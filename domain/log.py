@@ -16,6 +16,9 @@ class EthLog(object):
         self.block_hash = None
         self.block_timestamp = None
 
+    def __str__(self):
+        return "EthLog: " + vars(self).__str__()
+
 
 def transfer_dict_to_log(log_dict):
     log = EthLog()
