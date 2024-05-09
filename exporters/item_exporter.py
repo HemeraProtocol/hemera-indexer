@@ -1,19 +1,23 @@
 from exporters.console_item_exporter import ConsoleItemExporter
 from exporters.multi_item_exporter import MultiItemExporter
+from exporters.postgres_item_exporter import PostgresItemExporter
 
 
-def create_item_exporters(outputs):
+def create_item_exporters(outputs, mode):
     split_outputs = [output.strip() for output in outputs.split(',')] if outputs else ['console']
 
-    item_exporters = [create_item_exporter(output) for output in split_outputs]
+    item_exporters = [create_item_exporter(output, mode) for output in split_outputs]
     return MultiItemExporter(item_exporters)
 
 
-def create_item_exporter(output):
+def create_item_exporter(output, mode):
     item_exporter_type = determine_item_exporter_type(output)
 
     if item_exporter_type == ItemExporterType.CONSOLE:
         item_exporter = ConsoleItemExporter()
+
+    elif item_exporter_type == ItemExporterType.POSTGRES:
+        item_exporter = PostgresItemExporter(output, mode)
 
     else:
         raise ValueError('Unable to determine item exporter type for output ' + output)
