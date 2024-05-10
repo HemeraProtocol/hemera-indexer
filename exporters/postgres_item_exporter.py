@@ -1,21 +1,26 @@
+import logging
 import collections
 from datetime import datetime
-from dateutil.tz import tzlocal, tzutc
-# from blockchainetl.jobs.exporters.converters.composite_item_converter import CompositeItemConverter
-
-from sqlalchemy.orm import sessionmaker
-
-from exporters.jdbc.converter.postgresql_model_converter import PostgreSQLModelConverter
+from dateutil.tz import tzlocal
+from sqlalchemy.dialects.postgresql import insert
+from enumeration.eth_type import EthDataType
+from exporters.jdbc.schema.blocks import Blocks
+from exporters.jdbc.schema.transactions import Transactions
+from exporters.jdbc.schema.logs import Logs
 from exporters.jdbc.postgresql_service import PostgreSQLService
+from exporters.jdbc.converter.postgresql_model_converter import PostgreSQLModelConverter
 
-import logging
 
 logger = logging.getLogger(__name__)
 
 
 class PostgresItemExporter:
-    def lst2pgarr(alist):
-        return '{' + ','.join(alist) + '}'
+
+    table_mapping = {
+        EthDataType.BLOCK: Blocks,
+        EthDataType.TRANSACTION: Transactions,
+        EthDataType.LOG: Logs,
+    }
 
     def __init__(self, connection_url, mode):
 
@@ -41,8 +46,10 @@ class PostgresItemExporter:
                 item_group = items_grouped_by_type.get(item_type)
                 if item_group:
                     data = list(self.convert_items(item_type, item_group))
-                    session.add_all(data)
-            session.commit()
+                    for item in data:
+                        self.export_item(session, item_type, item)
+                    session.commit()
+
         except Exception as e:
             print(e)
             # print(item_type, insert_stmt, [i[-1] for i in data])
@@ -52,6 +59,16 @@ class PostgresItemExporter:
         end_time = datetime.now(tzlocal())
         logger.info(
             "Exporting items to PostgreSQL end, Item count: {}, Took {}".format(len(items), (end_time - start_time)))
+
+    def export_item(self, session, item_type, item):
+        model = self.table_mapping.get(item_type)
+
+        if model is None:
+            raise Exception("Unknown item type")
+
+        statement = insert(model).values(item).on_conflict_do_nothing()
+        session.execute(statement)
+
 
     def convert_items(self, item_type, items):
         for item in items:
