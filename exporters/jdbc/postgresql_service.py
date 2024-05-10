@@ -1,10 +1,9 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 
 from exporters.jdbc.schema.blocks import Blocks
 from exporters.jdbc.schema.transactions import Transactions
 from exporters.jdbc.schema.logs import Logs
-from sqlalchemy.ext.declarative import declarative_base
 
 
 class PostgreSQLService(object):
@@ -23,8 +22,9 @@ class PostgreSQLService(object):
 
     def init_schema(self):
         if self.mode:
-            Base = declarative_base()
-            Base.metadata.drop_all(self.engine)
+            metadata = MetaData()
+            metadata.reflect(bind=self.engine)
+            metadata.drop_all(bind=self.engine)
 
         Blocks.metadata.create_all(self.engine)
         Transactions.metadata.create_all(self.engine)
