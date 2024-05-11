@@ -1,9 +1,7 @@
-from sqlalchemy import create_engine, MetaData
+from alembic import command
+from alembic.config import Config
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
-from exporters.jdbc.schema.blocks import Blocks
-from exporters.jdbc.schema.transactions import Transactions
-from exporters.jdbc.schema.logs import Logs
 
 
 class PostgreSQLService(object):
@@ -14,21 +12,18 @@ class PostgreSQLService(object):
             cls.instance = super().__new__(cls)
         return cls.instance
 
-    def __init__(self, jdbc_url, init_mode=False):
-        self.mode = init_mode
+    def __init__(self, jdbc_url, db_version="head"):
+        self.db_version = db_version
         self.engine = create_engine(jdbc_url)
         self.Session = sessionmaker(bind=self.engine)
         self.init_schema()
 
     def init_schema(self):
-        if self.mode:
-            metadata = MetaData()
-            metadata.reflect(bind=self.engine)
-            metadata.drop_all(bind=self.engine)
+        alembic_config = Config("alembic.ini")
 
-        Blocks.metadata.create_all(self.engine)
-        Transactions.metadata.create_all(self.engine)
-        Logs.metadata.create_all(self.engine)
+        if self.db_version == "base":
+            command.downgrade(alembic_config, "base")
+        command.upgrade(alembic_config, self.db_version)
 
     def get_service_engine(self):
         return self.engine
