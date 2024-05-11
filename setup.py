@@ -38,8 +38,12 @@ setup(
         'python-dateutil>=2.8.0,<3',
         'click>=8.0.4,<9',
         'ethereum-dasm==0.1.5',
+        'airflow==2.9.1',
         'base58',
-        'requests'
+        'requests',
+        "sqlalchemy",
+        "psycopg2",
+        "alembic"
     ],
     extras_require={
         'streaming': [
@@ -48,7 +52,6 @@ setup(
             # 'google-cloud-storage==1.33.0',
             # 'kafka-python==2.0.2',
             'sqlalchemy==1.4',
-            'pg8000==1.16.6',
             # This library is a dependency for google-cloud-pubsub, starting from 0.3.22 it requires Rust,
             # that's why  we lock the version here
             # 'libcst==0.3.21',
