@@ -28,8 +28,11 @@ from utils.thread_local_proxy import ThreadLocalProxy
                    'or kafka, output name and connection host:port e.g. kafka/127.0.0.1:9092 '
                    'or Kinesis, e.g. kinesis://your-data-stream-name'
                    'If not specified will print to console')
-@click.option('-m', '--init-mode', default=False, show_default=True, type=bool,
-              help='The database mode to initialize the database.')
+@click.option('-v', '--db-version', default="head", show_default=True, type=str,
+              help='The database version to initialize the database. using the alembic script\'s revision ID to '
+                   'specify a version.'
+                   ' e.g. head, indicates the latest version.'
+                   'or base, indicates the empty database without any table.')
 @click.option('-s', '--start-block', default=None, show_default=True, type=int, help='Start block')
 @click.option('-e', '--entity-types', default=','.join(EntityType.ALL_FOR_STREAMING), show_default=True, type=str,
               help='The list of entity types to export.')
@@ -42,7 +45,7 @@ from utils.thread_local_proxy import ThreadLocalProxy
 @click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers')
 @click.option('--log-file', default=None, show_default=True, type=str, help='Log file')
 @click.option('--pid-file', default=None, show_default=True, type=str, help='pid file')
-def stream(last_synced_block_file, lag, provider_uri, debug_provider_uri, output, init_mode, start_block, entity_types,
+def stream(last_synced_block_file, lag, provider_uri, debug_provider_uri, output, db_version, start_block, entity_types,
            period_seconds=10, batch_size=2, block_batch_size=10, max_workers=5, log_file=None, pid_file=None):
     """Streams all data types to console or Google Pub/Sub."""
     configure_logging(log_file)
@@ -58,7 +61,7 @@ def stream(last_synced_block_file, lag, provider_uri, debug_provider_uri, output
     streamer_adapter = EthStreamerAdapter(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporter=create_item_exporters(output, init_mode),
+        item_exporter=create_item_exporters(output, db_version),
         batch_size=batch_size,
         max_workers=max_workers,
         entity_types=entity_types
