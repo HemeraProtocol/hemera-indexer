@@ -1,10 +1,7 @@
 from datetime import datetime
-
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from exporters.jdbc.schema import Base
 
 
 class Transactions(Base):
@@ -49,4 +46,3 @@ class Transactions(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP)
-

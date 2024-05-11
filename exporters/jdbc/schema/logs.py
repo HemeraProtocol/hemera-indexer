@@ -1,10 +1,7 @@
 from datetime import datetime
-
-from sqlalchemy import Column, UniqueConstraint, PrimaryKeyConstraint
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT
-from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from sqlalchemy import Column, PrimaryKeyConstraint
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP
+from exporters.jdbc.schema import Base
 
 
 class Logs(Base):
@@ -29,4 +26,3 @@ class Logs(Base):
     __table_args__ = (
         PrimaryKeyConstraint('log_index', 'transaction_hash', 'block_hash'),
     )
-

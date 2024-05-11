@@ -1,9 +1,8 @@
 from datetime import datetime
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
-from sqlalchemy.ext.declarative import declarative_base
 
-Base = declarative_base()
+from exporters.jdbc.schema import Base
 
 
 class Blocks(Base):
@@ -34,5 +33,3 @@ class Blocks(Base):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP)
     data_confirmed = Column(BOOLEAN, default=False)
-
-
