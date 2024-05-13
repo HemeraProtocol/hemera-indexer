@@ -10,12 +10,10 @@ from exporters.jdbc.schema.logs import Logs
 from exporters.jdbc.postgresql_service import PostgreSQLService
 from exporters.jdbc.converter.postgresql_model_converter import PostgreSQLModelConverter
 
-
 logger = logging.getLogger(__name__)
 
 
 class PostgresItemExporter:
-
     table_mapping = {
         EthDataType.BLOCK: Blocks,
         EthDataType.TRANSACTION: Transactions,
@@ -43,11 +41,16 @@ class PostgresItemExporter:
         try:
             items_grouped_by_type = group_by_item_type(items)
             for item_type in items_grouped_by_type.keys():
+
+                model = self.table_mapping.get(item_type)
+                if model is None:
+                    raise Exception("Unknown item type")
+
                 item_group = items_grouped_by_type.get(item_type)
                 if item_group:
                     data = list(self.convert_items(item_type, item_group))
-                    for item in data:
-                        self.export_item(session, item_type, item)
+                    statement = insert(model).values(data).on_conflict_do_nothing()
+                    session.execute(statement)
                     session.commit()
 
         except Exception as e:
@@ -61,14 +64,14 @@ class PostgresItemExporter:
             "Exporting items to PostgreSQL end, Item count: {}, Took {}".format(len(items), (end_time - start_time)))
 
     def export_item(self, session, item_type, item):
-        model = self.table_mapping.get(item_type)
-
-        if model is None:
-            raise Exception("Unknown item type")
-
-        statement = insert(model).values(item).on_conflict_do_nothing()
-        session.execute(statement)
-
+        # model = self.table_mapping.get(item_type)
+        #
+        # if model is None:
+        #     raise Exception("Unknown item type")
+        #
+        # statement = insert(model).values(item).on_conflict_do_nothing()
+        # session.execute(statement)
+        pass
 
     def convert_items(self, item_type, items):
         for item in items:
