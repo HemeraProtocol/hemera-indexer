@@ -1,4 +1,7 @@
+from cli.confirm import confirm
+from cli.stream import stream
 from utils.logging_utils import logging_basic_config
+
 logging_basic_config()
 
 import click
@@ -22,7 +25,6 @@ import click
 # from ethereumetl.cli.get_block_range_for_date import get_block_range_for_date
 # from ethereumetl.cli.get_block_range_for_timestamps import get_block_range_for_timestamps
 # from ethereumetl.cli.get_keccak_hash import get_keccak_hash
-from cli.stream import stream
 
 
 @click.group()
@@ -49,6 +51,7 @@ def cli(ctx):
 
 # streaming
 cli.add_command(stream, "stream")
+cli.add_command(confirm, "confirm")
 
 # utils
 # cli.add_command(get_block_range_for_date, "get_block_range_for_date")
