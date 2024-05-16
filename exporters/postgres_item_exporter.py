@@ -3,7 +3,7 @@ import collections
 from datetime import datetime
 from dateutil.tz import tzlocal
 from sqlalchemy.dialects.postgresql import insert
-from enumeration.eth_type import EthDataType
+from exporters.jdbc.schema.block_timestamp_mapper import BlockTimestampMapper
 from exporters.jdbc.schema.blocks import Blocks
 from exporters.jdbc.schema.transactions import Transactions
 from exporters.jdbc.schema.logs import Logs
@@ -15,18 +15,25 @@ logger = logging.getLogger(__name__)
 
 class PostgresItemExporter:
     table_mapping = {
-        EthDataType.BLOCK: Blocks,
-        EthDataType.TRANSACTION: Transactions,
-        EthDataType.LOG: Logs,
+        "blocks": Blocks,
+        "transactions": Transactions,
+        "logs": Logs,
+        "block_ts_mapper": BlockTimestampMapper,
     }
 
-    def __init__(self, connection_url, mode):
+    index_mapping = {
+        "blocks": ['hash'],
+        "transactions": ['hash'],
+        "logs": ['log_index', 'block_hash', 'transaction_hash']
+    }
 
-        self.service = PostgreSQLService(connection_url, mode)
-        self.converter = PostgreSQLModelConverter()
+    def __init__(self, connection_url, config):
+        version = config.get('db_version') if config.get('db_version') else "head"
+        confirm = config.get('confirm') if config.get('confirm') else False
 
-    def get_session(self):
-        return self.service.get_service_session()
+        self.service = PostgreSQLService(connection_url, version)
+        self.converter = PostgreSQLModelConverter(confirm)
+        self.confirm = confirm
 
     def open(self):
         pass
@@ -37,7 +44,7 @@ class PostgresItemExporter:
     def export_items(self, items):
         start_time = datetime.now(tzlocal())
 
-        session = self.get_session()
+        session = self.service.get_service_session()
         try:
             items_grouped_by_type = group_by_item_type(items)
             for item_type in items_grouped_by_type.keys():
@@ -49,9 +56,16 @@ class PostgresItemExporter:
                 item_group = items_grouped_by_type.get(item_type)
                 if item_group:
                     data = list(self.convert_items(item_type, item_group))
-                    statement = insert(model).values(data).on_conflict_do_nothing()
-                    session.execute(statement)
-                    session.commit()
+                    if self.confirm is True:
+                        for sub_data in data:
+                            statement = insert(model).values(sub_data).on_conflict_do_update(
+                                index_elements=self.index_mapping.get(item_type), set_=sub_data)
+                            session.execute(statement)
+                            session.commit()
+                    else:
+                        statement = insert(model).values(data).on_conflict_do_nothing()
+                        session.execute(statement)
+                        session.commit()
 
         except Exception as e:
             print(e)
@@ -64,13 +78,6 @@ class PostgresItemExporter:
             "Exporting items to PostgreSQL end, Item count: {}, Took {}".format(len(items), (end_time - start_time)))
 
     def export_item(self, session, item_type, item):
-        # model = self.table_mapping.get(item_type)
-        #
-        # if model is None:
-        #     raise Exception("Unknown item type")
-        #
-        # statement = insert(model).values(item).on_conflict_do_nothing()
-        # session.execute(statement)
         pass
 
     def convert_items(self, item_type, items):
@@ -81,6 +88,6 @@ class PostgresItemExporter:
 def group_by_item_type(items):
     result = collections.defaultdict(list)
     for item in items:
-        result[type(item).__name__].append(item)
+        result[item["model"]].append(item)
 
     return result
