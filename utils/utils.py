@@ -1,5 +1,6 @@
 import itertools
 import warnings
+import random
 
 
 def hex_to_dec(hex_string):
@@ -43,6 +44,12 @@ def to_normalized_address(address):
     if address is None or not isinstance(address, str):
         return address
     return address.lower()
+
+
+# TODO: Implement fallback mechanism for provider uris instead of picking randomly
+def pick_random_provider_uri(provider_uri):
+    provider_uris = [uri.strip() for uri in provider_uri.split(',')]
+    return random.choice(provider_uris)
 
 
 def validate_range(range_start_incl, range_end_incl):

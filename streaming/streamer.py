@@ -3,7 +3,8 @@ import os
 import time
 
 from streaming.streamer_adapter_stub import StreamerAdapterStub
-from utils.file_utils import smart_open
+from utils.file_utils import smart_open, write_last_block, delete_file, read_last_block, init_last_block_file, \
+    write_to_file
 
 
 class Streamer:
@@ -29,9 +30,14 @@ class Streamer:
         self.pid_file = pid_file
 
         if self.start_block is not None or not os.path.isfile(self.last_synced_block_file):
-            init_last_synced_block_file((self.start_block or 0) - 1, self.last_synced_block_file)
+            if os.path.isfile(last_synced_block_file):
+                raise ValueError(
+                    '{} should not exist if --start-block option is specified. '
+                    'Either remove the {} file or the --start-block option.'
+                    .format(last_synced_block_file, last_synced_block_file))
+            init_last_block_file((self.start_block or 0) - 1, self.last_synced_block_file)
 
-        self.last_synced_block = read_last_synced_block(self.last_synced_block_file)
+        self.last_synced_block = read_last_block(self.last_synced_block_file)
 
     def stream(self):
         try:
@@ -74,7 +80,7 @@ class Streamer:
         if blocks_to_sync != 0:
             self.blockchain_streamer_adapter.export_all(self.last_synced_block + 1, target_block)
             logging.info('Writing last synced block {}'.format(target_block))
-            write_last_synced_block(self.last_synced_block_file, target_block)
+            write_last_block(self.last_synced_block_file, target_block)
             self.last_synced_block = target_block
 
         return blocks_to_sync
@@ -86,31 +92,10 @@ class Streamer:
         return target_block
 
 
-def delete_file(file):
-    try:
-        os.remove(file)
-    except OSError:
-        pass
 
 
-def write_last_synced_block(file, last_synced_block):
-    write_to_file(file, str(last_synced_block) + '\n')
 
 
-def init_last_synced_block_file(start_block, last_synced_block_file):
-    if os.path.isfile(last_synced_block_file):
-        raise ValueError(
-            '{} should not exist if --start-block option is specified. '
-            'Either remove the {} file or the --start-block option.'
-                .format(last_synced_block_file, last_synced_block_file))
-    write_last_synced_block(last_synced_block_file, start_block)
 
 
-def read_last_synced_block(file):
-    with smart_open(file, 'r') as last_synced_block_file:
-        return int(last_synced_block_file.read())
 
-
-def write_to_file(file, content):
-    with smart_open(file, 'w') as file_handle:
-        file_handle.write(content)

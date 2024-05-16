@@ -2,6 +2,7 @@ import contextlib
 import os
 import pathlib
 import sys
+from glob import glob
 
 
 # https://stackoverflow.com/questions/17602878/how-to-handle-both-with-open-and-sys-stdout-nicely
@@ -13,6 +14,13 @@ def smart_open(filename=None, mode='w', binary=False, create_parent_dirs=True):
         yield fh
     finally:
         fh.close()
+
+
+def smart_delete(path_format):
+    file_list = glob(path_format)
+
+    for file in file_list:
+        delete_file(file)
 
 
 def get_file_handle(filename, mode='w', binary=False, create_parent_dirs=True):
@@ -36,6 +44,31 @@ def close_silently(file_handle):
         pass
     try:
         file_handle.close()
+    except OSError:
+        pass
+
+
+def init_last_block_file(start_block, last_block_file):
+    write_last_block(last_block_file, start_block)
+
+
+def read_last_block(file):
+    with smart_open(file, 'r') as last_synced_block_file:
+        return int(last_synced_block_file.read())
+
+
+def write_last_block(file, last_synced_block):
+    write_to_file(file, str(last_synced_block) + '\n')
+
+
+def write_to_file(file, content, mode='w'):
+    with smart_open(file, mode) as file_handle:
+        file_handle.write(content)
+
+
+def delete_file(file):
+    try:
+        os.remove(file)
     except OSError:
         pass
 

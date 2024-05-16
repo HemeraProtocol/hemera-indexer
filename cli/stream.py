@@ -10,6 +10,7 @@ from enumeration.entity_type import EntityType
 from utils.provider import get_provider_from_uri
 from exporters.item_exporter import create_item_exporters
 from utils.thread_local_proxy import ThreadLocalProxy
+from utils.utils import pick_random_provider_uri
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
@@ -56,7 +57,7 @@ def stream(last_synced_block_file, lag, provider_uri, debug_provider_uri, output
     provider_uri = pick_random_provider_uri(provider_uri)
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.info('Using provider ' + provider_uri)
-    logging.info('Using debug provider' + provider_uri)
+    logging.info('Using debug provider ' + debug_provider_uri)
 
     streamer_adapter = EthStreamerAdapter(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
@@ -91,7 +92,3 @@ def parse_entity_types(entity_types):
 
     return entity_types
 
-
-def pick_random_provider_uri(provider_uri):
-    provider_uris = [uri.strip() for uri in provider_uri.split(',')]
-    return random.choice(provider_uris)
