@@ -1,10 +1,12 @@
 import logging
+from datetime import datetime
 
 from web3._utils import blocks
 
-from domain.block import transfer_dict_to_block
-from domain.log import transfer_dict_to_log
-from domain.transaction import transfer_dict_to_transaction
+from domain.block import format_block_data
+from domain.block_ts_mapper import format_block_ts_mapper
+from domain.log import format_log_data
+from domain.transaction import format_transaction_data
 from exporters.console_item_exporter import ConsoleItemExporter
 from exporters.in_memory_item_exporter import InMemoryItemExporter
 from enumeration.entity_type import EntityType
@@ -21,7 +23,6 @@ from jobs.export_receipts_and_logs_job import ExportReceiptsAndLogsJob
 # from jobs.extract_tokens_job import ExtractTokensJob
 from streaming.enrich import enrich_transactions, enrich_logs, enrich_token_transfers, \
     enrich_contracts, enrich_tokens, enrich_geth_traces, join, enrich_blocks_timestamp
-# from ethereumetl.thread_local_proxy import ThreadLocalProxy
 from utils.web3_utils import build_web3
 
 
@@ -32,15 +33,13 @@ class EthStreamerAdapter:
             batch_web3_debug_provider,
             item_exporter=ConsoleItemExporter(),
             batch_size=100,
-            max_workers=5,
-            entity_types=tuple(EntityType.ALL_FOR_STREAMING)):
+            max_workers=5):
 
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
         self.item_exporter = item_exporter
         self.batch_size = batch_size
         self.max_workers = max_workers
-        self.entity_types = entity_types
 
     def open(self):
         self.item_exporter.open()
@@ -51,14 +50,10 @@ class EthStreamerAdapter:
 
     def export_all(self, start_block, end_block):
         # Export blocks and transactions
-        blocks, transactions = [], []
-        if self._should_export(EntityType.BLOCK) or self._should_export(EntityType.TRANSACTION):
-            blocks, transactions = self._export_blocks_and_transactions(start_block, end_block)
+        blocks, transactions = self._export_blocks_and_transactions(start_block, end_block)
 
         # Export receipts and logs
-        receipts, logs = [], []
-        if self._should_export(EntityType.RECEIPT) or self._should_export(EntityType.LOG):
-            receipts, logs = self._export_receipts_and_logs(transactions)
+        receipts, logs = self._export_receipts_and_logs(transactions)
 
         #
         # # Extract token transfers
@@ -88,16 +83,13 @@ class EthStreamerAdapter:
         # if self._should_export(EntityType.TOKEN):
         #     tokens = self._extract_tokens(contracts)
 
-        enriched_blocks = [transfer_dict_to_block(block) for block in blocks] \
-            if EntityType.BLOCK in self.entity_types else []
+        enriched_blocks = [format_block_data(block) for block in blocks]
 
-        enriched_transactions = [transfer_dict_to_transaction(transaction)
+        enriched_transactions = [format_transaction_data(transaction)
                                  for transaction in enrich_blocks_timestamp
-                                            (blocks, enrich_transactions(transactions, receipts))] \
-            if EntityType.TRANSACTION in self.entity_types else []
+                                 (blocks, enrich_transactions(transactions, receipts))]
 
-        enriched_logs = [transfer_dict_to_log(log) for log in enrich_blocks_timestamp(blocks, logs)] \
-            if EntityType.LOG in self.entity_types else []
+        enriched_logs = [format_log_data(log) for log in enrich_blocks_timestamp(blocks, logs)]
 
         # enriched_token_transfers = enrich_token_transfers(blocks, token_transfers) \
         #     if EntityType.TOKEN_TRANSFER in self.entity_types else []
@@ -110,11 +102,14 @@ class EthStreamerAdapter:
         # enriched_coin_balances = coin_balances \
         #     if EntityType.COIN_BALANCE in self.entity_types else []
 
+        block_ts_mapping = self._extract_blocks_number_timestamp_map(enriched_blocks)
+
         logging.info('Exporting with ' + type(self.item_exporter).__name__)
 
         all_items = enriched_blocks + \
                     enriched_transactions + \
-                    enriched_logs
+                    enriched_logs + \
+                    block_ts_mapping
         # enriched_token_transfers + \
         # enriched_traces + \
         # enriched_contracts + \
@@ -124,36 +119,43 @@ class EthStreamerAdapter:
         self.item_exporter.export_items(all_items)
 
     def _export_blocks_and_transactions(self, start_block, end_block):
-        blocks_and_transactions_item_exporter = InMemoryItemExporter(item_types=['block', 'transaction'])
-        blocks_and_transactions_job = ExportBlocksAndTransactionsJob(
+        job = ExportBlocksAndTransactionsJob(
             start_block=start_block,
             end_block=end_block,
             batch_size=self.batch_size,
             batch_web3_provider=self.batch_web3_provider,
             max_workers=self.max_workers,
-            item_exporter=blocks_and_transactions_item_exporter,
-            export_blocks=self._should_export(EntityType.BLOCK),
-            export_transactions=self._should_export(EntityType.TRANSACTION)
+            index_keys=['block', 'transaction']
         )
-        blocks_and_transactions_job.run()
-        blocks = blocks_and_transactions_item_exporter.get_items('block')
-        transactions = blocks_and_transactions_item_exporter.get_items('transaction')
+        datas = job.run()
+        blocks = datas.get('block')
+        transactions = datas.get('transaction')
         return blocks, transactions
 
+    def _extract_blocks_number_timestamp_map(self, blocks):
+        ts_dict = {}
+        for block in blocks:
+            timestamp = int(block['timestamp'] / 3600) * 3600
+            block_number = block['number']
+
+            if timestamp not in ts_dict.keys() or block_number < ts_dict[timestamp]:
+                ts_dict[timestamp] = block_number
+        mapping = []
+        for timestamp, block_number in ts_dict.items():
+            mapping.append(format_block_ts_mapper(timestamp, block_number))
+        return mapping
+
     def _export_receipts_and_logs(self, transactions):
-        exporter = InMemoryItemExporter(item_types=['receipt', 'log'])
         job = ExportReceiptsAndLogsJob(
             transactions=transactions,
             batch_size=self.batch_size,
             batch_web3_provider=self.batch_web3_provider,
             max_workers=self.max_workers,
-            item_exporter=exporter,
-            export_receipts=self._should_export(EntityType.RECEIPT),
-            export_logs=self._should_export(EntityType.LOG)
+            index_keys=['receipt', 'log']
         )
-        job.run()
-        receipts = exporter.get_items('receipt')
-        logs = exporter.get_items('log')
+        datas = job.run()
+        receipts = datas.get('receipt')
+        logs = datas.get('log')
         return receipts, logs
 
     #
@@ -259,37 +261,6 @@ class EthStreamerAdapter:
     #     job.run()
     #     tokens = exporter.get_items('token')
     #     return tokens
-
-    def _should_export(self, entity_type):
-        if entity_type == EntityType.BLOCK:
-            return True
-
-        if entity_type == EntityType.TRANSACTION:
-            return EntityType.TRANSACTION in self.entity_types or self._should_export(EntityType.LOG)
-
-        if entity_type == EntityType.RECEIPT:
-            return EntityType.TRANSACTION in self.entity_types or self._should_export(EntityType.TOKEN_TRANSFER)
-
-        if entity_type == EntityType.LOG:
-            return EntityType.LOG in self.entity_types or self._should_export(EntityType.TOKEN_TRANSFER)
-
-        if entity_type == EntityType.TOKEN_TRANSFER:
-            return EntityType.TOKEN_TRANSFER in self.entity_types
-
-        if entity_type == EntityType.TRACE:
-            return EntityType.TRACE in self.entity_types or self._should_export(EntityType.CONTRACT)
-
-        if entity_type == EntityType.CONTRACT:
-            return EntityType.CONTRACT in self.entity_types or self._should_export(EntityType.TOKEN)
-
-        if entity_type == EntityType.TOKEN:
-            return EntityType.TOKEN in self.entity_types
-
-        if entity_type == EntityType.COIN_BALANCE:
-            return EntityType.COIN_BALANCE in self.entity_types or self._should_export(
-                EntityType.TRANSACTION) or self._should_export(EntityType.TRACE)
-
-        raise ValueError('Unexpected entity type ' + entity_type)
 
     def close(self):
         self.item_exporter.close()
