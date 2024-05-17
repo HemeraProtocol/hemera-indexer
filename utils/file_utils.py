@@ -1,6 +1,7 @@
 import contextlib
 import os
 import pathlib
+import subprocess
 import sys
 from glob import glob
 
@@ -46,6 +47,13 @@ def close_silently(file_handle):
         file_handle.close()
     except OSError:
         pass
+
+
+def smart_compress_file(file_wildcards, compress_cmd):
+    file_list = glob(file_wildcards)
+
+    for file in file_list:
+        subprocess.run(f"{compress_cmd} {file}", shell=True, check=True)
 
 
 def init_last_block_file(start_block, last_block_file):

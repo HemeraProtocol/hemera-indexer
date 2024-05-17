@@ -5,7 +5,7 @@ from datetime import datetime
 
 from dateutil.tz import tzlocal
 
-from utils.file_utils import write_to_file, smart_delete
+from utils.file_utils import write_to_file, smart_delete, smart_compress_file
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,8 @@ class LocalFileItemExporter:
                         copy_item = item.copy()
                         copy_item.pop("model")
                         write_to_file(file_name, json.dumps(copy_item) + "\n", 'a+')
+
+                    smart_compress_file(f"{basic_file_path}*.json", "gzip -9")
 
         except Exception as e:
             print(e)
