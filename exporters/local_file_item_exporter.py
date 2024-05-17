@@ -5,7 +5,7 @@ from datetime import datetime
 
 from dateutil.tz import tzlocal
 
-from utils.file_utils import write_to_file, delete_file, smart_delete
+from utils.file_utils import write_to_file, smart_delete
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,9 @@ class LocalFileItemExporter:
                             file_name = basic_file_path + ".json"
                         else:
                             file_name = basic_file_path + f"-{int(i / self.partition_size)}.json"
-                        write_to_file(file_name, json.dumps(item) + "\n", 'a+')
+                        copy_item = item.copy()
+                        copy_item.pop("model")
+                        write_to_file(file_name, json.dumps(copy_item) + "\n", 'a+')
 
         except Exception as e:
             print(e)
@@ -61,6 +63,7 @@ class LocalFileItemExporter:
 def group_by_item_type(items):
     result = collections.defaultdict(list)
     for item in items:
-        result[item["model"]].append(item)
+        key = item["model"].__name__.lower()
+        result[key].append(item)
 
     return result
