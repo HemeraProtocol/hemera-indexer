@@ -1,32 +1,18 @@
-import logging
 import collections
+import logging
 from datetime import datetime
+
+import sqlalchemy
 from dateutil.tz import tzlocal
 from sqlalchemy.dialects.postgresql import insert
-from exporters.jdbc.schema.block_timestamp_mapper import BlockTimestampMapper
-from exporters.jdbc.schema.blocks import Blocks
-from exporters.jdbc.schema.transactions import Transactions
-from exporters.jdbc.schema.logs import Logs
-from exporters.jdbc.postgresql_service import PostgreSQLService
+
 from exporters.jdbc.converter.postgresql_model_converter import PostgreSQLModelConverter
+from exporters.jdbc.postgresql_service import PostgreSQLService
 
 logger = logging.getLogger(__name__)
 
 
 class PostgresItemExporter:
-    table_mapping = {
-        "blocks": Blocks,
-        "transactions": Transactions,
-        "logs": Logs,
-        "block_ts_mapper": BlockTimestampMapper,
-    }
-
-    index_mapping = {
-        "blocks": ['hash'],
-        "transactions": ['hash'],
-        "logs": ['log_index', 'transaction_hash']
-    }
-
     def __init__(self, connection_url, config):
         version = config.get('db_version') if config.get('db_version') else "head"
         confirm = config.get('confirm') if config.get('confirm') else False
@@ -46,24 +32,19 @@ class PostgresItemExporter:
 
         session = self.service.get_service_session()
         try:
-            items_grouped_by_type = group_by_item_type(items)
+            models, items_grouped_by_type = group_by_item_type(items)
             for item_type in items_grouped_by_type.keys():
-
-                model = self.table_mapping.get(item_type)
-                if model is None:
-                    raise Exception("Unknown item type")
-
                 item_group = items_grouped_by_type.get(item_type)
                 if item_group:
                     data = list(self.convert_items(item_type, item_group))
                     if self.confirm is True:
-                        for sub_data in data:
-                            statement = insert(model).values(sub_data).on_conflict_do_update(
-                                index_elements=self.index_mapping.get(item_type), set_=sub_data)
-                            session.execute(statement)
-                            session.commit()
+                        statement = insert(models[item_type]).values(data)
+                        statement = on_conflict_do_update(models[item_type], statement)
+                        session.execute(statement)
+                        session.commit()
+
                     else:
-                        statement = insert(model).values(data).on_conflict_do_nothing()
+                        statement = insert(models[item_type]).values(data).on_conflict_do_nothing()
                         session.execute(statement)
                         session.commit()
 
@@ -86,8 +67,27 @@ class PostgresItemExporter:
 
 
 def group_by_item_type(items):
+    models = dict()
     result = collections.defaultdict(list)
     for item in items:
-        result[item["model"]].append(item)
+        key = item["model"].__name__.lower()
+        models[key] = item["model"]
+        result[key].append(item)
 
-    return result
+    return models, result
+
+
+def on_conflict_do_update(model, statement):
+    pk_list = []
+    for constraint in model._sa_registry.metadata.tables[model.__name__.lower()].constraints:
+        if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
+            for column in constraint.columns:
+                pk_list.append(column.name)
+
+    update_set = {}
+    for exc in statement.excluded:
+        if exc.name not in pk_list:
+            update_set[exc.name] = exc
+
+    statement = statement.on_conflict_do_update(index_elements=pk_list, set_=update_set)
+    return statement
