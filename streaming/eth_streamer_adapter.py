@@ -104,6 +104,10 @@ class EthStreamerAdapter:
 
         block_ts_mapping = self._extract_blocks_number_timestamp_map(enriched_blocks)
 
+        enriched_blocks = sorted(enriched_blocks, key=lambda x: x['number'])
+        enriched_transactions = sorted(enriched_transactions, key=lambda x: (x['block_number'], x['transaction_index']))
+        enriched_logs = sorted(enriched_logs, key=lambda x: (x['block_number'], x['transaction_index'], x['log_index']))
+
         logging.info('Exporting with ' + type(self.item_exporter).__name__)
 
         all_items = enriched_blocks + \

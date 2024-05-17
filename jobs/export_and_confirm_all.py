@@ -49,6 +49,10 @@ def confirm_all(start_block, end_block,
 
     enriched_logs = [format_log_data(log) for log in enrich_blocks_timestamp(blocks, logs)]
 
+    enriched_blocks = sorted(enriched_blocks, key=lambda x: x['number'])
+    enriched_transactions = sorted(enriched_transactions, key=lambda x: (x['block_number'], x['transaction_index']))
+    enriched_logs = sorted(enriched_logs, key=lambda x: (x['block_number'], x['transaction_index'], x['log_index']))
+
     all_items = enriched_blocks + \
                 enriched_transactions + \
                 enriched_logs
