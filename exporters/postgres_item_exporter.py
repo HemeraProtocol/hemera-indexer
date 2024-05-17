@@ -70,7 +70,7 @@ def group_by_item_type(items):
     models = dict()
     result = collections.defaultdict(list)
     for item in items:
-        key = item["model"].__name__.lower()
+        key = item["model"].__tablename__
         models[key] = item["model"]
         result[key].append(item)
 

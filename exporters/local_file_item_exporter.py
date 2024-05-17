@@ -65,7 +65,7 @@ class LocalFileItemExporter:
 def group_by_item_type(items):
     result = collections.defaultdict(list)
     for item in items:
-        key = item["model"].__name__.lower()
+        key = item["model"].__tablename__
         result[key].append(item)
 
     return result
