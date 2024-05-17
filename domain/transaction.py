@@ -1,9 +1,10 @@
+from exporters.jdbc.schema.transactions import Transactions
 from utils.utils import hex_to_dec, to_normalized_address
 
 
 def format_transaction_data(transaction_dict):
     transaction = {
-        'model': "transactions",
+        'model': Transactions,
         'hash': transaction_dict['hash'],
         'transaction_index': hex_to_dec(transaction_dict['transactionIndex']),
         'from_address': to_normalized_address(transaction_dict['from']),

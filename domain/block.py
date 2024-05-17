@@ -1,9 +1,11 @@
+from exporters.jdbc.schema import blocks
+from exporters.jdbc.schema.blocks import Blocks
 from utils.utils import hex_to_dec, to_normalized_address
 
 
 def format_block_data(block_dict):
     block = {
-        'model': "blocks",
+        'model': Blocks,
         'number': hex_to_dec(block_dict['number']),
         'timestamp': hex_to_dec(block_dict['timestamp']),
         'hash': block_dict['hash'],

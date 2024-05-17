@@ -1,9 +1,10 @@
+from exporters.jdbc.schema.logs import Logs
 from utils.utils import hex_to_dec, to_normalized_address
 
 
 def format_log_data(log_dict):
     log = {
-        'model': "logs",
+        'model': Logs,
         'log_index': hex_to_dec(log_dict['logIndex']),
         'address': to_normalized_address(log_dict['address']),
         'data': log_dict['data'],
