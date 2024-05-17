@@ -17,12 +17,12 @@ class Logs(Base):
     transaction_hash = Column(BYTEA, primary_key=True)
     transaction_index = Column(INTEGER)
     block_number = Column(BIGINT)
-    block_hash = Column(BYTEA, primary_key=True)
+    block_hash = Column(BYTEA)
     block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP)
 
     __table_args__ = (
-        PrimaryKeyConstraint('log_index', 'transaction_hash', 'block_hash'),
+        PrimaryKeyConstraint('log_index', 'transaction_hash'),
     )
