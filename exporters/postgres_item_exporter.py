@@ -24,7 +24,7 @@ class PostgresItemExporter:
     index_mapping = {
         "blocks": ['hash'],
         "transactions": ['hash'],
-        "logs": ['log_index', 'block_hash', 'transaction_hash']
+        "logs": ['log_index', 'transaction_hash']
     }
 
     def __init__(self, connection_url, config):
