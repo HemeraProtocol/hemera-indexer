@@ -40,7 +40,7 @@ class LocalFileItemExporter:
                         else:
                             file_name = basic_file_path + f"-{int(i / self.partition_size)}.json"
                         copy_item = item.copy()
-                        copy_item.pop("model")
+                        copy_item['model'] = copy_item['model'].__name__
                         write_to_file(file_name, json.dumps(copy_item) + "\n", 'a+')
 
                     smart_compress_file(f"{basic_file_path}*.json", "gzip -9")
