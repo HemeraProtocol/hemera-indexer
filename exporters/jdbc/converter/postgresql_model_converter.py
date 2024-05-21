@@ -19,6 +19,9 @@ class PostgreSQLModelConverter:
         elif data_type == "logs":
             return self.convert_to_log(data)
 
+        elif data_type == "traces":
+            return self.convert_to_trace(data)
+
         elif data_type == "block_ts_mapper":
             return self.convert_to_block_ts_mapper(data)
 
@@ -99,6 +102,30 @@ class PostgreSQLModelConverter:
             'block_number': log["block_number"],
             'block_hash': bytes(log["block_hash"], 'utf-8'),
             'block_timestamp': func.to_timestamp(log["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_trace(self, trace):
+        return {
+            "trace_id": trace["trace_id"],
+            "from_address": bytes(trace["from_address"], 'utf-8') if trace["from_address"] else None,
+            "to_address": bytes(trace["to_address"], 'utf-8') if trace["to_address"] else None,
+            "value": trace["value"],
+            "input": bytes(trace["input"], 'utf-8') if trace["input"] else None,
+            "output": bytes(trace["output"], 'utf-8') if trace["output"] else None,
+            "trace_type": trace["trace_type"],
+            "call_type": trace["call_type"],
+            "gas": trace["gas"],
+            "gas_used": trace["gas_used"],
+            "subtraces": trace["subtraces"],
+            "trace_address": trace["trace_address"],
+            "error": trace["error"],
+            "status": trace["status"],
+            'block_number': trace["block_number"],
+            'block_hash': bytes(trace["block_hash"], 'utf-8') if trace["block_hash"] else None,
+            'block_timestamp': func.to_timestamp(trace["block_timestamp"]),
+            'transaction_index': trace["transaction_index"],
+            'transaction_hash': bytes(trace["transaction_hash"], 'utf-8') if trace["transaction_hash"] else None,
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
