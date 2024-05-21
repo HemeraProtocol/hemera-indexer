@@ -35,10 +35,10 @@ class ExportReceiptsAndLogsJob(BaseJob):
         receipts = [result for result in results]
         for receipt in receipts:
             receipt['item'] = 'receipt'
-            self._export_receipt(receipt)
+            self._export_item(receipt)
+            self._export_logs(receipt)
 
-    def _export_receipt(self, receipt):
-        self._export_item(receipt)
+    def _export_logs(self, receipt):
         for log in receipt['logs']:
             log['item'] = 'log'
             self._export_item(log)

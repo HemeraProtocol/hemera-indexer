@@ -1,4 +1,3 @@
-from exporters.jdbc.schema import blocks
 from exporters.jdbc.schema.blocks import Blocks
 from utils.utils import hex_to_dec, to_normalized_address
 

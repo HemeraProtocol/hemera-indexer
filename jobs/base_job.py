@@ -12,6 +12,7 @@ class BaseJob(object):
         return self.data_buff
 
     def _start(self):
+        self.data_buff = {}
         for key in self.index_keys:
             self.data_buff[key] = []
 

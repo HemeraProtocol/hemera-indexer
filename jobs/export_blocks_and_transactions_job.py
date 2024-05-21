@@ -40,10 +40,10 @@ class ExportBlocksAndTransactionsJob(BaseJob):
 
         for block in results:
             block['item'] = 'block'
-            self._export_block(block)
+            self._export_item(block)
+            self._export_transaction(block)
 
-    def _export_block(self, block):
-        self._export_item(block)
+    def _export_transaction(self, block):
         for transaction in block['transactions']:
             transaction['item'] = 'transaction'
             self._export_item(transaction)
