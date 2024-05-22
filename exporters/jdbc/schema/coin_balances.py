@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP
+from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP
 from exporters.jdbc.schema import Base
 
 

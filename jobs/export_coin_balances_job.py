@@ -31,15 +31,20 @@ class ExportCoinBalancesJob(BaseJob):
 
         for transaction in self.transactions_iterable:
             block_timestamp = blocks_timestamp_dict[transaction['blockNumber']]
-            coin_addresses.add((transaction['to'], transaction['blockNumber'], block_timestamp))
-            coin_addresses.add((transaction['from'], transaction['blockNumber'], block_timestamp))
+            if transaction['to'] is not None:
+                coin_addresses.add((transaction['to'], transaction['blockNumber'], block_timestamp))
+            if transaction['from'] is not None:
+                coin_addresses.add((transaction['from'], transaction['blockNumber'], block_timestamp))
 
         for trace in self.traces_iterable:
+            block_number = hex(trace['block_number'])
             if trace_is_contract_creation(trace) or trace_is_transfer_value(trace):
-                coin_addresses.add(
-                    (trace['to_address'], trace['blockNumber'], blocks_timestamp_dict[trace['block_number']]))
-                coin_addresses.add(
-                    (trace['from_address'], trace['blockNumber'], blocks_timestamp_dict[trace['block_number']]))
+                if trace['to_address'] is not None:
+                    coin_addresses.add(
+                        (trace['to_address'], block_number, blocks_timestamp_dict[block_number]))
+                if trace['from_address'] is not None:
+                    coin_addresses.add(
+                        (trace['from_address'], block_number, blocks_timestamp_dict[block_number]))
 
         self.coin_addresses = []
         for address in list(coin_addresses):

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, VARCHAR
+from sqlalchemy import Column, VARCHAR
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT
 from exporters.jdbc.schema import Base
 
