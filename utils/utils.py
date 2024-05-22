@@ -128,10 +128,4 @@ def check_classic_provider_uri(chain, provider_uri):
     return provider_uri
 
 
-def trace_is_contract_creation(trace):
-    return trace['trace_type'] == 'create' or trace['trace_type'] == 'create2'
 
-
-def trace_is_transfer_value(trace):
-    return trace['value'] is not None and trace['value'] > 0 and \
-        trace['from_address'] != trace['to_address'] and trace['trace_type'] != 'delegatecall'
