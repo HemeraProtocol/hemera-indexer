@@ -22,6 +22,9 @@ class PostgreSQLModelConverter:
         elif data_type == "traces":
             return self.convert_to_trace(data)
 
+        elif data_type == "address_coin_balances":
+            return self.convert_to_coin_balance(data)
+
         elif data_type == "block_ts_mapper":
             return self.convert_to_block_ts_mapper(data)
 
@@ -126,6 +129,15 @@ class PostgreSQLModelConverter:
             'block_timestamp': func.to_timestamp(trace["block_timestamp"]),
             'transaction_index': trace["transaction_index"],
             'transaction_hash': bytes(trace["transaction_hash"], 'utf-8') if trace["transaction_hash"] else None,
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_coin_balance(self, coin_balance):
+        return {
+            'address': bytes(coin_balance['address'], 'utf-8'),
+            'balance': coin_balance['balance'],
+            'block_number': coin_balance["block_number"],
+            'block_timestamp': func.to_timestamp(coin_balance["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 

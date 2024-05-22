@@ -1,11 +1,13 @@
 import logging
 
 from domain.block import format_block_data
+from domain.coin_balance import format_coin_balance_data
 from domain.log import format_log_data
 from domain.trace import format_trace_data
 from domain.transaction import format_transaction_data
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.export_blocks_and_transactions_job import ExportBlocksAndTransactionsJob
+from jobs.export_coin_balances_job import ExportCoinBalancesJob
 from jobs.export_geth_traces_job import ExportGethTracesJob
 from jobs.export_receipts_and_logs_job import ExportReceiptsAndLogsJob
 from jobs.extract_geth_traces_job import ExtractGethTracesJob
@@ -64,6 +66,18 @@ def confirm_all(start_block, end_block,
     datas = job.run()
     traces = datas.get('trace')
 
+    job = ExportCoinBalancesJob(
+        blocks_iterable=blocks,
+        transactions_iterable=transactions,
+        traces_iterable=traces,
+        batch_size=export_batch_size,
+        batch_web3_provider=batch_web3_debug_provider,
+        max_workers=max_workers,
+        index_keys=['coin_balance']
+    )
+    datas = job.run()
+    coin_balances = datas.get('coin_balance')
+
     enriched_blocks = [format_block_data(block) for block in blocks]
 
     enriched_transactions = [format_transaction_data(transaction)
@@ -75,16 +89,23 @@ def confirm_all(start_block, end_block,
     enriched_traces = [format_trace_data(trace) for trace in
                        enrich_geth_traces(enriched_blocks, traces, enriched_transactions)]
 
+    enriched_coin_balance = [format_coin_balance_data(coin_balance) for coin_balance in coin_balances]
+
+    # data resort
     enriched_blocks = sorted(enriched_blocks, key=lambda x: x['number'])
     enriched_transactions = sorted(enriched_transactions, key=lambda x: (x['block_number'], x['transaction_index']))
     enriched_logs = sorted(enriched_logs, key=lambda x: (x['block_number'], x['transaction_index'], x['log_index']))
     enriched_traces = sorted(enriched_traces,
                              key=lambda x: (x['block_number'], x['transaction_index'], x['trace_index']))
+    enriched_coin_balance = sorted(enriched_coin_balance,
+                                   key=lambda x: (x['block_number'], x['address']))
 
+    # collecting data
     all_items = enriched_blocks + \
                 enriched_transactions + \
                 enriched_logs + \
-                enriched_traces
+                enriched_traces + \
+                enriched_coin_balance
 
     item_exporter.export_items(all_items)
     item_exporter.close()

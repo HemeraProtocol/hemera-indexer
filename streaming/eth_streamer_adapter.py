@@ -1,15 +1,15 @@
 import logging
-from datetime import datetime
 
-from web3._utils import blocks
-
+import streaming.enrich as enrich
 from domain.block import format_block_data
+from domain.coin_balance import format_coin_balance_data
 from domain.log import format_log_data
 from domain.trace import format_trace_data
 from domain.transaction import format_transaction_data
 from domain.block_ts_mapper import format_block_ts_mapper
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.export_blocks_and_transactions_job import ExportBlocksAndTransactionsJob
+from jobs.export_coin_balances_job import ExportCoinBalancesJob
 from jobs.export_geth_traces_job import ExportGethTracesJob
 from jobs.export_receipts_and_logs_job import ExportReceiptsAndLogsJob
 from jobs.extract_geth_traces_job import ExtractGethTracesJob
@@ -22,8 +22,6 @@ from jobs.extract_geth_traces_job import ExtractGethTracesJob
 # from jobs.extract_token_transfers_and_balances_job import ExtractTokenTransfersAndBalancesJob
 # from jobs.extract_token_transfers_job import ExtractTokenTransfersJob
 # from jobs.extract_tokens_job import ExtractTokensJob
-from streaming.enrich import enrich_transactions, enrich_logs, enrich_token_transfers, \
-    enrich_contracts, enrich_tokens, enrich_geth_traces, join, enrich_blocks_timestamp
 from utils.web3_utils import build_web3
 
 
@@ -59,6 +57,9 @@ class EthStreamerAdapter:
         # Export traces
         traces = self._export_debug_traces(start_block, end_block)
 
+        # # Export contracts
+        coin_balances = self._export_coin_balances(blocks, transactions, traces)
+
         # # Extract token transfers
         # token_transfers = []
         # if self._should_export(EntityType.TOKEN_TRANSFER):
@@ -68,9 +69,7 @@ class EthStreamerAdapter:
         # # export coin balances
         # coin_balances = []
         # if self._should_export(EntityType.COIN_BALANCE):
-        #     coin_balances = self._export_coin_balances(blocks, transactions, traces)
 
-        # # Export contracts
         # contracts = []
         # if self._should_export(EntityType.CONTRACT):
         #     contracts = self._export_contracts(traces)
@@ -83,12 +82,13 @@ class EthStreamerAdapter:
         enriched_blocks = [format_block_data(block) for block in blocks]
 
         enriched_transactions = [format_transaction_data(transaction)
-                                 for transaction in enrich_blocks_timestamp
-                                 (blocks, enrich_transactions(transactions, receipts))]
+                                 for transaction in enrich.enrich_blocks_timestamp
+                                 (blocks, enrich.enrich_transactions(transactions, receipts))]
 
-        enriched_logs = [format_log_data(log) for log in enrich_blocks_timestamp(blocks, logs)]
+        enriched_logs = [format_log_data(log) for log in enrich.enrich_blocks_timestamp(blocks, logs)]
         enriched_traces = [format_trace_data(trace) for trace in
-                           enrich_geth_traces(enriched_blocks, traces, enriched_transactions)]
+                           enrich.enrich_geth_traces(enriched_blocks, traces, enriched_transactions)]
+        enriched_coin_balance = [format_coin_balance_data(coin_balance) for coin_balance in coin_balances]
 
         # enriched_token_transfers = enrich_token_transfers(blocks, token_transfers) \
         #     if EntityType.TOKEN_TRANSFER in self.entity_types else []
@@ -106,6 +106,8 @@ class EthStreamerAdapter:
         enriched_logs = sorted(enriched_logs, key=lambda x: (x['block_number'], x['transaction_index'], x['log_index']))
         enriched_traces = sorted(enriched_traces,
                                  key=lambda x: (x['block_number'], x['transaction_index'], x['trace_index']))
+        enriched_coin_balance = sorted(enriched_coin_balance,
+                                       key=lambda x: (x['block_number'], x['address']))
 
         logging.info('Exporting with ' + type(self.item_exporter).__name__)
 
@@ -113,6 +115,7 @@ class EthStreamerAdapter:
                     enriched_transactions + \
                     enriched_logs + \
                     enriched_traces + \
+                    enriched_coin_balance + \
                     block_ts_mapping
         # enriched_token_transfers + \
         # enriched_contracts + \
@@ -186,6 +189,20 @@ class EthStreamerAdapter:
         traces = datas.get('trace')
         return traces
 
+    def _export_coin_balances(self, blocks, transactions, traces):
+        job = ExportCoinBalancesJob(
+            blocks_iterable=blocks,
+            transactions_iterable=transactions,
+            traces_iterable=traces,
+            batch_size=self.batch_size,
+            batch_web3_provider=self.batch_web3_debug_provider,
+            max_workers=self.max_workers,
+            index_keys=['coin_balance']
+        )
+        datas = job.run()
+        coin_balances = datas.get('coin_balance')
+        return coin_balances
+
     # def _extract_token_transfers(self, logs):
     #     exporter = InMemoryItemExporter(item_types=['token_transfer'])
     #     job = ExtractTokenTransfersJob(
@@ -225,21 +242,6 @@ class EthStreamerAdapter:
     #     return traces
     #
 
-    #
-    # def _export_coin_balances(self, blocks, transactions, traces):
-    #     exporter = InMemoryItemExporter(item_types=['coin_balance'])
-    #     job = ExportCoinBalancesJob(
-    #         blocks_iterable=blocks,
-    #         transactions_iterable=transactions,
-    #         traces_iterable=traces,
-    #         batch_size=self.batch_size,
-    #         batch_web3_provider=self.batch_web3_debug_provider,
-    #         max_workers=self.max_workers,
-    #         item_exporter=exporter
-    #     )
-    #     job.run()
-    #     coin_balances = exporter.get_items('coin_balance')
-    #     return coin_balances
     #
     # def _export_contracts(self, traces):
     #     exporter = InMemoryItemExporter(item_types=['contract'])
