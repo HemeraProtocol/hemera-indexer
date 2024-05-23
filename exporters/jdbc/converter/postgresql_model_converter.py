@@ -25,6 +25,12 @@ class PostgreSQLModelConverter:
         elif data_type == "address_coin_balances":
             return self.convert_to_coin_balance(data)
 
+        elif data_type == "token_transfers":
+            return self.convert_to_token_transfer(data)
+
+        elif data_type == "address_token_balances":
+            return self.convert_to_token_balance(data)
+
         elif data_type == "block_ts_mapper":
             return self.convert_to_block_ts_mapper(data)
 
@@ -138,6 +144,34 @@ class PostgreSQLModelConverter:
             'balance': coin_balance['balance'],
             'block_number': coin_balance["block_number"],
             'block_timestamp': func.to_timestamp(coin_balance["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_token_transfer(self, token_transfer):
+        return {
+            'transaction_hash': bytes(token_transfer["transaction_hash"], 'utf-8'),
+            'log_index': token_transfer["log_index"],
+            "from_address": bytes(token_transfer["from_address"], 'utf-8'),
+            "to_address": bytes(token_transfer["to_address"], 'utf-8'),
+            "amount": token_transfer["amount"],
+            "token_id": token_transfer["token_id"],
+            "token_type": token_transfer["token_type"],
+            "token_address": bytes(token_transfer["token_address"], 'utf-8'),
+            'block_number': token_transfer["block_number"],
+            'block_hash': bytes(token_transfer["block_hash"], 'utf-8'),
+            'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_token_balance(self, token_balance):
+        return {
+            'address': bytes(token_balance["address"], 'utf-8'),
+            "token_id": token_balance["token_id"],
+            "token_type": token_balance["token_type"],
+            "token_address": bytes(token_balance["token_address"], 'utf-8'),
+            "balance": token_balance["balance"],
+            'block_number': token_balance["block_number"],
+            'block_timestamp': func.to_timestamp(token_balance["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 

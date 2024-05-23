@@ -44,6 +44,15 @@ def generate_get_balance_json_rpc(coin_addresses):
         )
 
 
+def generate_get_token_balance_json_rpc(parameters):
+    for idx, parameter in enumerate(parameters):
+        yield generate_json_rpc(
+            method='eth_call',
+            params=[{'to': parameter['token_address'], 'data': parameter['data']}, parameter['block_number']],
+            request_id=idx
+        )
+
+
 def generate_json_rpc(method, params, request_id=1):
     return {
         'jsonrpc': '2.0',
@@ -51,3 +60,7 @@ def generate_json_rpc(method, params, request_id=1):
         'params': params,
         'id': request_id,
     }
+
+def generate_contract_object(token_address, token_type):
+    pass
+
