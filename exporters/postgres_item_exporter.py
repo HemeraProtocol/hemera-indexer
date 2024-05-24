@@ -79,7 +79,7 @@ def group_by_item_type(items):
 
 def on_conflict_do_update(model, statement):
     pk_list = []
-    for constraint in model._sa_registry.metadata.tables[model.__name__.lower()].constraints:
+    for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
         if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
             for column in constraint.columns:
                 pk_list.append(column.name)
