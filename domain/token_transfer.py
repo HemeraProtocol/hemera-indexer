@@ -75,7 +75,7 @@ def handle_transfer_single_event(log):
 
 
 def handle_transfer_batch_event(log):
-    topics_with_data = "".join([topic[2:] for topic in log['topics'][1:]])
+    topics_with_data = bytes.fromhex("".join([topic[2:] for topic in log['topics'][1:]]))
     data = bytes.fromhex(log['data'][2:])
 
     op, from_address, to_address = abi.decode(['address', 'address', 'address'], topics_with_data)
