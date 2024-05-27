@@ -128,4 +128,26 @@ def check_classic_provider_uri(chain, provider_uri):
     return provider_uri
 
 
+def extract_url_from_output(outputs):
+    for output in outputs.split(','):
+        if output.startswith("postgresql"):
+            return output
 
+
+def merge_sort(sorted_col_a, sorted_col_b):
+    merged = []
+    a_index, a_len = 0, len(sorted_col_a)
+    b_index, b_len = 0, len(sorted_col_b)
+
+    while a_index < a_len and b_index < b_len:
+        if sorted_col_a[a_index]["id"] < sorted_col_b[b_index]["id"]:
+            merged.append(sorted_col_a[a_index])
+            a_index += 1
+        else:
+            merged.append(sorted_col_b[b_index])
+            b_index += 1
+
+    merged.extend(sorted_col_a[a_index:])
+    merged.extend(sorted_col_b[b_index:])
+
+    return merged

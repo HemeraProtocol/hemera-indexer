@@ -11,7 +11,7 @@ from utils.streaming.streaming_utils import configure_signals, configure_logging
 from utils.provider import get_provider_from_uri
 from exporters.item_exporter import create_item_exporters
 from utils.thread_local_proxy import ThreadLocalProxy
-from utils.utils import pick_random_provider_uri
+from utils.utils import pick_random_provider_uri, extract_url_from_output
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
@@ -71,7 +71,7 @@ def confirm(provider_uri, debug_provider_uri, output, db_version, start_time,
         "db_version": db_version,
         "confirm": True,
         "partition_size": partition_batch_size,
-        "time_range": f"{start_str}-{end_str}"
+        "time_range": f"{start_str}"
     }
 
     confirm_all(start_block=start_block,
@@ -92,12 +92,6 @@ def is_valid_export_time_format(time):
         raise ValueError("The start time of range must be YYYY-MM-DD HH:00:00 format")
 
     return start_dt, end_dt
-
-
-def extract_url_from_output(outputs):
-    for output in outputs.split(','):
-        if output.startswith("postgresql"):
-            return output
 
 
 def get_block_number_from_timestamp(session, timestamp):

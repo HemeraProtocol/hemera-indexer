@@ -3,7 +3,7 @@ import json
 from executors.batch_work_executor import BatchWorkExecutor
 from jobs.base_job import BaseJob
 from utils.json_rpc_requests import generate_get_block_by_number_json_rpc
-from utils.utils import rpc_response_batch_to_results, validate_range
+from utils.utils import rpc_response_batch_to_results, validate_range, hex_to_dec
 
 
 # Exports blocks and transactions
@@ -41,12 +41,12 @@ class ExportBlocksAndTransactionsJob(BaseJob):
         for block in results:
             block['item'] = 'block'
             self._export_item(block)
-            self._export_transaction(block)
-
-    def _export_transaction(self, block):
-        for transaction in block['transactions']:
-            transaction['item'] = 'transaction'
-            self._export_item(transaction)
+            for transaction in block['transactions']:
+                transaction['item'] = 'transaction'
+                self._export_item(transaction)
 
     def _end(self):
         self.batch_work_executor.shutdown()
+        self.data_buff['block'] = sorted(self.data_buff['block'], key=lambda x: hex_to_dec(x['number']))
+        self.data_buff['transaction'] = sorted(self.data_buff['transaction'], key=lambda x: (
+            hex_to_dec(x['blockNumber']), hex_to_dec(x['transactionIndex'])))

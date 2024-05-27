@@ -3,15 +3,13 @@ import os
 import time
 
 from streaming.streamer_adapter_stub import StreamerAdapterStub
-from utils.file_utils import smart_open, write_last_block, delete_file, read_last_block, init_last_block_file, \
-    write_to_file
+from utils.file_utils import delete_file, write_to_file
 
 
 class Streamer:
     def __init__(
             self,
             blockchain_streamer_adapter=StreamerAdapterStub(),
-            last_synced_block_file='last_synced_block.txt',
             lag=0,
             start_block=None,
             end_block=None,
@@ -20,7 +18,6 @@ class Streamer:
             retry_errors=True,
             pid_file=None):
         self.blockchain_streamer_adapter = blockchain_streamer_adapter
-        self.last_synced_block_file = last_synced_block_file
         self.lag = lag
         self.start_block = start_block
         self.end_block = end_block
@@ -29,15 +26,7 @@ class Streamer:
         self.retry_errors = retry_errors
         self.pid_file = pid_file
 
-        if self.start_block is not None or not os.path.isfile(self.last_synced_block_file):
-            if os.path.isfile(last_synced_block_file):
-                raise ValueError(
-                    '{} should not exist if --start-block option is specified. '
-                    'Either remove the {} file or the --start-block option.'
-                    .format(last_synced_block_file, last_synced_block_file))
-            init_last_block_file((self.start_block or 0) - 1, self.last_synced_block_file)
-
-        self.last_synced_block = read_last_block(self.last_synced_block_file)
+        self.last_synced_block = start_block
 
     def stream(self):
         try:
@@ -80,7 +69,6 @@ class Streamer:
         if blocks_to_sync != 0:
             self.blockchain_streamer_adapter.export_all(self.last_synced_block + 1, target_block)
             logging.info('Writing last synced block {}'.format(target_block))
-            write_last_block(self.last_synced_block_file, target_block)
             self.last_synced_block = target_block
 
         return blocks_to_sync
@@ -90,12 +78,3 @@ class Streamer:
         target_block = min(target_block, last_synced_block + self.block_batch_size)
         target_block = min(target_block, self.end_block) if self.end_block is not None else target_block
         return target_block
-
-
-
-
-
-
-
-
-

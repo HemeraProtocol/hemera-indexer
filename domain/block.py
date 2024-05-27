@@ -23,7 +23,7 @@ def format_block_data(block_dict):
         'state_root': block_dict['stateRoot'],
         'receipts_root': block_dict['receiptsRoot'],
         'extra_data': block_dict['extraData'],
-        'withdrawals_root': block_dict['withdrawalsRoot']
+        'withdrawals_root': block_dict.get('withdrawalsRoot')
     }
 
     return block

@@ -20,7 +20,7 @@ def create_item_exporter(output, config):
     elif item_exporter_type == ItemExporterType.POSTGRES:
         item_exporter = PostgresItemExporter(output, config)
 
-    elif item_exporter_type == ItemExporterType.FILESYS:
+    elif item_exporter_type == ItemExporterType.LOCALFILESYS:
         item_exporter = LocalFileItemExporter(output, config)
 
     else:
@@ -44,7 +44,7 @@ def determine_item_exporter_type(output):
     if output is not None and output.startswith('postgresql'):
         return ItemExporterType.POSTGRES
     elif output is not None and output.startswith('file://'):
-        return ItemExporterType.FILESYS
+        return ItemExporterType.LOCALFILESYS
     elif output is None or output == 'console':
         return ItemExporterType.CONSOLE
     else:
@@ -53,6 +53,6 @@ def determine_item_exporter_type(output):
 
 class ItemExporterType:
     POSTGRES = 'postgres'
-    FILESYS = 'file'
+    LOCALFILESYS = 'file'
     CONSOLE = 'console'
     UNKNOWN = 'unknown'

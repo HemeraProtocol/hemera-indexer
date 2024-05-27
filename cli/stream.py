@@ -1,7 +1,10 @@
 import logging
-import random
 
 import click
+from sqlalchemy import func
+
+from exporters.jdbc.postgresql_service import PostgreSQLService
+from exporters.jdbc.schema.blocks import Blocks
 from utils.streaming.streaming_utils import configure_signals, configure_logging
 from streaming.eth_streamer_adapter import EthStreamerAdapter
 from streaming.streamer import Streamer
@@ -10,7 +13,7 @@ from enumeration.entity_type import EntityType
 from utils.provider import get_provider_from_uri
 from exporters.item_exporter import create_item_exporters
 from utils.thread_local_proxy import ThreadLocalProxy
-from utils.utils import pick_random_provider_uri
+from utils.utils import pick_random_provider_uri, extract_url_from_output
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
@@ -69,9 +72,14 @@ def stream(last_synced_block_file, lag, provider_uri, debug_provider_uri, output
         max_workers=max_workers
     )
 
+    # build postgresql service, check the block number by timestamp
+    service_url = extract_url_from_output(output)
+    service = PostgreSQLService(service_url)
+    if start_block is None:
+        start_block = get_last_sync_block_number(service.get_service_session())
+
     streamer = Streamer(
         blockchain_streamer_adapter=streamer_adapter,
-        last_synced_block_file=last_synced_block_file,
         lag=lag,
         start_block=start_block,
         period_seconds=period_seconds,
@@ -92,4 +100,11 @@ def parse_entity_types(entity_types):
                 .format(entity_type, ','.join(EntityType.ALL_FOR_STREAMING)))
 
     return entity_types
+
+
+def get_last_sync_block_number(session):
+    result = session.query(func.max(Blocks.number)).scalar()
+    if result is not None:
+        return result
+    return 0
 

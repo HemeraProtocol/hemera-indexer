@@ -3,7 +3,7 @@ import json
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_get_receipt_json_rpc
-from utils.utils import rpc_response_batch_to_results
+from utils.utils import rpc_response_batch_to_results, hex_to_dec
 
 
 # Exports receipts and logs
@@ -36,12 +36,13 @@ class ExportReceiptsAndLogsJob(BaseJob):
         for receipt in receipts:
             receipt['item'] = 'receipt'
             self._export_item(receipt)
-            self._export_logs(receipt)
-
-    def _export_logs(self, receipt):
-        for log in receipt['logs']:
-            log['item'] = 'log'
-            self._export_item(log)
+            for log in receipt['logs']:
+                log['item'] = 'log'
+                self._export_item(log)
 
     def _end(self):
         self.batch_work_executor.shutdown()
+        self.data_buff['log'] = sorted(self.data_buff['log'],
+                                       key=lambda x: (hex_to_dec(x['blockNumber']),
+                                                      hex_to_dec(x['transactionIndex']),
+                                                      hex_to_dec(x['logIndex'])))

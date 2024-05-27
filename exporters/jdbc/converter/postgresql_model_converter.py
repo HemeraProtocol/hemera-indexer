@@ -56,7 +56,7 @@ class PostgreSQLModelConverter:
             'state_root': bytes(block["state_root"], 'utf-8'),
             'receipts_root': bytes(block["receipts_root"], 'utf-8'),
             'extra_data': bytes(block["extra_data"], 'utf-8'),
-            'withdrawals_root': bytes(block["withdrawals_root"], 'utf-8'),
+            'withdrawals_root': bytes(block["withdrawals_root"], 'utf-8') if block["withdrawals_root"] else None,
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
             'data_confirmed': self.confirm,
         }

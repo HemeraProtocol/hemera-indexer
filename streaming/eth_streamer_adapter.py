@@ -96,29 +96,16 @@ class EthStreamerAdapter:
 
         block_ts_mapping = self._extract_blocks_number_timestamp_map(enriched_blocks)
 
-        enriched_blocks = sorted(enriched_blocks, key=lambda x: x['number'])
-        enriched_transactions = sorted(enriched_transactions, key=lambda x: (x['block_number'], x['transaction_index']))
-        enriched_logs = sorted(enriched_logs, key=lambda x: (x['block_number'], x['transaction_index'], x['log_index']))
-        enriched_traces = sorted(enriched_traces,
-                                 key=lambda x: (x['block_number'], x['transaction_index'], x['trace_index']))
-        enriched_coin_balances = sorted(enriched_coin_balances,
-                                        key=lambda x: (x['block_number'], x['address']))
-        enriched_token_transfers = sorted(enriched_token_transfers,
-                                          key=lambda x: (x['block_number'], x['transaction_hash'], x['log_index']))
-        enriched_token_balances = sorted(enriched_token_balances,
-                                         key=lambda x: (x['block_number'], x['address']))
-
         logging.info('Exporting with ' + type(self.item_exporter).__name__)
 
-        all_items = enriched_blocks + \
-                    enriched_transactions + \
+        all_items = enriched_transactions + \
                     enriched_logs + \
                     enriched_traces + \
                     enriched_coin_balances + \
                     enriched_token_transfers + \
                     enriched_token_balances + \
-                    block_ts_mapping
-
+                    block_ts_mapping + \
+                    enriched_blocks
         # enriched_token_transfers + \
         # enriched_contracts + \
         # enriched_tokens + \

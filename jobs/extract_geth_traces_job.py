@@ -113,3 +113,5 @@ class ExtractGethTracesJob(BaseJob):
 
     def _end(self):
         self.batch_work_executor.shutdown()
+        self.data_buff['trace'] = sorted(self.data_buff['trace'],
+                                         key=lambda x: (x['block_number'], x['transaction_index'], x['trace_index']))

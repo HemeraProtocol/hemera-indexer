@@ -1,6 +1,7 @@
 from domain.token_transfer import extract_transfer_from_log
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
+from utils.utils import hex_to_dec
 
 
 class ExtractTokenTransfersJob(BaseJob):
@@ -38,3 +39,8 @@ class ExtractTokenTransfersJob(BaseJob):
 
     def _end(self):
         self.batch_work_executor.shutdown()
+        self.data_buff['token_transfer'] = sorted(self.data_buff['token_transfer'],
+                                                  key=lambda x: (
+                                                  hex_to_dec(x['blockNumber']),
+                                                  hex_to_dec(x['transactionHash']),
+                                                  hex_to_dec(x['logIndex'])))

@@ -3,7 +3,7 @@ import json
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_get_balance_json_rpc
-from utils.utils import rpc_response_to_result
+from utils.utils import rpc_response_to_result, hex_to_dec
 from domain.trace import trace_is_contract_creation, trace_is_transfer_value
 
 
@@ -84,3 +84,5 @@ class ExportCoinBalancesJob(BaseJob):
 
     def _end(self):
         self.batch_work_executor.shutdown()
+        self.data_buff['coin_balance'] = sorted(self.data_buff['coin_balance'],
+                                                key=lambda x: (hex_to_dec(x['block_number']), x['address']))

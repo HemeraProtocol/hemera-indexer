@@ -5,7 +5,7 @@ from web3 import Web3
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_get_token_balance_json_rpc
-from utils.utils import rpc_response_to_result, rpc_response_batch_to_results
+from utils.utils import rpc_response_to_result, hex_to_dec
 
 contract_abi = {
     "ERC20": [
@@ -145,3 +145,5 @@ class ExportTokenBalancesJob(BaseJob):
 
     def _end(self):
         self.batch_work_executor.shutdown()
+        self.data_buff['token_balance'] = sorted(self.data_buff['token_balance'],
+                                                 key=lambda x: (hex_to_dec(x['blockNumber']), x['address']))
