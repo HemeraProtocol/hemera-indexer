@@ -65,7 +65,7 @@ def rpc_response_batch_to_results(response):
         yield rpc_response_to_result(response_item)
 
 
-def rpc_response_to_result(response):
+def rpc_response_to_result(response, ignore_errors=False):
     result = response.get('result')
     if result is None:
         error_message = 'result is None in response {}.'.format(response)
@@ -74,9 +74,13 @@ def rpc_response_to_result(response):
             # When nodes are behind a load balancer it makes sense to retry the request in hopes it will go to other,
             # synced node
             raise ValueError(error_message)
-        elif response.get('error') is not None and is_retriable_error(response.get('error').get('code')):
+        elif response.get('error') is not None and \
+                is_retriable_error(response.get('error').get('code') and not ignore_errors):
             raise ValueError(error_message)
-        raise ValueError(error_message)
+        elif not ignore_errors:
+            raise ValueError(error_message)
+        else:
+            return result
     return result
 
 

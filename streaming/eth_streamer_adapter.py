@@ -3,6 +3,7 @@ import logging
 import streaming.enrich as enrich
 from domain.block import format_block_data
 from domain.coin_balance import format_coin_balance_data
+from domain.contract import format_contract_data
 from domain.log import format_log_data
 from domain.token_balance import format_token_balance_data
 from domain.token_transfer import format_token_transfer_data
@@ -12,6 +13,7 @@ from domain.block_ts_mapper import format_block_ts_mapper
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.export_blocks_and_transactions_job import ExportBlocksAndTransactionsJob
 from jobs.export_coin_balances_job import ExportCoinBalancesJob
+from jobs.export_contracts_job import ExportContractsJob
 from jobs.export_geth_traces_job import ExportGethTracesJob
 from jobs.export_receipts_and_logs_job import ExportReceiptsAndLogsJob
 from jobs.export_token_balances_job import ExportTokenBalancesJob
@@ -52,6 +54,9 @@ class EthStreamerAdapter:
         # Export traces
         traces = self._export_debug_traces(start_block, end_block)
 
+        # Extract contract and export contract name
+        contracts = self._export_contracts(traces)
+
         # Export coin balances
         coin_balances = self._export_coin_balances(blocks, transactions, traces)
 
@@ -61,15 +66,7 @@ class EthStreamerAdapter:
         # Export token balances
         token_balances = self._export_token_balances(token_transfers)
 
-        # contracts = []
-        # if self._should_export(EntityType.CONTRACT):
-        #     contracts = self._export_contracts(traces)
-
-        # # Export tokens
-        # tokens = []
-        # if self._should_export(EntityType.TOKEN):
-        #     tokens = self._extract_tokens(contracts)
-
+        # enriched data info
         enriched_blocks = [format_block_data(block) for block in blocks]
 
         enriched_transactions = [format_transaction_data(transaction)
@@ -79,7 +76,7 @@ class EthStreamerAdapter:
         enriched_logs = [format_log_data(log) for log in enrich.enrich_blocks_timestamp(blocks, logs)]
 
         enriched_traces = [format_trace_data(trace)
-                           for trace in enrich.enrich_geth_traces(enriched_blocks, traces, enriched_transactions)]
+                           for trace in enrich.enrich_geth_traces(enriched_blocks, traces)]
 
         enriched_coin_balances = [format_coin_balance_data(coin_balance) for coin_balance in coin_balances]
 
@@ -89,10 +86,8 @@ class EthStreamerAdapter:
         enriched_token_balances = [format_token_balance_data(token_balance)
                                    for token_balance in enrich.enrich_blocks_timestamp(blocks, token_balances)]
 
-        # enriched_token_transfers = enrich_token_transfers(blocks, token_transfers) \
-        # enriched_contracts = enrich_contracts(blocks, contracts) \
-        # enriched_tokens = enrich_tokens(blocks, tokens) \
-        # enriched_coin_balances = coin_balances \
+        enriched_contracts = [format_contract_data(contract) for contract in
+                              enrich.enrich_contracts(enriched_blocks, contracts)]
 
         block_ts_mapping = self._extract_blocks_number_timestamp_map(enriched_blocks)
 
@@ -101,15 +96,12 @@ class EthStreamerAdapter:
         all_items = enriched_transactions + \
                     enriched_logs + \
                     enriched_traces + \
+                    enriched_contracts + \
                     enriched_coin_balances + \
                     enriched_token_transfers + \
                     enriched_token_balances + \
                     block_ts_mapping + \
                     enriched_blocks
-        # enriched_token_transfers + \
-        # enriched_contracts + \
-        # enriched_tokens + \
-        # enriched_coin_balances
 
         self.item_exporter.export_items(all_items)
 
@@ -178,6 +170,19 @@ class EthStreamerAdapter:
         traces = datas.get('trace')
         return traces
 
+    def _export_contracts(self, traces):
+        job = ExportContractsJob(
+            traces_iterable=traces,
+            batch_size=self.batch_size,
+            batch_web3_provider=self.batch_web3_debug_provider,
+            web3=self.web3,
+            max_workers=self.max_workers,
+            index_keys=['contract']
+        )
+        datas = job.run()
+        contracts = datas.get('contract')
+        return contracts
+
     def _export_coin_balances(self, blocks, transactions, traces):
         job = ExportCoinBalancesJob(
             blocks_iterable=blocks,
@@ -215,20 +220,6 @@ class EthStreamerAdapter:
         datas = job.run()
         token_balance = datas.get('token_balance')
         return token_balance
-
-    #
-    # def _export_contracts(self, traces):
-    #     exporter = InMemoryItemExporter(item_types=['contract'])
-    #     job = ExtractContractsJob(
-    #         traces_iterable=traces,
-    #         batch_size=self.batch_size,
-    #         max_workers=self.max_workers,
-    #         item_exporter=exporter
-    #     )
-    #     job.run()
-    #     contracts = exporter.get_items('contract')
-    #     return contracts
-    #
 
     def close(self):
         self.item_exporter.close()

@@ -22,6 +22,9 @@ class PostgreSQLModelConverter:
         elif data_type == "traces":
             return self.convert_to_trace(data)
 
+        elif data_type == "contracts":
+            return self.convert_to_contract(data)
+
         elif data_type == "address_coin_balances":
             return self.convert_to_coin_balance(data)
 
@@ -135,6 +138,21 @@ class PostgreSQLModelConverter:
             'block_timestamp': func.to_timestamp(trace["block_timestamp"]),
             'transaction_index': trace["transaction_index"],
             'transaction_hash': bytes(trace["transaction_hash"], 'utf-8') if trace["transaction_hash"] else None,
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_contract(self, contract):
+        return {
+            'address': bytes(contract['address'], 'utf-8'),
+            'name': contract['name'],
+            'contract_creator': bytes(contract['contract_creator'], 'utf-8'),
+            'creation_code': bytes(contract['creation_code'], 'utf-8'),
+            'deployed_code': bytes(contract['deployed_code'], 'utf-8'),
+            'block_number': contract['block_number'],
+            'block_hash': bytes(contract['block_hash'], 'utf-8'),
+            'block_timestamp': func.to_timestamp(contract["block_timestamp"]),
+            'transaction_index': contract['transaction_index'],
+            'transaction_hash': bytes(contract['transaction_hash'], 'utf-8'),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 

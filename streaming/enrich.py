@@ -166,8 +166,8 @@ def enrich_traces(blocks, traces):
     return result
 
 
-def enrich_geth_traces(blocks, traces, transactions):
-    block_and_traces = list(join(
+def enrich_geth_traces(blocks, traces):
+    result = list(join(
         traces, blocks, ('block_number', 'number'),
         [
             'trace_id',
@@ -186,6 +186,7 @@ def enrich_geth_traces(blocks, traces, transactions):
             'status',
             'block_number',
             'transaction_index',
+            'transaction_hash',
             'trace_index'
         ],
         [
@@ -193,40 +194,6 @@ def enrich_geth_traces(blocks, traces, transactions):
             ('hash', 'block_hash'),
         ]))
 
-    for block_trace in block_and_traces:
-        block_trace['block_number_transaction_index'] = str(block_trace['block_number']) + '-' + str(
-            block_trace['transaction_index'])
-
-    for trace in transactions:
-        trace['block_number_transaction_index'] = str(trace['block_number']) + '-' + str(trace['transaction_index'])
-
-    result = list(join(
-        block_and_traces, transactions, ('block_number_transaction_index', 'block_number_transaction_index'),
-        [
-            'trace_id',
-            'from_address',
-            'to_address',
-            'input',
-            'output',
-            'value',
-            'gas',
-            'gas_used',
-            'trace_type',
-            'call_type',
-            'subtraces',
-            'trace_address',
-            'error',
-            'status',
-            'block_number',
-            'transaction_index',
-            'trace_index'
-        ],
-        [
-            ('block_timestamp', 'block_timestamp'),
-            ('block_hash', 'block_hash'),
-            ('hash', 'transaction_hash')
-        ]
-    ))
 
     if len(result) != len(traces):
         raise ValueError('The number of traces is wrong ' + str(result))
@@ -238,13 +205,14 @@ def enrich_contracts(blocks, contracts):
     result = list(join(
         contracts, blocks, ('block_number', 'number'),
         [
-            'type',
             'address',
-            'bytecode',
-            'function_sighashes',
-            'is_erc20',
-            'is_erc721',
-            'block_number'
+            'contract_creator',
+            'creation_code',
+            'deployed_code',
+            'block_number',
+            'transaction_index',
+            'transaction_hash',
+            'name'
         ],
         [
             ('timestamp', 'block_timestamp'),
