@@ -34,18 +34,19 @@ class ExtractGethTracesJob(BaseJob):
 
         traces = []
 
-        for tx_index, tx_trace in enumerate(transaction_traces):
+        for tx_index, tx in enumerate(transaction_traces):
             self.trace_idx = 0
 
             traces.extend(self._iterate_transaction_trace(
                 block_number,
                 tx_index,
-                tx_trace,
+                tx['txHash'],
+                tx['result']
             ))
 
         return traces
 
-    def _iterate_transaction_trace(self, block_number, tx_index, tx_trace, trace_address=[]):
+    def _iterate_transaction_trace(self, block_number, tx_index, tx_hash, tx_trace, trace_address=[]):
 
         block_number = block_number
         transaction_index = tx_index
@@ -96,6 +97,7 @@ class ExtractGethTracesJob(BaseJob):
             'status': status,
             'block_number': block_number,
             'transaction_index': tx_index,
+            'transaction_hash': tx_hash,
             'trace_index': self.trace_idx,
         }
 
@@ -105,6 +107,7 @@ class ExtractGethTracesJob(BaseJob):
             result.extend(self._iterate_transaction_trace(
                 block_number,
                 tx_index,
+                tx_hash,
                 call_trace,
                 trace_address + [call_index],
             ))

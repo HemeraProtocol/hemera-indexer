@@ -44,7 +44,7 @@ class ExportGethTracesJob(BaseJob):
             geth_trace = {
                 'item': 'geth_trace',
                 'block_number': block_number,
-                'transaction_traces': [tx_trace.get('result') for tx_trace in result],
+                'transaction_traces': result,
             }
 
             self._export_item(geth_trace)
