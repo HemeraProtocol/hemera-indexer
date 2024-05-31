@@ -6,6 +6,7 @@ from domain.coin_balance import format_coin_balance_data
 from domain.contract import format_contract_data
 from domain.contract_internal_transaction import trace_to_contract_internal_transaction
 from domain.log import format_log_data
+from domain.token import format_token_data
 from domain.token_balance import format_token_balance_data
 from domain.token_transfer import format_token_transfer_data
 from domain.trace import format_trace_data, trace_is_contract_creation, trace_is_transfer_value
@@ -18,6 +19,7 @@ from jobs.export_contracts_job import ExportContractsJob
 from jobs.export_geth_traces_job import ExportGethTracesJob
 from jobs.export_receipts_and_logs_job import ExportReceiptsAndLogsJob
 from jobs.export_token_balances_job import ExportTokenBalancesJob
+from jobs.export_tokens_info_job import ExportTokensInfoJob
 from jobs.extract_geth_traces_job import ExtractGethTracesJob
 from jobs.extract_token_transfers_job import ExtractTokenTransfersJob
 from utils.web3_utils import build_web3
@@ -38,6 +40,8 @@ class EthStreamerAdapter:
         self.item_exporter = item_exporter
         self.batch_size = batch_size
         self.max_workers = max_workers
+
+        self.tokens_set = set()
 
     def open(self):
         self.item_exporter.open()
@@ -64,6 +68,9 @@ class EthStreamerAdapter:
         # Extract token transfers
         token_transfers = self._extract_token_transfers(logs)
 
+        # Export tokens info
+        tokens = self._export_tokens_info(token_transfers)
+
         # Export token balances
         token_balances = self._export_token_balances(token_transfers)
 
@@ -89,6 +96,8 @@ class EthStreamerAdapter:
         enriched_token_transfers = [format_token_transfer_data(token_transfer)
                                     for token_transfer in enrich.enrich_blocks_timestamp(blocks, token_transfers)]
 
+        enriched_tokens = [format_token_data(token) for token in tokens]
+
         enriched_token_balances = [format_token_balance_data(token_balance)
                                    for token_balance in enrich.enrich_blocks_timestamp(blocks, token_balances)]
 
@@ -106,6 +115,7 @@ class EthStreamerAdapter:
                     enriched_contracts + \
                     enriched_coin_balances + \
                     enriched_token_transfers + \
+                    enriched_tokens + \
                     enriched_token_balances + \
                     block_ts_mapping + \
                     enriched_blocks
@@ -214,6 +224,24 @@ class EthStreamerAdapter:
         datas = job.run()
         token_transfers = datas.get('token_transfer')
         return token_transfers
+
+    def _export_tokens_info(self, token_transfers):
+        job = ExportTokensInfoJob(
+            token_transfer_iterable=token_transfers,
+            except_tokens=self.tokens_set,
+            batch_size=self.batch_size,
+            batch_web3_provider=self.batch_web3_provider,
+            web3=self.web3,
+            max_workers=self.max_workers,
+            index_keys=['tokens']
+        )
+        datas = job.run()
+        tokens = datas.get('tokens')
+
+        for token in tokens:
+            self.tokens_set.add((token['address'], token['token_type']))
+
+        return tokens
 
     def _export_token_balances(self, token_transfers):
         job = ExportTokenBalancesJob(

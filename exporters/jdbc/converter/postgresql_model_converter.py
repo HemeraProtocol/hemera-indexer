@@ -8,36 +8,39 @@ class PostgreSQLModelConverter:
     def __init__(self, confirm):
         self.confirm = confirm
 
-    def convert_item(self, data_type, data):
+    def convert_item(self, table, data):
 
-        if data_type == "blocks":
+        if table == "blocks":
             return self.convert_to_block(data)
 
-        elif data_type == "transactions":
+        elif table == "transactions":
             return self.convert_to_transaction(data)
 
-        elif data_type == "logs":
+        elif table == "logs":
             return self.convert_to_log(data)
 
-        elif data_type == "traces":
+        elif table == "traces":
             return self.convert_to_trace(data)
 
-        elif data_type == "contract_internal_transactions":
+        elif table == "contract_internal_transactions":
             return self.convert_to_contract_internal_transactions(data)
 
-        elif data_type == "contracts":
+        elif table == "contracts":
             return self.convert_to_contract(data)
 
-        elif data_type == "address_coin_balances":
+        elif table == "address_coin_balances":
             return self.convert_to_coin_balance(data)
 
-        elif data_type == "token_transfers":
+        elif table == "token_transfers":
             return self.convert_to_token_transfer(data)
 
-        elif data_type == "address_token_balances":
+        elif table == "tokens":
+            return self.convert_to_tokens(data)
+
+        elif table == "address_token_balances":
             return self.convert_to_token_balance(data)
 
-        elif data_type == "block_ts_mapper":
+        elif table == "block_ts_mapper":
             return self.convert_to_block_ts_mapper(data)
 
         else:
@@ -147,8 +150,10 @@ class PostgreSQLModelConverter:
     def convert_to_contract_internal_transactions(self, internal_transactions):
         return {
             "trace_id": internal_transactions["trace_id"],
-            "from_address": bytes(internal_transactions["from_address"], 'utf-8') if internal_transactions["from_address"] else None,
-            "to_address": bytes(internal_transactions["to_address"], 'utf-8') if internal_transactions["to_address"] else None,
+            "from_address": bytes(internal_transactions["from_address"], 'utf-8') if internal_transactions[
+                "from_address"] else None,
+            "to_address": bytes(internal_transactions["to_address"], 'utf-8') if internal_transactions[
+                "to_address"] else None,
             "value": internal_transactions["value"],
             "trace_type": internal_transactions["trace_type"],
             "call_type": internal_transactions["call_type"],
@@ -158,10 +163,12 @@ class PostgreSQLModelConverter:
             "error": internal_transactions["error"],
             "status": internal_transactions["status"],
             'block_number': internal_transactions["block_number"],
-            'block_hash': bytes(internal_transactions["block_hash"], 'utf-8') if internal_transactions["block_hash"] else None,
+            'block_hash': bytes(internal_transactions["block_hash"], 'utf-8') if internal_transactions[
+                "block_hash"] else None,
             'block_timestamp': func.to_timestamp(internal_transactions["block_timestamp"]),
             'transaction_index': internal_transactions["transaction_index"],
-            'transaction_hash': bytes(internal_transactions["transaction_hash"], 'utf-8') if internal_transactions["transaction_hash"] else None,
+            'transaction_hash': bytes(internal_transactions["transaction_hash"], 'utf-8') if internal_transactions[
+                "transaction_hash"] else None,
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
@@ -202,6 +209,17 @@ class PostgreSQLModelConverter:
             'block_number': token_transfer["block_number"],
             'block_hash': bytes(token_transfer["block_hash"], 'utf-8'),
             'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_tokens(self, token):
+        return {
+            "address": bytes(token["address"], 'utf-8'),
+            'name': token['name'],
+            'symbol': token['symbol'],
+            'total_supply': token['total_supply'],
+            'decimals': token['decimals'],
+            'token_type': token['token_type'],
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 

@@ -26,6 +26,15 @@ def generate_get_contract_name_json_rpc(contracts):
         )
 
 
+def generate_get_token_info_json_rpc(tokens):
+    for idx, token in enumerate(tokens):
+        yield generate_json_rpc(
+            method='eth_call',
+            params=[{'to': token['address'], 'data': token['data']}, 'latest'],
+            request_id=idx
+        )
+
+
 def generate_get_receipt_json_rpc(transaction_hashes):
     for idx, transaction_hash in enumerate(transaction_hashes):
         yield generate_json_rpc(
@@ -69,7 +78,3 @@ def generate_json_rpc(method, params, request_id=1):
         'params': params,
         'id': request_id,
     }
-
-
-def generate_contract_object(token_address, token_type):
-    pass
