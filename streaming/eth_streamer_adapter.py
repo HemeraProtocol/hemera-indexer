@@ -4,10 +4,11 @@ import streaming.enrich as enrich
 from domain.block import format_block_data
 from domain.coin_balance import format_coin_balance_data
 from domain.contract import format_contract_data
+from domain.contract_internal_transaction import trace_to_contract_internal_transaction
 from domain.log import format_log_data
 from domain.token_balance import format_token_balance_data
 from domain.token_transfer import format_token_transfer_data
-from domain.trace import format_trace_data
+from domain.trace import format_trace_data, trace_is_contract_creation, trace_is_transfer_value
 from domain.transaction import format_transaction_data
 from domain.block_ts_mapper import format_block_ts_mapper
 from exporters.console_item_exporter import ConsoleItemExporter
@@ -78,6 +79,11 @@ class EthStreamerAdapter:
         enriched_traces = [format_trace_data(trace)
                            for trace in enrich.enrich_geth_traces(enriched_blocks, traces)]
 
+        enriched_contract_internal_transactions = [trace_to_contract_internal_transaction(trace)
+                                                   for trace in enriched_traces if
+                                                   trace_is_contract_creation(trace) or
+                                                   trace_is_transfer_value(trace, True)]
+
         enriched_coin_balances = [format_coin_balance_data(coin_balance) for coin_balance in coin_balances]
 
         enriched_token_transfers = [format_token_transfer_data(token_transfer)
@@ -96,6 +102,7 @@ class EthStreamerAdapter:
         all_items = enriched_transactions + \
                     enriched_logs + \
                     enriched_traces + \
+                    enriched_contract_internal_transactions + \
                     enriched_contracts + \
                     enriched_coin_balances + \
                     enriched_token_transfers + \

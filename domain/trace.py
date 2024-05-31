@@ -34,6 +34,10 @@ def trace_is_contract_creation(trace):
     return trace['trace_type'] == 'create' or trace['trace_type'] == 'create2'
 
 
-def trace_is_transfer_value(trace):
-    return trace['value'] is not None and hex_to_dec(trace['value']) > 0 and \
-        trace['from_address'] != trace['to_address'] and trace['trace_type'] != 'delegatecall'
+def trace_is_transfer_value(trace, formated=False):
+    status = True
+    if formated:
+        status = status and trace['value'] is not None and trace['value'] > 0
+    else:
+        status = status and trace['value'] is not None and hex_to_dec(trace['value']) > 0
+    return status and trace['from_address'] != trace['to_address'] and trace['trace_type'] != 'delegatecall'

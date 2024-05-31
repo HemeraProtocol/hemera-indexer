@@ -22,6 +22,9 @@ class PostgreSQLModelConverter:
         elif data_type == "traces":
             return self.convert_to_trace(data)
 
+        elif data_type == "contract_internal_transactions":
+            return self.convert_to_contract_internal_transactions(data)
+
         elif data_type == "contracts":
             return self.convert_to_contract(data)
 
@@ -138,6 +141,27 @@ class PostgreSQLModelConverter:
             'block_timestamp': func.to_timestamp(trace["block_timestamp"]),
             'transaction_index': trace["transaction_index"],
             'transaction_hash': bytes(trace["transaction_hash"], 'utf-8') if trace["transaction_hash"] else None,
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_contract_internal_transactions(self, internal_transactions):
+        return {
+            "trace_id": internal_transactions["trace_id"],
+            "from_address": bytes(internal_transactions["from_address"], 'utf-8') if internal_transactions["from_address"] else None,
+            "to_address": bytes(internal_transactions["to_address"], 'utf-8') if internal_transactions["to_address"] else None,
+            "value": internal_transactions["value"],
+            "trace_type": internal_transactions["trace_type"],
+            "call_type": internal_transactions["call_type"],
+            "gas": internal_transactions["gas"],
+            "gas_used": internal_transactions["gas_used"],
+            "trace_address": internal_transactions["trace_address"],
+            "error": internal_transactions["error"],
+            "status": internal_transactions["status"],
+            'block_number': internal_transactions["block_number"],
+            'block_hash': bytes(internal_transactions["block_hash"], 'utf-8') if internal_transactions["block_hash"] else None,
+            'block_timestamp': func.to_timestamp(internal_transactions["block_timestamp"]),
+            'transaction_index': internal_transactions["transaction_index"],
+            'transaction_hash': bytes(internal_transactions["transaction_hash"], 'utf-8') if internal_transactions["transaction_hash"] else None,
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
