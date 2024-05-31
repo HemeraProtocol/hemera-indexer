@@ -27,6 +27,7 @@ __lazy_imports = {
     "Transactions": "exporters.jdbc.schema.transactions",
     "Logs": "exporters.jdbc.schema.logs",
     "Traces": "exporters.jdbc.schema.traces",
+    "ContractInternalTransactions": "exporters.jdbc.schema.contract_internal_transactions",
     "Contracts": "exporters.jdbc.schema.contracts",
     "CoinBalances": "exporters.jdbc.schema.coin_balances",
     "TokenTransfers": "exporters.jdbc.schema.token_transfers",
