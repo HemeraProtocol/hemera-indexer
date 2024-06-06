@@ -1,30 +1,51 @@
 class BaseJob(object):
-    data_buff = {}
-    index_keys = []
+    _data_buff = {}
+
+    def __init__(self, index_keys=None):
+        self._index_keys = index_keys
 
     def run(self):
         try:
             self._start()
-            self._export()
+            self._collect()
+            # self._process()
+            # self._export()
         finally:
             self._end()
 
-        return self.data_buff
-
     def _start(self):
-        self.data_buff = {}
-        for key in self.index_keys:
-            self.data_buff[key] = []
+        for key in self._index_keys:
+            self._data_buff[key] = []
 
-    def _export(self):
+    def _end(self):
+        self._process()
+        self._export()
+
+    def _collect(self):
         pass
 
-    def _export_item(self, item):
+    def _collect_batch(self, iterator):
+        pass
+
+    def _collect_item(self, item):
         item_type = item.get('item', None)
         if item_type is None:
             raise ValueError('type key is not found in item {}'.format(repr(item)))
 
-        self.data_buff[item_type].append(item)
+        self._data_buff[item_type].append(item)
 
-    def _end(self):
+    def _process(self):
         pass
+
+    def _extract_from_buff(self, keys=None):
+        items = []
+        for key in keys:
+            items.extend(self._data_buff[key])
+
+        return items
+
+    def _export(self):
+        pass
+
+    def get_buff(self):
+        return self._data_buff

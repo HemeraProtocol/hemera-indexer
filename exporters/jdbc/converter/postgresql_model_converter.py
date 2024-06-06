@@ -31,8 +31,23 @@ class PostgreSQLModelConverter:
         elif table == "address_coin_balances":
             return self.convert_to_coin_balance(data)
 
-        elif table == "token_transfers":
-            return self.convert_to_token_transfer(data)
+        elif table == "erc20_token_transfers":
+            return self.convert_to_erc20_token_transfer(data)
+
+        elif table == "erc20_token_holders":
+            return self.convert_to_erc20_token_holder(data)
+
+        elif table == "erc721_token_transfers":
+            return self.convert_to_erc721_token_transfer(data)
+
+        elif table == "erc721_token_holders":
+            return self.convert_to_erc721_token_holder(data)
+
+        elif table == "erc1155_token_transfers":
+            return self.convert_to_erc1155_token_transfer(data)
+
+        elif table == "erc1155_token_holders":
+            return self.convert_to_erc1155_token_holder(data)
 
         elif table == "tokens":
             return self.convert_to_tokens(data)
@@ -67,7 +82,6 @@ class PostgreSQLModelConverter:
             'extra_data': bytes(block["extra_data"], 'utf-8'),
             'withdrawals_root': bytes(block["withdrawals_root"], 'utf-8') if block["withdrawals_root"] else None,
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
-            'data_confirmed': self.confirm,
         }
 
     def convert_to_transaction(self, transaction):
@@ -196,19 +210,78 @@ class PostgreSQLModelConverter:
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
-    def convert_to_token_transfer(self, token_transfer):
+    def convert_to_erc20_token_transfer(self, token_transfer):
         return {
             'transaction_hash': bytes(token_transfer["transaction_hash"], 'utf-8'),
             'log_index': token_transfer["log_index"],
             "from_address": bytes(token_transfer["from_address"], 'utf-8'),
             "to_address": bytes(token_transfer["to_address"], 'utf-8'),
-            "amount": token_transfer["amount"],
-            "token_id": token_transfer["token_id"],
-            "token_type": token_transfer["token_type"],
             "token_address": bytes(token_transfer["token_address"], 'utf-8'),
+            "value": token_transfer["value"],
             'block_number': token_transfer["block_number"],
             'block_hash': bytes(token_transfer["block_hash"], 'utf-8'),
             'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_erc20_token_holder(self, token_holder):
+        return {
+            "token_address": bytes(token_holder["token_address"], 'utf-8'),
+            "wallet_address": bytes(token_holder["wallet_address"], 'utf-8'),
+            "balance_of": token_holder["balance_of"],
+            'block_number': token_holder["block_number"],
+            'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_erc721_token_transfer(self, token_transfer):
+        return {
+            'transaction_hash': bytes(token_transfer["transaction_hash"], 'utf-8'),
+            'log_index': token_transfer["log_index"],
+            "from_address": bytes(token_transfer["from_address"], 'utf-8'),
+            "to_address": bytes(token_transfer["to_address"], 'utf-8'),
+            "token_address": bytes(token_transfer["token_address"], 'utf-8'),
+            "token_id": token_transfer["token_id"],
+            'block_number': token_transfer["block_number"],
+            'block_hash': bytes(token_transfer["block_hash"], 'utf-8'),
+            'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_erc721_token_holder(self, token_holder):
+        return {
+            "token_address": bytes(token_holder["token_address"], 'utf-8'),
+            "wallet_address": bytes(token_holder["wallet_address"], 'utf-8'),
+            "balance_of": token_holder["balance_of"],
+            'block_number': token_holder["block_number"],
+            'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_erc1155_token_transfer(self, token_transfer):
+        return {
+            'transaction_hash': bytes(token_transfer["transaction_hash"], 'utf-8'),
+            'log_index': token_transfer["log_index"],
+            "from_address": bytes(token_transfer["from_address"], 'utf-8'),
+            "to_address": bytes(token_transfer["to_address"], 'utf-8'),
+            "token_address": bytes(token_transfer["token_address"], 'utf-8'),
+            "token_id": token_transfer["token_id"],
+            "value": token_transfer["value"],
+            'block_number': token_transfer["block_number"],
+            'block_hash': bytes(token_transfer["block_hash"], 'utf-8'),
+            'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_erc1155_token_holder(self, token_holder):
+        return {
+            "token_address": bytes(token_holder["token_address"], 'utf-8'),
+            "wallet_address": bytes(token_holder["wallet_address"], 'utf-8'),
+            "token_id": token_holder["token_id"],
+            "balance_of": token_holder["balance_of"],
+            "last_call_contract_time": func.to_timestamp(token_holder["last_call_contract_time"]),
+            'block_number': token_holder["block_number"],
+            'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
