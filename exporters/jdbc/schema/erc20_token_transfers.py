@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, VARCHAR
+from sqlalchemy import Column, Index, desc, PrimaryKeyConstraint
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC
 from exporters.jdbc.schema import Base
 
@@ -20,3 +20,14 @@ class ERC20TokenTransfers(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP)
+
+    __table_args__ = (
+        PrimaryKeyConstraint('transaction_hash', 'log_index'),
+    )
+
+
+Index('erc20_token_transfers_block_timestamp_index', desc(ERC20TokenTransfers.block_timestamp))
+
+Index('erc20_token_transfers_address_block_number_log_index_index',
+      ERC20TokenTransfers.token_address, ERC20TokenTransfers.from_address, ERC20TokenTransfers.to_address,
+      desc(ERC20TokenTransfers.block_number), desc(ERC20TokenTransfers.log_index))

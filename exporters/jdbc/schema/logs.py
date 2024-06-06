@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint
+from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP
 from exporters.jdbc.schema import Base
 
@@ -26,3 +26,8 @@ class Logs(Base):
     __table_args__ = (
         PrimaryKeyConstraint('log_index', 'transaction_hash'),
     )
+
+
+Index('logs_block_timestamp_index', desc(Logs.block_timestamp))
+Index('logs_address_block_number_log_index_index',
+      Logs.address, desc(Logs.block_number), desc(Logs.log_index))

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint
+from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC
 from exporters.jdbc.schema import Base
 
@@ -20,3 +20,7 @@ class ERC20TokenHolders(Base):
     __table_args__ = (
         PrimaryKeyConstraint('token_address', 'wallet_address'),
     )
+
+
+Index('erc20_token_holders_token_address_balance_of_index',
+      ERC20TokenHolders.token_address, desc(ERC20TokenHolders.balance_of))

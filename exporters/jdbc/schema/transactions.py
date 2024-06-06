@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column
+from sqlalchemy import Column, Index, desc
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT
 from exporters.jdbc.schema import Base
 
@@ -46,3 +46,11 @@ class Transactions(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP)
+
+
+Index('transactions_block_timestamp_block_number_index',
+      desc(Transactions.block_timestamp), desc(Transactions.block_number))
+
+Index('transactions_address_block_number_transaction_idx',
+      Transactions.from_address, Transactions.to_address,
+      desc(Transactions.block_number), desc(Transactions.transaction_index))

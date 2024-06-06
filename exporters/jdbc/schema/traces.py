@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, VARCHAR
+from sqlalchemy import Column, VARCHAR, Index, desc
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT
 from exporters.jdbc.schema import Base
 
@@ -30,3 +30,8 @@ class Traces(Base):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP)
 
+
+Index('traces_transaction_hash_index', Traces.transaction_hash)
+
+Index('traces_address_block_timestamp_index',
+      Traces.from_address, Traces.to_address, desc(Traces.block_timestamp))
