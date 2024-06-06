@@ -43,7 +43,8 @@ setup(
         'requests',
         "sqlalchemy",
         "psycopg2",
-        "alembic"
+        "alembic",
+        "pandas"
     ],
     extras_require={
         'streaming': [
