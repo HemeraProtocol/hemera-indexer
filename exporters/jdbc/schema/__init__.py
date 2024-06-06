@@ -23,6 +23,7 @@ def __getattr__(name):
 
 
 __lazy_imports = {
+    "SyncRecord": "exporters.jdbc.schema.sync_record",
     "Blocks": "exporters.jdbc.schema.blocks",
     "Transactions": "exporters.jdbc.schema.transactions",
     "Logs": "exporters.jdbc.schema.logs",
@@ -30,7 +31,12 @@ __lazy_imports = {
     "ContractInternalTransactions": "exporters.jdbc.schema.contract_internal_transactions",
     "Contracts": "exporters.jdbc.schema.contracts",
     "CoinBalances": "exporters.jdbc.schema.coin_balances",
-    "TokenTransfers": "exporters.jdbc.schema.token_transfers",
+    "ERC20TokenTransfers": "exporters.jdbc.schema.erc20_token_transfers",
+    "ERC20TokenHolders": "exporters.jdbc.schema.erc20_token_holders",
+    "ERC721TokenTransfers": "exporters.jdbc.schema.erc721_token_transfers",
+    "ERC721TokenHolders": "exporters.jdbc.schema.erc721_token_holders",
+    "ERC1155TokenTransfers": "exporters.jdbc.schema.erc1155_token_transfers",
+    "ERC1155TokenHolders": "exporters.jdbc.schema.erc1155_token_holders",
     "Tokens": "exporters.jdbc.schema.tokens",
     "TokenBalances": "exporters.jdbc.schema.token_balances",
     "BlockTimestampMapper": "exporters.jdbc.schema.block_timestamp_mapper",
