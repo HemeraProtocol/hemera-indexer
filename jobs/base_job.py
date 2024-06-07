@@ -40,7 +40,8 @@ class BaseJob(object):
     def _extract_from_buff(self, keys=None):
         items = []
         for key in keys:
-            items.extend(self._data_buff[key])
+            if key in self._data_buff:
+                items.extend(self._data_buff[key])
 
         return items
 
