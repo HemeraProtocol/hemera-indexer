@@ -43,11 +43,20 @@ class PostgreSQLModelConverter:
         elif table == "erc721_token_holders":
             return self.convert_to_erc721_token_holder(data)
 
+        elif table == "erc721_token_id_changes":
+            return self.convert_to_erc721_token_id_change(data)
+
+        elif table == "erc721_token_id_details":
+            return self.convert_to_erc721_token_id_detail(data)
+
         elif table == "erc1155_token_transfers":
             return self.convert_to_erc1155_token_transfer(data)
 
         elif table == "erc1155_token_holders":
             return self.convert_to_erc1155_token_holder(data)
+
+        elif table == "erc1155_token_id_details":
+            return self.convert_to_erc1155_token_id_detail(data)
 
         elif table == "tokens":
             return self.convert_to_tokens(data)
@@ -258,6 +267,28 @@ class PostgreSQLModelConverter:
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
+    def convert_to_erc721_token_id_change(self, token_id_change):
+        return {
+            "address": bytes(token_id_change["address"], 'utf-8'),
+            "token_id": token_id_change["token_id"],
+            "token_owner": bytes(token_id_change["token_owner"], 'utf-8'),
+            'block_number': token_id_change["block_number"],
+            'block_timestamp': func.to_timestamp(token_id_change["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_erc721_token_id_detail(self, token_id_detail):
+        return {
+            "address": bytes(token_id_detail["address"], 'utf-8'),
+            "token_id": token_id_detail["token_id"],
+            "token_owner": bytes(token_id_detail["token_owner"], 'utf-8'),
+            "token_uri": token_id_detail["token_uri"],
+            "token_uri_info": token_id_detail["token_uri_info"],
+            'block_number': token_id_detail["block_number"],
+            'block_timestamp': func.to_timestamp(token_id_detail["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
     def convert_to_erc1155_token_transfer(self, token_transfer):
         return {
             'transaction_hash': bytes(token_transfer["transaction_hash"], 'utf-8'),
@@ -279,9 +310,21 @@ class PostgreSQLModelConverter:
             "wallet_address": bytes(token_holder["wallet_address"], 'utf-8'),
             "token_id": token_holder["token_id"],
             "balance_of": token_holder["balance_of"],
-            "last_call_contract_time": func.to_timestamp(token_holder["last_call_contract_time"]),
+            "latest_call_contract_time": func.to_timestamp(token_holder["latest_call_contract_time"]),
             'block_number': token_holder["block_number"],
             'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
+            'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
+        }
+
+    def convert_to_erc1155_token_id_detail(self, token_id_detail):
+        return {
+            "address": bytes(token_id_detail["address"], 'utf-8'),
+            "token_id": token_id_detail["token_id"],
+            "token_supply": token_id_detail["token_supply"],
+            "token_uri": token_id_detail["token_uri"],
+            "token_uri_info": token_id_detail["token_uri_info"],
+            'block_number': token_id_detail["block_number"],
+            'block_timestamp': func.to_timestamp(token_id_detail["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
