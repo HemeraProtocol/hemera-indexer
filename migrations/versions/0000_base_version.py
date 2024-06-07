@@ -1,8 +1,8 @@
 """base version
 
-Revision ID: dd85f8014225
+Revision ID: 9204e1446aab
 Revises: 
-Create Date: 2024-06-06 15:23:55.733040
+Create Date: 2024-06-07 18:15:33.373905
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = 'dd85f8014225'
+revision: str = '9204e1446aab'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -136,6 +136,19 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('token_address', 'wallet_address', 'token_id')
     )
     op.create_index('erc1155_token_holders_token_address_balance_of_index', 'erc1155_token_holders', ['token_address', sa.text('balance_of DESC')], unique=False)
+    op.create_table('erc1155_token_id_details',
+    sa.Column('address', postgresql.BYTEA(), nullable=False),
+    sa.Column('token_id', sa.NUMERIC(precision=78), nullable=False),
+    sa.Column('token_supply', sa.NUMERIC(precision=78), nullable=True),
+    sa.Column('token_uri', sa.VARCHAR(), nullable=True),
+    sa.Column('token_uri_info', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('block_number', sa.BIGINT(), nullable=True),
+    sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
+    sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
+    sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
+    sa.PrimaryKeyConstraint('address', 'token_id')
+    )
+    op.create_index('erc1155_detail_desc_address_id_index', 'erc1155_token_id_details', [sa.text('address DESC'), 'token_id'], unique=False)
     op.create_table('erc1155_token_transfers',
     sa.Column('transaction_hash', postgresql.BYTEA(), nullable=False),
     sa.Column('log_index', sa.INTEGER(), nullable=False),
@@ -191,6 +204,30 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('token_address', 'wallet_address')
     )
     op.create_index('erc721_token_holders_token_address_balance_of_index', 'erc721_token_holders', ['token_address', sa.text('balance_of DESC')], unique=False)
+    op.create_table('erc721_token_id_changes',
+    sa.Column('address', postgresql.BYTEA(), nullable=False),
+    sa.Column('token_id', sa.NUMERIC(precision=78), nullable=False),
+    sa.Column('token_owner', postgresql.BYTEA(), nullable=True),
+    sa.Column('block_number', sa.BIGINT(), nullable=False),
+    sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
+    sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
+    sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
+    sa.PrimaryKeyConstraint('address', 'token_id', 'block_number')
+    )
+    op.create_index('erc721_change_address_id_number_desc_index', 'erc721_token_id_changes', ['address', 'token_id', sa.text('block_number DESC')], unique=False)
+    op.create_table('erc721_token_id_details',
+    sa.Column('address', postgresql.BYTEA(), nullable=False),
+    sa.Column('token_id', sa.NUMERIC(precision=78), nullable=False),
+    sa.Column('token_owner', postgresql.BYTEA(), nullable=True),
+    sa.Column('token_uri', sa.VARCHAR(), nullable=True),
+    sa.Column('token_uri_info', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+    sa.Column('block_number', sa.BIGINT(), nullable=True),
+    sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
+    sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
+    sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
+    sa.PrimaryKeyConstraint('address', 'token_id')
+    )
+    op.create_index('erc721_detail_owner_address_id_index', 'erc721_token_id_details', [sa.text('token_owner DESC'), 'address', 'token_id'], unique=False)
     op.create_table('erc721_token_transfers',
     sa.Column('transaction_hash', postgresql.BYTEA(), nullable=False),
     sa.Column('log_index', sa.INTEGER(), nullable=False),
@@ -334,6 +371,10 @@ def downgrade() -> None:
     op.drop_index('erc721_token_transfers_block_timestamp_index', table_name='erc721_token_transfers')
     op.drop_index('erc721_token_transfers_address_block_number_log_index_index', table_name='erc721_token_transfers')
     op.drop_table('erc721_token_transfers')
+    op.drop_index('erc721_detail_owner_address_id_index', table_name='erc721_token_id_details')
+    op.drop_table('erc721_token_id_details')
+    op.drop_index('erc721_change_address_id_number_desc_index', table_name='erc721_token_id_changes')
+    op.drop_table('erc721_token_id_changes')
     op.drop_index('erc721_token_holders_token_address_balance_of_index', table_name='erc721_token_holders')
     op.drop_table('erc721_token_holders')
     op.drop_index('erc20_token_transfers_block_timestamp_index', table_name='erc20_token_transfers')
@@ -344,6 +385,8 @@ def downgrade() -> None:
     op.drop_index('erc1155_token_transfers_block_timestamp_index', table_name='erc1155_token_transfers')
     op.drop_index('erc1155_token_transfers_address_block_number_log_index_index', table_name='erc1155_token_transfers')
     op.drop_table('erc1155_token_transfers')
+    op.drop_index('erc1155_detail_desc_address_id_index', table_name='erc1155_token_id_details')
+    op.drop_table('erc1155_token_id_details')
     op.drop_index('erc1155_token_holders_token_address_balance_of_index', table_name='erc1155_token_holders')
     op.drop_table('erc1155_token_holders')
     op.drop_table('contracts')
