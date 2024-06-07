@@ -1,21 +1,21 @@
 from exporters.jdbc.schema.blocks import Blocks
-from utils.utils import hex_to_dec, to_normalized_address
+from eth_utils import to_int, to_normalized_address
 
 
 def format_block_data(block_dict):
     block = {
         'model': Blocks,
-        'number': hex_to_dec(block_dict['number']),
-        'timestamp': hex_to_dec(block_dict['timestamp']),
+        'number': to_int(hexstr=block_dict['number']),
+        'timestamp': to_int(hexstr=block_dict['timestamp']),
         'hash': block_dict['hash'],
         'parent_hash': block_dict['parentHash'],
         'nonce': block_dict['nonce'],
-        'gas_limit': hex_to_dec(block_dict['gasLimit']),
-        'gas_used': hex_to_dec(block_dict['gasUsed']),
-        'base_fee_per_gas': hex_to_dec(block_dict['baseFeePerGas']),
-        'difficulty': hex_to_dec(block_dict['difficulty']),
-        'total_difficulty': hex_to_dec(block_dict['totalDifficulty']),
-        'size': hex_to_dec(block_dict['size']),
+        'gas_limit': to_int(hexstr=block_dict['gasLimit']),
+        'gas_used': to_int(hexstr=block_dict['gasUsed']),
+        'base_fee_per_gas': to_int(hexstr=block_dict['baseFeePerGas']),
+        'difficulty': to_int(hexstr=block_dict['difficulty']),
+        'total_difficulty': to_int(hexstr=block_dict['totalDifficulty']),
+        'size': to_int(hexstr=block_dict['size']),
         'miner': to_normalized_address(block_dict['miner']),
         'sha3_uncles': block_dict['sha3Uncles'],
         'transactions_root': block_dict['transactionsRoot'],

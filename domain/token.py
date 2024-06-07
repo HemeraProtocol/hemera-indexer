@@ -1,5 +1,5 @@
 from exporters.jdbc.schema.tokens import Tokens
-from utils.utils import hex_to_dec, to_normalized_address
+from eth_utils import to_normalized_address
 
 
 def format_token_data(token):

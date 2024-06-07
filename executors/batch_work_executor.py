@@ -87,7 +87,7 @@ class BatchWorkExecutor:
                 self._futures.remove(future)
 
 
-def execute_with_retries(func, *args, max_retries=5, retry_exceptions=RETRY_EXCEPTIONS, sleep_seconds=1):
+def execute_with_retries(func, *args, max_retries=5, retry_exceptions=RETRY_EXCEPTIONS, sleep_seconds=5):
     for i in range(max_retries):
         try:
             return func(*args)

@@ -3,16 +3,6 @@ import warnings
 import random
 
 
-def hex_to_dec(hex_string):
-    if hex_string is None:
-        return None
-    try:
-        return int(hex_string, 16)
-    except ValueError:
-        print("Not a hex string %s" % hex_string)
-        return hex_string
-
-
 def to_int_or_none(val):
     if isinstance(val, int):
         return val
@@ -38,12 +28,6 @@ def to_float_or_none(val):
 
 def chunk_string(string, length):
     return (string[0 + i:length + i] for i in range(0, len(string), length))
-
-
-def to_normalized_address(address):
-    if address is None or not isinstance(address, str):
-        return address
-    return address.lower()
 
 
 # TODO: Implement fallback mechanism for provider uris instead of picking randomly

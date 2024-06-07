@@ -1,11 +1,11 @@
 from exporters.jdbc.schema.logs import Logs
-from utils.utils import hex_to_dec, to_normalized_address
+from eth_utils import to_int, to_normalized_address
 
 
 def format_log_data(log_dict):
     log = {
         'model': Logs,
-        'log_index': hex_to_dec(log_dict['logIndex']),
+        'log_index': to_int(hexstr=log_dict['logIndex']),
         'address': to_normalized_address(log_dict['address']),
         'data': log_dict['data'],
         'topic0': log_dict['topics'][0],
@@ -13,9 +13,9 @@ def format_log_data(log_dict):
         'topic2': log_dict['topics'][2] if len(log_dict['topics']) > 2 else None,
         'topic3': log_dict['topics'][3] if len(log_dict['topics']) > 3 else None,
         'transaction_hash': log_dict['transactionHash'],
-        'transaction_index': hex_to_dec(log_dict['transactionIndex']),
-        'block_number': hex_to_dec(log_dict['blockNumber']),
+        'transaction_index': to_int(hexstr=log_dict['transactionIndex']),
+        'block_number': to_int(hexstr=log_dict['blockNumber']),
         'block_hash': log_dict['blockHash'],
-        'block_timestamp': hex_to_dec(log_dict['blockTimestamp'])
+        'block_timestamp': to_int(hexstr=log_dict['blockTimestamp'])
     }
     return log

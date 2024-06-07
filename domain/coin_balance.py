@@ -1,5 +1,5 @@
 from exporters.jdbc.schema.coin_balances import CoinBalances
-from utils.utils import to_normalized_address, hex_to_dec
+from eth_utils import to_normalized_address, to_int
 
 
 def format_coin_balance_data(coin_balance_dict):
@@ -7,8 +7,8 @@ def format_coin_balance_data(coin_balance_dict):
         'model': CoinBalances,
         'address': to_normalized_address(coin_balance_dict['address']),
         'balance': coin_balance_dict['balance'],
-        'block_number': hex_to_dec(coin_balance_dict['block_number']),
-        'block_timestamp': hex_to_dec(coin_balance_dict['block_timestamp'])
+        'block_number': to_int(hexstr=coin_balance_dict['block_number']),
+        'block_timestamp': to_int(hexstr=coin_balance_dict['block_timestamp'])
     }
 
     return coin_balance

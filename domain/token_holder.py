@@ -1,11 +1,7 @@
-import logging
-
-from enumeration.token_type import TokenType
 from exporters.jdbc.schema.erc1155_token_holders import ERC1155TokenHolders
 from exporters.jdbc.schema.erc20_token_holders import ERC20TokenHolders
 from exporters.jdbc.schema.erc721_token_holders import ERC721TokenHolders
-from utils.utils import hex_to_dec, to_normalized_address
-from exporters.jdbc.schema.token_balances import TokenBalances
+from eth_utils import to_normalized_address
 
 
 def format_erc20_token_holder_data(token_balance_dict):
@@ -41,7 +37,7 @@ def format_erc1155_token_holder_data(token_balance_dict):
         'wallet_address': to_normalized_address(token_balance_dict['address']),
         'token_id': token_balance_dict['token_id'],
         'balance_of': token_balance_dict['balance'],
-        'last_call_contract_time': token_balance_dict['block_timestamp'],
+        'latest_call_contract_time': token_balance_dict['block_timestamp'],
         'block_number': token_balance_dict['block_number'],
         'block_timestamp': token_balance_dict['block_timestamp'],
         'update_strategy': "EXCLUDED.block_number >= erc1155_token_holders.block_number"

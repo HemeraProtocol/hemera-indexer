@@ -5,8 +5,7 @@ from enumeration.token_type import TokenType
 from exporters.jdbc.schema.erc1155_token_transfers import ERC1155TokenTransfers
 from exporters.jdbc.schema.erc20_token_transfers import ERC20TokenTransfers
 from exporters.jdbc.schema.erc721_token_transfers import ERC721TokenTransfers
-from utils.utils import hex_to_dec, to_normalized_address
-from exporters.jdbc.schema.token_transfers import TokenTransfers
+from eth_utils import to_int, to_normalized_address
 
 TRANSFER_EVENT_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 TRANSFER_SINGLE_EVENT_TOPIC = '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
@@ -52,39 +51,20 @@ transfer_abi = {
 }
 
 
-def format_token_transfer_data(token_transfer_dict):
-    token_transfer = {
-        'model': TokenTransfers,
-        'transaction_hash': token_transfer_dict['transactionHash'],
-        'log_index': hex_to_dec(token_transfer_dict['logIndex']),
-        'from_address': to_normalized_address(token_transfer_dict['fromAddress']),
-        'to_address': to_normalized_address(token_transfer_dict['toAddress']),
-        'value': hex_to_dec(token_transfer_dict['value']),
-        'token_id': token_transfer_dict['tokenId'],
-        'token_type': token_transfer_dict['tokenType'],
-        'token_address': token_transfer_dict['tokenAddress'],
-
-        'block_number': hex_to_dec(token_transfer_dict['blockNumber']),
-        'block_hash': token_transfer_dict['blockHash'],
-        'block_timestamp': hex_to_dec(token_transfer_dict['blockTimestamp'])
-    }
-    return token_transfer
-
-
 def format_erc20_token_transfer_data(token_transfer_dict):
     erc20_token_transfer = {
         'model': ERC20TokenTransfers,
         'transaction_hash': token_transfer_dict['transactionHash'],
-        'log_index': hex_to_dec(token_transfer_dict['logIndex']),
+        'log_index': to_int(hexstr=token_transfer_dict['logIndex']),
         'from_address': to_normalized_address(token_transfer_dict['fromAddress']),
         'to_address': to_normalized_address(token_transfer_dict['toAddress']),
         'value': token_transfer_dict['value'],
         'token_type': token_transfer_dict['tokenType'],
         'token_address': token_transfer_dict['tokenAddress'],
 
-        'block_number': hex_to_dec(token_transfer_dict['blockNumber']),
+        'block_number': to_int(hexstr=token_transfer_dict['blockNumber']),
         'block_hash': token_transfer_dict['blockHash'],
-        'block_timestamp': hex_to_dec(token_transfer_dict['blockTimestamp'])
+        'block_timestamp': to_int(hexstr=token_transfer_dict['blockTimestamp'])
     }
     return erc20_token_transfer
 
@@ -93,16 +73,16 @@ def format_erc721_token_transfer_data(token_transfer_dict):
     erc721_token_transfer = {
         'model': ERC721TokenTransfers,
         'transaction_hash': token_transfer_dict['transactionHash'],
-        'log_index': hex_to_dec(token_transfer_dict['logIndex']),
+        'log_index': to_int(hexstr=token_transfer_dict['logIndex']),
         'from_address': to_normalized_address(token_transfer_dict['fromAddress']),
         'to_address': to_normalized_address(token_transfer_dict['toAddress']),
         'token_id': token_transfer_dict['tokenId'],
         'token_type': token_transfer_dict['tokenType'],
         'token_address': token_transfer_dict['tokenAddress'],
 
-        'block_number': hex_to_dec(token_transfer_dict['blockNumber']),
+        'block_number': to_int(hexstr=token_transfer_dict['blockNumber']),
         'block_hash': token_transfer_dict['blockHash'],
-        'block_timestamp': hex_to_dec(token_transfer_dict['blockTimestamp'])
+        'block_timestamp': to_int(hexstr=token_transfer_dict['blockTimestamp'])
     }
     return erc721_token_transfer
 
@@ -111,7 +91,7 @@ def format_erc1155_token_transfer_data(token_transfer_dict):
     erc1155_token_transfer = {
         'model': ERC1155TokenTransfers,
         'transaction_hash': token_transfer_dict['transactionHash'],
-        'log_index': hex_to_dec(token_transfer_dict['logIndex']),
+        'log_index': to_int(hexstr=token_transfer_dict['logIndex']),
         'from_address': to_normalized_address(token_transfer_dict['fromAddress']),
         'to_address': to_normalized_address(token_transfer_dict['toAddress']),
         'token_id': token_transfer_dict['tokenId'],
@@ -119,9 +99,9 @@ def format_erc1155_token_transfer_data(token_transfer_dict):
         'token_type': token_transfer_dict['tokenType'],
         'token_address': token_transfer_dict['tokenAddress'],
 
-        'block_number': hex_to_dec(token_transfer_dict['blockNumber']),
+        'block_number': to_int(hexstr=token_transfer_dict['blockNumber']),
         'block_hash': token_transfer_dict['blockHash'],
-        'block_timestamp': hex_to_dec(token_transfer_dict['blockTimestamp'])
+        'block_timestamp': to_int(hexstr=token_transfer_dict['blockTimestamp'])
     }
     return erc1155_token_transfer
 
