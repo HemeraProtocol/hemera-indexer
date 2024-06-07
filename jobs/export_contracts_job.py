@@ -1,6 +1,6 @@
 import json
 
-from eth_abi.exceptions import InsufficientDataBytes
+from eth_abi.exceptions import InsufficientDataBytes, InvalidPointer
 from web3 import Web3
 from eth_abi import abi
 
@@ -73,7 +73,7 @@ class ExportContractsJob(BaseJob):
             name = result[2:] if result is not None else None
             try:
                 contract['name'] = abi.decode(['string'], bytes.fromhex(name))[0]
-            except (InsufficientDataBytes, TypeError) as e:
+            except (InsufficientDataBytes, InvalidPointer, TypeError) as e:
                 contract['name'] = None
 
             self._collect_item(contract)

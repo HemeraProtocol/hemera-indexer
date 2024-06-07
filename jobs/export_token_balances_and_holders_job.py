@@ -1,4 +1,5 @@
 import json
+import numpy
 import pandas
 
 from web3 import Web3
@@ -12,6 +13,7 @@ from executors.batch_work_executor import BatchWorkExecutor
 from utils.enrich import enrich_blocks_timestamp
 from utils.json_rpc_requests import generate_get_token_balance_json_rpc
 from utils.utils import rpc_response_to_result
+from utils.web3_utils import verify_0_address
 
 contract_abi = {
     "ERC20": [
@@ -100,35 +102,55 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
         self._item_exporter = item_exporter
 
-        distinct_addresses = set()
+    def _start(self):
+        super()._start()
+
+    def _collect(self):
+        origin_parameters = []
+
         for transfer in self._data_buff['token_transfer']:
             from_address = Web3.to_checksum_address(transfer['fromAddress'])
             to_address = Web3.to_checksum_address(transfer['toAddress'])
             token_address = Web3.to_checksum_address(transfer['tokenAddress'])
 
-            distinct_addresses.add((from_address, token_address, transfer['tokenId'],
-                                    transfer['blockNumber'], transfer['tokenType']))
-            distinct_addresses.add((to_address, token_address, transfer['tokenId'],
-                                    transfer['blockNumber'], transfer['tokenType']))
-
-        self.rpc_parameters = []
-        for address in list(distinct_addresses):
-            contract = self._web3.eth.contract(address=address[1], abi=contract_abi[address[4]])
-            data = contract.encodeABI(fn_name='balanceOf', args=[address[0]])
-            self.rpc_parameters.append({
-                'token_id': address[2],
-                'address': address[0],
-                'token_address': address[1],
-                'token_type': address[4],
-                'data': data,
-                'block_number': address[3],
+            origin_parameters.append({
+                'address': from_address,
+                'token_address': token_address,
+                'token_id': transfer['tokenId'],
+                'token_type': transfer['tokenType'],
+                'block_number': transfer['blockNumber'],
+            })
+            origin_parameters.append({
+                'address': to_address,
+                'token_address': token_address,
+                'token_id': transfer['tokenId'],
+                'token_type': transfer['tokenType'],
+                'block_number': transfer['blockNumber'],
             })
 
-    def _start(self):
-        super()._start()
+        rpc_parameters = []
+        for parameter in pandas.DataFrame(origin_parameters).drop_duplicates().replace(numpy.NaN, None).to_dict(
+                orient='records'):
+            parameter['token_id'] = int(parameter['token_id']) if parameter['token_id'] is not None else None
+            if not verify_0_address(parameter['address']):
+                contract = self._web3.eth.contract(address=parameter['token_address'],
+                                                   abi=contract_abi[parameter['token_type']])
 
-    def _collect(self):
-        self._batch_work_executor.execute(self.rpc_parameters, self._collect_batch)
+                if len(contract_abi[parameter['token_type']][0]['inputs']) > 1:
+                    data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address'], parameter['token_id']])
+                else:
+                    data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address']])
+
+                rpc_parameters.append({
+                    'address': parameter['address'],
+                    'token_address': parameter['token_address'],
+                    'token_id': parameter['token_id'],
+                    'token_type': parameter['token_type'],
+                    'data': data,
+                    'block_number': parameter['block_number'],
+                })
+
+        self._batch_work_executor.execute(rpc_parameters, self._collect_batch)
 
     def _collect_batch(self, parameters):
         token_balance_rpc = list(generate_get_token_balance_json_rpc(parameters))

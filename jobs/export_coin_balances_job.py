@@ -5,8 +5,9 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_get_balance_json_rpc
-from utils.utils import rpc_response_to_result, hex_to_dec
+from utils.utils import rpc_response_to_result
 from domain.trace import trace_is_contract_creation, trace_is_transfer_value
+from utils.web3_utils import verify_0_address
 
 
 # Exports coin balances
@@ -45,11 +46,12 @@ class ExportCoinBalancesJob(BaseJob):
 
         self._coin_addresses = []
         for address in list(coin_addresses):
-            self._coin_addresses.append({
-                'address': address[0],
-                'block_number': address[1],
-                'block_timestamp': address[2]
-            })
+            if not verify_0_address(address[0]):
+                self._coin_addresses.append({
+                    'address': address[0],
+                    'block_number': address[1],
+                    'block_timestamp': address[2]
+                })
 
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
