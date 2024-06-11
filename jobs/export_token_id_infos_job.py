@@ -14,35 +14,48 @@ from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_get_token_info_json_rpc
 from utils.utils import rpc_response_to_result
 
-erc_token_id_info_abi = [
-    {
-        "constant": True,
-        "inputs": [{"name": "id", "type": "uint256"}],
-        "name": "tokenURI",
-        "outputs": [{"name": "", "type": "string"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": True,
-        "inputs": [{"name": "id", "type": "uint256"}],
-        "name": "ownerOf",
-        "outputs": [{"name": "", "type": "address"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": True,
-        "inputs": [{"name": "id", "type": "uint256"}],
-        "name": "tokenSupply",
-        "outputs": [{"name": "", "type": "uint256"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
+erc_token_id_info_abi = {
+    "ERC721": [
+        {
+            "constant": True,
+            "inputs": [{"name": "id", "type": "uint256"}],
+            "name": "tokenURI",
+            "outputs": [{"name": "", "type": "string"}],
+            "payable": False,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": True,
+            "inputs": [{"name": "id", "type": "uint256"}],
+            "name": "ownerOf",
+            "outputs": [{"name": "", "type": "address"}],
+            "payable": False,
+            "stateMutability": "view",
+            "type": "function"
+        },
+    ],
+    "ERC1155": [
+        {
+            "constant": True,
+            "inputs": [{"name": "id", "type": "uint256"}],
+            "name": "uri",
+            "outputs": [{"name": "", "type": "string"}],
+            "payable": False,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": True,
+            "inputs": [{"name": "id", "type": "uint256"}],
+            "name": "totalSupply",
+            "outputs": [{"name": "", "type": "uint256"}],
+            "payable": False,
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ]
+}
 
 
 class ExportTokenIdInfosJob(BaseJob):
@@ -64,11 +77,19 @@ class ExportTokenIdInfosJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        token_list = []
+        erc721_token_list = []
+        erc1155_token_list = []
         for token_transfer in self._data_buff['token_transfer']:
-            if (token_transfer['tokenType'] == TokenType.ERC721.value or
-                    token_transfer['tokenType'] == TokenType.ERC1155.value):
-                token_list.append({
+            if token_transfer['tokenType'] == TokenType.ERC721.value:
+                erc721_token_list.append({
+                    'address': token_transfer['tokenAddress'],
+                    'token_id': token_transfer['tokenId'],
+                    'token_type': token_transfer['tokenType'],
+                    'block_number': token_transfer['blockNumber'],
+                    'block_timestamp': token_transfer['blockTimestamp'],
+                })
+            elif token_transfer['tokenType'] == TokenType.ERC1155.value:
+                erc1155_token_list.append({
                     'address': token_transfer['tokenAddress'],
                     'token_id': token_transfer['tokenId'],
                     'token_type': token_transfer['tokenType'],
@@ -76,7 +97,9 @@ class ExportTokenIdInfosJob(BaseJob):
                     'block_timestamp': token_transfer['blockTimestamp'],
                 })
 
-        unique_token = pandas.DataFrame(token_list).drop_duplicates()
+        unique_token = pandas.DataFrame(erc721_token_list).drop_duplicates()
+        self._batch_work_executor.execute(unique_token.to_dict(orient="records"), self._collect_batch)
+        unique_token = pandas.DataFrame(erc1155_token_list).drop_duplicates()
         self._batch_work_executor.execute(unique_token.to_dict(orient="records"), self._collect_batch)
 
     def _collect_batch(self, token_list):
@@ -114,25 +137,25 @@ class ExportTokenIdInfosJob(BaseJob):
         self._batch_work_executor.shutdown()
         super()._end()
 
-    def _build_rpc_method_data(self, tokens, fn):
+    def _build_rpc_method_data(self, tokens, token_type, fn):
         parameters = []
 
         for token in tokens:
             token['data'] = (self._web3.eth
                              .contract(address=Web3.to_checksum_address(token['address']),
-                                       abi=erc_token_id_info_abi)
+                                       abi=erc_token_id_info_abi[token_type])
                              .encodeABI(fn_name=fn, args=[token['token_id']]))
-            for abi_fn in erc_token_id_info_abi:
+            for abi_fn in erc_token_id_info_abi[token_type]:
                 if fn == abi_fn['name']:
                     token['data_type'] = abi_fn['outputs'][0]['type']
             parameters.append(token)
         return parameters
 
     def _fetch_token_id_info(self, tokens):
-        fn_names = ['tokenURI', 'ownerOf', 'tokenSupply']
-
-        for fn_name in fn_names:
-            token_name_rpc = list(generate_get_token_info_json_rpc(self._build_rpc_method_data(tokens, fn_name)))
+        token_type = tokens[0]['token_type']
+        for abi_json in erc_token_id_info_abi[token_type]:
+            token_name_rpc = list(generate_get_token_info_json_rpc(
+                self._build_rpc_method_data(tokens, token_type, abi_json['name'])))
             response = self._batch_web3_provider.make_batch_request(json.dumps(token_name_rpc))
             for data in list(zip(response, tokens)):
                 result = rpc_response_to_result(data[0], ignore_errors=True)
@@ -140,8 +163,8 @@ class ExportTokenIdInfosJob(BaseJob):
                 token = data[1]
                 value = result[2:] if result is not None else None
                 try:
-                    token[fn_name] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
+                    token[abi_json['name']] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
                 except (InsufficientDataBytes, TypeError) as e:
-                    token[fn_name] = None
+                    token[abi_json['name']] = None
 
         return tokens
