@@ -6,7 +6,7 @@ import click
 from exporters.jdbc.postgresql_service import PostgreSQLService
 from exporters.jdbc.schema.block_timestamp_mapper import BlockTimestampMapper
 from jobs.export_and_confirm_all import confirm_all
-from utils.streaming.streaming_utils import configure_signals, configure_logging
+from utils.logging_utils import configure_signals, configure_logging
 
 from utils.provider import get_provider_from_uri
 from exporters.item_exporter import create_item_exporters

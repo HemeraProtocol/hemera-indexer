@@ -76,7 +76,6 @@ class StreamDispatcher(BaseDispatcher):
             item_exporter=self._item_exporter
         ).run()
 
-
         ExportTracesJob(
             index_keys=['trace'],
             start_block=start_block,

@@ -119,7 +119,7 @@ class ExportTokensAndTransfersJob(BaseJob):
         for log_dict in log_dicts:
             transfer_event = extract_transfer_from_log(log_dict)
             if transfer_event is not None:
-                if transfer_event is list:
+                if type(transfer_event) is list:
                     token_transfer.extend(transfer_event)
                 else:
                     token_transfer.append(transfer_event)
