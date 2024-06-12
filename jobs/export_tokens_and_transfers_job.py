@@ -201,11 +201,17 @@ class ExportTokensAndTransfersJob(BaseJob):
     @staticmethod
     def _get_exist_token(db_service):
         session = db_service.get_service_session()
-        result = session.query(Tokens.address, Tokens.token_type).all()
-        history_token = {}
-        if result is not None:
-            for item in result:
-                history_token[item[0].decode('utf-8')] = item[1]
+        try:
+            result = session.query(Tokens.address, Tokens.token_type).all()
+            history_token = {}
+            if result is not None:
+                for item in result:
+                    history_token[item[0].decode('utf-8')] = item[1]
+        except Exception as e:
+            print(e)
+            raise e
+        finally:
+            session.close()
         return history_token
 
     def _build_rpc_method_data(self, tokens, fn):

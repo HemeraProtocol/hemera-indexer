@@ -84,7 +84,13 @@ class StreamController(BaseController):
 
     def _get_last_synced_block(self):
         session = self.db_service.get_service_session()
-        result = session.query(SyncRecord.last_block_number).filter(SyncRecord.mission_type == 'stream').scalar()
+        try:
+            result = session.query(SyncRecord.last_block_number).filter(SyncRecord.mission_type == 'stream').scalar()
+        except Exception as e:
+            print(e)
+            raise e
+        finally:
+            session.close()
         if result is not None:
             return result
         return 0
@@ -92,19 +98,25 @@ class StreamController(BaseController):
     def _set_last_synced_block(self, last_synced_block):
         session = self.db_service.get_service_session()
         update_time = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
-        statement = insert(SyncRecord).values({
-            "mission_type": "stream",
-            "last_block_number": last_synced_block,
-            "update_time": update_time
-        }).on_conflict_do_update(index_elements=[SyncRecord.mission_type],
-                                 set_=
-                                 {
-                                     "last_block_number": last_synced_block,
-                                     "update_time": update_time
-                                 })
+        try:
+            statement = insert(SyncRecord).values({
+                "mission_type": "stream",
+                "last_block_number": last_synced_block,
+                "update_time": update_time
+            }).on_conflict_do_update(index_elements=[SyncRecord.mission_type],
+                                     set_=
+                                     {
+                                         "last_block_number": last_synced_block,
+                                         "update_time": update_time
+                                     })
 
-        session.execute(statement)
-        session.commit()
+            session.execute(statement)
+            session.commit()
+        except Exception as e:
+            print(e)
+            raise e
+        finally:
+            session.close()
 
     @staticmethod
     def _calculate_target_block(current_block, last_synced_block, end_block, steps):

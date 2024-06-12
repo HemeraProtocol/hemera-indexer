@@ -14,7 +14,15 @@ class PostgreSQLService(object):
 
     def __init__(self, jdbc_url, db_version="head"):
         self.db_version = db_version
-        self.engine = create_engine(jdbc_url)
+        self.engine = create_engine(jdbc_url,
+                                    pool_size=10,
+                                    max_overflow=10,
+                                    pool_timeout=30,
+                                    pool_recycle=60,
+                                    connect_args={
+                                        "application_name": "hemera_indexer"
+                                    })
+
         self.Session = sessionmaker(bind=self.engine)
         self.init_schema()
 
