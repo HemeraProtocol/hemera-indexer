@@ -1,5 +1,6 @@
 import json
 
+from domain.contract_internal_transaction import trace_to_contract_internal_transaction
 from domain.trace import format_trace_data
 from executors.batch_work_executor import BatchWorkExecutor
 from exporters.console_item_exporter import ConsoleItemExporter
@@ -152,8 +153,11 @@ class ExportTracesJob(BaseJob):
                                                     key=lambda x: (
                                                         x['block_number'], x['transaction_index'], x['trace_index']))
 
+        self._data_buff['internal_transaction'] = [trace_to_contract_internal_transaction(trace)
+                                                   for trace in  self._data_buff['enriched_traces']]
+
     def _export(self):
-        items = self._extract_from_buff(['enriched_traces'])
+        items = self._extract_from_buff(['enriched_traces', 'internal_transaction'])
         self._item_exporter.export_items(items)
 
     def _end(self):
