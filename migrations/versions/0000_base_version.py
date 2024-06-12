@@ -116,9 +116,9 @@ def upgrade() -> None:
     sa.Column('social_list', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('is_verified', sa.BOOLEAN(), nullable=True),
     sa.Column('is_proxy', sa.BOOLEAN(), nullable=True),
-    sa.Column('implementation_contract', sa.BOOLEAN(), nullable=True),
-    sa.Column('verified_implementation_contract', sa.BOOLEAN(), nullable=True),
-    sa.Column('proxy_standard', sa.BOOLEAN(), nullable=True),
+    sa.Column('implementation_contract', postgresql.BYTEA(), nullable=True),
+    sa.Column('verified_implementation_contract', postgresql.BYTEA(), nullable=True),
+    sa.Column('proxy_standard', sa.VARCHAR(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint('address')

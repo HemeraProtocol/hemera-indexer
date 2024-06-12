@@ -25,9 +25,9 @@ class Contracts(Base):
     social_list = Column(JSONB)
     is_verified = Column(BOOLEAN)
     is_proxy = Column(BOOLEAN)
-    implementation_contract = Column(BOOLEAN)
-    verified_implementation_contract = Column(BOOLEAN)
-    proxy_standard = Column(BOOLEAN)
+    implementation_contract = Column(BYTEA)
+    verified_implementation_contract = Column(BYTEA)
+    proxy_standard = Column(VARCHAR)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP)
