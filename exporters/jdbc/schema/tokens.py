@@ -27,6 +27,7 @@ class Tokens(Base):
     cmc_id = Column(INTEGER)
     cmc_slug = Column(VARCHAR)
     gecko_id = Column(VARCHAR)
+    description = Column(VARCHAR)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP)
