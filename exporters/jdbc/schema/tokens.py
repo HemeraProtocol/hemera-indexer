@@ -22,7 +22,7 @@ class Tokens(Base):
     previous_price = Column(NUMERIC(38, 6))
     market_cap = Column(NUMERIC(38, 2))
     on_chain_market_cap = Column(NUMERIC(38, 2))
-    is_verified = Column(BOOLEAN)
+    is_verified = Column(BOOLEAN, default=False)
 
     cmc_id = Column(INTEGER)
     cmc_slug = Column(VARCHAR)
