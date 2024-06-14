@@ -11,7 +11,7 @@ from enumeration.token_type import TokenType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
-from utils.json_rpc_requests import generate_get_token_info_json_rpc
+from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 
 erc_token_id_info_abi = {
@@ -141,10 +141,11 @@ class ExportTokenIdInfosJob(BaseJob):
         parameters = []
 
         for token in tokens:
-            token['data'] = (self._web3.eth
-                             .contract(address=Web3.to_checksum_address(token['address']),
-                                       abi=erc_token_id_info_abi[token_type])
-                             .encodeABI(fn_name=fn, args=[token['token_id']]))
+            token['param_to'] = token['address']
+            token['param_data'] = (self._web3.eth
+                                   .contract(address=Web3.to_checksum_address(token['address']),
+                                             abi=erc_token_id_info_abi[token_type])
+                                   .encodeABI(fn_name=fn, args=[token['token_id']]))
             for abi_fn in erc_token_id_info_abi[token_type]:
                 if fn == abi_fn['name']:
                     token['data_type'] = abi_fn['outputs'][0]['type']
@@ -154,7 +155,7 @@ class ExportTokenIdInfosJob(BaseJob):
     def _fetch_token_id_info(self, tokens):
         token_type = tokens[0]['token_type']
         for abi_json in erc_token_id_info_abi[token_type]:
-            token_name_rpc = list(generate_get_token_info_json_rpc(
+            token_name_rpc = list(generate_eth_call_json_rpc(
                 self._build_rpc_method_data(tokens, token_type, abi_json['name'])))
             response = self._batch_web3_provider.make_batch_request(json.dumps(token_name_rpc))
             for data in list(zip(response, tokens)):

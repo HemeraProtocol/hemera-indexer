@@ -9,7 +9,7 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.enrich import enrich_contracts
-from utils.json_rpc_requests import generate_get_contract_name_json_rpc
+from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 
 contract_abi = [
@@ -46,24 +46,27 @@ class ExportContractsJob(BaseJob):
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
         self._item_exporter = item_exporter
 
-        self.contracts = []
-        for trace_dict in self._data_buff['trace']:
-            if trace_dict['trace_type'] in ['create', 'create2'] and trace_dict['to_address'] is not None \
-                    and len(trace_dict['to_address']) > 0 and trace_dict['status'] == 1:
-                contract = extract_contract_from_trace(trace_dict)
-                contract['data'] = (self._web3.eth
-                                    .contract(address=Web3.to_checksum_address(contract['address']), abi=contract_abi)
-                                    .encodeABI(fn_name='name'))
-                self.contracts.append(contract)
-
     def _start(self):
         super()._start()
 
     def _collect(self):
-        self._batch_work_executor.execute(self.contracts, self._collect_batch)
+        contracts = []
+        for trace_dict in self._data_buff['trace']:
+            if trace_dict['trace_type'] in ['create', 'create2'] and trace_dict['to_address'] is not None \
+                    and len(trace_dict['to_address']) > 0 and trace_dict['status'] == 1:
+                contract = extract_contract_from_trace(trace_dict)
+                contract['param_to'] = contract['address']
+                contract['param_data'] = (self._web3.eth
+                                          .contract(address=Web3.to_checksum_address(contract['address']),
+                                                    abi=contract_abi)
+                                          .encodeABI(fn_name='name'))
+                contract['param_number'] = hex(contract['block_number'])
+                contracts.append(contract)
+
+        self._batch_work_executor.execute(contracts, self._collect_batch)
 
     def _collect_batch(self, contracts):
-        contract_name_rpc = list(generate_get_contract_name_json_rpc(contracts))
+        contract_name_rpc = list(generate_eth_call_json_rpc(contracts, is_latest=False))
         response = self._batch_web3_provider.make_batch_request(json.dumps(contract_name_rpc))
 
         for data in list(zip(contracts, response)):

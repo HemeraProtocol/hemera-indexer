@@ -17,24 +17,6 @@ def generate_trace_block_by_number_json_rpc(block_numbers):
         )
 
 
-def generate_get_contract_name_json_rpc(contracts):
-    for idx, contract in enumerate(contracts):
-        yield generate_json_rpc(
-            method='eth_call',
-            params=[{'to': contract['address'], 'data': contract['data']}, hex(contract['block_number'])],
-            request_id=idx
-        )
-
-
-def generate_get_token_info_json_rpc(tokens):
-    for idx, token in enumerate(tokens):
-        yield generate_json_rpc(
-            method='eth_call',
-            params=[{'to': token['address'], 'data': token['data']}, 'latest'],
-            request_id=idx
-        )
-
-
 def generate_get_receipt_json_rpc(transaction_hashes):
     for idx, transaction_hash in enumerate(transaction_hashes):
         yield generate_json_rpc(
@@ -62,11 +44,17 @@ def generate_get_balance_json_rpc(coin_addresses):
         )
 
 
-def generate_get_token_balance_json_rpc(parameters):
-    for idx, parameter in enumerate(parameters):
+def generate_eth_call_json_rpc(params, is_latest=True):
+    for idx, param in enumerate(params):
         yield generate_json_rpc(
             method='eth_call',
-            params=[{'to': parameter['token_address'], 'data': parameter['data']}, parameter['block_number']],
+            params=[
+                {
+                    'to': param['param_to'],
+                    'data': param['param_data']
+                },
+                'latest' if is_latest else param['param_number']
+            ],
             request_id=idx
         )
 

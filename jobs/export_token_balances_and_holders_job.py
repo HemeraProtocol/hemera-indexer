@@ -11,7 +11,7 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.enrich import enrich_blocks_timestamp
-from utils.json_rpc_requests import generate_get_token_balance_json_rpc
+from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 from utils.web3_utils import verify_0_address
 
@@ -146,14 +146,16 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
                     'token_address': parameter['token_address'],
                     'token_id': parameter['token_id'],
                     'token_type': parameter['token_type'],
-                    'data': data,
+                    'param_to': parameter['token_address'],
+                    'param_data': data,
+                    'param_number': parameter['block_number'],
                     'block_number': parameter['block_number'],
                 })
 
         self._batch_work_executor.execute(rpc_parameters, self._collect_batch)
 
     def _collect_batch(self, parameters):
-        token_balance_rpc = list(generate_get_token_balance_json_rpc(parameters))
+        token_balance_rpc = list(generate_eth_call_json_rpc(parameters))
         response = self._batch_web3_provider.make_batch_request(json.dumps(token_balance_rpc))
 
         for data in list(zip(parameters, response)):

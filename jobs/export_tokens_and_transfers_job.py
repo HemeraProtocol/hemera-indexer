@@ -13,7 +13,7 @@ from exporters.jdbc.schema.tokens import Tokens
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.enrich import enrich_blocks_timestamp
-from utils.json_rpc_requests import generate_get_token_info_json_rpc
+from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 
 erc_token_abi = {
@@ -220,7 +220,8 @@ class ExportTokensAndTransfersJob(BaseJob):
         for token in tokens:
             token_type = token['token_type'] if token['token_type'] is not None else "ELSE"
             try:
-                token['data'] = (self._web3.eth
+                token['param_to'] = token['address']
+                token['param_data'] = (self._web3.eth
                                  .contract(address=Web3.to_checksum_address(token['address']),
                                            abi=erc_token_abi[token_type])
                                  .encodeABI(fn_name=fn))
@@ -239,7 +240,7 @@ class ExportTokensAndTransfersJob(BaseJob):
         fn_names = ['name', 'symbol', 'decimals', 'totalSupply', 'tokenSupply']
 
         for fn_name in fn_names:
-            token_name_rpc = list(generate_get_token_info_json_rpc(self._build_rpc_method_data(tokens, fn_name)))
+            token_name_rpc = list(generate_eth_call_json_rpc(self._build_rpc_method_data(tokens, fn_name)))
             response = self._batch_web3_provider.make_batch_request(json.dumps(token_name_rpc))
             for data in list(zip(response, tokens)):
                 result = rpc_response_to_result(data[0], ignore_errors=True)
