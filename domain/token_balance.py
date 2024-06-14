@@ -1,10 +1,10 @@
 from eth_utils import to_int, to_normalized_address
-from exporters.jdbc.schema.token_balances import TokenBalances
+from exporters.jdbc.schema.token_balances import AddressTokenBalances
 
 
 def format_token_balance_data(token_balance_dict):
     token_transfer = {
-        'model': TokenBalances,
+        'model': AddressTokenBalances,
         'address': to_normalized_address(token_balance_dict['address']),
         'token_id': token_balance_dict['tokenId'],
         'token_type': token_balance_dict['tokenType'],
