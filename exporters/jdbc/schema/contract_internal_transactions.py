@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, VARCHAR, Index, desc
+from sqlalchemy import Column, VARCHAR, Index, desc, func
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT
 from exporters.jdbc.schema import Base
 
@@ -25,7 +25,7 @@ class ContractInternalTransactions(Base):
     transaction_hash = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP)
+    update_time = Column(TIMESTAMP, onupdate=func.now())
 
 
 Index('contract_internal_transactions_transaction_hash_idx', ContractInternalTransactions.transaction_hash)

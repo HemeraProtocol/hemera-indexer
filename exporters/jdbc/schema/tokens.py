@@ -1,6 +1,6 @@
 from datetime import datetime
-from sqlalchemy import Column, VARCHAR, PrimaryKeyConstraint, Index
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, TIMESTAMP, NUMERIC, BOOLEAN
+from sqlalchemy import Column, VARCHAR, PrimaryKeyConstraint, Index, func
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, TIMESTAMP, NUMERIC, BOOLEAN, JSONB
 from exporters.jdbc.schema import Base
 
 
@@ -17,6 +17,7 @@ class Tokens(Base):
     holder_count = Column(INTEGER, default=0)
     transfer_count = Column(INTEGER, default=0)
     icon_url = Column(VARCHAR)
+    urls = Column(JSONB)
     volume_24h = Column(NUMERIC(38, 2))
     price = Column(NUMERIC(38, 6))
     previous_price = Column(NUMERIC(38, 6))
@@ -30,7 +31,7 @@ class Tokens(Base):
     description = Column(VARCHAR)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP)
+    update_time = Column(TIMESTAMP, onupdate=func.now())
 
     __table_args__ = (
         PrimaryKeyConstraint('address'),

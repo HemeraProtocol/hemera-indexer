@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, VARCHAR, Index, desc
+from sqlalchemy import Column, VARCHAR, Index, desc, func
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT
 from exporters.jdbc.schema import Base
 
@@ -28,7 +28,7 @@ class Traces(Base):
     transaction_hash = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP)
+    update_time = Column(TIMESTAMP, onupdate=func.now())
 
 
 Index('traces_transaction_hash_index', Traces.transaction_hash)

@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc
+from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, VARCHAR, JSONB
 from exporters.jdbc.schema import Base
 
@@ -17,7 +17,7 @@ class ERC721TokenIdDetails(Base):
     block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP)
+    update_time = Column(TIMESTAMP, onupdate=func.now())
 
     __table_args__ = (
         PrimaryKeyConstraint('address', 'token_id'),

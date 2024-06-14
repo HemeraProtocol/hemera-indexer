@@ -1,6 +1,6 @@
 from datetime import datetime
-from sqlalchemy import Column, VARCHAR
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, BOOLEAN, TEXT, JSONB
+from sqlalchemy import Column, VARCHAR, func
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, BOOLEAN, JSONB
 from exporters.jdbc.schema import Base
 
 
@@ -30,4 +30,4 @@ class Contracts(Base):
     proxy_standard = Column(VARCHAR)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP)
+    update_time = Column(TIMESTAMP, onupdate=func.now())

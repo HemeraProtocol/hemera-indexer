@@ -41,6 +41,6 @@ __lazy_imports = {
     "ERC1155TokenHolders": "exporters.jdbc.schema.erc1155_token_holders",
     "ERC1155TokenIdDetails": "exporters.jdbc.schema.erc1155_token_id_details",
     "Tokens": "exporters.jdbc.schema.tokens",
-    "TokenBalances": "exporters.jdbc.schema.token_balances",
+    "AddressTokenBalances": "exporters.jdbc.schema.token_balances",
     "BlockTimestampMapper": "exporters.jdbc.schema.block_timestamp_mapper",
 }

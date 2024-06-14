@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, Index, desc
+from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT
 from exporters.jdbc.schema import Base
 
@@ -45,7 +45,7 @@ class Transactions(Base):
     revert_reason = Column(TEXT)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP)
+    update_time = Column(TIMESTAMP, onupdate=func.now())
 
 
 Index('transactions_block_timestamp_block_number_index',

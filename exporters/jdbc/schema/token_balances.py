@@ -1,10 +1,10 @@
 from datetime import datetime
-from sqlalchemy import Column, VARCHAR, PrimaryKeyConstraint
+from sqlalchemy import Column, VARCHAR, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC
 from exporters.jdbc.schema import Base
 
 
-class TokenBalances(Base):
+class AddressTokenBalances(Base):
     __tablename__ = 'address_token_balances'
 
     address = Column(BYTEA, primary_key=True)
@@ -17,7 +17,7 @@ class TokenBalances(Base):
     block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP)
+    update_time = Column(TIMESTAMP, onupdate=func.now())
 
     __table_args__ = (
         PrimaryKeyConstraint('address', 'token_address', 'block_number'),
