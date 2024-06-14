@@ -126,10 +126,10 @@ class ExportTokensAndTransfersJob(BaseJob):
 
         new_tokens = set()
         for token in token_transfer:
-            if token['tokenAddress'] not in self._exist_token.keys():
+            if token['tokenAddress'][2:] not in self._exist_token.keys():
                 new_tokens.add((token['tokenAddress'], token['tokenType']))
             elif token['tokenType'] is None:
-                token['tokenType'] = self._exist_token[token['tokenAddress']]
+                token['tokenType'] = self._exist_token[token['tokenAddress'][2:]]
 
         tokens_parameter = []
         for token in new_tokens:
@@ -206,7 +206,7 @@ class ExportTokensAndTransfersJob(BaseJob):
             history_token = {}
             if result is not None:
                 for item in result:
-                    history_token[item[0].decode('utf-8')] = item[1]
+                    history_token[item[0].hex()] = item[1]
         except Exception as e:
             print(e)
             raise e

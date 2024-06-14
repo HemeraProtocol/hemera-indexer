@@ -72,45 +72,45 @@ class PostgreSQLModelConverter:
 
     def convert_to_block(self, block):
         return {
-            'hash': bytes(block["hash"], 'utf-8'),
+            'hash': bytes.fromhex(block["hash"][2:]),
             'number': block["number"],
             'timestamp': func.to_timestamp(block["timestamp"]),
-            'parent_hash': bytes(block["parent_hash"], 'utf-8'),
-            'nonce': bytes(block["nonce"], 'utf-8'),
+            'parent_hash': bytes.fromhex(block["parent_hash"][2:]),
+            'nonce': bytes.fromhex(block["nonce"][2:]),
             'gas_limit': block["gas_limit"],
             'gas_used': block["gas_used"],
             'base_fee_per_gas': block["base_fee_per_gas"],
             'difficulty': block["difficulty"],
             'size': block["size"],
-            'miner': bytes(block["miner"], 'utf-8'),
-            'sha3_uncles': bytes(block["sha3_uncles"], 'utf-8'),
-            'transactions_root': bytes(block["transactions_root"], 'utf-8'),
+            'miner': bytes.fromhex(block["miner"][2:]),
+            'sha3_uncles': bytes.fromhex(block["sha3_uncles"][2:]),
+            'transactions_root': bytes.fromhex(block["transactions_root"][2:]),
             'transactions_count': block["transactions_count"],
-            'state_root': bytes(block["state_root"], 'utf-8'),
-            'receipts_root': bytes(block["receipts_root"], 'utf-8'),
-            'extra_data': bytes(block["extra_data"], 'utf-8'),
-            'withdrawals_root': bytes(block["withdrawals_root"], 'utf-8') if block["withdrawals_root"] else None,
+            'state_root': bytes.fromhex(block["state_root"][2:]),
+            'receipts_root': bytes.fromhex(block["receipts_root"][2:]),
+            'extra_data': bytes.fromhex(block["extra_data"][2:]),
+            'withdrawals_root': bytes.fromhex(block["withdrawals_root"][2:]) if block["withdrawals_root"] else None,
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
     def convert_to_transaction(self, transaction):
         return {
-            'hash': bytes(transaction["hash"], 'utf-8'),
+            'hash': bytes.fromhex(transaction["hash"][2:]),
             'transaction_index': transaction["transaction_index"],
-            'from_address': bytes(transaction["from_address"], 'utf-8') if transaction["from_address"] else None,
-            'to_address': bytes(transaction["to_address"], 'utf-8') if transaction["to_address"] else None,
+            'from_address': bytes.fromhex(transaction["from_address"][2:]) if transaction["from_address"] else None,
+            'to_address': bytes.fromhex(transaction["to_address"][2:]) if transaction["to_address"] else None,
             'value': transaction["value"],
             'transaction_type': transaction["transaction_type"],
-            'input': bytes(transaction["input"], 'utf-8'),
+            'input': bytes.fromhex(transaction["input"][2:]),
             'nonce': transaction["nonce"],
-            'block_hash': bytes(transaction["block_hash"], 'utf-8'),
+            'block_hash': bytes.fromhex(transaction["block_hash"][2:]),
             'block_number': transaction["block_number"],
             'block_timestamp': func.to_timestamp(transaction["block_timestamp"]),
             'gas': transaction["gas"],
             'gas_price': transaction["gas_price"],
             'max_fee_per_gas': transaction["max_fee_per_gas"],
             'max_priority_fee_per_gas': transaction["max_priority_fee_per_gas"],
-            'receipt_root': bytes(transaction["receipt_root"], 'utf-8') if transaction["receipt_root"] else None,
+            'receipt_root': bytes.fromhex(transaction["receipt_root"][2:]) if transaction["receipt_root"] else None,
             'receipt_status': transaction["receipt_status"],
             'receipt_gas_used': transaction["receipt_gas_used"],
             'receipt_cumulative_gas_used': transaction["receipt_cumulative_gas_used"],
@@ -119,10 +119,10 @@ class PostgreSQLModelConverter:
             'receipt_l1_fee_scalar': transaction["receipt_l1_fee_scalar"],
             'receipt_l1_gas_used': transaction["receipt_l1_gas_used"],
             'receipt_l1_gas_price': transaction["receipt_l1_gas_price"],
-            'blob_versioned_hashes': [bytes(_, 'utf-8') for _ in transaction["blob_versioned_hashes"]] \
-                if transaction["blob_versioned_hashes"] else None,
-            'receipt_contract_address': bytes(transaction["receipt_contract_address"],
-                                              'utf-8') if transaction["receipt_contract_address"] else None,
+            'blob_versioned_hashes': [bytes.fromhex(_[2:]) for _ in transaction["blob_versioned_hashes"]]
+            if transaction["blob_versioned_hashes"] else None,
+            'receipt_contract_address': bytes.fromhex(transaction["receipt_contract_address"][2:])
+            if transaction["receipt_contract_address"] else None,
             'exist_error': transaction["exist_error"],
             'error': transaction["error"],
             'revert_reason': transaction["revert_reason"],
@@ -132,16 +132,16 @@ class PostgreSQLModelConverter:
     def convert_to_log(self, log):
         return {
             'log_index': log["log_index"],
-            'address': bytes(log["address"], 'utf-8'),
-            'data': bytes(log["data"], 'utf-8'),
-            'topic0': bytes(log["topic0"], 'utf-8'),
-            'topic1': bytes(log["topic1"], 'utf-8') if log["topic1"] else None,
-            'topic2': bytes(log["topic2"], 'utf-8') if log["topic2"] else None,
-            'topic3': bytes(log["topic3"], 'utf-8') if log["topic3"] else None,
-            'transaction_hash': bytes(log["transaction_hash"], 'utf-8'),
+            'address': bytes.fromhex(log["address"][2:]),
+            'data': bytes.fromhex(log["data"][2:]),
+            'topic0': bytes.fromhex(log["topic0"][2:]),
+            'topic1': bytes.fromhex(log["topic1"][2:]) if log["topic1"] else None,
+            'topic2': bytes.fromhex(log["topic2"][2:]) if log["topic2"] else None,
+            'topic3': bytes.fromhex(log["topic3"][2:]) if log["topic3"] else None,
+            'transaction_hash': bytes.fromhex(log["transaction_hash"][2:]),
             'transaction_index': log["transaction_index"],
             'block_number': log["block_number"],
-            'block_hash': bytes(log["block_hash"], 'utf-8'),
+            'block_hash': bytes.fromhex(log["block_hash"][2:]),
             'block_timestamp': func.to_timestamp(log["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
@@ -149,11 +149,11 @@ class PostgreSQLModelConverter:
     def convert_to_trace(self, trace):
         return {
             "trace_id": trace["trace_id"],
-            "from_address": bytes(trace["from_address"], 'utf-8') if trace["from_address"] else None,
-            "to_address": bytes(trace["to_address"], 'utf-8') if trace["to_address"] else None,
+            "from_address": bytes.fromhex(trace["from_address"][2:]) if trace["from_address"] else None,
+            "to_address": bytes.fromhex(trace["to_address"][2:]) if trace["to_address"] else None,
             "value": trace["value"],
-            "input": bytes(trace["input"], 'utf-8') if trace["input"] else None,
-            "output": bytes(trace["output"], 'utf-8') if trace["output"] else None,
+            "input": bytes.fromhex(trace["input"][2:]) if trace["input"] else None,
+            "output": bytes.fromhex(trace["output"][2:]) if trace["output"] else None,
             "trace_type": trace["trace_type"],
             "call_type": trace["call_type"],
             "gas": trace["gas"],
@@ -163,19 +163,19 @@ class PostgreSQLModelConverter:
             "error": trace["error"],
             "status": trace["status"],
             'block_number': trace["block_number"],
-            'block_hash': bytes(trace["block_hash"], 'utf-8') if trace["block_hash"] else None,
+            'block_hash': bytes.fromhex(trace["block_hash"][2:]) if trace["block_hash"] else None,
             'block_timestamp': func.to_timestamp(trace["block_timestamp"]),
             'transaction_index': trace["transaction_index"],
-            'transaction_hash': bytes(trace["transaction_hash"], 'utf-8') if trace["transaction_hash"] else None,
+            'transaction_hash': bytes.fromhex(trace["transaction_hash"][2:]) if trace["transaction_hash"] else None,
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
     def convert_to_contract_internal_transactions(self, internal_transactions):
         return {
             "trace_id": internal_transactions["trace_id"],
-            "from_address": bytes(internal_transactions["from_address"], 'utf-8') if internal_transactions[
+            "from_address": bytes.fromhex(internal_transactions["from_address"][2:]) if internal_transactions[
                 "from_address"] else None,
-            "to_address": bytes(internal_transactions["to_address"], 'utf-8') if internal_transactions[
+            "to_address": bytes.fromhex(internal_transactions["to_address"][2:]) if internal_transactions[
                 "to_address"] else None,
             "value": internal_transactions["value"],
             "trace_type": internal_transactions["trace_type"],
@@ -186,33 +186,33 @@ class PostgreSQLModelConverter:
             "error": internal_transactions["error"],
             "status": internal_transactions["status"],
             'block_number': internal_transactions["block_number"],
-            'block_hash': bytes(internal_transactions["block_hash"], 'utf-8') if internal_transactions[
+            'block_hash': bytes.fromhex(internal_transactions["block_hash"][2:]) if internal_transactions[
                 "block_hash"] else None,
             'block_timestamp': func.to_timestamp(internal_transactions["block_timestamp"]),
             'transaction_index': internal_transactions["transaction_index"],
-            'transaction_hash': bytes(internal_transactions["transaction_hash"], 'utf-8') if internal_transactions[
+            'transaction_hash': bytes.fromhex(internal_transactions["transaction_hash"][2:]) if internal_transactions[
                 "transaction_hash"] else None,
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
     def convert_to_contract(self, contract):
         return {
-            'address': bytes(contract['address'], 'utf-8'),
+            'address': bytes.fromhex(contract['address'][2:]),
             'name': contract['name'],
-            'contract_creator': bytes(contract['contract_creator'], 'utf-8'),
-            'creation_code': bytes(contract['creation_code'], 'utf-8'),
-            'deployed_code': bytes(contract['deployed_code'], 'utf-8'),
+            'contract_creator': bytes.fromhex(contract['contract_creator'][2:]),
+            'creation_code': bytes.fromhex(contract['creation_code'][2:]),
+            'deployed_code': bytes.fromhex(contract['deployed_code'][2:]),
             'block_number': contract['block_number'],
-            'block_hash': bytes(contract['block_hash'], 'utf-8'),
+            'block_hash': bytes.fromhex(contract['block_hash'][2:]),
             'block_timestamp': func.to_timestamp(contract["block_timestamp"]),
             'transaction_index': contract['transaction_index'],
-            'transaction_hash': bytes(contract['transaction_hash'], 'utf-8'),
+            'transaction_hash': bytes.fromhex(contract['transaction_hash'][2:]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
     def convert_to_coin_balance(self, coin_balance):
         return {
-            'address': bytes(coin_balance['address'], 'utf-8'),
+            'address': bytes.fromhex(coin_balance['address'][2:]),
             'balance': coin_balance['balance'],
             'block_number': coin_balance["block_number"],
             'block_timestamp': func.to_timestamp(coin_balance["block_timestamp"]),
@@ -221,22 +221,22 @@ class PostgreSQLModelConverter:
 
     def convert_to_erc20_token_transfer(self, token_transfer):
         return {
-            'transaction_hash': bytes(token_transfer["transaction_hash"], 'utf-8'),
+            'transaction_hash': bytes.fromhex(token_transfer["transaction_hash"][2:]),
             'log_index': token_transfer["log_index"],
-            "from_address": bytes(token_transfer["from_address"], 'utf-8'),
-            "to_address": bytes(token_transfer["to_address"], 'utf-8'),
-            "token_address": bytes(token_transfer["token_address"], 'utf-8'),
+            "from_address": bytes.fromhex(token_transfer["from_address"][2:]),
+            "to_address": bytes.fromhex(token_transfer["to_address"][2:]),
+            "token_address": bytes.fromhex(token_transfer["token_address"][2:]),
             "value": token_transfer["value"],
             'block_number': token_transfer["block_number"],
-            'block_hash': bytes(token_transfer["block_hash"], 'utf-8'),
+            'block_hash': bytes.fromhex(token_transfer["block_hash"][2:]),
             'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
     def convert_to_erc20_token_holder(self, token_holder):
         return {
-            "token_address": bytes(token_holder["token_address"], 'utf-8'),
-            "wallet_address": bytes(token_holder["wallet_address"], 'utf-8'),
+            "token_address": bytes.fromhex(token_holder["token_address"][2:]),
+            "wallet_address": bytes.fromhex(token_holder["wallet_address"][2:]),
             "balance_of": token_holder["balance_of"],
             'block_number': token_holder["block_number"],
             'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
@@ -245,22 +245,22 @@ class PostgreSQLModelConverter:
 
     def convert_to_erc721_token_transfer(self, token_transfer):
         return {
-            'transaction_hash': bytes(token_transfer["transaction_hash"], 'utf-8'),
+            'transaction_hash': bytes.fromhex(token_transfer["transaction_hash"][2:]),
             'log_index': token_transfer["log_index"],
-            "from_address": bytes(token_transfer["from_address"], 'utf-8'),
-            "to_address": bytes(token_transfer["to_address"], 'utf-8'),
-            "token_address": bytes(token_transfer["token_address"], 'utf-8'),
+            "from_address": bytes.fromhex(token_transfer["from_address"][2:]),
+            "to_address": bytes.fromhex(token_transfer["to_address"][2:]),
+            "token_address": bytes.fromhex(token_transfer["token_address"][2:]),
             "token_id": token_transfer["token_id"],
             'block_number': token_transfer["block_number"],
-            'block_hash': bytes(token_transfer["block_hash"], 'utf-8'),
+            'block_hash': bytes.fromhex(token_transfer["block_hash"][2:]),
             'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
     def convert_to_erc721_token_holder(self, token_holder):
         return {
-            "token_address": bytes(token_holder["token_address"], 'utf-8'),
-            "wallet_address": bytes(token_holder["wallet_address"], 'utf-8'),
+            "token_address": bytes.fromhex(token_holder["token_address"][2:]),
+            "wallet_address": bytes.fromhex(token_holder["wallet_address"][2:]),
             "balance_of": token_holder["balance_of"],
             'block_number': token_holder["block_number"],
             'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
@@ -269,9 +269,9 @@ class PostgreSQLModelConverter:
 
     def convert_to_erc721_token_id_change(self, token_id_change):
         return {
-            "address": bytes(token_id_change["address"], 'utf-8'),
+            "address": bytes.fromhex(token_id_change["address"][2:]),
             "token_id": token_id_change["token_id"],
-            "token_owner": bytes(token_id_change["token_owner"], 'utf-8'),
+            "token_owner": bytes.fromhex(token_id_change["token_owner"][2:]),
             'block_number': token_id_change["block_number"],
             'block_timestamp': func.to_timestamp(token_id_change["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
@@ -279,9 +279,9 @@ class PostgreSQLModelConverter:
 
     def convert_to_erc721_token_id_detail(self, token_id_detail):
         return {
-            "address": bytes(token_id_detail["address"], 'utf-8'),
+            "address": bytes.fromhex(token_id_detail["address"][2:]),
             "token_id": token_id_detail["token_id"],
-            "token_owner": bytes(token_id_detail["token_owner"], 'utf-8'),
+            "token_owner": bytes.fromhex(token_id_detail["token_owner"][2:]),
             "token_uri": token_id_detail["token_uri"],
             "token_uri_info": token_id_detail["token_uri_info"],
             'block_number': token_id_detail["block_number"],
@@ -291,23 +291,23 @@ class PostgreSQLModelConverter:
 
     def convert_to_erc1155_token_transfer(self, token_transfer):
         return {
-            'transaction_hash': bytes(token_transfer["transaction_hash"], 'utf-8'),
+            'transaction_hash': bytes.fromhex(token_transfer["transaction_hash"][2:]),
             'log_index': token_transfer["log_index"],
-            "from_address": bytes(token_transfer["from_address"], 'utf-8'),
-            "to_address": bytes(token_transfer["to_address"], 'utf-8'),
-            "token_address": bytes(token_transfer["token_address"], 'utf-8'),
+            "from_address": bytes.fromhex(token_transfer["from_address"][2:]),
+            "to_address": bytes.fromhex(token_transfer["to_address"][2:]),
+            "token_address": bytes.fromhex(token_transfer["token_address"][2:]),
             "token_id": token_transfer["token_id"],
             "value": token_transfer["value"],
             'block_number': token_transfer["block_number"],
-            'block_hash': bytes(token_transfer["block_hash"], 'utf-8'),
+            'block_hash': bytes.fromhex(token_transfer["block_hash"][2:]),
             'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
             'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if self.confirm else None,
         }
 
     def convert_to_erc1155_token_holder(self, token_holder):
         return {
-            "token_address": bytes(token_holder["token_address"], 'utf-8'),
-            "wallet_address": bytes(token_holder["wallet_address"], 'utf-8'),
+            "token_address": bytes.fromhex(token_holder["token_address"][2:]),
+            "wallet_address": bytes.fromhex(token_holder["wallet_address"][2:]),
             "token_id": token_holder["token_id"],
             "balance_of": token_holder["balance_of"],
             "latest_call_contract_time": func.to_timestamp(token_holder["latest_call_contract_time"]),
@@ -318,7 +318,7 @@ class PostgreSQLModelConverter:
 
     def convert_to_erc1155_token_id_detail(self, token_id_detail):
         return {
-            "address": bytes(token_id_detail["address"], 'utf-8'),
+            "address": bytes.fromhex(token_id_detail["address"][2:]),
             "token_id": token_id_detail["token_id"],
             "token_supply": token_id_detail["token_supply"],
             "token_uri": token_id_detail["token_uri"],
@@ -330,7 +330,7 @@ class PostgreSQLModelConverter:
 
     def convert_to_tokens(self, token):
         return {
-            "address": bytes(token["address"], 'utf-8'),
+            "address": bytes.fromhex(token["address"][2:]),
             'name': token['name'],
             'symbol': token['symbol'],
             'total_supply': token['total_supply'],
@@ -341,10 +341,10 @@ class PostgreSQLModelConverter:
 
     def convert_to_token_balance(self, token_balance):
         return {
-            'address': bytes(token_balance["address"], 'utf-8'),
+            'address': bytes.fromhex(token_balance["address"][2:]),
             "token_id": token_balance["token_id"],
             "token_type": token_balance["token_type"],
-            "token_address": bytes(token_balance["token_address"], 'utf-8'),
+            "token_address": bytes.fromhex(token_balance["token_address"][2:]),
             "balance": token_balance["balance"],
             'block_number': token_balance["block_number"],
             'block_timestamp': func.to_timestamp(token_balance["block_timestamp"]),
