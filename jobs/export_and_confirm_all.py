@@ -4,19 +4,17 @@ from domain.block import format_block_data
 from domain.coin_balance import format_coin_balance_data
 from domain.log import format_log_data
 from domain.token_balance import format_token_balance_data
-from domain.token_transfer import format_token_transfer_data
 from domain.trace import format_trace_data
 from domain.transaction import format_transaction_data
 from exporters.console_item_exporter import ConsoleItemExporter
-from jobs.export_blocks_and_transactions_job import ExportBlocksAndTransactionsJob
-from jobs.export_coin_balances_job import ExportCoinBalancesJob
-from jobs.export_geth_traces_job import ExportGethTracesJob
-from jobs.export_receipts_and_logs_job import ExportReceiptsAndLogsJob
-from jobs.export_token_balances_job import ExportTokenBalancesJob
-from jobs.extract_geth_traces_job import ExtractGethTracesJob
-from jobs.extract_token_transfers_job import ExtractTokenTransfersJob
-from streaming import enrich
-from streaming.enrich import enrich_blocks_timestamp, enrich_transactions, enrich_geth_traces
+# from jobs.export_blocks_and_transactions_job import ExportBlocksAndTransactionsJob
+# from jobs.export_coin_balances_job import ExportCoinBalancesJob
+# from jobs.export_geth_traces_job import ExportGethTracesJob
+# from jobs.export_receipts_and_logs_job import ExportReceiptsAndLogsJob
+# from jobs.export_token_balances_and_holders_job import ExportTokenBalancesAndHoldersJob
+# from jobs.extract_geth_traces_job import ExtractGethTracesJob
+# from jobs.extract_token_transfers_job import ExtractTokenTransfersJob
+from utils import enrich
 from utils.web3_utils import build_web3
 
 logger = logging.getLogger('export_all')
@@ -120,7 +118,7 @@ def confirm_all(start_block, end_block,
     enriched_logs = [format_log_data(log) for log in enrich.enrich_blocks_timestamp(blocks, logs)]
 
     enriched_traces = [format_trace_data(trace)
-                       for trace in enrich.enrich_geth_traces(enriched_blocks, traces, enriched_transactions)]
+                       for trace in enrich.enrich_traces(enriched_blocks, traces, enriched_transactions)]
 
     enriched_coin_balances = [format_coin_balance_data(coin_balance) for coin_balance in coin_balances]
 

@@ -7,6 +7,7 @@ from web3 import Web3
 from domain.token_balance import format_token_balance_data
 from domain.token_holder import format_erc20_token_holder_data, format_erc721_token_holder_data, \
     format_erc1155_token_holder_data
+from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
@@ -91,12 +92,14 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
     def __init__(
             self,
             index_keys,
+            entity_types,
             web3,
             batch_size,
             batch_web3_provider,
             max_workers,
             item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys)
+        super().__init__(index_keys=index_keys, entity_types=entity_types)
+
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
@@ -206,9 +209,11 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
                 ['token_address', 'wallet_address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
 
     def _export(self):
-        items = self._extract_from_buff(
-            ['enriched_token_balances', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'])
-        self._item_exporter.export_items(items)
+
+        if self._entity_types & EntityType.TOKEN:
+            items = self._extract_from_buff(
+                ['enriched_token_balances', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'])
+            self._item_exporter.export_items(items)
 
     def _end(self):
         self._batch_work_executor.shutdown()

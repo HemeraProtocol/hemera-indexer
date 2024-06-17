@@ -1,4 +1,5 @@
 from controller.dispatcher.base_dispatcher import BaseDispatcher
+from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.export_blocks_job import ExportBlocksJob
 from jobs.export_coin_balances_job import ExportCoinBalancesJob
@@ -19,7 +20,8 @@ class StreamDispatcher(BaseDispatcher):
                  batch_web3_debug_provider,
                  item_exporter=ConsoleItemExporter(),
                  batch_size=100,
-                 max_workers=5):
+                 max_workers=5,
+                 entity_types=EntityType.ALL_FOR_STREAMING):
         super().__init__(service)
         self._batch_web3_provider = batch_web3_provider
         self._batch_web3_debug_provider = batch_web3_debug_provider
@@ -27,78 +29,100 @@ class StreamDispatcher(BaseDispatcher):
         self._batch_size = batch_size
         self._max_workers = max_workers
         self._item_exporter = item_exporter
+        self._entity_types = entity_types
 
     def run(self, start_block, end_block):
-        ExportBlocksJob(
-            index_keys=['block', 'transaction'],
-            start_block=start_block,
-            end_block=end_block,
-            batch_web3_provider=self._batch_web3_provider,
-            batch_size=self._batch_size,
-            max_workers=self._max_workers,
-            item_exporter=self._item_exporter,
-        ).run()
 
-        ExportTransactionsAndLogsJob(
-            index_keys=['receipt', 'log'],
-            batch_web3_provider=self._batch_web3_provider,
-            batch_size=self._batch_size,
-            max_workers=self._max_workers,
-            item_exporter=self._item_exporter,
-        ).run()
+        if self._entity_types & EntityType.BLOCK or self._entity_types & EntityType.TRANSACTION \
+                or self._entity_types & EntityType.LOG or self._entity_types & EntityType.TOKEN \
+                or self._entity_types & EntityType.TOKEN_TRANSFER or self._entity_types & EntityType.COIN_BALANCE:
+            ExportBlocksJob(
+                index_keys=['block', 'transaction'],
+                entity_types=self._entity_types,
+                start_block=start_block,
+                end_block=end_block,
+                batch_web3_provider=self._batch_web3_provider,
+                batch_size=self._batch_size,
+                max_workers=self._max_workers,
+                item_exporter=self._item_exporter,
+            ).run()
 
-        ExportTokensAndTransfersJob(
-            index_keys=['token', 'token_transfer',
-                        'erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers'],
-            web3=self._web3,
-            service=self._db_service,
-            batch_web3_provider=self._batch_web3_provider,
-            batch_size=self._batch_size,
-            max_workers=self._max_workers,
-            item_exporter=self._item_exporter
-        ).run()
+        if self._entity_types & EntityType.TRANSACTION or self._entity_types & EntityType.LOG \
+                or self._entity_types & EntityType.TOKEN or self._entity_types & EntityType.TOKEN_TRANSFER \
+                or self._entity_types & EntityType.COIN_BALANCE:
+            ExportTransactionsAndLogsJob(
+                index_keys=['receipt', 'log'],
+                entity_types=self._entity_types,
+                batch_web3_provider=self._batch_web3_provider,
+                batch_size=self._batch_size,
+                max_workers=self._max_workers,
+                item_exporter=self._item_exporter,
+            ).run()
 
-        ExportTokenBalancesAndHoldersJob(
-            index_keys=['token_balance', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'],
-            web3=self._web3,
-            batch_web3_provider=self._batch_web3_provider,
-            batch_size=self._batch_size,
-            max_workers=self._max_workers,
-            item_exporter=self._item_exporter
-        ).run()
+        if self._entity_types & EntityType.TOKEN or self._entity_types & EntityType.TOKEN_TRANSFER:
+            ExportTokensAndTransfersJob(
+                index_keys=['token', 'token_transfer',
+                            'erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers'],
+                entity_types=self._entity_types,
+                web3=self._web3,
+                service=self._db_service,
+                batch_web3_provider=self._batch_web3_provider,
+                batch_size=self._batch_size,
+                max_workers=self._max_workers,
+                item_exporter=self._item_exporter
+            ).run()
 
-        ExportTokenIdInfosJob(
-            index_keys=['erc721_token_ids', 'erc1155_token_ids'],
-            web3=self._web3,
-            batch_web3_provider=self._batch_web3_provider,
-            batch_size=self._batch_size,
-            max_workers=self._max_workers,
-            item_exporter=self._item_exporter
-        ).run()
+        if self._entity_types & EntityType.TOKEN:
+            ExportTokenBalancesAndHoldersJob(
+                index_keys=['token_balance', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'],
+                entity_types=self._entity_types,
+                web3=self._web3,
+                batch_web3_provider=self._batch_web3_provider,
+                batch_size=self._batch_size,
+                max_workers=self._max_workers,
+                item_exporter=self._item_exporter
+            ).run()
 
-        ExportTracesJob(
-            index_keys=['trace'],
-            start_block=start_block,
-            end_block=end_block,
-            batch_web3_provider=self._batch_web3_debug_provider,
-            batch_size=self._batch_size,
-            max_workers=self._max_workers,
-            item_exporter=self._item_exporter,
-        ).run()
+            ExportTokenIdInfosJob(
+                index_keys=['erc721_token_ids', 'erc1155_token_ids'],
+                entity_types=self._entity_types,
+                web3=self._web3,
+                batch_web3_provider=self._batch_web3_provider,
+                batch_size=self._batch_size,
+                max_workers=self._max_workers,
+                item_exporter=self._item_exporter
+            ).run()
 
-        ExportContractsJob(
-            index_keys=['contract'],
-            web3=self._web3,
-            batch_web3_provider=self._batch_web3_debug_provider,
-            batch_size=self._batch_size,
-            max_workers=self._max_workers,
-            item_exporter=self._item_exporter,
-        ).run()
+        if self._entity_types & EntityType.TRACE or self._entity_types & EntityType.CONTRACT \
+                or self._entity_types & EntityType.COIN_BALANCE:
+            ExportTracesJob(
+                index_keys=['trace'],
+                entity_types=self._entity_types,
+                start_block=start_block,
+                end_block=end_block,
+                batch_web3_provider=self._batch_web3_debug_provider,
+                batch_size=self._batch_size,
+                max_workers=self._max_workers,
+                item_exporter=self._item_exporter,
+            ).run()
 
-        ExportCoinBalancesJob(
-            index_keys=['coin_balance'],
-            batch_web3_provider=self._batch_web3_debug_provider,
-            batch_size=self._batch_size,
-            max_workers=self._max_workers,
-            item_exporter=self._item_exporter,
-        ).run()
+        if self._entity_types & EntityType.TRACE or self._entity_types & EntityType.CONTRACT:
+            ExportContractsJob(
+                index_keys=['contract'],
+                entity_types=self._entity_types,
+                web3=self._web3,
+                batch_web3_provider=self._batch_web3_debug_provider,
+                batch_size=self._batch_size,
+                max_workers=self._max_workers,
+                item_exporter=self._item_exporter,
+            ).run()
+
+        if self._entity_types & EntityType.COIN_BALANCE:
+            ExportCoinBalancesJob(
+                index_keys=['coin_balance'],
+                entity_types=self._entity_types,
+                batch_web3_provider=self._batch_web3_debug_provider,
+                batch_size=self._batch_size,
+                max_workers=self._max_workers,
+                item_exporter=self._item_exporter,
+            ).run()

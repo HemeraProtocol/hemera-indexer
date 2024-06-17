@@ -1,6 +1,7 @@
 import json
 
 from domain.coin_balance import format_coin_balance_data
+from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
@@ -15,11 +16,12 @@ class ExportCoinBalancesJob(BaseJob):
     def __init__(
             self,
             index_keys,
+            entity_types,
             batch_web3_provider,
             batch_size,
             max_workers,
             item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys)
+        super().__init__(index_keys=index_keys, entity_types=entity_types)
 
         coin_addresses = set()
         blocks_timestamp_dict = dict()
@@ -89,8 +91,9 @@ class ExportCoinBalancesJob(BaseJob):
                                                           key=lambda x: (x['block_number'], x['address']))
 
     def _export(self):
-        items = self._extract_from_buff(['formated_coin_balance'])
-        self._item_exporter.export_items(items)
+        if self._entity_types & EntityType.COIN_BALANCE:
+            items = self._extract_from_buff(['formated_coin_balance'])
+            self._item_exporter.export_items(items)
 
     def _end(self):
         self._batch_work_executor.shutdown()

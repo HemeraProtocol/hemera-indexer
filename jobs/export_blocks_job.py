@@ -2,6 +2,7 @@ import json
 
 from domain.block import format_block_data
 from domain.block_ts_mapper import format_block_ts_mapper
+from enumeration.entity_type import EntityType
 from executors.batch_work_executor import BatchWorkExecutor
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
@@ -13,13 +14,14 @@ from utils.utils import rpc_response_batch_to_results, validate_range
 class ExportBlocksJob(BaseJob):
     def __init__(self,
                  index_keys,
+                 entity_types,
                  start_block,
                  end_block,
                  batch_web3_provider,
                  batch_size,
                  max_workers,
                  item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys)
+        super().__init__(index_keys=index_keys, entity_types=entity_types)
         validate_range(start_block, end_block)
         self._start_block = start_block
         self._end_block = end_block
@@ -65,7 +67,11 @@ class ExportBlocksJob(BaseJob):
             self._data_buff['block_ts_mapping'].append(format_block_ts_mapper(timestamp, block_number))
 
     def _export(self):
-        export_items = self._extract_from_buff(['formated_block', 'block_ts_mapping'])
+        export_items = self._extract_from_buff(['block_ts_mapping'])
+
+        if self._entity_types & EntityType.BLOCK:
+            export_items.extend(self._extract_from_buff(['formated_block']))
+
         self._item_exporter.export_items(export_items)
 
     def _end(self):

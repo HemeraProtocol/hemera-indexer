@@ -2,6 +2,7 @@ import json
 
 from domain.contract_internal_transaction import trace_to_contract_internal_transaction
 from domain.trace import format_trace_data
+from enumeration.entity_type import EntityType
 from executors.batch_work_executor import BatchWorkExecutor
 from exporters.console_item_exporter import ConsoleItemExporter
 from utils.enrich import enrich_traces
@@ -14,13 +15,15 @@ from utils.utils import validate_range, rpc_response_to_result
 class ExportTracesJob(BaseJob):
     def __init__(self,
                  index_keys,
+                 entity_types,
                  start_block,
                  end_block,
                  batch_web3_provider,
                  batch_size,
                  max_workers,
                  item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys)
+        super().__init__(index_keys=index_keys, entity_types=entity_types)
+
         validate_range(start_block, end_block)
         self._start_block = start_block
         self._end_block = end_block
@@ -157,8 +160,9 @@ class ExportTracesJob(BaseJob):
                                                    for trace in  self._data_buff['enriched_traces']]
 
     def _export(self):
-        items = self._extract_from_buff(['enriched_traces', 'internal_transaction'])
-        self._item_exporter.export_items(items)
+        if self._entity_types & EntityType.TRACE:
+            items = self._extract_from_buff(['enriched_traces', 'internal_transaction'])
+            self._item_exporter.export_items(items)
 
     def _end(self):
         self._batch_work_executor.shutdown()

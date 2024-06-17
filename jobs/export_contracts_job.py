@@ -5,6 +5,7 @@ from web3 import Web3
 from eth_abi import abi
 
 from domain.contract import extract_contract_from_trace, format_contract_data
+from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
@@ -35,12 +36,13 @@ class ExportContractsJob(BaseJob):
     def __init__(
             self,
             index_keys,
+            entity_types,
             web3,
             batch_web3_provider,
             batch_size,
             max_workers,
             item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys)
+        super().__init__(index_keys=index_keys, entity_types=entity_types)
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
@@ -92,8 +94,9 @@ class ExportContractsJob(BaseJob):
                                                                      x['address']))
 
     def _export(self):
-        items = self._extract_from_buff(['enriched_contract'])
-        self._item_exporter.export_items(items)
+        if self._entity_types & EntityType.CONTRACT:
+            items = self._extract_from_buff(['enriched_contract'])
+            self._item_exporter.export_items(items)
 
     def _end(self):
         self._batch_work_executor.shutdown()

@@ -2,6 +2,7 @@ import json
 
 from domain.log import format_log_data
 from domain.transaction import format_transaction_data
+from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
@@ -14,11 +15,13 @@ from utils.utils import rpc_response_batch_to_results
 class ExportTransactionsAndLogsJob(BaseJob):
     def __init__(self,
                  index_keys,
+                 entity_types,
                  batch_web3_provider,
                  batch_size,
                  max_workers,
                  item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys)
+        super().__init__(index_keys=index_keys, entity_types=entity_types)
+
         self._batch_web3_provider = batch_web3_provider
         self._transaction_hashes_iterable = (transaction['hash'] for transaction in self._data_buff['transaction'])
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
@@ -62,7 +65,13 @@ class ExportTransactionsAndLogsJob(BaseJob):
                                                                 x['log_index']))
 
     def _export(self):
-        items = self._extract_from_buff(['enriched_transaction', 'enriched_log'])
+        items = []
+        if self._entity_types & EntityType.TRANSACTION:
+            items.extend(self._extract_from_buff(['enriched_transaction']))
+
+        if self._entity_types & EntityType.LOG:
+            items.extend(self._extract_from_buff(['enriched_log']))
+            
         self._item_exporter.export_items(items)
 
     def _end(self):

@@ -1,8 +1,12 @@
+from enumeration.entity_type import EntityType
+
+
 class BaseJob(object):
     _data_buff = {}
 
-    def __init__(self, index_keys=None):
+    def __init__(self, index_keys=None, entity_types=EntityType.BASIC_COLLECTION):
         self._index_keys = index_keys
+        self._entity_types = entity_types
 
     def run(self):
         try:

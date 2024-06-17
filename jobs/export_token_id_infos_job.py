@@ -7,6 +7,7 @@ from web3 import Web3
 
 from domain.token_id_infos import format_erc721_token_id_change, format_erc721_token_id_detail, \
     format_erc1155_token_id_detail
+from enumeration.entity_type import EntityType
 from enumeration.token_type import TokenType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
@@ -62,12 +63,14 @@ class ExportTokenIdInfosJob(BaseJob):
     def __init__(
             self,
             index_keys,
+            entity_types,
             web3,
             batch_web3_provider,
             batch_size,
             max_workers,
             item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys)
+        super().__init__(index_keys=index_keys, entity_types=entity_types)
+
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
@@ -129,9 +132,10 @@ class ExportTokenIdInfosJob(BaseJob):
                 ['address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
 
     def _export(self):
-        items = self._extract_from_buff(
-            ['erc721_token_id_changes', 'erc721_token_id_details', 'erc1155_token_id_details'])
-        self._item_exporter.export_items(items)
+        if self._entity_types & EntityType.TOKEN:
+            items = self._extract_from_buff(
+                ['erc721_token_id_changes', 'erc721_token_id_details', 'erc1155_token_id_details'])
+            self._item_exporter.export_items(items)
 
     def _end(self):
         self._batch_work_executor.shutdown()

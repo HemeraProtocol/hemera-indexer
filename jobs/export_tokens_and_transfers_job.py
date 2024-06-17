@@ -7,6 +7,7 @@ from web3.exceptions import Web3ValidationError
 from domain.token import format_token_data
 from domain.token_transfer import extract_transfer_from_log, \
     format_erc20_token_transfer_data, format_erc721_token_transfer_data, format_erc1155_token_transfer_data
+from enumeration.entity_type import EntityType
 from enumeration.token_type import TokenType
 from exporters.console_item_exporter import ConsoleItemExporter
 from exporters.jdbc.schema.tokens import Tokens
@@ -95,13 +96,15 @@ class ExportTokensAndTransfersJob(BaseJob):
     def __init__(
             self,
             index_keys,
+            entity_types,
             web3,
             service,
             batch_web3_provider,
             batch_size,
             max_workers,
             item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys)
+        super().__init__(index_keys=index_keys, entity_types=entity_types)
+
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
@@ -190,8 +193,15 @@ class ExportTokensAndTransfersJob(BaseJob):
                                                                 x['log_index']))
 
     def _export(self):
-        items = self._extract_from_buff(
-            ['formated_token', 'erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers'])
+        items = []
+
+        if self._entity_types & EntityType.TOKEN:
+            items.extend(self._extract_from_buff(['token']))
+
+        if self._entity_types & EntityType.TOKEN_TRANSFER:
+            items.extend(
+                self._extract_from_buff(['erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers']))
+        
         self._item_exporter.export_items(items)
 
     def _end(self):
@@ -222,9 +232,9 @@ class ExportTokensAndTransfersJob(BaseJob):
             try:
                 token['param_to'] = token['address']
                 token['param_data'] = (self._web3.eth
-                                 .contract(address=Web3.to_checksum_address(token['address']),
-                                           abi=erc_token_abi[token_type])
-                                 .encodeABI(fn_name=fn))
+                                       .contract(address=Web3.to_checksum_address(token['address']),
+                                                 abi=erc_token_abi[token_type])
+                                       .encodeABI(fn_name=fn))
                 for abi_fn in erc_token_abi[token_type]:
                     if fn == abi_fn['name']:
                         token['data_type'] = abi_fn['outputs'][0]['type']
