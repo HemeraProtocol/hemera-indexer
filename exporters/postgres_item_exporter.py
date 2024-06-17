@@ -35,8 +35,10 @@ class PostgresItemExporter:
         session = self.service.get_service_session()
         try:
             models, items_grouped_by_type = group_by_item_type(items)
+            tables = []
             for item_type in items_grouped_by_type.keys():
                 item_group = items_grouped_by_type.get(item_type)
+                tables.append(models[item_type].__tablename__)
 
                 if item_group:
                     self.check_update_strategy(item_group[0])
@@ -60,7 +62,8 @@ class PostgresItemExporter:
             session.close()
         end_time = datetime.now(tzlocal())
         logger.info(
-            "Exporting items to PostgreSQL end, Item count: {}, Took {}".format(len(items), (end_time - start_time)))
+            "Exporting items to table {} end, Item count: {}, Took {}"
+            .format(", ".join(tables), len(items), (end_time - start_time)))
 
     def export_item(self, session, item_type, item):
         pass
