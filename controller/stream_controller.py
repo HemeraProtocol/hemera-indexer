@@ -85,7 +85,7 @@ class StreamController(BaseController):
     def _get_last_synced_block(self):
         session = self.db_service.get_service_session()
         try:
-            result = session.query(SyncRecord.last_block_number).filter(SyncRecord.mission_type == 'stream').scalar()
+            result = session.query(SyncRecord.last_block_number).filter(SyncRecord.mission_type == self.__class__.__name__).scalar()
         except Exception as e:
             print(e)
             raise e
@@ -100,7 +100,7 @@ class StreamController(BaseController):
         update_time = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
         try:
             statement = insert(SyncRecord).values({
-                "mission_type": "stream",
+                "mission_type": self.__class__.__name__,
                 "last_block_number": last_synced_block,
                 "update_time": update_time
             }).on_conflict_do_update(index_elements=[SyncRecord.mission_type],
