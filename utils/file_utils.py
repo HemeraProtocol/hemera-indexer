@@ -74,11 +74,24 @@ def write_to_file(file, content, mode='w'):
         file_handle.write(content)
 
 
+def scan_tmp_files(data_dir):
+    paths = os.walk(data_dir)
+    tmp_files = []
+
+    for path, dirs, files in paths:
+        for file in files:
+            file_path = os.path.join(path, file)
+            if file_path[-3:] == 'tmp':
+                tmp_files.append(file_path)
+
+    return tmp_files
+
+
 def delete_file(file):
     try:
         os.remove(file)
     except OSError:
-        pass
+        raise OSError
 
 
 class NoopFile:

@@ -1,5 +1,6 @@
 from exporters.console_item_exporter import ConsoleItemExporter
-from exporters.local_file_item_exporter import LocalFileItemExporter
+from exporters.csv_file_item_exporter import CSVFileItemExporter
+from exporters.json_file_item_exporter import JSONFileItemExporter
 from exporters.multi_item_exporter import MultiItemExporter
 from exporters.postgres_item_exporter import PostgresItemExporter
 
@@ -20,8 +21,11 @@ def create_item_exporter(output, config):
     elif item_exporter_type == ItemExporterType.POSTGRES:
         item_exporter = PostgresItemExporter(output, config)
 
-    elif item_exporter_type == ItemExporterType.LOCALFILESYS:
-        item_exporter = LocalFileItemExporter(output, config)
+    elif item_exporter_type == ItemExporterType.JSONFILE:
+        item_exporter = JSONFileItemExporter(output, config)
+
+    elif item_exporter_type == ItemExporterType.CSVFILE:
+        item_exporter = CSVFileItemExporter(output, config)
 
     else:
         raise ValueError('Unable to determine item exporter type for output ' + output)
@@ -43,8 +47,10 @@ def get_bucket_and_path_from_gcs_output(output):
 def determine_item_exporter_type(output):
     if output is not None and output.startswith('postgresql'):
         return ItemExporterType.POSTGRES
-    elif output is not None and output.startswith('file://'):
-        return ItemExporterType.LOCALFILESYS
+    elif output is not None and output.startswith('jsonfile://'):
+        return ItemExporterType.JSONFILE
+    elif output is not None and output.startswith('csvfile://'):
+        return ItemExporterType.CSVFILE
     elif output is None or output == 'console':
         return ItemExporterType.CONSOLE
     else:
@@ -53,6 +59,7 @@ def determine_item_exporter_type(output):
 
 class ItemExporterType:
     POSTGRES = 'postgres'
-    LOCALFILESYS = 'file'
+    JSONFILE = 'jsonfile'
+    CSVFILE = 'csvfile'
     CONSOLE = 'console'
     UNKNOWN = 'unknown'

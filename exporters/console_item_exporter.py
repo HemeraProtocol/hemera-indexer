@@ -1,9 +1,9 @@
 import json
 
+from exporters.base_exporter import BaseExporter
 
-class ConsoleItemExporter:
-    def open(self):
-        pass
+
+class ConsoleItemExporter(BaseExporter):
 
     def export_items(self, items):
         for item in items:
@@ -12,5 +12,5 @@ class ConsoleItemExporter:
     def export_item(self, item):
         print(item)
 
-    def close(self):
-        pass
+    def batch_finish(self):
+        print("Batch finished")

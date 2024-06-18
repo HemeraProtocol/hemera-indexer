@@ -14,6 +14,10 @@ class MultiItemExporter:
         for exporter in self.item_exporters:
             exporter.export_item(item)
 
+    def batch_finish(self):
+        for exporter in self.item_exporters:
+            exporter.batch_finish()
+
     def close(self):
         for exporter in self.item_exporters:
             exporter.close()

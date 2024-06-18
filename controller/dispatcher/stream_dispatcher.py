@@ -21,7 +21,7 @@ class StreamDispatcher(BaseDispatcher):
                  item_exporter=ConsoleItemExporter(),
                  batch_size=100,
                  max_workers=5,
-                 entity_types=EntityType.ALL_FOR_STREAMING):
+                 entity_types=255):
         super().__init__(service)
         self._batch_web3_provider = batch_web3_provider
         self._batch_web3_debug_provider = batch_web3_debug_provider
@@ -126,3 +126,5 @@ class StreamDispatcher(BaseDispatcher):
                 max_workers=self._max_workers,
                 item_exporter=self._item_exporter,
             ).run()
+
+        self._item_exporter.batch_finish()

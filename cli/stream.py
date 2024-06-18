@@ -3,7 +3,7 @@ import logging
 import click
 from controller.dispatcher.stream_dispatcher import StreamDispatcher
 from controller.stream_controller import StreamController
-from enumeration.entity_type import calculate_entity_value
+from enumeration.entity_type import calculate_entity_value, ALL_ENTITY_COLLECTIONS
 from exporters.jdbc.postgresql_service import PostgreSQLService
 from utils.logging_utils import configure_signals, configure_logging
 from utils.provider import get_provider_from_uri
@@ -20,12 +20,9 @@ from utils.utils import pick_random_provider_uri, extract_url_from_output
               help='The URI of the web3 debug provider e.g. '
                    'file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io')
 @click.option('-o', '--output', type=str,
-              help='Either Google PubSub topic path e.g. projects/your-project/topics/crypto_ethereum; '
-                   'or Postgres connection url e.g. postgresql+pg8000://postgres:admin@127.0.0.1:5432/ethereum; '
-                   'or GCS bucket e.g. gs://your-bucket-name; '
-                   'or kafka, output name and connection host:port e.g. kafka/127.0.0.1:9092 '
-                   'or Kinesis, e.g. kinesis://your-data-stream-name'
-                   'If not specified will print to console')
+              help='Postgres connection url e.g. postgresql+pg8000://postgres:admin@127.0.0.1:5432/ethereum; '
+                   'or local json file e.g. jsonfile://your-file-path; '
+                   'or local csv file e.g. csvfile://your-file-path; ')
 @click.option('-e', '--entity-types', default=','.join(ALL_ENTITY_COLLECTIONS), show_default=True, type=str,
               help='The list of entity types to export. e.g. block,transaction,log')
 @click.option('-v', '--db-version', default="head", show_default=True, type=str,
@@ -34,6 +31,8 @@ from utils.utils import pick_random_provider_uri, extract_url_from_output
                    ' e.g. head, indicates the latest version.'
                    'or base, indicates the empty database without any table.')
 @click.option('-s', '--start-block', default=None, show_default=True, type=int, help='Start block')
+@click.option('--partition-size', default=50000, show_default=True, type=int,
+              help='How many records was written to each file')
 @click.option('--period-seconds', default=10, show_default=True, type=int,
               help='How many seconds to sleep between syncs')
 @click.option('-b', '--batch-size', default=10, show_default=True, type=int,
@@ -41,8 +40,8 @@ from utils.utils import pick_random_provider_uri, extract_url_from_output
 @click.option('-B', '--block-batch-size', default=1, show_default=True, type=int,
               help='How many blocks to batch in single sync round')
 @click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers')
-def stream(provider_uri, debug_provider_uri, output, db_version, start_block, entity_types, period_seconds=10,
-           batch_size=2, block_batch_size=10, max_workers=5, log_file=None, pid_file=None):
+def stream(provider_uri, debug_provider_uri, output, db_version, start_block, entity_types, partition_size,
+           period_seconds=10, batch_size=2, block_batch_size=10, max_workers=5, log_file=None, pid_file=None):
     configure_logging(log_file)
     configure_signals()
 
@@ -54,6 +53,7 @@ def stream(provider_uri, debug_provider_uri, output, db_version, start_block, en
     # build exporter config
     exporter_config = {
         "db_version": db_version,
+        "partition_size": partition_size,
     }
 
     # build postgresql service

@@ -7,13 +7,14 @@ from dateutil.tz import tzlocal
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
+from exporters.base_exporter import BaseExporter
 from exporters.jdbc.converter.postgresql_model_converter import PostgreSQLModelConverter
 from exporters.jdbc.postgresql_service import PostgreSQLService
 
 logger = logging.getLogger(__name__)
 
 
-class PostgresItemExporter:
+class PostgresItemExporter(BaseExporter):
     def __init__(self, connection_url, config):
         version = config.get('db_version') if config.get('db_version') else "head"
         confirm = config.get('confirm') if config.get('confirm') else False
@@ -22,12 +23,6 @@ class PostgresItemExporter:
         self.converter = PostgreSQLModelConverter(confirm)
         self.confirm = confirm
         self.conflict_do_update = {}
-
-    def open(self):
-        pass
-
-    def close(self):
-        pass
 
     def export_items(self, items):
         start_time = datetime.now(tzlocal())
@@ -64,9 +59,6 @@ class PostgresItemExporter:
         logger.info(
             "Exporting items to table {} end, Item count: {}, Took {}"
             .format(", ".join(tables), len(items), (end_time - start_time)))
-
-    def export_item(self, session, item_type, item):
-        pass
 
     def convert_items(self, item_type, items):
         for item in items:
