@@ -196,7 +196,7 @@ class ExportTokensAndTransfersJob(BaseJob):
         items = []
 
         if self._entity_types & EntityType.TOKEN:
-            items.extend(self._extract_from_buff(['token']))
+            items.extend(self._extract_from_buff(['formated_token']))
 
         if self._entity_types & EntityType.TOKEN_TRANSFER:
             items.extend(
