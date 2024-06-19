@@ -63,10 +63,10 @@ class CSVFileItemExporter(BaseExporter):
             basic_file_path = f"{self.dir}/{item_type}/{item_type}"
 
         # delete unfinished tmp file because of except exit
-        tmp_file_name = basic_file_path + ".csv.tmp"
-        smart_delete(tmp_file_name)
+        smart_delete(f"{self.dir}/{item_type}/*.tmp")
 
-        with smart_open(tmp_file_name, mode='a+') as csvfile:
+        tmp_file_name = basic_file_path + ".csv.tmp"
+        with smart_open(tmp_file_name, mode='w') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=items[0].keys())
             writer.writeheader()
             for item in items:
@@ -115,7 +115,7 @@ class CSVFileItemExporter(BaseExporter):
                     data_frame.to_csv(to_file, mode='a', header=False, index=False)
 
             smart_delete(tmp_file)
-            self.check_and_split_files(list(data_to_file.keys()))
+            # self.check_and_split_files(list(data_to_file.keys()))
 
     def check_and_split_files(self, files):
         for file in files:
@@ -134,6 +134,8 @@ class CSVFileItemExporter(BaseExporter):
         for i in range(0, int(len(total) / self.partition_size) + 1):
             sub_data = total[i * self.partition_size:(i + 1) * self.partition_size]
             sub_data.to_csv(f"{basic_file_path}({i}).csv", index=False)
+
+        smart_delete(file)
 
 
 def group_by_item_type(items):

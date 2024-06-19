@@ -4,6 +4,7 @@ import collections
 import os
 import subprocess
 from datetime import datetime, timezone
+from glob import glob
 
 from dateutil.tz import tzlocal
 
@@ -58,8 +59,11 @@ class JSONFileItemExporter(BaseExporter):
         else:
             basic_file_path = f"{self.dir}/{item_type}/{item_type}"
 
-        smart_delete(basic_file_path + ".json.tmp")
-        with smart_open(basic_file_path + '.json.tmp', mode='a+') as file_handle:
+        # delete unfinished tmp file because of except exit
+        smart_delete(f"{self.dir}/{item_type}/*.tmp")
+
+        tmp_file_name = basic_file_path + ".json.tmp"
+        with smart_open(tmp_file_name, mode='w') as file_handle:
             for item in items:
                 copy_item = item.copy()
                 copy_item['model'] = copy_item['model'].__name__
@@ -71,7 +75,7 @@ class JSONFileItemExporter(BaseExporter):
             path_component = tmp_file.split('/')
             model = path_component[-2]
 
-            written_files = set()
+            data_to_file = dict()
             with smart_open(tmp_file, mode='r') as file_handle:
                 for line in file_handle:
                     data = json.loads(line)
@@ -87,18 +91,30 @@ class JSONFileItemExporter(BaseExporter):
                     if timestamp is not None:
                         dt = datetime.fromtimestamp(timestamp, tz=timezone.utc)
                         time_range = dt.strftime("%Y-%m-%d_%H:00:00")
-                        to_file = f"{self.dir}/{model}/{model}-{time_range}.json"
+                        exist_files = glob(f"{self.dir}/{model}/{model}-{time_range}*")
+                        if len(exist_files) > 1:
+                            to_file = f"{self.dir}/{model}/{model}-{time_range}_{len(exist_files)-1}.json"
+                        else:
+                            to_file = f"{self.dir}/{model}/{model}-{time_range}.json"
                     else:
                         file_cnt = os.listdir('/'.join(path_component[:-1]))
                         if len(file_cnt) > 1:
                             to_file = f"{self.dir}/{model}/{model}_{len(file_cnt) - 1}.json"
                         else:
                             to_file = f"{self.dir}/{model}/{model}.json"
-                    written_files.add(to_file)
-                    write_to_file(to_file, json.dumps(data) + "\n", mode='a+')
+
+                    if to_file not in data_to_file:
+                        data_to_file[to_file] = [data]
+                    else:
+                        data_to_file[to_file].append(data)
+
+            for to_file in data_to_file.keys():
+                with smart_open(to_file, mode='a') as json_writer:
+                    for data in data_to_file[to_file]:
+                        json_writer.write(json.dumps(data) + '\n')
 
             smart_delete(tmp_file)
-            self.check_and_split_files(list(written_files))
+            # self.check_and_split_files(data_to_file.keys())
 
     def check_and_split_files(self, files):
         for file in files:
@@ -112,9 +128,18 @@ class JSONFileItemExporter(BaseExporter):
     def split_file(self, file):
         basic_file_path = file[:-5]
         with smart_open(file, 'r') as file_handle:
-            for line, data in enumerate(file_handle):
-                write_to_file(f"{basic_file_path}({int(line / self.partition_size)}).json",
-                              json.dumps(data) + "\n", mode='a+')
+            total = [json.loads((line.strip())) for line in file_handle.readlines()]
+
+            sub_file_handlers = [open(f"{basic_file_path}_{i}.json", 'w')
+                                 for i in range(0, int(len(total) / self.partition_size) + 1)]
+
+            for i, data in enumerate(total):
+                sub_file_handlers[int(i / self.partition_size)].write(json.dumps(data) + '\n')
+
+            for sub_file in sub_file_handlers:
+                sub_file.close()
+
+        smart_delete(file)
 
 
 def group_by_item_type(items):
