@@ -1,3 +1,4 @@
+import configparser
 import itertools
 import warnings
 import random
@@ -139,3 +140,12 @@ def merge_sort(sorted_col_a, sorted_col_b):
     merged.extend(sorted_col_b[b_index:])
 
     return merged
+
+
+def set_config(config_file, section, key, value):
+    config = configparser.ConfigParser()
+    config.read(config_file)
+    config[section][key] = value
+
+    with open(config_file, 'w') as configfile:
+        config.write(configfile)

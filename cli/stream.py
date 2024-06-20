@@ -9,7 +9,7 @@ from utils.logging_utils import configure_signals, configure_logging
 from utils.provider import get_provider_from_uri
 from exporters.item_exporter import create_item_exporters
 from utils.thread_local_proxy import ThreadLocalProxy
-from utils.utils import pick_random_provider_uri, extract_url_from_output
+from utils.utils import pick_random_provider_uri, extract_url_from_output, set_config
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
@@ -56,8 +56,11 @@ def stream(provider_uri, debug_provider_uri, output, db_version, start_block, en
         "partition_size": partition_size,
     }
 
-    # build postgresql service
+    # set alembic.ini and build postgresql service
     service_url = extract_url_from_output(output)
+    if service_url is None:
+        raise click.ClickException('postgresql url must be provided.')
+    set_config(config_file='alembic.ini', section='alembic', key='sqlalchemy.url', value=service_url)
     service = PostgreSQLService(service_url)
 
     stream_dispatcher = StreamDispatcher(
