@@ -1,0 +1,6 @@
+.venv
+build
+.idea
+*.pyc
+dist
+/hemera_indexer.egg-info/
