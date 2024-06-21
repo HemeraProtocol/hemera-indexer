@@ -169,6 +169,8 @@ class ExportTokenIdInfosJob(BaseJob):
                 value = result[2:] if result is not None else None
                 try:
                     token[abi_json['name']] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
+                    if token['data_type'] == 'string':
+                        token[abi_json['name']] = token[abi_json['name']].replace('\u0000', '')
                 except (InsufficientDataBytes, TypeError) as e:
                     token[abi_json['name']] = None
 
