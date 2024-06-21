@@ -43,6 +43,8 @@ class ExportTracesJob(BaseJob):
             total_items=self._end_block - self._start_block + 1
         )
 
+        self._batch_work_executor.shutdown()
+
     def _collect_batch(self, block_number_batch):
         trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_number_batch))
         response = self._batch_web3_provider.make_batch_request(json.dumps(trace_block_rpc))
@@ -157,13 +159,9 @@ class ExportTracesJob(BaseJob):
                                                         x['block_number'], x['transaction_index'], x['trace_index']))
 
         self._data_buff['internal_transaction'] = [trace_to_contract_internal_transaction(trace)
-                                                   for trace in  self._data_buff['enriched_traces']]
+                                                   for trace in self._data_buff['enriched_traces']]
 
     def _export(self):
         if self._entity_types & EntityType.TRACE:
             items = self._extract_from_buff(['enriched_traces', 'internal_transaction'])
             self._item_exporter.export_items(items)
-
-    def _end(self):
-        self._batch_work_executor.shutdown()
-        super()._end()

@@ -66,6 +66,7 @@ class ExportContractsJob(BaseJob):
                 contracts.append(contract)
 
         self._batch_work_executor.execute(contracts, self._collect_batch)
+        self._batch_work_executor.shutdown()
 
     def _collect_batch(self, contracts):
         contract_name_rpc = list(generate_eth_call_json_rpc(contracts, is_latest=False))
@@ -97,7 +98,3 @@ class ExportContractsJob(BaseJob):
         if self._entity_types & EntityType.CONTRACT:
             items = self._extract_from_buff(['enriched_contract'])
             self._item_exporter.export_items(items)
-
-    def _end(self):
-        self._batch_work_executor.shutdown()
-        super()._end()

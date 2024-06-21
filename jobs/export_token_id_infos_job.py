@@ -105,6 +105,8 @@ class ExportTokenIdInfosJob(BaseJob):
         unique_token = pandas.DataFrame(erc1155_token_list).drop_duplicates()
         self._batch_work_executor.execute(unique_token.to_dict(orient="records"), self._collect_batch)
 
+        self._batch_work_executor.shutdown()
+
     def _collect_batch(self, token_list):
         tokens = self._fetch_token_id_info(token_list)
         for token in tokens:
@@ -136,10 +138,6 @@ class ExportTokenIdInfosJob(BaseJob):
             items = self._extract_from_buff(
                 ['erc721_token_id_changes', 'erc721_token_id_details', 'erc1155_token_id_details'])
             self._item_exporter.export_items(items)
-
-    def _end(self):
-        self._batch_work_executor.shutdown()
-        super()._end()
 
     def _build_rpc_method_data(self, tokens, token_type, fn):
         parameters = []

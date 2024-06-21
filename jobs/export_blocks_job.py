@@ -38,6 +38,7 @@ class ExportBlocksJob(BaseJob):
             self._collect_batch,
             total_items=self._end_block - self._start_block + 1
         )
+        self._batch_work_executor.shutdown()
 
     def _collect_batch(self, block_number_batch):
         blocks_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, True))
@@ -73,7 +74,3 @@ class ExportBlocksJob(BaseJob):
             export_items.extend(self._extract_from_buff(['formated_block']))
 
         self._item_exporter.export_items(export_items)
-
-    def _end(self):
-        self._batch_work_executor.shutdown()
-        super()._end()

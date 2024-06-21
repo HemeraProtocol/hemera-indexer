@@ -4,7 +4,7 @@ from enumeration.entity_type import BASIC_COLLECTION
 class BaseJob(object):
     _data_buff = {}
 
-    def __init__(self, index_keys=None, entity_types=BASIC_COLLECTION):
+    def __init__(self, index_keys=[], entity_types=BASIC_COLLECTION):
         self._index_keys = index_keys
         self._entity_types = entity_types
 
@@ -12,8 +12,8 @@ class BaseJob(object):
         try:
             self._start()
             self._collect()
-            # self._process()
-            # self._export()
+            self._process()
+            self._export()
         finally:
             self._end()
 
@@ -22,8 +22,7 @@ class BaseJob(object):
             self._data_buff[key] = []
 
     def _end(self):
-        self._process()
-        self._export()
+        pass
 
     def _collect(self):
         pass

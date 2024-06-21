@@ -116,6 +116,7 @@ class ExportTokensAndTransfersJob(BaseJob):
 
     def _collect(self):
         self._batch_work_executor.execute(self._data_buff['log'], self._collect_batch)
+        self._batch_work_executor.shutdown()
 
     def _collect_batch(self, log_dicts):
         token_transfer = []
@@ -203,10 +204,6 @@ class ExportTokensAndTransfersJob(BaseJob):
                 self._extract_from_buff(['erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers']))
 
         self._item_exporter.export_items(items)
-
-    def _end(self):
-        self._batch_work_executor.shutdown()
-        super()._end()
 
     @staticmethod
     def _get_exist_token(db_service):

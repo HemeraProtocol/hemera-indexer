@@ -156,6 +156,7 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
                 })
 
         self._batch_work_executor.execute(rpc_parameters, self._collect_batch)
+        self._batch_work_executor.shutdown()
 
     def _collect_batch(self, parameters):
         token_balance_rpc = list(generate_eth_call_json_rpc(parameters))
@@ -214,7 +215,3 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
             items = self._extract_from_buff(
                 ['enriched_token_balances', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'])
             self._item_exporter.export_items(items)
-
-    def _end(self):
-        self._batch_work_executor.shutdown()
-        super()._end()
