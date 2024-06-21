@@ -11,35 +11,45 @@ from exporters.item_exporter import create_item_exporters
 from utils.thread_local_proxy import ThreadLocalProxy
 from utils.utils import pick_random_provider_uri, extract_url_from_output, set_config
 
-
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('-p', '--provider-uri', default='https://mainnet.infura.io', show_default=True, type=str,
+              envvar='PROVIDER_URI',
               help='The URI of the web3 provider e.g. '
                    'file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io')
 @click.option('-d', '--debug-provider-uri', default='https://mainnet.infura.io', show_default=True, type=str,
+              envvar="DEBUG_PROVIDER_URI",
               help='The URI of the web3 debug provider e.g. '
                    'file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io')
 @click.option('-o', '--output', type=str,
+              envvar='OUTPUT',
               help='Postgres connection url e.g. postgresql+pg8000://postgres:admin@127.0.0.1:5432/ethereum; '
                    'or local json file e.g. jsonfile://your-file-path; '
                    'or local csv file e.g. csvfile://your-file-path; ')
 @click.option('-e', '--entity-types', default=','.join(ALL_ENTITY_COLLECTIONS), show_default=True, type=str,
+              envvar='ENTITY_TYPES',
               help='The list of entity types to export. e.g. block,transaction,log')
 @click.option('-v', '--db-version', default="head", show_default=True, type=str,
+              envvar='DB_VERSION',
               help='The database version to initialize the database. using the alembic script\'s revision ID to '
                    'specify a version.'
                    ' e.g. head, indicates the latest version.'
                    'or base, indicates the empty database without any table.')
-@click.option('-s', '--start-block', default=None, show_default=True, type=int, help='Start block')
+@click.option('-s', '--start-block', default=None, show_default=True, type=int, help='Start block',
+              envvar='START_BLOCK')
 @click.option('--partition-size', default=50000, show_default=True, type=int,
+              envvar='PARTITION_SIZE',
               help='How many records was written to each file')
 @click.option('--period-seconds', default=10, show_default=True, type=int,
+              envvar='PERIOD_SECONDS',
               help='How many seconds to sleep between syncs')
 @click.option('-b', '--batch-size', default=10, show_default=True, type=int,
+              envvar='BATCH_SIZE',
               help='How many blocks to batch in single request')
 @click.option('-B', '--block-batch-size', default=1, show_default=True, type=int,
+              envvar='BLOCK_BATCH_SIZE',
               help='How many blocks to batch in single sync round')
-@click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers')
+@click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers',
+              envvar='MAX_WORKERS')
 def stream(provider_uri, debug_provider_uri, output, db_version, start_block, entity_types, partition_size,
            period_seconds=10, batch_size=2, block_batch_size=10, max_workers=5, log_file=None, pid_file=None):
     configure_logging(log_file)
