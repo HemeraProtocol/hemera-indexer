@@ -64,6 +64,7 @@ class ExportCoinBalancesJob(BaseJob):
 
     def _collect(self):
         self._batch_work_executor.execute(self._coin_addresses, self._collect_batch)
+        self._batch_work_executor.shutdown()
 
     def _collect_batch(self, coin_addresses):
         coin_balance_rpc = list(generate_get_balance_json_rpc(coin_addresses))
@@ -94,7 +95,3 @@ class ExportCoinBalancesJob(BaseJob):
         if self._entity_types & EntityType.COIN_BALANCE:
             items = self._extract_from_buff(['formated_coin_balance'])
             self._item_exporter.export_items(items)
-
-    def _end(self):
-        self._batch_work_executor.shutdown()
-        super()._end()

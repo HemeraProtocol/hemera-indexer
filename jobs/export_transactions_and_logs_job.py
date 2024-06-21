@@ -32,6 +32,7 @@ class ExportTransactionsAndLogsJob(BaseJob):
 
     def _collect(self):
         self._batch_work_executor.execute(self._transaction_hashes_iterable, self._collect_batch)
+        self._batch_work_executor.shutdown()
 
     def _collect_batch(self, transaction_hashes):
         receipts_rpc = list(generate_get_receipt_json_rpc(transaction_hashes))
@@ -71,9 +72,5 @@ class ExportTransactionsAndLogsJob(BaseJob):
 
         if self._entity_types & EntityType.LOG:
             items.extend(self._extract_from_buff(['enriched_log']))
-            
-        self._item_exporter.export_items(items)
 
-    def _end(self):
-        self._batch_work_executor.shutdown()
-        super()._end()
+        self._item_exporter.export_items(items)
