@@ -75,9 +75,9 @@ class ExportContractsJob(BaseJob):
             result = rpc_response_to_result(data[1], ignore_errors=True)
             contract = data[0]
             contract['item'] = 'contract'
-            name = result[2:] if result is not None else None
+            info = result[2:] if result is not None else None
             try:
-                contract['name'] = abi.decode(['string'], bytes.fromhex(name))[0]
+                contract['name'] = abi.decode(['string'], bytes.fromhex(info))[0].replace('\u0000', '')
             except (InsufficientDataBytes, InvalidPointer, TypeError) as e:
                 contract['name'] = None
 

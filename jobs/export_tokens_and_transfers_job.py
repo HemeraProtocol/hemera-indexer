@@ -201,7 +201,7 @@ class ExportTokensAndTransfersJob(BaseJob):
         if self._entity_types & EntityType.TOKEN_TRANSFER:
             items.extend(
                 self._extract_from_buff(['erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers']))
-        
+
         self._item_exporter.export_items(items)
 
     def _end(self):
@@ -260,6 +260,8 @@ class ExportTokensAndTransfersJob(BaseJob):
                 value = result[2:] if result is not None else None
                 try:
                     token[fn_name] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
+                    if token['data_type'] == 'string':
+                        token[fn_name] = token[fn_name].replace('\u0000', '')
                 except Exception as e:
                     token[fn_name] = None
 
