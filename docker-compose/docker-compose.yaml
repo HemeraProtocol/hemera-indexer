@@ -1,6 +1,6 @@
 services:
   hemera:
-    image: a39547ce840e
+    build: ../
     container_name: hemera
     command:
       [ "python", "hemera.py", "stream" ]
