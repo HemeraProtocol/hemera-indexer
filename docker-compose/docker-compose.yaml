@@ -1,0 +1,45 @@
+services:
+  hemera:
+    build: ../
+    container_name: hemera
+    command:
+      [ "python", "hemera.py", "stream" ]
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - hemera
+    environment:
+      - PROVIDER_URI=https://eth.llamarpc.com
+      - DEBUG_PROVIDER_URI=https://eth.llamarpc.com
+      - ENTITY_TYPES=transaction,block
+      - START_BLOCK=20137200
+      - OUTPUT=postgresql+psycopg2://user:password@postgresql:5432/postgres
+    volumes:
+      - ./data/output:/app/output
+
+  postgresql:
+    image: postgres:15
+    container_name: postgresql
+    healthcheck:
+      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 1s
+      timeout: 3s
+      retries: 3
+    ports:
+      - 5432:5432
+    networks:
+      - hemera
+    environment:
+      # This only works when you run this for the very first time. If the container has been created, you will need to remove the volume and recreate the container
+      # for it to take effect.
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
+    volumes:
+      - ./data/pg:/var/lib/postgresql/data
+networks:
+  hemera:
