@@ -127,6 +127,10 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
         self._data_buff['enriched_token_balances'] = sorted(self._data_buff['enriched_token_balances'],
                                                             key=lambda x: (x['block_number'], x['address']))
 
+        (self._data_buff['erc20_token_holders'],
+         self._data_buff['erc721_token_holders'],
+         self._data_buff['erc1155_token_holders']) = calculate_token_holders(self._data_buff['enriched_token_balances'])
+
         total_erc20, total_erc721, total_erc1155 = [], [], []
         for token_balance in self._data_buff['enriched_token_balances']:
             if token_balance['token_type'] == "ERC20":
@@ -230,3 +234,32 @@ def token_balances_rpc_requests(make_requests, tokens):
         })
 
     return token_balances
+
+
+def calculate_token_holders(token_balances):
+    total_erc20, total_erc721, total_erc1155 = [], [], []
+    for token_balance in token_balances:
+        if token_balance['token_type'] == "ERC20":
+            total_erc20.append(format_erc20_token_holder_data(token_balance))
+        elif token_balance['token_type'] == "ERC721":
+            total_erc721.append(format_erc721_token_holder_data(token_balance))
+        elif token_balance['token_type'] == "ERC1155":
+            total_erc1155.append(format_erc1155_token_holder_data(token_balance))
+
+    erc20_token_holders, erc721_token_holders, erc1155_token_holders = [], [], []
+    if len(total_erc20) > 0:
+        total_erc20_frame = pandas.DataFrame(total_erc20)
+        erc20_token_holders = total_erc20_frame.loc[total_erc20_frame.groupby(
+            ['token_address', 'wallet_address'])['block_number'].idxmax()].to_dict(orient='records')
+
+    if len(total_erc721) > 0:
+        total_erc721_frame = pandas.DataFrame(total_erc721)
+        erc721_token_holders = total_erc721_frame.loc[total_erc721_frame.groupby(
+            ['token_address', 'wallet_address'])['block_number'].idxmax()].to_dict(orient='records')
+
+    if len(total_erc1155) > 0:
+        total_erc1155_frame = pandas.DataFrame(total_erc1155)
+        erc1155_token_holders = total_erc1155_frame.loc[total_erc1155_frame.groupby(
+            ['token_address', 'wallet_address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
+
+    return erc20_token_holders, erc721_token_holders, erc1155_token_holders

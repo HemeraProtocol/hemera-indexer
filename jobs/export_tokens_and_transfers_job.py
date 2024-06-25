@@ -135,14 +135,9 @@ class ExportTokensAndTransfersJob(BaseJob):
             self._collect_item(transfer_event)
 
     def _process(self):
-
-        for token_transfer in self._data_buff['token_transfer']:
-            if token_transfer['tokenType'] == TokenType.ERC20.value:
-                self._data_buff['erc20_token_transfers'].append(format_erc20_token_transfer_data(token_transfer))
-            elif token_transfer['tokenType'] == TokenType.ERC721.value:
-                self._data_buff['erc721_token_transfers'].append(format_erc721_token_transfer_data(token_transfer))
-            elif token_transfer['tokenType'] == TokenType.ERC1155.value:
-                self._data_buff['erc1155_token_transfers'].append(format_erc1155_token_transfer_data(token_transfer))
+        (self._data_buff['erc20_token_transfers'],
+         self._data_buff['erc721_token_transfers'],
+         self._data_buff['erc1155_token_transfers']) = split_token_transfers(self._data_buff['token_transfer'])
 
         self._data_buff['formated_token'] = [format_token_data(token) for token in self._data_buff['token']]
 
@@ -275,3 +270,19 @@ def tokens_rpc_requests(web3, make_requests, tokens):
             token_types[token['address']] = token['token_type']
 
     return tokens, token_types
+
+
+def split_token_transfers(token_transfers):
+    erc20_token_transfers = []
+    erc721_token_transfers = []
+    erc1155_token_transfers = []
+
+    for token_transfer in token_transfers:
+        if token_transfer['tokenType'] == TokenType.ERC20.value:
+            erc20_token_transfers.append(format_erc20_token_transfer_data(token_transfer))
+        elif token_transfer['tokenType'] == TokenType.ERC721.value:
+            erc721_token_transfers.append(format_erc721_token_transfer_data(token_transfer))
+        elif token_transfer['tokenType'] == TokenType.ERC1155.value:
+            erc1155_token_transfers.append(format_erc1155_token_transfer_data(token_transfer))
+
+    return erc20_token_transfers, erc721_token_transfers, erc1155_token_transfers
