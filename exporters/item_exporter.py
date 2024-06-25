@@ -6,7 +6,7 @@ from exporters.postgres_item_exporter import PostgresItemExporter
 
 
 def create_item_exporters(outputs, config):
-    split_outputs = [output.strip() for output in outputs.split(',')] if outputs else ['console']
+    split_outputs = [output.strip() for output in outputs.split(',')] if outputs else ['postgresql']
 
     item_exporters = [create_item_exporter(output, config) for output in split_outputs]
     return MultiItemExporter(item_exporters)
@@ -19,7 +19,7 @@ def create_item_exporter(output, config):
         item_exporter = ConsoleItemExporter()
 
     elif item_exporter_type == ItemExporterType.POSTGRES:
-        item_exporter = PostgresItemExporter(output, config)
+        item_exporter = PostgresItemExporter(config['db_service'])
 
     elif item_exporter_type == ItemExporterType.JSONFILE:
         item_exporter = JSONFileItemExporter(output, config)

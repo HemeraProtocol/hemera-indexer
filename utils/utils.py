@@ -117,10 +117,10 @@ def check_classic_provider_uri(chain, provider_uri):
     return provider_uri
 
 
-def extract_url_from_output(outputs):
-    for output in outputs.split(','):
-        if output.startswith("postgresql"):
-            return output
+def verify_db_connection_url(db_url):
+    if not db_url.startswith("postgresql"):
+        raise ValueError("db_url must start with 'postgresql'")
+    return db_url
 
 
 def merge_sort(sorted_col_a, sorted_col_b):
