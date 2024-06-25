@@ -1,4 +1,4 @@
-from cli.confirm import confirm
+from cli.fixing import fixing
 from cli.stream import stream
 from utils.logging_utils import logging_basic_config
 
@@ -51,7 +51,7 @@ def cli(ctx):
 
 # streaming
 cli.add_command(stream, "stream")
-cli.add_command(confirm, "confirm")
+cli.add_command(fixing, "fixing")
 
 # utils
 # cli.add_command(get_block_range_for_date, "get_block_range_for_date")

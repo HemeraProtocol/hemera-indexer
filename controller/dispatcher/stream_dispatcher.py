@@ -1,6 +1,7 @@
 from controller.dispatcher.base_dispatcher import BaseDispatcher
 from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
+from jobs.check_block_consensus_job import CheckBlockConsensusJob
 from jobs.export_blocks_job import ExportBlocksJob
 from jobs.export_coin_balances_job import ExportCoinBalancesJob
 from jobs.export_contracts_job import ExportContractsJob
@@ -128,3 +129,10 @@ class StreamDispatcher(BaseDispatcher):
             ).run()
 
         self._item_exporter.batch_finish()
+
+        CheckBlockConsensusJob(entity_types=self._entity_types,
+                               service=self._db_service,
+                               batch_web3_provider=self._batch_web3_provider,
+                               batch_web3_debug_provider=self._batch_web3_debug_provider,
+                               ranges=end_block - start_block - 1
+                               ).run()
