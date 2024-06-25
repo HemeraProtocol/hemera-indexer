@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, BOOLEAN
 from exporters.jdbc.schema import Base
 
 
@@ -22,6 +22,7 @@ class Logs(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    relog = Column(BOOLEAN, default=False)
 
     __table_args__ = (
         PrimaryKeyConstraint('log_index', 'transaction_hash'),

@@ -24,6 +24,7 @@ def __getattr__(name):
 
 __lazy_imports = {
     "SyncRecord": "exporters.jdbc.schema.sync_record",
+    "FixRecord": "exporters.jdbc.schema.fix_record",
     "Blocks": "exporters.jdbc.schema.blocks",
     "Transactions": "exporters.jdbc.schema.transactions",
     "Logs": "exporters.jdbc.schema.logs",
