@@ -8,20 +8,15 @@ from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
 from exporters.base_exporter import BaseExporter
-from exporters.jdbc.converter.postgresql_model_converter import PostgreSQLModelConverter
-from exporters.jdbc.postgresql_service import PostgreSQLService
+from exporters.jdbc.converter.postgresql_model_converter import convert_item
 
 logger = logging.getLogger(__name__)
 
 
 class PostgresItemExporter(BaseExporter):
-    def __init__(self, connection_url, config):
-        version = config.get('db_version') if config.get('db_version') else "head"
-        confirm = config.get('confirm') if config.get('confirm') else False
+    def __init__(self, service):
 
-        self.service = PostgreSQLService(connection_url, version)
-        self.converter = PostgreSQLModelConverter(confirm)
-        self.confirm = confirm
+        self.service = service
         self.conflict_do_update = {}
 
     def export_items(self, items):
@@ -38,7 +33,7 @@ class PostgresItemExporter(BaseExporter):
                 if item_group:
                     self.check_update_strategy(item_group[0])
                     data = list(self.convert_items(item_type, item_group))
-                    if self.confirm is True or item_type in self.conflict_do_update.keys():
+                    if item_type in self.conflict_do_update.keys():
                         statement = insert(models[item_type]).values(data)
                         statement = self.on_conflict_do_update(models[item_type], statement)
                         session.execute(statement)
@@ -62,7 +57,7 @@ class PostgresItemExporter(BaseExporter):
 
     def convert_items(self, item_type, items):
         for item in items:
-            yield self.converter.convert_item(item_type, item)
+            yield convert_item(item_type, item)
 
     def check_update_strategy(self, data_example):
         if "update_strategy" in data_example:
