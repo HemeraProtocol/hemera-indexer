@@ -1,6 +1,10 @@
 import itertools
 from collections import defaultdict
 
+from eth_utils import to_int
+
+from enumeration.token_type import TokenType
+
 
 def join(left, right, join_fields, left_fields, right_fields):
     left_join_field, right_join_field = join_fields
@@ -217,6 +221,16 @@ def enrich_blocks_timestamp(blocks, datas):
         block_timestamp[block['number']] = block['timestamp']
 
     for data in datas:
-        data['blockTimestamp'] = block_timestamp[data['blockNumber']]
+        data['blockTimestamp'] = block_timestamp[to_int(hexstr=data['blockNumber'])]
 
     return datas
+
+
+def enrich_token_transfer_type(token_transfers, tokens_type):
+    for transfer_event in token_transfers:
+        if transfer_event['tokenType'] is None:
+            transfer_event['tokenType'] = tokens_type[transfer_event['tokenAddress']]
+        if transfer_event['tokenType'] == TokenType.ERC721.value:
+            transfer_event['tokenId'] = transfer_event['value']
+
+    return token_transfers

@@ -109,78 +109,20 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        origin_parameters = []
+        parameters = extract_token_parameters(self._data_buff['token_transfer'], self._web3)
 
-        for transfer in self._data_buff['token_transfer']:
-            from_address = Web3.to_checksum_address(transfer['fromAddress'])
-            to_address = Web3.to_checksum_address(transfer['toAddress'])
-            token_address = Web3.to_checksum_address(transfer['tokenAddress'])
-
-            origin_parameters.append({
-                'address': from_address,
-                'token_address': token_address,
-                'token_id': transfer['tokenId'],
-                'token_type': transfer['tokenType'],
-                'block_number': transfer['blockNumber'],
-            })
-            origin_parameters.append({
-                'address': to_address,
-                'token_address': token_address,
-                'token_id': transfer['tokenId'],
-                'token_type': transfer['tokenType'],
-                'block_number': transfer['blockNumber'],
-            })
-
-        rpc_parameters = []
-        for parameter in pandas.DataFrame(origin_parameters).drop_duplicates().replace(numpy.NaN, None).to_dict(
-                orient='records'):
-            parameter['token_id'] = int(parameter['token_id']) if parameter['token_id'] is not None else None
-            if not verify_0_address(parameter['address']):
-                contract = self._web3.eth.contract(address=parameter['token_address'],
-                                                   abi=contract_abi[parameter['token_type']])
-
-                if len(contract_abi[parameter['token_type']][0]['inputs']) > 1:
-                    data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address'], parameter['token_id']])
-                else:
-                    data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address']])
-
-                rpc_parameters.append({
-                    'address': parameter['address'],
-                    'token_address': parameter['token_address'],
-                    'token_id': parameter['token_id'],
-                    'token_type': parameter['token_type'],
-                    'param_to': parameter['token_address'],
-                    'param_data': data,
-                    'param_number': parameter['block_number'],
-                    'block_number': parameter['block_number'],
-                })
-
-        self._batch_work_executor.execute(rpc_parameters, self._collect_batch)
+        self._batch_work_executor.execute(parameters, self._collect_batch)
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, parameters):
-        token_balance_rpc = list(generate_eth_call_json_rpc(parameters))
-        response = self._batch_web3_provider.make_batch_request(json.dumps(token_balance_rpc))
-
-        for data in list(zip(parameters, response)):
-            result = rpc_response_to_result(data[1])
-            token_balance = {
-                'item': 'token_balance',
-                'tokenId': data[0]['token_id'],
-                'address': data[0]['address'],
-                'tokenAddress': data[0]['token_address'],
-                'tokenType': data[0]['token_type'],
-                'tokenBalance': int(result, 16),
-                'blockNumber': data[0]['block_number'],
-            }
-
+        token_balances = token_balances_rpc_requests(self._batch_web3_provider.make_batch_request, parameters)
+        for token_balance in token_balances:
+            token_balance['item'] = 'token_balance'
             self._collect_item(token_balance)
 
     def _process(self):
         self._data_buff['enriched_token_balances'] = [format_token_balance_data(token_balance)
-                                                      for token_balance in
-                                                      enrich_blocks_timestamp(self._data_buff['block'],
-                                                                              self._data_buff['token_balance'])]
+                                                      for token_balance in self._data_buff['token_balance']]
 
         self._data_buff['enriched_token_balances'] = sorted(self._data_buff['enriched_token_balances'],
                                                             key=lambda x: (x['block_number'], x['address']))
@@ -215,3 +157,76 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
             items = self._extract_from_buff(
                 ['enriched_token_balances', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'])
             self._item_exporter.export_items(items)
+
+
+def extract_token_parameters(token_transfers, web3):
+    origin_parameters = []
+
+    for transfer in token_transfers:
+        from_address = Web3.to_checksum_address(transfer['fromAddress'])
+        to_address = Web3.to_checksum_address(transfer['toAddress'])
+        token_address = Web3.to_checksum_address(transfer['tokenAddress'])
+
+        origin_parameters.append({
+            'address': from_address,
+            'token_address': token_address,
+            'token_id': transfer['tokenId'],
+            'token_type': transfer['tokenType'],
+            'block_number': transfer['blockNumber'],
+            'block_timestamp': transfer['blockTimestamp'],
+        })
+        origin_parameters.append({
+            'address': to_address,
+            'token_address': token_address,
+            'token_id': transfer['tokenId'],
+            'token_type': transfer['tokenType'],
+            'block_number': transfer['blockNumber'],
+            'block_timestamp': transfer['blockTimestamp'],
+        })
+
+    token_parameters = []
+    for parameter in pandas.DataFrame(origin_parameters).drop_duplicates().replace(numpy.NaN, None).to_dict(
+            orient='records'):
+        parameter['token_id'] = int(parameter['token_id']) if parameter['token_id'] is not None else None
+        if not verify_0_address(parameter['address']):
+            contract = web3.eth.contract(address=parameter['token_address'],
+                                         abi=contract_abi[parameter['token_type']])
+
+            if len(contract_abi[parameter['token_type']][0]['inputs']) > 1:
+                data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address'], parameter['token_id']])
+            else:
+                data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address']])
+
+            token_parameters.append({
+                'address': parameter['address'],
+                'token_address': parameter['token_address'],
+                'token_id': parameter['token_id'],
+                'token_type': parameter['token_type'],
+                'param_to': parameter['token_address'],
+                'param_data': data,
+                'param_number': parameter['block_number'],
+                'block_number': parameter['block_number'],
+                'block_timestamp': parameter['block_timestamp'],
+            })
+
+    return token_parameters
+
+
+def token_balances_rpc_requests(make_requests, tokens):
+    token_balance_rpc = list(generate_eth_call_json_rpc(tokens))
+    response = make_requests(json.dumps(token_balance_rpc))
+
+    token_balances = []
+    for data in list(zip(tokens, response)):
+        result = rpc_response_to_result(data[1])
+        token_balances.append({
+            'tokenId': data[0]['token_id'],
+            'address': data[0]['address'],
+            'tokenAddress': data[0]['token_address'],
+            'tokenType': data[0]['token_type'],
+            'tokenBalance': int(result, 16),
+            'blockNumber': data[0]['block_number'],
+            'blockTimestamp': data[0]['block_timestamp'],
+        })
+
+    return token_balances

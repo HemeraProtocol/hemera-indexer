@@ -39,7 +39,7 @@ def generate_get_balance_json_rpc(coin_addresses):
     for idx, coin_address in enumerate(coin_addresses):
         yield generate_json_rpc(
             method='eth_getBalance',
-            params=[coin_address['address'], coin_address['block_number']],
+            params=[coin_address['address'], hex(coin_address['block_number'])],
             request_id=idx
         )
 

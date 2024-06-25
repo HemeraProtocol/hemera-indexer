@@ -13,7 +13,7 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from exporters.jdbc.schema.tokens import Tokens
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
-from utils.enrich import enrich_blocks_timestamp
+from utils.enrich import enrich_token_transfer_type
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 
@@ -109,63 +109,34 @@ class ExportTokensAndTransfersJob(BaseJob):
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
         self._item_exporter = item_exporter
-        self._exist_token = self._get_exist_token(service)
+        self._exist_token = get_exist_token(service)
 
     def _start(self):
         super()._start()
 
     def _collect(self):
-        self._batch_work_executor.execute(self._data_buff['log'], self._collect_batch)
+        self._batch_work_executor.execute(self._data_buff['enriched_log'], self._collect_batch)
         self._batch_work_executor.shutdown()
 
-    def _collect_batch(self, log_dicts):
-        token_transfer = []
-        for log_dict in log_dicts:
-            transfer_event = extract_transfer_from_log(log_dict)
-            if transfer_event is not None:
-                if type(transfer_event) is list:
-                    token_transfer.extend(transfer_event)
-                else:
-                    token_transfer.append(transfer_event)
+    def _collect_batch(self, logs):
 
-        new_tokens = set()
-        for token in token_transfer:
-            if token['tokenAddress'][2:] not in self._exist_token.keys():
-                new_tokens.add((token['tokenAddress'], token['tokenType']))
-            elif token['tokenType'] is None:
-                token['tokenType'] = self._exist_token[token['tokenAddress'][2:]]
+        tokens_parameter, token_transfers = extract_parameters_and_token_transfers(self._exist_token, logs)
 
-        tokens_parameter = []
-        for token in new_tokens:
-            tokens_parameter.append(
-                {
-                    "address": token[0],
-                    "token_type": token[1]
-                }
-            )
+        tokens, tokens_type = tokens_rpc_requests(self._web3,
+                                                  self._batch_web3_provider.make_batch_request,
+                                                  tokens_parameter)
 
-        new_token_types = {}
-        if len(tokens_parameter) > 0:
-            tokens = self._fetch_token_info(tokens_parameter)
-            for token in tokens:
-                if token['token_type'] is None:
-                    if token['decimals'] is not None and token['decimals'] > 0:
-                        token['token_type'] = TokenType.ERC20.value
-                    else:
-                        token['token_type'] = TokenType.ERC721.value
-                self._collect_item(token)
-                new_token_types[token['address']] = token['token_type']
+        for token in tokens:
+            token['item'] = 'token'
+            self._collect_item(token)
 
-        for transfer_event in token_transfer:
-            if transfer_event['tokenType'] is None:
-                transfer_event['tokenType'] = new_token_types[transfer_event['tokenAddress']]
-            if transfer_event['tokenType'] == TokenType.ERC721.value:
-                transfer_event['tokenId'] = transfer_event['value']
+        for transfer_event in enrich_token_transfer_type(token_transfers, tokens_type):
+            transfer_event['item'] = 'token_transfer'
             self._collect_item(transfer_event)
 
     def _process(self):
 
-        for token_transfer in enrich_blocks_timestamp(self._data_buff['block'], self._data_buff['token_transfer']):
+        for token_transfer in self._data_buff['token_transfer']:
             if token_transfer['tokenType'] == TokenType.ERC20.value:
                 self._data_buff['erc20_token_transfers'].append(format_erc20_token_transfer_data(token_transfer))
             elif token_transfer['tokenType'] == TokenType.ERC721.value:
@@ -205,61 +176,102 @@ class ExportTokensAndTransfersJob(BaseJob):
 
         self._item_exporter.export_items(items)
 
-    @staticmethod
-    def _get_exist_token(db_service):
-        session = db_service.get_service_session()
+
+def get_exist_token(db_service):
+    session = db_service.get_service_session()
+    try:
+        result = session.query(Tokens.address, Tokens.token_type).all()
+        history_token = {}
+        if result is not None:
+            for item in result:
+                history_token[item[0].hex()] = item[1]
+    except Exception as e:
+        print(e)
+        raise e
+    finally:
+        session.close()
+    return history_token
+
+
+def extract_parameters_and_token_transfers(exist_tokens, logs):
+    token_transfer = []
+    for log in logs:
+        transfer_event = extract_transfer_from_log(log)
+        if transfer_event is not None:
+            if type(transfer_event) is list:
+                token_transfer.extend(transfer_event)
+            else:
+                token_transfer.append(transfer_event)
+
+    new_tokens = set()
+    for token in token_transfer:
+        if token['tokenAddress'][2:] not in exist_tokens.keys():
+            new_tokens.add((token['tokenAddress'], token['tokenType']))
+        elif token['tokenType'] is None:
+            token['tokenType'] = exist_tokens[token['tokenAddress'][2:]]
+
+    tokens_parameter = []
+    for token in new_tokens:
+        tokens_parameter.append(
+            {
+                "address": token[0],
+                "token_type": token[1]
+            }
+        )
+
+    return tokens_parameter, token_transfer
+
+
+def build_rpc_method_data(web3, tokens, fn):
+    parameters = []
+
+    for token in tokens:
+        token_type = token['token_type'] if 'token_type' in token and token['token_type'] is not None else "ELSE"
         try:
-            result = session.query(Tokens.address, Tokens.token_type).all()
-            history_token = {}
-            if result is not None:
-                for item in result:
-                    history_token[item[0].hex()] = item[1]
-        except Exception as e:
-            print(e)
-            raise e
-        finally:
-            session.close()
-        return history_token
+            token['param_to'] = token['address']
+            token['param_data'] = (web3.eth
+                                   .contract(address=Web3.to_checksum_address(token['address']),
+                                             abi=erc_token_abi[token_type])
+                                   .encodeABI(fn_name=fn))
+            for abi_fn in erc_token_abi[token_type]:
+                if fn == abi_fn['name']:
+                    token['data_type'] = abi_fn['outputs'][0]['type']
 
-    def _build_rpc_method_data(self, tokens, fn):
-        parameters = []
+        except Web3ValidationError:
+            token['data'] = '0x'
+            token['data_type'] = ''
+        parameters.append(token)
 
-        for token in tokens:
-            token_type = token['token_type'] if token['token_type'] is not None else "ELSE"
+    return parameters
+
+
+def tokens_rpc_requests(web3, make_requests, tokens):
+    if len(tokens) == 0:
+        return [], {}
+    fn_names = ['name', 'symbol', 'decimals', 'totalSupply', 'tokenSupply']
+
+    for fn_name in fn_names:
+        token_name_rpc = list(generate_eth_call_json_rpc(build_rpc_method_data(web3, tokens, fn_name)))
+        response = make_requests(json.dumps(token_name_rpc))
+        for data in list(zip(response, tokens)):
+            result = rpc_response_to_result(data[0], ignore_errors=True)
+
+            token = data[1]
+            value = result[2:] if result is not None else None
             try:
-                token['param_to'] = token['address']
-                token['param_data'] = (self._web3.eth
-                                       .contract(address=Web3.to_checksum_address(token['address']),
-                                                 abi=erc_token_abi[token_type])
-                                       .encodeABI(fn_name=fn))
-                for abi_fn in erc_token_abi[token_type]:
-                    if fn == abi_fn['name']:
-                        token['data_type'] = abi_fn['outputs'][0]['type']
+                token[fn_name] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
+                if token['data_type'] == 'string':
+                    token[fn_name] = token[fn_name].replace('\u0000', '')
+            except Exception as e:
+                token[fn_name] = None
 
-            except Web3ValidationError:
-                token['data'] = '0x'
-                token['data_type'] = ''
-            parameters.append(token)
+    token_types = {}
+    for token in tokens:
+        if token['token_type'] is None:
+            if token['decimals'] is not None and token['decimals'] > 0:
+                token['token_type'] = TokenType.ERC20.value
+            else:
+                token['token_type'] = TokenType.ERC721.value
+            token_types[token['address']] = token['token_type']
 
-        return parameters
-
-    def _fetch_token_info(self, tokens):
-        fn_names = ['name', 'symbol', 'decimals', 'totalSupply', 'tokenSupply']
-
-        for fn_name in fn_names:
-            token_name_rpc = list(generate_eth_call_json_rpc(self._build_rpc_method_data(tokens, fn_name)))
-            response = self._batch_web3_provider.make_batch_request(json.dumps(token_name_rpc))
-            for data in list(zip(response, tokens)):
-                result = rpc_response_to_result(data[0], ignore_errors=True)
-
-                token = data[1]
-                token['item'] = 'token'
-                value = result[2:] if result is not None else None
-                try:
-                    token[fn_name] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
-                    if token['data_type'] == 'string':
-                        token[fn_name] = token[fn_name].replace('\u0000', '')
-                except Exception as e:
-                    token[fn_name] = None
-
-        return tokens
+    return tokens, token_types

@@ -1,5 +1,7 @@
 import json
 
+import pandas
+
 from domain.coin_balance import format_coin_balance_data
 from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
@@ -23,38 +25,6 @@ class ExportCoinBalancesJob(BaseJob):
             item_exporter=ConsoleItemExporter()):
         super().__init__(index_keys=index_keys, entity_types=entity_types)
 
-        coin_addresses = set()
-        blocks_timestamp_dict = dict()
-        for block in self._data_buff['block']:
-            coin_addresses.add((block['miner'], block['number'], block['timestamp']))
-            blocks_timestamp_dict[block['number']] = block['timestamp']
-
-        for transaction in self._data_buff['transaction']:
-            block_timestamp = blocks_timestamp_dict[transaction['blockNumber']]
-            if transaction['to'] is not None:
-                coin_addresses.add((transaction['to'], transaction['blockNumber'], block_timestamp))
-            if transaction['from'] is not None:
-                coin_addresses.add((transaction['from'], transaction['blockNumber'], block_timestamp))
-
-        for trace in self._data_buff['trace']:
-            block_number = hex(trace['block_number'])
-            if trace_is_contract_creation(trace) or trace_is_transfer_value(trace):
-                if trace['to_address'] is not None:
-                    coin_addresses.add(
-                        (trace['to_address'], block_number, blocks_timestamp_dict[block_number]))
-                if trace['from_address'] is not None:
-                    coin_addresses.add(
-                        (trace['from_address'], block_number, blocks_timestamp_dict[block_number]))
-
-        self._coin_addresses = []
-        for address in list(coin_addresses):
-            if not verify_0_address(address[0]):
-                self._coin_addresses.append({
-                    'address': address[0],
-                    'block_number': address[1],
-                    'block_timestamp': address[2]
-                })
-
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
         self._item_exporter = item_exporter
@@ -63,24 +33,18 @@ class ExportCoinBalancesJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        self._batch_work_executor.execute(self._coin_addresses, self._collect_batch)
+
+        coin_addresses = distinct_addresses(self._data_buff['formated_block'],
+                                            self._data_buff['enriched_transaction'],
+                                            self._data_buff['enriched_traces'])
+        self._batch_work_executor.execute(coin_addresses, self._collect_batch)
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, coin_addresses):
-        coin_balance_rpc = list(generate_get_balance_json_rpc(coin_addresses))
-        response = self._batch_web3_provider.make_batch_request(json.dumps(coin_balance_rpc))
+        coin_balances = coin_balances_rpc_requests(self._batch_web3_provider.make_batch_request, coin_addresses)
 
-        for data in list(zip(response, coin_addresses)):
-            result = rpc_response_to_result(data[0])
-
-            coin_balance = {
-                'item': 'coin_balance',
-                'address': data[1]['address'],
-                'balance': int(result, 16),
-                'block_number': data[1]['block_number'],
-                'block_timestamp': data[1]['block_timestamp'],
-            }
-
+        for coin_balance in coin_balances:
+            coin_balance['item'] = 'coin_balance'
             self._collect_item(coin_balance)
 
     def _process(self):
@@ -95,3 +59,63 @@ class ExportCoinBalancesJob(BaseJob):
         if self._entity_types & EntityType.COIN_BALANCE:
             items = self._extract_from_buff(['formated_coin_balance'])
             self._item_exporter.export_items(items)
+
+
+def distinct_addresses(blocks, transactions, traces):
+    addresses = []
+    for block in blocks:
+        addresses.append({
+            'address': block['miner'],
+            'block_number': block['number'],
+            'block_timestamp': block['timestamp']
+        })
+
+    for transaction in transactions:
+        if transaction['from_address'] is not None:
+            addresses.append({
+                'address': transaction['from_address'],
+                'block_number': transaction['block_number'],
+                'block_timestamp': transaction['block_timestamp']
+            })
+
+        if transaction['to_address'] is not None:
+            addresses.append({
+                'address': transaction['to_address'],
+                'block_number': transaction['block_number'],
+                'block_timestamp': transaction['block_timestamp']
+            })
+
+    for trace in traces:
+        if trace_is_contract_creation(trace) or trace_is_transfer_value(trace, True):
+            if trace['to_address'] is not None:
+                addresses.append({
+                    'address': trace['to_address'],
+                    'block_number': trace['block_number'],
+                    'block_timestamp': trace['block_timestamp']
+                })
+            if trace['from_address'] is not None:
+                addresses.append({
+                    'address': trace['from_address'],
+                    'block_number': trace['block_number'],
+                    'block_timestamp': trace['block_timestamp']
+                })
+
+    return pandas.DataFrame(addresses).drop_duplicates().to_dict(orient='records')
+
+
+def coin_balances_rpc_requests(make_requests, addresses):
+    coin_balance_rpc = list(generate_get_balance_json_rpc(addresses))
+    response = make_requests(json.dumps(coin_balance_rpc))
+
+    coin_balances = []
+    for data in list(zip(response, addresses)):
+        result = rpc_response_to_result(data[0])
+
+        coin_balances.append({
+            'address': data[1]['address'],
+            'balance': int(result, 16),
+            'block_number': data[1]['block_number'],
+            'block_timestamp': data[1]['block_timestamp'],
+        })
+
+    return coin_balances

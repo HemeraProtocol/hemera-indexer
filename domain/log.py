@@ -16,6 +16,6 @@ def format_log_data(log_dict):
         'transaction_index': to_int(hexstr=log_dict['transactionIndex']),
         'block_number': to_int(hexstr=log_dict['blockNumber']),
         'block_hash': log_dict['blockHash'],
-        'block_timestamp': to_int(hexstr=log_dict['blockTimestamp'])
+        'block_timestamp': log_dict['blockTimestamp']
     }
     return log

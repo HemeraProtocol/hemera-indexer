@@ -23,7 +23,6 @@ class ExportTransactionsAndLogsJob(BaseJob):
         super().__init__(index_keys=index_keys, entity_types=entity_types)
 
         self._batch_web3_provider = batch_web3_provider
-        self._transaction_hashes_iterable = (transaction['hash'] for transaction in self._data_buff['transaction'])
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
         self._item_exporter = item_exporter
 
@@ -31,7 +30,8 @@ class ExportTransactionsAndLogsJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        self._batch_work_executor.execute(self._transaction_hashes_iterable, self._collect_batch)
+        transaction_hashes_iterable = (transaction['hash'] for transaction in self._data_buff['transaction'])
+        self._batch_work_executor.execute(transaction_hashes_iterable, self._collect_batch)
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, transaction_hashes):
@@ -48,12 +48,12 @@ class ExportTransactionsAndLogsJob(BaseJob):
     def _process(self):
         self._data_buff['enriched_transaction'] = [format_transaction_data(transaction)
                                                    for transaction in enrich_blocks_timestamp
-                                                   (self._data_buff['block'],
+                                                   (self._data_buff['formated_block'],
                                                     enrich_transactions(self._data_buff['transaction'],
                                                                         self._data_buff['receipt']))]
 
         self._data_buff['enriched_log'] = [format_log_data(log) for log in
-                                           enrich_blocks_timestamp(self._data_buff['block'],
+                                           enrich_blocks_timestamp(self._data_buff['formated_block'],
                                                                    self._data_buff['log'])]
 
         self._data_buff['enriched_transaction'] = sorted(self._data_buff['enriched_transaction'],
@@ -74,3 +74,11 @@ class ExportTransactionsAndLogsJob(BaseJob):
             items.extend(self._extract_from_buff(['enriched_log']))
 
         self._item_exporter.export_items(items)
+
+
+def receipt_rpc_requests(make_request, transaction_hashes):
+    receipts_rpc = list(generate_get_receipt_json_rpc(transaction_hashes))
+    response = make_request(json.dumps(receipts_rpc))
+    results = rpc_response_batch_to_results(response)
+
+    return results

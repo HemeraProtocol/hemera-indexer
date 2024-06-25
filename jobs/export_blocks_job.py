@@ -41,9 +41,7 @@ class ExportBlocksJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, block_number_batch):
-        blocks_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, True))
-        response = self._batch_web3_provider.make_batch_request(json.dumps(blocks_rpc))
-        results = rpc_response_batch_to_results(response)
+        results = blocks_rpc_requests(self._batch_web3_provider.make_batch_request, block_number_batch)
 
         for block in results:
             block['item'] = 'block'
@@ -74,3 +72,11 @@ class ExportBlocksJob(BaseJob):
             export_items.extend(self._extract_from_buff(['formated_block']))
 
         self._item_exporter.export_items(export_items)
+
+
+def blocks_rpc_requests(make_request, block_number_batch):
+    block_number_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, True))
+    response = make_request(json.dumps(block_number_rpc))
+    results = rpc_response_batch_to_results(response)
+
+    return results

@@ -52,36 +52,16 @@ class ExportContractsJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        contracts = []
-        for trace_dict in self._data_buff['trace']:
-            if trace_dict['trace_type'] in ['create', 'create2'] and trace_dict['to_address'] is not None \
-                    and len(trace_dict['to_address']) > 0 and trace_dict['status'] == 1:
-                contract = extract_contract_from_trace(trace_dict)
-                contract['param_to'] = contract['address']
-                contract['param_data'] = (self._web3.eth
-                                          .contract(address=Web3.to_checksum_address(contract['address']),
-                                                    abi=contract_abi)
-                                          .encodeABI(fn_name='name'))
-                contract['param_number'] = hex(contract['block_number'])
-                contracts.append(contract)
+        contracts = build_contracts(self._web3, self._data_buff['trace'])
 
         self._batch_work_executor.execute(contracts, self._collect_batch)
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, contracts):
-        contract_name_rpc = list(generate_eth_call_json_rpc(contracts, is_latest=False))
-        response = self._batch_web3_provider.make_batch_request(json.dumps(contract_name_rpc))
+        contracts = contract_info_rpc_requests(self._batch_web3_provider.make_batch_request, contracts)
 
-        for data in list(zip(contracts, response)):
-            result = rpc_response_to_result(data[1], ignore_errors=True)
-            contract = data[0]
+        for contract in contracts:
             contract['item'] = 'contract'
-            info = result[2:] if result is not None else None
-            try:
-                contract['name'] = abi.decode(['string'], bytes.fromhex(info))[0].replace('\u0000', '')
-            except (InsufficientDataBytes, InvalidPointer, TypeError) as e:
-                contract['name'] = None
-
             self._collect_item(contract)
 
     def _process(self):
@@ -98,3 +78,36 @@ class ExportContractsJob(BaseJob):
         if self._entity_types & EntityType.CONTRACT:
             items = self._extract_from_buff(['enriched_contract'])
             self._item_exporter.export_items(items)
+
+
+def build_contracts(web3, traces):
+    contracts = []
+    for trace_dict in traces:
+        if trace_dict['trace_type'] in ['create', 'create2'] and trace_dict['to_address'] is not None \
+                and len(trace_dict['to_address']) > 0 and trace_dict['status'] == 1:
+            contract = extract_contract_from_trace(trace_dict)
+            contract['param_to'] = contract['address']
+            contract['param_data'] = (web3.eth
+                                      .contract(address=Web3.to_checksum_address(contract['address']),
+                                                abi=contract_abi)
+                                      .encodeABI(fn_name='name'))
+            contract['param_number'] = hex(contract['block_number'])
+            contracts.append(contract)
+
+    return contracts
+
+
+def contract_info_rpc_requests(make_requests, contracts):
+    contract_name_rpc = list(generate_eth_call_json_rpc(contracts, is_latest=False))
+    response = make_requests(json.dumps(contract_name_rpc))
+
+    for data in list(zip(contracts, response)):
+        result = rpc_response_to_result(data[1], ignore_errors=True)
+        contract = data[0]
+        info = result[2:] if result is not None else None
+        try:
+            contract['name'] = abi.decode(['string'], bytes.fromhex(info))[0].replace('\u0000', '')
+        except (InsufficientDataBytes, InvalidPointer, TypeError) as e:
+            contract['name'] = None
+
+    return contracts

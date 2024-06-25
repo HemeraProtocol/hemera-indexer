@@ -15,7 +15,7 @@ def format_transaction_data(transaction_dict):
         'nonce': to_int(hexstr=transaction_dict['nonce']),
         'block_hash': transaction_dict['blockHash'],
         'block_number': to_int(hexstr=transaction_dict['blockNumber']),
-        'block_timestamp': to_int(hexstr=transaction_dict['blockTimestamp']),
+        'block_timestamp': transaction_dict['blockTimestamp'],
         'gas': to_int(hexstr=transaction_dict['gas']),
         'gas_price': to_int(hexstr=transaction_dict['gasPrice']),
         'max_fee_per_gas': to_int(hexstr=transaction_dict.get('maxFeePerGas'))

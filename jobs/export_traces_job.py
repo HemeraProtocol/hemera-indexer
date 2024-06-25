@@ -31,8 +31,6 @@ class ExportTracesJob(BaseJob):
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
         self._item_exporter = item_exporter
 
-        self._trace_idx = 0
-
     def _start(self):
         super()._start()
 
@@ -46,24 +44,37 @@ class ExportTracesJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, block_number_batch):
-        trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_number_batch))
-        response = self._batch_web3_provider.make_batch_request(json.dumps(trace_block_rpc))
+        traces = traces_rpc_requests(self._batch_web3_provider.make_batch_request, block_number_batch)
 
-        for response_item in response:
-            block_number = response_item.get('id')
-            result = rpc_response_to_result(response_item)
+        for trace in traces:
+            trace['item'] = 'trace'
+            self._collect_item(trace)
 
-            geth_trace = {
-                'block_number': block_number,
-                'transaction_traces': result,
-            }
-            traces = self._geth_trace_to_traces(geth_trace)
+    def _process(self):
 
-            for trace in traces:
-                trace['item'] = 'trace'
-                self._collect_item(trace)
+        self._data_buff['enriched_traces'] = [format_trace_data(trace)
+                                              for trace in enrich_traces(self._data_buff['formated_block'],
+                                                                         self._data_buff['trace'])]
 
-    def _geth_trace_to_traces(self, geth_trace):
+        self._data_buff['enriched_traces'] = sorted(self._data_buff['enriched_traces'],
+                                                    key=lambda x: (
+                                                        x['block_number'], x['transaction_index'], x['trace_index']))
+
+        self._data_buff['internal_transaction'] = [trace_to_contract_internal_transaction(trace)
+                                                   for trace in self._data_buff['enriched_traces']]
+
+    def _export(self):
+        if self._entity_types & EntityType.TRACE:
+            items = self._extract_from_buff(['enriched_traces', 'internal_transaction'])
+            self._item_exporter.export_items(items)
+
+
+class ExtractTraces:
+
+    def __init__(self):
+        self._trace_idx = 0
+
+    def geth_trace_to_traces(self, geth_trace):
         block_number = geth_trace['block_number']
         transaction_traces = geth_trace['transaction_traces']
 
@@ -148,20 +159,23 @@ class ExportTracesJob(BaseJob):
 
         return result
 
-    def _process(self):
 
-        self._data_buff['enriched_traces'] = [format_trace_data(trace)
-                                              for trace in enrich_traces(self._data_buff['formated_block'],
-                                                                         self._data_buff['trace'])]
+def traces_rpc_requests(make_requests, block_batch):
+    trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_batch))
+    response = make_requests(json.dumps(trace_block_rpc))
 
-        self._data_buff['enriched_traces'] = sorted(self._data_buff['enriched_traces'],
-                                                    key=lambda x: (
-                                                        x['block_number'], x['transaction_index'], x['trace_index']))
+    total_traces = []
+    for response_item in response:
+        block_number = response_item.get('id')
+        result = rpc_response_to_result(response_item)
 
-        self._data_buff['internal_transaction'] = [trace_to_contract_internal_transaction(trace)
-                                                   for trace in self._data_buff['enriched_traces']]
+        geth_trace = {
+            'block_number': block_number,
+            'transaction_traces': result,
+        }
+        trace_spliter = ExtractTraces()
+        traces = trace_spliter.geth_trace_to_traces(geth_trace)
 
-    def _export(self):
-        if self._entity_types & EntityType.TRACE:
-            items = self._extract_from_buff(['enriched_traces', 'internal_transaction'])
-            self._item_exporter.export_items(items)
+        total_traces.extend(traces)
+
+    return total_traces
