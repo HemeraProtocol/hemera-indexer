@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, Index, desc, PrimaryKeyConstraint, func
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, JSONB
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, JSONB, BOOLEAN
 from exporters.jdbc.schema import Base
 
 
@@ -21,6 +21,7 @@ class ERC721TokenTransfers(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    relog = Column(BOOLEAN, default=False)
 
     __table_args__ = (
         PrimaryKeyConstraint('transaction_hash', 'log_index'),

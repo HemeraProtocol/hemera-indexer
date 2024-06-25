@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, VARCHAR, Index, desc, func
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT
+from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT, BOOLEAN
 from exporters.jdbc.schema import Base
 
 
@@ -29,6 +29,7 @@ class Traces(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    relog = Column(BOOLEAN, default=False)
 
 
 Index('traces_transaction_hash_index', Traces.transaction_hash)

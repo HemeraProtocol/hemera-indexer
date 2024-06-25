@@ -31,3 +31,5 @@ class Contracts(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    relog = Column(BOOLEAN, default=False)
+

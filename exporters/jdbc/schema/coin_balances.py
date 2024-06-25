@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint, func
-from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC
+from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 from exporters.jdbc.schema import Base
 
 
@@ -14,6 +14,7 @@ class CoinBalances(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    relog = Column(BOOLEAN, default=False)
 
     __table_args__ = (
         PrimaryKeyConstraint('address', 'block_number'),

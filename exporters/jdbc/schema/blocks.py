@@ -32,7 +32,7 @@ class Blocks(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
-    consensus = Column(BOOLEAN, default=True)
+    relog = Column(BOOLEAN, default=False)
 
 
 Index('blocks_timestamp_index', desc(Blocks.timestamp))
