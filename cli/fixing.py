@@ -1,15 +1,12 @@
 import logging
-from datetime import datetime, timezone, timedelta
 
 import click
 
 from controller.fixing_controller import FixingController
 from exporters.jdbc.postgresql_service import PostgreSQLService
-from exporters.jdbc.schema.block_timestamp_mapper import BlockTimestampMapper
 from utils.logging_utils import configure_signals, configure_logging
 
 from utils.provider import get_provider_from_uri
-from exporters.item_exporter import create_item_exporters
 from utils.thread_local_proxy import ThreadLocalProxy
 from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_config
 
@@ -61,4 +58,4 @@ def fixing(provider_uri, debug_provider_uri, database_url, db_version, block_num
                                       lambda: get_provider_from_uri(provider_uri, batch=True)),
                                   ranges=ranges)
 
-    controller.action(block_number)
+    controller.action(block_number=block_number)

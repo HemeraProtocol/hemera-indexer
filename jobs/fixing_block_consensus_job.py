@@ -1,6 +1,7 @@
 import pandas
 import sqlalchemy
-from sqlalchemy import insert, text
+from sqlalchemy import text
+from sqlalchemy.dialects.postgresql import insert
 
 from domain.block import format_block_data
 from domain.coin_balance import format_coin_balance_data
@@ -92,16 +93,14 @@ class FixingBlockConsensusJob(BaseJob):
                                    for token_id_info in erc721_token_ids]
         total_erc721_id_details = pandas.DataFrame([format_erc721_token_id_detail(token_id_info)
                                                     for token_id_info in erc721_token_ids])
-        erc721_token_id_details = total_erc721_id_details.loc[total_erc721_id_details.groupby(
-            ['address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
+        erc721_token_id_details = self.collect_fixed_latest_token_ids_detail(total_erc721_id_details)
         self.update_fixed_block_data(erc721_token_id_changes)
         self.update_fixed_block_data(erc721_token_id_details)
 
         erc1155_token_ids = self.collect_fixed_token_ids_info(token_transfers, TokenType.ERC1155)
         total_erc1155_id_details = pandas.DataFrame([format_erc1155_token_id_detail(token_id_info)
                                                      for token_id_info in erc1155_token_ids])
-        erc1155_token_id_details = total_erc1155_id_details.loc[total_erc1155_id_details.groupby(
-            ['address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
+        erc1155_token_id_details = self.collect_fixed_latest_token_ids_detail(total_erc1155_id_details)
         self.update_fixed_block_data(erc1155_token_id_details)
 
         token_balances = self.collect_fixed_token_balances(token_transfers)
@@ -221,54 +220,63 @@ class FixingBlockConsensusJob(BaseJob):
         session.close()
 
     def update_fixed_block_data(self, origin_data):
+        if len(origin_data) == 0:
+            return
 
         model = origin_data[0]['model']
         db_data = [convert_item(model.__tablename__, data, fixing=True) for data in origin_data]
         session = self.service.get_service_session()
 
-        statement = insert(model).values(db_data)
+        try:
+            statement = insert(model).values(db_data)
 
-        pk_list = []
-        for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
-            if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
-                for column in constraint.columns:
-                    pk_list.append(column.name)
+            pk_list = []
+            for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
+                if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
+                    for column in constraint.columns:
+                        pk_list.append(column.name)
 
-        update_set = {}
-        for exc in statement.excluded:
-            if exc.name not in pk_list:
-                update_set[exc.name] = exc
+            update_set = {}
+            for exc in statement.excluded:
+                if exc.name not in pk_list:
+                    update_set[exc.name] = exc
 
-        where_clause = None
-        if 'update_strategy' in origin_data[0]:
-            where_clause = text(origin_data[0]['update_strategy'])
+            where_clause = None
+            if 'update_strategy' in origin_data[0]:
+                where_clause = text(origin_data[0]['update_strategy'])
 
-        statement = statement.on_conflict_do_update(index_elements=pk_list, set_=update_set, where=where_clause)
-        session.execute(statement)
-        session.commit()
+            statement = statement.on_conflict_do_update(index_elements=pk_list, set_=update_set, where=where_clause)
+            session.execute(statement)
+            session.commit()
+        finally:
+            session.close()
 
     def collect_fixed_block(self):
-        block = blocks_rpc_requests(self.batch_web3_provider.make_batch_request, [self.block_number])
-
+        block_generator = blocks_rpc_requests(self.batch_web3_provider.make_batch_request, [self.block_number])
+        block = [block for block in block_generator][0]
         return format_block_data(block), block['transactions']
 
     def collect_fixed_transactions_logs(self, block, transactions):
-        receipts = receipt_rpc_requests(self.batch_web3_provider.make_batch_request,
-                                        [transaction['hash'] for transaction in transactions])
+        receipt_generator = receipt_rpc_requests(self.batch_web3_provider.make_batch_request,
+                                                 [transaction['hash'] for transaction in transactions])
+
+        logs, receipts = [], []
+        for receipt in receipt_generator:
+            receipts.append(receipt)
+            logs.extend(receipt['logs'])
 
         enriched_transactions = [format_transaction_data(transaction)
                                  for transaction in enrich_blocks_timestamp
                                  ([block], enrich_transactions(transactions, receipts))]
 
         enriched_logs = [format_log_data(log) for log in
-                         enrich_blocks_timestamp([block],
-                                                 receipts['logs'])]
+                         enrich_blocks_timestamp([block], logs)]
 
         return enriched_transactions, enriched_logs
 
     def collect_fixed_tokens_and_token_transfers(self, logs):
         exist_token = get_exist_token(self.service)
-        token_transfers, tokens_parameter = extract_parameters_and_token_transfers(exist_token, logs)
+        tokens_parameter, token_transfers = extract_parameters_and_token_transfers(exist_token, logs)
 
         tokens, tokens_type = tokens_rpc_requests(self.web3,
                                                   self.batch_web3_provider.make_batch_request,
@@ -280,9 +288,22 @@ class FixingBlockConsensusJob(BaseJob):
 
     def collect_fixed_token_ids_info(self, token_transfers, token_type):
         tokens = distinct_tokens(token_transfers, token_type)
+        if len(tokens) == 0:
+            return []
+
         token_ids = token_ids_info_rpc_requests(self.web3, self.batch_web3_provider.make_batch_request, tokens)
 
         return token_ids
+
+    @staticmethod
+    def collect_fixed_latest_token_ids_detail(total_token_ids_detail):
+        if len(total_token_ids_detail) == 0:
+            return []
+
+        token_ids_detail = total_token_ids_detail.loc[total_token_ids_detail.groupby(
+            ['address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
+
+        return token_ids_detail
 
     def collect_fixed_token_balances(self, token_transfers):
         parameters = extract_token_parameters(token_transfers, self.web3)

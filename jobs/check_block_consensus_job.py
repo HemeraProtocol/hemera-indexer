@@ -1,3 +1,5 @@
+import threading
+
 from controller.fixing_controller import FixingController
 from jobs.base_job import BaseJob
 
@@ -31,7 +33,9 @@ class CheckBlockConsensusJob(BaseJob):
                 block_hash = block['hash']
                 if block_hash != parent_hash:
                     # non-consensus detected
-                    self.fix_controller.action(block['number'])
+                    fixing_thread = threading.Thread(target=self.fix_controller.action,
+                                                     kwargs={'block_number': block['number']})
+                    fixing_thread.start()
                     break
 
                 parent_hash = block['parent_hash']
