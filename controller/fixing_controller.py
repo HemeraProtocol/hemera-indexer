@@ -110,6 +110,7 @@ class FixingController(BaseController):
                 self.fixing_job.run()
 
                 logging.info(f'Block No.{fix_block} and relative entities completely fixed .')
+                break
 
             except Exception as e:
                 print(e)
