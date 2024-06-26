@@ -12,7 +12,7 @@ def format_block_data(block_dict):
         'nonce': block_dict['nonce'],
         'gas_limit': to_int(hexstr=block_dict['gasLimit']),
         'gas_used': to_int(hexstr=block_dict['gasUsed']),
-        'base_fee_per_gas': to_int(hexstr=block_dict['baseFeePerGas']),
+        'base_fee_per_gas': to_int(hexstr=block_dict['baseFeePerGas']) if 'baseFeePerGas' in block_dict else None,
         'difficulty': to_int(hexstr=block_dict['difficulty']),
         'total_difficulty': to_int(hexstr=block_dict['totalDifficulty']),
         'size': to_int(hexstr=block_dict['size']),

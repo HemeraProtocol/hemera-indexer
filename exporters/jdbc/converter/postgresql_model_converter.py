@@ -133,7 +133,7 @@ def convert_to_log(log, fixing=False):
         'log_index': log["log_index"],
         'address': bytes.fromhex(log["address"][2:]),
         'data': bytes.fromhex(log["data"][2:]),
-        'topic0': bytes.fromhex(log["topic0"][2:]),
+        'topic0': bytes.fromhex(log["topic0"][2:]) if log["topic1"] else None,
         'topic1': bytes.fromhex(log["topic1"][2:]) if log["topic1"] else None,
         'topic2': bytes.fromhex(log["topic2"][2:]) if log["topic2"] else None,
         'topic3': bytes.fromhex(log["topic3"][2:]) if log["topic3"] else None,
@@ -219,7 +219,7 @@ def convert_to_erc721_token_id_change(token_id_change, fixing=False):
     return {
         "address": bytes.fromhex(token_id_change["address"][2:]),
         "token_id": token_id_change["token_id"],
-        "token_owner": bytes.fromhex(token_id_change["token_owner"][2:]),
+        "token_owner": bytes.fromhex(token_id_change["token_owner"][2:]) if token_id_change["token_owner"] else None,
         'block_number': token_id_change["block_number"],
         'block_timestamp': func.to_timestamp(token_id_change["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
@@ -231,7 +231,7 @@ def convert_to_erc721_token_id_detail(token_id_detail, fixing=False):
     return {
         "address": bytes.fromhex(token_id_detail["address"][2:]),
         "token_id": token_id_detail["token_id"],
-        "token_owner": bytes.fromhex(token_id_detail["token_owner"][2:]),
+        "token_owner": bytes.fromhex(token_id_detail["token_owner"][2:]) if token_id_detail["token_owner"] else None,
         "token_uri": token_id_detail["token_uri"],
         "token_uri_info": token_id_detail["token_uri_info"],
         'block_number': token_id_detail["block_number"],
