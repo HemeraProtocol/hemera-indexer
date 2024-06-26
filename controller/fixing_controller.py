@@ -32,9 +32,18 @@ class FixingController(BaseController):
         self.waite_count = 0
 
     def action(self,
-               block_number,
+               job_id=None,
+               block_number=None,
+               remains=None,
                retry_errors=True):
-        job_id = self.submit_new_fixing_job(block_number, self.ranges)
+        if block_number is None:
+            raise ValueError('Fixing mission must provide a block_number.')
+        if remains is None:
+            remains = self.ranges
+
+        if job_id is None:
+            job_id = self.submit_new_fixing_job(block_number, remains)
+
         self.increment_waiting()
         with self.condition:
             # condition can lock other thread, using this check to prevent other process going through
@@ -50,49 +59,60 @@ class FixingController(BaseController):
             self.decrement_waiting()
             self.update_job_info(job_id, {"job_status": "running"})
 
-            for i in range(self.ranges):
-                try:
-                    fix_need = self.check_block_need_fix(block_number - i)
-                    if fix_need:
-                        logging.info(f'Fixing block No.{block_number - i}')
-                        self._do_fixing(block_number - i, retry_errors)
-                    else:
-                        logging.info(f'Block No.{block_number - i} is verified to be correct. Skip to the next one.')
+            try:
+                offset, limit = 0, remains
+                while offset < limit:
+                    fix_need = self.check_block_been_synced(block_number - offset) and \
+                               self.check_block_need_fix(block_number - offset)
 
-                finally:
-                    if fix_need and i == self.ranges - 1:
-                        self.ranges += 1
-                    # submit the progress to db
+                    if fix_need:
+                        logging.info(f'Fixing block No.{block_number - offset}')
+                        self._do_fixing(block_number - offset, retry_errors)
+                    else:
+                        logging.info(
+                            f'Block No.{block_number - offset} is verified to be correct or has not been synced. '
+                            f'Skip to the next one.')
+
+                    if fix_need and offset == limit - 1:
+                        offset += 1
+
                     self.update_job_info(job_id,
                                          job_info={
-                                             "last_fixed_block_number": block_number - i,
-                                             "remain_process": self.ranges - i - 1,
+                                             "last_fixed_block_number": block_number - offset,
+                                             "remain_process": limit - offset - 1,
                                              "update_time": datetime.now(timezone.utc),
-                                             "job_status": "interrupt"
                                          })
+                    offset += 1
+            except (Exception, KeyboardInterrupt) as e:
+                self.update_job_info(job_id,
+                                     job_info={
+                                         "last_fixed_block_number": block_number - offset,
+                                         "remain_process": limit - offset - 1,
+                                         "update_time": datetime.now(timezone.utc),
+                                         "job_status": "interrupt"
+                                     })
+                print(e)
+                raise e
 
-            self.update_job_info(job_id, {"job_status": "completed"})
-            self.wake_up_next_job()
+            self.update_job_info(job_id, job_info={"job_status": "completed"})
 
-            logging.info('Fixing mission completed.')
+            logging.info(f'Fixing mission start from block No.{block_number} and ranges {remains} has been completed.')
+
+        self.wake_up_next_job()
 
     def _do_fixing(self, fix_block, retry_errors=True):
         while True:
-            synced_blocks = 0
-
             try:
-                logging.info(f'Fixing block {fix_block}')
+                # set block number first
+                self.fixing_job.set_fix_block_number(fix_block)
 
-                if synced_blocks != 0:
-                    # set block number first
-                    self.fixing_job.set_fix_block_number(fix_block)
+                # Main fixing logic
+                self.fixing_job.run()
 
-                    # Main fixing logic
-                    self.fixing_job.run()
-
-                    logging.info(f'Block No.{fix_block} and relative entities completely fixed .')
+                logging.info(f'Block No.{fix_block} and relative entities completely fixed .')
 
             except Exception as e:
+                print(e)
                 logging.exception('An exception occurred while fixing block data.')
                 if not retry_errors:
                     raise e
@@ -136,7 +156,7 @@ class FixingController(BaseController):
                 update(FixRecord)
                 .where(FixRecord.job_id == job_id)
                 .values(job_info))
-            result = session.execute(stmt)
+            session.execute(stmt)
             session.commit()
         finally:
             session.close()
@@ -158,23 +178,39 @@ class FixingController(BaseController):
         if self.get_waiting_count() > 0:
             self.condition.notify_all()
             return
-
         session = self.db_service.get_service_session()
-        job = (session.query(FixRecord)
-               .filter(FixRecord.job_status != "completed")
-               .order_by(FixRecord.create_time)
-               .first())
+        try:
+            job = (session.query(FixRecord)
+                   .filter(FixRecord.job_status != "completed")
+                   .order_by(FixRecord.create_time)
+                   .first())
 
-        if job:
-            self.action(job.last_fixed_block_number - 1, job.remain_process)
+            if job:
+                self.action(job_id=job.job_id,
+                            block_number=job.last_fixed_block_number - 1,
+                            remains=job.remain_process)
+        finally:
+            session.close()
+
+    def check_block_been_synced(self, block_number):
+        session = self.db_service.get_service_session()
+        try:
+            result = (session.query(Blocks)
+                      .filter(and_(Blocks.number == block_number))
+                      .first())
+        finally:
+            session.close()
+        return result is not None
 
     def check_block_need_fix(self, block_number):
         block = self.web3.eth.get_block(block_number)
         block_hash = block.hash.hex()
 
         session = self.db_service.get_service_session()
-        result = (session.query(Blocks)
-                  .filter(and_(Blocks.number == block_number, Blocks.hash == bytes.fromhex(block_hash[2:])))
-                  .first())
-
+        try:
+            result = (session.query(Blocks)
+                      .filter(and_(Blocks.number == block_number, Blocks.hash == bytes.fromhex(block_hash[2:])))
+                      .first())
+        finally:
+            session.close()
         return result is None
