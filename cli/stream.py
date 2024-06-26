@@ -22,6 +22,7 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
               help='The URI of the web3 debug provider e.g. '
                    'file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io')
 @click.option('-db', '--database-url', type=str, required=True,
+              envvar="DATABASE_URL",
               help='The required postgres connection url.'
                    'e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum')
 @click.option('-o', '--output', type=str,
