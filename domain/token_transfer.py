@@ -131,7 +131,7 @@ def handle_transfer_event(log):
 
 
 def handle_transfer_single_event(log):
-    types = build_types_from_abi(log['topics'][0])
+    types = build_types_from_abi(log['topic0'])
     topics_with_data = join_topics_with_data([log['topic1'], log['topic2'], log['topic3']], log['data'])
     operator, from_address, to_address, token_id, value = abi.decode(types, bytes.fromhex(topics_with_data))
 
@@ -153,7 +153,7 @@ def handle_transfer_single_event(log):
 
 
 def handle_transfer_batch_event(log):
-    indexed_types, none_indexed_types = build_types_from_abi(log['topics'][0])
+    indexed_types, none_indexed_types = build_types_from_abi(log['topic0'])
     topics_with_data = join_topics_with_data([log['topic1'], log['topic2'], log['topic3']])
     data = bytes.fromhex(log['data'][2:])
 
