@@ -1,6 +1,7 @@
 import json
 import numpy
 import pandas
+from eth_utils import to_int
 
 from web3 import Web3
 
@@ -228,7 +229,7 @@ def token_balances_rpc_requests(make_requests, tokens):
             'address': data[0]['address'],
             'tokenAddress': data[0]['token_address'],
             'tokenType': data[0]['token_type'],
-            'tokenBalance': int(result, 16) if result is not None else None,
+            'tokenBalance': to_int(hexstr=result) if result is not None and len(result) > 2 else None,
             'blockNumber': data[0]['block_number'],
             'blockTimestamp': data[0]['block_timestamp'],
         })
