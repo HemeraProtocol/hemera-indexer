@@ -222,13 +222,13 @@ def token_balances_rpc_requests(make_requests, tokens):
 
     token_balances = []
     for data in list(zip(tokens, response)):
-        result = rpc_response_to_result(data[1])
+        result = rpc_response_to_result(data[1], ignore_errors=True)
         token_balances.append({
             'tokenId': data[0]['token_id'],
             'address': data[0]['address'],
             'tokenAddress': data[0]['token_address'],
             'tokenType': data[0]['token_type'],
-            'tokenBalance': int(result, 16),
+            'tokenBalance': int(result, 16) if result is not None else None,
             'blockNumber': data[0]['block_number'],
             'blockTimestamp': data[0]['block_timestamp'],
         })
