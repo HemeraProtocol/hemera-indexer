@@ -44,6 +44,7 @@ setup(
         "sqlalchemy",
         "psycopg2",
         "alembic",
+        "numpy<2.0",
         "pandas"
     ],
     extras_require={
