@@ -243,28 +243,63 @@ The URI of the web3 provider e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `h
 [**Required**]
 The URI of the web3 debug provider e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`
 
-#### `OUTPUT` or `--output`
+#### `DATABASE_URL` or `--database-url`
 [**Required**]
-Either file system path e.g. `file://projects/your-project/topics/crypto_ethereum` or Postgres connection url e.g. `postgresql+pg8000://postgres:admin@127.0.0.1:5432/ethereum`
+The postgresql connection url of which data will be exported to. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
 
-A postgresql connection string must be provided.
+#### `OUTPUT` or `--output`
+You may specify the output parameter so hemera will export the data to csv or json files as well. If not specified the data will be printed to the console.
 
-If not specified will print to console.
+If you have multi outputs, use "," to concat the files.
+The file location will be relative to your current location if you run from source code, or the `output` folder as configured in `docker-compose.yaml`. 
 
-#### `START_TIME` or `--start-time`
-Specify the start time of range for data confirming. e.g. `2024-01-01_00:00:00` .
+e.g.
+- `jsonfile://output/json`: Json files will be exported to folder `output/json` 
+- `csvfile://output/csv`: Csv files will be exported to folder `output/csv`
+- `console,jsonfile://output/json,csvfile://output/csv`: Multiple destinations are supported. 
 
-#### `PARTITION_BATCH_SIZE` or `--partition-batch-size`
-The number of blocks to export in partition.
+#### `ENTITY_TYPES` or `--entity-types`
+Hemera indexer will export those entity types to your database and files(if `OUTPUT` is specified).
+Full list of available entity types:
+- `block`
+- `transaction`
+- `log`
+- `token`
+- `token_transfer`
+- `trace`
+- `contract`
+- `coin_balance`
 
-#### `EXPORT_BATCH_SIZE` or `--export-batch-size`
-How many blocks to batch in single sync round.
+If you didn't specify this parameter, the default entity types will be all of the above.
+
+#### `DB_VERSION` or `--db-version`
+The database version to initialize the database. Using the Alembic script's revision ID to specify a version.  
+e.g. `head`, indicates the latest version.  
+Or `base`, indicates the empty database without any table.  
+Default value: `head`
+
+#### `START_BLOCK` or `--start-block`
+The desired start block of hemera indexer, specify this option if you want to skip the blocks.
+
+#### `PARTITION_SIZE` or `--partition-size`
+How many records were written to each file.  
+Default value: `50000`
+
+#### `PERIOD_SECONDS` or `--period-seconds`
+How many seconds to sleep between syncs.  
+Default value: `10`
+
+#### `BATCH_SIZE` or `--batch-size`
+How many blocks to batch in a single request.  
+Default value: `10`
+
+#### `BLOCK_BATCH_SIZE` or `--block-batch-size`
+How many blocks to batch in a single sync round.  
+Default value: `1`
 
 #### `MAX_WORKERS` or `--max-workers`
-The number of workers
-
-#### `LOG_FILE` or `--log-file`
-Log file.
+The number of workers.  
+Default value: `5`
 
 
 # Export Result

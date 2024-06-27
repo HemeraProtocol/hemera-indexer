@@ -14,12 +14,13 @@ services:
       - hemera
     environment:
       - PROVIDER_URI=https://eth.llamarpc.com
-      - DEBUG_PROVIDER_URI=https://eth.llamarpc.com
-      - ENTITY_TYPES=transaction,block
-      - START_BLOCK=20137200
-      - OUTPUT=postgresql+psycopg2://user:password@postgresql:5432/postgres
+      - PROVIDER_URI=https://eth.llamarpc.com
+      - START_BLOCK=20159954
+      - DATABASE_URL=postgresql+psycopg2://user:Ts6YZSrGegXr8PPONtHcSLAHDGd1fjwHBjFZ6WVNpgiOmGf7ghYXl0I1@postgresql:5432/postgres
+      - ENTITY_TYPES=transaction,block,log
+      # - OUTPUT=jsonfile://output/json,csvfile://output/csv
     volumes:
-      - ./data/output:/app/output
+      - ./output:/app/output
 
   postgresql:
     image: postgres:15
@@ -37,9 +38,9 @@ services:
       # This only works when you run this for the very first time. If the container has been created, you will need to remove the volume and recreate the container
       # for it to take effect.
       - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=Ts6YZSrGegXr8PPONtHcSLAHDGd1fjwHBjFZ6WVNpgiOmGf7ghYXl0I1
       - POSTGRES_DB=postgres
     volumes:
-      - ./data/pg:/var/lib/postgresql/data
+      - ./postgres:/var/lib/postgresql/data
 networks:
   hemera:
