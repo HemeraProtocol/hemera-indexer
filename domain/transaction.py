@@ -29,8 +29,7 @@ def format_transaction_data(transaction_dict):
         if transaction_dict.get('receiptCumulativeGasUsed') else None,
         'receipt_effective_gas_price': to_int(hexstr=transaction_dict.get('receiptEffectiveGasPrice'))
         if transaction_dict.get('receiptEffectiveGasPrice') else None,
-        'receipt_root': to_normalized_address(transaction_dict.get('receiptRoot'))
-        if transaction_dict.get('receiptRoot') else None,
+        'receipt_root': transaction_dict.get('receiptRoot', None),
         'receipt_status': to_int(hexstr=transaction_dict.get('receiptStatus'))
         if transaction_dict.get('receiptStatus') else None,
         'receipt_l1_fee': to_int(hexstr=transaction_dict.get('receiptL1Fee'))

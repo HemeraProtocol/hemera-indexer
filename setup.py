@@ -44,8 +44,8 @@ setup(
         "sqlalchemy",
         "psycopg2",
         "alembic",
-        "numpy<2.0",
-        "pandas"
+        "pandas",
+        "numpy<2.0"
     ],
     extras_require={
         'streaming': [
