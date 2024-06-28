@@ -59,6 +59,14 @@ types of transactions to a postgres database or CSV/JSON files.
 
 
 ## Disk Size
+
+
+| Tables   |      Are      |  Cool |
+|----------|:-------------:|------:|
+| col 1 is |  left-aligned | $1600 |
+| col 2 is |    centered   |   $12 |
+| col 3 is | right-aligned |    $1 |
+
 ### Block, Transaction and Log
   - If you just collect `block`, `transaction` and `log`, based on June 2024 ETH blockchain, every `10k` blocks consume about `3.3GB` of postgres database disk size.
     - Approximately 36 hours according to the speed of eth. 
