@@ -2,6 +2,8 @@
 * [Introduction](#introduction)
 * [Prerequisites](#prerequisites)
   * [Disk Size](#disk-size)
+    * [Block, Transaction and Log](#block-transaction-and-log)
+  * [### Everything](#-everything)
   * [VM](#vm)
     * [Crete VM From Cloud Services](#crete-vm-from-cloud-services)
       * [Create an AWS EC2 Instance](#create-an-aws-ec2-instance)
@@ -256,15 +258,17 @@ The URI of the web3 debug provider e.g. `file://$HOME/Library/Ethereum/geth.ipc`
 
 #### `DATABASE_URL` or `--database-url`
 [**Required**]
-The postgresql connection url of which data will be exported to. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
+The postgresql connection url that hemera used to maintain its state. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
 
 #### `OUTPUT` or `--output`
+[**Required**]
 You may specify the output parameter so hemera will export the data to csv or json files as well. If not specified the data will be printed to the console.
 
 If you have multi outputs, use "," to concat the files.
 The file location will be relative to your current location if you run from source code, or the `output` folder as configured in `docker-compose.yaml`. 
 
 e.g.
+- `postgresql+psycopg2://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
 - `jsonfile://output/json`: Json files will be exported to folder `output/json` 
 - `csvfile://output/csv`: Csv files will be exported to folder `output/csv`
 - `console,jsonfile://output/json,csvfile://output/csv`: Multiple destinations are supported. 
