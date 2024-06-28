@@ -38,7 +38,7 @@ services:
       # This only works when you run this for the very first time. If the container has been created, you will need to remove the volume and recreate the container
       # for it to take effect.
       - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_PASSWORD=Ts6YZSrGegXr8PPONtHcSLAHDGd1fjwHBjFZ6WVNpgiOmGf7ghYXl0I1
       - POSTGRES_DB=postgres
     volumes:
       - ./data/pg:/var/lib/postgresql/data
