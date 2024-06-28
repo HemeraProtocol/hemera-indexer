@@ -41,6 +41,6 @@ services:
       - POSTGRES_PASSWORD=Ts6YZSrGegXr8PPONtHcSLAHDGd1fjwHBjFZ6WVNpgiOmGf7ghYXl0I1
       - POSTGRES_DB=postgres
     volumes:
-      - ./data/pg:/var/lib/postgresql/data
+      - ./postgres:/var/lib/postgresql/data
 networks:
   hemera:
