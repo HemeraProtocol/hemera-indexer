@@ -18,7 +18,7 @@ services:
       - START_BLOCK=20159954
       - DATABASE_URL=postgresql+psycopg2://user:Ts6YZSrGegXr8PPONtHcSLAHDGd1fjwHBjFZ6WVNpgiOmGf7ghYXl0I1@postgresql:5432/postgres
       - ENTITY_TYPES=transaction,block,log
-      # - OUTPUT=jsonfile://output/json,csvfile://output/csv
+      - OUTPUT=jsonfile://output/json,csvfile://output/csv,postgresql+psycopg2://user:Ts6YZSrGegXr8PPONtHcSLAHDGd1fjwHBjFZ6WVNpgiOmGf7ghYXl0I1@postgresql:5432/postgres
     volumes:
       - ./output:/app/output
 
