@@ -1,6 +1,7 @@
 <!-- TOC -->
 * [Introduction](#introduction)
 * [Prerequisites](#prerequisites)
+  * [Disk Size](#disk-size)
   * [VM](#vm)
     * [Crete VM From Cloud Services](#crete-vm-from-cloud-services)
       * [Create an AWS EC2 Instance](#create-an-aws-ec2-instance)
@@ -16,18 +17,22 @@
       * [Install Pip Dependencies](#install-pip-dependencies)
       * [Prepare Your PostgresQL Instance](#prepare-your-postgresql-instance)
         * [Setup PostgresQL](#setup-postgresql)
-        * [Configure](#configure-)
+        * [Configure](#configure)
       * [Run](#run)
 * [Configure Hemera Indexer](#configure-hemera-indexer)
   * [Parameters](#parameters)
       * [`PROVIDER_URI` or `--provider-uri`](#provider_uri-or---provider-uri)
       * [`DEBUG_PROVIDER_URI` or `--debug-provider-url`](#debug_provider_uri-or---debug-provider-url)
+      * [`DATABASE_URL` or `--database-url`](#database_url-or---database-url)
       * [`OUTPUT` or `--output`](#output-or---output)
-      * [`START_TIME` or `--start-time`](#start_time-or---start-time)
-      * [`PARTITION_BATCH_SIZE` or `--partition-batch-size`](#partition_batch_size-or---partition-batch-size)
-      * [`EXPORT_BATCH_SIZE` or `--export-batch-size`](#export_batch_size-or---export-batch-size)
+      * [`ENTITY_TYPES` or `--entity-types`](#entity_types-or---entity-types)
+      * [`DB_VERSION` or `--db-version`](#db_version-or---db-version)
+      * [`START_BLOCK` or `--start-block`](#start_block-or---start-block)
+      * [`PARTITION_SIZE` or `--partition-size`](#partition_size-or---partition-size)
+      * [`PERIOD_SECONDS` or `--period-seconds`](#period_seconds-or---period-seconds)
+      * [`BATCH_SIZE` or `--batch-size`](#batch_size-or---batch-size)
+      * [`BLOCK_BATCH_SIZE` or `--block-batch-size`](#block_batch_size-or---block-batch-size)
       * [`MAX_WORKERS` or `--max-workers`](#max_workers-or---max-workers)
-      * [`LOG_FILE` or `--log-file`](#log_file-or---log-file)
 * [Export Result](#export-result)
   * [Export From Postgresql Database](#export-from-postgresql-database)
     * [Connect to Your Postgresql Instance](#connect-to-your-postgresql-instance)
@@ -47,11 +52,17 @@ types of transactions to a postgres database or CSV/JSON files.
 
 - VM
   - Ubuntu
-    - Technically you can run hemera indexer on any python compatible platform but for simplicity, this documentation is based on Ubuntu.
-  - Minimal disk size of 30? GB
-  - CPU?
-  - Network access
+    - Technically, you can run hemera indexer on any python compatible platform but for simplicity, this documentation is based on Ubuntu.
 - RPC Node of your EVM compatible blockchain
+
+
+## Disk Size
+### Block, Transaction and Log
+  - If you just collect `block`, `transaction` and `log`, based on June 2024 ETH blockchain, every `10k` blocks consume about `3.3GB` of postgres database disk size.
+    - Approximately 36 hours according to the speed of eth. 
+    - Approximately 1.8 million transactions.
+### Everything
+  - 
 
 ## VM
 
@@ -190,7 +201,7 @@ Hemera indexer requires a postgresql database to record all the data. You may sk
 ##### Setup PostgresQL
 Follow the instructions about how to set up a postgresql database here: [Setup PostgresQL on Ubuntu](https://www.cherryservers.com/blog/how-to-install-and-setup-postgresql-server-on-ubuntu-20-04).
 
-##### Configure 
+##### Configure
 Configure the `OUTPUT` or `--output` parameter according to your postgresql role information. Checkout [Configure Hemera Indexer](#output-or---output) for details. 
 
 E.g. `postgresql+psycopg2://${YOUR_USER}:${YOUR_PASSWORD}@${YOUR_HOST}:5432/${YOUR_DATABASE}`.
