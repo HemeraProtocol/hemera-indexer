@@ -13,7 +13,7 @@ class ERC1155TokenTransfers(Base):
     to_address = Column(BYTEA)
     token_address = Column(BYTEA)
     token_id = Column(NUMERIC(78))
-    value = Column(NUMERIC(100))
+    value = Column(NUMERIC)
 
     block_number = Column(BIGINT)
     block_hash = Column(BYTEA)

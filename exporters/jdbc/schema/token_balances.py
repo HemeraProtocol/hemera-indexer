@@ -11,7 +11,7 @@ class AddressTokenBalances(Base):
     token_id = Column(NUMERIC(78))
     token_type = Column(VARCHAR)
     token_address = Column(BYTEA, primary_key=True)
-    balance = Column(NUMERIC(100))
+    balance = Column(NUMERIC)
 
     block_number = Column(BIGINT, primary_key=True)
     block_timestamp = Column(TIMESTAMP)

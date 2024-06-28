@@ -10,7 +10,7 @@ class ContractInternalTransactions(Base):
     trace_id = Column(VARCHAR, primary_key=True)
     from_address = Column(BYTEA)
     to_address = Column(BYTEA)
-    value = Column(NUMERIC(100))
+    value = Column()
     trace_type = Column(VARCHAR)
     call_type = Column(VARCHAR)
     gas = Column(NUMERIC(100))

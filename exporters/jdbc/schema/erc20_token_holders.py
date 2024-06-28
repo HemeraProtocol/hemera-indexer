@@ -9,7 +9,7 @@ class ERC20TokenHolders(Base):
 
     token_address = Column(BYTEA, primary_key=True)
     wallet_address = Column(BYTEA, primary_key=True)
-    balance_of = Column(NUMERIC(100))
+    balance_of = Column(NUMERIC)
 
     block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)

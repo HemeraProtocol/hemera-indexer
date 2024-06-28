@@ -10,7 +10,7 @@ class Traces(Base):
     trace_id = Column(VARCHAR, primary_key=True)
     from_address = Column(BYTEA)
     to_address = Column(BYTEA)
-    value = Column(NUMERIC(100))
+    value = Column()
     input = Column(BYTEA)
     output = Column(BYTEA)
     trace_type = Column(VARCHAR)

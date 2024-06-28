@@ -10,7 +10,7 @@ class ERC1155TokenHolders(Base):
     token_address = Column(BYTEA, primary_key=True)
     wallet_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(78), primary_key=True)
-    balance_of = Column(NUMERIC(100))
+    balance_of = Column(NUMERIC)
     latest_call_contract_time = Column(TIMESTAMP)
 
     block_number = Column(BIGINT)
