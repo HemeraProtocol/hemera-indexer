@@ -21,7 +21,7 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
               envvar="DEBUG_PROVIDER_URI",
               help='The URI of the web3 debug provider e.g. '
                    'file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io')
-@click.option('-db', '--database-url', type=str, required=True,
+@click.option('-pg', '--postgres-url', type=str, required=True,
               envvar="DATABASE_URL",
               help='The required postgres connection url.'
                    'e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum')
@@ -51,14 +51,18 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
               help='How many seconds to sleep between syncs')
 @click.option('-b', '--batch-size', default=10, show_default=True, type=int,
               envvar='BATCH_SIZE',
-              help='How many blocks to batch in single request')
+              help='How many parameters to batch in single request')
+@click.option('-db', '--debug-batch-size', default=1, show_default=True, type=int,
+              envvar='DEBUG_BATCH_SIZE',
+              help='How many parameters to batch in single debug rpc request')
 @click.option('-B', '--block-batch-size', default=1, show_default=True, type=int,
               envvar='BLOCK_BATCH_SIZE',
               help='How many blocks to batch in single sync round')
 @click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers',
               envvar='MAX_WORKERS')
-def stream(provider_uri, debug_provider_uri, database_url, output, db_version, start_block, entity_types, partition_size,
-           period_seconds=10, batch_size=2, block_batch_size=10, max_workers=5, log_file=None, pid_file=None):
+def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, entity_types,
+           partition_size, period_seconds=10, batch_size=10, debug_batch_size=1, block_batch_size=1, max_workers=5,
+           log_file=None, pid_file=None):
     configure_logging(log_file)
     configure_signals()
 
@@ -68,7 +72,7 @@ def stream(provider_uri, debug_provider_uri, database_url, output, db_version, s
     logging.info('Using debug provider ' + debug_provider_uri)
 
     # set alembic.ini and build postgresql service
-    service_url = verify_db_connection_url(database_url)
+    service_url = verify_db_connection_url(postgres_url)
     if service_url is None:
         raise click.ClickException('postgresql url must be provided.')
     set_config(config_file='alembic.ini', section='alembic', key='sqlalchemy.url', value=service_url)
@@ -82,17 +86,20 @@ def stream(provider_uri, debug_provider_uri, database_url, output, db_version, s
 
     stream_dispatcher = StreamDispatcher(
         service=service,
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
+        batch_web3_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(provider_uri, batch=True)),
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
         item_exporter=create_item_exporters(output, exporter_config),
         batch_size=batch_size,
+        debug_batch_size=debug_batch_size,
         max_workers=max_workers,
         entity_types=calculate_entity_value(entity_types))
 
     controller = StreamController(
         service=service,
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(provider_uri, batch=True)),
+            lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_dispatcher=stream_dispatcher,
     )
 

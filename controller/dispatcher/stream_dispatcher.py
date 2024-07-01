@@ -21,6 +21,7 @@ class StreamDispatcher(BaseDispatcher):
                  batch_web3_debug_provider,
                  item_exporter=ConsoleItemExporter(),
                  batch_size=100,
+                 debug_batch_size=1,
                  max_workers=5,
                  entity_types=255):
         super().__init__(service)
@@ -28,6 +29,7 @@ class StreamDispatcher(BaseDispatcher):
         self._batch_web3_debug_provider = batch_web3_debug_provider
         self._web3 = build_web3(batch_web3_provider)
         self._batch_size = batch_size
+        self._debug_batch_size = debug_batch_size
         self._max_workers = max_workers
         self._item_exporter = item_exporter
         self._entity_types = entity_types
@@ -102,7 +104,7 @@ class StreamDispatcher(BaseDispatcher):
                 start_block=start_block,
                 end_block=end_block,
                 batch_web3_provider=self._batch_web3_debug_provider,
-                batch_size=self._batch_size,
+                batch_size=self._debug_batch_size,
                 max_workers=self._max_workers,
                 item_exporter=self._item_exporter,
             ).run()
@@ -112,7 +114,7 @@ class StreamDispatcher(BaseDispatcher):
                 index_keys=['contract'],
                 entity_types=self._entity_types,
                 web3=self._web3,
-                batch_web3_provider=self._batch_web3_debug_provider,
+                batch_web3_provider=self._batch_web3_provider,
                 batch_size=self._batch_size,
                 max_workers=self._max_workers,
                 item_exporter=self._item_exporter,
@@ -122,7 +124,7 @@ class StreamDispatcher(BaseDispatcher):
             ExportCoinBalancesJob(
                 index_keys=['coin_balance'],
                 entity_types=self._entity_types,
-                batch_web3_provider=self._batch_web3_debug_provider,
+                batch_web3_provider=self._batch_web3_provider,
                 batch_size=self._batch_size,
                 max_workers=self._max_workers,
                 item_exporter=self._item_exporter,
@@ -134,5 +136,7 @@ class StreamDispatcher(BaseDispatcher):
                                service=self._db_service,
                                batch_web3_provider=self._batch_web3_provider,
                                batch_web3_debug_provider=self._batch_web3_debug_provider,
-                               ranges=end_block - start_block - 1
+                               ranges=end_block - start_block - 1,
+                               batch_size=self._batch_size,
+                               debug_batch_size=self._debug_batch_size,
                                ).run()
