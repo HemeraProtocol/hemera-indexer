@@ -20,8 +20,8 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
               envvar='DEBUG_PROVIDER_URI',
               help='The URI of the web3 debug provider e.g. '
                    'file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io')
-@click.option('-db', '--database-url', type=str, required=True,
-              envvar='DATABASE_URL',
+@click.option('-pg', '--postgres-url', type=str, required=True,
+              envvar="DATABASE_URL",
               help='The required postgres connection url.'
                    'e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum')
 @click.option('-v', '--db-version', default="head", show_default=True, type=str,
@@ -30,14 +30,21 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
                    'specify a version.'
                    ' e.g. head, indicates the latest version.'
                    'or base, indicates the empty database without any table.')
-@click.option('-b', '--block-number', default=None, required=True, type=int,
-              envvar='BLOCK_NUMBER',
-              help='Specify the block number for data fixing. e.g. 1024')
+@click.option('-b', '--batch-size', default=10, show_default=True, type=int,
+              envvar='BATCH_SIZE',
+              help='How many parameters to batch in single request')
+@click.option('-db', '--debug-batch-size', default=1, show_default=True, type=int,
+              envvar='DEBUG_BATCH_SIZE',
+              help='How many parameters to batch in single debug rpc request')
 @click.option('-r', '--ranges', default=1000, show_default=True, type=int,
               envvar='RANGES',
               help='Specify the range limit for data fixing.')
+@click.option('--batch-size', default=10, show_default=True, type=int,
+              envvar='BATCH_SIZE',
+              help='How many parameters to batch in single request')
 @click.option('--log-file', default=None, show_default=True, type=str, envvar='LOG_FILE', help='Log file')
-def fixing(provider_uri, debug_provider_uri, database_url, db_version, block_number, ranges, log_file=None):
+def fixing(provider_uri, debug_provider_uri, postgres_url, db_version, block_number, ranges,
+           batch_size, debug_batch_size, log_file=None):
     configure_logging(log_file)
     configure_signals()
 
@@ -47,15 +54,17 @@ def fixing(provider_uri, debug_provider_uri, database_url, db_version, block_num
     logging.info('Using debug provider ' + debug_provider_uri)
 
     # build postgresql service
-    service_url = verify_db_connection_url(database_url)
+    service_url = verify_db_connection_url(postgres_url)
     set_config(config_file='alembic.ini', section='alembic', key='sqlalchemy.url', value=service_url)
     service = PostgreSQLService(service_url, db_version=db_version)
 
     controller = FixingController(service=service,
                                   batch_web3_provider=ThreadLocalProxy(
-                                      lambda: get_provider_from_uri(provider_uri, batch=True)),
+                                      lambda: get_provider_from_uri(provider_uri, batch=batch_size > 1)),
                                   batch_web3_debug_provider=ThreadLocalProxy(
-                                      lambda: get_provider_from_uri(provider_uri, batch=True)),
-                                  ranges=ranges)
+                                      lambda: get_provider_from_uri(debug_provider_uri, batch=debug_batch_size > 1)),
+                                  ranges=ranges,
+                                  batch_size=batch_size,
+                                  debug_batch_size=debug_batch_size)
 
     controller.action(block_number=block_number)

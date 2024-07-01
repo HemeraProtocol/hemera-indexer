@@ -19,14 +19,18 @@ class FixingController(BaseController):
                  service,
                  batch_web3_provider,
                  batch_web3_debug_provider,
-                 ranges):
+                 ranges,
+                 batch_size,
+                 debug_batch_size):
         super().__init__(service)
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
         self.fixing_job = FixingBlockConsensusJob(
             service=service,
             batch_web3_provider=batch_web3_provider,
-            batch_web3_debug_provider=batch_web3_debug_provider)
+            batch_web3_debug_provider=batch_web3_debug_provider,
+            batch_size=batch_size,
+            debug_batch_size=debug_batch_size)
         self.condition = Condition()
         self.waite_lock = Lock()
         self.waite_count = 0

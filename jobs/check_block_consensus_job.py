@@ -10,19 +10,22 @@ class CheckBlockConsensusJob(BaseJob):
                  service,
                  batch_web3_provider,
                  batch_web3_debug_provider,
-                 ranges):
+                 ranges,
+                 batch_size,
+                 debug_batch_size):
         super().__init__(entity_types=entity_types)
         self.last_batch_end_block = None
         self.fix_controller = FixingController(service=service,
                                                batch_web3_provider=batch_web3_provider,
                                                batch_web3_debug_provider=batch_web3_debug_provider,
-                                               ranges=ranges)
+                                               ranges=ranges,
+                                               batch_size=batch_size,
+                                               debug_batch_size=debug_batch_size)
 
     def _process(self):
 
         if self._entity_types & 255 == 255:
             batch_blocks = self._data_buff['formated_block']
-            fix_range = len(batch_blocks)
 
             if self.last_batch_end_block is not None:
                 batch_blocks = [self.last_batch_end_block] + batch_blocks
