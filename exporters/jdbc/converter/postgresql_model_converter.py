@@ -359,7 +359,7 @@ def convert_to_contract(contract, fixing=False):
         'name': contract['name'],
         'contract_creator': bytes.fromhex(contract['contract_creator'][2:]),
         'creation_code': bytes.fromhex(contract['creation_code'][2:]),
-        'deployed_code': bytes.fromhex(contract['deployed_code'][2:]),
+        'deployed_code': bytes.fromhex(contract['deployed_code'][2:]) if contract['deployed_code'] else None,
         'block_number': contract['block_number'],
         'block_hash': bytes.fromhex(contract['block_hash'][2:]),
         'block_timestamp': func.to_timestamp(contract["block_timestamp"]),
