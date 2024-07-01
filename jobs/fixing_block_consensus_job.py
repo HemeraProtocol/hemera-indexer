@@ -46,6 +46,7 @@ from jobs.export_traces_job import traces_rpc_requests
 from jobs.export_transactions_and_logs_job import receipt_rpc_requests
 from utils.enrich import enrich_transactions, enrich_blocks_timestamp, enrich_token_transfer_type, enrich_traces, \
     enrich_contracts
+from utils.utils import dynamic_batch_iterator
 from utils.web3_utils import build_web3
 
 
@@ -53,11 +54,17 @@ class FixingBlockConsensusJob(BaseJob):
     def __init__(self,
                  service,
                  batch_web3_provider,
-                 batch_web3_debug_provider):
+                 batch_web3_debug_provider,
+                 batch_size,
+                 debug_batch_size):
         super().__init__()
         self.service = service
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
+        self.batch_size = batch_size
+        self.is_batch = batch_size > 1
+        self.debug_batch_size = debug_batch_size
+        self.is_debug_batch = debug_batch_size > 1
         self.web3 = build_web3(batch_web3_provider)
         self.block_number = None
 
@@ -252,18 +259,18 @@ class FixingBlockConsensusJob(BaseJob):
             session.close()
 
     def collect_fixed_block(self):
-        block_generator = blocks_rpc_requests(self.batch_web3_provider.make_batch_request, [self.block_number])
+        block_generator = blocks_rpc_requests(self.batch_web3_provider.make_request, [self.block_number], self.is_batch)
         block = [block for block in block_generator][0]
         return format_block_data(block), block['transactions']
 
     def collect_fixed_transactions_logs(self, block, transactions):
-        receipt_generator = receipt_rpc_requests(self.batch_web3_provider.make_batch_request,
-                                                 [transaction['hash'] for transaction in transactions])
-
         logs, receipts = [], []
-        for receipt in receipt_generator:
-            receipts.append(receipt)
-            logs.extend(receipt['logs'])
+        for batch in dynamic_batch_iterator([transaction['hash'] for transaction in transactions], self.batch_size):
+            receipt_generator = receipt_rpc_requests(self.batch_web3_provider.make_request, batch, self.is_batch)
+
+            for receipt in receipt_generator:
+                receipts.append(receipt)
+                logs.extend(receipt['logs'])
 
         enriched_transactions = [format_transaction_data(transaction)
                                  for transaction in enrich_blocks_timestamp
@@ -278,9 +285,14 @@ class FixingBlockConsensusJob(BaseJob):
         exist_token = get_exist_token(self.service)
         tokens_parameter, token_transfers = extract_parameters_and_token_transfers(exist_token, logs)
 
-        tokens, tokens_type = tokens_rpc_requests(self.web3,
-                                                  self.batch_web3_provider.make_batch_request,
-                                                  tokens_parameter)
+        tokens, tokens_type = [], []
+        for batch in dynamic_batch_iterator(tokens_parameter, self.batch_size):
+            batch_tokens, batch_tokens_type = tokens_rpc_requests(self.web3,
+                                                                  self.batch_web3_provider.make_request,
+                                                                  batch,
+                                                                  self.is_batch)
+            tokens.extend(batch_tokens)
+            tokens_type.extend(batch_tokens_type)
 
         format_tokens = [format_token_data(token) for token in tokens]
 
@@ -291,7 +303,13 @@ class FixingBlockConsensusJob(BaseJob):
         if len(tokens) == 0:
             return []
 
-        token_ids = token_ids_info_rpc_requests(self.web3, self.batch_web3_provider.make_batch_request, tokens)
+        token_ids = []
+        for batch in dynamic_batch_iterator(tokens, self.batch_size):
+            batch_token_ids = token_ids_info_rpc_requests(self.web3,
+                                                          self.batch_web3_provider.make_request,
+                                                          batch,
+                                                          self.is_batch)
+            token_ids.extend(batch_token_ids)
 
         return token_ids
 
@@ -307,26 +325,49 @@ class FixingBlockConsensusJob(BaseJob):
 
     def collect_fixed_token_balances(self, token_transfers):
         parameters = extract_token_parameters(token_transfers, self.web3)
-        token_balances = token_balances_rpc_requests(self.batch_web3_provider.make_batch_request, parameters)
+
+        token_balances = []
+        for batch in dynamic_batch_iterator(parameters, self.batch_size):
+            batch_token_balances = token_balances_rpc_requests(self.batch_web3_provider.make_request,
+                                                               batch,
+                                                               self.is_batch)
+            token_balances.extend(batch_token_balances)
 
         return [format_token_balance_data(token_balance) for token_balance in token_balances]
 
     def collect_fixed_traces(self, block):
-        traces = traces_rpc_requests(self.batch_web3_provider.make_batch_request, [self.block_number])
+        traces = traces_rpc_requests(self.batch_web3_debug_provider.make_request,
+                                     [self.block_number],
+                                     self.is_debug_batch)
         formated_traces = [format_trace_data(trace) for trace in enrich_traces([block], traces)]
 
         return formated_traces
 
     def collect_fixed_contracts(self, block, traces):
-        contracts = build_contracts(self.web3, traces)
-        contracts = contract_info_rpc_requests(self.batch_web3_provider.make_batch_request, contracts)
+        origin_contracts = build_contracts(self.web3, traces)
+
+        contracts = []
+        for batch in dynamic_batch_iterator(origin_contracts, self.batch_size):
+            batch_contracts = tokens_rpc_requests(self.web3,
+                                                  self.batch_web3_provider.make_request,
+                                                  batch,
+                                                  self.is_batch)
+            contracts.extend(batch_contracts)
+
         enriched_contract = [format_contract_data(contract) for contract in enrich_contracts([block], contracts)]
 
         return enriched_contract
 
     def collect_fixed_coin_balances(self, block, transactions, traces):
         addresses = distinct_addresses([block], transactions, traces)
-        coin_balances = coin_balances_rpc_requests(self.batch_web3_provider.make_batch_request, addresses)
+
+        coin_balances = []
+        for batch in dynamic_batch_iterator(addresses, self.batch_size):
+            batch_coin_balances = coin_balances_rpc_requests(self.batch_web3_provider.make_request,
+                                                             batch,
+                                                             self.is_batch)
+            coin_balances.extend(batch_coin_balances)
+
         formated_coin_balance = [format_coin_balance_data(coin_balance) for coin_balance in coin_balances]
 
         return formated_coin_balance
