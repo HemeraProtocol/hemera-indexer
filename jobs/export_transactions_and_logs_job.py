@@ -24,6 +24,7 @@ class ExportTransactionsAndLogsJob(BaseJob):
 
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
     def _start(self):
@@ -35,9 +36,8 @@ class ExportTransactionsAndLogsJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, transaction_hashes):
-        receipts_rpc = list(generate_get_receipt_json_rpc(transaction_hashes))
-        response = self._batch_web3_provider.make_batch_request(json.dumps(receipts_rpc))
-        results = rpc_response_batch_to_results(response)
+        results = receipt_rpc_requests(self._batch_web3_provider.make_request, transaction_hashes, self._is_batch)
+
         for receipt in results:
             receipt['item'] = 'receipt'
             self._collect_item(receipt)
@@ -76,9 +76,13 @@ class ExportTransactionsAndLogsJob(BaseJob):
         self._item_exporter.export_items(items)
 
 
-def receipt_rpc_requests(make_request, transaction_hashes):
+def receipt_rpc_requests(make_request, transaction_hashes, is_batch):
     receipts_rpc = list(generate_get_receipt_json_rpc(transaction_hashes))
-    response = make_request(json.dumps(receipts_rpc))
-    results = rpc_response_batch_to_results(response)
 
+    if is_batch:
+        response = make_request(params=json.dumps(receipts_rpc))
+    else:
+        response = [make_request(params=json.dumps(receipts_rpc[0]))]
+
+    results = rpc_response_batch_to_results(response)
     return results

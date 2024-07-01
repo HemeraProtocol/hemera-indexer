@@ -74,6 +74,7 @@ class ExportTokenIdInfosJob(BaseJob):
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
     def _start(self):
@@ -89,7 +90,10 @@ class ExportTokenIdInfosJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, token_list):
-        tokens = token_ids_info_rpc_requests(self._web3, self._batch_web3_provider.make_batch_request, token_list)
+        tokens = token_ids_info_rpc_requests(self._web3,
+                                             self._batch_web3_provider.make_request,
+                                             token_list,
+                                             self._is_batch)
         for token in tokens:
             if token['token_type'] == TokenType.ERC721.value:
                 token['item'] = 'erc721_token_ids'
@@ -153,12 +157,17 @@ def build_rpc_method_data(web3, tokens, token_type, fn):
     return parameters
 
 
-def token_ids_info_rpc_requests(web3, make_requests, tokens):
+def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
     token_type = tokens[0]['token_type']
     for abi_json in erc_token_id_info_abi[token_type]:
         token_name_rpc = list(generate_eth_call_json_rpc(
             build_rpc_method_data(web3, tokens, token_type, abi_json['name'])))
-        response = make_requests(json.dumps(token_name_rpc))
+
+        if is_batch:
+            response = make_requests(params=json.dumps(token_name_rpc))
+        else:
+            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+
         for data in list(zip(response, tokens)):
             result = rpc_response_to_result(data[0], ignore_errors=True)
 

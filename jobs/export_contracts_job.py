@@ -46,6 +46,7 @@ class ExportContractsJob(BaseJob):
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
     def _start(self):
@@ -58,7 +59,7 @@ class ExportContractsJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, contracts):
-        contracts = contract_info_rpc_requests(self._batch_web3_provider.make_batch_request, contracts)
+        contracts = contract_info_rpc_requests(self._batch_web3_provider.make_request, contracts, self._is_batch)
 
         for contract in contracts:
             contract['item'] = 'contract'
@@ -97,9 +98,13 @@ def build_contracts(web3, traces):
     return contracts
 
 
-def contract_info_rpc_requests(make_requests, contracts):
+def contract_info_rpc_requests(make_requests, contracts, is_batch):
     contract_name_rpc = list(generate_eth_call_json_rpc(contracts, is_latest=False))
-    response = make_requests(json.dumps(contract_name_rpc))
+
+    if is_batch:
+        response = make_requests(params=json.dumps(contract_name_rpc))
+    else:
+        response = [make_requests(params=json.dumps(contract_name_rpc[0]))]
 
     for data in list(zip(contracts, response)):
         result = rpc_response_to_result(data[1], ignore_errors=True)

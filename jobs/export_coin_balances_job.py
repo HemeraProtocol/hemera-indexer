@@ -27,6 +27,7 @@ class ExportCoinBalancesJob(BaseJob):
 
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
     def _start(self):
@@ -41,7 +42,9 @@ class ExportCoinBalancesJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, coin_addresses):
-        coin_balances = coin_balances_rpc_requests(self._batch_web3_provider.make_batch_request, coin_addresses)
+        coin_balances = coin_balances_rpc_requests(self._batch_web3_provider.make_request,
+                                                   coin_addresses,
+                                                   self._is_batch)
 
         for coin_balance in coin_balances:
             coin_balance['item'] = 'coin_balance'
@@ -103,9 +106,13 @@ def distinct_addresses(blocks, transactions, traces):
     return pandas.DataFrame(addresses).drop_duplicates().to_dict(orient='records')
 
 
-def coin_balances_rpc_requests(make_requests, addresses):
+def coin_balances_rpc_requests(make_requests, addresses, is_batch):
     coin_balance_rpc = list(generate_get_balance_json_rpc(addresses))
-    response = make_requests(json.dumps(coin_balance_rpc))
+
+    if is_batch:
+        response = make_requests(params=json.dumps(coin_balance_rpc))
+    else:
+        response = [make_requests(params=json.dumps(coin_balance_rpc[0]))]
 
     coin_balances = []
     for data in list(zip(response, addresses)):

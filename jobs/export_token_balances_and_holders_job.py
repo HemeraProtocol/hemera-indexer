@@ -12,7 +12,6 @@ from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
-from utils.enrich import enrich_blocks_timestamp
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 from utils.web3_utils import verify_0_address
@@ -104,6 +103,7 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
     def _start(self):
@@ -116,7 +116,7 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, parameters):
-        token_balances = token_balances_rpc_requests(self._batch_web3_provider.make_batch_request, parameters)
+        token_balances = token_balances_rpc_requests(self._batch_web3_provider.make_request, parameters, self._is_batch)
         for token_balance in token_balances:
             token_balance['item'] = 'token_balance'
             self._collect_item(token_balance)
@@ -217,9 +217,13 @@ def extract_token_parameters(token_transfers, web3):
     return token_parameters
 
 
-def token_balances_rpc_requests(make_requests, tokens):
+def token_balances_rpc_requests(make_requests, tokens, is_batch):
     token_balance_rpc = list(generate_eth_call_json_rpc(tokens))
-    response = make_requests(json.dumps(token_balance_rpc))
+
+    if is_batch:
+        response = make_requests(params=json.dumps(token_balance_rpc))
+    else:
+        response = [make_requests(params=json.dumps(token_balance_rpc[0]))]
 
     token_balances = []
     for data in list(zip(tokens, response)):

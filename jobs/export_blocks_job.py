@@ -27,6 +27,7 @@ class ExportBlocksJob(BaseJob):
         self._end_block = end_block
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
     def _start(self):
@@ -41,7 +42,7 @@ class ExportBlocksJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, block_number_batch):
-        results = blocks_rpc_requests(self._batch_web3_provider.make_batch_request, block_number_batch)
+        results = blocks_rpc_requests(self._batch_web3_provider.make_request, block_number_batch, self._is_batch)
 
         for block in results:
             block['item'] = 'block'
@@ -74,9 +75,13 @@ class ExportBlocksJob(BaseJob):
         self._item_exporter.export_items(export_items)
 
 
-def blocks_rpc_requests(make_request, block_number_batch):
+def blocks_rpc_requests(make_request, block_number_batch, is_batch):
     block_number_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, True))
-    response = make_request(json.dumps(block_number_rpc))
-    results = rpc_response_batch_to_results(response)
 
+    if is_batch:
+        response = make_request(params=json.dumps(block_number_rpc))
+    else:
+        response = [make_request(params=json.dumps(block_number_rpc[0]))]
+
+    results = rpc_response_batch_to_results(response)
     return results

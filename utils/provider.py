@@ -30,8 +30,8 @@ def get_provider_from_uri(uri_string, timeout=DEFAULT_TIMEOUT, batch=False):
 class BatchIPCProvider(IPCProvider):
     _socket = None
 
-    def make_batch_request(self, text):
-        request = text.encode('utf-8')
+    def make_request(self, method=None, params=None):
+        request = params.encode('utf-8')
         with self._lock, self._socket as sock:
             try:
                 sock.sendall(request)
@@ -65,10 +65,10 @@ class BatchIPCProvider(IPCProvider):
 
 class BatchHTTPProvider(HTTPProvider):
 
-    def make_batch_request(self, text):
+    def make_request(self, method=None, params=None):
         self.logger.debug("Making request HTTP. URI: %s, Request: %s",
-                          self.endpoint_uri, text)
-        request_data = text.encode('utf-8')
+                          self.endpoint_uri, params)
+        request_data = params.encode('utf-8')
         raw_response = make_post_request(
             self.endpoint_uri,
             request_data,
@@ -77,7 +77,7 @@ class BatchHTTPProvider(HTTPProvider):
         response = self.decode_rpc_response(raw_response)
         self.logger.debug("Getting response HTTP. URI: %s, "
                           "Request: %s, Response: %s",
-                          self.endpoint_uri, text, response)
+                          self.endpoint_uri, params, response)
         return response
 
 

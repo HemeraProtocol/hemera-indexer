@@ -29,6 +29,7 @@ class ExportTracesJob(BaseJob):
         self._end_block = end_block
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
     def _start(self):
@@ -44,7 +45,7 @@ class ExportTracesJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, block_number_batch):
-        traces = traces_rpc_requests(self._batch_web3_provider.make_batch_request, block_number_batch)
+        traces = traces_rpc_requests(self._batch_web3_provider.make_request, block_number_batch, self._is_batch)
 
         for trace in traces:
             trace['item'] = 'trace'
@@ -160,9 +161,13 @@ class ExtractTraces:
         return result
 
 
-def traces_rpc_requests(make_requests, block_batch):
+def traces_rpc_requests(make_requests, block_batch, is_batch):
     trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_batch))
-    response = make_requests(json.dumps(trace_block_rpc))
+
+    if is_batch:
+        response = make_requests(params=json.dumps(trace_block_rpc))
+    else:
+        response = [make_requests(params=json.dumps(trace_block_rpc[0]))]
 
     total_traces = []
     for response_item in response:

@@ -108,6 +108,7 @@ class ExportTokensAndTransfersJob(BaseJob):
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
         self._exist_token = get_exist_token(service)
 
@@ -123,8 +124,9 @@ class ExportTokensAndTransfersJob(BaseJob):
         tokens_parameter, token_transfers = extract_parameters_and_token_transfers(self._exist_token, logs)
 
         tokens, tokens_type = tokens_rpc_requests(self._web3,
-                                                  self._batch_web3_provider.make_batch_request,
-                                                  tokens_parameter)
+                                                  self._batch_web3_provider.make_request,
+                                                  tokens_parameter,
+                                                  self._is_batch)
 
         for token in tokens:
             token['item'] = 'token'
@@ -240,14 +242,19 @@ def build_rpc_method_data(web3, tokens, fn):
     return parameters
 
 
-def tokens_rpc_requests(web3, make_requests, tokens):
+def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
     if len(tokens) == 0:
         return [], {}
     fn_names = ['name', 'symbol', 'decimals', 'totalSupply', 'tokenSupply']
 
     for fn_name in fn_names:
         token_name_rpc = list(generate_eth_call_json_rpc(build_rpc_method_data(web3, tokens, fn_name)))
-        response = make_requests(json.dumps(token_name_rpc))
+
+        if is_batch:
+            response = make_requests(params=json.dumps(token_name_rpc))
+        else:
+            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+
         for data in list(zip(response, tokens)):
             result = rpc_response_to_result(data[0], ignore_errors=True)
 
@@ -263,7 +270,8 @@ def tokens_rpc_requests(web3, make_requests, tokens):
     token_types = {}
     for token in tokens:
         if token['token_type'] is None:
-            if token['decimals'] is not None and token['decimals'] > 0:
+            if token['decimals'] is not None:
+                # if token['decimals'] is not None and token['decimals'] > 0:
                 token['token_type'] = TokenType.ERC20.value
             else:
                 token['token_type'] = TokenType.ERC721.value
