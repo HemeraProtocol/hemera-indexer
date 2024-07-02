@@ -128,7 +128,7 @@ def coin_balances_rpc_requests(make_requests, addresses, is_batch):
         except Exception as e:
             logger.warning(
                 f"Decoding coin balance value failed. "
-                f"address: {data['address']}. "
+                f"address: {data[1]['address']}. "
                 f"rpc response: {result}. "
                 f"block_number: {data[1]['block_number']}. "
                 f"exception: {e}. ")
