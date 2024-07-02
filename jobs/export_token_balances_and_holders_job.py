@@ -1,7 +1,9 @@
 import json
+import logging
+
 import numpy
 import pandas
-from eth_utils import to_int
+from eth_abi import abi
 
 from web3 import Web3
 
@@ -15,6 +17,8 @@ from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 from utils.web3_utils import verify_0_address
+
+logger = logging.getLogger(__name__)
 
 contract_abi = {
     "ERC20": [
@@ -228,12 +232,20 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
     token_balances = []
     for data in list(zip(tokens, response)):
         result = rpc_response_to_result(data[1], ignore_errors=True)
+        balance = None
+
+        try:
+            if result:
+                balance = abi.decode(['uint256'], bytes.fromhex(result[2:]))[0]
+        except Exception as e:
+            logger.warning(f"Decoding balance value failed. {e}")
+
         token_balances.append({
             'tokenId': data[0]['token_id'],
             'address': data[0]['address'],
             'tokenAddress': data[0]['token_address'],
             'tokenType': data[0]['token_type'],
-            'tokenBalance': to_int(hexstr=result) if result is not None and len(result) > 2 else None,
+            'tokenBalance': balance,
             'blockNumber': data[0]['block_number'],
             'blockTimestamp': data[0]['block_timestamp'],
         })
