@@ -59,12 +59,14 @@ types of transactions to a postgres database or CSV/JSON files.
 
 
 ## Disk Size
-### Block, Transaction and Log
-  - If you just collect `block`, `transaction` and `log`, based on June 2024 ETH blockchain, every `10k` blocks consume about `3.3GB` of postgres database disk size.
-    - Approximately 36 hours according to the speed of eth. 
-    - Approximately 1.8 million transactions.
-### Everything
-  - 
+
+### Entity Types
+Based on the 2024 Ethereum, every 25k blocks, which is approximate 4.5 million transactions, consume disk size as below
+- 9GB PostgresQL database
+- 9.3GB CSV file, if you opt for the csv export.
+- 15GB Json file, if you opt for the json export
+That is about 35GB for every 25k blocks, for every 100k blocks, we recommend at least 150 GB for every 100k eth blocks.  
+
 
 ## VM
 
