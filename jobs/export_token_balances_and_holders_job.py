@@ -15,7 +15,7 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_eth_call_json_rpc
-from utils.utils import rpc_response_to_result
+from utils.utils import rpc_response_to_result, zip_rpc_response
 from utils.web3_utils import verify_0_address
 
 logger = logging.getLogger(__name__)
@@ -228,6 +228,9 @@ def extract_token_parameters(token_transfers, web3):
 
 
 def token_balances_rpc_requests(make_requests, tokens, is_batch):
+    for idx, token in enumerate(tokens):
+        token['request_id'] = idx
+
     token_balance_rpc = list(generate_eth_call_json_rpc(tokens))
 
     if is_batch:
@@ -236,7 +239,7 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
         response = [make_requests(params=json.dumps(token_balance_rpc[0]))]
 
     token_balances = []
-    for data in list(zip(tokens, response)):
+    for data in list(zip_rpc_response(tokens, response)):
         result = rpc_response_to_result(data[1], ignore_errors=True)
         balance = None
 

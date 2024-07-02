@@ -2,7 +2,6 @@ import json
 import logging
 
 import pandas
-from eth_abi import abi
 from eth_utils import to_int
 
 from domain.coin_balance import format_coin_balance_data
@@ -11,7 +10,7 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_get_balance_json_rpc
-from utils.utils import rpc_response_to_result
+from utils.utils import rpc_response_to_result, zip_rpc_response
 from domain.trace import trace_is_contract_creation, trace_is_transfer_value
 
 logger = logging.getLogger(__name__)
@@ -111,6 +110,9 @@ def distinct_addresses(blocks, transactions, traces):
 
 
 def coin_balances_rpc_requests(make_requests, addresses, is_batch):
+    for idx, address in enumerate(addresses):
+        address['request_id'] = idx
+
     coin_balance_rpc = list(generate_get_balance_json_rpc(addresses))
 
     if is_batch:
@@ -119,14 +121,14 @@ def coin_balances_rpc_requests(make_requests, addresses, is_batch):
         response = [make_requests(params=json.dumps(coin_balance_rpc[0]))]
 
     coin_balances = []
-    for data in list(zip(response, addresses)):
-        result = rpc_response_to_result(data[0])
+    for data in list(zip_rpc_response(addresses, response)):
+        result = rpc_response_to_result(data[1])
 
         coin_balances.append({
-            'address': data[1]['address'],
+            'address': data[0]['address'],
             'balance': to_int(hexstr=result),
-            'block_number': data[1]['block_number'],
-            'block_timestamp': data[1]['block_timestamp'],
+            'block_number': data[0]['block_number'],
+            'block_timestamp': data[0]['block_timestamp'],
         })
 
     return coin_balances

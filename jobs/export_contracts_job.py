@@ -12,7 +12,7 @@ from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.enrich import enrich_contracts
 from utils.json_rpc_requests import generate_eth_call_json_rpc
-from utils.utils import rpc_response_to_result
+from utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 contract_abi = [
@@ -110,6 +110,9 @@ def build_contracts(web3, traces):
 
 
 def contract_info_rpc_requests(make_requests, contracts, is_batch):
+    for idx, contract in enumerate(contracts):
+        contract['request_id'] = idx
+
     contract_name_rpc = list(generate_eth_call_json_rpc(contracts, is_latest=False))
 
     if is_batch:
@@ -117,7 +120,7 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
     else:
         response = [make_requests(params=json.dumps(contract_name_rpc[0]))]
 
-    for data in list(zip(contracts, response)):
+    for data in list(zip_rpc_response(contracts, response)):
         result = rpc_response_to_result(data[1], ignore_errors=True)
         contract = data[0]
         info = result[2:] if result is not None else None
