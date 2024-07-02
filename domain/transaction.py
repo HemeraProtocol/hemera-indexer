@@ -10,7 +10,7 @@ def format_transaction_data(transaction_dict):
         'from_address': to_normalized_address(transaction_dict['from']),
         'to_address': to_normalized_address(transaction_dict['to']) if transaction_dict['to'] else None,
         'value': to_int(hexstr=transaction_dict['value']),
-        'transaction_type': to_int(hexstr=transaction_dict['type']),
+        'transaction_type': to_int(hexstr=transaction_dict['type']) if transaction_dict['type'] else None,
         'input': transaction_dict['input'],
         'nonce': to_int(hexstr=transaction_dict['nonce']),
         'block_hash': transaction_dict['blockHash'],
