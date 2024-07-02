@@ -1,4 +1,5 @@
 import json
+import logging
 
 from domain.contract_internal_transaction import trace_to_contract_internal_transaction
 from domain.trace import format_trace_data
@@ -9,6 +10,8 @@ from utils.enrich import enrich_traces
 from utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from jobs.base_job import BaseJob
 from utils.utils import validate_range, rpc_response_to_result
+
+logger = logging.getLogger(__name__)
 
 
 # Exports traces

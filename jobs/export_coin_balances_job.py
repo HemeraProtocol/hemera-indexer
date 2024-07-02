@@ -126,7 +126,12 @@ def coin_balances_rpc_requests(make_requests, addresses, is_batch):
             if result:
                 balance = abi.decode(['uint256'], bytes.fromhex(result[2:]))[0]
         except Exception as e:
-            logger.warning(f"Decoding balance value failed. {e}")
+            logger.warning(
+                f"Decoding coin balance value failed. "
+                f"address: {data['address']}. "
+                f"rpc response: {result}. "
+                f"block_number: {data[1]['block_number']}. "
+                f"exception: {e}. ")
 
         coin_balances.append({
             'address': data[1]['address'],

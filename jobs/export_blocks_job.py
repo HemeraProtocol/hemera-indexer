@@ -1,4 +1,5 @@
 import json
+import logging
 
 from domain.block import format_block_data
 from domain.block_ts_mapper import format_block_ts_mapper
@@ -8,6 +9,8 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from utils.json_rpc_requests import generate_get_block_by_number_json_rpc
 from utils.utils import rpc_response_batch_to_results, validate_range
+
+logger = logging.getLogger(__name__)
 
 
 # Exports blocks and block number <-> timestamp mapping
@@ -57,7 +60,7 @@ class ExportBlocksJob(BaseJob):
 
         ts_dict = {}
         for block in self._data_buff['formated_block']:
-            timestamp = int(block['timestamp'] / 3600) * 3600
+            timestamp = block['timestamp'] // 3600 * 3600
             block_number = block['number']
 
             if timestamp not in ts_dict.keys() or block_number < ts_dict[timestamp]:

@@ -1,4 +1,5 @@
 import json
+import logging
 
 from eth_abi import abi
 from web3 import Web3
@@ -17,6 +18,7 @@ from utils.enrich import enrich_token_transfer_type
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 
+logger = logging.getLogger(__name__)
 erc_token_abi = {
     "ELSE": [
         {
@@ -234,7 +236,13 @@ def build_rpc_method_data(web3, tokens, fn):
                 if fn == abi_fn['name']:
                     token['data_type'] = abi_fn['outputs'][0]['type']
 
-        except Web3ValidationError:
+        except Exception as e:
+            logger.warning(
+                f"Encoding token abi parameter failed. "
+                f"token: {token}. "
+                f"fn: {fn}. "
+                f"exception: {e}")
+
             token['data'] = '0x'
             token['data_type'] = ''
         parameters.append(token)
@@ -265,6 +273,11 @@ def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
                 if token['data_type'] == 'string':
                     token[fn_name] = token[fn_name].replace('\u0000', '')
             except Exception as e:
+                logger.warning(f"Decoding token info failed. "
+                               f"token: {token}. "
+                               f"fn: {fn_name}. "
+                               f"rpc response: {result}. "
+                               f"exception: {e}")
                 token[fn_name] = None
 
     token_types = {}

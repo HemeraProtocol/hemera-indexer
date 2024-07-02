@@ -1,7 +1,10 @@
+import logging
 import threading
 
 from controller.fixing_controller import FixingController
 from jobs.base_job import BaseJob
+
+logger = logging.getLogger(__name__)
 
 
 class CheckBlockConsensusJob(BaseJob):

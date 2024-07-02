@@ -95,7 +95,7 @@ class FixingController(BaseController):
                                          "update_time": datetime.now(timezone.utc),
                                          "job_status": "interrupt"
                                      })
-                print(e)
+                logging.error(f"Fixing mission catch exception: {e}")
                 raise e
 
             self.update_job_info(job_id, job_info={"job_status": "completed"})

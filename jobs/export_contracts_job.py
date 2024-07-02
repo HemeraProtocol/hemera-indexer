@@ -1,4 +1,5 @@
 import json
+import logging
 
 from eth_abi.exceptions import InsufficientDataBytes, InvalidPointer
 from web3 import Web3
@@ -13,6 +14,7 @@ from utils.enrich import enrich_contracts
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 
+logger = logging.getLogger(__name__)
 contract_abi = [
     {
         "constant": True,
@@ -88,10 +90,19 @@ def build_contracts(web3, traces):
                 and len(trace_dict['to_address']) > 0 and trace_dict['status'] == 1:
             contract = extract_contract_from_trace(trace_dict)
             contract['param_to'] = contract['address']
-            contract['param_data'] = (web3.eth
-                                      .contract(address=Web3.to_checksum_address(contract['address']),
-                                                abi=contract_abi)
-                                      .encodeABI(fn_name='name'))
+
+            try:
+                contract['param_data'] = (web3.eth
+                                          .contract(address=Web3.to_checksum_address(contract['address']),
+                                                    abi=contract_abi)
+                                          .encodeABI(fn_name='name'))
+            except Exception as e:
+                logger.warning(f"Encoding contract api parameter failed. "
+                               f"contract address: {contract['address']}. "
+                               f"fn: name. "
+                               f"exception: {e}. ")
+                contract['param_data'] = '0x'
+
             contract['param_number'] = hex(contract['block_number'])
             contracts.append(contract)
 
@@ -110,9 +121,14 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
         result = rpc_response_to_result(data[1], ignore_errors=True)
         contract = data[0]
         info = result[2:] if result is not None else None
+
         try:
             contract['name'] = abi.decode(['string'], bytes.fromhex(info))[0].replace('\u0000', '')
-        except (InsufficientDataBytes, InvalidPointer, TypeError) as e:
+        except Exception as e:
+            logger.warning(f"Decoding contract name failed. "
+                           f"contract address: {contract['address']}. "
+                           f"rpc response: {result}. "
+                           f"exception: {e}")
             contract['name'] = None
 
     return contracts

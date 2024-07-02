@@ -1,3 +1,5 @@
+import logging
+
 import pandas
 import sqlalchemy
 from sqlalchemy import text
@@ -48,6 +50,8 @@ from utils.enrich import enrich_transactions, enrich_blocks_timestamp, enrich_to
     enrich_contracts
 from utils.utils import dynamic_batch_iterator
 from utils.web3_utils import build_web3
+
+logger = logging.getLogger(__name__)
 
 
 class FixingBlockConsensusJob(BaseJob):
