@@ -12,7 +12,7 @@ class ERC20TokenTransfers(Base):
     from_address = Column(BYTEA)
     to_address = Column(BYTEA)
     token_address = Column(BYTEA)
-    value = Column(NUMERIC)
+    value = Column(NUMERIC(100))
 
     block_number = Column(BIGINT)
     block_hash = Column(BYTEA)
