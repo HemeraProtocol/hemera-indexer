@@ -69,6 +69,16 @@ def rpc_response_to_result(response, ignore_errors=False):
     return result
 
 
+def zip_rpc_response(requests, responses):
+    response_dict = {}
+    for response in responses:
+        response_dict[response['id']] = response
+
+    for request in requests:
+        request_id = request['request_id']
+        yield request, response_dict[request_id]
+
+
 def is_retriable_error(error_code):
     if error_code is None:
         return False

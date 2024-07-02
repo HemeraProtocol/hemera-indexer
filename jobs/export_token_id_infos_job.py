@@ -15,7 +15,7 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_eth_call_json_rpc
-from utils.utils import rpc_response_to_result
+from utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 erc_token_id_info_abi = {
@@ -147,7 +147,8 @@ def distinct_tokens(token_transfers, token_type):
 def build_rpc_method_data(web3, tokens, token_type, fn):
     parameters = []
 
-    for token in tokens:
+    for idx, token in enumerate(tokens):
+        token['request_id'] = idx
         token['param_to'] = token['address']
         token['param_data'] = '0x'
 
@@ -180,10 +181,10 @@ def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
         else:
             response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
-        for data in list(zip(response, tokens)):
-            result = rpc_response_to_result(data[0], ignore_errors=True)
+        for data in list(zip_rpc_response(tokens, response)):
+            result = rpc_response_to_result(data[1], ignore_errors=True)
 
-            token = data[1]
+            token = data[0]
             value = result[2:] if result is not None else None
             try:
                 token[abi_json['name']] = abi.decode([token['data_type']], bytes.fromhex(value))[0]

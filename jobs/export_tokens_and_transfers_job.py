@@ -3,7 +3,6 @@ import logging
 
 from eth_abi import abi
 from web3 import Web3
-from web3.exceptions import Web3ValidationError
 
 from domain.token import format_token_data
 from domain.token_transfer import extract_transfer_from_log, \
@@ -16,82 +15,47 @@ from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.enrich import enrich_token_transfer_type
 from utils.json_rpc_requests import generate_eth_call_json_rpc
-from utils.utils import rpc_response_to_result
+from utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
-erc_token_abi = {
-    "ELSE": [
-        {
-            "constant": True,
-            "inputs": [],
-            "name": "name",
-            "outputs": [{"name": "", "type": "string"}],
-            "payable": False,
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "constant": True,
-            "inputs": [],
-            "name": "symbol",
-            "outputs": [{"name": "", "type": "string"}],
-            "payable": False,
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "constant": True,
-            "inputs": [],
-            "name": "decimals",
-            "outputs": [{"name": "", "type": "uint8"}],
-            "payable": False,
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "constant": True,
-            "inputs": [],
-            "name": "totalSupply",
-            "outputs": [{"name": "", "type": "uint256"}],
-            "payable": False,
-            "stateMutability": "view",
-            "type": "function"
-        }],
-    "ERC1155": [
-        {
-            "constant": True,
-            "inputs": [],
-            "name": "name",
-            "outputs": [{"name": "", "type": "string"}],
-            "payable": False,
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "constant": True,
-            "inputs": [],
-            "name": "symbol",
-            "outputs": [{"name": "", "type": "string"}],
-            "payable": False,
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "constant": True,
-            "inputs": [{"name": "id", "type": "uint256"}],
-            "name": "tokenSupply",
-            "outputs": [{"name": "", "type": "uint256"}],
-            "payable": False,
-            "stateMutability": "view",
-            "type": "function"
-        }
-    ]
-}
-
-erc_abi_names = {
-    "ELSE": [abi_fn['name'] for abi_fn in erc_token_abi["ELSE"]],
-    "ERC1155": [abi_fn['name'] for abi_fn in erc_token_abi["ERC1155"]]
-}
+erc_token_abi = [
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "name",
+        "outputs": [{"name": "", "type": "string"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [{"name": "", "type": "string"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{"name": "", "type": "uint8"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "totalSupply",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    }
+]
 
 
 class ExportTokensAndTransfersJob(BaseJob):
@@ -224,15 +188,19 @@ def extract_parameters_and_token_transfers(exist_tokens, logs):
 def build_rpc_method_data(web3, tokens, fn):
     parameters = []
 
-    for token in tokens:
-        token_type = token['token_type'] if 'token_type' in token and token['token_type'] is not None else "ELSE"
+    for idx, token in enumerate(tokens):
+
+        token['request_id'] = idx
+        token['param_to'] = token['address']
+        token['param_data'] = '0x'
+        token['data_type'] = ''
+
         try:
-            token['param_to'] = token['address']
             token['param_data'] = (web3.eth
                                    .contract(address=Web3.to_checksum_address(token['address']),
-                                             abi=erc_token_abi[token_type])
+                                             abi=erc_token_abi)
                                    .encodeABI(fn_name=fn))
-            for abi_fn in erc_token_abi[token_type]:
+            for abi_fn in erc_token_abi:
                 if fn == abi_fn['name']:
                     token['data_type'] = abi_fn['outputs'][0]['type']
 
@@ -243,8 +211,6 @@ def build_rpc_method_data(web3, tokens, fn):
                 f"fn: {fn}. "
                 f"exception: {e}")
 
-            token['data'] = '0x'
-            token['data_type'] = ''
         parameters.append(token)
 
     return parameters
@@ -253,7 +219,7 @@ def build_rpc_method_data(web3, tokens, fn):
 def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
     if len(tokens) == 0:
         return [], {}
-    fn_names = ['name', 'symbol', 'decimals', 'totalSupply', 'tokenSupply']
+    fn_names = ['name', 'symbol', 'decimals', 'totalSupply']
 
     for fn_name in fn_names:
         token_name_rpc = list(generate_eth_call_json_rpc(build_rpc_method_data(web3, tokens, fn_name)))
@@ -263,10 +229,10 @@ def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
         else:
             response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
-        for data in list(zip(response, tokens)):
-            result = rpc_response_to_result(data[0], ignore_errors=True)
+        for data in list(zip_rpc_response(tokens, response)):
+            result = rpc_response_to_result(data[1], ignore_errors=True)
 
-            token = data[1]
+            token = data[0]
             value = result[2:] if result is not None else None
             try:
                 token[fn_name] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
