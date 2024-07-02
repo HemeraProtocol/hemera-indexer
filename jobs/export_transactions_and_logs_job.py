@@ -1,4 +1,5 @@
 import json
+import logging
 
 from domain.log import format_log_data
 from domain.transaction import format_transaction_data
@@ -9,6 +10,8 @@ from executors.batch_work_executor import BatchWorkExecutor
 from utils.enrich import enrich_blocks_timestamp, enrich_transactions
 from utils.json_rpc_requests import generate_get_receipt_json_rpc
 from utils.utils import rpc_response_batch_to_results
+
+logger = logging.getLogger(__name__)
 
 
 # Exports transactions and logs

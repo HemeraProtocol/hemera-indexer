@@ -200,11 +200,17 @@ def extract_token_parameters(token_transfers, web3):
         if not verify_0_address(parameter['address']):
             contract = web3.eth.contract(address=parameter['token_address'],
                                          abi=contract_abi[parameter['token_type']])
-
-            if len(contract_abi[parameter['token_type']][0]['inputs']) > 1:
-                data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address'], parameter['token_id']])
-            else:
-                data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address']])
+            data = None
+            try:
+                if len(contract_abi[parameter['token_type']][0]['inputs']) > 1:
+                    data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address'], parameter['token_id']])
+                else:
+                    data = contract.encodeABI(fn_name='balanceOf', args=[parameter['address']])
+            except Exception as e:
+                logger.warning(f"Encoding token balance api parameter failed. "
+                               f"token: {parameter}. "
+                               f"fn: balanceOf. "
+                               f"exception: {e}. ")
 
             token_parameters.append({
                 'address': parameter['address'],
@@ -238,7 +244,11 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
             if result:
                 balance = abi.decode(['uint256'], bytes.fromhex(result[2:]))[0]
         except Exception as e:
-            logger.warning(f"Decoding balance value failed. {e}")
+            logger.warning(f"Decoding token balance value failed. "
+                           f"token address: {data[0]['token_address']}. "
+                           f"rpc response: {result}. "
+                           f"block number: {data[0]['block_number']}. "
+                           f"exception: {e}. ")
 
         token_balances.append({
             'tokenId': data[0]['token_id'],

@@ -45,7 +45,8 @@ class PostgresItemExporter(BaseExporter):
                         session.commit()
 
         except Exception as e:
-            print(e)
+            # print(e)
+            logger.error(f"Error exporting items:{e}")
             # print(item_type, insert_stmt, [i[-1] for i in data])
             raise Exception("Error exporting items")
         finally:
@@ -55,7 +56,8 @@ class PostgresItemExporter(BaseExporter):
             "Exporting items to table {} end, Item count: {}, Took {}"
             .format(", ".join(tables), len(items), (end_time - start_time)))
 
-    def convert_items(self, item_type, items):
+    @staticmethod
+    def convert_items(item_type, items):
         for item in items:
             yield convert_item(item_type, item)
 

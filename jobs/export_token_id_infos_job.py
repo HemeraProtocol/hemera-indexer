@@ -1,4 +1,6 @@
 import json
+import logging
+
 import pandas
 
 from eth_abi import abi
@@ -15,6 +17,7 @@ from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result
 
+logger = logging.getLogger(__name__)
 erc_token_id_info_abi = {
     "ERC721": [
         {
@@ -146,10 +149,19 @@ def build_rpc_method_data(web3, tokens, token_type, fn):
 
     for token in tokens:
         token['param_to'] = token['address']
-        token['param_data'] = (web3.eth
-                               .contract(address=Web3.to_checksum_address(token['address']),
-                                         abi=erc_token_id_info_abi[token_type])
-                               .encodeABI(fn_name=fn, args=[token['token_id']]))
+        token['param_data'] = '0x'
+
+        try:
+            token['param_data'] = (web3.eth
+                                   .contract(address=Web3.to_checksum_address(token['address']),
+                                             abi=erc_token_id_info_abi[token_type])
+                                   .encodeABI(fn_name=fn, args=[token['token_id']]))
+        except Exception as e:
+            logger.warning(f"Encoding token id {fn} abi parameter failed. "
+                           f"token address: {token['address']}. "
+                           f"token id: {token['token_id']}. "
+                           f"exception: {e}. ")
+
         for abi_fn in erc_token_id_info_abi[token_type]:
             if fn == abi_fn['name']:
                 token['data_type'] = abi_fn['outputs'][0]['type']
@@ -178,6 +190,11 @@ def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
                 if token['data_type'] == 'string':
                     token[abi_json['name']] = token[abi_json['name']].replace('\u0000', '')
             except (InsufficientDataBytes, TypeError) as e:
+                logger.warning(f"Decoding token id info failed. "
+                               f"token: {token}. "
+                               f"fn: {abi_json['name']}. "
+                               f"rpc response: {result}. "
+                               f"exception: {e}.")
                 token[abi_json['name']] = None
 
     return tokens
