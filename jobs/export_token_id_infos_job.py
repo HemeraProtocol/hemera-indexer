@@ -189,7 +189,7 @@ def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
                 token[abi_json['name']] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
                 if token['data_type'] == 'string':
                     token[abi_json['name']] = token[abi_json['name']].replace('\u0000', '')
-            except (InsufficientDataBytes, TypeError) as e:
+            except Exception as e:
                 logger.warning(f"Decoding token id info failed. "
                                f"token: {token}. "
                                f"fn: {abi_json['name']}. "

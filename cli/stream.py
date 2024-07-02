@@ -60,6 +60,7 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
               help='How many blocks to batch in single sync round')
 @click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers',
               envvar='MAX_WORKERS')
+@click.option('--log-file', default=None, show_default=True, type=str, envvar='LOG_FILE', help='Log file')
 def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, entity_types,
            partition_size, period_seconds=10, batch_size=10, debug_batch_size=1, block_batch_size=1, max_workers=5,
            log_file=None, pid_file=None):
