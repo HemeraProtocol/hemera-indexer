@@ -18,6 +18,8 @@ services:
       - ./output:/app/output
 
   postgresql:
+    env_file:
+      - hemera-indexer.env
     image: postgres:15
     container_name: postgresql
     healthcheck:
