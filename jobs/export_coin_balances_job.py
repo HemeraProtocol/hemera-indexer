@@ -1,6 +1,8 @@
 import json
+import logging
 
 import pandas
+from eth_abi import abi
 
 from domain.coin_balance import format_coin_balance_data
 from enumeration.entity_type import EntityType
@@ -10,7 +12,8 @@ from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_get_balance_json_rpc
 from utils.utils import rpc_response_to_result
 from domain.trace import trace_is_contract_creation, trace_is_transfer_value
-from utils.web3_utils import verify_0_address
+
+logger = logging.getLogger(__name__)
 
 
 # Exports coin balances
@@ -117,10 +120,17 @@ def coin_balances_rpc_requests(make_requests, addresses, is_batch):
     coin_balances = []
     for data in list(zip(response, addresses)):
         result = rpc_response_to_result(data[0])
+        balance = None
+
+        try:
+            if result:
+                balance = abi.decode(['uint256'], bytes.fromhex(result[2:]))[0]
+        except Exception as e:
+            logger.warning(f"Decoding balance value failed. {e}")
 
         coin_balances.append({
             'address': data[1]['address'],
-            'balance': int(result, 16),
+            'balance': balance,
             'block_number': data[1]['block_number'],
             'block_timestamp': data[1]['block_timestamp'],
         })
