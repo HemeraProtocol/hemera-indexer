@@ -289,18 +289,17 @@ class FixingBlockConsensusJob(BaseJob):
         exist_token = get_exist_token(self.service)
         tokens_parameter, token_transfers = extract_parameters_and_token_transfers(exist_token, logs)
 
-        tokens, tokens_type = [], []
+        tokens = []
         for batch in dynamic_batch_iterator(tokens_parameter, self.batch_size):
-            batch_tokens, batch_tokens_type = tokens_rpc_requests(self.web3,
-                                                                  self.batch_web3_provider.make_request,
-                                                                  batch,
-                                                                  self.is_batch)
+            batch_tokens = tokens_rpc_requests(self.web3,
+                                               self.batch_web3_provider.make_request,
+                                               batch,
+                                               self.is_batch)
             tokens.extend(batch_tokens)
-            tokens_type.extend(batch_tokens_type)
 
         format_tokens = [format_token_data(token) for token in tokens]
 
-        return format_tokens, enrich_token_transfer_type(token_transfers, tokens_type)
+        return format_tokens, token_transfers
 
     def collect_fixed_token_ids_info(self, token_transfers, token_type):
         tokens = distinct_tokens(token_transfers, token_type)

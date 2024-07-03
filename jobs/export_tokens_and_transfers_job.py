@@ -89,16 +89,16 @@ class ExportTokensAndTransfersJob(BaseJob):
 
         tokens_parameter, token_transfers = extract_parameters_and_token_transfers(self._exist_token, logs)
 
-        tokens, tokens_type = tokens_rpc_requests(self._web3,
-                                                  self._batch_web3_provider.make_request,
-                                                  tokens_parameter,
-                                                  self._is_batch)
+        tokens = tokens_rpc_requests(self._web3,
+                                     self._batch_web3_provider.make_request,
+                                     tokens_parameter,
+                                     self._is_batch)
 
         for token in tokens:
             token['item'] = 'token'
             self._collect_item(token)
 
-        for transfer_event in enrich_token_transfer_type(token_transfers, tokens_type):
+        for transfer_event in token_transfers:
             transfer_event['item'] = 'token_transfer'
             self._collect_item(transfer_event)
 
@@ -218,7 +218,7 @@ def build_rpc_method_data(web3, tokens, fn):
 
 def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
     if len(tokens) == 0:
-        return [], {}
+        return []
     fn_names = ['name', 'symbol', 'decimals', 'totalSupply']
 
     for fn_name in fn_names:
@@ -246,17 +246,7 @@ def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
                                f"exception: {e}")
                 token[fn_name] = None
 
-    token_types = {}
-    for token in tokens:
-        if token['token_type'] is None:
-            if token['decimals'] is not None:
-                # if token['decimals'] is not None and token['decimals'] > 0:
-                token['token_type'] = TokenType.ERC20.value
-            else:
-                token['token_type'] = TokenType.ERC721.value
-            token_types[token['address']] = token['token_type']
-
-    return tokens, token_types
+    return tokens
 
 
 def split_token_transfers(token_transfers):
