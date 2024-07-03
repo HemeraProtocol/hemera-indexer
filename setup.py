@@ -15,10 +15,10 @@ setup(
     version='0.0.1',
     author='xuzh',
     author_email='zihao.xu@thehemera.com',
-    description='Tools for exporting Ethereum blockchain data to JSON file and postgresql',
+    description='Tools for exporting Ethereum blockchain data to JSON/CSV file and postgresql',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/xxxx/hemera-indexer',
+    url='https://github.com/HemeraProtocol/hemera-indexer',
     packages=find_packages(exclude=['schemas', 'tests']),
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -70,12 +70,12 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'ethereumetl=ethereumetl.cli:cli',
+            'hemera=hemera.cli:cli',
         ],
     },
     project_urls={
-        'Bug Reports': 'https://github.com/xxxx/hemera_indexer/issues',
+        'Bug Reports': 'https://github.com/HemeraProtocol/hemera_indexer/issues',
         'Chat': '',
-        'Source': 'https://github.com/xxxx/hemera_indexer',
+        'Source': 'https://github.com/HemeraProtocol/hemera_indexer',
     },
 )
