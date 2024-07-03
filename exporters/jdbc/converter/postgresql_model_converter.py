@@ -86,7 +86,7 @@ def convert_to_block(block, fixing=False):
         'extra_data': bytes.fromhex(block["extra_data"][2:]),
         'withdrawals_root': bytes.fromhex(block["withdrawals_root"][2:]) if block["withdrawals_root"] else None,
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -124,7 +124,7 @@ def convert_to_transaction(transaction, fixing=False):
         'error': transaction["error"],
         'revert_reason': transaction["revert_reason"],
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -143,7 +143,7 @@ def convert_to_log(log, fixing=False):
         'block_hash': bytes.fromhex(log["block_hash"][2:]),
         'block_timestamp': func.to_timestamp(log["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -171,7 +171,7 @@ def convert_to_erc20_token_transfer(token_transfer, fixing=False):
         'block_hash': bytes.fromhex(token_transfer["block_hash"][2:]),
         'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -183,7 +183,7 @@ def convert_to_erc20_token_holder(token_holder, fixing=False):
         'block_number': token_holder["block_number"],
         'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -199,7 +199,7 @@ def convert_to_erc721_token_transfer(token_transfer, fixing=False):
         'block_hash': bytes.fromhex(token_transfer["block_hash"][2:]),
         'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -211,7 +211,7 @@ def convert_to_erc721_token_holder(token_holder, fixing=False):
         'block_number': token_holder["block_number"],
         'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -223,7 +223,7 @@ def convert_to_erc721_token_id_change(token_id_change, fixing=False):
         'block_number': token_id_change["block_number"],
         'block_timestamp': func.to_timestamp(token_id_change["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -237,7 +237,7 @@ def convert_to_erc721_token_id_detail(token_id_detail, fixing=False):
         'block_number': token_id_detail["block_number"],
         'block_timestamp': func.to_timestamp(token_id_detail["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -254,7 +254,7 @@ def convert_to_erc1155_token_transfer(token_transfer, fixing=False):
         'block_hash': bytes.fromhex(token_transfer["block_hash"][2:]),
         'block_timestamp': func.to_timestamp(token_transfer["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -268,7 +268,7 @@ def convert_to_erc1155_token_holder(token_holder, fixing=False):
         'block_number': token_holder["block_number"],
         'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -282,7 +282,7 @@ def convert_to_erc1155_token_id_detail(token_id_detail, fixing=False):
         'block_number': token_id_detail["block_number"],
         'block_timestamp': func.to_timestamp(token_id_detail["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -296,7 +296,7 @@ def convert_to_token_balance(token_balance, fixing=False):
         'block_number': token_balance["block_number"],
         'block_timestamp': func.to_timestamp(token_balance["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -322,7 +322,7 @@ def convert_to_trace(trace, fixing=False):
         'transaction_index': trace["transaction_index"],
         'transaction_hash': bytes.fromhex(trace["transaction_hash"][2:]) if trace["transaction_hash"] else None,
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -349,7 +349,7 @@ def convert_to_contract_internal_transactions(internal_transactions, fixing=Fals
         'transaction_hash': bytes.fromhex(internal_transactions["transaction_hash"][2:]) if internal_transactions[
             "transaction_hash"] else None,
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -366,7 +366,7 @@ def convert_to_contract(contract, fixing=False):
         'transaction_index': contract['transaction_index'],
         'transaction_hash': bytes.fromhex(contract['transaction_hash'][2:]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 
@@ -377,7 +377,7 @@ def convert_to_coin_balance(coin_balance, fixing=False):
         'block_number': coin_balance["block_number"],
         'block_timestamp': func.to_timestamp(coin_balance["block_timestamp"]),
         'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
-        'relog': False
+        'reorg': False
     }
 
 

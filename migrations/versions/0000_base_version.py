@@ -27,7 +27,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('address', 'block_number')
     )
     op.create_table('address_token_balances',
@@ -40,7 +40,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('address', 'token_address', 'block_number')
     )
     op.create_table('block_ts_mapper',
@@ -72,7 +72,7 @@ def upgrade() -> None:
     sa.Column('withdrawals_root', postgresql.BYTEA(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('hash')
     )
     op.create_index('blocks_number_index', 'blocks', [sa.text('number DESC')], unique=False)
@@ -96,7 +96,7 @@ def upgrade() -> None:
     sa.Column('transaction_hash', postgresql.BYTEA(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('trace_id')
     )
     op.create_index('contract_internal_transactions_transaction_hash_idx', 'contract_internal_transactions', ['transaction_hash'], unique=False)
@@ -124,7 +124,7 @@ def upgrade() -> None:
     sa.Column('proxy_standard', sa.VARCHAR(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('address')
     )
     op.create_table('erc1155_token_holders',
@@ -137,7 +137,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('token_address', 'wallet_address', 'token_id')
     )
     op.create_index('erc1155_token_holders_token_address_balance_of_index', 'erc1155_token_holders', ['token_address', sa.text('balance_of DESC')], unique=False)
@@ -151,7 +151,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('address', 'token_id')
     )
     op.create_index('erc1155_detail_desc_address_id_index', 'erc1155_token_id_details', [sa.text('address DESC'), 'token_id'], unique=False)
@@ -168,7 +168,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('transaction_hash', 'log_index')
     )
     op.create_index('erc1155_token_transfers_address_block_number_log_index_index', 'erc1155_token_transfers', ['token_address', 'from_address', 'to_address', sa.text('block_number DESC'), sa.text('log_index DESC')], unique=False)
@@ -181,7 +181,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('token_address', 'wallet_address')
     )
     op.create_index('erc20_token_holders_token_address_balance_of_index', 'erc20_token_holders', ['token_address', sa.text('balance_of DESC')], unique=False)
@@ -197,7 +197,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('transaction_hash', 'log_index')
     )
     op.create_index('erc20_token_transfers_address_block_number_log_index_index', 'erc20_token_transfers', ['token_address', 'from_address', 'to_address', sa.text('block_number DESC'), sa.text('log_index DESC')], unique=False)
@@ -210,7 +210,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('token_address', 'wallet_address')
     )
     op.create_index('erc721_token_holders_token_address_balance_of_index', 'erc721_token_holders', ['token_address', sa.text('balance_of DESC')], unique=False)
@@ -222,7 +222,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('address', 'token_id', 'block_number')
     )
     op.create_index('erc721_change_address_id_number_desc_index', 'erc721_token_id_changes', ['address', 'token_id', sa.text('block_number DESC')], unique=False)
@@ -236,7 +236,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('address', 'token_id')
     )
     op.create_index('erc721_detail_owner_address_id_index', 'erc721_token_id_details', [sa.text('token_owner DESC'), 'address', 'token_id'], unique=False)
@@ -253,7 +253,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('transaction_hash', 'log_index')
     )
     op.create_index('erc721_token_transfers_address_block_number_log_index_index', 'erc721_token_transfers', ['token_address', 'from_address', 'to_address', sa.text('block_number DESC'), sa.text('log_index DESC')], unique=False)
@@ -283,7 +283,7 @@ def upgrade() -> None:
     sa.Column('block_timestamp', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('log_index', 'transaction_hash')
     )
     op.create_index('logs_address_block_number_log_index_index', 'logs', ['address', sa.text('block_number DESC'), sa.text('log_index DESC')], unique=False)
@@ -343,7 +343,7 @@ def upgrade() -> None:
     sa.Column('transaction_hash', postgresql.BYTEA(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('trace_id')
     )
     op.create_index('traces_address_block_timestamp_index', 'traces', ['from_address', 'to_address', sa.text('block_timestamp DESC')], unique=False)
@@ -382,7 +382,7 @@ def upgrade() -> None:
     sa.Column('revert_reason', sa.TEXT(), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('relog', sa.BOOLEAN(), nullable=True),
+    sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('hash')
     )
     op.create_index('transactions_address_block_number_transaction_idx', 'transactions', ['from_address', 'to_address', sa.text('block_number DESC'), sa.text('transaction_index DESC')], unique=False)

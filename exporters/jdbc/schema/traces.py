@@ -29,7 +29,7 @@ class Traces(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
-    relog = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, default=False)
 
 
 Index('traces_transaction_hash_index', Traces.transaction_hash)

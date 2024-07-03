@@ -26,7 +26,7 @@ class ContractInternalTransactions(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
-    relog = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, default=False)
 
 
 Index('contract_internal_transactions_transaction_hash_idx', ContractInternalTransactions.transaction_hash)

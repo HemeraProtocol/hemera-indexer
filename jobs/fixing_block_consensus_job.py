@@ -139,54 +139,54 @@ class FixingBlockConsensusJob(BaseJob):
         session = self.service.get_service_session()
 
         # sign old data
-        session.query(Blocks).filter(Blocks.number == self.block_number).update({Blocks.relog: True})
+        session.query(Blocks).filter(Blocks.number == self.block_number).update({Blocks.reorg: True})
 
         session.query(Transactions).filter(Transactions.block_number == self.block_number).update(
-            {Transactions.relog: True})
+            {Transactions.reorg: True})
 
         session.query(Logs).filter(Logs.block_number == self.block_number).update(
-            {Logs.relog: True})
+            {Logs.reorg: True})
 
         session.query(AddressTokenBalances).filter(AddressTokenBalances.block_number == self.block_number).update(
-            {AddressTokenBalances.relog: True})
+            {AddressTokenBalances.reorg: True})
 
         session.query(ERC20TokenTransfers).filter(ERC20TokenTransfers.block_number == self.block_number).update(
-            {ERC20TokenTransfers.relog: True})
+            {ERC20TokenTransfers.reorg: True})
 
         session.query(ERC721TokenTransfers).filter(ERC721TokenTransfers.block_number == self.block_number).update(
-            {ERC721TokenTransfers.relog: True})
+            {ERC721TokenTransfers.reorg: True})
 
         session.query(ERC1155TokenTransfers).filter(ERC1155TokenTransfers.block_number == self.block_number).update(
-            {ERC1155TokenTransfers.relog: True})
+            {ERC1155TokenTransfers.reorg: True})
 
         session.query(ERC20TokenHolders).filter(ERC20TokenHolders.block_number == self.block_number).update(
-            {ERC20TokenHolders.relog: True})
+            {ERC20TokenHolders.reorg: True})
 
         session.query(ERC721TokenHolders).filter(ERC721TokenHolders.block_number == self.block_number).update(
-            {ERC721TokenHolders.relog: True})
+            {ERC721TokenHolders.reorg: True})
 
         session.query(ERC1155TokenHolders).filter(ERC1155TokenHolders.block_number == self.block_number).update(
-            {ERC1155TokenHolders.relog: True})
+            {ERC1155TokenHolders.reorg: True})
 
         session.query(ERC721TokenIdChanges).filter(ERC721TokenIdChanges.block_number == self.block_number).update(
-            {ERC721TokenIdChanges.relog: True})
+            {ERC721TokenIdChanges.reorg: True})
 
         session.query(ERC721TokenIdDetails).filter(ERC721TokenIdDetails.block_number == self.block_number).update(
-            {ERC721TokenIdDetails.relog: True})
+            {ERC721TokenIdDetails.reorg: True})
 
         session.query(ERC1155TokenIdDetails).filter(ERC1155TokenIdDetails.block_number == self.block_number).update(
-            {ERC1155TokenIdDetails.relog: True})
+            {ERC1155TokenIdDetails.reorg: True})
 
-        session.query(Traces).filter(Traces.block_number == self.block_number).update({Traces.relog: True})
+        session.query(Traces).filter(Traces.block_number == self.block_number).update({Traces.reorg: True})
 
         session.query(ContractInternalTransactions).filter(
             ContractInternalTransactions.block_number == self.block_number).update(
-            {ContractInternalTransactions.relog: True})
+            {ContractInternalTransactions.reorg: True})
 
-        session.query(Contracts).filter(Contracts.block_number == self.block_number).update({Contracts.relog: True})
+        session.query(Contracts).filter(Contracts.block_number == self.block_number).update({Contracts.reorg: True})
 
         session.query(CoinBalances).filter(CoinBalances.block_number == self.block_number).update(
-            {CoinBalances.relog: True})
+            {CoinBalances.reorg: True})
 
         session.commit()
         session.close()
@@ -195,37 +195,37 @@ class FixingBlockConsensusJob(BaseJob):
         session = self.service.get_service_session()
 
         # clean unlinked data
-        session.query(Transactions).filter(Transactions.relog).delete()
+        session.query(Transactions).filter(Transactions.reorg).delete()
 
-        session.query(Logs).filter(Logs.relog).delete()
+        session.query(Logs).filter(Logs.reorg).delete()
 
-        session.query(AddressTokenBalances).filter(AddressTokenBalances.relog).delete()
+        session.query(AddressTokenBalances).filter(AddressTokenBalances.reorg).delete()
 
-        session.query(ERC20TokenTransfers).filter(ERC20TokenTransfers.relog).delete()
+        session.query(ERC20TokenTransfers).filter(ERC20TokenTransfers.reorg).delete()
 
-        session.query(ERC721TokenTransfers).filter(ERC721TokenTransfers.relog).delete()
+        session.query(ERC721TokenTransfers).filter(ERC721TokenTransfers.reorg).delete()
 
-        session.query(ERC1155TokenTransfers).filter(ERC1155TokenTransfers.relog).delete()
+        session.query(ERC1155TokenTransfers).filter(ERC1155TokenTransfers.reorg).delete()
 
-        session.query(ERC20TokenHolders).filter(ERC20TokenHolders.relog).delete()
+        session.query(ERC20TokenHolders).filter(ERC20TokenHolders.reorg).delete()
 
-        session.query(ERC721TokenHolders).filter(ERC721TokenHolders.relog).delete()
+        session.query(ERC721TokenHolders).filter(ERC721TokenHolders.reorg).delete()
 
-        session.query(ERC1155TokenHolders).filter(ERC1155TokenHolders.relog).delete()
+        session.query(ERC1155TokenHolders).filter(ERC1155TokenHolders.reorg).delete()
 
-        session.query(ERC721TokenIdChanges).filter(ERC721TokenIdChanges.relog).delete()
+        session.query(ERC721TokenIdChanges).filter(ERC721TokenIdChanges.reorg).delete()
 
-        session.query(ERC721TokenIdDetails).filter(ERC721TokenIdDetails.relog).delete()
+        session.query(ERC721TokenIdDetails).filter(ERC721TokenIdDetails.reorg).delete()
 
-        session.query(ERC1155TokenIdDetails).filter(ERC1155TokenIdDetails.relog).delete()
+        session.query(ERC1155TokenIdDetails).filter(ERC1155TokenIdDetails.reorg).delete()
 
-        session.query(Traces).filter(Traces.relog).delete()
+        session.query(Traces).filter(Traces.reorg).delete()
 
-        session.query(ContractInternalTransactions).filter(ContractInternalTransactions.relog).delete()
+        session.query(ContractInternalTransactions).filter(ContractInternalTransactions.reorg).delete()
 
-        session.query(Contracts).filter(Contracts.relog).delete()
+        session.query(Contracts).filter(Contracts.reorg).delete()
 
-        session.query(CoinBalances).filter(CoinBalances.relog).delete()
+        session.query(CoinBalances).filter(CoinBalances.reorg).delete()
 
         session.commit()
         session.close()

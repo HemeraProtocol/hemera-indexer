@@ -46,7 +46,7 @@ class Transactions(Base):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
-    relog = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, default=False)
 
 
 Index('transactions_block_timestamp_block_number_index',
