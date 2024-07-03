@@ -2,11 +2,9 @@
 * [Introduction](#introduction)
 * [Prerequisites](#prerequisites)
   * [Disk Size](#disk-size)
-    * [Block, Transaction and Log](#block-transaction-and-log)
-  * [### Everything](#-everything)
+    * [Entity Types](#entity-types)
   * [VM](#vm)
     * [Crete VM From Cloud Services](#crete-vm-from-cloud-services)
-      * [Create an AWS EC2 Instance](#create-an-aws-ec2-instance)
 * [Install and Run Hemera Indexer](#install-and-run-hemera-indexer)
   * [Clone the Repository](#clone-the-repository)
   * [Run Hemera Indexer](#run-hemera-indexer)
@@ -72,22 +70,8 @@ That is about 35GB for every 25k blocks, for every 100k blocks, we recommend at 
 
 ### Crete VM From Cloud Services
 
-If you don't have a VM in place, here is the guidance on how to create one from popular cloud providers.
-
-#### Create an AWS EC2 Instance
-1. Navigate to EC2 console
-    ![ClickLaunch](images/aws/ec2-portal.png)
-2. Launch an AWS Instance
-   - Select ubuntu as the operating system
-       ![Launch](images/aws/launch-instance.jpg)
-   - Select ssh key pair for you to log into the VM later
-       ![SSH Key](images/aws/key-pair.png)
-   - Change the disk size that fits your need
-       ![Disk Size](images/aws/disk-size.png)
-   - [TODO] Expose postgres port
-   - Click Launch
-3. Once the instance is created, ssh into the instance and follow instructions in [Configure Hemera Indexer](#configure-hemera-indexer) section.
-
+If you don't have a VM in place, you can create VMs from cloud providers.
+[Create an AWS EC2 Instance](AWS.md)
 
 # Install and Run Hemera Indexer
 
