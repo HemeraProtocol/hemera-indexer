@@ -2,7 +2,7 @@ import json
 import logging
 
 from domain.contract_internal_transaction import trace_to_contract_internal_transaction
-from domain.trace import format_trace_data
+from domain.trace import format_trace_data, trace_is_contract_creation, trace_is_transfer_value
 from enumeration.entity_type import EntityType
 from executors.batch_work_executor import BatchWorkExecutor
 from exporters.console_item_exporter import ConsoleItemExporter
@@ -65,7 +65,9 @@ class ExportTracesJob(BaseJob):
                                                         x['block_number'], x['transaction_index'], x['trace_index']))
 
         self._data_buff['internal_transaction'] = [trace_to_contract_internal_transaction(trace)
-                                                   for trace in self._data_buff['enriched_traces']]
+                                                   for trace in self._data_buff['enriched_traces']
+                                                   if trace_is_contract_creation(trace) or
+                                                   trace_is_transfer_value(trace, True)]
 
     def _export(self):
         if self._entity_types & EntityType.TRACE:
