@@ -32,7 +32,7 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
                    'or local json file e.g. jsonfile://your-file-path; '
                    'or local csv file e.g. csvfile://your-file-path; '
                    'or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path')
-@click.option('-e', '--entity-types', default=','.join(ALL_ENTITY_COLLECTIONS), show_default=True, type=str,
+@click.option('-E', '--entity-types', default=','.join(ALL_ENTITY_COLLECTIONS), show_default=True, type=str,
               envvar='ENTITY_TYPES',
               help='The list of entity types to export. e.g. block,transaction,log')
 @click.option('-v', '--db-version', default="head", show_default=True, type=str,
@@ -43,6 +43,8 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
                    'or base, indicates the empty database without any table.')
 @click.option('-s', '--start-block', default=None, show_default=True, type=int, help='Start block',
               envvar='START_BLOCK')
+@click.option('-e', '--end-block', default=None, show_default=True, type=int, help='end block',
+              envvar='END_BLOCK')
 @click.option('--partition-size', default=50000, show_default=True, type=int,
               envvar='PARTITION_SIZE',
               help='How many records was written to each file')
@@ -61,7 +63,7 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
 @click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers',
               envvar='MAX_WORKERS')
 @click.option('--log-file', default=None, show_default=True, type=str, envvar='LOG_FILE', help='Log file')
-def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, entity_types,
+def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, end_block, entity_types,
            partition_size, period_seconds=10, batch_size=10, debug_batch_size=1, block_batch_size=1, max_workers=5,
            log_file=None, pid_file=None):
     configure_logging(log_file)
@@ -104,5 +106,8 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
         job_dispatcher=stream_dispatcher,
     )
 
-    controller.action(start_block=start_block, block_batch_size=block_batch_size, period_seconds=period_seconds,
+    controller.action(start_block=start_block,
+                      end_block=end_block,
+                      block_batch_size=block_batch_size,
+                      period_seconds=period_seconds,
                       pid_file=pid_file)
