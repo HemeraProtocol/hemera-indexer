@@ -34,7 +34,7 @@ def format_transaction_data(transaction_dict):
         if transaction_dict.get('receiptStatus') else None,
         'receipt_l1_fee': to_int(hexstr=transaction_dict.get('receiptL1Fee'))
         if transaction_dict.get('receiptL1Fee') else None,
-        'receipt_l1_fee_scalar': to_int(hexstr=transaction_dict.get('receiptL1FeeScalar'))
+        'receipt_l1_fee_scalar': float(transaction_dict.get('receiptL1FeeScalar'))
         if transaction_dict.get('receiptL1FeeScalar') else None,
         'receipt_l1_gas_used': to_int(hexstr=transaction_dict.get('receiptL1GasUsed'))
         if transaction_dict.get('receiptL1GasUsed') else None,
