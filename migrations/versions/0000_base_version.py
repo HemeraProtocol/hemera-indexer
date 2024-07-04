@@ -370,7 +370,7 @@ def upgrade() -> None:
     sa.Column('receipt_cumulative_gas_used', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('receipt_effective_gas_price', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('receipt_l1_fee', sa.NUMERIC(precision=100), nullable=True),
-    sa.Column('receipt_l1_fee_scalar', sa.FLOAT(precision=100), nullable=True),
+    sa.Column('receipt_l1_fee_scalar', sa.FLOAT(), nullable=True),
     sa.Column('receipt_l1_gas_used', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('receipt_l1_gas_price', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('receipt_blob_gas_used', sa.NUMERIC(precision=100), nullable=True),
