@@ -80,7 +80,7 @@ class StreamController(BaseController):
                 logging.exception('An exception occurred while syncing block data.')
                 tries += 1
                 tries_reset = False
-                if not retry_errors and tries >= self.max_retries:
+                if not retry_errors or tries >= self.max_retries:
                     logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     raise e
                 else:
