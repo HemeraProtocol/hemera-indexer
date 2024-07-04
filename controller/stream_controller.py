@@ -52,9 +52,9 @@ class StreamController(BaseController):
         if start_block is not None or last_synced_block == -1:
             last_synced_block = (start_block or 0) - 1
 
+        tries = 0
         while True and (end_block is None or last_synced_block < end_block):
             synced_blocks = 0
-            tries = 0
 
             try:
                 current_block = self._get_current_block_number()
@@ -81,6 +81,8 @@ class StreamController(BaseController):
                     raise e
                 else:
                     logging.info(f'No: {tries} retry is about to start.')
+            finally:
+                tries = 0
 
             if synced_blocks <= 0:
                 logging.info('Nothing to sync. Sleeping for {} seconds...'.format(period_seconds))
