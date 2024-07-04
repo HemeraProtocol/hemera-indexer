@@ -52,11 +52,12 @@ class StreamController(BaseController):
         if start_block is not None or last_synced_block == -1:
             last_synced_block = (start_block or 0) - 1
 
-        tries = 0
+        tries, tries_reset = 0, True
         while True and (end_block is None or last_synced_block < end_block):
             synced_blocks = 0
 
             try:
+                tries_reset = True
                 current_block = self._get_current_block_number()
 
                 target_block = self._calculate_target_block(current_block, last_synced_block, end_block, steps)
@@ -76,13 +77,15 @@ class StreamController(BaseController):
             except Exception as e:
                 logging.exception('An exception occurred while syncing block data.')
                 tries += 1
+                tries_reset = False
                 if not retry_errors and tries >= self.max_retries:
                     logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     raise e
                 else:
                     logging.info(f'No: {tries} retry is about to start.')
             finally:
-                tries = 0
+                if tries_reset:
+                    tries = 0
 
             if synced_blocks <= 0:
                 logging.info('Nothing to sync. Sleeping for {} seconds...'.format(period_seconds))
