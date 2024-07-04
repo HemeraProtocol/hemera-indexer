@@ -22,17 +22,20 @@
 * [Configure Hemera Indexer](#configure-hemera-indexer)
   * [Parameters](#parameters)
       * [`PROVIDER_URI` or `--provider-uri`](#provider_uri-or---provider-uri)
-      * [`DEBUG_PROVIDER_URI` or `--debug-provider-url`](#debug_provider_uri-or---debug-provider-url)
-      * [`DATABASE_URL` or `--database-url`](#database_url-or---database-url)
+      * [`DEBUG_PROVIDER_URI` or `--debug-provider-uri`](#debug_provider_uri-or---debug-provider-uri)
+      * [`POSTGRES_URL` or `--postgres-url`](#postgres_url-or---postgres-url)
       * [`OUTPUT` or `--output`](#output-or---output)
       * [`ENTITY_TYPES` or `--entity-types`](#entity_types-or---entity-types)
       * [`DB_VERSION` or `--db-version`](#db_version-or---db-version)
       * [`START_BLOCK` or `--start-block`](#start_block-or---start-block)
+      * [`END_BLOCK` or `--end-block`](#end_block-or---end-block)
       * [`PARTITION_SIZE` or `--partition-size`](#partition_size-or---partition-size)
       * [`PERIOD_SECONDS` or `--period-seconds`](#period_seconds-or---period-seconds)
       * [`BATCH_SIZE` or `--batch-size`](#batch_size-or---batch-size)
+      * [`DEBUG_BATCH_SIZE` or `--debug-batch-size`](#debug_batch_size-or---debug-batch-size)
       * [`BLOCK_BATCH_SIZE` or `--block-batch-size`](#block_batch_size-or---block-batch-size)
       * [`MAX_WORKERS` or `--max-workers`](#max_workers-or---max-workers)
+      * [`LOG_FILE` or `--log-file`](#log_file-or---log-file)
 * [Export Result](#export-result)
   * [Export From Postgresql Database](#export-from-postgresql-database)
     * [Connect to Your Postgresql Instance](#connect-to-your-postgresql-instance)
@@ -196,12 +199,19 @@ E.g. `postgresql+psycopg2://${YOUR_USER}:${YOUR_PASSWORD}@${YOUR_HOST}:5432/${YO
 
 #### Run
 Please check out [Configure Hemera Indexer](#configure-hemera-indexer) on how to configure the indexer.
-```bash
+```bash     
 python hemera.py stream \
-                        -p https://eth.llamarpc.com \
-                        -d https://eth.llamarpc.com \
-                        -o postgresql+psycopg2://user:password@localhost:5432/hemera_indexer \
-                        -e transaction,block
+    --provider-uri https://eth.llamarpc.com \
+    --debug-provider-uri https://eth.llamarpc.com \
+    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --start-block 20000001 \
+    --end-block 20010000 \
+    --entity-types block,transaction,log,token,token_transfer \
+    --log-file logs/eth_blocks_20000001_20010000.log \
+    --block-batch-size 200 \
+    --batch-size 200 \
+    --max-workers 32
 ```
 
 Once you have successfully bootstrapped hemera indexer, you should be able to view similar logs as below.
@@ -246,36 +256,63 @@ The URI of the web3 debug provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc
 
 ---
 
-#### `DATABASE_URL` or `--postgres-url`
+#### `POSTGRES_URL` or `--postgres-url`
 [**Required**]
-The required postgres connection URL, e.g. `postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum`.
+The postgresql connection url that hemera used to maintain its state. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
 
 ---
 
 #### `OUTPUT` or `--output`
-The extra output selection. Print to console, e.g. `console`; or local json file, e.g. `jsonfile://your-file-path`; or local csv file, e.g. `csvfile://your-file-path`; or both, e.g. `console,jsonfile://your-file-path,csvfile://your-file-path`.
+[**Required**]
+You may specify the output parameter so hemera will export the data to csv or json files as well. If not specified the data will be printed to the console.
+
+If you have multi outputs, use "," to concat the files.
+The file location will be relative to your current location if you run from source code, or the `output` folder as configured in `docker-compose.yaml`.
+
+e.g.
+- `postgresql+psycopg2://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
+- `jsonfile://output/json`: Json files will be exported to folder `output/json`
+- `csvfile://output/csv`: Csv files will be exported to folder `output/csv`
+- `console,jsonfile://output/json,csvfile://output/csv`: Multiple destinations are supported.
 
 ---
 
 #### `ENTITY_TYPES` or `--entity-types`
 [**Default**: `<value of ALL_ENTITY_COLLECTIONS>`]
-The list of entity types to export, e.g. `block,transaction,log`.
+Hemera indexer will export those entity types to your database and files(if `OUTPUT` is specified).
+Full list of available entity types:
+- `block`
+- `transaction`
+- `log`
+- `token`
+- `token_transfer`
+- `trace`
+- `contract`
+- `coin_balance`
+
+If you didn't specify this parameter, the default entity types will be all of the above.
+
+You may spawn up multi hemera indexer processes, each of them is indexing different entity types to accelrate the syncing process, as traces may take much longer than other entities, checkout 'docker-compose/docker-compose.yaml' for examples.
 
 ---
 
 #### `DB_VERSION` or `--db-version`
 [**Default**: `head`]
-The database version to initialize the database, using the alembic script's revision ID to specify a version. e.g. `head` indicates the latest version, `base` indicates the empty database without any table.
-
+The database version to initialize the database. Using the Alembic script's revision ID to specify a version.  
+e.g. `head`, indicates the latest version.  
+Or `base`, indicates the empty database without any table.  
+Default value: `head`
 ---
 
 #### `START_BLOCK` or `--start-block`
 The block number to start from, e.g. `0`, `1000`, etc.
 
+If you don't specify this, hemera will read the last synced block from the postgresql database and resume from it. 
+
 ---
 
 #### `END_BLOCK` or `--end-block`
-The block number to end at, e.g. `10000`, `20000`, etc.
+The block number that ends at, e.g. `10000`, `20000`, etc.
 
 ---
 
@@ -317,74 +354,6 @@ The number of workers, e.g. `4`, `5`, etc.
 
 #### `LOG_FILE` or `--log-file`
 The log file to use. e.g. `path/to/logfile.log`.
-#### `PROVIDER_URI` or `--provider-uri`
-[**Required**]
-The URI of the web3 provider e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`
-
-#### `DEBUG_PROVIDER_URI` or `--debug-provider-url`
-[**Required**]
-The URI of the web3 debug provider e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`
-
-#### `DATABASE_URL` or `--database-url`
-[**Required**]
-The postgresql connection url that hemera used to maintain its state. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
-
-#### `OUTPUT` or `--output`
-[**Required**]
-You may specify the output parameter so hemera will export the data to csv or json files as well. If not specified the data will be printed to the console.
-
-If you have multi outputs, use "," to concat the files.
-The file location will be relative to your current location if you run from source code, or the `output` folder as configured in `docker-compose.yaml`. 
-
-e.g.
-- `postgresql+psycopg2://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
-- `jsonfile://output/json`: Json files will be exported to folder `output/json` 
-- `csvfile://output/csv`: Csv files will be exported to folder `output/csv`
-- `console,jsonfile://output/json,csvfile://output/csv`: Multiple destinations are supported. 
-
-#### `ENTITY_TYPES` or `--entity-types`
-Hemera indexer will export those entity types to your database and files(if `OUTPUT` is specified).
-Full list of available entity types:
-- `block`
-- `transaction`
-- `log`
-- `token`
-- `token_transfer`
-- `trace`
-- `contract`
-- `coin_balance`
-
-If you didn't specify this parameter, the default entity types will be all of the above.
-
-#### `DB_VERSION` or `--db-version`
-The database version to initialize the database. Using the Alembic script's revision ID to specify a version.  
-e.g. `head`, indicates the latest version.  
-Or `base`, indicates the empty database without any table.  
-Default value: `head`
-
-#### `START_BLOCK` or `--start-block`
-The desired start block of hemera indexer, specify this option if you want to skip the blocks.
-
-#### `PARTITION_SIZE` or `--partition-size`
-How many records were written to each file.  
-Default value: `50000`
-
-#### `PERIOD_SECONDS` or `--period-seconds`
-How many seconds to sleep between syncs.  
-Default value: `10`
-
-#### `BATCH_SIZE` or `--batch-size`
-How many blocks to batch in a single request.  
-Default value: `10`
-
-#### `BLOCK_BATCH_SIZE` or `--block-batch-size`
-How many blocks to batch in a single sync round.  
-Default value: `1`
-
-#### `MAX_WORKERS` or `--max-workers`
-The number of workers.  
-Default value: `5`
-
 
 # Export Result
 Hemera indexer allows you to export the blockchain data to a database, or to json/csv files. 
@@ -401,21 +370,31 @@ You can check out [this post](https://www.intelligentdiscovery.io/controls/ec2/a
 
 ## Export From Output Files
 #### Run In Docker
-By default, the `docker-compose.yaml` mounts the `output` folder to `docker-compose/data/output`.
+By default, the `docker-compose.yaml` mounts the `output` folder to `docker-compose/output`, assuming that you are running from `docker-compose` folder.
+You can find exported results in `docker-compose/output`.
 
-E.g. If you specify the `OUTPUT` or `--output` parameter as below
+#### Run From Source Code
+The database and exported file locations are the same as what you configured in `OUTPUT` or `--output` parameter.
+
+E.g., If you specify the `OUTPUT` or `--output` parameter as below
 ```bash
 # Command line parameter
 python hemera.py stream \
-                        -p https://eth.llamarpc.com \
-                        -d https://eth.llamarpc.com \
-                        -o postgresql+psycopg2://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
-
-# Environment variable
+    --provider-uri https://eth.llamarpc.com \
+    --debug-provider-uri https://eth.llamarpc.com \
+    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --start-block 20000001 \
+    --end-block 20010000 \
+    --entity-types block,transaction,log,token,token_transfer \
+    --log-file logs/eth_blocks_20000001_20010000.log \
+    --block-batch-size 200 \
+    --batch-size 200 \
+    --max-workers 32
+    
+# Or using environment variable
 export OUTPUT = postgresql+psycopg2://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
 ```
 
-
-#### Run From Source Code
-The database and exported file locations are the same as what your configured in `OUTPUT` or `--output` parameter.
+You will be able to find those results in the `output` folder of your current location.
 
