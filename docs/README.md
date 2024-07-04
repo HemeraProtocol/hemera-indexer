@@ -235,6 +235,89 @@ Hemera indexer can read configuration from cmd line arguments or environment var
 
 Avoid specifying the same parameter from both environment variable and cmd line.
 #### `PROVIDER_URI` or `--provider-uri`
+[**Default**: `https://mainnet.infura.io`]
+The URI of the web3 provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`.
+
+---
+
+#### `DEBUG_PROVIDER_URI` or `--debug-provider-uri`
+[**Default**: `https://mainnet.infura.io`]
+The URI of the web3 debug provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`.
+
+---
+
+#### `DATABASE_URL` or `--postgres-url`
+[**Required**]
+The required postgres connection URL, e.g. `postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum`.
+
+---
+
+#### `OUTPUT` or `--output`
+The extra output selection. Print to console, e.g. `console`; or local json file, e.g. `jsonfile://your-file-path`; or local csv file, e.g. `csvfile://your-file-path`; or both, e.g. `console,jsonfile://your-file-path,csvfile://your-file-path`.
+
+---
+
+#### `ENTITY_TYPES` or `--entity-types`
+[**Default**: `<value of ALL_ENTITY_COLLECTIONS>`]
+The list of entity types to export, e.g. `block,transaction,log`.
+
+---
+
+#### `DB_VERSION` or `--db-version`
+[**Default**: `head`]
+The database version to initialize the database, using the alembic script's revision ID to specify a version. e.g. `head` indicates the latest version, `base` indicates the empty database without any table.
+
+---
+
+#### `START_BLOCK` or `--start-block`
+The block number to start from, e.g. `0`, `1000`, etc.
+
+---
+
+#### `END_BLOCK` or `--end-block`
+The block number to end at, e.g. `10000`, `20000`, etc.
+
+---
+
+#### `PARTITION_SIZE` or `--partition-size`
+[**Default**: `50000`]
+How many records to write to each file.
+
+---
+
+#### `PERIOD_SECONDS` or `--period-seconds`
+[**Default**: `10`]
+How many seconds to sleep between syncs.
+
+---
+
+#### `BATCH_SIZE` or `--batch-size`
+[**Default**: `10`]
+How many parameters to batch in a single request.
+
+---
+
+#### `DEBUG_BATCH_SIZE` or `--debug-batch-size`
+[**Default**: `1`]
+How many parameters to batch in a single debug RPC request.
+
+---
+
+#### `BLOCK_BATCH_SIZE` or `--block-batch-size`
+[**Default**: `1`]
+How many blocks to batch in a single sync round.
+
+---
+
+#### `MAX_WORKERS` or `--max-workers`
+[**Default**: `5`]
+The number of workers, e.g. `4`, `5`, etc.
+
+---
+
+#### `LOG_FILE` or `--log-file`
+The log file to use. e.g. `path/to/logfile.log`.
+#### `PROVIDER_URI` or `--provider-uri`
 [**Required**]
 The URI of the web3 provider e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`
 
