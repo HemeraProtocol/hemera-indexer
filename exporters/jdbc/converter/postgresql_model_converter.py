@@ -133,7 +133,7 @@ def convert_to_log(log, fixing=False):
         'log_index': log["log_index"],
         'address': bytes.fromhex(log["address"][2:]),
         'data': bytes.fromhex(log["data"][2:]),
-        'topic0': bytes.fromhex(log["topic0"][2:]) if log["topic1"] else None,
+        'topic0': bytes.fromhex(log["topic0"][2:]) if log["topic0"] else None,
         'topic1': bytes.fromhex(log["topic1"][2:]) if log["topic1"] else None,
         'topic2': bytes.fromhex(log["topic2"][2:]) if log["topic2"] else None,
         'topic3': bytes.fromhex(log["topic3"][2:]) if log["topic3"] else None,
