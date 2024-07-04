@@ -1,8 +1,8 @@
 """base version
 
-Revision ID: 9f7bd5e524a4
+Revision ID: 5e4608933f64
 Revises: 
-Create Date: 2024-06-25 14:33:48.102583
+Create Date: 2024-07-04 19:05:00.122248
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '9f7bd5e524a4'
+revision: str = '5e4608933f64'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -290,9 +290,10 @@ def upgrade() -> None:
     op.create_index('logs_block_timestamp_index', 'logs', [sa.text('block_timestamp DESC')], unique=False)
     op.create_table('sync_record',
     sa.Column('mission_type', sa.VARCHAR(), nullable=False),
+    sa.Column('entity_types', sa.INTEGER(), nullable=False),
     sa.Column('last_block_number', sa.BIGINT(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.PrimaryKeyConstraint('mission_type')
+    sa.PrimaryKeyConstraint('mission_type', 'entity_types')
     )
     op.create_table('tokens',
     sa.Column('address', postgresql.BYTEA(), nullable=False),
@@ -370,7 +371,7 @@ def upgrade() -> None:
     sa.Column('receipt_cumulative_gas_used', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('receipt_effective_gas_price', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('receipt_l1_fee', sa.NUMERIC(precision=100), nullable=True),
-    sa.Column('receipt_l1_fee_scalar', sa.FLOAT(), nullable=True),
+    sa.Column('receipt_l1_fee_scalar', sa.NUMERIC(precision=100, scale=18), nullable=True),
     sa.Column('receipt_l1_gas_used', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('receipt_l1_gas_price', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('receipt_blob_gas_used', sa.NUMERIC(precision=100), nullable=True),

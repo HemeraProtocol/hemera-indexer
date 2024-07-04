@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, Index, desc, func
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT, FLOAT
+from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT
 from exporters.jdbc.schema import Base
 
 
@@ -31,7 +31,7 @@ class Transactions(Base):
     receipt_cumulative_gas_used = Column(NUMERIC(100))
     receipt_effective_gas_price = Column(NUMERIC(100))
     receipt_l1_fee = Column(NUMERIC(100))
-    receipt_l1_fee_scalar = Column(FLOAT(100))
+    receipt_l1_fee_scalar = Column(NUMERIC(100, 18))
     receipt_l1_gas_used = Column(NUMERIC(100))
     receipt_l1_gas_price = Column(NUMERIC(100))
     receipt_blob_gas_used = Column(NUMERIC(100))
