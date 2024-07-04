@@ -208,7 +208,6 @@ python hemera.py stream \
     --start-block 20000001 \
     --end-block 20010000 \
     --entity-types block,transaction,log,token,token_transfer \
-    --log-file logs/eth_blocks_20000001_20010000.log \
     --block-batch-size 200 \
     --batch-size 200 \
     --max-workers 32
@@ -387,7 +386,6 @@ python hemera.py stream \
     --start-block 20000001 \
     --end-block 20010000 \
     --entity-types block,transaction,log,token,token_transfer \
-    --log-file logs/eth_blocks_20000001_20010000.log \
     --block-batch-size 200 \
     --batch-size 200 \
     --max-workers 32
