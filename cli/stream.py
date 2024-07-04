@@ -87,6 +87,8 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
         "partition_size": partition_size,
     }
 
+    entity_types = calculate_entity_value(entity_types)
+
     stream_dispatcher = StreamDispatcher(
         service=service,
         batch_web3_provider=ThreadLocalProxy(
@@ -97,12 +99,13 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
-        entity_types=calculate_entity_value(entity_types))
+        entity_types=entity_types)
 
     controller = StreamController(
         service=service,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(provider_uri, batch=False)),
+        entity_types=entity_types,
         job_dispatcher=stream_dispatcher,
     )
 
