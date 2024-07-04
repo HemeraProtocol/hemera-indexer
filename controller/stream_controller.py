@@ -18,10 +18,12 @@ class StreamController(BaseController):
     def __init__(self,
                  service,
                  batch_web3_provider,
-                 job_dispatcher=BaseDispatcher()):
+                 job_dispatcher=BaseDispatcher(),
+                 max_retries=5):
         super().__init__(service)
         self.web3 = build_web3(batch_web3_provider)
         self.job_dispatcher = job_dispatcher
+        self.max_retries = max_retries
 
     def action(self,
                start_block=None,
@@ -52,6 +54,7 @@ class StreamController(BaseController):
 
         while True and (end_block is None or last_synced_block < end_block):
             synced_blocks = 0
+            tries = 0
 
             try:
                 current_block = self._get_current_block_number()
@@ -72,8 +75,12 @@ class StreamController(BaseController):
 
             except Exception as e:
                 logging.exception('An exception occurred while syncing block data.')
-                if not retry_errors:
+                tries += 1
+                if not retry_errors and tries >= self.max_retries:
+                    logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     raise e
+                else:
+                    logging.info(f'No: {tries} retry is about to start.')
 
             if synced_blocks <= 0:
                 logging.info('Nothing to sync. Sleeping for {} seconds...'.format(period_seconds))
@@ -85,7 +92,8 @@ class StreamController(BaseController):
     def _get_last_synced_block(self):
         session = self.db_service.get_service_session()
         try:
-            result = session.query(SyncRecord.last_block_number).filter(SyncRecord.mission_type == self.__class__.__name__).scalar()
+            result = session.query(SyncRecord.last_block_number).filter(
+                SyncRecord.mission_type == self.__class__.__name__).scalar()
         except Exception as e:
             print(e)
             raise e
