@@ -57,7 +57,7 @@ class ProgressLogger:
 
         duration = datetime.now() - self.start_time
         track_message = None
-        if self.total_items is None:
+        if self.total_items is None or self.total_items == 0:
             if int(processed_items_before / self.log_items_step) != int(processed_items / self.log_items_step):
                 track_message = f"{processed_items} items processed. Took {duration}."
         else:

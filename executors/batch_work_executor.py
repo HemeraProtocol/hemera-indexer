@@ -1,5 +1,6 @@
 import logging
 import time
+from concurrent import futures
 
 from requests.exceptions import Timeout as RequestsTimeout, HTTPError, TooManyRedirects
 from web3._utils.threads import Timeout as Web3Timeout
@@ -15,7 +16,12 @@ BATCH_CHANGE_COOLDOWN_PERIOD_SECONDS = 2 * 60
 
 # Executes the given work in batches, reducing the batch size exponentially in case of errors.
 class BatchWorkExecutor:
-    def __init__(self, starting_batch_size, max_workers, job_name='BatchWorkExecutor', retry_exceptions=RETRY_EXCEPTIONS, max_retries=5):
+    def __init__(self,
+                 starting_batch_size,
+                 max_workers,
+                 job_name='BatchWorkExecutor',
+                 retry_exceptions=RETRY_EXCEPTIONS,
+                 max_retries=5):
         self.batch_size = starting_batch_size
         self.max_batch_size = starting_batch_size
         self.latest_batch_size_change_time = None
@@ -70,6 +76,13 @@ class BatchWorkExecutor:
                 self.logger.info('Increasing batch size to {}.'.format(new_batch_size))
                 self.batch_size = new_batch_size
                 self.latest_batch_size_change_time = current_time
+
+    def wait(self):
+        futures.wait(self._futures)
+        self._check_completed_futures()
+        assert len(self._futures) == 0
+
+        self.progress_logger.finish()
 
     def shutdown(self):
         self.executor.shutdown(wait=True)

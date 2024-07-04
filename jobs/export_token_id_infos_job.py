@@ -90,6 +90,8 @@ class ExportTokenIdInfosJob(BaseJob):
                                           self._collect_batch,
                                           total_items=len(token_721))
 
+        self._batch_work_executor.wait()
+
         token_1155 = distinct_tokens(self._data_buff['token_transfer'], TokenType.ERC1155)
         self._batch_work_executor.execute(token_1155,
                                           self._collect_batch,

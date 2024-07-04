@@ -1,3 +1,6 @@
+import logging
+from datetime import datetime
+
 from enumeration.entity_type import BASIC_COLLECTION
 
 
@@ -7,13 +10,24 @@ class BaseJob(object):
     def __init__(self, index_keys=[], entity_types=BASIC_COLLECTION):
         self._index_keys = index_keys
         self._entity_types = entity_types
+        self.logger = logging.getLogger(self.__class__.__name__)
 
     def run(self):
         try:
             self._start()
+
+            start_time = datetime.now()
             self._collect()
+            self.logger.info(f"Stage collect finished. Took {datetime.now() - start_time}")
+
+            start_time = datetime.now()
             self._process()
+            self.logger.info(f"Stage process finished. Took {datetime.now() - start_time}")
+
+            start_time = datetime.now()
             self._export()
+            self.logger.info(f"Stage export finished. Took {datetime.now() - start_time}")
+
         finally:
             self._end()
 
