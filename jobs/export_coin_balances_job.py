@@ -29,7 +29,7 @@ class ExportCoinBalancesJob(BaseJob):
         super().__init__(index_keys=index_keys, entity_types=entity_types)
 
         self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
@@ -41,7 +41,7 @@ class ExportCoinBalancesJob(BaseJob):
         coin_addresses = distinct_addresses(self._data_buff['formated_block'],
                                             self._data_buff['enriched_transaction'],
                                             self._data_buff['enriched_traces'])
-        self._batch_work_executor.execute(coin_addresses, self._collect_batch)
+        self._batch_work_executor.execute(coin_addresses, self._collect_batch, total_items=len(coin_addresses))
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, coin_addresses):

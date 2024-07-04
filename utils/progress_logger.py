@@ -55,15 +55,18 @@ class ProgressLogger:
         processed_items = self.counter.increment(item_count)
         processed_items_before = processed_items - item_count
 
+        duration = datetime.now() - self.start_time
         track_message = None
         if self.total_items is None:
             if int(processed_items_before / self.log_items_step) != int(processed_items / self.log_items_step):
-                track_message = '{} items processed.'.format(processed_items)
+                track_message = f"{processed_items} items processed. Took {duration}."
         else:
             percentage = processed_items * 100 / self.total_items
             percentage_before = processed_items_before * 100 / self.total_items
             if int(percentage_before / self.log_percentage_step) != int(percentage / self.log_percentage_step):
-                track_message = '{} items processed. Progress is {}%'.format(processed_items, int(percentage)) + \
+                track_message = (f"{processed_items} items processed. "
+                                 f"Took {duration}. "
+                                 f"Progress is {int(percentage)}%") + \
                                 ('!!!' if int(percentage) > 100 else '.')
 
         if track_message is not None:

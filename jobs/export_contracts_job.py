@@ -1,7 +1,6 @@
 import json
 import logging
 
-from eth_abi.exceptions import InsufficientDataBytes, InvalidPointer
 from web3 import Web3
 from eth_abi import abi
 
@@ -47,7 +46,7 @@ class ExportContractsJob(BaseJob):
         super().__init__(index_keys=index_keys, entity_types=entity_types)
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
@@ -57,7 +56,7 @@ class ExportContractsJob(BaseJob):
     def _collect(self):
         contracts = build_contracts(self._web3, self._data_buff['trace'])
 
-        self._batch_work_executor.execute(contracts, self._collect_batch)
+        self._batch_work_executor.execute(contracts, self._collect_batch, total_items=len(contracts))
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, contracts):

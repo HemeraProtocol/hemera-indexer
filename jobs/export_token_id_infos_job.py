@@ -76,7 +76,7 @@ class ExportTokenIdInfosJob(BaseJob):
 
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
@@ -85,10 +85,15 @@ class ExportTokenIdInfosJob(BaseJob):
 
     def _collect(self):
 
-        self._batch_work_executor.execute(distinct_tokens(self._data_buff['token_transfer'], TokenType.ERC721),
-                                          self._collect_batch)
-        self._batch_work_executor.execute(distinct_tokens(self._data_buff['token_transfer'], TokenType.ERC1155),
-                                          self._collect_batch)
+        token_721 = distinct_tokens(self._data_buff['token_transfer'], TokenType.ERC721)
+        self._batch_work_executor.execute(token_721,
+                                          self._collect_batch,
+                                          total_items=len(token_721))
+
+        token_1155 = distinct_tokens(self._data_buff['token_transfer'], TokenType.ERC1155)
+        self._batch_work_executor.execute(token_1155,
+                                          self._collect_batch,
+                                          total_items=len(token_1155))
 
         self._batch_work_executor.shutdown()
 

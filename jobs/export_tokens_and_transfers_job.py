@@ -13,7 +13,6 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from exporters.jdbc.schema.tokens import Tokens
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
-from utils.enrich import enrich_token_transfer_type
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result, zip_rpc_response
 
@@ -73,7 +72,7 @@ class ExportTokensAndTransfersJob(BaseJob):
 
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
         self._exist_token = get_exist_token(service)
@@ -82,7 +81,9 @@ class ExportTokensAndTransfersJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        self._batch_work_executor.execute(self._data_buff['enriched_log'], self._collect_batch)
+        self._batch_work_executor.execute(self._data_buff['enriched_log'],
+                                          self._collect_batch,
+                                          total_items=len(self._data_buff['enriched_log']))
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, logs):

@@ -106,7 +106,7 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
 
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
@@ -116,7 +116,9 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
     def _collect(self):
         parameters = extract_token_parameters(self._data_buff['token_transfer'], self._web3)
 
-        self._batch_work_executor.execute(parameters, self._collect_batch)
+        self._batch_work_executor.execute(parameters,
+                                          self._collect_batch,
+                                          total_items=len(parameters))
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, parameters):

@@ -26,7 +26,7 @@ class ExportTransactionsAndLogsJob(BaseJob):
         super().__init__(index_keys=index_keys, entity_types=entity_types)
 
         self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers)
+        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
 
@@ -34,8 +34,10 @@ class ExportTransactionsAndLogsJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        transaction_hashes_iterable = (transaction['hash'] for transaction in self._data_buff['transaction'])
-        self._batch_work_executor.execute(transaction_hashes_iterable, self._collect_batch)
+        transaction_hashes_iterable = [transaction['hash'] for transaction in self._data_buff['transaction']]
+        self._batch_work_executor.execute(transaction_hashes_iterable,
+                                          self._collect_batch,
+                                          total_items=len(transaction_hashes_iterable))
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, transaction_hashes):
