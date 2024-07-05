@@ -89,10 +89,16 @@ Based on the 2024 Ethereum, every 25k blocks, which is approximately 4.5 million
 If you don't have a VM in place, you can create VMs from cloud providers.
 [Create an AWS EC2 Instance](docs/AWS.md)
 
+#### RPC Usage
+
+The Indexer will consume a large number of RPC requests. Make sure you have a robust and fast RPC endpoint. Most of the time, the RPC endpoint will be the bottleneck for the indexer.
+
 ### Clone the Repository
 
 ```bash
-git clone git@github.com:hemera-protocol/hemera-indexer.git
+git clone https://github.com/HemeraProtocol/hemera-indexer.git
+or
+git clone git@github.com:HemeraProtocol/hemera-indexer.git
 ```
 
 ### Run Hemera Indexer
@@ -129,7 +135,7 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-#### Enter the Docker Compose Folder
+#### Run the Docker Compose
 
 ```bash
 cd hemera-indexer
@@ -276,9 +282,9 @@ By default, the PostgreSQL port is open on and mapped to port 5432 of your ec2 i
 
 If you are using any cloud services, make sure the PostgreSQL port is accessible by updating the network rules.
 
-If your are using AWS and EC2, you can check out [this post](https://www.intelligentdiscovery.io/controls/ec2/aws-ec2-postgresql-open) on how to configure the security group.
+If you are using AWS and EC2, you can check out [this post](https://www.intelligentdiscovery.io/controls/ec2/aws-ec2-postgresql-open) on how to configure the security group.
 
-### Export From Output Files
+### Export To Output Files
 
 #### Run In Docker
 
@@ -315,9 +321,10 @@ You will be able to find those results in the `output` folder of your current lo
 
 Hemera indexer can read configuration from cmd line arguments or environment variables.
 
-- If you run Hemera Indexer in [Docker](#run-in-docker), then environment variable is easier to config.
-- If you prefer running from [Source Code](#run-from-source-code), command line arguments is more intuitive.
-  - Run with `python hemera.py stream --help` to get the latest instructions for arguments.
+- If you run Hemera Indexer in [Docker](#run-in-docker), then the environment variable is easier to configure.
+- If you prefer running from [Source Code](#run-from-source-code), command line arguments are more intuitive.
+
+Run with `python hemera.py stream --help` to get the latest instructions for arguments.
 
 ### Parameters
 
@@ -375,7 +382,7 @@ Full list of available entity types:
 
 If you didn't specify this parameter, the default entity types will be BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER.
 
-You may spawn up multiple Hemera Indexer processes, each of them indexing different entity types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout 'docker-compose/docker-compose.yaml' for examples.
+You may spawn up multiple Hemera Indexer processes, each of them indexing different entity types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
 
 #### `DB_VERSION` or `--db-version`
 
