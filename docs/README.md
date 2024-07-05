@@ -64,7 +64,7 @@ As of July 5, 2024, the initial open-source version of the Hemera Indexer offers
 
 ### Prerequisites
 
-- VM Instance (or your own laptop)
+- VM Instance (or your local machine)
 - RPC Node of your EVM-compatible blockchain
 
 ### Hardware Requirements
@@ -89,10 +89,16 @@ Based on the 2024 Ethereum, every 25k blocks, which is approximately 4.5 million
 If you don't have a VM in place, you can create VMs from cloud providers.
 [Create an AWS EC2 Instance](AWS.md)
 
+#### RPC Usage
+
+The Indexer will consume a large number of RPC requests. Make sure you have a robust and fast RPC endpoint. Most of the time, the RPC endpoint will be the bottleneck for the indexer.
+
 ### Clone the Repository
 
 ```bash
-git clone git@github.com:hemera-protocol/hemera-indexer.git
+git clone https://github.com/HemeraProtocol/hemera-indexer.git
+or
+git clone git@github.com:HemeraProtocol/hemera-indexer.git
 ```
 
 ### Run Hemera Indexer
@@ -129,7 +135,7 @@ sudo apt-get update
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-#### Enter the Docker Compose Folder
+#### Run the Docker Compose
 
 ```bash
 cd hemera-indexer
@@ -260,13 +266,67 @@ Once you have successfully bootstrapped Hemera Indexer, you should be able to vi
 
 ```
 
+### Export Result
+
+Hemera Indexer allows you to export the blockchain data to a database, or to JSON/CSV files.
+
+### Export From PostgreSQL Database
+
+#### Connect to Your Postgresql Instance
+
+Use any PostgreSQL client to connect to your PostgreSQL instance, please make sure the `user`, `password`, and `port` is the same as your configuration.
+
+#### Run In Docker
+
+By default, the PostgreSQL port is open on and mapped to port 5432 of your ec2 instance, you can verify or change it in the PostgreSQL section of the `docker-compose.yaml`.
+
+#### Configure Your Network
+
+If you are using any cloud services, make sure the PostgreSQL port is accessible by updating the network rules.
+
+If you are using AWS and EC2, you can check out [this post](https://www.intelligentdiscovery.io/controls/ec2/aws-ec2-postgresql-open) on how to configure the security group.
+
+### Export To Output Files
+
+#### Run In Docker
+
+By default, the `docker-compose.yaml` mounts the `output` folder to `docker-compose/output`, assuming that you are running from `docker-compose` folder.
+You can find exported results in `docker-compose/output`.
+
+#### Run From Source Code
+
+The database and exported file locations are the same as what you configured in `OUTPUT` or `--output` parameter.
+
+E.g., If you specify the `OUTPUT` or `--output` parameter as below
+
+```bash
+# Command line parameter
+python hemera.py stream \
+    --provider-uri https://eth.llamarpc.com \
+    --debug-provider-uri https://eth.llamarpc.com \
+    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --start-block 20000001 \
+    --end-block 20010000 \
+    --entity-types block,transaction,log,token,token_transfer \
+    --block-batch-size 200 \
+    --batch-size 200 \
+    --max-workers 32
+
+# Or using environment variable
+export OUTPUT = postgresql+psycopg2://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
+```
+
+You will be able to find those results in the `output` folder of your current location.
+
 ## Configure Hemera Indexer
 
 Hemera indexer can read configuration from cmd line arguments or environment variables.
 
-- If you run Hemera Indexer in [Docker](#run-in-docker), then environment variable is easier to config.
-- If you prefer running from [Source Code](#run-from-source-code), command line arguments is more intuitive.
-  - Run with `python hemera.py stream --help` to get the latest instructions for arguments.
+- If you run Hemera Indexer in [Docker](#run-in-docker), then the environment variable is easier to configure.
+- If you prefer running from [Source Code](#run-from-source-code), command line arguments are more intuitive.
+
+Run with `python hemera.py stream --help` to get the latest instructions for arguments.
 
 ### Parameters
 
@@ -307,7 +367,7 @@ e.g.
 
 #### `ENTITY_TYPES` or `--entity-types`
 
-[**Default**: `<value of ALL_ENTITY_COLLECTIONS>`]
+[**Default**: `BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER`]
 Hemera Indexer will export those entity types to your database and files(if `OUTPUT` is specified).
 Full list of available entity types:
 
@@ -322,9 +382,9 @@ Full list of available entity types:
 - `token_balance`
 - `token_ids`
 
-If you didn't specify this parameter, the default entity types will be all of the above.
+If you didn't specify this parameter, the default entity types will be BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER.
 
-You may spawn up multiple Hemera Indexer processes, each of them indexing different entity types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout 'docker-compose/docker-compose.yaml' for examples.
+You may spawn up multiple Hemera Indexer processes, each of them indexing different entity types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
 
 #### `DB_VERSION` or `--db-version`
 
@@ -376,56 +436,3 @@ The number of workers, e.g. `4`, `5`, etc.
 #### `LOG_FILE` or `--log-file`
 
 The log file to use. e.g. `path/to/logfile.log`.
-
-### Export Result
-
-Hemera Indexer allows you to export the blockchain data to a database, or to JSON/CSV files.
-
-### Export From PostgreSQL Database
-
-#### Connect to Your Postgresql Instance
-
-Use any PostgreSQL client to connect to your PostgreSQL instance, please make sure the `user`, `password`, and `port` is the same as your configuration.
-
-#### Run In Docker
-
-By default, the PostgreSQL port is open on and mapped to port 5432 of your ec2 instance, you can verify or change it in the PostgreSQL section of the `docker-compose.yaml`.
-
-#### Update AWS Security Groups
-
-If you are using AWS ec2, make sure the PostgreSQL port is accessible by updating the security groups of your ec2 instance.
-
-You can check out [this post](https://www.intelligentdiscovery.io/controls/ec2/aws-ec2-postgresql-open) on how to configure the security group.
-
-### Export From Output Files
-
-#### Run In Docker
-
-By default, the `docker-compose.yaml` mounts the `output` folder to `docker-compose/output`, assuming that you are running from `docker-compose` folder.
-You can find exported results in `docker-compose/output`.
-
-#### Run From Source Code
-
-The database and exported file locations are the same as what you configured in `OUTPUT` or `--output` parameter.
-
-E.g., If you specify the `OUTPUT` or `--output` parameter as below
-
-```bash
-# Command line parameter
-python hemera.py stream \
-    --provider-uri https://eth.llamarpc.com \
-    --debug-provider-uri https://eth.llamarpc.com \
-    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
-    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
-    --start-block 20000001 \
-    --end-block 20010000 \
-    --entity-types block,transaction,log,token,token_transfer \
-    --block-batch-size 200 \
-    --batch-size 200 \
-    --max-workers 32
-
-# Or using environment variable
-export OUTPUT = postgresql+psycopg2://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
-```
-
-You will be able to find those results in the `output` folder of your current location.

@@ -74,8 +74,8 @@ setup(
         ],
     },
     project_urls={
-        'Bug Reports': 'https://github.com/HemeraProtocol/hemera_indexer/issues',
+        'Bug Reports': 'https://github.com/HemeraProtocol/hemera-indexer/issues',
         'Chat': '',
-        'Source': 'https://github.com/HemeraProtocol/hemera_indexer',
+        'Source': 'https://github.com/HemeraProtocol/hemera-indexer',
     },
 )
