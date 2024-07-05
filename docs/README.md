@@ -87,7 +87,7 @@ Based on the 2024 Ethereum, every 25k blocks, which is approximately 4.5 million
 #### Use VM From Cloud Services
 
 If you don't have a VM in place, you can create VMs from cloud providers.
-[Create an AWS EC2 Instance](docs/AWS.md)
+[Create an AWS EC2 Instance](AWS.md)
 
 ### Clone the Repository
 
@@ -234,10 +234,12 @@ python hemera.py stream \
     --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
     --start-block 20000001 \
     --end-block 20010000 \
+    # alternatively you can spin up a separate process for traces, as it takes more time
+    # --entity-types trace,contract,coin_balance
     --entity-types block,transaction,log,token,token_transfer \
     --block-batch-size 200 \
     --batch-size 200 \
-    --max-workers 32
+    --max-workers 32 
 ```
 
 Once you have successfully bootstrapped Hemera Indexer, you should be able to view similar logs as below.

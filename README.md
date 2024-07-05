@@ -234,6 +234,8 @@ python hemera.py stream \
     --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
     --start-block 20000001 \
     --end-block 20010000 \
+    # alternatively you can spin up a separate process for traces, as it takes more time
+    # --entity-types trace,contract,coin_balance
     --entity-types block,transaction,log,token,token_transfer \
     --block-batch-size 200 \
     --batch-size 200 \
