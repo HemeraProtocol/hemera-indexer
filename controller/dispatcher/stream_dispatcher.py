@@ -38,7 +38,8 @@ class StreamDispatcher(BaseDispatcher):
 
         if self._entity_types & EntityType.BLOCK or self._entity_types & EntityType.TRANSACTION \
                 or self._entity_types & EntityType.LOG or self._entity_types & EntityType.TOKEN \
-                or self._entity_types & EntityType.TOKEN_TRANSFER or self._entity_types & EntityType.COIN_BALANCE:
+                or self._entity_types & EntityType.TOKEN_TRANSFER or self._entity_types & EntityType.TOKEN_BALANCE \
+                or self._entity_types & EntityType.TOKEN_IDS or self._entity_types & EntityType.COIN_BALANCE:
             ExportBlocksJob(
                 index_keys=['block', 'transaction'],
                 entity_types=self._entity_types,
@@ -52,6 +53,7 @@ class StreamDispatcher(BaseDispatcher):
 
         if self._entity_types & EntityType.TRANSACTION or self._entity_types & EntityType.LOG \
                 or self._entity_types & EntityType.TOKEN or self._entity_types & EntityType.TOKEN_TRANSFER \
+                or self._entity_types & EntityType.TOKEN_BALANCE or self._entity_types & EntityType.TOKEN_IDS \
                 or self._entity_types & EntityType.COIN_BALANCE:
             ExportTransactionsAndLogsJob(
                 index_keys=['receipt', 'log'],
