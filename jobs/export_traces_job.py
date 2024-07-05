@@ -1,6 +1,8 @@
 import json
 import logging
 
+from eth_utils import to_int
+
 from domain.contract_internal_transaction import trace_to_contract_internal_transaction
 from domain.trace import format_trace_data, trace_is_contract_creation, trace_is_transfer_value
 from enumeration.entity_type import EntityType
@@ -9,7 +11,7 @@ from exporters.console_item_exporter import ConsoleItemExporter
 from utils.enrich import enrich_traces
 from utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from jobs.base_job import BaseJob
-from utils.utils import validate_range, rpc_response_to_result
+from utils.utils import validate_range, rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
@@ -19,17 +21,12 @@ class ExportTracesJob(BaseJob):
     def __init__(self,
                  index_keys,
                  entity_types,
-                 start_block,
-                 end_block,
                  batch_web3_provider,
                  batch_size,
                  max_workers,
                  item_exporter=ConsoleItemExporter()):
         super().__init__(index_keys=index_keys, entity_types=entity_types)
 
-        validate_range(start_block, end_block)
-        self._start_block = start_block
-        self._end_block = end_block
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
@@ -40,15 +37,15 @@ class ExportTracesJob(BaseJob):
 
     def _collect(self):
         self._batch_work_executor.execute(
-            range(self._start_block, self._end_block + 1),
+            self._data_buff['block'],
             self._collect_batch,
-            total_items=self._end_block - self._start_block + 1
+            total_items=len(self._data_buff['block'])
         )
 
         self._batch_work_executor.shutdown()
 
-    def _collect_batch(self, block_number_batch):
-        traces = traces_rpc_requests(self._batch_web3_provider.make_request, block_number_batch, self._is_batch)
+    def _collect_batch(self, blocks):
+        traces = traces_rpc_requests(self._batch_web3_provider.make_request, blocks, self._is_batch)
 
         for trace in traces:
             trace['item'] = 'trace'
@@ -166,21 +163,32 @@ class ExtractTraces:
         return result
 
 
-def traces_rpc_requests(make_requests, block_batch, is_batch):
-    trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_batch))
+def traces_rpc_requests(make_requests, blocks, is_batch):
+    block_numbers = []
+    for block in blocks:
+        block_numbers.append(block['number'])
+    trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_numbers))
 
     if is_batch:
-        response = make_requests(params=json.dumps(trace_block_rpc))
+        responses = make_requests(params=json.dumps(trace_block_rpc))
     else:
-        response = [make_requests(params=json.dumps(trace_block_rpc[0]))]
+        responses = [make_requests(params=json.dumps(trace_block_rpc[0]))]
 
     total_traces = []
-    for response_item in response:
-        block_number = response_item.get('id')
-        result = rpc_response_to_result(response_item)
+    for block, response in zip_rpc_response(blocks, responses, index='number'):
+        block_number = block['number']
+        transactions = block['transactions']
+        result = rpc_response_to_result(response)
+
+        if 'txHash' not in result[0]:
+            if len(result) != len(transactions):
+                raise ValueError('The number of traces is wrong ' + str(result))
+
+            for idx, trace_result in enumerate(result):
+                trace_result['txHash'] = transactions[idx]['hash']
 
         geth_trace = {
-            'block_number': block_number,
+            'block_number': to_int(hexstr=block_number),
             'transaction_traces': result,
         }
         trace_spliter = ExtractTraces()
