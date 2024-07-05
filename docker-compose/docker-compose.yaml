@@ -1,13 +1,35 @@
 services:
-  hemera:
+  hemera-main-indexer:
     build: ../
     env_file:
       - hemera-indexer.env
-    container_name: hemera
+    container_name: hemera-main
     command:
       [ "python", "hemera.py", "stream" ]
     ports:
       - "8080:8080"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - hemera
+    volumes:
+      - ./output:/app/output
+    environment:
+      # In the main indexer, we will export those entity types as they don't require traces, which consumes much more time.
+      - ENTITY_TYPES=block,transaction,log,token,token_transfer
+
+  hemera-trace-indexer:
+    build: ../
+    env_file:
+      - hemera-indexer.env
+    container_name: hemera-trace
+    environment:
+      # In the main indexer, we will export those entity types as they don't require traces, which consumes much more time.
+      - ENTITY_TYPES=block,transaction,log,token,token_transfer
+    command:
+      [ "python", "hemera.py", "stream" ]
     depends_on:
       postgresql:
         condition: service_healthy

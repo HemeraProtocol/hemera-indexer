@@ -22,7 +22,7 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
               help='The URI of the web3 debug provider e.g. '
                    'file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io')
 @click.option('-pg', '--postgres-url', type=str, required=True,
-              envvar="DATABASE_URL",
+              envvar="POSTGRES_URL",
               help='The required postgres connection url.'
                    'e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum')
 @click.option('-o', '--output', type=str,
@@ -43,7 +43,7 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
                    'or base, indicates the empty database without any table.')
 @click.option('-s', '--start-block', default=None, show_default=True, type=int, help='Start block',
               envvar='START_BLOCK')
-@click.option('-e', '--end-block', default=None, show_default=True, type=int, help='end block',
+@click.option('-e', '--end-block', default=None, show_default=True, type=int, help='End block',
               envvar='END_BLOCK')
 @click.option('--partition-size', default=50000, show_default=True, type=int,
               envvar='PARTITION_SIZE',
