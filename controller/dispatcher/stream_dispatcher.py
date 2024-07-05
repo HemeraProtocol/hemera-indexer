@@ -39,7 +39,8 @@ class StreamDispatcher(BaseDispatcher):
         if self._entity_types & EntityType.BLOCK or self._entity_types & EntityType.TRANSACTION \
                 or self._entity_types & EntityType.LOG or self._entity_types & EntityType.TOKEN \
                 or self._entity_types & EntityType.TOKEN_TRANSFER or self._entity_types & EntityType.TOKEN_BALANCE \
-                or self._entity_types & EntityType.TOKEN_IDS or self._entity_types & EntityType.COIN_BALANCE:
+                or self._entity_types & EntityType.TOKEN_IDS or self._entity_types & EntityType.TRACE \
+                or self._entity_types & EntityType.COIN_BALANCE:
             ExportBlocksJob(
                 index_keys=['block', 'transaction'],
                 entity_types=self._entity_types,
@@ -105,8 +106,6 @@ class StreamDispatcher(BaseDispatcher):
             ExportTracesJob(
                 index_keys=['trace'],
                 entity_types=self._entity_types,
-                start_block=start_block,
-                end_block=end_block,
                 batch_web3_provider=self._batch_web3_debug_provider,
                 batch_size=self._debug_batch_size,
                 max_workers=self._max_workers,

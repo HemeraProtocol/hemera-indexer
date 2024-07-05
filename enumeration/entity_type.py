@@ -17,7 +17,7 @@ class EntityType(IntFlag):
 
 
 ALL_ENTITY_COLLECTIONS = EntityType.__members__.keys()
-BASIC_COLLECTION = ["BLOCK", "TRANSACTION", "LOG"]
+DEFAULT_COLLECTION = ["BLOCK", "TRANSACTION", "LOG", "TOKEN", "TOKEN_TRANSFER"]
 
 
 def calculate_entity_value(entity_types):

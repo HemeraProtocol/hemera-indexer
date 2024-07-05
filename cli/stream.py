@@ -3,7 +3,7 @@ import logging
 import click
 from controller.dispatcher.stream_dispatcher import StreamDispatcher
 from controller.stream_controller import StreamController
-from enumeration.entity_type import calculate_entity_value, ALL_ENTITY_COLLECTIONS
+from enumeration.entity_type import calculate_entity_value, DEFAULT_COLLECTION
 from exporters.jdbc.postgresql_service import PostgreSQLService
 from utils.logging_utils import configure_signals, configure_logging
 from utils.provider import get_provider_from_uri
@@ -32,14 +32,15 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
                    'or local json file e.g. jsonfile://your-file-path; '
                    'or local csv file e.g. csvfile://your-file-path; '
                    'or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path')
-@click.option('-E', '--entity-types', default=','.join(ALL_ENTITY_COLLECTIONS), show_default=True, type=str,
+@click.option('-E', '--entity-types', default=','.join(DEFAULT_COLLECTION), show_default=True, type=str,
               envvar='ENTITY_TYPES',
-              help='The list of entity types to export. e.g. block,transaction,log')
+              help='The list of entity types to export. '
+                   'e.g. block,transaction,log,token,token_transfer,token_balance,token_ids,trace,contract,coin_balance')
 @click.option('-v', '--db-version', default="head", show_default=True, type=str,
               envvar='DB_VERSION',
               help='The database version to initialize the database. using the alembic script\'s revision ID to '
-                   'specify a version.'
-                   ' e.g. head, indicates the latest version.'
+                   'specify a version. '
+                   'e.g. head, indicates the latest version.'
                    'or base, indicates the empty database without any table.')
 @click.option('-s', '--start-block', default=None, show_default=True, type=int, help='Start block',
               envvar='START_BLOCK')
@@ -53,10 +54,10 @@ from utils.utils import pick_random_provider_uri, verify_db_connection_url, set_
               help='How many seconds to sleep between syncs')
 @click.option('-b', '--batch-size', default=10, show_default=True, type=int,
               envvar='BATCH_SIZE',
-              help='How many parameters to batch in single request')
+              help='The number of non-debug RPC requests to batch in a single request')
 @click.option('-db', '--debug-batch-size', default=1, show_default=True, type=int,
               envvar='DEBUG_BATCH_SIZE',
-              help='How many parameters to batch in single debug rpc request')
+              help='The number of debug RPC requests to batch in a single request')
 @click.option('-B', '--block-batch-size', default=1, show_default=True, type=int,
               envvar='BLOCK_BATCH_SIZE',
               help='How many blocks to batch in single sync round')
