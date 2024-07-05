@@ -12,6 +12,8 @@ class EntityType(IntFlag):
     TRACE = 32
     CONTRACT = 64
     COIN_BALANCE = 128
+    TOKEN_BALANCE = 256
+    TOKEN_IDS = 512
 
 
 ALL_ENTITY_COLLECTIONS = EntityType.__members__.keys()
@@ -42,6 +44,15 @@ def calculate_entity_value(entity_types):
                 entities = entities | EntityType.CONTRACT
             elif entity_type == EntityType.COIN_BALANCE.name:
                 entities = entities | EntityType.COIN_BALANCE
+            elif entity_type == EntityType.TOKEN_BALANCE.name:
+                entities = entities | EntityType.TOKEN_BALANCE
+            elif entity_type == EntityType.TOKEN_IDS.name:
+                entities = entities | EntityType.TOKEN_IDS
             else:
                 pass
     return entities
+
+
+def all_entities_value():
+    entities = ','.join(ALL_ENTITY_COLLECTIONS)
+    return calculate_entity_value(entities)

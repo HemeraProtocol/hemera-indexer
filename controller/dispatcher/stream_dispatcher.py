@@ -62,7 +62,8 @@ class StreamDispatcher(BaseDispatcher):
                 item_exporter=self._item_exporter,
             ).run()
 
-        if self._entity_types & EntityType.TOKEN or self._entity_types & EntityType.TOKEN_TRANSFER:
+        if self._entity_types & EntityType.TOKEN or self._entity_types & EntityType.TOKEN_TRANSFER or \
+                self._entity_types & EntityType.TOKEN_BALANCE or self._entity_types & EntityType.TOKEN_IDS:
             ExportTokensAndTransfersJob(
                 index_keys=['token', 'token_transfer',
                             'erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers'],
@@ -75,7 +76,7 @@ class StreamDispatcher(BaseDispatcher):
                 item_exporter=self._item_exporter
             ).run()
 
-        if self._entity_types & EntityType.TOKEN:
+        if self._entity_types & EntityType.TOKEN_BALANCE:
             ExportTokenBalancesAndHoldersJob(
                 index_keys=['token_balance', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'],
                 entity_types=self._entity_types,
@@ -86,6 +87,7 @@ class StreamDispatcher(BaseDispatcher):
                 item_exporter=self._item_exporter
             ).run()
 
+        if self._entity_types & EntityType.TOKEN_IDS:
             ExportTokenIdInfosJob(
                 index_keys=['erc721_token_ids', 'erc1155_token_ids'],
                 entity_types=self._entity_types,
