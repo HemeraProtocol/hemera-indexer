@@ -9,6 +9,7 @@ from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
+from services.rpc_statistic_service import statistic_service
 from utils.json_rpc_requests import generate_get_balance_json_rpc
 from utils.utils import rpc_response_to_result, zip_rpc_response
 from domain.trace import trace_is_contract_creation, trace_is_transfer_value
@@ -119,6 +120,10 @@ def coin_balances_rpc_requests(make_requests, addresses, is_batch):
         response = make_requests(params=json.dumps(coin_balance_rpc))
     else:
         response = [make_requests(params=json.dumps(coin_balance_rpc[0]))]
+
+    statistic_service.increase_rpc_count(method='eth_getBalance',
+                                         caller=__name__,
+                                         count=len(coin_balance_rpc))
 
     coin_balances = []
     for data in list(zip_rpc_response(addresses, response)):

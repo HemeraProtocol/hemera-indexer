@@ -14,6 +14,7 @@ from enumeration.token_type import TokenType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
+from services.rpc_statistic_service import statistic_service
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result, zip_rpc_response
 
@@ -187,6 +188,10 @@ def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
             response = make_requests(params=json.dumps(token_name_rpc))
         else:
             response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+
+        statistic_service.increase_rpc_count(method='eth_call',
+                                             caller=__name__,
+                                             count=len(token_name_rpc))
 
         for data in list(zip_rpc_response(tokens, response)):
             result = rpc_response_to_result(data[1], ignore_errors=True)

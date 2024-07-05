@@ -8,6 +8,7 @@ from domain.trace import format_trace_data, trace_is_contract_creation, trace_is
 from enumeration.entity_type import EntityType
 from executors.batch_work_executor import BatchWorkExecutor
 from exporters.console_item_exporter import ConsoleItemExporter
+from services.rpc_statistic_service import statistic_service
 from utils.enrich import enrich_traces
 from utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from jobs.base_job import BaseJob
@@ -173,6 +174,11 @@ def traces_rpc_requests(make_requests, blocks, is_batch):
         responses = make_requests(params=json.dumps(trace_block_rpc))
     else:
         responses = [make_requests(params=json.dumps(trace_block_rpc[0]))]
+
+    statistic_service.increase_rpc_count(method='debug_traceBlockByNumber',
+                                         caller=__name__,
+                                         count=len(trace_block_rpc),
+                                         is_debug=True)
 
     total_traces = []
     for block, response in zip_rpc_response(blocks, responses, index='number'):

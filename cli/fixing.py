@@ -3,7 +3,8 @@ import logging
 import click
 
 from controller.fixing_controller import FixingController
-from exporters.jdbc.postgresql_service import PostgreSQLService
+from services.postgresql_service import PostgreSQLService
+from services.rpc_statistic_service import statistic_service
 from utils.logging_utils import configure_signals, configure_logging
 
 from utils.provider import get_provider_from_uri
@@ -57,6 +58,8 @@ def fixing(provider_uri, debug_provider_uri, postgres_url, db_version, block_num
     service_url = verify_db_connection_url(postgres_url)
     set_config(config_file='alembic.ini', section='alembic', key='sqlalchemy.url', value=service_url)
     service = PostgreSQLService(service_url, db_version=db_version)
+
+    statistic_service.init_service(service=service, rpc_endpoint=provider_uri, debug_rpc_endpoint=debug_provider_uri)
 
     controller = FixingController(service=service,
                                   batch_web3_provider=ThreadLocalProxy(

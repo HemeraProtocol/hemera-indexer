@@ -7,6 +7,7 @@ from enumeration.entity_type import EntityType
 from executors.batch_work_executor import BatchWorkExecutor
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
+from services.rpc_statistic_service import statistic_service
 from utils.json_rpc_requests import generate_get_block_by_number_json_rpc
 from utils.utils import rpc_response_batch_to_results, validate_range
 
@@ -85,6 +86,10 @@ def blocks_rpc_requests(make_request, block_number_batch, is_batch):
         response = make_request(params=json.dumps(block_number_rpc))
     else:
         response = [make_request(params=json.dumps(block_number_rpc[0]))]
+
+    statistic_service.increase_rpc_count(method='eth_getBlockByNumber',
+                                         caller=__name__,
+                                         count=len(block_number_rpc))
 
     results = rpc_response_batch_to_results(response)
     return results

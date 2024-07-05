@@ -1,5 +1,5 @@
 from controller.dispatcher.base_dispatcher import BaseDispatcher
-from enumeration.entity_type import EntityType
+from enumeration.entity_type import EntityType, calculate_entity_value, DEFAULT_COLLECTION
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.check_block_consensus_job import CheckBlockConsensusJob
 from jobs.export_blocks_job import ExportBlocksJob
@@ -23,7 +23,8 @@ class StreamDispatcher(BaseDispatcher):
                  batch_size=100,
                  debug_batch_size=1,
                  max_workers=5,
-                 entity_types=255):
+                 entity_types=calculate_entity_value(','.join(DEFAULT_COLLECTION)),
+                 ):
         super().__init__(service)
         self._batch_web3_provider = batch_web3_provider
         self._batch_web3_debug_provider = batch_web3_debug_provider

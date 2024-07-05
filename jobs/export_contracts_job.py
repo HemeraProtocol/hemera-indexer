@@ -9,6 +9,7 @@ from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
+from services.rpc_statistic_service import statistic_service
 from utils.enrich import enrich_contracts
 from utils.json_rpc_requests import generate_eth_call_json_rpc
 from utils.utils import rpc_response_to_result, zip_rpc_response
@@ -118,6 +119,10 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
         response = make_requests(params=json.dumps(contract_name_rpc))
     else:
         response = [make_requests(params=json.dumps(contract_name_rpc[0]))]
+
+    statistic_service.increase_rpc_count(method='eth_call',
+                                         caller=__name__,
+                                         count=len(contract_name_rpc))
 
     for data in list(zip_rpc_response(contracts, response)):
         result = rpc_response_to_result(data[1], ignore_errors=True)

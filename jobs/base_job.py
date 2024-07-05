@@ -1,13 +1,13 @@
 import logging
 from datetime import datetime
 
-from enumeration.entity_type import DEFAULT_COLLECTION
+from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value
 
 
 class BaseJob(object):
     _data_buff = {}
 
-    def __init__(self, index_keys=[], entity_types=DEFAULT_COLLECTION):
+    def __init__(self, index_keys=[], entity_types=calculate_entity_value(','.join(DEFAULT_COLLECTION))):
         self._index_keys = index_keys
         self._entity_types = entity_types
         self.logger = logging.getLogger(self.__class__.__name__)

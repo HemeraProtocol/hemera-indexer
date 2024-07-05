@@ -4,7 +4,8 @@ import click
 from controller.dispatcher.stream_dispatcher import StreamDispatcher
 from controller.stream_controller import StreamController
 from enumeration.entity_type import calculate_entity_value, DEFAULT_COLLECTION
-from exporters.jdbc.postgresql_service import PostgreSQLService
+from services.postgresql_service import PostgreSQLService
+from services.rpc_statistic_service import statistic_service
 from utils.logging_utils import configure_signals, configure_logging
 from utils.provider import get_provider_from_uri
 from exporters.item_exporter import create_item_exporters
@@ -90,6 +91,8 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
 
     entity_types = calculate_entity_value(entity_types)
 
+    statistic_service.init_service(service=service, rpc_endpoint=provider_uri, debug_rpc_endpoint=debug_provider_uri)
+
     stream_dispatcher = StreamDispatcher(
         service=service,
         batch_web3_provider=ThreadLocalProxy(
@@ -100,7 +103,8 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
-        entity_types=entity_types)
+        entity_types=entity_types
+    )
 
     controller = StreamController(
         service=service,

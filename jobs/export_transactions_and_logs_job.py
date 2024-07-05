@@ -7,6 +7,7 @@ from enumeration.entity_type import EntityType
 from exporters.console_item_exporter import ConsoleItemExporter
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
+from services.rpc_statistic_service import statistic_service
 from utils.enrich import enrich_blocks_timestamp, enrich_transactions
 from utils.json_rpc_requests import generate_get_receipt_json_rpc
 from utils.utils import rpc_response_batch_to_results
@@ -88,6 +89,10 @@ def receipt_rpc_requests(make_request, transaction_hashes, is_batch):
         response = make_request(params=json.dumps(receipts_rpc))
     else:
         response = [make_request(params=json.dumps(receipts_rpc[0]))]
+
+    statistic_service.increase_rpc_count(method='eth_getTransactionReceipt',
+                                         caller=__name__,
+                                         count=len(receipts_rpc))
 
     results = rpc_response_batch_to_results(response)
     return results
