@@ -76,7 +76,8 @@ def zip_rpc_response(requests, responses, index='request_id'):
 
     for request in requests:
         request_id = request[index]
-        yield request, response_dict[request_id]
+        if request_id in response_dict:
+            yield request, response_dict[request_id]
 
 
 def is_retriable_error(error_code):

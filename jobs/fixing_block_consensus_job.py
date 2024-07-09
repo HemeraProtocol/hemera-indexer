@@ -41,9 +41,9 @@ from jobs.export_coin_balances_job import coin_balances_rpc_requests, distinct_a
 from jobs.export_contracts_job import build_contracts, contract_info_rpc_requests
 from jobs.export_token_balances_and_holders_job import extract_token_parameters, token_balances_rpc_requests, \
     calculate_token_holders
-from jobs.export_token_id_infos_job import distinct_tokens, token_ids_info_rpc_requests
-from jobs.export_tokens_and_transfers_job import tokens_rpc_requests, extract_parameters_and_token_transfers, \
-    get_exist_token, split_token_transfers
+from jobs.export_token_id_infos_job import distinct_token_ids, token_ids_info_rpc_requests, get_exist_token_ids
+from jobs.export_tokens_and_transfers_job import tokens_rpc_requests, extract_tokens_and_token_transfers, \
+    get_exist_token, split_token_transfers, distinct_tokens
 from jobs.export_traces_job import traces_rpc_requests
 from jobs.export_transactions_and_logs_job import receipt_rpc_requests
 from utils.enrich import enrich_transactions, enrich_blocks_timestamp, enrich_token_transfer_type, enrich_traces, \
@@ -99,7 +99,7 @@ class FixingBlockConsensusJob(BaseJob):
         self.update_fixed_block_data(erc721_token_transfers)
         self.update_fixed_block_data(erc1155_token_transfers)
 
-        erc721_token_ids = self.collect_fixed_token_ids_info(token_transfers, TokenType.ERC721)
+        erc721_token_ids = self.collect_fixed_token_ids_info(token_transfers, TokenType.ERC721, ERC721TokenIdDetails)
         erc721_token_id_changes = [format_erc721_token_id_change(token_id_info)
                                    for token_id_info in erc721_token_ids]
         total_erc721_id_details = pandas.DataFrame([format_erc721_token_id_detail(token_id_info)
@@ -108,7 +108,7 @@ class FixingBlockConsensusJob(BaseJob):
         self.update_fixed_block_data(erc721_token_id_changes)
         self.update_fixed_block_data(erc721_token_id_details)
 
-        erc1155_token_ids = self.collect_fixed_token_ids_info(token_transfers, TokenType.ERC1155)
+        erc1155_token_ids = self.collect_fixed_token_ids_info(token_transfers, TokenType.ERC1155, ERC1155TokenIdDetails)
         total_erc1155_id_details = pandas.DataFrame([format_erc1155_token_id_detail(token_id_info)
                                                      for token_id_info in erc1155_token_ids])
         erc1155_token_id_details = self.collect_fixed_latest_token_ids_detail(total_erc1155_id_details)
@@ -286,11 +286,13 @@ class FixingBlockConsensusJob(BaseJob):
         return enriched_transactions, enriched_logs
 
     def collect_fixed_tokens_and_token_transfers(self, logs):
-        exist_token = get_exist_token(self.service)
-        tokens_parameter, token_transfers = extract_parameters_and_token_transfers(exist_token, logs)
+        exist_tokens = get_exist_token(self.service)
+        total_tokens, token_transfers = extract_tokens_and_token_transfers(logs)
+
+        unique_tokens = distinct_tokens(exist_tokens, total_tokens)
 
         tokens = []
-        for batch in dynamic_batch_iterator(tokens_parameter, self.batch_size):
+        for batch in dynamic_batch_iterator(unique_tokens, self.batch_size):
             batch_tokens = tokens_rpc_requests(self.web3,
                                                self.batch_web3_provider.make_request,
                                                batch,
@@ -301,8 +303,9 @@ class FixingBlockConsensusJob(BaseJob):
 
         return format_tokens, token_transfers
 
-    def collect_fixed_token_ids_info(self, token_transfers, token_type):
-        tokens = distinct_tokens(token_transfers, token_type)
+    def collect_fixed_token_ids_info(self, token_transfers, token_type, model):
+        exist_token_ids = get_exist_token_ids(self.service, model)
+        tokens = distinct_token_ids(exist_token_ids, token_transfers, token_type)
         if len(tokens) == 0:
             return []
 

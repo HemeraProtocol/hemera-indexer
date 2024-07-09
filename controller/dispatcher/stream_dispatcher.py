@@ -95,6 +95,7 @@ class StreamDispatcher(BaseDispatcher):
                 index_keys=['erc721_token_ids', 'erc1155_token_ids'],
                 entity_types=self._entity_types,
                 web3=self._web3,
+                service=self._db_service,
                 batch_web3_provider=self._batch_web3_provider,
                 batch_size=self._batch_size,
                 max_workers=self._max_workers,

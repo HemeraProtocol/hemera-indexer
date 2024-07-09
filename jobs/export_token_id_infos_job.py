@@ -12,6 +12,8 @@ from domain.token_id_infos import format_erc721_token_id_change, format_erc721_t
 from enumeration.entity_type import EntityType
 from enumeration.token_type import TokenType
 from exporters.console_item_exporter import ConsoleItemExporter
+from exporters.jdbc.schema.erc1155_token_id_details import ERC1155TokenIdDetails
+from exporters.jdbc.schema.erc721_token_id_details import ERC721TokenIdDetails
 from jobs.base_job import BaseJob
 from executors.batch_work_executor import BatchWorkExecutor
 from utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -27,7 +29,8 @@ erc_token_id_info_abi = {
             "outputs": [{"name": "", "type": "string"}],
             "payable": False,
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            'require_new': True
         },
         {
             "constant": True,
@@ -36,7 +39,8 @@ erc_token_id_info_abi = {
             "outputs": [{"name": "", "type": "address"}],
             "payable": False,
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "require_new": False
         },
     ],
     "ERC1155": [
@@ -47,7 +51,8 @@ erc_token_id_info_abi = {
             "outputs": [{"name": "", "type": "string"}],
             "payable": False,
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            'require_new': True
         },
         {
             "constant": True,
@@ -56,7 +61,8 @@ erc_token_id_info_abi = {
             "outputs": [{"name": "", "type": "uint256"}],
             "payable": False,
             "stateMutability": "view",
-            "type": "function"
+            "type": "function",
+            "require_new": False
         }
     ]
 }
@@ -68,6 +74,7 @@ class ExportTokenIdInfosJob(BaseJob):
             index_keys,
             entity_types,
             web3,
+            service,
             batch_web3_provider,
             batch_size,
             max_workers,
@@ -79,20 +86,24 @@ class ExportTokenIdInfosJob(BaseJob):
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
+        self._exist_token = {
+            "ERC721": get_exist_token_ids(service, ERC721TokenIdDetails),
+            "ERC1155": get_exist_token_ids(service, ERC1155TokenIdDetails)
+        }
 
     def _start(self):
         super()._start()
 
     def _collect(self):
 
-        token_721 = distinct_tokens(self._data_buff['token_transfer'], TokenType.ERC721)
+        token_721 = distinct_token_ids(self._exist_token, self._data_buff['token_transfer'], TokenType.ERC721)
         self._batch_work_executor.execute(token_721,
                                           self._collect_batch,
                                           total_items=len(token_721))
 
         self._batch_work_executor.wait()
 
-        token_1155 = distinct_tokens(self._data_buff['token_transfer'], TokenType.ERC1155)
+        token_1155 = distinct_token_ids(self._exist_token, self._data_buff['token_transfer'], TokenType.ERC1155)
         self._batch_work_executor.execute(token_1155,
                                           self._collect_batch,
                                           total_items=len(token_1155))
@@ -129,35 +140,67 @@ class ExportTokenIdInfosJob(BaseJob):
                 ['address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
 
     def _export(self):
-        if self._entity_types & EntityType.TOKEN:
+        if self._entity_types & EntityType.TOKEN_IDS:
             items = self._extract_from_buff(
                 ['erc721_token_id_changes', 'erc721_token_id_details', 'erc1155_token_id_details'])
             self._item_exporter.export_items(items)
 
 
-def distinct_tokens(token_transfers, token_type):
-    token_list = []
+def get_exist_token_ids(db_service, model):
+    session = db_service.get_service_session()
+    try:
+
+        result = session.query(model.address, model.token_id).all()
+        history_token = [('0x' + item[0].hex(), item[1]) for item in result]
+
+    except Exception as e:
+        print(e)
+        raise e
+    finally:
+        session.close()
+    return history_token
+
+
+def distinct_token_ids(exist_tokens, token_transfers, token_type):
+    exist_set = set(exist_tokens[token_type.value])
+
+    unique_tokens = {}
     for token_transfer in token_transfers:
         if token_transfer['tokenType'] == token_type.value:
-            token_list.append({
-                'address': token_transfer['tokenAddress'],
-                'token_id': token_transfer['tokenId'],
-                'token_type': token_transfer['tokenType'],
-                'block_number': token_transfer['blockNumber'],
-                'block_timestamp': token_transfer['blockTimestamp'],
-            })
+            key = f"{token_transfer['tokenAddress']}_{token_transfer['tokenId']}_{token_transfer['blockNumber']}"
+            if key not in unique_tokens:
+                is_new = True
+                if (token_transfer['tokenAddress'], token_transfer['tokenId']) in exist_set:
+                    is_new = False
 
-    unique_token = pandas.DataFrame(token_list).drop_duplicates()
-    return unique_token.to_dict(orient="records")
+                unique_tokens[key] = {
+                    'address': token_transfer['tokenAddress'],
+                    'token_id': token_transfer['tokenId'],
+                    'token_type': token_transfer['tokenType'],
+                    'block_number': token_transfer['blockNumber'],
+                    'block_timestamp': token_transfer['blockTimestamp'],
+                    'is_new': is_new,
+                    'request_id': len(unique_tokens.keys())
+                }
+
+    tokens_list = []
+    for key in unique_tokens.keys():
+        tokens_list.append(unique_tokens[key])
+
+    return tokens_list
 
 
-def build_rpc_method_data(web3, tokens, token_type, fn):
+def build_rpc_method_data(web3, tokens, token_type, fn, require_new):
     parameters = []
 
-    for idx, token in enumerate(tokens):
-        token['request_id'] = idx
+    for token in tokens:
+
+        if not token['is_new'] and require_new:
+            continue
+
         token['param_to'] = token['address']
         token['param_data'] = '0x'
+        token['param_number'] = hex(token['block_number'])
 
         try:
             token['param_data'] = (web3.eth
@@ -181,7 +224,7 @@ def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
     token_type = tokens[0]['token_type']
     for abi_json in erc_token_id_info_abi[token_type]:
         token_name_rpc = list(generate_eth_call_json_rpc(
-            build_rpc_method_data(web3, tokens, token_type, abi_json['name'])))
+            build_rpc_method_data(web3, tokens, token_type, abi_json['name'], abi_json['require_new'])))
 
         if is_batch:
             response = make_requests(params=json.dumps(token_name_rpc))
@@ -198,9 +241,8 @@ def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
                 if token['data_type'] == 'string':
                     token[abi_json['name']] = token[abi_json['name']].replace('\u0000', '')
             except Exception as e:
-                logger.warning(f"Decoding token id info failed. "
+                logger.warning(f"Decoding token id {abi_json['name']} failed. "
                                f"token: {token}. "
-                               f"fn: {abi_json['name']}. "
                                f"rpc response: {result}. "
                                f"exception: {e}.")
                 token[abi_json['name']] = None
