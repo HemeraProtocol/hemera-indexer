@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 
 import eth_abi.registry
-from eth_abi.codec import ABIDecoder, ABICodec
+from eth_abi.codec import ABICodec
 from eth_utils import function_abi_to_4byte_selector, event_abi_to_log_topic
 from web3._utils.abi import get_indexed_event_inputs, exclude_indexed_event_inputs, named_tree
 from web3.types import ABIEvent
