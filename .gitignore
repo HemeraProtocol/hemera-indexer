@@ -40,3 +40,4 @@ ENV/
 # Output Data Files
 *.json
 *.csv
+docker-compose/data/

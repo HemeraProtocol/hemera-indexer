@@ -86,7 +86,7 @@ class Transaction:
     block_number: int
     block_timestamp: int
     block_hash: str
-    blob_versioned_hashes: List[str] = field(default_factory=list)
+    # blob_versioned_hashes: List[str] = field(default_factory=list)
     max_fee_per_gas: Optional[int] = None
     max_priority_fee_per_gas: Optional[int] = None
     receipt: Receipt = None
