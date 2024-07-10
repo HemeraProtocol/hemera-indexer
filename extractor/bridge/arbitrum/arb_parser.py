@@ -24,7 +24,7 @@ INBOX_MESSAGE_DELIVERED_EVENT_SIG = event_log_abi_to_topic(INBOX_MESSAGE_DELIVER
 
 BRIDGE_CALL_TRIGGERED_EVENT = cast(ABIEvent, json.loads(
     """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"outbox","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":false,"internalType":"bytes","name":"data","type":"bytes"}],"name":"BridgeCallTriggered","type":"event"}"""))
-BRIGHT_CALL_TRIGGERED_EVENT_SIG = event_log_abi_to_topic(BRIDGE_CALL_TRIGGERED_EVENT)
+BRIDGE_CALL_TRIGGERED_EVENT_SIG = event_log_abi_to_topic(BRIDGE_CALL_TRIGGERED_EVENT)
 
 WITHDRAWAL_INITIATED_EVENT = cast(ABIEvent, json.loads(
     """{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"l1Token","type":"address"},{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":true,"internalType":"uint256","name":"_l2ToL1Id","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_exitNum","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"WithdrawalInitiated","type":"event"}"""))
@@ -191,6 +191,37 @@ class ArbitrumTransactionBatch:
     transaction_count: int
 
 
+@dataclass
+class ArbitrumStateBatchConfirmed:
+    node_num: int
+    block_hash: str
+    send_root: str
+    l1_block_number: int
+    l1_block_timestamp: int
+    l1_block_hash: str
+    l1_transaction_hash: str
+    end_block_number: int
+    start_block_number: int
+    transaction_count: int
+
+
+@dataclass
+class ArbitrumStateBatchCreated:
+    node_num: int
+    create_l1_block_number: int
+    create_l1_block_timestamp: int
+    create_l1_block_hash: str
+    create_l1_transaction_hash: str
+    parent_node_hash: str
+    node_hash: str
+
+
+@dataclass
+class BridgeToken:
+    l1_token_address: str
+    l2_token_address: str
+
+
 ZERO_ADDRESS_32 = bytes(32)
 ZERO_ADDRESS = bytes(20)
 
@@ -200,6 +231,21 @@ def strip_leading_zeros(byte_array: bytes) -> bytes:
         return byte_array.lstrip(b'\x00')
     else:
         return ZERO_ADDRESS
+
+
+def parse_inbox_message_delivered(transaction, contract_set):
+    res = []
+    for log in transaction.receipt.logs:
+        if log.topic0 == INBOX_MESSAGE_DELIVERED_EVENT_SIG and log.address in contract_set:
+            event = decode_log(INBOX_MESSAGE_DELIVERED_EVENT, log)
+            message_num = event['messageNum']
+            ib = InboxMessageDeliveredData(
+                transaction_hash=transaction.transaction_hash,
+                msg_number=message_num,
+                data=event['data'],
+            )
+            res.append(ib)
+    return res
 
 
 def parse_message_delivered(transaction, contract_set):
@@ -293,6 +339,101 @@ def un_marshal_tx_to_l1(data):
     restData = data[offset, data.length]
     return selector, _token, _from, _to, _amount, restData
 
+
+def un_marshal_inbox_message_delivered_data(raw_kind, data):
+    kind = raw_kind
+    offset = 0
+
+    if kind == -1:
+        kind = data[offset: offset + 1]
+        offset += 1
+
+    destAddress = ZERO_ADDRESS
+    l2CallValue = 0
+    msgValue = 0
+    gasLimit = 0
+    maxSubmissionCost = 0
+    excessFeeRefundAddress = ZERO_ADDRESS
+    callValueRefundAddress = ZERO_ADDRESS
+    maxFeePerGas = 0
+    l1TokenId = ZERO_ADDRESS
+    l1TokenAmount = 0
+    dataBytes = b""
+    if kind == Constants.INITIALIZATION_MSG_TYPE:
+        """
+           * bytes memory initMsg = abi.encodePacked(
+           * keccak256("ChallengePeriodEthBlocks"),
+           * confirmPeriodBlocks,
+           * keccak256("SpeedLimitPerSecond"),
+           * avmGasSpeedLimitPerBlock / 100, // convert avm gas to arbgas
+           * keccak256("ChainOwner"),
+           * uint256(uint160(bytes20(owner))),
+           * extraConfig
+           * );
+           */
+       
+        """
+        chainId = data[offset, offset + 32]
+        offset += 32
+    elif kind == Constants.L2MessageType_unsignedEOATx:
+        gasLimit = data[offset, offset + 32]
+        offset += 32
+        maxFeePerGas = data[offset, offset + 32]
+        offset += 32
+        nonce = data[offset, offset + 32]
+        offset += 32
+        destAddress = data[offset, offset + 32]
+        offset += 32
+        msgValue = data[offset, offset + 32]
+        offset += 32
+        dataBytes = data[offset, data.length]
+    elif kind == Constants.L2MessageType_unsignedContractTx:
+        gasLimit = data[offset, offset + 32]
+        offset += 32
+        maxFeePerGas = data[offset, offset + 32]
+        offset += 32
+        destAddress = data[offset, offset + 32]
+        offset += 32
+        msgValue = data[offset, offset + 32]
+        offset += 32
+        dataBytes = data[offset, data.length]
+    elif kind == Constants.L1MessageType_submitRetryableTx:
+        destAddress = data[offset, offset + 32]
+        offset += 32
+        l2CallValue = data[offset, offset + 32]
+        offset += 32
+        msgValue = data[offset, offset + 32]
+        offset += 32
+        maxSubmissionCost = data[offset, offset + 32]
+        offset += 32
+        excessFeeRefundAddress = data[offset, offset + 32]
+        offset += 32
+        callValueRefundAddress = data[offset, offset + 32]
+        offset += 32
+        gasLimit = data[offset, offset + 32]
+        offset += 32
+        maxFeePerGas = data[offset, offset + 32]
+        offset += 32
+        dataLength = data[offset, offset + 32]
+        offset += 32
+        offset += 4
+        l1TokenId = data[offset, offset + 32]
+        offset -= 4
+        dataBytes = data[offset, offset + dataLength.toInt]
+        offset += 100
+        if (l1TokenId and offset < len(data)):
+            l1TokenAmount = data[offset, offset + 32]
+    elif kind == Constants.L2_MSG:
+        pass
+    elif kind == Constants.L1MessageType_ethDeposit:
+        destAddress = data[offset, offset + 20]
+        offset += 20
+        msg_value = data[offset, offset + 32]
+    else:
+        raise Exception(f"uncovered case. kind: {kind}")
+    return destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress, callValueRefundAddress, maxFeePerGas, dataBytes, l1TokenId, l1TokenAmount
+
+
 def parse_l2_to_l1_tx_64_event(transaction, contract_set):
     res = []
     for log in transaction.receipt.logs:
@@ -371,17 +512,99 @@ def parse_sequencer_batch_delivered(transaction, contract_set) -> list:
             res.append(at)
     return res
 
-def parseOutboundTransferFunction(self, transactions, contracts):
+
+def parse_node_confirmed(transaction, contract_set) -> list:
+    res = []
+    for log in transaction.receipt.logs:
+        if log.topic0 == NODE_CONFIRMED_EVENT_SIG and log.address in contract_set:
+            event = decode_log(NODE_CONFIRMED_EVENT, log)
+            asb = ArbitrumStateBatchConfirmed(
+                node_num=event.get("nodeNum").toString.toLong,
+                block_hash="0x" + event.get("blockHash"),
+                send_root="0x" + event.get("sendRoot"),
+                l1_block_number=transaction.blockNumber,
+                l1_block_timestamp=transaction.blockTimestamp,
+                l1_block_hash=transaction.blockHash,
+                l1_transaction_hash=transaction.hash,
+            )
+            res.append(asb)
+    return res
+
+
+def parse_node_created(transaction, contract_set) -> list:
+    res = []
+    for log in transaction.receipt.logs:
+        if log.topic0 == NODE_CREATED_EVENT_SIG and log.add_address in contract_set:
+            event = decode_log(NODE_CREATED_EVENT, log)
+            asb = ArbitrumStateBatchCreated(
+                node_num=log.topic1,
+                create_l1_block_number=transaction.blockNumber,
+                create_l1_block_timestamp=transaction.blockTimestamp,
+                create_l1_block_hash=transaction.blockHash,
+                create_l1_transaction_hash=transaction.hash,
+                parent_node_hash=log.topic2,
+                node_hash=log.topic3,
+            )
+            res.append(asb)
+    return res
+
+
+def parse_bridge_token(transaction, contract_set) -> list:
+    res = []
+    l1_token_address = None
+    l2_token_address = None
+    if transaction.topic1 in contract_set:
+        for log in transaction.receipt.logs:
+            if log.topic0 == BEACON_UPGRADED_EVENT_SIG:
+                l2_token_address = log.address
+            if log.topic0 == DEPOSIT_FINALIZED_EVENT_SIG:
+                l1_token_address = log.topic1
+        l1_token_address = l1_token_address
+        l2_token_address = l2_token_address
+        if l1_token_address and l2_token_address:
+            br = BridgeToken(
+                l1_token_address=l1_token_address,
+                l2_token_address=l2_token_address,
+            )
+            res.append(br)
+    return res
+
+
+def parse_outbound_transfer_function(transactions, contract_set):
     res = []
     for tnx in transactions:
-        if tnx.to in contracts:
+        if tnx.to in contract_set:
             input_sig = tnx.input[0:10]
-            if input_sig == ArbAbiClass.OutboundTransferFunction.signature:
-                decoded_input = decode_transaction_data(ArbAbiClass.OutboundTransferFunction, tnx.input)
+            if input_sig == OUT_BOUND_TRANSFER_FUNCTION_SIG:
+                decoded_input = decode_transaction_data(OUT_BOUND_TRANSFER_FUNCTION, tnx.input)
                 tt = TransactionToken(
                     transaction_hash=tnx.hash,
                     l1Token=decoded_input["_l1Token"],
                     amount=decoded_input["_amount"],
                 )
                 res.append(tt)
+    return res
+
+
+def parse_bridge_call_triggered(transaction, contract_set):
+    res = []
+    for log in transaction.receipt.logs:
+        if log.topic0 == BRIDGE_CALL_TRIGGERED_EVENT_SIG and log.address in contract_set:
+            decoded_input = decode_transaction_data(EXECUTE_TRANSACTION_FUNCTION, transaction.input)
+            msg_num = decoded_input["msg_num"]
+            event = decode_log(BRIDGE_CALL_TRIGGERED_EVENT, log)
+            bc = BridgeCallTriggeredData(
+                msg_hash=msg_num,
+                l1_transaction_hash=transaction.hash,
+                l1_block_number=transaction.blockNumber,
+                l1_block_timestamp=transaction.blockTimestamp,
+                l1_block_hash=transaction.blockHash,
+                l1_from_address=transaction.fromAddress,
+                l1_to_address=transaction.toAddress,
+                outbox=event.get("outbox"),
+                to=event.get("to"),
+                value=event.get("value"),
+                data=event.get("data")
+            )
+            res.append(bc)
     return res
