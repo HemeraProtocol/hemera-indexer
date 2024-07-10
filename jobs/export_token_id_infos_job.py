@@ -226,6 +226,9 @@ def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
         token_name_rpc = list(generate_eth_call_json_rpc(
             build_rpc_method_data(web3, tokens, token_type, abi_json['name'], abi_json['require_new'])))
 
+        if len(token_name_rpc) == 0:
+            continue
+            
         if is_batch:
             response = make_requests(params=json.dumps(token_name_rpc))
         else:
