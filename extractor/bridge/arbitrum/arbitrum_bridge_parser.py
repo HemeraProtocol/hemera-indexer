@@ -11,6 +11,7 @@ from typing import Any, Dict, cast
 
 from eth_typing import ABIEvent, ABIFunction
 from web3 import Web3
+from web3._utils.contracts import decode_transaction_data
 
 from domain.transaction import format_transaction_data
 from extractor.signature import decode_log
@@ -19,175 +20,24 @@ from extractor.types import dict_to_dataclass, Transaction, Log, Receipt
 logger = logging.getLogger(__name__)
 
 
-class Constants:
-    L2_MSG = 3
-    L1MessageType_L2FundedByL1 = 7
-    L1MessageType_submitRetryableTx = 9
-    L1MessageType_ethDeposit = 12
-    L1MessageType_batchPostingReport = 13
-    L2MessageType_unsignedEOATx = 0
-    L2MessageType_unsignedContractTx = 1
-
-    ROLLUP_PROTOCOL_EVENT_TYPE = 8
-    INITIALIZATION_MSG_TYPE = 11
-
-    ZERO_ADDRESS = bytes(20)
-    ZERO_ADDRESS_32 = bytes(32)
-
-
-@dataclass
-class MessageDeliveredData:
-    msg_hash: bytes
-    block_number: int
-    block_timestamp: int
-    block_hash: bytes
-    transaction_hash: bytes
-    from_address: bytes
-    to_address: bytes
-    bridge_from_address: bytes
-    bridge_to_address: bytes
-    extra_info: Dict[str, Any]
-    beforeInboxAcc: bytes
-    messageIndex: int
-    inbox: bytes
-    kind: int
-    sender: bytes
-    messageDataHash: bytes
-    baseFeeL1: int
-    timestamp: int
-
-
-@dataclass
-class InboxMessageDeliveredData:
-    transaction_hash: str
-    msg_number: int
-    data: bytes
-
-
-@dataclass
-class TicketCreatedData:
-    msg_hash: bytes
-    transaction_hash: bytes
-    block_number: int
-    block_timestamp: int
-    block_hash: bytes
-    from_address: bytes
-    to_address: bytes
-
-
-@dataclass
-class BridgeCallTriggeredData:
-    msg_hash: bytes
-    l1_transaction_hash: bytes
-    l1_block_number: int
-    l1_block_timestamp: int
-    l1_block_hash: bytes
-    l1_from_address: bytes
-    l1_to_address: bytes
-    outbox: bytes
-    to: bytes
-    value: int
-    data: bytes
-
-
-@dataclass
-class L2ToL1Tx_64:
-    msg_hash: bytes
-    l2_block_number: int
-    l2_block_timestamp: int
-    l2_block_hash: bytes
-    l2_transaction_hash: bytes
-    l2_from_address: bytes
-    l2_to_address: bytes
-    l2_token_address: bytes
-    caller: bytes
-    destination: bytes
-    hash: bytes
-    position: int
-    arbBlockNum: int
-    ethBlockNum: int
-    timestamp: int
-    callvalue: int
-    data: bytes
-
-
-@dataclass
-class TransactionToken:
-    transaction_hash: str
-    l1Token: bytes
-    amount: int
-
-
-ZERO_ADDRESS_32 = bytes(32)
-ZERO_ADDRESS = bytes(20)
-
-
-def strip_leading_zeros(byte_array: bytes) -> bytes:
-    if byte_array != ZERO_ADDRESS_32:
-        return byte_array.lstrip(b'\x00')
-    else:
-        return ZERO_ADDRESS
-
-
-class ArbAbiClass:
-    MessageDeliveredEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"messageIndex","type":"uint256"},{"indexed":true,"internalType":"bytes32","name":"beforeInboxAcc","type":"bytes32"},{"indexed":false,"internalType":"address","name":"inbox","type":"address"},{"indexed":false,"internalType":"uint8","name":"kind","type":"uint8"},{"indexed":false,"internalType":"address","name":"sender","type":"address"},{"indexed":false,"internalType":"bytes32","name":"messageDataHash","type":"bytes32"},{"indexed":false,"internalType":"uint256","name":"baseFeeL1","type":"uint256"},{"indexed":false,"internalType":"uint64","name":"timestamp","type":"uint64"}],"name":"MessageDelivered","type":"event"}"""))
-
-    InboxMessageDeliveredEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"messageNum","type":"uint256"},{"indexed":false,"internalType":"bytes","name":"data","type":"bytes"}],"name":"InboxMessageDelivered","type":"event"}"""))
-
-    BridgeCallTriggeredEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"outbox","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"},{"indexed":false,"internalType":"bytes","name":"data","type":"bytes"}],"name":"BridgeCallTriggered","type":"event"}"""))
-
-    WithdrawalInitiatedEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"l1Token","type":"address"},{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":true,"internalType":"uint256","name":"_l2ToL1Id","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_exitNum","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"WithdrawalInitiated","type":"event"}"""))
-
-    TicketCreatedEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"bytes32","name":"ticketId","type":"bytes32"}],"name":"TicketCreated","type":"event"}"""))
-
-    TxToL1_GW_Event = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_from","type":"address"},{"indexed":true,"internalType":"address","name":"_to","type":"address"},{"indexed":true,"internalType":"uint256","name":"_id","type":"uint256"},{"indexed":false,"internalType":"bytes","name":"_data","type":"bytes"}],"name":"TxToL1","type":"event"}"""))
-
-    L2ToL1Tx_64_Event = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"caller","type":"address"},{"indexed":true,"internalType":"address","name":"destination","type":"address"},{"indexed":true,"internalType":"uint256","name":"hash","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"position","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"arbBlockNum","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"ethBlockNum","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"timestamp","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"callvalue","type":"uint256"},{"indexed":false,"internalType":"bytes","name":"data","type":"bytes"}],"name":"L2ToL1Tx","type":"event"}"""))
-
-    ExecuteTransactionFunction = cast(ABIFunction, json.loads(
-        """{"inputs":[{"internalType":"bytes32[]","name":"proof","type":"bytes32[]"},{"internalType":"uint256","name":"index","type":"uint256"},{"internalType":"address","name":"l2Sender","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"l2Block","type":"uint256"},{"internalType":"uint256","name":"l1Block","type":"uint256"},{"internalType":"uint256","name":"l2Timestamp","type":"uint256"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"executeTransaction","outputs":[],"stateMutability":"nonpayable","type":"function"}"""))
-
-    SequencerBatchDeliveredEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"batchSequenceNumber","type":"uint256"},{"indexed":true,"internalType":"bytes32","name":"beforeAcc","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"afterAcc","type":"bytes32"},{"indexed":false,"internalType":"bytes32","name":"delayedAcc","type":"bytes32"},{"indexed":false,"internalType":"uint256","name":"afterDelayedMessagesRead","type":"uint256"},{"components":[{"internalType":"uint64","name":"minTimestamp","type":"uint64"},{"internalType":"uint64","name":"maxTimestamp","type":"uint64"},{"internalType":"uint64","name":"minBlockNumber","type":"uint64"},{"internalType":"uint64","name":"maxBlockNumber","type":"uint64"}],"indexed":false,"internalType":"struct IBridge.TimeBounds","name":"timeBounds","type":"tuple"},{"indexed":false,"internalType":"enum IBridge.BatchDataLocation","name":"dataLocation","type":"uint8"}],"name":"SequencerBatchDelivered","type":"event"}"""))
-
-    AddSequencerL2BatchFromBlobsFunction = cast(ABIFunction, json.loads(
-        """{"inputs":[{"internalType":"uint256","name":"sequenceNumber","type":"uint256"},{"internalType":"uint256","name":"afterDelayedMessagesRead","type":"uint256"},{"internalType":"contract IGasRefunder","name":"gasRefunder","type":"address"},{"internalType":"uint256","name":"prevMessageCount","type":"uint256"},{"internalType":"uint256","name":"newMessageCount","type":"uint256"}],"name":"addSequencerL2BatchFromBlobs","outputs":[],"stateMutability":"nonpayable","type":"function"}"""))
-
-    AddSequencerL2BatchFromOriginFunction = cast(ABIFunction, json.loads(
-        """{"inputs":[{"internalType":"uint256","name":"sequenceNumber","type":"uint256"},{"name":"data","type":"bytes","internalType":"bytes"},{"internalType":"uint256","name":"afterDelayedMessagesRead","type":"uint256"},{"internalType":"contract IGasRefunder","name":"gasRefunder","type":"address"},{"internalType":"uint256","name":"prevMessageCount","type":"uint256"},{"internalType":"uint256","name":"newMessageCount","type":"uint256"}],"name":"addSequencerL2BatchFromOrigin","outputs":[],"stateMutability":"nonpayable","type":"function"}"""))
-
-    NodeCreatedEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint64","name":"nodeNum","type":"uint64"},{"indexed":true,"internalType":"bytes32","name":"parentNodeHash","type":"bytes32"},{"indexed":true,"internalType":"bytes32","name":"nodeHash","type":"bytes32"},{"indexed":false,"internalType":"bytes32","name":"executionHash","type":"bytes32"},{"components":[{"components":[{"components":[{"internalType":"bytes32[2]","name":"bytes32Vals","type":"bytes32[2]"},{"internalType":"uint64[2]","name":"u64Vals","type":"uint64[2]"}],"internalType":"struct GlobalState","name":"globalState","type":"tuple"},{"internalType":"enum MachineStatus","name":"machineStatus","type":"uint8"}],"internalType":"struct RollupLib.ExecutionState","name":"beforeState","type":"tuple"},{"components":[{"components":[{"internalType":"bytes32[2]","name":"bytes32Vals","type":"bytes32[2]"},{"internalType":"uint64[2]","name":"u64Vals","type":"uint64[2]"}],"internalType":"struct GlobalState","name":"globalState","type":"tuple"},{"internalType":"enum MachineStatus","name":"machineStatus","type":"uint8"}],"internalType":"struct RollupLib.ExecutionState","name":"afterState","type":"tuple"},{"internalType":"uint64","name":"numBlocks","type":"uint64"}],"indexed":false,"internalType":"struct RollupLib.Assertion","name":"assertion","type":"tuple"},{"indexed":false,"internalType":"bytes32","name":"afterInboxBatchAcc","type":"bytes32"},{"indexed":false,"internalType":"bytes32","name":"wasmModuleRoot","type":"bytes32"},{"indexed":false,"internalType":"uint256","name":"inboxMaxCount","type":"uint256"}],"name":"NodeCreated","type":"event"}"""))
-    # NodeCreatedEvent.signatrue = ("0x4f4caa9e67fb994e349dd35d1ad0ce23053d4323f83ce11dc817b5435031d096")
-    NodeCreatedEventSignature = "0x4f4caa9e67fb994e349dd35d1ad0ce23053d4323f83ce11dc817b5435031d096"
-
-    NodeConfirmedEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint64","name":"nodeNum","type":"uint64"},{"indexed":false,"internalType":"bytes32","name":"blockHash","type":"bytes32"},{"indexed":false,"internalType":"bytes32","name":"sendRoot","type":"bytes32"}],"name":"NodeConfirmed","type":"event"}"""))
-    NodeConfirmedEventSignature = "0x22ef0479a7ff660660d1c2fe35f1b632cf31675c2d9378db8cec95b00d8ffa3c"
-
-    BeaconUpgradedEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"beacon","type":"address"}],"name":"BeaconUpgraded","type":"event"}"""))
-
-    DepositFinalizedEvent = cast(ABIEvent, json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":true,"internalType":"address","name":"receiver","type":"address"},{"indexed":false,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"DepositFinalized","type":"event"}"""))
-    OutboundTransferFunction = cast(ABIFunction, json.loads(
-        """{"inputs":[{"name":"_l1Token","type":"address","internalType":"address"},{"name":"_to","type":"address","internalType":"address"},{"name":"_amount","type":"uint256","internalType":"uint256"},{"name":"a","type":"uint256","internalType":"uint256"},{"name":"b","type":"uint256","internalType":"uint256"},{"name":"_data","type":"bytes","internalType":"bytes"}],"name":"outboundTransfer","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}"""))
-
-
 class ArbitrumBridgeExtractor:
 
     def __init__(self):
         pass
 
-    def l1_contract_extractor(self):
+    def l1_contract_extractor(self, transactions) -> list:
+        res = []
+        tnx_input = self.parseOutboundTransferFunction(transactions)
+        tnx_map = {}
+        for tnx in tnx_input:
+            tnx_map[tnx['hash']] = tnx
+
+        message_delivered_event_list = []
+        for tnx in transactions:
+
         pass
+
+
 
     def l2_contract_extractor(self):
         pass
@@ -211,41 +61,6 @@ class ArbitrumBridgeExtractor:
                     to_address=Web3.to_bytes(transaction.toAddress),
                 )
                 res.append(tc)
-        return res
-
-    def parseSequencerBatchDelivered(self, transaction, contract_list) -> list:
-        res = []
-        for log in transaction.receipt.logs:
-            if log.topic == ArbAbiClass.SequencerBatchDeliveredEvent.signature and log.address in contract_list:
-                addSeqBlobSig = ArbAbiClass.AddSequencerL2BatchFromBlobsFunction.signature.slice(0, 10)
-                addSeqOriginSig = ArbAbiClass.AddSequencerL2BatchFromOriginFunction.signature.slice(0, 10)
-                input = transaction.input
-                input_sig = input.slice(0, 10)
-                sequenceNumber = 0
-                prevMessageCount = 0
-                newMessageCount = 0
-                gasRefunder = ZERO_ADDRESS
-                afterDelayedMessagesRead = 0
-                if (input_sig == addSeqBlobSig):
-                    decoded_input = decode_input(ArbAbiClass.AddSequencerL2BatchFromBlobsFunction, input)
-                    sequenceNumber = decoded_input.get("sequenceNumber").getOrElse(None).toString.toLong
-                    prevMessageCount = decoded_input.get("prevMessageCount").getOrElse(None).toString.toLong
-                    newMessageCount = decoded_input.get("newMessageCount").getOrElse(None).toString.toLong
-                    gasRefunder = Web3.to_bytes(decoded_input.get("gasRefunder").getOrElse("").toString)
-                    afterDelayedMessagesRead = decoded_input.get("afterDelayedMessagesRead").getOrElse(
-                        None).toString.toLong
-
-                elif (input_sig == addSeqOriginSig):
-                    decoded_input = decode_input(ArbAbiClass.AddSequencerL2BatchFromOriginFunction, transaction.input)
-                    sequenceNumber = decoded_input.get("sequenceNumber").getOrElse(None).toString.toLong
-                    prevMessageCount = decoded_input.get("prevMessageCount").getOrElse(None).toString.toLong
-                    newMessageCount = decoded_input.get("newMessageCount").getOrElse(None).toString.toLong
-                    gasRefunder = Web3.to_bytes(decoded_input.get("gasRefunder").getOrElse("").toString)
-                    afterDelayedMessagesRead = decoded_input.get("afterDelayedMessagesRead").getOrElse(
-                        None).toString.toLong
-                    data = decoded_input.get("data")
-                at = ArbitrumTransactionBatch()
-                res.append(at)
         return res
 
     def parseNodeConfirmed(self, transaction, contract_list) -> list:
@@ -321,22 +136,25 @@ def get_formated_transaction(rpc, tnx_hash):
 def main():
 
     # postgres = PostgresqlDatabaseUtils.parseFromURL("")
-
-    l2Rpc = "https://dodochain-testnet.alt.technology"
-    l1Rpc = "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
+    # l2Rpc = "https://dodochain-testnet.alt.technology"
+    l2Rpc = "https://arbitrum-one-rpc.publicnode.com"
+    # l1Rpc = "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
+    l1Rpc = "https://ethereum-rpc.publicnode.com"
     l1w3 = Web3(Web3.HTTPProvider(l1Rpc))
     l2w3 = Web3(Web3.HTTPProvider(l2Rpc))
 
     # L1 -> L2
     # tnx = getL1Transaction(46298492, "0x022800446360a100034dc5cbc0563813db6ff4136ca7ff4f777badc2603ac4c0", l1Rpc)
-    tnx = l1w3.eth.get_transaction('0x022800446360a100034dc5cbc0563813db6ff4136ca7ff4f777badc2603ac4c0')
-    receipt = l1w3.eth.get_transaction_receipt('0x022800446360a100034dc5cbc0563813db6ff4136ca7ff4f777badc2603ac4c0')
+    l1tnx = "0xdb88244fe9d6e078d60dda68dd81dc29d1094a19ad84d9da42aecdf5591718d1"
+    tnx = l1w3.eth.get_transaction(l1tnx)
+    receipt = l1w3.eth.get_transaction_receipt(l1tnx)
     # logs = [dict_to_dataclass(ll, Log) for ll in receipt.logs]
     # receipt = dict_to_dataclass(receipt, Receipt)
     # receipt.logs = logs
 
     transaction = dict_to_dataclass(format_transaction_data(tnx), Transaction)
     transaction.receipt = receipt
+    l2tnx = "0x51a14b1b6fcb89239781eaa387c7a919ea744f3e641ae01a6367b8d54fa452d8"
 
     # obj = ArbitrumL1ContractExtractor(
     #     ["0xc0856971702b02a5576219540bd92dae79a79288", "0xd62ef8d8c71d190417c6ce71f65795696c069f09",
