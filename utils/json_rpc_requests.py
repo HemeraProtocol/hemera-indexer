@@ -44,8 +44,8 @@ def generate_get_balance_json_rpc(coin_addresses):
         )
 
 
-def generate_eth_call_json_rpc(params, is_latest=True):
-    for idx, param in enumerate(params):
+def generate_eth_call_json_rpc(params):
+    for param in params:
         yield generate_json_rpc(
             method='eth_call',
             params=[
@@ -53,7 +53,7 @@ def generate_eth_call_json_rpc(params, is_latest=True):
                     'to': param['param_to'],
                     'data': param['param_data']
                 },
-                'latest' if is_latest else param['param_number']
+                param['param_number']
             ],
             request_id=param['request_id']
         )

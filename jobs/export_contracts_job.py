@@ -112,7 +112,7 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
     for idx, contract in enumerate(contracts):
         contract['request_id'] = idx
 
-    contract_name_rpc = list(generate_eth_call_json_rpc(contracts, is_latest=False))
+    contract_name_rpc = list(generate_eth_call_json_rpc(contracts))
 
     if is_batch:
         response = make_requests(params=json.dumps(contract_name_rpc))

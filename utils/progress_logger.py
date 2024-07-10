@@ -43,6 +43,9 @@ class ProgressLogger:
             self.logger = logging.getLogger('ProgressLogger')
 
     def start(self, total_items=None):
+        if self.counter is None:
+            self.counter = AtomicCounter()
+
         self.total_items = total_items
         self.start_time = datetime.now()
         start_message = 'Started {}.'.format(self.name)
@@ -82,4 +85,5 @@ class ProgressLogger:
         if duration is not None:
             finish_message = finish_message + ' Took {}.'.format(str(duration))
 
+        self.counter = None
         self.logger.info(finish_message)

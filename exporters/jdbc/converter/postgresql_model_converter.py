@@ -29,31 +29,31 @@ def convert_item(table, data, fixing=False):
         return convert_to_erc20_token_transfer(data, fixing)
 
     elif table == "erc20_token_holders":
-        return convert_to_erc20_token_holder(data, fixing)
+        return convert_to_erc20_token_holder(data)
 
     elif table == "erc721_token_transfers":
         return convert_to_erc721_token_transfer(data, fixing)
 
     elif table == "erc721_token_holders":
-        return convert_to_erc721_token_holder(data, fixing)
+        return convert_to_erc721_token_holder(data)
 
     elif table == "erc721_token_id_changes":
         return convert_to_erc721_token_id_change(data, fixing)
 
     elif table == "erc721_token_id_details":
-        return convert_to_erc721_token_id_detail(data, fixing)
+        return convert_to_erc721_token_id_detail(data)
 
     elif table == "erc1155_token_transfers":
         return convert_to_erc1155_token_transfer(data, fixing)
 
     elif table == "erc1155_token_holders":
-        return convert_to_erc1155_token_holder(data, fixing)
+        return convert_to_erc1155_token_holder(data)
 
     elif table == "erc1155_token_id_details":
-        return convert_to_erc1155_token_id_detail(data, fixing)
+        return convert_to_erc1155_token_id_detail(data)
 
     elif table == "tokens":
-        return convert_to_tokens(data, fixing)
+        return convert_to_tokens(data)
 
     elif table == "address_token_balances":
         return convert_to_token_balance(data, fixing)
@@ -147,16 +147,25 @@ def convert_to_log(log, fixing=False):
     }
 
 
-def convert_to_tokens(token, fixing=False):
-    return {
+def convert_to_tokens(token):
+    db_token = {
         "address": bytes.fromhex(token["address"][2:]),
-        'name': token['name'],
-        'symbol': token['symbol'],
-        'total_supply': token['total_supply'],
-        'decimals': token['decimals'],
         'token_type': token['token_type'],
-        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
+        'total_supply': token['total_supply'],
+        'update_block_number': token['update_block_number'],
+        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())),
     }
+
+    if 'name' in token:
+        db_token['name'] = token['name']
+
+    if 'symbol' in token:
+        db_token['symbol'] = token['symbol']
+
+    if 'decimals' in token:
+        db_token['decimals'] = token['decimals']
+
+    return db_token
 
 
 def convert_to_erc20_token_transfer(token_transfer, fixing=False):
@@ -175,14 +184,14 @@ def convert_to_erc20_token_transfer(token_transfer, fixing=False):
     }
 
 
-def convert_to_erc20_token_holder(token_holder, fixing=False):
+def convert_to_erc20_token_holder(token_holder):
     return {
         "token_address": bytes.fromhex(token_holder["token_address"][2:]),
         "wallet_address": bytes.fromhex(token_holder["wallet_address"][2:]),
         "balance_of": token_holder["balance_of"],
         'block_number': token_holder["block_number"],
         'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
-        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
+        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())),
         'reorg': False
     }
 
@@ -203,14 +212,14 @@ def convert_to_erc721_token_transfer(token_transfer, fixing=False):
     }
 
 
-def convert_to_erc721_token_holder(token_holder, fixing=False):
+def convert_to_erc721_token_holder(token_holder):
     return {
         "token_address": bytes.fromhex(token_holder["token_address"][2:]),
         "wallet_address": bytes.fromhex(token_holder["wallet_address"][2:]),
         "balance_of": token_holder["balance_of"],
         'block_number': token_holder["block_number"],
         'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
-        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
+        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())),
         'reorg': False
     }
 
@@ -227,18 +236,22 @@ def convert_to_erc721_token_id_change(token_id_change, fixing=False):
     }
 
 
-def convert_to_erc721_token_id_detail(token_id_detail, fixing=False):
-    return {
+def convert_to_erc721_token_id_detail(token_id_detail):
+    db_detail = {
         "address": bytes.fromhex(token_id_detail["address"][2:]),
         "token_id": token_id_detail["token_id"],
         "token_owner": bytes.fromhex(token_id_detail["token_owner"][2:]) if token_id_detail["token_owner"] else None,
-        "token_uri": token_id_detail["token_uri"],
         "token_uri_info": token_id_detail["token_uri_info"],
         'block_number': token_id_detail["block_number"],
         'block_timestamp': func.to_timestamp(token_id_detail["block_timestamp"]),
-        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
+        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())),
         'reorg': False
     }
+
+    if 'token_uri' in token_id_detail:
+        db_detail['token_uri'] = token_id_detail['token_uri']
+
+    return db_detail
 
 
 def convert_to_erc1155_token_transfer(token_transfer, fixing=False):
@@ -258,7 +271,7 @@ def convert_to_erc1155_token_transfer(token_transfer, fixing=False):
     }
 
 
-def convert_to_erc1155_token_holder(token_holder, fixing=False):
+def convert_to_erc1155_token_holder(token_holder):
     return {
         "token_address": bytes.fromhex(token_holder["token_address"][2:]),
         "wallet_address": bytes.fromhex(token_holder["wallet_address"][2:]),
@@ -267,23 +280,27 @@ def convert_to_erc1155_token_holder(token_holder, fixing=False):
         "latest_call_contract_time": func.to_timestamp(token_holder["latest_call_contract_time"]),
         'block_number': token_holder["block_number"],
         'block_timestamp': func.to_timestamp(token_holder["block_timestamp"]),
-        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
+        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())),
         'reorg': False
     }
 
 
-def convert_to_erc1155_token_id_detail(token_id_detail, fixing=False):
-    return {
+def convert_to_erc1155_token_id_detail(token_id_detail):
+    db_detail = {
         "address": bytes.fromhex(token_id_detail["address"][2:]),
         "token_id": token_id_detail["token_id"],
         "token_supply": token_id_detail["token_supply"],
-        "token_uri": token_id_detail["token_uri"],
         "token_uri_info": token_id_detail["token_uri_info"],
         'block_number': token_id_detail["block_number"],
         'block_timestamp': func.to_timestamp(token_id_detail["block_timestamp"]),
-        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())) if fixing else None,
+        'update_time': func.to_timestamp(int(datetime.now(timezone.utc).timestamp())),
         'reorg': False
     }
+
+    if 'token_uri' in token_id_detail:
+        db_detail['token_uri'] = token_id_detail['token_uri']
+
+    return db_detail
 
 
 def convert_to_token_balance(token_balance, fixing=False):

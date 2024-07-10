@@ -12,7 +12,8 @@ def format_erc20_token_holder_data(token_balance_dict):
         'balance_of': token_balance_dict['balance'],
         'block_number': token_balance_dict['block_number'],
         'block_timestamp': token_balance_dict['block_timestamp'],
-        'update_strategy': "EXCLUDED.block_number >= erc20_token_holders.block_number"
+        'update_strategy': "EXCLUDED.block_number >= erc20_token_holders.block_number",
+        'update_columns': ['balance_of', 'update_time']
     }
     return erc20_token_holder
 
@@ -25,7 +26,8 @@ def format_erc721_token_holder_data(token_balance_dict):
         'balance_of': token_balance_dict['balance'],
         'block_number': token_balance_dict['block_number'],
         'block_timestamp': token_balance_dict['block_timestamp'],
-        'update_strategy': "EXCLUDED.block_number >= erc721_token_holders.block_number"
+        'update_strategy': "EXCLUDED.block_number >= erc721_token_holders.block_number",
+        'update_columns': ['balance_of', 'update_time']
     }
     return erc721_token_holder
 
@@ -40,6 +42,7 @@ def format_erc1155_token_holder_data(token_balance_dict):
         'latest_call_contract_time': token_balance_dict['block_timestamp'],
         'block_number': token_balance_dict['block_number'],
         'block_timestamp': token_balance_dict['block_timestamp'],
-        'update_strategy': "EXCLUDED.block_number >= erc1155_token_holders.block_number"
+        'update_strategy': "EXCLUDED.block_number >= erc1155_token_holders.block_number",
+        'update_columns': ['balance_of', 'update_time']
     }
     return erc1155_token_holder

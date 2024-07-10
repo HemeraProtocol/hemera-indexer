@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, VARCHAR, PrimaryKeyConstraint, Index, func
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, TIMESTAMP, NUMERIC, BOOLEAN, JSONB
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, TIMESTAMP, NUMERIC, BOOLEAN, JSONB
 from exporters.jdbc.schema import Base
 
 
@@ -8,11 +8,12 @@ class Tokens(Base):
     __tablename__ = 'tokens'
 
     address = Column(BYTEA, primary_key=True)
+    token_type = Column(VARCHAR)
     name = Column(VARCHAR)
     symbol = Column(VARCHAR)
-    total_supply = Column(NUMERIC(100))
     decimals = Column(NUMERIC(100))
-    token_type = Column(VARCHAR)
+    total_supply = Column(NUMERIC(100))
+    update_block_number = Column(BIGINT)
 
     holder_count = Column(INTEGER, default=0)
     transfer_count = Column(INTEGER, default=0)

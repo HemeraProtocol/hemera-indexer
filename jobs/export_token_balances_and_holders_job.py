@@ -164,7 +164,7 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
 
     def _export(self):
 
-        if self._entity_types & EntityType.TOKEN:
+        if self._entity_types & EntityType.TOKEN_BALANCE:
             items = self._extract_from_buff(
                 ['enriched_token_balances', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'])
             self._item_exporter.export_items(items)
@@ -221,7 +221,7 @@ def extract_token_parameters(token_transfers, web3):
                 'token_type': parameter['token_type'],
                 'param_to': parameter['token_address'],
                 'param_data': data,
-                'param_number': parameter['block_number'],
+                'param_number': hex(parameter['block_number']),
                 'block_number': parameter['block_number'],
                 'block_timestamp': parameter['block_timestamp'],
             })

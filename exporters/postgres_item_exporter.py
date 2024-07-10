@@ -62,9 +62,13 @@ class PostgresItemExporter(BaseExporter):
             yield convert_item(item_type, item)
 
     def check_update_strategy(self, data_example):
+        model = data_example["model"]
         if "update_strategy" in data_example:
-            model = data_example["model"]
-            self.conflict_do_update[model.__tablename__] = data_example["update_strategy"]
+            self.conflict_do_update[model.__tablename__] = {}
+            self.conflict_do_update[model.__tablename__]['strategy'] = data_example["update_strategy"]
+
+            if "update_columns" in data_example:
+                self.conflict_do_update[model.__tablename__]['columns'] = data_example["update_columns"]
 
     def on_conflict_do_update(self, model, statement):
         pk_list = []
@@ -76,11 +80,13 @@ class PostgresItemExporter(BaseExporter):
         update_set = {}
         for exc in statement.excluded:
             if exc.name not in pk_list:
-                update_set[exc.name] = exc
+                if 'columns' in self.conflict_do_update[model.__tablename__] \
+                        and exc.name in self.conflict_do_update[model.__tablename__]['columns']:
+                    update_set[exc.name] = exc
 
         where_clause = None
         if model.__tablename__ in self.conflict_do_update:
-            where_clause = text(self.conflict_do_update[model.__tablename__])
+            where_clause = text(self.conflict_do_update[model.__tablename__]['strategy'])
 
         statement = statement.on_conflict_do_update(index_elements=pk_list, set_=update_set, where=where_clause)
         return statement
