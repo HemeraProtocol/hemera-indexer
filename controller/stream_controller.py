@@ -9,6 +9,7 @@ from sqlalchemy.dialects.postgresql import insert
 from controller.base_controller import BaseController
 from controller.dispatcher.base_dispatcher import BaseDispatcher
 from exporters.jdbc.schema.sync_record import SyncRecord
+from utils.exception_control import HemeraBaseException
 from utils.file_utils import write_to_file, delete_file
 from utils.web3_utils import build_web3
 
@@ -75,6 +76,24 @@ class StreamController(BaseController):
                     logging.info('Writing last synced block {}'.format(target_block))
                     self._set_last_synced_block(target_block)
                     last_synced_block = target_block
+
+            except HemeraBaseException as e:
+                logging.exception(f'An rpc response exception occurred while syncing block data. error: {e}')
+                if e.crashable:
+                    logging.exception('Mission will crash immediately.')
+                    raise e
+
+                if e.retriable:
+                    tries += 1
+                    tries_reset = False
+                    if tries >= self.max_retries:
+                        logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                        raise e
+                    else:
+                        logging.info(f'No: {tries} retry is about to start.')
+                else:
+                    logging.exception('Mission will not retry, and exit immediately.')
+                    raise e
 
             except Exception as e:
                 logging.exception('An exception occurred while syncing block data.')

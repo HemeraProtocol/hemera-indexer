@@ -3,6 +3,8 @@ import itertools
 import warnings
 import random
 
+from utils.exception_control import decode_response_error, RetriableError
+
 
 def to_int_or_none(val):
     if isinstance(val, int):
@@ -50,7 +52,7 @@ def rpc_response_batch_to_results(response):
         yield rpc_response_to_result(response_item)
 
 
-def rpc_response_to_result(response, ignore_errors=False):
+def rpc_response_to_result(response):
     result = response.get('result')
     if result is None:
         error_message = 'result is None in response {}.'.format(response)
@@ -58,12 +60,9 @@ def rpc_response_to_result(response, ignore_errors=False):
             error_message = error_message + ' Make sure Ethereum node is synced.'
             # When nodes are behind a load balancer it makes sense to retry the request in hopes it will go to other,
             # synced node
-            raise ValueError(error_message)
-        elif response.get('error') is not None and \
-                is_retriable_error(response.get('error').get('code') and not ignore_errors):
-            raise ValueError(error_message)
-        elif not ignore_errors:
-            raise ValueError(error_message)
+            raise RetriableError(error_message)
+        elif response.get('error') is not None:
+            return decode_response_error(response.get('error'))
         else:
             return result
     return result

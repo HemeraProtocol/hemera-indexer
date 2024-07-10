@@ -120,7 +120,7 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
         response = [make_requests(params=json.dumps(contract_name_rpc[0]))]
 
     for data in list(zip_rpc_response(contracts, response)):
-        result = rpc_response_to_result(data[1], ignore_errors=True)
+        result = rpc_response_to_result(data[1])
         contract = data[0]
         info = result[2:] if result is not None else None
 
