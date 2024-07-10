@@ -1,7 +1,7 @@
 from abc import abstractmethod
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from extractor.types import Transaction, Base, dict_to_dataclass, dataclass_to_dict
+from extractor.types import Base, Transaction, dataclass_to_dict, dict_to_dataclass
 
 
 class ContractExtractor(object):

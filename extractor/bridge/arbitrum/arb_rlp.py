@@ -14,13 +14,24 @@ from web3 import Web3
 def convert_int_bytes(value, length):
     if isinstance(value, bytes):
         return value
-    return value.to_bytes(length, byteorder='big')
+    return value.to_bytes(length, byteorder="big")
 
 
-def calculate_submit_retryable_id(l2_chain_id, message_number, from_address, l1_base_fee,
-                                  dest_address, l2_call_value, l1_value, max_submission_fee,
-                                  excess_fee_refund_address, call_value_refund_address,
-                                  gas_limit, max_fee_per_gas, data):
+def calculate_submit_retryable_id(
+    l2_chain_id,
+    message_number,
+    from_address,
+    l1_base_fee,
+    dest_address,
+    l2_call_value,
+    l1_value,
+    max_submission_fee,
+    excess_fee_refund_address,
+    call_value_refund_address,
+    gas_limit,
+    max_fee_per_gas,
+    data,
+):
     r_dest_address = dest_address if dest_address != "0x0000000000000000000000000000000000000000" else "0x"
     fields = [
         (l2_chain_id),
@@ -35,10 +46,10 @@ def calculate_submit_retryable_id(l2_chain_id, message_number, from_address, l1_
         bytes.fromhex(call_value_refund_address[2:]),
         (max_submission_fee),
         bytes.fromhex(excess_fee_refund_address[2:]),
-        bytes.fromhex(data[2:])
+        bytes.fromhex(data[2:]),
     ]
     encoded_data = rlp.encode(fields)
-    mm = b'\x69' + encoded_data
+    mm = b"\x69" + encoded_data
     return Web3.keccak(hexstr=(Web3.to_hex(mm))).hex()
 
 
@@ -48,11 +59,11 @@ def calculate_deposit_tx_id(l2_chain_id, message_number, from_address, to_addres
         convert_int_bytes((message_number), 32),
         bytes.fromhex(from_address[2:]),
         bytes.fromhex(to_address[2:]),
-        (value)
+        (value),
     ]
 
     encoded_data = rlp.encode(fields)
-    mm = b'\x64' + encoded_data
+    mm = b"\x64" + encoded_data
     return Web3.keccak(hexstr=(Web3.to_hex(mm))).hex()
 
 

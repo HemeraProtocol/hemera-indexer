@@ -1,5 +1,5 @@
-from dataclasses import dataclass, field, is_dataclass, asdict
-from typing import Optional, List, Union, Dict, Any, get_origin, get_args
+from dataclasses import asdict, dataclass, field, is_dataclass
+from typing import Any, Dict, List, Optional, Union, get_args, get_origin
 
 from hexbytes import HexBytes
 
@@ -28,22 +28,21 @@ class Log(Base):
 
     @property
     def type(self):
-        return 'log'
+        return "log"
 
     def get_bytes_topics(self) -> HexBytes:
         topics = ""
         for i in range(4):
-            topic = getattr(self, f'topic{i}')
+            topic = getattr(self, f"topic{i}")
             if topic and i != 0:
-                if topic.startswith('0x'):
+                if topic.startswith("0x"):
                     topic = topic[2:]
                 topics += topic
         return HexBytes(bytearray.fromhex(topics))
 
-
     def get_bytes_data(self) -> HexBytes:
         data = self.data
-        if data.startswith('0x'):
+        if data.startswith("0x"):
             data = self.data[2:]
         return HexBytes(bytearray.fromhex(data))
 
@@ -54,8 +53,8 @@ class Receipt:
     transaction_index: int
     contract_address: str
     status: int
-    root: str
     logs: List[Log] = field(default_factory=list)
+    root: str = Optional[None]
     cumulative_gas_used: Optional[int] = None
     gas_used: Optional[int] = None
     effective_gas_price: Optional[int] = None
@@ -68,7 +67,7 @@ class Receipt:
 
     @property
     def type(self):
-        return 'receipt'
+        return "receipt"
 
 
 @dataclass
@@ -93,7 +92,7 @@ class Transaction:
 
     @property
     def type(self):
-        return 'transaction'
+        return "transaction"
 
 
 def dict_to_dataclass(data: Dict[str, Any], cls):
@@ -116,8 +115,10 @@ def dict_to_dataclass(data: Dict[str, Any], cls):
             if origin is list:
                 # Handle lists
                 item_type = args[0]
-                init_values[field] = [dict_to_dataclass(item, item_type) if isinstance(item, dict) else item for item in data[field]]
-            elif hasattr(field_type, '__dataclass_fields__'):
+                init_values[field] = [
+                    dict_to_dataclass(item, item_type) if isinstance(item, dict) else item for item in data[field]
+                ]
+            elif hasattr(field_type, "__dataclass_fields__"):
                 # Handle nested dataclass
                 init_values[field] = dict_to_dataclass(data[field], field_type)
             else:
@@ -135,7 +136,7 @@ def dataclass_to_dict(instance: Base) -> Dict[str, Any]:
         raise ValueError("dataclass_to_dict() should be called on dataclass instances only.")
 
     result = asdict(instance)
-    result['_type'] = instance.type
+    result["_type"] = instance.type
 
     for key, value in result.items():
         if isinstance(value, list):

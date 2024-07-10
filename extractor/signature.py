@@ -1,29 +1,30 @@
-from typing import Dict, Any, Optional
+from typing import Any, Dict, Optional
 
 import eth_abi.registry
 from eth_abi.codec import ABICodec
-from eth_utils import function_abi_to_4byte_selector, event_abi_to_log_topic
-from web3._utils.abi import get_indexed_event_inputs, exclude_indexed_event_inputs, named_tree
-from web3.types import ABIEvent,ABIFunction
+from eth_utils import event_abi_to_log_topic, function_abi_to_4byte_selector
+from web3._utils.abi import exclude_indexed_event_inputs, get_indexed_event_inputs, named_tree
+from web3.types import ABIEvent, ABIFunction
 
 from extractor.types import Log
 
 
 def bytes_to_hex_str(b: bytes) -> str:
-    return '0x' + b.hex()
+    return "0x" + b.hex()
+
 
 def event_log_abi_to_topic(event_abi: ABIEvent) -> str:
-    return '0x' + event_abi_to_log_topic(event_abi).hex()
+    return "0x" + event_abi_to_log_topic(event_abi).hex()
 
 
 def function_abi_to_4byte_selector_str(function_abi: ABIFunction) -> str:
     # return 10 hex string
-    return '0x' + function_abi_to_4byte_selector(function_abi).hex()
+    return "0x" + function_abi_to_4byte_selector(function_abi).hex()
 
 
 def decode_log(
-        fn_abi: ABIEvent,
-        log: Log,
+    fn_abi: ABIEvent,
+    log: Log,
 ) -> Optional[Dict[str, Any]]:
     indexed_types = get_indexed_event_inputs(fn_abi)
     for indexed_type in indexed_types:

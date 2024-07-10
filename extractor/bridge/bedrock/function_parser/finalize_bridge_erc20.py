@@ -4,11 +4,17 @@ from typing import cast
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIFunction
 
-from extractor.bridge.bedrock.function_parser import RemoteFunctionCallDecoder, BridgeRemoteFunctionCallInfo, \
-    BedRockFunctionCallType
+from extractor.bridge.bedrock.function_parser import (
+    BedRockFunctionCallType,
+    BridgeRemoteFunctionCallInfo,
+    RemoteFunctionCallDecoder,
+)
 from extractor.signature import function_abi_to_4byte_selector_str
 
-FINALIZE_BRIDGE_ERC20 = cast(ABIFunction, json.loads("""
+FINALIZE_BRIDGE_ERC20 = cast(
+    ABIFunction,
+    json.loads(
+        """
     {
         "inputs": [
             {
@@ -48,17 +54,16 @@ FINALIZE_BRIDGE_ERC20 = cast(ABIFunction, json.loads("""
         "type": "function"
     }
 """
-))
+    ),
+)
 
 
 def decode_function(input_data: bytes) -> BridgeRemoteFunctionCallInfo:
     assert len(input_data) >= 4
     print(function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ERC20))
-    assert function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ERC20) == '0x' + input_data[:4].hex().lower()
+    assert function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ERC20) == "0x" + input_data[:4].hex().lower()
 
-    function_info = decode_transaction_data(
-        FINALIZE_BRIDGE_ERC20, input_data.hex()
-    )
+    function_info = decode_transaction_data(FINALIZE_BRIDGE_ERC20, input_data.hex())
     if function_info is None:
         raise ValueError("Failed to decode transaction data")
 
@@ -74,11 +79,10 @@ def decode_function(input_data: bytes) -> BridgeRemoteFunctionCallInfo:
                 "amount": function_info.get("_amount"),
             }
         },
-        remove_function_call_type=BedRockFunctionCallType.DEPOSIT_ERC20.value
+        remove_function_call_type=BedRockFunctionCallType.DEPOSIT_ERC20.value,
     )
 
 
 FINALIZE_BRIDGE_ERC20_DECODER = RemoteFunctionCallDecoder(
-    function_abi=FINALIZE_BRIDGE_ERC20,
-    decode_function=decode_function
+    function_abi=FINALIZE_BRIDGE_ERC20, decode_function=decode_function
 )

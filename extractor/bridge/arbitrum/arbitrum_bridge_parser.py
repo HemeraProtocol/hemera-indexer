@@ -15,7 +15,7 @@ from web3._utils.contracts import decode_transaction_data
 
 from domain.transaction import format_transaction_data
 from extractor.signature import decode_log
-from extractor.types import dict_to_dataclass, Transaction, Log, Receipt
+from extractor.types import Log, Receipt, Transaction, dict_to_dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class ArbitrumBridgeExtractor:
                     create_l1_block_hash=transaction.blockHash,
                     create_l1_transaction_hash=transaction.hash,
                     parent_node_hash=log.topic2,
-                    node_hash=log.topic3
+                    node_hash=log.topic3,
                 )
                 res.append(asb)
         return res
@@ -103,7 +103,7 @@ class ArbitrumBridgeExtractor:
         l2_token_address = None
         if transaction.topic1 in contract_list:
             for log in transaction.receipt.logs:
-                if (log.topic0 == ArbAbiClass.BeaconUpgradedEvent.signature):
+                if log.topic0 == ArbAbiClass.BeaconUpgradedEvent.signature:
                     l2_token_address = log.add_address
                 if log.topic0 == ArbAbiClass.DepositFinalizedEvent.signature:
                     l1_token_address = log.topic1
@@ -117,13 +117,15 @@ class ArbitrumBridgeExtractor:
     def parseOutboundTransferFunction(self, transactions, contract_list) -> list:
         res = []
         for tnx in transactions:
-            if tnx.to_address in contract_list and tnx.input[0:10] == ArbAbiClass.OutboundTransferFunction.signature[
-                                                                      0:10]:
+            if (
+                tnx.to_address in contract_list
+                and tnx.input[0:10] == ArbAbiClass.OutboundTransferFunction.signature[0:10]
+            ):
                 decoded_input = decode_input(ArbAbiClass.OutboundTransferFunction, tnx.input)
                 tt = TransactionToken(
                     transaction_hash=tnx.hash,
                     l1Token=Web3.to_bytes(decoded_input.get("_l1Token").toString),
-                    amount=(decoded_input.get("_amount").getOrElse(None).toString)
+                    amount=(decoded_input.get("_amount").getOrElse(None).toString),
                 )
                 res.append(tt)
         return res
@@ -203,5 +205,6 @@ def main():
     #     postgres.saveToPostgres(x)
     pass
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

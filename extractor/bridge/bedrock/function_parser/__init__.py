@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from typing import Callable, List, cast, Optional
+from enum import Enum, IntEnum
+from typing import Callable, List, Optional, cast
 
 from web3.types import ABIFunction
 
 from extractor.signature import function_abi_to_4byte_selector_str
-
-from enum import Enum, IntEnum
 
 
 class BedRockFunctionCallType(Enum):
@@ -13,7 +12,6 @@ class BedRockFunctionCallType(Enum):
     DEPOSIT_ETH = 1
     DEPOSIT_ERC20 = 2
     DEPOSIT_ERC721 = 3
-
 
 
 @dataclass
@@ -31,9 +29,10 @@ class RemoteFunctionCallDecoder:
     def __init__(self, function_abi: ABIFunction, decode_function: Callable[[bytes], BridgeRemoteFunctionCallInfo]):
         self.function_abi = function_abi
         self.decode = decode_function
+        self._4byte_selector = function_abi_to_4byte_selector_str(self.function_abi)
 
     def get_4byte_selector(self) -> str:
-        return function_abi_to_4byte_selector_str(self.function_abi)
+        return self._4byte_selector
 
 
 class BedrockBridgeParser:
@@ -43,7 +42,7 @@ class BedrockBridgeParser:
     def get_remote_function_call_info(self, transaction_input: bytes) -> BridgeRemoteFunctionCallInfo:
         if len(transaction_input) < 4:
             raise ValueError("Input is too short to contain a function selector")
-        selector = '0x' + transaction_input[:4].hex().lower()  # Assuming lowercase for consistency
+        selector = "0x" + transaction_input[:4].hex().lower()  # Assuming lowercase for consistency
 
         for decoder in self.remote_function_call_decoders:
             if decoder.get_4byte_selector() == selector:
