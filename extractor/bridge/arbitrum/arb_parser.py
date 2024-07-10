@@ -5,11 +5,12 @@
 # @File  arb_parser.py
 # @Brief
 import json
-
+from web3 import Web3
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIEvent, ABIFunction
 from typing import Any, Dict, cast
 from dataclasses import dataclass
+from extractor.bridge.arbitrum.arb_conf import env
 
 
 from extractor.signature import event_log_abi_to_topic, decode_log, function_abi_to_4byte_selector_str
@@ -240,7 +241,7 @@ def parse_inbox_message_delivered(transaction, contract_set):
             event = decode_log(INBOX_MESSAGE_DELIVERED_EVENT, log)
             message_num = event['messageNum']
             ib = InboxMessageDeliveredData(
-                transaction_hash=transaction.transaction_hash,
+                transaction_hash=transaction.hash,
                 msg_number=message_num,
                 data=event['data'],
             )
@@ -264,12 +265,12 @@ def parse_message_delivered(transaction, contract_set):
             timestamp = event.get("timestamp")
             mdd = MessageDeliveredData(
                 msg_hash=None,
-                block_number=transaction.blockNumber,
-                block_timestamp=transaction.blockTimestamp,
-                block_hash=transaction.blockHash,
+                block_number=transaction.block_number,
+                block_timestamp=transaction.block_timestamp,
+                block_hash=transaction.block_hash,
                 transaction_hash=transaction.hash,
-                from_address=transaction.fromAddress,
-                to_address=transaction.toAddress,
+                from_address=transaction.from_address,
+                to_address=transaction.to_address,
                 bridge_from_address=sender,
                 bridge_to_address=sender,
                 extra_info={
@@ -297,11 +298,11 @@ def parse_ticket_created_event(transaction, contract_set):
             tcd = TicketCreatedData(
                 msg_hash=event.get("ticketId"),
                 transaction_hash=transaction.hash,
-                block_number=transaction.blockNumber,
-                block_timestamp=transaction.blockTimestamp,
-                block_hash=transaction.blockHash,
-                from_address=transaction.fromAddress,
-                to_address=transaction.toAddress,
+                block_number=transaction.block_number,
+                block_timestamp=transaction.block_timestamp,
+                block_hash=transaction.block_hash,
+                from_address=transaction.from_address,
+                to_address=transaction.to_address,
             )
             res.append(tcd)
     return res
@@ -373,62 +374,62 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
            */
        
         """
-        chainId = data[offset, offset + 32]
+        chainId = data[offset: offset + 32]
         offset += 32
     elif kind == Constants.L2MessageType_unsignedEOATx:
-        gasLimit = data[offset, offset + 32]
+        gasLimit = data[offset: offset + 32]
         offset += 32
-        maxFeePerGas = data[offset, offset + 32]
+        maxFeePerGas = data[offset: offset + 32]
         offset += 32
-        nonce = data[offset, offset + 32]
+        nonce = data[offset: offset + 32]
         offset += 32
-        destAddress = data[offset, offset + 32]
+        destAddress = data[offset: offset + 32]
         offset += 32
-        msgValue = data[offset, offset + 32]
+        msgValue = data[offset: offset + 32]
         offset += 32
-        dataBytes = data[offset, data.length]
+        dataBytes = data[offset: data.length]
     elif kind == Constants.L2MessageType_unsignedContractTx:
-        gasLimit = data[offset, offset + 32]
+        gasLimit = data[offset: offset + 32]
         offset += 32
-        maxFeePerGas = data[offset, offset + 32]
+        maxFeePerGas = data[offset: offset + 32]
         offset += 32
-        destAddress = data[offset, offset + 32]
+        destAddress = data[offset: offset + 32]
         offset += 32
-        msgValue = data[offset, offset + 32]
+        msgValue = data[offset: offset + 32]
         offset += 32
-        dataBytes = data[offset, data.length]
+        dataBytes = data[offset: data.length]
     elif kind == Constants.L1MessageType_submitRetryableTx:
-        destAddress = data[offset, offset + 32]
+        destAddress = data[offset: offset + 32]
         offset += 32
-        l2CallValue = data[offset, offset + 32]
+        l2CallValue = data[offset: offset + 32]
         offset += 32
-        msgValue = data[offset, offset + 32]
+        msgValue = data[offset: offset + 32]
         offset += 32
-        maxSubmissionCost = data[offset, offset + 32]
+        maxSubmissionCost = data[offset: offset + 32]
         offset += 32
-        excessFeeRefundAddress = data[offset, offset + 32]
+        excessFeeRefundAddress = data[offset: offset + 32]
         offset += 32
-        callValueRefundAddress = data[offset, offset + 32]
+        callValueRefundAddress = data[offset: offset + 32]
         offset += 32
-        gasLimit = data[offset, offset + 32]
+        gasLimit = data[offset: offset + 32]
         offset += 32
-        maxFeePerGas = data[offset, offset + 32]
+        maxFeePerGas = data[offset: offset + 32]
         offset += 32
-        dataLength = data[offset, offset + 32]
+        dataLength = data[offset: offset + 32]
         offset += 32
         offset += 4
-        l1TokenId = data[offset, offset + 32]
+        l1TokenId = data[offset: offset + 32]
         offset -= 4
-        dataBytes = data[offset, offset + dataLength.toInt]
+        dataBytes = data[offset: offset + dataLength.toInt]
         offset += 100
         if (l1TokenId and offset < len(data)):
-            l1TokenAmount = data[offset, offset + 32]
+            l1TokenAmount = data[offset: offset + 32]
     elif kind == Constants.L2_MSG:
         pass
     elif kind == Constants.L1MessageType_ethDeposit:
-        destAddress = data[offset, offset + 20]
+        destAddress = data[offset: offset + 20]
         offset += 20
-        msg_value = data[offset, offset + 32]
+        msg_value = data[offset: offset + 32]
     else:
         raise Exception(f"uncovered case. kind: {kind}")
     return destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress, callValueRefundAddress, maxFeePerGas, dataBytes, l1TokenId, l1TokenAmount
@@ -472,10 +473,11 @@ def parse_l2_to_l1_tx_64_event(transaction, contract_set):
 
 def parse_sequencer_batch_delivered(transaction, contract_set) -> list:
     res = []
+    transaction_batch_offset = env['transaction_batch_offset']
     for log in transaction.receipt.logs:
         if log.topic0 == SEQUENCER_BATCH_DELIVERED_EVENT_SIG and log.address in contract_set:
             input = transaction.input
-            input_sig = input.slice(0, 10)
+            input_sig = input[0: 10]
             sequenceNumber = 0
             prevMessageCount = 0
             newMessageCount = 0
@@ -483,31 +485,29 @@ def parse_sequencer_batch_delivered(transaction, contract_set) -> list:
             afterDelayedMessagesRead = 0
             if (input_sig == ADD_SEQUENCER_L2_BATCH_FROM_BLOBS_FUNCTION_SIG):
                 decoded_input = decode_transaction_data(ADD_SEQUENCER_L2_BATCH_FROM_BLOBS_FUNCTION, input)
-                sequenceNumber = decoded_input.get("sequenceNumber").getOrElse(None).toString.toLong
-                prevMessageCount = decoded_input.get("prevMessageCount").getOrElse(None).toString.toLong
-                newMessageCount = decoded_input.get("newMessageCount").getOrElse(None).toString.toLong
-                gasRefunder = (decoded_input.get("gasRefunder").getOrElse("").toString)
-                afterDelayedMessagesRead = decoded_input.get("afterDelayedMessagesRead").getOrElse(
-                    None).toString.toLong
+                sequenceNumber = decoded_input.get("sequenceNumber")
+                prevMessageCount = decoded_input.get("prevMessageCount")
+                newMessageCount = decoded_input.get("newMessageCount")
+                gasRefunder = decoded_input.get("gasRefunder")
+                afterDelayedMessagesRead = decoded_input.get("afterDelayedMessagesRead")
 
             elif (input_sig == ADD_SEQUENCER_L2_BATCH_FROM_ORIGIN_FUNCTION_SIG):
                 decoded_input = decode_transaction_data(ADD_SEQUENCER_L2_BATCH_FROM_ORIGIN_FUNCTION, transaction.input)
-                sequenceNumber = decoded_input.get("sequenceNumber").getOrElse(None).toString.toLong
-                prevMessageCount = decoded_input.get("prevMessageCount").getOrElse(None).toString.toLong
-                newMessageCount = decoded_input.get("newMessageCount").getOrElse(None).toString.toLong
-                gasRefunder = (decoded_input.get("gasRefunder").getOrElse("").toString)
-                afterDelayedMessagesRead = decoded_input.get("afterDelayedMessagesRead").getOrElse(
-                    None).toString.toLong
+                sequenceNumber = decoded_input.get("sequenceNumber")
+                prevMessageCount = decoded_input.get("prevMessageCount")
+                newMessageCount = decoded_input.get("newMessageCount")
+                gasRefunder = decoded_input.get("gasRefunder")
+                afterDelayedMessagesRead = decoded_input.get("afterDelayedMessagesRead")
                 data = decoded_input.get("data")
             at = ArbitrumTransactionBatch(
                 batch_index=sequenceNumber,
-                l1_block_number=transaction.blockNumber,
-                l1_block_timestamp=transaction.blockTimestamp,
-                l1_block_hash=transaction.blockHash,
+                l1_block_number=transaction.block_number,
+                l1_block_timestamp=transaction.block_timestamp,
+                l1_block_hash=transaction.block_hash,
                 l1_transaction_hash=transaction.hash,
-
-                end_block_number=newMessageCount,
-                start_block_number=prevMessageCount,
+                transaction_count=None,
+                end_block_number=newMessageCount + transaction_batch_offset,
+                start_block_number=prevMessageCount + transaction_batch_offset + 1,
             )
             res.append(at)
     return res
@@ -519,13 +519,16 @@ def parse_node_confirmed(transaction, contract_set) -> list:
         if log.topic0 == NODE_CONFIRMED_EVENT_SIG and log.address in contract_set:
             event = decode_log(NODE_CONFIRMED_EVENT, log)
             asb = ArbitrumStateBatchConfirmed(
-                node_num=event.get("nodeNum").toString.toLong,
-                block_hash="0x" + event.get("blockHash"),
-                send_root="0x" + event.get("sendRoot"),
-                l1_block_number=transaction.blockNumber,
-                l1_block_timestamp=transaction.blockTimestamp,
-                l1_block_hash=transaction.blockHash,
+                node_num=event.get("nodeNum"),
+                block_hash=Web3.to_hex(event.get("blockHash")),
+                send_root=Web3.to_hex(event.get("sendRoot")),
+                l1_block_number=transaction.block_number,
+                l1_block_timestamp=transaction.block_timestamp,
+                l1_block_hash=transaction.block_hash,
                 l1_transaction_hash=transaction.hash,
+                start_block_number=None,
+                end_block_number=None,
+                transaction_count=None
             )
             res.append(asb)
     return res
@@ -534,13 +537,12 @@ def parse_node_confirmed(transaction, contract_set) -> list:
 def parse_node_created(transaction, contract_set) -> list:
     res = []
     for log in transaction.receipt.logs:
-        if log.topic0 == NODE_CREATED_EVENT_SIG and log.add_address in contract_set:
-            event = decode_log(NODE_CREATED_EVENT, log)
+        if log.topic0 == NODE_CREATED_EVENT_SIG and log.address in contract_set:
             asb = ArbitrumStateBatchCreated(
-                node_num=log.topic1,
-                create_l1_block_number=transaction.blockNumber,
-                create_l1_block_timestamp=transaction.blockTimestamp,
-                create_l1_block_hash=transaction.blockHash,
+                node_num=int(log.topic1, 16),
+                create_l1_block_number=transaction.block_number,
+                create_l1_block_timestamp=transaction.block_timestamp,
+                create_l1_block_hash=transaction.block_hash,
                 create_l1_transaction_hash=transaction.hash,
                 parent_node_hash=log.topic2,
                 node_hash=log.topic3,
@@ -553,7 +555,7 @@ def parse_bridge_token(transaction, contract_set) -> list:
     res = []
     l1_token_address = None
     l2_token_address = None
-    if transaction.topic1 in contract_set:
+    if transaction.to_address in contract_set:
         for log in transaction.receipt.logs:
             if log.topic0 == BEACON_UPGRADED_EVENT_SIG:
                 l2_token_address = log.address
@@ -573,7 +575,7 @@ def parse_bridge_token(transaction, contract_set) -> list:
 def parse_outbound_transfer_function(transactions, contract_set):
     res = []
     for tnx in transactions:
-        if tnx.to in contract_set:
+        if tnx.to_address in contract_set:
             input_sig = tnx.input[0:10]
             if input_sig == OUT_BOUND_TRANSFER_FUNCTION_SIG:
                 decoded_input = decode_transaction_data(OUT_BOUND_TRANSFER_FUNCTION, tnx.input)
