@@ -593,16 +593,16 @@ def parse_bridge_call_triggered(transaction, contract_set):
     for log in transaction.receipt.logs:
         if log.topic0 == BRIDGE_CALL_TRIGGERED_EVENT_SIG and log.address in contract_set:
             decoded_input = decode_transaction_data(EXECUTE_TRANSACTION_FUNCTION, transaction.input)
-            msg_num = decoded_input["msg_num"]
+            msg_num = decoded_input["index"]
             event = decode_log(BRIDGE_CALL_TRIGGERED_EVENT, log)
             bc = BridgeCallTriggeredData(
                 msg_hash=msg_num,
                 l1_transaction_hash=transaction.hash,
-                l1_block_number=transaction.blockNumber,
-                l1_block_timestamp=transaction.blockTimestamp,
-                l1_block_hash=transaction.blockHash,
-                l1_from_address=transaction.fromAddress,
-                l1_to_address=transaction.toAddress,
+                l1_block_number=transaction.block_number,
+                l1_block_timestamp=transaction.block_timestamp,
+                l1_block_hash=transaction.block_hash,
+                l1_from_address=transaction.from_address,
+                l1_to_address=transaction.to_address,
                 outbox=event.get("outbox"),
                 to=event.get("to"),
                 value=event.get("value"),

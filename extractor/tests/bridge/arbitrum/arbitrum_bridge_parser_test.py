@@ -6,11 +6,9 @@
 # @Brief
 import pytest
 
-from extractor.bridge.arbitrum.arb_parser import parse_sequencer_batch_delivered
-from extractor.bridge.bedrock.bedrock_bridge_parser import parse_transaction_deposited_event
-from extractor.tests.json_rpc_to_dataclass import get_transaction_from_rpc
-from extractor.bridge.arbitrum.arbitrum_bridge_parser import ArbitrumBridgeExtractor
 from extractor.bridge.arbitrum.arb_parser import *
+from extractor.bridge.arbitrum.arbitrum_bridge_parser import ArbitrumBridgeExtractor
+from extractor.tests.json_rpc_to_dataclass import get_transaction_from_rpc
 
 l2Rpc = "https://arbitrum-one-rpc.publicnode.com"
 l1Rpc = "https://ethereum-rpc.publicnode.com"
@@ -40,11 +38,23 @@ def test_bridge_state_batch():
 def test_bridge_l1_to_l2():
     l1_tnx_hash = '0xda4bb002306d46ac3d4ec4754f8841e72d82e876231106ecf4eb77f6244de836'
     l2_tnx_hash = '0x358bad7e9e28729b77f41ca3fdd188bcccc5004636d0cf81d7dc2abaed9c84fd'
-    l1transaction = get_transaction_from_rpc(
+    l1_tnx = get_transaction_from_rpc(
         l1Rpc, l1_tnx_hash
     )
-    l2transaction = get_transaction_from_rpc(l2Rpc, l2_tnx_hash)
+    l2_tnx = get_transaction_from_rpc(l2Rpc, l2_tnx_hash)
     abe = ArbitrumBridgeExtractor()
-    resa = abe.l1_contract_extractor([l1transaction], contract_set)
-    resb = abe.l2_contract_extractor([l2transaction], contract_set)
+    resa = abe.l1_contract_extractor([l1_tnx], contract_set)
+    resb = abe.l2_contract_extractor([l2_tnx], contract_set)
+    print(resa, resb)
+
+
+@pytest.mark.bridge
+def test_bridge_l2_to_l1():
+    l2_tnx_hash = '0xe5b6baf0eba9cdf6dcdf3e2c99d5da38c36272dc543083c41b40d92a13f5bb11'
+    l1_tnx_hash = '0x3f1cb5813c4c9f6db21e66500dc414716d522e85136e607a6be8fff91885a40a'
+    l1_tnx = get_transaction_from_rpc(l1Rpc, l1_tnx_hash)
+    l2_tnx = get_transaction_from_rpc(l2Rpc, l2_tnx_hash)
+    abe = ArbitrumBridgeExtractor()
+    resa = abe.l1_contract_extractor([l1_tnx], contract_set)
+    resb = abe.l2_contract_extractor([l2_tnx], contract_set)
     print(resa, resb)
