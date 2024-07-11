@@ -22,4 +22,4 @@ def test_bedrock_finalize_bridge_erc20_decoder():
 
     assert bridge_info.amount == 100000000000
     assert bridge_info.extra_info == {"token": {"type": "ERC20", "amount": 100000000000}}
-    assert bridge_info.remove_function_call_type == BedRockFunctionCallType.DEPOSIT_ERC20.value
+    assert bridge_info.remote_function_call_type == BedRockFunctionCallType.DEPOSIT_ERC20.value

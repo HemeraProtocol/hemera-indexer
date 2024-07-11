@@ -6,7 +6,8 @@ from web3._utils.contracts import decode_transaction_data
 from web3.auto import w3
 from web3.types import ABIEvent, ABIFunction
 
-from extractor.bridge.bedrock.function_parser import BedrockBridgeParser, BridgeRemoteFunctionCallInfo
+from extractor.bridge.bedrock.function_parser import BedrockBridgeParser, BridgeRemoteFunctionCallInfo, \
+    BedRockFunctionCallType
 from extractor.bridge.bedrock.function_parser.finalize_bridge_erc20 import FINALIZE_BRIDGE_ERC20_DECODER
 from extractor.bridge.bedrock.function_parser.finalize_bridge_erc721 import FINALIZE_BRIDGE_ERC721_DECODER
 from extractor.bridge.bedrock.function_parser.finalize_bridge_eth import FINALIZE_BRIDGE_ETH_DECODER
@@ -101,11 +102,11 @@ def parse_transaction_deposited_event(transaction: Transaction, contract_address
     This function handles different versions of deposited transactions and decodes their data accordingly.
 
     Parameters:
-    transaction (Transaction): The transaction data containing the logs to be parsed.
-    contract_address (str): The contract addresses to filter the relevant logs.
+        transaction (Transaction): The transaction data containing the logs to be parsed.
+        contract_address (str): The contract addresses to filter the relevant logs.
 
     Returns:
-    List[DepositedTransaction]: A list of DepositedTransaction objects containing detailed information about each deposit.
+        List[DepositedTransaction]: A list of DepositedTransaction objects containing detailed information about each deposit.
     """
 
     results = []
@@ -145,7 +146,7 @@ def parse_transaction_deposited_event(transaction: Transaction, contract_address
                         sender=transaction.from_address,
                         target=transaction.from_address,
                         l2_transaction_hash=l2_transaction_hash,
-                        bridge_transaction_type=0xFF,
+                        bridge_transaction_type=BedRockFunctionCallType.NATIVE_DEPOSIT_ETH.value,
                         data=None,
                         extra_info={"gas_limit": gas, "tx_origin": tx_origin},
                     )
@@ -170,7 +171,7 @@ def parse_transaction_deposited_event(transaction: Transaction, contract_address
                         remote_token_address=None,
                         amount=value,
                         extra_info={},
-                        remove_function_call_type=0,
+                        remote_function_call_type=BedRockFunctionCallType.NORMAL_CROSS_CHAIN_CALL.value,
                     )
 
                 results.append(
@@ -188,12 +189,12 @@ def parse_transaction_deposited_event(transaction: Transaction, contract_address
                         remote_token_address=bridge_info.remote_token_address,
                         bridge_from_address=bridge_info.bridge_from_address,
                         bridge_to_address=bridge_info.bridge_to_address,
-                        amount=value,
+                        amount=bridge_info.amount,
                         sender=sender,
                         target=target,
                         l2_transaction_hash=l2_transaction_hash,
-                        bridge_transaction_type=bridge_info.remove_function_call_type,
-                        data=message,
+                        bridge_transaction_type=bridge_info.remote_function_call_type,
+                        data=bytes_to_hex_str(message),
                         extra_info={**bridge_info.extra_info, "gas_limit": gas_limit, "tx_origin": tx_origin},
                     )
                 )
@@ -211,13 +212,13 @@ def parse_relayed_message(
     - WithdrawalFinalized on L2: Finalized withdrawal event on Layer 2
 
     Parameters:
-    abi_event (ABIEvent): The ABI event object containing detailed event information.
-    transaction (Transaction): The transaction object associated with the event.
-    contract_address (str): The contract addresses to filter the relevant logs.
-    msg_filed_name (str): The field name in the message to be processed.
+        abi_event (ABIEvent): The ABI event object containing detailed event information.
+        transaction (Transaction): The transaction object associated with the event.
+        contract_address (str): The contract addresses to filter the relevant logs.
+        msg_filed_name (str): The field name in the message to be processed.
 
     Returns:
-    List[RelayedMessageTransaction]: A list of parsed relayed message transactions.
+        List[RelayedMessageTransaction]: A list of parsed relayed message transactions.
     """
 
     results = []
@@ -251,11 +252,11 @@ def parse_propose_l2_output(transaction: Transaction, contract_address: str) -> 
     This function can be expanded to parse and handle specific types of state updates or batch operations from Layer 1 to Layer 2.
 
     Parameters:
-    transaction (Transaction): The transaction data containing the logs to be parsed.
-    contract_address (str): The contract addresses to filter the relevant logs.
+        transaction (Transaction): The transaction data containing the logs to be parsed.
+        contract_address (str): The contract addresses to filter the relevant logs.
 
     Returns:
-    List[RelayedMessageTransaction]: A list of transactions indicating state changes or updates in L2 as proposed from L1.
+        List[RelayedMessageTransaction]: A list of transactions indicating state changes or updates in L2 as proposed from L1.
     """
 
     results = []

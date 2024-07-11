@@ -79,7 +79,7 @@ def decode_function(input_data: bytes) -> BridgeRemoteFunctionCallInfo:
                 "amount": function_info.get("_amount"),
             }
         },
-        remove_function_call_type=BedRockFunctionCallType.DEPOSIT_ERC20.value,
+        remote_function_call_type=BedRockFunctionCallType.DEPOSIT_ERC20.value,
     )
 
 

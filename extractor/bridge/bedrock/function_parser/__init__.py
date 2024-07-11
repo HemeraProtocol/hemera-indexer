@@ -8,11 +8,13 @@ from extractor.signature import function_abi_to_4byte_selector_str
 
 
 class BedRockFunctionCallType(Enum):
-    UNKNOWN = 0
+    NATIVE_DEPOSIT_ETH = 0
+
     DEPOSIT_ETH = 1
     DEPOSIT_ERC20 = 2
     DEPOSIT_ERC721 = 3
 
+    NORMAL_CROSS_CHAIN_CALL = 7
 
 @dataclass
 class BridgeRemoteFunctionCallInfo:
@@ -22,7 +24,7 @@ class BridgeRemoteFunctionCallInfo:
     remote_token_address: Optional[str]
     amount: int
     extra_info: dict
-    remove_function_call_type: int
+    remote_function_call_type: int
 
 
 class RemoteFunctionCallDecoder:

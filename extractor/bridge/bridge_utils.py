@@ -1,13 +1,4 @@
-import json
 from typing import Optional, Tuple
-
-from eth_utils import to_int
-
-from domain.transaction import format_transaction_data
-from extractor.types import Log, Receipt, Transaction
-from utils.json_rpc_requests import generate_get_block_by_number_json_rpc, generate_get_receipt_json_rpc
-from utils.provider import BatchHTTPProvider
-from utils.utils import rpc_response_batch_to_results
 
 
 def get_version_and_index_from_nonce(nonce: int) -> (int, int):

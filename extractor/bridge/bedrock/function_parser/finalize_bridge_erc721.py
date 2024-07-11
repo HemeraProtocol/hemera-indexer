@@ -74,7 +74,7 @@ def decode_function(input_data: bytes) -> BridgeRemoteFunctionCallInfo:
         remote_token_address=function_info.get("_remoteToken"),
         amount=1,
         extra_info={"token": {"type": "ERC721", "token_ids": [function_info.get("_tokenId")], "amounts": [1]}},
-        remove_function_call_type=BedRockFunctionCallType.DEPOSIT_ERC721.value,
+        remote_function_call_type=BedRockFunctionCallType.DEPOSIT_ERC721.value,
     )
 
 

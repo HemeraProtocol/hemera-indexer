@@ -21,4 +21,4 @@ def test_bedrock_finalize_bridge_erc721_decoder():
 
     assert bridge_info.amount == 1
     assert bridge_info.extra_info == {"token": {"type": "ERC721", "token_ids": [281492156579894], "amounts": [1]}}
-    assert bridge_info.remove_function_call_type == BedRockFunctionCallType.DEPOSIT_ERC721.value
+    assert bridge_info.remote_function_call_type == BedRockFunctionCallType.DEPOSIT_ERC721.value
