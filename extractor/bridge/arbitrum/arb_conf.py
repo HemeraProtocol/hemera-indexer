@@ -5,6 +5,6 @@
 # @File  arb_conf.py
 # @Brief
 env = {
-    'l2_chain_id': 123,
+    'l2_chain_id': 42161,
     'transaction_batch_offset': 22207816
 }

@@ -73,7 +73,7 @@ class ArbitrumBridgeExtractor:
         tnx_input = parse_outbound_transfer_function(transactions, contract_set)
         tnx_input_map = {}
         for tnx in tnx_input:
-            tnx_input_map[tnx['hash']] = tnx
+            tnx_input_map[str(tnx['hash'])] = tnx
         message_delivered_event_list = list(map(lambda x: parse_message_delivered(x, contract_set), transactions))
         message_delivered_event_map = {m.messageIndex: m for sublist in message_delivered_event_list for m in sublist}
         inbox_message_delivered_event_list = list(map(lambda x: parse_inbox_message_delivered(x, contract_set), transactions))

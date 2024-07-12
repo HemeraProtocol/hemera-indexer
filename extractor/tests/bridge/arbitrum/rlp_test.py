@@ -32,3 +32,16 @@ def test_arbitrum_rlp(caplog):
     )
     assert res == "0x8ba13904639c7444d8578cc582a230b8501c9f0f7903f5069d276fdd3a7dea44"
     print("ok!")
+
+
+@pytest.mark.bridge
+def test_calculate_deposit_tx_id():
+    l2_chain_id = 42161
+    message_number = 1605605
+    from_address = "0xF45e40e5200615Ba57F66025475571063CD70222"
+    to_address = "0xE34d40E5200615ba57F66025475571063Cd6F111"
+    value = 1000000000000000
+    ctx = calculate_deposit_tx_id(l2_chain_id, message_number, from_address, to_address, value)
+    print(ctx)
+    expect = '0x358bad7e9e28729b77f41ca3fdd188bcccc5004636d0cf81d7dc2abaed9c84fd'
+    assert ctx == expect

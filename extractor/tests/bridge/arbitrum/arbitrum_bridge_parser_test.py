@@ -12,7 +12,7 @@ from extractor.tests.json_rpc_to_dataclass import get_transaction_from_rpc
 
 l2Rpc = "https://arbitrum-one-rpc.publicnode.com"
 l1Rpc = "https://ethereum-rpc.publicnode.com"
-contract_set = {'0x1c479675ad559dc151f6ec7ed3fbf8cee79582b6', '0x5ef0d09d1e6204141b4d37530808ed19f60fba35', '0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f', '0x8315177ab297ba92a06054ce80a67ed4dbd7ed3a'}
+contract_set = {'0x1c479675ad559dc151f6ec7ed3fbf8cee79582b6', '0x5ef0d09d1e6204141b4d37530808ed19f60fba35', '0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f', '0x8315177ab297ba92a06054ce80a67ed4dbd7ed3a', '0x0000000000000000000000000000000000000064'}
 
 
 @pytest.mark.bridge
@@ -50,8 +50,8 @@ def test_bridge_l1_to_l2():
 
 @pytest.mark.bridge
 def test_bridge_l2_to_l1():
-    l2_tnx_hash = '0xe5b6baf0eba9cdf6dcdf3e2c99d5da38c36272dc543083c41b40d92a13f5bb11'
-    l1_tnx_hash = '0x3f1cb5813c4c9f6db21e66500dc414716d522e85136e607a6be8fff91885a40a'
+    l2_tnx_hash = '0xde2d34248ce22eeff376cc4cc8706b5d187cbd6ea585446c3c6d3d94ace5e0af'
+    l1_tnx_hash = '0x80620129db9fca3127a072a1898a56dc6bdc8f950ce6b0ff6e7a3057baf7f5fe'
     l1_tnx = get_transaction_from_rpc(l1Rpc, l1_tnx_hash)
     l2_tnx = get_transaction_from_rpc(l2Rpc, l2_tnx_hash)
     abe = ArbitrumBridgeExtractor()

@@ -326,7 +326,8 @@ def un_marshal_tx_to_l1(data):
     _to = ZERO_ADDRESS
     _amount = 0
     restData = b""
-
+    if not data:
+        return selector, _token, _from, _to, _amount, restData
     selector = data[offset: offset + 4]
     offset += 4
     _token = data[offset, offset + 32]
@@ -399,26 +400,26 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
         offset += 32
         dataBytes = data[offset: data.length]
     elif kind == Constants.L1MessageType_submitRetryableTx:
-        destAddress = data[offset: offset + 32]
+        destAddress = Web3.to_hex(data[offset: offset + 32])
         offset += 32
-        l2CallValue = data[offset: offset + 32]
+        l2CallValue = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
-        msgValue = data[offset: offset + 32]
+        msgValue = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
-        maxSubmissionCost = data[offset: offset + 32]
+        maxSubmissionCost = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
-        excessFeeRefundAddress = data[offset: offset + 32]
+        excessFeeRefundAddress = Web3.to_hex(data[offset: offset + 32])
         offset += 32
-        callValueRefundAddress = data[offset: offset + 32]
+        callValueRefundAddress = Web3.to_hex(data[offset: offset + 32])
         offset += 32
-        gasLimit = data[offset: offset + 32]
+        gasLimit = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
-        maxFeePerGas = data[offset: offset + 32]
+        maxFeePerGas = int.from_bytes(data[offset: offset + 32])
         offset += 32
-        dataLength = data[offset: offset + 32]
+        dataLength = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
         offset += 4
-        l1TokenId = data[offset: offset + 32]
+        l1TokenId = Web3.to_hex(data[offset: offset + 32])
         offset -= 4
         dataBytes = data[offset: offset + dataLength.toInt]
         offset += 100
@@ -427,9 +428,9 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
     elif kind == Constants.L2_MSG:
         pass
     elif kind == Constants.L1MessageType_ethDeposit:
-        destAddress = data[offset: offset + 20]
+        destAddress = Web3.to_hex(data[offset: offset + 20])
         offset += 20
-        msg_value = data[offset: offset + 32]
+        msgValue = int.from_bytes(data[offset: offset + 32], 'big')
     else:
         raise Exception(f"uncovered case. kind: {kind}")
     return destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress, callValueRefundAddress, maxFeePerGas, dataBytes, l1TokenId, l1TokenAmount
@@ -449,17 +450,17 @@ def parse_l2_to_l1_tx_64_event(transaction, contract_set):
                 amount = event.get("callvalue")
 
             l2tol1 = L2ToL1Tx_64(
-                msg_hash=msgNumber.toByteArray,
-                l2_block_number=transaction.blockNumber,
-                l2_block_timestamp=transaction.blockTimestamp,
-                l2_block_hash=transaction.blockHash,
+                msg_hash=msgNumber,
+                l2_block_number=transaction.block_number,
+                l2_block_timestamp=transaction.block_timestamp,
+                l2_block_hash=transaction.block_hash,
                 l2_transaction_hash=transaction.hash,
-                l2_from_address=transaction.fromAddress,
-                l2_to_address=transaction.toAddress,
+                l2_from_address=transaction.from_address,
+                l2_to_address=transaction.to_address,
                 l2_token_address=_token,
                 caller=event.get("caller"),
                 destination=event.get("destination"),
-                hash=event.get("hash"),
+                hash=hex(int(event.get("hash"))),
                 position=event.get("position"),
                 arbBlockNum=event.get("arbBlockNum"),
                 ethBlockNum=event.get("ethBlockNum"),
