@@ -85,7 +85,7 @@ def format_bridge_transaction_data(transaction_dict):
 
 
 
-class FetchOpBedrockBridgeDataJob(BaseJob):
+class FetchFilterDataJob(BaseJob):
     def __init__(self,
                  index_keys,
                  start_block,

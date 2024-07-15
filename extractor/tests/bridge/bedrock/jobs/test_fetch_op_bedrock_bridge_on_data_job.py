@@ -1,17 +1,18 @@
 import pytest
 
 from extractor.bridge.bedrock.extractor.l1_bridge_data_extractor import L1BridgeDataExtractor
-from extractor.bridge.bedrock.jobs.fetch_op_bedrock_bridge_on_data_job import FetchOpBedrockBridgeDataJob
+
 from extractor.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
 from extractor.bridge.items import L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1, L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN, \
     L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED
+from extractor.jobs.fetch_filter_data_job import FetchFilterDataJob
 from utils.provider import get_provider_from_uri
 from utils.thread_local_proxy import ThreadLocalProxy
 
 
 @pytest.mark.util
 def test_fetch_op_bedrock_bridge_on_data():
-    job = FetchOpBedrockBridgeDataJob(
+    op_bedrock_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1,
                     L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN,
                     L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED],
@@ -30,4 +31,4 @@ def test_fetch_op_bedrock_bridge_on_data():
         ),
     )
 
-    job.run()
+    op_bedrock_job.run()
