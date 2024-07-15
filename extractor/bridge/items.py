@@ -1,4 +1,4 @@
-from sqlalchemy import Column, BIGINT, TIMESTAMP, NUMERIC, INT, JSON, TEXT, func
+from sqlalchemy import Column, BIGINT, TIMESTAMP, NUMERIC, INT, JSON, TEXT, func, BigInteger, DateTime, String, Integer
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import declarative_base
 
@@ -84,12 +84,53 @@ class StateBatches(Base):
     batch_root = Column(BYTEA)
 
 
+class ArbitrumTransactionBatches(Base):
+    __tablename__ = "arbitrum_transaction_batches"
+
+    batch_index = Column(BigInteger, primary_key=True)
+    l1_block_number = Column(BigInteger)
+    l1_block_timestamp = Column(DateTime)
+    l1_block_hash = Column(BYTEA)
+    l1_transaction_hash = Column(BYTEA)
+    batch_root = Column(BYTEA)
+    start_block_number = Column(BigInteger)
+    end_block_number = Column(BigInteger)
+    transaction_count = Column(Integer)
+    block_count = Column(Integer)
+
+
+class ArbitrumStateBatches(Base):
+    __tablename__ = "arbitrum_state_batches"
+
+    node_num = Column(BigInteger, primary_key=True)
+    create_l1_block_number = Column(BigInteger)
+    create_l1_block_timestamp = Column(DateTime)
+    create_l1_block_hash = Column(BYTEA)
+    create_l1_transaction_hash = Column(BYTEA)
+
+    l1_block_number = Column(BigInteger)
+    l1_block_timestamp = Column(DateTime)
+    l1_block_hash = Column(BYTEA)
+    l1_transaction_hash = Column(BYTEA)
+
+    parent_node_hash = Column(BYTEA)
+    node_hash = Column(BYTEA)
+    block_hash = Column(BYTEA)
+    send_root = Column(BYTEA)
+    start_block_number = Column(BigInteger)
+    end_block_number = Column(BigInteger)
+    transaction_count = Column(Integer)
+    block_count = Column(Integer)
+
+
 L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1 = "l1_to_l2_transactions_op_deposited_on_l1"
 L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN = "l2_to_l1_transactions_op_withdrawn_proven_on_l1"
 L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED = "l2_to_l1_transactions_op_withdrawn_finalized_on_l1"
 OP_STATE_BATCH_TRANSACTION = "op_state_batch_transactions"
 L1_TO_L2_DEPOSITED_TRANSACTION_ON_L2 = "l1_to_l2_transactions_op_deposited_on_l2"
 L2_TO_L1_WITHDRAWN_TRANSACTION_ON_l2 = "l2_to_l1_transactions_op_withdrawn_on_l2"
+ARB_TRANSACTION_BATCH = "arbitrum_transaction_batches"
+ARB_STATE_BATCH = "arbitrum_state_batches"
 
 items = {
     L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1: L1ToL2BridgeTransactions,
@@ -98,6 +139,8 @@ items = {
     OP_STATE_BATCH_TRANSACTION: StateBatches,
     L1_TO_L2_DEPOSITED_TRANSACTION_ON_L2: L1ToL2BridgeTransactions,
     L2_TO_L1_WITHDRAWN_TRANSACTION_ON_l2: L2ToL1BridgeTransactions,
+    ARB_TRANSACTION_BATCH: ArbitrumTransactionBatches,
+    ARB_STATE_BATCH: ArbitrumStateBatches,
 }
 
 def format_bridge_data(dict):

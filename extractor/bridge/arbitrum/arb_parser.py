@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from extractor.bridge.arbitrum.arb_conf import env
 
 
-from extractor.signature import event_log_abi_to_topic, decode_log, function_abi_to_4byte_selector_str
+from extractor.bridge.signature import event_log_abi_to_topic, decode_log, function_abi_to_4byte_selector_str
 
 MESSAGE_DELIVERED_EVENT = cast(ABIEvent, json.loads(
     """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"messageIndex","type":"uint256"},{"indexed":true,"internalType":"bytes32","name":"beforeInboxAcc","type":"bytes32"},{"indexed":false,"internalType":"address","name":"inbox","type":"address"},{"indexed":false,"internalType":"uint8","name":"kind","type":"uint8"},{"indexed":false,"internalType":"address","name":"sender","type":"address"},{"indexed":false,"internalType":"bytes32","name":"messageDataHash","type":"bytes32"},{"indexed":false,"internalType":"uint256","name":"baseFeeL1","type":"uint256"},{"indexed":false,"internalType":"uint64","name":"timestamp","type":"uint64"}],"name":"MessageDelivered","type":"event"}"""))
@@ -150,6 +150,10 @@ class BridgeCallTriggeredData:
     to: str
     value: int
     data: str
+
+    @property
+    def type(self):
+        return "bridgeCall"
 
 
 @dataclass
@@ -414,14 +418,14 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
         offset += 32
         gasLimit = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
-        maxFeePerGas = int.from_bytes(data[offset: offset + 32])
+        maxFeePerGas = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
         dataLength = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
         offset += 4
         l1TokenId = Web3.to_hex(data[offset: offset + 32])
         offset -= 4
-        dataBytes = data[offset: offset + dataLength.toInt]
+        dataBytes = data[offset: offset + dataLength]
         offset += 100
         if (l1TokenId and offset < len(data)):
             l1TokenAmount = data[offset: offset + 32]

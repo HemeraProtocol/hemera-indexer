@@ -44,7 +44,7 @@ def calculate_submit_retryable_id(
         bytes.fromhex(call_value_refund_address[2:]),
         (max_submission_fee),
         bytes.fromhex(excess_fee_refund_address[2:]),
-        bytes.fromhex(data[2:]),
+        data[2:],
     ]
     encoded_data = rlp.encode(fields)
     mm = b"\x69" + encoded_data
