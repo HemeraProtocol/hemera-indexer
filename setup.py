@@ -9,7 +9,6 @@ def read(fname):
 
 long_description = read('README.md') if os.path.isfile("README.md") else ""
 
-
 setup(
     name='hemera-indexer',
     version='0.0.1',
@@ -42,10 +41,10 @@ setup(
         'base58',
         'requests',
         "sqlalchemy",
-        "psycopg2",
+        "psycopg2-binary==2.9.9",
         "alembic",
         "pandas",
-        "numpy<2.0"
+        "numpy==1.26.0"
     ],
     extras_require={
         'streaming': [
@@ -66,7 +65,39 @@ setup(
         ],
         'dev': [
             'pytest~=4.3.0'
-        ]
+        ],
+        'socialscan-api':
+            [
+                'firebase-admin==6.1.0',
+                'Flask==2.1.3',
+                'Flask-Caching==2.0.1',
+                'Flask-Cors==3.0.9',
+                'flask-limiter==2.6.3',
+                'flask-restx==0.5.1',
+                'Flask-SQLAlchemy==2.5.1',
+                'sentry-sdk==1.9.5',
+                'blinker==1.4',
+                'SQLAlchemy==1.4.46',
+                'Werkzeug==2.0.1',
+                'openpyxl==3.0.7',
+                'ShopifyAPI==12.2.0',
+                'psycopg2-binary==2.9.9',
+                'protobuf==4.21.6',
+                'pycryptodome==3.17',
+                'boto3==1.26.107',
+                'bcrypt==4.0.1',
+                'redis==4.5.4',
+                'urllib3==1.26.12',
+                'pytz~=2023.3',
+                'PyJWT==2.7.0',
+                'gunicorn==21.2.0',
+                'chardet==5.2.0',
+                'openai==1.29.0',
+                'hexbytes==0.3.1',
+                'langchain-core==0.1.52',
+                'langchain-openai==0.1.6',
+                'dataclass-wizard==0.22.3'
+            ]
     },
     entry_points={
         'console_scripts': [

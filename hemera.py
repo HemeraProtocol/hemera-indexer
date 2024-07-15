@@ -1,3 +1,3 @@
-from cli import cli
+from indexer.cli import cli
 
 cli()
