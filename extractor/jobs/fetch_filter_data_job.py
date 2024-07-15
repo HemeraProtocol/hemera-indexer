@@ -160,6 +160,7 @@ class FetchFilterDataJob(BaseJob):
                 if data['type'] not in self._data_buff.keys():
                     self._data_buff[data['type']] = []
                 self._data_buff[data['type']].append(data)
+        print(self._data_buff)
 
     def _collect(self):
         self._batch_work_executor.execute(
