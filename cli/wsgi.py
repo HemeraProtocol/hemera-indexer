@@ -1,4 +1,5 @@
 """Web Server Gateway Interface"""
+import click
 
 ##################
 # FOR PRODUCTION
@@ -6,7 +7,9 @@
 ####################
 from socialscan_api.app.main import app
 
-if __name__ == "__main__":
+
+@click.command(context_settings=dict(help_option_names=['-h', '--help']))
+def wsgi():
     ####################
     # FOR DEVELOPMENT
     ####################
