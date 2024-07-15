@@ -78,8 +78,8 @@ class ExportBlocksJob(BaseJob):
         self._item_exporter.export_items(export_items)
 
 
-def blocks_rpc_requests(make_request, block_number_batch, is_batch):
-    block_number_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, True))
+def blocks_rpc_requests(make_request, block_number_batch, is_batch, include_transactions=True):
+    block_number_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, include_transactions))
 
     if is_batch:
         response = make_request(params=json.dumps(block_number_rpc))

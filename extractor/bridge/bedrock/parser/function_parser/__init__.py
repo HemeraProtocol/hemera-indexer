@@ -4,15 +4,15 @@ from typing import Callable, List, Optional, cast
 
 from web3.types import ABIFunction
 
-from extractor.signature import function_abi_to_4byte_selector_str
+from extractor.bridge.signature import function_abi_to_4byte_selector_str
 
 
 class BedRockFunctionCallType(Enum):
-    NATIVE_DEPOSIT_ETH = 0
+    NATIVE_BRIDGE_ETH = 0
 
-    DEPOSIT_ETH = 1
-    DEPOSIT_ERC20 = 2
-    DEPOSIT_ERC721 = 3
+    BRIDGE_ETH = 1
+    BRIDGE_ERC20 = 2
+    BRIDGE_ERC721 = 3
 
     NORMAL_CROSS_CHAIN_CALL = 7
 

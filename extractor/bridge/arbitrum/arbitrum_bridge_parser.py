@@ -87,7 +87,7 @@ class ArbitrumBridgeExtractor:
             (destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress,
              callValueRefundAddress,
              maxFeePerGas, dataBytes, l1TokenId, l1TokenAmount) = un_marshal_inbox_message_delivered_data(kind,
-                                                                                                          inbox_message.data)
+                                                                                                          inbox_message.message)
             l2_chain_id = env["l2_chain_id"]
             if kind == 9:
                 l2_tx_hash = calculate_submit_retryable_id(

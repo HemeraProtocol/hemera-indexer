@@ -5,12 +5,12 @@ import hexbytes
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIFunction
 
-from extractor.bridge.bedrock.function_parser import (
+from extractor.bridge.bedrock.parser.function_parser import (
     BedRockFunctionCallType,
     BridgeRemoteFunctionCallInfo,
     RemoteFunctionCallDecoder,
 )
-from extractor.signature import function_abi_to_4byte_selector_str
+from extractor.bridge.signature import function_abi_to_4byte_selector_str
 
 FINALIZE_BRIDGE_ETH = cast(
     ABIFunction,
@@ -65,7 +65,7 @@ def decode_function(input_data: bytes) -> BridgeRemoteFunctionCallInfo:
         remote_token_address=None,
         amount=function_info.get("_amount"),
         extra_info={},
-        remote_function_call_type=BedRockFunctionCallType.DEPOSIT_ETH.value,
+        remote_function_call_type=BedRockFunctionCallType.BRIDGE_ETH.value,
     )
 
 

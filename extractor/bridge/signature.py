@@ -6,7 +6,7 @@ from eth_utils import event_abi_to_log_topic, function_abi_to_4byte_selector
 from web3._utils.abi import exclude_indexed_event_inputs, get_indexed_event_inputs, named_tree
 from web3.types import ABIEvent, ABIFunction
 
-from extractor.types import Log
+from extractor.bridge.types import Log
 
 
 def bytes_to_hex_str(b: bytes) -> str:

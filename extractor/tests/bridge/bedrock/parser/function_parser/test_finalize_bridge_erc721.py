@@ -1,11 +1,11 @@
 import pytest
 
-from extractor.bridge.bedrock.function_parser import BedRockFunctionCallType
+from extractor.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
 
 
 @pytest.mark.util
 def test_bedrock_finalize_bridge_erc721_decoder():
-    from extractor.bridge.bedrock.function_parser.finalize_bridge_erc721 import decode_function
+    from extractor.bridge.bedrock.parser.function_parser.finalize_bridge_erc721 import decode_function
 
     bridge_info = decode_function(
         bytearray.fromhex(
@@ -21,4 +21,4 @@ def test_bedrock_finalize_bridge_erc721_decoder():
 
     assert bridge_info.amount == 1
     assert bridge_info.extra_info == {"token": {"type": "ERC721", "token_ids": [281492156579894], "amounts": [1]}}
-    assert bridge_info.remote_function_call_type == BedRockFunctionCallType.DEPOSIT_ERC721.value
+    assert bridge_info.remote_function_call_type == BedRockFunctionCallType.BRIDGE_ERC721.value
