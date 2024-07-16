@@ -136,7 +136,6 @@ def dataclass_to_dict(instance: Base) -> Dict[str, Any]:
         raise ValueError("dataclass_to_dict() should be called on dataclass instances only.")
 
     result = asdict(instance)
-    result["_type"] = instance.type
 
     for key, value in result.items():
         if isinstance(value, list):

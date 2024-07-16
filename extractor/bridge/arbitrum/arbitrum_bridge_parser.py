@@ -111,6 +111,8 @@ class ArbitrumL1BridgeDataExtractor(Extractor):
         for msg_num, inbox_message in inbox_message_delivered_event_map.items():
             token_transaction = tnx_input_map.get(inbox_message.transaction_hash)
             message_deliver = message_delivered_event_map.get(msg_num)
+            if not message_deliver:
+                continue
             kind = message_deliver.kind if message_deliver.kind else -1
             (destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress,
              callValueRefundAddress,
@@ -195,6 +197,13 @@ class ArbitrumL1BridgeDataExtractor(Extractor):
                 dic["type"] = L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN
                 bridge_call_triggered_transaction.append(dic)
         result += bridge_call_triggered_transaction
+
+        tnx_batches = map(lambda x: parse_sequencer_batch_delivered(x, self.contract_set), transactions)
+        state_create_batches = map(lambda x: parse_node_created(x, self.contract_set), tnx_batches)
+        state_confirm_batches = map(lambda x: parse_node_confirmed(x, self.contract_set), tnx_batches)
+        result += tnx_batches
+        result += state_create_batches
+        result += state_confirm_batches
         return result
 
 
@@ -272,10 +281,4 @@ class ArbitrumL2BridgeDataExtractor(Extractor):
         result += ticket_created
         result += l2_to_l1
         result += bridge_tokens
-        tnx_batches = map(lambda x: parse_sequencer_batch_delivered(x, self.contract_set), transactions)
-        state_create_batches = map(lambda x: parse_node_created(x, self.contract_set), tnx_batches)
-        state_confirm_batches = map(lambda x: parse_node_confirmed(x, self.contract_set), tnx_batches)
-        result += tnx_batches
-        result += state_create_batches
-        result += state_confirm_batches
         return result

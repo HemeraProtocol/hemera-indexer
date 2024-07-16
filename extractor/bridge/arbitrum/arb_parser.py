@@ -4,6 +4,7 @@
 # @Author  will
 # @File  arb_parser.py
 # @Brief
+import re
 import json
 from web3 import Web3
 from web3._utils.contracts import decode_transaction_data
@@ -11,6 +12,7 @@ from web3.types import ABIEvent, ABIFunction
 from typing import Any, Dict, cast
 from dataclasses import dataclass
 from extractor.bridge.arbitrum.arb_conf import env
+from extractor.bridge.types import dataclass_to_dict
 
 
 from extractor.bridge.signature import event_log_abi_to_topic, decode_log, function_abi_to_4byte_selector_str
@@ -97,8 +99,22 @@ class Constants:
     ZERO_ADDRESS_32 = bytes(32)
 
 
+class ArbBase:
+
+    @property
+    def type(self) -> str:
+        """Return the class name in snake_case."""
+        return self._to_snake_case(self.__class__.__name__)
+
+    @staticmethod
+    def _to_snake_case(name: str) -> str:
+        """Convert a CamelCase name to snake_case."""
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+
 @dataclass
-class MessageDeliveredData:
+class MessageDeliveredData(ArbBase):
     msg_hash: str
     block_number: int
     block_timestamp: int
@@ -120,14 +136,14 @@ class MessageDeliveredData:
 
 
 @dataclass
-class InboxMessageDeliveredData:
+class InboxMessageDeliveredData(ArbBase):
     transaction_hash: str
     msg_number: int
     data: str
 
 
 @dataclass
-class TicketCreatedData:
+class TicketCreatedData(ArbBase):
     msg_hash: str
     transaction_hash: str
     block_number: int
@@ -138,7 +154,7 @@ class TicketCreatedData:
 
 
 @dataclass
-class BridgeCallTriggeredData:
+class BridgeCallTriggeredData(ArbBase):
     msg_hash: str
     l1_transaction_hash: str
     l1_block_number: int
@@ -151,13 +167,9 @@ class BridgeCallTriggeredData:
     value: int
     data: str
 
-    @property
-    def type(self):
-        return "bridgeCall"
-
 
 @dataclass
-class L2ToL1Tx_64:
+class L2ToL1Tx_64(ArbBase):
     msg_hash: str
     l2_block_number: int
     l2_block_timestamp: int
@@ -178,14 +190,14 @@ class L2ToL1Tx_64:
 
 
 @dataclass
-class TransactionToken:
+class TransactionToken(ArbBase):
     transaction_hash: str
     l1Token: str
     amount: int
 
 
 @dataclass
-class ArbitrumTransactionBatch:
+class ArbitrumTransactionBatch(ArbBase):
     batch_index: int
     l1_block_number: int
     l1_block_timestamp: int
@@ -195,9 +207,13 @@ class ArbitrumTransactionBatch:
     start_block_number: str
     transaction_count: int
 
+    @property
+    def type(self) -> str:
+        return super().type
+
 
 @dataclass
-class ArbitrumStateBatchConfirmed:
+class ArbitrumStateBatchConfirmed(ArbBase):
     node_num: int
     block_hash: str
     send_root: str
@@ -211,7 +227,7 @@ class ArbitrumStateBatchConfirmed:
 
 
 @dataclass
-class ArbitrumStateBatchCreated:
+class ArbitrumStateBatchCreated(ArbBase):
     node_num: int
     create_l1_block_number: int
     create_l1_block_timestamp: int
@@ -222,7 +238,7 @@ class ArbitrumStateBatchCreated:
 
 
 @dataclass
-class BridgeToken:
+class BridgeToken(ArbBase):
     l1_token_address: str
     l2_token_address: str
 
@@ -514,7 +530,7 @@ def parse_sequencer_batch_delivered(transaction, contract_set) -> list:
                 end_block_number=newMessageCount + transaction_batch_offset,
                 start_block_number=prevMessageCount + transaction_batch_offset + 1,
             )
-            res.append(at)
+            res.append(dataclass_to_dict(at))
     return res
 
 
@@ -535,7 +551,7 @@ def parse_node_confirmed(transaction, contract_set) -> list:
                 end_block_number=None,
                 transaction_count=None
             )
-            res.append(asb)
+            res.append(dataclass_to_dict(asb))
     return res
 
 
@@ -552,7 +568,7 @@ def parse_node_created(transaction, contract_set) -> list:
                 parent_node_hash=log.topic2,
                 node_hash=log.topic3,
             )
-            res.append(asb)
+            res.append(dataclass_to_dict(asb))
     return res
 
 
@@ -613,5 +629,5 @@ def parse_bridge_call_triggered(transaction, contract_set):
                 value=event.get("value"),
                 data=event.get("data")
             )
-            res.append(bc)
+            res.append(dataclass_to_dict(bc))
     return res
