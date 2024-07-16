@@ -198,9 +198,10 @@ class ArbitrumL1BridgeDataExtractor(Extractor):
                 bridge_call_triggered_transaction.append(dic)
         result += bridge_call_triggered_transaction
 
-        tnx_batches = map(lambda x: parse_sequencer_batch_delivered(x, self.contract_set), transactions)
-        state_create_batches = map(lambda x: parse_node_created(x, self.contract_set), tnx_batches)
-        state_confirm_batches = map(lambda x: parse_node_confirmed(x, self.contract_set), tnx_batches)
+        tnx_batches = [item for x in transactions for item in parse_sequencer_batch_delivered(x, self.contract_set)]
+        state_create_batches = [item for x in transactions for item in parse_node_created(x, self.contract_set)]
+        state_confirm_batches = [item for x in transactions for item in parse_node_confirmed(x, self.contract_set)]
+
         result += tnx_batches
         result += state_create_batches
         result += state_confirm_batches

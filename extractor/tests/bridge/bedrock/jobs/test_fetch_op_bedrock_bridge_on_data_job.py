@@ -13,7 +13,8 @@ from utils.thread_local_proxy import ThreadLocalProxy
 @pytest.mark.util
 def test_fetch_op_bedrock_bridge_on_data():
     op_bedrock_job = FetchFilterDataJob(
-        index_keys=['block', 'transaction', 'receipt', 'log', L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1,
+        index_keys=['block', 'transaction', 'receipt', 'log',
+                    L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1,
                     L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN,
                     L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED],
         start_block=20273057,

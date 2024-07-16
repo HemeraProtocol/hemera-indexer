@@ -139,7 +139,6 @@ class FetchFilterDataJob(BaseJob):
         for timestamp, block_number in ts_dict.items():
             self._data_buff['block_ts_mapping'].append(format_block_ts_mapper(timestamp, block_number))
 
-
         self._data_buff['enriched_transaction'] = [format_bridge_transaction_data(transaction)
                                                        for transaction in enrich_blocks_timestamp
                                                        (self._data_buff['formated_block'],
@@ -152,14 +151,10 @@ class FetchFilterDataJob(BaseJob):
 
         transactions = (self._data_buff['enriched_transaction'])
 
-        self._data_buff.clear()
         extract_data = self._extractor.extract_bridge_data(transactions)
 
         for data in extract_data:
-            if len(data) > 0:
-                if data['type'] not in self._data_buff.keys():
-                    self._data_buff[data['type']] = []
-                self._data_buff[data['type']].append(data)
+            self._collect_item(data)
         print(self._data_buff)
 
     def _collect(self):
@@ -190,6 +185,5 @@ class FetchFilterDataJob(BaseJob):
 
 
     def _export(self):
-        export_items = self._extract_from_buff(['block_ts_mapping'])
+        export_items = self._extract_from_buff(keys= self._index_keys)
         self._item_exporter.export_items(export_items)
-

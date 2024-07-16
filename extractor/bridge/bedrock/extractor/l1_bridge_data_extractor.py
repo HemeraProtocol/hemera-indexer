@@ -64,7 +64,7 @@ class L1BridgeDataExtractor(Extractor):
         if self.optimism_portal_proxy:
             l1_to_l2_deposit_transactions = [
                 {
-                    "type": L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1,
+                    "item": L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1,
                     "msg_hash": deposited_transaction.msg_hash,
                     "version": deposited_transaction.version,
                     "index": deposited_transaction.index,
@@ -91,7 +91,7 @@ class L1BridgeDataExtractor(Extractor):
 
             l2_to_l1_withdraw_transactions = [
                 {
-                    "type": L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN,
+                    "item": L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN,
                     "msg_hash": proven_transaction.msg_hash,
                     "l1_proven_block_number": proven_transaction.block_number,
                     "l1_proven_block_timestamp": proven_transaction.block_timestamp,
@@ -111,7 +111,7 @@ class L1BridgeDataExtractor(Extractor):
 
             l2_to_l1_withdraw_transactions += [
                 {
-                    "type": L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED,
+                    "item": L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED,
                     "msg_hash": finalized_transaction.msg_hash,
                     "l1_block_number": finalized_transaction.block_number,
                     "l1_block_timestamp": finalized_transaction.block_timestamp,
@@ -134,7 +134,7 @@ class L1BridgeDataExtractor(Extractor):
         if self.optimism_portal_proxy:
             op_state_batches = [
                 {
-                "type": "op_state_batches",
+                "item": "op_state_batches",
                 "batch_index": op_state_batch.batch_index,
                 "l1_block_number": op_state_batch.l1_block_number,
                 "l1_block_timestamp": op_state_batch.l1_block_timestamp,

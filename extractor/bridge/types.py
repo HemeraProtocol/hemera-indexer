@@ -1,14 +1,23 @@
 from dataclasses import asdict, dataclass, field, is_dataclass
 from typing import Any, Dict, List, Optional, Union, get_args, get_origin
+import re
 
 from hexbytes import HexBytes
 
 
 @dataclass
 class Base(object):
-    @property
-    def type(self):
-        raise NotImplementedError
+
+    @classmethod
+    def type(cls) -> str:
+        """Return the class name in snake_case."""
+        return cls._to_snake_case(cls.__name__)
+
+    @staticmethod
+    def _to_snake_case(name: str) -> str:
+        """Convert a CamelCase name to snake_case."""
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
 @dataclass
@@ -26,9 +35,6 @@ class Log(Base):
     topic2: Optional[str] = None
     topic3: Optional[str] = None
 
-    @property
-    def type(self):
-        return "log"
 
     def get_bytes_topics(self) -> HexBytes:
         topics = ""
@@ -136,6 +142,7 @@ def dataclass_to_dict(instance: Base) -> Dict[str, Any]:
         raise ValueError("dataclass_to_dict() should be called on dataclass instances only.")
 
     result = asdict(instance)
+    result["item"] = instance.type()
 
     for key, value in result.items():
         if isinstance(value, list):

@@ -43,7 +43,7 @@ class L2BridgeDataExtractor(Extractor):
 
         relay_transactions = [
             {
-                "type": L1_TO_L2_DEPOSITED_TRANSACTION_ON_L2,
+                "item": L1_TO_L2_DEPOSITED_TRANSACTION_ON_L2,
                 "msg_hash": relay_transaction.msg_hash,
                 "l2_block_number": relay_transaction.block_number,
                 "l2_block_timestamp": relay_transaction.block_timestamp,
@@ -63,7 +63,7 @@ class L2BridgeDataExtractor(Extractor):
 
         l2_to_l1_withdrawal_transactions = [
             {
-                "type": L2_TO_L1_WITHDRAWN_TRANSACTION_ON_l2,
+                "item": L2_TO_L1_WITHDRAWN_TRANSACTION_ON_l2,
                 "msg_hash": withdrawn_transaction.withdrawal_hash,
                 "version": withdrawn_transaction.version,
                 "index": withdrawn_transaction.index,
