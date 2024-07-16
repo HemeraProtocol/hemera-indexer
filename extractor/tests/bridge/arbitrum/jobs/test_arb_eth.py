@@ -10,8 +10,7 @@ from extractor.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch, Arbit
     ArbitrumStateBatchConfirmed
 from extractor.bridge.arbitrum.arbitrum_bridge_parser import ArbitrumL1BridgeDataExtractor, \
     ArbitrumL2BridgeDataExtractor
-from extractor.bridge.items import L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN, \
-    ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1
+from extractor.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1
 from extractor.jobs.fetch_filter_data_job import FetchFilterDataJob
 from utils.provider import get_provider_from_uri
 from utils.thread_local_proxy import ThreadLocalProxy

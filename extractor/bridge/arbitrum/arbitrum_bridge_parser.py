@@ -199,6 +199,60 @@ class ArbitrumL1BridgeDataExtractor(Extractor):
                     '_type': 1
                 }
                 arb_deposit_lis.append(qdt)
+            elif kind == 11:
+                l2_tx_hash = calculate_deposit_tx_id(
+                    l2_chain_id,
+                    msg_num,
+                    message_deliver.sender,
+                    message_deliver.from_address,
+                    msgValue
+                )
+                qdt = {
+                    "item": ARB_L1ToL2_ON_L1,
+                    'msg_hash': l2_tx_hash,
+                    'index': msg_num,
+                    'l1_block_number': message_deliver.block_number,
+                    'l1_block_timestamp': message_deliver.block_timestamp,
+                    'l1_block_hash': message_deliver.block_hash,
+                    'l1_transaction_hash': message_deliver.transaction_hash,
+                    'l1_from_address': message_deliver.from_address,
+                    'l1_to_address': message_deliver.to_address,
+                    'l1_token_address': strip_leading_zeros(l1TokenId) if l1TokenId else None,
+                    'l2_token_address': None,
+                    'from_address': message_deliver.bridge_from_address,
+                    'to_address': message_deliver.bridge_to_address,
+                    'amount': l1TokenAmount,
+                    'extra_info': message_deliver.extra_info,
+                    '_type': 1
+                }
+                arb_deposit_lis.append(qdt)
+            elif kind == 3:
+                l2_tx_hash = calculate_deposit_tx_id(
+                    l2_chain_id,
+                    msg_num,
+                    message_deliver.sender,
+                    message_deliver.from_address,
+                    msgValue
+                )
+                qdt = {
+                    "item": ARB_L1ToL2_ON_L1,
+                    'msg_hash': l2_tx_hash,
+                    'index': msg_num,
+                    'l1_block_number': message_deliver.block_number,
+                    'l1_block_timestamp': message_deliver.block_timestamp,
+                    'l1_block_hash': message_deliver.block_hash,
+                    'l1_transaction_hash': message_deliver.transaction_hash,
+                    'l1_from_address': message_deliver.from_address,
+                    'l1_to_address': message_deliver.to_address,
+                    'l1_token_address': strip_leading_zeros(l1TokenId) if l1TokenId else None,
+                    'l2_token_address': None,
+                    'from_address': message_deliver.bridge_from_address,
+                    'to_address': message_deliver.bridge_to_address,
+                    'amount': l1TokenAmount,
+                    'extra_info': message_deliver.extra_info,
+                    '_type': 1
+                }
+                arb_deposit_lis.append(qdt)
         result += arb_deposit_lis
         # l2 -> l1
         bridge_call_triggered_transaction = []
