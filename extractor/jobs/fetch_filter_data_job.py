@@ -155,7 +155,6 @@ class FetchFilterDataJob(BaseJob):
 
         for data in extract_data:
             self._collect_item(data)
-        print(self._data_buff)
 
     def _collect(self):
         self._batch_work_executor.execute(

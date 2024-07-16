@@ -32,19 +32,19 @@ def calculate_submit_retryable_id(
 ):
     r_dest_address = dest_address if dest_address != "0x0000000000000000000000000000000000000000" else "0x"
     fields = [
-        (l2_chain_id),
+        l2_chain_id,
         convert_int_bytes(message_number, 32),
         bytes.fromhex(from_address[2:]),
-        (l1_base_fee),
-        (l1_value),
-        (max_fee_per_gas),
-        (gas_limit),
+        l1_base_fee,
+        l1_value,
+        max_fee_per_gas,
+        gas_limit,
         bytes.fromhex(r_dest_address[2:]),
-        (l2_call_value),
+        l2_call_value,
         bytes.fromhex(call_value_refund_address[2:]),
-        (max_submission_fee),
+        max_submission_fee,
         bytes.fromhex(excess_fee_refund_address[2:]),
-        data[2:],
+        bytes.fromhex(data[2:]),
     ]
     encoded_data = rlp.encode(fields)
     mm = b"\x69" + encoded_data
@@ -53,11 +53,11 @@ def calculate_submit_retryable_id(
 
 def calculate_deposit_tx_id(l2_chain_id, message_number, from_address, to_address, value):
     fields = [
-        (l2_chain_id),
-        convert_int_bytes((message_number), 32),
+        l2_chain_id,
+        convert_int_bytes(message_number, 32),
         bytes.fromhex(from_address[2:]),
         bytes.fromhex(to_address[2:]),
-        (value),
+        value,
     ]
 
     encoded_data = rlp.encode(fields)

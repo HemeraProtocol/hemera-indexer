@@ -2,7 +2,8 @@ from sqlalchemy import Column, BIGINT, TIMESTAMP, NUMERIC, INT, JSON, TEXT, func
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import declarative_base
 
-from extractor.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch
+from extractor.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch, ArbitrumStateBatchConfirmed, \
+    ArbitrumStateBatchCreated
 
 Base = declarative_base()
 
@@ -131,8 +132,10 @@ L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED = "l2_to_l1_transactions_op_withdrawn_f
 OP_STATE_BATCH_TRANSACTION = "op_state_batch_transaction"
 L1_TO_L2_DEPOSITED_TRANSACTION_ON_L2 = "l1_to_l2_transactions_op_deposited_on_l2"
 L2_TO_L1_WITHDRAWN_TRANSACTION_ON_l2 = "l2_to_l1_transactions_op_withdrawn_on_l2"
-ARB_TRANSACTION_BATCH = ArbitrumTransactionBatch.type()
-ARB_STATE_BATCH = "arbitrum_state_batch"
+ARB_L1ToL2_ON_L1 = "arbitrum_l1_to_l2_on_l1"
+ARB_L1ToL2_ON_L2 = "arbitrum_l1_to_l2_on_l2"
+ARB_L2ToL1_ON_L1 = "arbitrum_l2_to_l1_on_l1"
+ARB_L2ToL1_ON_L2 = "arbitrum_l2_to_l1_on_l2"
 
 items = {
     L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1: L1ToL2BridgeTransactions,
@@ -141,8 +144,13 @@ items = {
     OP_STATE_BATCH_TRANSACTION: StateBatches,
     L1_TO_L2_DEPOSITED_TRANSACTION_ON_L2: L1ToL2BridgeTransactions,
     L2_TO_L1_WITHDRAWN_TRANSACTION_ON_l2: L2ToL1BridgeTransactions,
-    ARB_TRANSACTION_BATCH: ArbitrumStateBatches,
-    ARB_STATE_BATCH: ArbitrumStateBatches,
+    ArbitrumTransactionBatch.type(): ArbitrumTransactionBatches,
+    ArbitrumStateBatchCreated.type(): ArbitrumStateBatches,
+    ArbitrumStateBatchConfirmed.type(): ArbitrumStateBatches,
+    ARB_L1ToL2_ON_L1: L1ToL2BridgeTransactions,
+    ARB_L1ToL2_ON_L2: L1ToL2BridgeTransactions,
+    ARB_L2ToL1_ON_L1: L2ToL1BridgeTransactions,
+    ARB_L2ToL1_ON_L2: L2ToL1BridgeTransactions,
 }
 
 def format_bridge_data(dict):

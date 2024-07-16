@@ -6,7 +6,7 @@
 # @Brief
 import pytest
 from extractor.bridge.arbitrum.arb_rlp import calculate_submit_retryable_id, calculate_deposit_tx_id
-
+from web3 import Web3
 @pytest.mark.bridge
 def test_arbitrum_rlp(caplog):
     l2_chain_id = 42161
@@ -30,6 +30,8 @@ def test_arbitrum_rlp(caplog):
         max_submission_fee,
         excess_fee_refund_address, call_value_refund_address, gas_limit, max_fee_per_gas, data
     )
+    assert Web3.keccak(hexstr=mid).hex() == "0x8ba13904639c7444d8578cc582a230b8501c9f0f7903f5069d276fdd3a7dea44"
+
     assert res == "0x8ba13904639c7444d8578cc582a230b8501c9f0f7903f5069d276fdd3a7dea44"
     print("ok!")
 

@@ -229,11 +229,19 @@ ZERO_ADDRESS_32 = bytes(32)
 ZERO_ADDRESS = bytes(20)
 
 
-def strip_leading_zeros(byte_array: bytes) -> bytes:
+def strip_bytes_leading_zeros(byte_array: bytes) -> bytes:
     if byte_array != ZERO_ADDRESS_32:
         return byte_array.lstrip(b'\x00')
     else:
         return ZERO_ADDRESS
+
+
+def strip_leading_zeros(hex_str: str) -> str:
+    if not hex_str.startswith('0x'):
+        raise ValueError(f'hex_str should start with 0x not {hex_str}')
+    bs = Web3.to_bytes(hexstr=hex_str)
+    bs = strip_bytes_leading_zeros(bs)
+    return Web3.to_hex(bs)
 
 
 def parse_inbox_message_delivered(transaction, contract_set):
@@ -298,7 +306,7 @@ def parse_ticket_created_event(transaction, contract_set):
         if log.topic0 == TICKET_CREATED_EVENT_SIG and log.address in contract_set:
             event = decode_log(TICKET_CREATED_EVENT, log)
             tcd = TicketCreatedData(
-                msg_hash=event.get("ticketId"),
+                msg_hash=Web3.to_hex(event.get("ticketId")),
                 transaction_hash=transaction.hash,
                 block_number=transaction.block_number,
                 block_timestamp=transaction.block_timestamp,
@@ -332,15 +340,15 @@ def un_marshal_tx_to_l1(data):
         return selector, _token, _from, _to, _amount, restData
     selector = data[offset: offset + 4]
     offset += 4
-    _token = data[offset, offset + 32]
+    _token = Web3.to_hex(data[offset: offset + 32])
     offset += 32
-    _from = data[offset, offset + 32]
+    _from = Web3.to_hex(data[offset: offset + 32])
     offset += 32
-    _to = data[offset, offset + 32]
+    _to = Web3.to_hex(data[offset: offset + 32])
     offset += 32
-    _amount = data[offset, offset + 32]
+    _amount = int.from_bytes(data[offset: offset + 32], 'big')
     offset += 32
-    restData = data[offset, data.length]
+    restData = Web3.to_hex(data[offset:])
     return selector, _token, _from, _to, _amount, restData
 
 
@@ -360,9 +368,9 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
     excessFeeRefundAddress = ZERO_ADDRESS
     callValueRefundAddress = ZERO_ADDRESS
     maxFeePerGas = 0
-    l1TokenId = ZERO_ADDRESS
+    l1TokenId = None
     l1TokenAmount = 0
-    dataBytes = b""
+    dataBytes = "0x"
     if kind == Constants.INITIALIZATION_MSG_TYPE:
         """
            * bytes memory initMsg = abi.encodePacked(
@@ -390,7 +398,7 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
         offset += 32
         msgValue = data[offset: offset + 32]
         offset += 32
-        dataBytes = data[offset: data.length]
+        dataBytes = Web3.to_hex(data[offset: data.length])
     elif kind == Constants.L2MessageType_unsignedContractTx:
         gasLimit = data[offset: offset + 32]
         offset += 32
@@ -400,7 +408,7 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
         offset += 32
         msgValue = data[offset: offset + 32]
         offset += 32
-        dataBytes = data[offset: data.length]
+        dataBytes = Web3.to_hex(data[offset: data.length])
     elif kind == Constants.L1MessageType_submitRetryableTx:
         destAddress = Web3.to_hex(data[offset: offset + 32])
         offset += 32
@@ -420,13 +428,14 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
         offset += 32
         dataLength = int.from_bytes(data[offset: offset + 32], 'big')
         offset += 32
-        offset += 4
-        l1TokenId = Web3.to_hex(data[offset: offset + 32])
-        offset -= 4
-        dataBytes = data[offset: offset + dataLength]
-        offset += 100
-        if (l1TokenId and offset < len(data)):
-            l1TokenAmount = data[offset: offset + 32]
+        # offset += 4
+        # l1TokenId = Web3.to_hex(data[offset: offset + 32])
+        # offset -= 4
+        dataBytes = Web3.to_hex(data[offset: offset + dataLength])
+
+        restData = data[offset:]
+        if (68 <= len(restData)):
+            l1TokenAmount = int.from_bytes(restData[36: 68], 'big')
     elif kind == Constants.L2_MSG:
         pass
     elif kind == Constants.L1MessageType_ethDeposit:
@@ -459,10 +468,10 @@ def parse_l2_to_l1_tx_64_event(transaction, contract_set):
                 l2_transaction_hash=transaction.hash,
                 l2_from_address=transaction.from_address,
                 l2_to_address=transaction.to_address,
-                l2_token_address=_token,
+                l2_token_address=strip_leading_zeros(_token),
                 caller=event.get("caller"),
                 destination=event.get("destination"),
-                hash=hex(int(event.get("hash"))),
+                hash=hex(event.get("hash")),
                 position=event.get("position"),
                 arbBlockNum=event.get("arbBlockNum"),
                 ethBlockNum=event.get("ethBlockNum"),
@@ -571,7 +580,7 @@ def parse_bridge_token(transaction, contract_set) -> list:
                 l1_token_address=l1_token_address,
                 l2_token_address=l2_token_address,
             )
-            res.append(br)
+            res.append(dataclass_to_dict(br))
     return res
 
 
@@ -584,7 +593,7 @@ def parse_outbound_transfer_function(transactions, contract_set):
                 decoded_input = decode_transaction_data(OUT_BOUND_TRANSFER_FUNCTION, tnx.input)
                 tt = TransactionToken(
                     transaction_hash=tnx.hash,
-                    l1Token=decoded_input["_l1Token"],
+                    l1Token=decoded_input['_l1Token'],
                     amount=decoded_input["_amount"],
                 )
                 res.append(tt)
@@ -611,5 +620,5 @@ def parse_bridge_call_triggered(transaction, contract_set):
                 value=event.get("value"),
                 data=event.get("data")
             )
-            res.append(dataclass_to_dict(bc))
+            res.append(bc)
     return res
