@@ -6,6 +6,7 @@ from common.models.tokens import Tokens
 from common.models.wallet_addresses import WalletAddresses
 from common.models.wallet_addresses import WalletAddresses as ExplorerWalletAddresses
 from common.utils.config import get_config
+from common.utils.db_utils import build_entities
 from socialscan_api.app.cache import cache
 from socialscan_api.app.contract.contract_verify import get_contract_names
 from socialscan_api.app.ens.ens import ENSClient
@@ -145,3 +146,18 @@ def get_ens_mapping(wallet_address_list):
         for address in addresses:
             address_map[address.address] = address.ens_name
     return address_map
+
+
+def get_wallet_addresses_by_ens_name(ens_name, columns='*', limit=1):
+    entities = build_entities(WalletAddresses, columns)
+    wallets = (
+        db.session.query(WalletAddresses)
+        .with_entities(*entities)
+        .filter(
+            WalletAddresses.ens_name.ilike(f"%{ens_name}%"),
+        )
+        .limit(limit)
+        .all()
+    )
+
+    return wallets

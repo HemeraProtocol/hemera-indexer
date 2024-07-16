@@ -35,13 +35,6 @@ def validate_input(address, compiler_type, compiler_version):
         raise APIError("Missing base required data", code=400)
 
 
-def get_contract_by_address(address: str):
-    contract = db.session().query(Contracts).filter_by(address=address).first()
-    if not contract:
-        raise APIError("The address is not a contract", code=400)
-    return contract
-
-
 def check_contract_verification_status(contract):
     if contract.is_verified:
         raise APIError("This contract is already verified", code=400)

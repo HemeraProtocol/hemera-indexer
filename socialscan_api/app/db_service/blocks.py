@@ -1,24 +1,62 @@
 from common.models import db
 from common.models.blocks import Blocks
+from common.utils.db_utils import build_entities
 
 
-def get_last_block():
-    lastest_block = (
+def get_last_block(columns='*'):
+    entities = build_entities(Blocks, columns)
+
+    latest_block = (
         db.session.query(Blocks)
-        .with_entities(Blocks.number, Blocks.timestamp)
+        .with_entities(*entities)
         .order_by(Blocks.number.desc())
         .first()
     )
 
-    return lastest_block
+    return latest_block
 
 
-def get_block_by_number(block_number: int):
+def get_block_by_number(block_number: int, columns='*'):
+    entities = build_entities(Blocks, columns)
+
     block = (
         db.session.query(Blocks)
-        .with_entities(Blocks.number, Blocks.timestamp)
+        .with_entities(*entities)
         .filter(Blocks.number == block_number)
         .first()
     )
 
     return block
+
+
+def get_block_by_hash(hash, columns='*'):
+    bytes_hash = bytes.fromhex(hash[2:])
+    entities = build_entities(Blocks, columns)
+
+    results = (
+        db.session.query(Blocks)
+        .with_entities(*entities)
+        .filter(Blocks.hash == bytes_hash)
+        .first()
+    )
+
+    return results
+
+
+def get_blocks_by_condition(filter_condition=None, columns='*', limit=None, offset=None):
+    entities = build_entities(Blocks, columns)
+
+    statement = db.session.query(Blocks).with_entities(*entities)
+
+    if filter_condition:
+        statement = statement.filter(filter_condition)
+
+    statement = statement.order_by(Blocks.number.desc())
+
+    if limit:
+        statement = statement.limit(limit)
+
+    if offset:
+        statement = statement.offset(offset)
+
+    return statement.all()

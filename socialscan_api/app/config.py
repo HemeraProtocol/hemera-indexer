@@ -149,14 +149,23 @@ class AppConfig(YAMLWizard):
             ),
             "db_read_sql_alchemy_database_config": DatabaseConfig(
                 host=db_creds.get("HOST", "localhost"),
+                port=int(db_creds.get("PORT", "5432")),
+                username=db_creds.get("USER", "admin"),
+                password=db_creds.get("PASSWD", "admin"),
                 database=db_creds["DB_NAME"] or "default",
             ),
             "db_write_sql_alchemy_database_config": DatabaseConfig(
                 host=db_creds["WRITE_HOST"],
+                port=int(db_creds.get("PORT", "5432")),
+                username=db_creds.get("USER", "admin"),
+                password=db_creds.get("PASSWD", "admin"),
                 database=db_creds["DB_NAME"] or "default",
             ),
             "db_common_sql_alchemy_database_config": DatabaseConfig(
                 host=db_creds["COMMON_HOST"],
+                port=int(db_creds.get("PORT", "5432")),
+                username=db_creds.get("USER", "admin"),
+                password=db_creds.get("PASSWD", "admin"),
                 database=db_creds["DB_NAME"],
             ),
             "api_modules": (

@@ -20,10 +20,10 @@ from common.models import db
 from common.models.blocks import Blocks
 from common.models.contract_internal_transactions import ContractInternalTransactions
 from common.models.contracts import Contracts
-from common.models.daily_address_aggreggates import DailyAddressesAggregates
-from common.models.daily_blocks_aggreggates import DailyBlocksAggregates
-from common.models.daily_tokens_aggreggates import DailyTokensAggregates
-from common.models.daily_transactions_aggreggates import DailyTransactionsAggregates
+from common.models.daily_address_aggregates import DailyAddressesAggregates
+from common.models.daily_blocks_aggregates import DailyBlocksAggregates
+from common.models.daily_tokens_aggregates import DailyTokensAggregates
+from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
 from common.models.erc1155_token_holders import ERC1155TokenHolders
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.erc20_token_holders import ERC20TokenHolders
@@ -40,11 +40,20 @@ from common.utils.config import get_config
 from common.utils.format_utils import as_dict, format_coin_value_with_unit, row_to_dict
 from socialscan_api.app.cache import cache
 from socialscan_api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
-from socialscan_api.app.db_service.blocks import get_last_block, get_block_by_number
+from socialscan_api.app.db_service.blocks import get_last_block, get_block_by_number, get_block_by_hash, \
+    get_blocks_by_condition
+from socialscan_api.app.db_service.contract_internal_transactions import get_internal_transactions_by_condition, \
+    get_internal_transactions_cnt_by_condition, get_internal_transactions_by_transaction_hash
+from socialscan_api.app.db_service.contracts import get_contract_by_address, get_contracts_by_addresses
+from socialscan_api.app.db_service.daily_transactions_aggregates import get_daily_transactions_cnt
+from socialscan_api.app.db_service.logs import get_logs_with_input_by_hash
 from socialscan_api.app.db_service.tokens import get_address_token_transfer_cnt, get_token_address_token_transfer_cnt, \
-    type_to_token_transfer_table, get_raw_token_transfers, parse_token_transfers
+    type_to_token_transfer_table, get_raw_token_transfers, parse_token_transfers, get_tokens_by_name_symbol, \
+    get_token_transfers_with_token_by_hash, get_tokens_by_condition, get_tokens_cnt_by_condition, get_token_by_address
+from socialscan_api.app.db_service.traces import get_traces_by_condition, get_traces_by_transaction_hash
 from socialscan_api.app.db_service.transactions import get_last_transaction, get_address_transaction_cnt, \
-    get_total_txn_count, get_tps_latest_10min
+    get_total_txn_count, get_tps_latest_10min, get_transactions_by_from_address, get_transactions_by_to_address, \
+    get_transaction_by_hash, get_transactions_by_condition, get_transactions_cnt_by_condition
 from socialscan_api.app.explorer import explorer_namespace
 from common.models.token_balances import AddressTokenBalances
 
@@ -68,7 +77,8 @@ from common.utils.web3_utils import (
 )
 
 from common.utils.exception_control import APIError
-from socialscan_api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
+from socialscan_api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping, \
+    get_wallet_addresses_by_ens_name
 from socialscan_api.app.token.token_prices import get_token_price
 
 PAGE_SIZE = 25
@@ -78,6 +88,13 @@ MAX_INTERNAL_TRANSACTION = 10000
 MAX_TOKEN_TRANSFER = 10000
 
 app_config = get_config()
+
+
+@explorer_namespace.route("/v1/explorer/test")
+class ExplorerHealthCheck(Resource):
+    def get(self):
+        block = get_last_block(columns=[('number', 'ddddd'), 'timestamp'])
+        print(block)
 
 
 @explorer_namespace.route("/v1/explorer/health")
@@ -99,22 +116,22 @@ class ExplorerMainStats(Resource):
         last_transaction = get_last_transaction()
         transaction_tps = get_tps_latest_10min(last_transaction.block_timestamp)
 
-        lastest_batch_number = 0
+        latest_batch_number = 0
         # For zkevm
 
         # if app_config.l2_config.rollup_type:
         #     lastest_batch_number = get_latest_batch_index()
 
-        lastest_block = get_last_block()
-        lastest_block_number = lastest_block.number
-        earlier_block_number = max(lastest_block_number - 5000, 1)
-        earlier_block = get_block_by_number(earlier_block_number)
+        latest_block = get_last_block(columns=['number', 'timestamp'])
+        latest_block_number = latest_block.number
+        earlier_block_number = max(latest_block_number - 5000, 1)
+        earlier_block = get_block_by_number(block_number=earlier_block_number, columns=['number', 'timestamp'])
 
         if earlier_block is None:
-            earlier_block = lastest_block
+            earlier_block = latest_block
 
-        avg_block_time = (lastest_block.timestamp.timestamp() - earlier_block.timestamp.timestamp()) / (
-                (lastest_block_number - earlier_block_number) or 1
+        avg_block_time = (latest_block.timestamp.timestamp() - earlier_block.timestamp.timestamp()) / (
+                (latest_block_number - earlier_block_number) or 1
         )
 
         BTC_PRICE = get_token_price("WBTC")
@@ -154,8 +171,8 @@ class ExplorerMainStats(Resource):
         return {
             "total_transactions": transaction_count,
             "transaction_tps": round(transaction_tps, 2),
-            "latest_batch": lastest_batch_number,
-            "latest_block": lastest_block_number,
+            "latest_batch": latest_batch_number,
+            "latest_block": latest_block_number,
             "avg_block_time": avg_block_time,
             "eth_price": "{0:.2f}".format(ETH_PRICE),
             "eth_price_btc": "{0:.5f}".format(ETH_PRICE / (BTC_PRICE or 1)),
@@ -189,17 +206,7 @@ class ExplorerMainStats(Resource):
 class ExplorerChartsTransactionsPerDay(Resource):
     @cache.cached(timeout=300, query_string=True)
     def get(self):
-        results = (
-            db.session.query(DailyTransactionsAggregates)
-            .with_entities(
-                func.DATE(DailyTransactionsAggregates.block_date).label("date"),
-                DailyTransactionsAggregates.cnt,
-            )
-            .order_by(
-                DailyTransactionsAggregates.block_date.desc(),
-            )
-            .limit(14)
-        )
+        results = get_daily_transactions_cnt(columns=[('block_date', 'date'), 'cnt'], limit=14)
 
         date_list = []
         for item in results:
@@ -222,7 +229,7 @@ class ExplorerSearch(Resource):
 
         search_result = []
         if query_string.isdigit():
-            block = Blocks.query.filter(Blocks.number == int(query_string)).first()
+            block = get_block_by_number(block_number=int(query_string))
             if block is not None:
                 search_result.append(
                     {
@@ -234,8 +241,7 @@ class ExplorerSearch(Resource):
 
         # Top priority, search wallet_address
         if is_eth_address(query_string):
-            bytes_string = bytes.fromhex(query_string[2:])
-            contract = Contracts.query.filter(Contracts.address == bytes_string).first()
+            contract = get_contract_by_address(address=query_string)
             if contract:
                 search_result.append(
                     {
@@ -245,12 +251,9 @@ class ExplorerSearch(Resource):
                 )
                 return search_result
             else:
-                wallet = (
-                    db.session.query(Transactions)
-                    .with_entities(Transactions.from_address.label("address"))
-                    .filter(Transactions.from_address == bytes_string)
-                    .first()
-                )
+                wallet = get_transactions_by_from_address(address=query_string,
+                                                          columns=[('from_address', 'address')],
+                                                          limit=1)
                 if wallet:
                     search_result.append(
                         {
@@ -260,12 +263,9 @@ class ExplorerSearch(Resource):
                     )
                     return search_result
                 else:
-                    wallet = (
-                        db.session.query(Transactions)
-                        .with_entities(Transactions.to_address.label("address"))
-                        .filter(Transactions.to_address == bytes_string)
-                        .first()
-                    )
+                    wallet = get_transactions_by_to_address(address=query_string,
+                                                            columns=[('to_address', 'address')],
+                                                            limit=1)
                     if wallet:
                         search_result.append(
                             {
@@ -277,13 +277,7 @@ class ExplorerSearch(Resource):
 
         # Check transaction hash
         if is_eth_transaction_hash(query_string):
-            bytes_string = bytes.fromhex(query_string[2:])
-            transaction = (
-                db.session.query(Transactions)
-                .with_entities(Transactions.hash)
-                .filter(Transactions.hash == bytes_string)
-                .first()
-            )
+            transaction = get_transaction_by_hash(hash=query_string, columns=['hash'])
             if transaction:
                 search_result.append(
                     {
@@ -293,12 +287,7 @@ class ExplorerSearch(Resource):
                 )
                 return search_result
             else:
-                block = (
-                    db.session.query(Blocks)
-                    .with_entities(Blocks.hash, Blocks.number)
-                    .filter(Blocks.hash == bytes_string)
-                    .first()
-                )
+                block = get_block_by_hash(hash=query_string, columns=['hash', 'number'])
                 if block:
                     search_result.append(
                         {
@@ -311,67 +300,38 @@ class ExplorerSearch(Resource):
 
         # search token
         if len(query_string) > 1:
-            erc20_tokens = (
-                db.session.query(Tokens)
-                .with_entities(
-                    Tokens.name,
-                    Tokens.symbol,
-                    Tokens.address,
+            filter_condition = and_(
+                Tokens.token_type == 'ERC20',
+                or_(
+                    Tokens.name.ilike(f"%{query_string}%"),
+                    Tokens.symbol.ilike(f"%{query_string}%"),
                 )
-                .filter(
-                    and_(
-                        Tokens.token_type == 'ERC20'
-                        ,
-                        or_(
-                            Tokens.name.ilike(f"%{query_string}%"),
-                            Tokens.symbol.ilike(f"%{query_string}%"),
-                        )
-                    )
+            )
+            erc20_tokens = get_tokens_by_condition(columns=['name', 'symbol', 'address'],
+                                                   filter_condition=filter_condition,
+                                                   limit=5)
 
+            filter_condition = and_(
+                Tokens.token_type == 'ERC721',
+                or_(
+                    Tokens.name.ilike(f"%{query_string}%"),
+                    Tokens.symbol.ilike(f"%{query_string}%"),
                 )
-                .limit(5)
-                .all()
             )
-            erc721_tokens = (
-                db.session.query(Tokens)
-                .with_entities(
-                    Tokens.name,
-                    Tokens.symbol,
-                    Tokens.address,
+            erc721_tokens = get_tokens_by_condition(columns=['name', 'symbol', 'address'],
+                                                    filter_condition=filter_condition,
+                                                    limit=5)
+
+            filter_condition = and_(
+                Tokens.token_type == 'ERC1155',
+                or_(
+                    Tokens.name.ilike(f"%{query_string}%"),
+                    Tokens.symbol.ilike(f"%{query_string}%"),
                 )
-                .filter(
-                    and_(
-                        Tokens.token_type == 'ERC721'
-                        ,
-                        or_(
-                            Tokens.name.ilike(f"%{query_string}%"),
-                            Tokens.symbol.ilike(f"%{query_string}%"),
-                        )
-                    )
-                )
-                .limit(5)
-                .all()
             )
-            erc1155_tokens = (
-                db.session.query(Tokens)
-                .with_entities(
-                    Tokens.name,
-                    Tokens.symbol,
-                    Tokens.address,
-                )
-                .filter(
-                    and_(
-                        Tokens.token_type == 'ERC1155'
-                        ,
-                        or_(
-                            Tokens.name.ilike(f"%{query_string}%"),
-                            Tokens.symbol.ilike(f"%{query_string}%"),
-                        )
-                    )
-                )
-                .limit(5)
-                .all()
-            )
+            erc1155_tokens = get_tokens_by_condition(columns=['name', 'symbol', 'address'],
+                                                     filter_condition=filter_condition,
+                                                     limit=5)
 
             for token in erc20_tokens + erc721_tokens + erc1155_tokens:
                 search_result.append(
@@ -384,14 +344,7 @@ class ExplorerSearch(Resource):
                     }
                 )
 
-            ens_match_wallets = (
-                db.session.query(WalletAddresses)
-                .filter(
-                    WalletAddresses.ens_name.ilike(f"%{query_string}%"),
-                )
-                .limit(5)
-                .all()
-            )
+            ens_match_wallets = get_wallet_addresses_by_ens_name(ens_name=query_string, limit=5)
             for wallet in ens_match_wallets:
                 search_result.append(
                     {
@@ -432,31 +385,18 @@ class ExplorerInternalTransactions(Resource):
         elif block:
             filter_condition = ContractInternalTransactions.block_number == block
 
-        transactions = (
-            db.session.query(ContractInternalTransactions)
-            .order_by(
-                ContractInternalTransactions.block_number.desc(),
-                ContractInternalTransactions.transaction_index.desc(),
-            )
-            .filter(filter_condition)
-            .limit(page_size)
-            .offset((page_index - 1) * page_size)
-            .all()
-        )
+        transactions = get_internal_transactions_by_condition(filter_condition=filter_condition,
+                                                              limit=page_size,
+                                                              offset=(page_index - 1) * page_size)
+
         # Slow - 300ms
         if (len(transactions) > 0 or page_index == 1) and len(transactions) < page_size:
             total_records = (page_index - 1) * page_size + len(transactions)
         elif filter_condition == True:
             total_records = get_total_row_count("contract_internal_transactions")
         else:
-            total_records = (
-                db.session.query(
-                    ContractInternalTransactions.block_number,
-                    ContractInternalTransactions.transaction_index,
-                )
-                .filter(filter_condition)
-                .count()
-            )
+            total_records = get_internal_transactions_cnt_by_condition(columns=['block_number', 'transaction_index'],
+                                                                       filter_condition=filter_condition)
 
         transaction_list = []
         address_list = []
@@ -471,12 +411,7 @@ class ExplorerInternalTransactions(Resource):
             address_list.append(transaction.to_address)
 
         # Find contract
-        contracts = (
-            db.session.query(Contracts)
-            .with_entities(Contracts.address)
-            .filter(Contracts.address.in_(list(set(address_list))))
-            .all()
-        )
+        contracts = get_contracts_by_addresses(address_list=address_list, columns=['address'])
         contract_list = set(map(lambda x: x.address, contracts))
 
         for transaction_json in transaction_list:
@@ -527,14 +462,14 @@ class ExplorerTransactions(Resource):
 
         if block:
             if block.isnumeric():
-                chain_block = Blocks.query.filter(Blocks.number == block).first()
+                chain_block = get_block_by_number(block_number=int(block))
                 if not chain_block:
                     raise APIError("Block not exist", code=400)
                 total_records = chain_block.transactions_count
                 filter_condition = Transactions.block_number == block
             else:
                 block = bytes.fromhex(block.lower()[2:])
-                chain_block = Blocks.query.get(block)
+                chain_block = get_block_by_hash(hash=block)
                 if not chain_block:
                     raise APIError("Block not exist", code=400)
                 total_records = chain_block.transactions_count
@@ -555,24 +490,17 @@ class ExplorerTransactions(Resource):
 
             filter_condition = (Transactions.block_timestamp >= start_time) & (Transactions.block_timestamp < end_time)
 
-        transactions = (
-            db.session.query(Transactions)
-            .order_by(
-                Transactions.block_number.desc(),
-                Transactions.transaction_index.desc(),
-            )
-            .filter(filter_condition)
-            .limit(page_size)
-            .offset((page_index - 1) * page_size)
-            .all()
-        )
+        transactions = get_transactions_by_condition(filter_condition=filter_condition,
+                                                     limit=page_size,
+                                                     offset=(page_index - 1) * page_size)
 
         if (len(transactions) > 0 or page_index == 1) and len(transactions) < page_size:
             total_records = (page_index - 1) * page_size + len(transactions)
 
         # Only if has filter and we haven't calculate total transactions, then we query to get total count
         elif has_filter and len(transactions) > 0 and total_records == 0:
-            total_records = db.session.query(Transactions.hash).filter(filter_condition).count()
+            total_records = get_transactions_cnt_by_condition(filter_condition=filter_condition,
+                                                              columns=['hash'])
         elif total_records == 0:
             total_records = get_total_txn_count()
         transactions = [as_dict(transaction) for transaction in transactions]
@@ -616,21 +544,18 @@ def generate_type_str(component):
 class ExplorerTransactionDetail(Resource):
     @cache.cached(timeout=60, query_string=True)
     def get(self, hash):
-        hash = bytes.fromhex(hash.lower()[2:])
-        transaction = db.session.query(Transactions).get(hash)
+        transaction = get_transaction_by_hash(hash=hash)
         if transaction:
             transaction = as_dict(transaction)
             transaction_json = parse_transactions([transaction])[0]
-
-            trace = (
-                db.session.query(Traces)
-                .with_entities(Traces.error)
-                .filter(
-                    Traces.transaction_hash == hash,
-                    Traces.trace_address == "{}",
-                )
-                .first()
+            filter_condition = and_(
+                Traces.transaction_hash == hash,
+                Traces.trace_address == "{}",
             )
+
+            trace = get_traces_by_condition(filter_condition=filter_condition,
+                                            columns=['error'],
+                                            limit=1)
 
             # Add trace info to transaction detail
             if trace and trace.error:
@@ -680,14 +605,7 @@ class ExplorerTransactionDetail(Resource):
 class ExplorerTransactionLogs(Resource):
     @cache.cached(timeout=360, query_string=True)
     def get(self, hash):
-        hash = bytes.fromhex(hash.lower()[2:])
-        logs = (
-            db.session.query(Logs)
-            .filter(Logs.transaction_hash == hash)
-            .join(Transactions, Logs.transaction_hash == Transactions.hash)
-            .add_columns(Transactions.input)
-            .all()
-        )
+        logs = get_logs_with_input_by_hash(hash=hash)
         log_list = parse_log_with_transaction_input_list(logs)
 
         return {"total": len(log_list), "data": log_list}, 200
@@ -697,52 +615,18 @@ class ExplorerTransactionLogs(Resource):
 class ExplorerTransactionTokenTransfers(Resource):
     @cache.cached(timeout=360, query_string=True)
     def get(self, hash):
-        hash = bytes.fromhex(hash.lower()[2:])
+        erc20_token_transfers = get_token_transfers_with_token_by_hash(hash=hash,
+                                                                       model=ERC20TokenTransfers,
+                                                                       token_columns=['name', 'symbol', 'decimals',
+                                                                                      'icon_url'])
 
-        erc20_token_transfers = (
-            db.session.query(ERC20TokenTransfers)
-            .filter(ERC20TokenTransfers.transaction_hash == hash)
-            .join(
-                Tokens,
-                ERC20TokenTransfers.token_address == Tokens.address,
-            )
-            .add_columns(
-                Tokens.name,
-                Tokens.symbol,
-                Tokens.decimals,
-                Tokens.icon_url,
-            )
-            .all()
-        )
+        erc721_token_transfers = get_token_transfers_with_token_by_hash(hash=hash,
+                                                                        model=ERC721TokenTransfers,
+                                                                        token_columns=['name', 'symbol'])
 
-        erc721_token_transfers = (
-            db.session.query(ERC721TokenTransfers)
-            .filter(ERC721TokenTransfers.transaction_hash == hash)
-            .join(
-                Tokens,
-                ERC721TokenTransfers.token_address == Tokens.address,
-            )
-            .add_columns(
-                Tokens.name,
-                Tokens.symbol,
-            )
-            .all()
-        )
-
-        # ERC1155
-        erc1155_token_transfers = (
-            db.session.query(ERC1155TokenTransfers)
-            .filter(ERC1155TokenTransfers.transaction_hash == hash)
-            .join(
-                Tokens,
-                ERC1155TokenTransfers.token_address == Tokens.address,
-            )
-            .add_columns(
-                Tokens.name,
-                Tokens.symbol,
-            )
-            .all()
-        )
+        erc1155_token_transfers = get_token_transfers_with_token_by_hash(hash=hash,
+                                                                         model=ERC1155TokenTransfers,
+                                                                         token_columns=['name', 'symbol'])
 
         token_transfer_list = []
         token_transfer_list.extend(process_token_transfer(erc20_token_transfers, "tokentxns"))
@@ -760,17 +644,7 @@ class ExplorerTransactionTokenTransfers(Resource):
 class ExplorerTransactionInternalTransactions(Resource):
     @cache.cached(timeout=360, query_string=True)
     def get(self, hash):
-        hash = bytes.fromhex(hash.lower()[2:])
-
-        transactions = (
-            db.session.query(ContractInternalTransactions)
-            .order_by(
-                ContractInternalTransactions.block_number.desc(),
-                ContractInternalTransactions.transaction_index.desc(),
-            )
-            .filter(ContractInternalTransactions.transaction_hash == hash)
-            .all()
-        )
+        transactions = get_internal_transactions_by_transaction_hash(transaction_hash=hash)
         transaction_list = []
         address_list = []
         for transaction in transactions:
@@ -784,12 +658,8 @@ class ExplorerTransactionInternalTransactions(Resource):
             address_list.append(transaction.to_address)
 
         # Find contract
-        contracts = (
-            db.session.query(Contracts)
-            .with_entities(Contracts.address)
-            .filter(Contracts.address.in_(list(set(address_list))))
-            .all()
-        )
+        contracts = get_contracts_by_addresses(address_list=address_list,
+                                               columns=['address'])
         contract_list = set(map(lambda x: x.address, contracts))
 
         for transaction_json in transaction_list:
@@ -926,14 +796,8 @@ class ExplorerTransactionInternalTransactions(Resource):
         if len(hash) != 66 or not all(c in string.hexdigits for c in hash[2:]):
             raise APIError("Invalid transaction hash", code=400)
         try:
-            hash = bytes.fromhex(hash[2:])
 
-            traces_row = (
-                db.session.query(Traces)
-                .filter(Traces.transaction_hash == hash)
-                .order_by(Traces.trace_address)
-                .all()
-            )
+            traces_row = get_traces_by_transaction_hash(hash)
 
             trace = get_debug_trace_transaction(
                 [
@@ -999,29 +863,18 @@ class ExplorerTokens(Resource):
             else:
                 order_expression = order_expression.asc()
             order_expression = nullslast(order_expression)
-            tokens = (
-                db.session.query(Tokens)
-                .with_entities(
-                    Tokens.address,
-                    Tokens.name,
-                    Tokens.symbol,
-                    Tokens.icon_url,
-                    Tokens.total_supply,
-                    Tokens.decimals,
-                    Tokens.price,
-                    Tokens.description,
-                    Tokens.volume_24h,
-                    Tokens.market_cap,
-                    Tokens.on_chain_market_cap,
-                    Tokens.holder_count,
-                )
-                .filter(and_(Tokens.is_verified == is_verified if is_verified else 1 == 1),
-                        Tokens.token_type == 'ERC20')
-                .order_by(order_expression)
-                .limit(page_size)
-                .offset((page_index - 1) * page_size)
-                .all()
+
+            filter_condition = and_(
+                Tokens.token_type == 'ERC20',
+                Tokens.is_verified == is_verified if is_verified else 1 == 1
             )
+            tokens = get_tokens_by_condition(columns=['address', 'name', 'symbol', 'icon_url', 'total_supply',
+                                                      'decimals', 'price', 'description', 'volume_24h',
+                                                      'market_cap', 'on_chain_market_cap', 'holder_count'],
+                                             filter_condition=filter_condition,
+                                             order=order_expression,
+                                             limit=page_size,
+                                             offset=(page_index - 1) * page_size)
 
             token_list = [
                 {
@@ -1045,10 +898,11 @@ class ExplorerTokens(Resource):
             ]
 
             if is_verified:
-                total_records = Tokens.query.filter(
-                    and_(Tokens.is_verified == is_verified, Tokens.token_type == 'ERC20')).count()
+                total_records = get_tokens_cnt_by_condition(
+                    filter_condition=and_(Tokens.is_verified == is_verified, Tokens.token_type == 'ERC20'))
             else:
-                total_records = Tokens.query.filter(Tokens.token_type == 'ERC20').count()
+                total_records = get_tokens_cnt_by_condition(
+                    filter_condition=Tokens.token_type == 'ERC20')
 
         elif type == "erc721":
             sort = flask.request.args.get("sort", "holder_count")
@@ -1063,23 +917,15 @@ class ExplorerTokens(Resource):
             else:
                 order_expression = order_expression.asc()
             order_expression = nullslast(order_expression)
-            tokens = (
-                db.session.query(Tokens)
-                .with_entities(
-                    Tokens.address,
-                    Tokens.name,
-                    Tokens.symbol,
-                    Tokens.total_supply,
-                    Tokens.holder_count,
-                    Tokens.transfer_count,
-                )
-                .filter(Tokens.token_type == 'ERC721')
-                .order_by(order_expression)
-                .limit(page_size)
-                .offset((page_index - 1) * page_size)
-                .all()
-            )
-            total_records = Tokens.query.filter(Tokens.token_type == 'ERC721').count()
+            tokens = get_tokens_by_condition(
+                columns=['address', 'name', 'symbol', 'total_supply', 'holder_count', 'transfer_count'],
+                filter_condition=Tokens.token_type == 'ERC721',
+                order=order_expression,
+                limit=page_size,
+                offset=(page_index - 1) * page_size)
+
+            total_records = get_tokens_cnt_by_condition(
+                filter_condition=Tokens.token_type == 'ERC721')
 
             token_list = [
                 {
@@ -1106,23 +952,17 @@ class ExplorerTokens(Resource):
             else:
                 order_expression = order_expression.asc()
             order_expression = nullslast(order_expression)
-            tokens = (
-                db.session.query(Tokens)
-                .with_entities(
-                    Tokens.address,
-                    Tokens.name,
-                    Tokens.symbol,
-                    Tokens.total_supply,
-                    Tokens.holder_count,
-                    Tokens.transfer_count,
-                )
-                .filter(Tokens.token_type == 'ERC1155')
-                .order_by(order_expression)
-                .limit(page_size)
-                .offset((page_index - 1) * page_size)
-                .all()
-            )
-            total_records = Tokens.query.filter(Tokens.token_type == 'ERC1155').count()
+
+            tokens = get_tokens_by_condition(
+                columns=['address', 'name', 'symbol', 'total_supply', 'holder_count', 'transfer_count'],
+                filter_condition=Tokens.token_type == 'ERC1155',
+                order=order_expression,
+                limit=page_size,
+                offset=(page_index - 1) * page_size)
+
+            total_records = get_tokens_cnt_by_condition(
+                filter_condition=Tokens.token_type == 'ERC1155')
+
             token_list = [
                 {
                     "address": '0x' + x.address.hex(),
@@ -1219,9 +1059,7 @@ class ExplorerBlocks(Resource):
         batch = flask.request.args.get("batch", None)
 
         if state_batch is None and batch is None:
-            latest_block = (
-                db.session.query(Blocks).with_entities(Blocks.number).order_by(Blocks.number.desc()).first()
-            )
+            latest_block = get_last_block(columns=['number'])
 
             total_blocks = latest_block.number if latest_block else 0
 
@@ -1229,12 +1067,7 @@ class ExplorerBlocks(Resource):
             start_block = end_block - page_size + 1
             start_block = max(0, start_block)
 
-            blocks = (
-                db.session.query(Blocks)
-                .filter(Blocks.number.between(start_block, end_block))
-                .order_by(Blocks.number.desc())
-                .all()
-            )
+            blocks = get_blocks_by_condition(filter_condition=Blocks.number.between(start_block, end_block))
 
             block_list = [as_dict(block) for block in blocks]
 
@@ -1247,28 +1080,18 @@ class ExplorerBlocks(Resource):
 
         filter_condition = True
         total_blocks = 0
-        blocks = (
-            db.session.query(Blocks)
-            .filter(filter_condition)
-            .order_by(Blocks.number.desc())
-            .limit(page_size)
-            .offset((page_index - 1) * page_size)
-            .all()
-        )
+        blocks = get_blocks_by_condition(filter_condition=filter_condition,
+                                         limit=page_size,
+                                         offset=(page_index - 1) * page_size)
+
         block_list = []
         for block in blocks:
             block_list.append(as_dict(block))
 
         if total_blocks == 0 and len(block_list) > 0:
-            lastest_block = (
-                db.session.query(Blocks)
-                .with_entities(Blocks.number, Blocks.timestamp)
-                .order_by(Blocks.number.desc())
-                .first()
-            )
-            total_blocks = lastest_block.number
+            latest_block = get_last_block(columns=['number', 'timestamp'])
+            total_blocks = latest_block.number
 
-        pass
         return {
             "data": block_list,
             "total": total_blocks,
@@ -1283,19 +1106,17 @@ class ExplorerBlockDetail(Resource):
     def get(self, number_or_hash):
         if number_or_hash.isnumeric():
             number = int(number_or_hash)
-            block = db.session.query(Blocks).filter(Blocks.number == int(number)).first()
+            block = get_block_by_number(block_number=int(number))
         else:
-            hash = bytes.fromhex(number_or_hash.lower()[2:])
-            block = db.session.query(Blocks).filter(Blocks.hash == hash).first()
+            block = get_block_by_hash(hash=hash)
 
         if block:
             block_json = as_dict(block)
             # Need additional data eth_price, block time, internal_transaction_count
-            internal_transaction_count = (
-                db.session.query(ContractInternalTransactions)
-                .filter(ContractInternalTransactions.block_number == block.number)
-                .count()
-            )
+
+            internal_transaction_count = get_internal_transactions_cnt_by_condition(
+                filter_condition=ContractInternalTransactions.block_number == block.number)
+
             block_json["internal_transaction_count"] = internal_transaction_count
 
             block_json["gas_fee_token_price"] = "{0:.2f}".format(
@@ -1303,18 +1124,14 @@ class ExplorerBlockDetail(Resource):
             )
 
             earlier_block_number = max(block.number - 1, 1)
-            earlier_block = (
-                db.session.query(Blocks)
-                .with_entities(Blocks.number, Blocks.timestamp)
-                .filter(Blocks.number == earlier_block_number)
-                .first()
-            )
+            earlier_block = get_block_by_number(block_number=earlier_block_number,
+                                                columns=['number', 'timestamp'])
+
             block_json["seconds_since_last_block"] = block.timestamp.timestamp() - earlier_block.timestamp.timestamp()
 
-            lastest_block = (
-                db.session.query(Blocks).with_entities(Blocks.number).order_by(Blocks.number.desc()).first()
-            )
-            block_json["is_last_block"] = lastest_block.number == block.number
+            latest_block = get_last_block(columns=['number'])
+
+            block_json["is_last_block"] = latest_block.number == block.number
             return block_json, 200
         else:
             raise APIError("Cannot find block with block number or block hash", code=400)
@@ -1324,11 +1141,10 @@ class ExplorerBlockDetail(Resource):
 class ExplorerAddressProfile(Resource):
     @cache.cached(timeout=60, query_string=True)
     def get(self, address):
-        address_str = address.lower()
-        address_bytes = bytes.fromhex(address_str[2:])
+        address = address.lower()
         NATIVE_TOKEN_PRICE = get_token_price(app_config.token_configuration.native_token)
 
-        native_token_balance = get_balance(address_str)
+        native_token_balance = get_balance(address)
         profile_json = {
             "balance": "{0:.18f}".format(native_token_balance / 10 ** 18).rstrip("0").rstrip("."),
             "native_token_price": "{0:.2f}".format(NATIVE_TOKEN_PRICE),
@@ -1337,7 +1153,7 @@ class ExplorerAddressProfile(Resource):
             "is_token": False,
         }
 
-        contract = db.session.query(Contracts).filter(Contracts.address == address_bytes).first()
+        contract = get_contract_by_address(address)
         if contract:
             profile_json["is_contract"] = True
             profile_json["contract_creator"] = '0x' + contract.contract_creator.hex()
@@ -1348,11 +1164,11 @@ class ExplorerAddressProfile(Resource):
                 if contract.implementation_contract else None
             profile_json["verified_implementation_contract"] = '0x' + contract.verified_implementation_contract.hex() \
                 if contract.verified_implementation_contract else None
-            deployed_code = contract.deployed_code or get_sha256_hash(get_code(address_str))
+            deployed_code = contract.deployed_code or get_sha256_hash(get_code(address))
             addresses = get_similar_addresses(deployed_code)
-            profile_json["similar_verified_addresses"] = [add for add in addresses if add != address_str]
+            profile_json["similar_verified_addresses"] = [add for add in addresses if add != address]
 
-            token, type = get_token_by_address(address_bytes)
+            token, type = get_token_and_token_type(address)
 
             if token:
                 profile_json["is_token"] = True
@@ -1466,33 +1282,33 @@ class ExplorerAddressTransactions(Resource):
         )
 
         total_count = len(transactions) if len(transactions) < PAGE_SIZE else PAGE_SIZE
-        # if len(transactions) < PAGE_SIZE:
-        #     total_count = len(transactions)
-        # else:
-        #     last_timestamp = db.session.query(
-        #         func.max(ScheduledWalletCountMetadata.last_data_timestamp)
-        #     ).scalar()
-        #     recently_txn_count = (
-        #         db.session.query(Transactions.hash)
-        #         .filter(
-        #             and_(
-        #                 (Transactions.block_timestamp >= last_timestamp.date() if last_timestamp is not None else True),
-        #                 or_(
-        #                     Transactions.from_address == address_bytes,
-        #                     Transactions.to_address == address_bytes,
-        #                 ),
-        #             )
-        #         )
-        #         .count()
-        #     )
-        #     result = (
-        #         db.session.query(WalletAddresses)
-        #         .with_entities(WalletAddresses.txn_cnt)
-        #         .filter(WalletAddresses.address == address)
-        #         .first()
-        #     )
-        #     past_txn_count = 0 if not result else result[0]
-        #     total_count = past_txn_count + recently_txn_count
+        if len(transactions) < PAGE_SIZE:
+            total_count = len(transactions)
+        else:
+            last_timestamp = db.session.query(
+                func.max(ScheduledWalletCountMetadata.last_data_timestamp)
+            ).scalar()
+            recently_txn_count = (
+                db.session.query(Transactions.hash)
+                .filter(
+                    and_(
+                        (Transactions.block_timestamp >= last_timestamp.date() if last_timestamp is not None else True),
+                        or_(
+                            Transactions.from_address == address_bytes,
+                            Transactions.to_address == address_bytes,
+                        ),
+                    )
+                )
+                .count()
+            )
+            result = (
+                db.session.query(WalletAddresses)
+                .with_entities(WalletAddresses.txn_cnt)
+                .filter(WalletAddresses.address == address)
+                .first()
+            )
+            past_txn_count = 0 if not result else result[0]
+            total_count = past_txn_count + recently_txn_count
 
         transactions = [as_dict(transaction) for transaction in transactions]
         transaction_list = parse_transactions(transactions)
@@ -1629,9 +1445,10 @@ class ExplorerAddressLogs(Resource):
         return {"total": len(logs), "data": log_list}, 200
 
 
-def get_token_by_address(address):
+def get_token_and_token_type(address):
     token_type = None
-    token = db.session.query(Tokens).filter(Tokens.address == address).first()
+    token = get_token_by_address(address=address)
+
     if token.token_type == 'ERC20':
         token_type = "tokentxns"
     elif token.token_type == 'ERC721':
@@ -1648,7 +1465,7 @@ class ExplorerTokenProfile(Resource):
         address = address.lower()
         address_bytes = bytes.fromhex(address[2:])
 
-        token, type = get_token_by_address(address_bytes)
+        token, type = get_token_and_token_type(address_bytes)
 
         if not token:
             raise APIError("Token not found", code=400)
@@ -1697,7 +1514,7 @@ class ExplorerTokenTokenTransfers(Resource):
         address = address.lower()
         address_bytes = bytes.fromhex(address[2:])
 
-        token, type = get_token_by_address(address_bytes)
+        token, type = get_token_and_token_type(address_bytes)
         if not token:
             raise APIError("Token not found", code=400)
 
@@ -1734,7 +1551,7 @@ class ExplorerTokenTopHolders(Resource):
         if page_index <= 0 or page_size <= 0:
             raise APIError("Invalid page or size", code=400)
 
-        token, type = get_token_by_address(address_bytes)
+        token, type = get_token_and_token_type(address_bytes)
 
         if not token:
             raise APIError("Token not found", code=400)
@@ -1839,7 +1656,7 @@ class ExplorerTokenTopHolders(Resource):
         if page_index <= 0 or page_size <= 0:
             raise APIError("Invalid page or size", code=400)
 
-        token, type = get_token_by_address(address_bytes)
+        token, type = get_token_and_token_type(address_bytes)
 
         if not token:
             raise APIError("Token not found", code=400)

@@ -13,7 +13,7 @@ from common.models import db
 from common.utils.web3_utils import decode_log_data
 from common.utils.format_utils import as_dict, format_coin_value
 from socialscan_api.app.contract.contract_verify import get_names_from_method_or_topic_list, get_abis_for_logs
-from socialscan_api.app.db_service.contracts import get_contract_by_addresses
+from socialscan_api.app.db_service.contracts import get_contracts_by_addresses
 from socialscan_api.app.db_service.wallet_addresses import get_address_display_mapping
 from socialscan_api.app.token.token_prices import get_token_price
 
@@ -133,7 +133,7 @@ def parse_transactions(transactions):
         transaction_list.append(display_transaction(float(GAS_FEE_TOKEN_PRICE), transaction))
 
     # Find contract
-    contracts = get_contract_by_addresses(to_address_list)
+    contracts = get_contracts_by_addresses(address_list=to_address_list, columns=['address'])
     contract_list = set(map(lambda x: x.address, contracts))
 
     method_list = []

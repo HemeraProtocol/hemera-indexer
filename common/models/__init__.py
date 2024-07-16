@@ -57,5 +57,10 @@ __lazy_imports = {
     "ERC1155TokenIdDetails": "common.models.erc1155_token_id_details",
     "Tokens": "common.models.tokens",
     "AddressTokenBalances": "common.models.token_balances",
-    "BlockTimestampMapper": "common.models.block_timestamp_mapper",
+    "DailyAddressesAggregates": "common.models.daily_address_aggregates",
+    "DailyBlocksAggregates": "common.models.daily_blocks_aggregates",
+    "DailyTokensAggregates": "common.models.daily_tokens_aggregates",
+    "DailyTransactionsAggregates": "common.models.daily_transactions_aggregates",
+    "ScheduledWalletCountMetadata": "common.models.scheduled_metadata",
+    "ScheduledTokenCountMetadata": "common.models.scheduled_metadata",
 }
