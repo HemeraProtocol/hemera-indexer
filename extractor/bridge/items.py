@@ -137,7 +137,7 @@ ARB_L1ToL2_ON_L2 = "arbitrum_l1_to_l2_on_l2"
 ARB_L2ToL1_ON_L1 = "arbitrum_l2_to_l1_on_l1"
 ARB_L2ToL1_ON_L2 = "arbitrum_l2_to_l1_on_l2"
 
-items = {
+bridge_items = {
     L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1: L1ToL2BridgeTransactions,
     L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN: L2ToL1BridgeTransactions,
     L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED: L2ToL1BridgeTransactions,
@@ -153,26 +153,32 @@ items = {
     ARB_L2ToL1_ON_L2: L2ToL1BridgeTransactions,
 }
 
+
 def format_bridge_data(dict):
     return {**dict, **{
-        'model': items[dict['type']],
+        'model': bridge_items[dict['type']],
         'update_columns': [dict.keys()],
     }}
+
 
 def convert_bridge_column(dict):
     pg_dict = {}
     for key, value in dict.items():
-        if key in ['model', 'update_columns', 'type']:
+        if key in ['model', 'update_columns', 'item']:
             pass
-        if key.endswith('_address') or key.endswith('_hash') or key in ['batch_root', 'extra_data']:
+        elif value is None:
+            pg_dict[key] = None
+        elif isinstance(value, str) and value.startswith('0x'):
             pg_dict[key] = bytes.fromhex(value[2:])
-        if key.endswith('_timestamp'):
+        elif key.endswith('_timestamp'):
             pg_dict[key] = func.to_timestamp(value),
+        else:
+            pg_dict[key] = value
     return pg_dict
 
 
 def convert_bridge_items(item_type, items, session):
-    if item_type == 'op_state_batches':
+    if item_type == OP_STATE_BATCH_TRANSACTION:
         # TODO: patch state batches from postgres
         pass
     for item in items:

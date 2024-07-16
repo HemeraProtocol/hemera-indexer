@@ -8,6 +8,7 @@ from enumeration.entity_type import EntityType
 from executors.batch_work_executor import BatchWorkExecutor
 from exporters.console_item_exporter import ConsoleItemExporter
 from extractor.bridge.bedrock.extractor.extractor import Extractor
+from extractor.bridge.items import bridge_items
 from jobs.base_job import BaseJob
 from jobs.export_blocks_job import blocks_rpc_requests
 from jobs.export_transactions_and_logs_job import receipt_rpc_requests
@@ -83,8 +84,6 @@ def format_bridge_transaction_data(transaction_dict):
     return transaction
 
 
-
-
 class FetchFilterDataJob(BaseJob):
     def __init__(self,
                  index_keys,
@@ -95,7 +94,9 @@ class FetchFilterDataJob(BaseJob):
                  batch_size,
                  max_workers,
                  extractor: Extractor,
-                 item_exporter=ConsoleItemExporter()):
+                 item_exporter=ConsoleItemExporter(),
+                 export_keys=None
+                 ):
         super().__init__(index_keys=index_keys)
         validate_range(start_block, end_block)
         self.web3 = build_web3(t)
@@ -106,6 +107,10 @@ class FetchFilterDataJob(BaseJob):
         self._is_batch = batch_size > 1
         self._extractor = extractor
         self._item_exporter = item_exporter
+        if not export_keys:
+            self._export_keys = index_keys
+        else:
+            self._export_keys = export_keys
 
     def _start(self):
         super()._start()
@@ -140,10 +145,10 @@ class FetchFilterDataJob(BaseJob):
             self._data_buff['block_ts_mapping'].append(format_block_ts_mapper(timestamp, block_number))
 
         self._data_buff['enriched_transaction'] = [format_bridge_transaction_data(transaction)
-                                                       for transaction in enrich_blocks_timestamp
-                                                       (self._data_buff['formated_block'],
-                                                        enrich_transactions(self._data_buff['transaction'],
-                                                                            self._data_buff['receipt']))]
+                                                   for transaction in enrich_blocks_timestamp
+                                                   (self._data_buff['formated_block'],
+                                                    enrich_transactions(self._data_buff['transaction'],
+                                                                        self._data_buff['receipt']))]
 
         self._data_buff['enriched_transaction'] = sorted(self._data_buff['enriched_transaction'],
                                                          key=lambda x: (x['block_number'],
@@ -182,7 +187,10 @@ class FetchFilterDataJob(BaseJob):
                 log['item'] = 'log'
                 self._collect_item(log)
 
-
     def _export(self):
-        export_items = self._extract_from_buff(keys= self._index_keys)
-        self._item_exporter.export_items(export_items)
+        export_items = self._extract_from_buff(keys=self._export_keys)
+        for item in export_items:
+            item['model'] = bridge_items[item['item']]
+        self._item_exporter.export_items(
+            export_items
+        )
