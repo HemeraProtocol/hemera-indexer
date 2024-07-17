@@ -12,8 +12,8 @@ from models.bridge.arbitrum.arbitrum_bridge_parser import ArbitrumL1BridgeDataEx
     ArbitrumL2BridgeDataExtractor
 from models.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1
 from models.jobs.fetch_filter_data_job import FetchFilterDataJob
-from utils.provider import get_provider_from_uri
-from utils.thread_local_proxy import ThreadLocalProxy
+from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
 
 @pytest.mark.test_arb_eth

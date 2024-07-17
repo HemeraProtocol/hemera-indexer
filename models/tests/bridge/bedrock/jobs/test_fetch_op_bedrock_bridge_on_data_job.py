@@ -1,16 +1,17 @@
 import pytest
 
-from exporters.jdbc.postgresql_service import PostgreSQLService
-from exporters.postgres_item_exporter import PostgresItemExporter
+from common.services.postgresql_service import PostgreSQLService
+
+from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from models.bridge.bedrock.extractor.l1_bridge_data_extractor import L1BridgeDataExtractor
 
 from models.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
 from models.bridge.items import L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1, L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN, \
     L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED, convert_bridge_items
 from models.jobs.fetch_filter_data_job import FetchFilterDataJob
-from utils.provider import get_provider_from_uri
-from utils.thread_local_proxy import ThreadLocalProxy
-from utils.utils import set_config, verify_db_connection_url
+from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.thread_local_proxy import ThreadLocalProxy
+from indexer.utils.utils import  verify_db_connection_url
 
 
 @pytest.mark.util

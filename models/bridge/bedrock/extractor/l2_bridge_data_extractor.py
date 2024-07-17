@@ -3,11 +3,11 @@ from typing import Dict, List
 
 from eth_utils import to_checksum_address
 
-from models.bridge.bedrock.extractor.extractor import Extractor
 from models.bridge.bedrock.parser.bedrock_bridge_parser import parse_relayed_message, \
     parse_message_passed_event, BEDROCK_EVENT_ABI_SIGNATURE_MAPPING
+from models.bridge.extractor import Extractor
 from models.bridge.items import L1_TO_L2_DEPOSITED_TRANSACTION_ON_L2, L2_TO_L1_WITHDRAWN_TRANSACTION_ON_l2
-from models.bridge.types import dict_to_dataclass, Transaction
+from models.types import dict_to_dataclass, Transaction
 
 logger = logging.getLogger(__name__)
 

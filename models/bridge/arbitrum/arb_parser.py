@@ -9,10 +9,10 @@ import json
 from web3 import Web3
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIEvent, ABIFunction
-from typing import Any, Dict, cast
+from typing import Any, Dict, cast, Optional
 from dataclasses import dataclass
 from models.bridge.arbitrum.arb_conf import env
-from models.bridge.types import dataclass_to_dict, Base
+from models.types import dataclass_to_dict, Base
 
 from models.bridge.signature import event_log_abi_to_topic, decode_log, function_abi_to_4byte_selector_str
 
@@ -64,18 +64,19 @@ DEPOSIT_FINALIZED_EVENT = cast(ABIEvent, json.loads(
     """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"sender","type":"address"},{"indexed":true,"internalType":"address","name":"receiver","type":"address"},{"indexed":false,"internalType":"address","name":"token","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"DepositFinalized","type":"event"}"""))
 DEPOSIT_FINALIZED_EVENT_SIG = event_log_abi_to_topic(DEPOSIT_FINALIZED_EVENT)
 
-
 EXECUTE_TRANSACTION_FUNCTION = cast(ABIFunction, json.loads(
     """{"inputs":[{"internalType":"bytes32[]","name":"proof","type":"bytes32[]"},{"internalType":"uint256","name":"index","type":"uint256"},{"internalType":"address","name":"l2Sender","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"l2Block","type":"uint256"},{"internalType":"uint256","name":"l1Block","type":"uint256"},{"internalType":"uint256","name":"l2Timestamp","type":"uint256"},{"internalType":"uint256","name":"value","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"executeTransaction","outputs":[],"stateMutability":"nonpayable","type":"function"}"""))
 EXECUTE_TRANSACTION_FUNCTION_SIG = function_abi_to_4byte_selector_str(EXECUTE_TRANSACTION_FUNCTION)
 
 ADD_SEQUENCER_L2_BATCH_FROM_BLOBS_FUNCTION = cast(ABIFunction, json.loads(
     """{"inputs":[{"internalType":"uint256","name":"sequenceNumber","type":"uint256"},{"internalType":"uint256","name":"afterDelayedMessagesRead","type":"uint256"},{"internalType":"contract IGasRefunder","name":"gasRefunder","type":"address"},{"internalType":"uint256","name":"prevMessageCount","type":"uint256"},{"internalType":"uint256","name":"newMessageCount","type":"uint256"}],"name":"addSequencerL2BatchFromBlobs","outputs":[],"stateMutability":"nonpayable","type":"function"}"""))
-ADD_SEQUENCER_L2_BATCH_FROM_BLOBS_FUNCTION_SIG = function_abi_to_4byte_selector_str(ADD_SEQUENCER_L2_BATCH_FROM_BLOBS_FUNCTION)
+ADD_SEQUENCER_L2_BATCH_FROM_BLOBS_FUNCTION_SIG = function_abi_to_4byte_selector_str(
+    ADD_SEQUENCER_L2_BATCH_FROM_BLOBS_FUNCTION)
 
 ADD_SEQUENCER_L2_BATCH_FROM_ORIGIN_FUNCTION = cast(ABIFunction, json.loads(
     """{"inputs":[{"internalType":"uint256","name":"sequenceNumber","type":"uint256"},{"name":"data","type":"bytes","internalType":"bytes"},{"internalType":"uint256","name":"afterDelayedMessagesRead","type":"uint256"},{"internalType":"contract IGasRefunder","name":"gasRefunder","type":"address"},{"internalType":"uint256","name":"prevMessageCount","type":"uint256"},{"internalType":"uint256","name":"newMessageCount","type":"uint256"}],"name":"addSequencerL2BatchFromOrigin","outputs":[],"stateMutability":"nonpayable","type":"function"}"""))
-ADD_SEQUENCER_L2_BATCH_FROM_ORIGIN_FUNCTION_SIG = function_abi_to_4byte_selector_str(ADD_SEQUENCER_L2_BATCH_FROM_ORIGIN_FUNCTION)
+ADD_SEQUENCER_L2_BATCH_FROM_ORIGIN_FUNCTION_SIG = function_abi_to_4byte_selector_str(
+    ADD_SEQUENCER_L2_BATCH_FROM_ORIGIN_FUNCTION)
 
 OUT_BOUND_TRANSFER_FUNCTION = cast(ABIFunction, json.loads(
     """{"inputs":[{"name":"_l1Token","type":"address","internalType":"address"},{"name":"_to","type":"address","internalType":"address"},{"name":"_amount","type":"uint256","internalType":"uint256"},{"name":"a","type":"uint256","internalType":"uint256"},{"name":"b","type":"uint256","internalType":"uint256"},{"name":"_data","type":"bytes","internalType":"bytes"}],"name":"outboundTransfer","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}"""))
@@ -98,10 +99,9 @@ class Constants:
     ZERO_ADDRESS_32 = bytes(32)
 
 
-
 @dataclass
 class MessageDeliveredData(Base):
-    msg_hash: str
+    msg_hash: Optional[str]
     block_number: int
     block_timestamp: int
     block_hash: str
@@ -191,7 +191,7 @@ class ArbitrumTransactionBatch(Base):
     l1_transaction_hash: str
     end_block_number: str
     start_block_number: str
-    transaction_count: int
+    transaction_count: Optional[int]
 
 
 @dataclass
@@ -203,9 +203,9 @@ class ArbitrumStateBatchConfirmed(Base):
     l1_block_timestamp: int
     l1_block_hash: str
     l1_transaction_hash: str
-    end_block_number: int
-    start_block_number: int
-    transaction_count: int
+    end_block_number: Optional[int]
+    start_block_number: Optional[int]
+    transaction_count: Optional[int]
 
 
 @dataclass

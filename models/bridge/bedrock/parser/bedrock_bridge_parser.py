@@ -17,7 +17,7 @@ from models.bridge.bridge_utils import (
     unmarshal_deposit_version1, deposit_event_to_op_bedrock_transaction,
 )
 from models.bridge.signature import bytes_to_hex_str, decode_log, event_log_abi_to_topic
-from models.bridge.types import Transaction
+from models.types import Transaction
 
 bedrockBridgeParser = BedrockBridgeParser(
     [FINALIZE_BRIDGE_ETH_DECODER, FINALIZE_BRIDGE_ERC20_DECODER, FINALIZE_BRIDGE_ERC721_DECODER]

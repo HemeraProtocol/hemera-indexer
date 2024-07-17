@@ -6,7 +6,7 @@ from eth_utils import event_abi_to_log_topic, function_abi_to_4byte_selector
 from web3._utils.abi import exclude_indexed_event_inputs, get_indexed_event_inputs, named_tree
 from web3.types import ABIEvent, ABIFunction
 
-from models.bridge.types import Log
+from models.types import Log
 
 
 def bytes_to_hex_str(b: bytes) -> str:
@@ -23,8 +23,8 @@ def function_abi_to_4byte_selector_str(function_abi: ABIFunction) -> str:
 
 
 def decode_log(
-    fn_abi: ABIEvent,
-    log: Log,
+        fn_abi: ABIEvent,
+        log: Log,
 ) -> Optional[Dict[str, Any]]:
     indexed_types = get_indexed_event_inputs(fn_abi)
     for indexed_type in indexed_types:

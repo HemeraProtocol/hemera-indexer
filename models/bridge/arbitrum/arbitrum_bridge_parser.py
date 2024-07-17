@@ -8,15 +8,13 @@ import logging
 from enum import Enum
 from typing import List
 
-from models.bridge.arbitrum.arb_rlp import calculate_submit_retryable_id, calculate_deposit_tx_id
-
-from models.bridge.arbitrum.arb_parser import *
-from models.bridge.bedrock.extractor.extractor import Extractor
 from eth_utils import to_checksum_address
 
-from models.bridge.items import L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1, L2_TO_L1_WITHDRAWN_TRANSACTION_PROVEN, \
-    ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L1, ARB_L2ToL1_ON_L2
-from models.bridge.types import dict_to_dataclass, Transaction, dataclass_to_dict
+from models.bridge.arbitrum.arb_parser import *
+from models.bridge.arbitrum.arb_rlp import calculate_submit_retryable_id, calculate_deposit_tx_id
+from models.bridge.extractor import Extractor
+from models.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L1, ARB_L2ToL1_ON_L2
+from models.types import dict_to_dataclass, Transaction
 
 logger = logging.getLogger(__name__)
 

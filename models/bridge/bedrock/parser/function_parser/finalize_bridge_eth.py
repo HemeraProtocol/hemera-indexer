@@ -1,7 +1,6 @@
 import json
 from typing import cast
 
-import hexbytes
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIFunction
 

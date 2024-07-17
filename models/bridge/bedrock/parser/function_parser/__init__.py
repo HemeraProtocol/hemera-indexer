@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from enum import Enum, IntEnum
-from typing import Callable, List, Optional, cast
+from enum import Enum
+from typing import Callable, List, Optional
 
 from web3.types import ABIFunction
 

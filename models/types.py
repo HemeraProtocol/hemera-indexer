@@ -54,7 +54,7 @@ class Log(Base):
 
 
 @dataclass
-class Receipt:
+class Receipt(Base):
     transaction_hash: str
     transaction_index: int
     contract_address: str
@@ -71,13 +71,10 @@ class Receipt:
     blob_gas_used: Optional[int] = None
     blob_gas_price: Optional[int] = None
 
-    @property
-    def type(self):
-        return "receipt"
 
 
 @dataclass
-class Transaction:
+class Transaction(Base):
     hash: str
     nonce: int
     transaction_index: int
@@ -96,9 +93,6 @@ class Transaction:
     max_priority_fee_per_gas: Optional[int] = None
     receipt: Receipt = None
 
-    @property
-    def type(self):
-        return "transaction"
 
 
 def dict_to_dataclass(data: Dict[str, Any], cls):

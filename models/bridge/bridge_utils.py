@@ -1,12 +1,10 @@
 from typing import Optional, Tuple
 
-
 import rlp
+from models.types import Log
 from rlp import Serializable
-from rlp.sedes import BigEndianInt, big_endian_int, binary, boolean
+from rlp.sedes import big_endian_int, binary, boolean
 from web3 import Web3 as w3
-
-from models.bridge.types import Log
 
 
 class OpBedrockDepositTx(Serializable):

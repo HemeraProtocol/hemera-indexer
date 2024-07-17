@@ -1,22 +1,80 @@
+import json
 import logging
 
 from eth_utils import to_int, to_normalized_address
+from web3 import Web3
+from web3.middleware import geth_poa_middleware
 
-from domain.block import format_block_data
-from domain.block_ts_mapper import format_block_ts_mapper
-from enumeration.entity_type import EntityType
-from executors.batch_work_executor import BatchWorkExecutor
-from exporters.console_item_exporter import ConsoleItemExporter
-from models.bridge.bedrock.extractor.extractor import Extractor
+from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.exporters.console_item_exporter import ConsoleItemExporter
+from indexer.jobs.base_job import BaseJob
+from indexer.utils.enrich import enrich_blocks_timestamp, enrich_transactions
+from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rpc, generate_get_receipt_json_rpc
+from indexer.utils.utils import validate_range, rpc_response_batch_to_results
+from models.bridge.extractor import Extractor
 from models.bridge.items import bridge_items
-from jobs.base_job import BaseJob
-from jobs.export_blocks_job import blocks_rpc_requests
-from jobs.export_transactions_and_logs_job import receipt_rpc_requests
-from utils.enrich import enrich_blocks_timestamp, enrich_transactions
-from utils.utils import validate_range
-from utils.web3_utils import build_web3
 
 logger = logging.getLogger(__name__)
+
+def blocks_rpc_requests(make_request, block_number_batch, is_batch, include_transactions=True):
+    block_number_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, include_transactions))
+
+    if is_batch:
+        response = make_request(params=json.dumps(block_number_rpc))
+    else:
+        response = [make_request(params=json.dumps(block_number_rpc[0]))]
+
+    results = rpc_response_batch_to_results(response)
+    return results
+
+def receipt_rpc_requests(make_request, transaction_hashes, is_batch):
+    receipts_rpc = list(generate_get_receipt_json_rpc(transaction_hashes))
+
+    if is_batch:
+        response = make_request(params=json.dumps(receipts_rpc))
+    else:
+        response = [make_request(params=json.dumps(receipts_rpc[0]))]
+
+    results = rpc_response_batch_to_results(response)
+    return results
+
+def build_web3(provider):
+    w3 = Web3(provider)
+    w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+    return w3
+
+
+def format_block_ts_mapper(timestamp, block_number):
+    block_ts_mapper = {
+        'block_number': block_number,
+        'timestamp': timestamp,
+    }
+    return block_ts_mapper
+
+def format_bridge_block_data(block_dict):
+    block = {
+        'number': to_int(hexstr=block_dict['number']),
+        'timestamp': to_int(hexstr=block_dict['timestamp']),
+        'hash': block_dict['hash'],
+        'parent_hash': block_dict['parentHash'],
+        'nonce': block_dict['nonce'],
+        'gas_limit': to_int(hexstr=block_dict['gasLimit']),
+        'gas_used': to_int(hexstr=block_dict['gasUsed']),
+        'base_fee_per_gas': to_int(hexstr=block_dict['baseFeePerGas']) if 'baseFeePerGas' in block_dict else None,
+        'difficulty': to_int(hexstr=block_dict['difficulty']),
+        'total_difficulty': to_int(hexstr=block_dict['totalDifficulty']),
+        'size': to_int(hexstr=block_dict['size']),
+        'miner': to_normalized_address(block_dict['miner']),
+        'sha3_uncles': block_dict['sha3Uncles'],
+        'transactions_root': block_dict['transactionsRoot'],
+        'transactions_count': len(block_dict['transactions']),
+        'state_root': block_dict['stateRoot'],
+        'receipts_root': block_dict['receiptsRoot'],
+        'extra_data': block_dict['extraData'],
+        'withdrawals_root': block_dict.get('withdrawalsRoot')
+    }
+
+    return block
 
 
 def format_bridge_transaction_data(transaction_dict):
@@ -130,7 +188,7 @@ class FetchFilterDataJob(BaseJob):
         self.transaction_hashes = list(hash.hex() for hash in transaction_hashes)
 
     def _process(self):
-        self._data_buff['formated_block'] = [format_block_data(block) for block in self._data_buff['block']]
+        self._data_buff['formated_block'] = [format_bridge_block_data(block) for block in self._data_buff['block']]
         self._data_buff['formated_block'] = sorted(self._data_buff['formated_block'], key=lambda x: x['number'])
 
         ts_dict = {}

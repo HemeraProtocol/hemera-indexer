@@ -10,8 +10,8 @@ from models.bridge.items import L1_TO_L2_DEPOSITED_TRANSACTION_ON_L1, L2_TO_L1_W
     L2_TO_L1_WITHDRAWN_TRANSACTION_FINALIZED
 
 
-from models.bridge.bedrock.extractor.extractor import Extractor
-from models.bridge.types import dict_to_dataclass, Transaction
+from models.bridge.extractor import Extractor
+from models.types import dict_to_dataclass, Transaction
 
 logger = logging.getLogger(__name__)
 

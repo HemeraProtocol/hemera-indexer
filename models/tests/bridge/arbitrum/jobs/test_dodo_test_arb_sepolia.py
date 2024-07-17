@@ -5,6 +5,8 @@
 # @File  test_arb_eth.py
 # @Brief
 import pytest
+from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
 from models.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch, ArbitrumStateBatchCreated, \
     ArbitrumStateBatchConfirmed
@@ -12,8 +14,6 @@ from models.bridge.arbitrum.arbitrum_bridge_parser import ArbitrumL1BridgeDataEx
     ArbitrumL2BridgeDataExtractor
 from models.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1
 from models.jobs.fetch_filter_data_job import FetchFilterDataJob
-from utils.provider import get_provider_from_uri
-from utils.thread_local_proxy import ThreadLocalProxy
 
 """
 DODO 
@@ -96,6 +96,7 @@ def test_l1_to_l2_deposit_dodo():
 
     l2_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L2],
+        export_keys=[ARB_L2ToL1_ON_L2],
         start_block=232679023,
         end_block=232679023,
         t=ThreadLocalProxy(
@@ -137,6 +138,7 @@ def test_l1_to_l2_deposit_erc20():
     """
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
+        export_keys=[ARB_L1ToL2_ON_L1],
         start_block=20317463,
         end_block=20317463,
         t=ThreadLocalProxy(
@@ -188,6 +190,7 @@ def test_l2_to_l1_withdraw():
     """
     arb_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L2],
+        export_keys=[ARB_L2ToL1_ON_L2],
         start_block=213672440,
         end_block=213672440,
         t=ThreadLocalProxy(
@@ -212,6 +215,7 @@ def test_l2_to_l1_withdraw():
 
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L1],
+        export_keys=[ARB_L2ToL1_ON_L1],
         start_block=19975906,
         end_block=19975906,
         t=ThreadLocalProxy(
@@ -238,6 +242,7 @@ def test_state_batch_eth():
     # node_created_tnx_hash = '0x3772f60c09379b147a80086f185b9fc3b7151a871fb48fa674e40ffa970b4aa4'
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumStateBatchCreated.type()],
+        export_keys=[ArbitrumStateBatchCreated.type()],
         start_block=20275296,
         end_block=20275296,
         t=ThreadLocalProxy(
@@ -262,6 +267,7 @@ def test_state_batch_eth():
     # node_confirmed_tnx_hash = '0xec745d2444fa77165db936d1661d69da4234050f715ae5d7b1509200339a8a0d'
     eth_job1 = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumStateBatchConfirmed.type()],
+        export_keys=[ArbitrumStateBatchConfirmed.type()],
         start_block=20275326,
         end_block=20275326,
         t=ThreadLocalProxy(
@@ -290,6 +296,7 @@ def test_transaction_batch_eth():
     # 0xfbeaff030508a0ec169d709a24c5f3c07c2a7c595b9647e45e080a54416c7f82
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumTransactionBatch.type()],
+        export_keys=[ArbitrumTransactionBatch.type()],
         start_block=20274992,
         end_block=20274992,
         t=ThreadLocalProxy(

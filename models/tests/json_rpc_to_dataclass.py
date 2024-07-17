@@ -2,11 +2,10 @@ import json
 from typing import Optional
 
 from eth_utils import to_int
-
 from models.types import Transaction, Receipt, Log
-from utils.json_rpc_requests import generate_get_receipt_json_rpc, generate_get_block_by_number_json_rpc
-from utils.provider import BatchHTTPProvider
-from utils.utils import rpc_response_batch_to_results
+from indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc, generate_get_block_by_number_json_rpc
+from indexer.utils.provider import BatchHTTPProvider
+from indexer.utils.utils import rpc_response_batch_to_results
 
 
 def get_transaction_from_rpc(rpc: str, transaction_hash: str) -> Optional[Transaction]:

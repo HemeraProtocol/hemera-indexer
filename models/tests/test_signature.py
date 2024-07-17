@@ -4,7 +4,7 @@ from typing import cast
 import pytest
 from web3.types import ABIEvent
 
-from models.signature import decode_log
+from models.bridge.signature import decode_log
 from models.types import Log
 
 
