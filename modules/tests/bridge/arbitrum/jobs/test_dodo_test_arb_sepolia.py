@@ -39,7 +39,7 @@ op-batch {
 
 """
 
-l1_rpc = "https://public.stackup.sh/api/v1/node/arbitrum-sepolia"
+l1_rpc = "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
 l2_rpc = "https://dodochain-testnet.alt.technology"
 
 @pytest.mark.test_arb_eth
@@ -271,7 +271,7 @@ def test_l2_to_l1_withdraw():
         batch_size=10,
         max_workers=1,
         extractor=ArbitrumL1BridgeDataExtractor(
-            contract_list=['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a'])
+            contract_list=['0xc0856971702b02a5576219540bd92dae79a79288'])
     )
     eth_job.run()
     confirm = eth_job._data_buff[ARB_L2ToL1_ON_L1][0]
