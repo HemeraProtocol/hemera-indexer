@@ -93,6 +93,7 @@ class ArbitrumL1BridgeDataExtractor(Extractor):
         topics.append(BRIDGE_CALL_TRIGGERED_EVENT_SIG)
         topics.append(NODE_CREATED_EVENT_SIG)
         topics.append(NODE_CONFIRMED_EVENT_SIG)
+        topics.append(SEQUENCER_BATCH_DELIVERED_EVENT_SIG)
 
         filter_params = {
             "topics": [
