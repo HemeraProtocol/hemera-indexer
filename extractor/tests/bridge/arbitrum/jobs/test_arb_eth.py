@@ -49,6 +49,7 @@ def test_l1_to_l2_deposit_eth():
 
     arb_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L2],
+        export_keys=[ARB_L2ToL1_ON_L2],
         start_block=232679023,
         end_block=232679023,
         t=ThreadLocalProxy(
@@ -154,6 +155,7 @@ def test_l2_to_l1_withdraw():
 
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L1],
+        export_keys=[ARB_L2ToL1_ON_L1],
         start_block=19975906,
         end_block=19975906,
         t=ThreadLocalProxy(
@@ -205,6 +207,7 @@ def test_state_batch_eth():
     # node_confirmed_tnx_hash = '0xec745d2444fa77165db936d1661d69da4234050f715ae5d7b1509200339a8a0d'
     eth_job1 = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumStateBatchConfirmed.type()],
+        export_keys=[ArbitrumStateBatchConfirmed.type()],
         start_block=20275326,
         end_block=20275326,
         t=ThreadLocalProxy(

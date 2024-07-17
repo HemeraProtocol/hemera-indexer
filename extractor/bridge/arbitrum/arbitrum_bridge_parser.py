@@ -169,7 +169,7 @@ class ArbitrumL1BridgeDataExtractor(Extractor):
                     'to_address': message_deliver.bridge_to_address,
                     'amount': l1TokenAmount,
                     'extra_info': message_deliver.extra_info,
-                    '_type': ArbType.BRIDGE_NATIVE,
+                    '_type': ArbType.BRIDGE_NATIVE.value,
                 }
                 arb_deposit_lis.append(qdt)
             elif kind == 12:

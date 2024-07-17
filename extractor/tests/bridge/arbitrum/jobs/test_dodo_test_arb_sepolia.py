@@ -52,6 +52,7 @@ def test_l1_to_l2_deposit_dodo():
     """
     l1_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
+        export_keys=[ARB_L1ToL2_ON_L1],
         start_block=37277407,
         end_block=37277407,
         t=ThreadLocalProxy(
@@ -70,16 +71,28 @@ def test_l1_to_l2_deposit_dodo():
     # all kinds
     # kind 3
     k3 = send_lis[2]
-    k11 = send_lis[0]
-    k9 = send_lis[1]
+    assert k3['index'] == 2
+    assert k3['l1_block_number'] == 37277407
+    assert k3['from_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
+    assert k3['to_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
+    # TODO confirm what l2hash should be
+    # assert k3['msg_hash'] == ''
 
-    assert k3 is not None
-    assert k3['msg_hash'] == '0xf448aff385bf01d8815d14f01fe5eba92f43631bacb83c467089139c1defe0f4'
-    assert k3['index'] == 1612917
-    assert k3['l1_block_number'] == 20316414
-    assert k3['l1_transaction_hash'] == '0x496e1f86b07b0db956e68f026f74286e829605249e7714db6d1f9ae40b27d941'
-    assert k3['l1_token_address'] is None
-    assert k3['amount'] == 604110835137788
+    # kind 11
+    k11 = send_lis[0]
+    assert k11['index'] == 0
+    assert k11['l1_block_number'] == 37277407
+    assert k11['from_address'] == '0x0000000000000000000000000000000000000000'
+    # TODO confirm what l2hash should be
+    # assert k11['msg_hash'] == ''
+    # kind9
+    k9 = send_lis[1]
+    assert k9['index'] == 1
+    assert k9['l1_block_number'] == 37277407
+    assert k9['from_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
+    assert k9['to_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
+    # TODO confirm what l2hash should be
+    # assert k9['msg_hash'] == ''
 
     l2_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L2],
@@ -95,8 +108,8 @@ def test_l1_to_l2_deposit_dodo():
         max_workers=1,
         extractor=ArbitrumL2BridgeDataExtractor(contract_list=['0x000000000000000000000000000000000000006e'])
     )
-    arb_job.run()
-    confirm = arb_job._data_buff[ARB_L2ToL1_ON_L2][0]
+    l2_job.run()
+    confirm = l2_job._data_buff[ARB_L2ToL1_ON_L2][0]
     assert confirm is not None
     assert confirm['msg_hash'] == '0xf448aff385bf01d8815d14f01fe5eba92f43631bacb83c467089139c1defe0f4'
     assert confirm['l2_block_number'] == 232679023
@@ -104,7 +117,11 @@ def test_l1_to_l2_deposit_dodo():
 
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_usdc():
-    pass
+    # 46298492
+    l1_tnx_hash = '0x022800446360a100034dc5cbc0563813db6ff4136ca7ff4f777badc2603ac4c0'
+    #
+    l2_tnx_hash = '0x74e8ac4359905ad27ee403bc13d976640d9febf4e663009cd0a41134a103516a'
+
 
 
 @pytest.mark.test_arb_eth
