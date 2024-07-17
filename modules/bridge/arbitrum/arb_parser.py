@@ -449,6 +449,7 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data, chain_id=Network.Arb
         destAddress = Web3.to_hex(data[offset: offset + 20])
         offset += 20
         msgValue = int.from_bytes(data[offset: offset + 32], 'big')
+        l1TokenAmount = msgValue
     else:
         raise Exception(f"uncovered case. kind: {kind}")
     return destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress, callValueRefundAddress, maxFeePerGas, dataBytes, l1TokenId, l1TokenAmount

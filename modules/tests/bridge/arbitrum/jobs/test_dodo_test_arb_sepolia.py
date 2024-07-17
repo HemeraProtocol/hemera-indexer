@@ -77,7 +77,8 @@ def test_l1_to_l2_deposit_dodo():
     assert k3['from_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
     assert k3['to_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
     # TODO confirm what l2hash should be
-    # assert k3['msg_hash'] == ''
+    # assert k3['msg_hash'] == 'aa'
+    # assert k3['amount'] == 0
 
     # kind 11
     k11 = send_lis[0]
@@ -86,6 +87,7 @@ def test_l1_to_l2_deposit_dodo():
     assert k11['from_address'] == '0x0000000000000000000000000000000000000000'
     # TODO confirm what l2hash should be
     # assert k11['msg_hash'] == ''
+    # assert k11['amount'] == 101
     # kind9
     k9 = send_lis[1]
     assert k9['index'] == 1
@@ -93,7 +95,8 @@ def test_l1_to_l2_deposit_dodo():
     assert k9['from_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
     assert k9['to_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
     # TODO confirm what l2hash should be
-    # assert k9['msg_hash'] == ''
+    assert k9['msg_hash'] == '0x74e8ac4359905ad27ee403bc13d976640d9febf4e663009cd0a41134a103516a'
+    assert k9['amount'] == 0
 
     l2_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L2],
@@ -145,6 +148,33 @@ def test_l1_to_l2_deposit_usdc():
     assert send_lis[0]['l1_transaction_hash'] == '0x022800446360a100034dc5cbc0563813db6ff4136ca7ff4f777badc2603ac4c0'
     assert send_lis[0]['amount'] == 10000000000000000000
     assert send_lis[0]['l1_token_address'] == '0xd0cf7dfbf09cafab8aef00e0ce19a4638004a364'
+
+
+@pytest.mark.test_arb_eth
+def test_l1_to_l2_deposit_kind12():
+    #
+    l1_job = FetchFilterDataJob(
+        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
+        export_keys=[ARB_L1ToL2_ON_L1],
+        start_block=44594973,
+        end_block=44594973,
+        t=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l1_rpc, batch=False)
+        ),
+        batch_web3_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l1_rpc, batch=True)
+        ),
+        batch_size=10,
+        max_workers=1,
+        extractor=ArbitrumL1BridgeDataExtractor(contract_list=['0xd62ef8d8c71d190417c6ce71f65795696c069f09', '0xc0856971702b02a5576219540bd92dae79a79288', '0xa97c7633c747a10dfc8150d3a6dae448a0a6b65d'])
+    )
+    l1_job.run()
+    send_lis = l1_job._data_buff[ARB_L1ToL2_ON_L1]
+    assert len(send_lis) == 1
+    assert send_lis[0]['msg_hash'] == '0x695b1c8f042c71f123379ccce2dea17298d858315d1dedff8704d64b67388eb0'
+    assert send_lis[0]['l1_block_number'] == 44594973
+    assert send_lis[0]['l1_transaction_hash'] == '0x05bea0b3d43714348f869152769bf3b2f81863339dbd2ce961c2c14f54185d41'
+    assert send_lis[0]['amount'] == 100000000000000
 
 
 @pytest.mark.test_arb_eth
