@@ -74,7 +74,8 @@ def enrich_transactions(transactions, receipts):
             ('blobGasPrice', 'receiptBlobGasPrice'),
             ('contractAddress', 'receiptContractAddress'),
             ('error', 'error'),
-            ('revertReason', 'revertReason')
+            ('revertReason', 'revertReason'),
+            ('logs', 'logs')
         ]))
 
     if len(result) != len(transactions):
