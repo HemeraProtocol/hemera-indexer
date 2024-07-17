@@ -4,17 +4,18 @@
 # @Author  will
 # @File  arb_parser.py
 # @Brief
-import re
 import json
+from dataclasses import dataclass
+from typing import Any, Dict, cast
+
 from web3 import Web3
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIEvent, ABIFunction
-from typing import Any, Dict, cast, Optional
-from dataclasses import dataclass
-from modules.bridge.arbitrum.arb_conf import env
-from modules.types import dataclass_to_dict, Base
 
+from modules.bridge.arbitrum.arb_conf import env
+from modules.bridge.arbitrum.arb_network import Network
 from modules.bridge.signature import event_log_abi_to_topic, decode_log, function_abi_to_4byte_selector_str
+from modules.types import dataclass_to_dict, Base
 
 MESSAGE_DELIVERED_EVENT = cast(ABIEvent, json.loads(
     """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"messageIndex","type":"uint256"},{"indexed":true,"internalType":"bytes32","name":"beforeInboxAcc","type":"bytes32"},{"indexed":false,"internalType":"address","name":"inbox","type":"address"},{"indexed":false,"internalType":"uint8","name":"kind","type":"uint8"},{"indexed":false,"internalType":"address","name":"sender","type":"address"},{"indexed":false,"internalType":"bytes32","name":"messageDataHash","type":"bytes32"},{"indexed":false,"internalType":"uint256","name":"baseFeeL1","type":"uint256"},{"indexed":false,"internalType":"uint64","name":"timestamp","type":"uint64"}],"name":"MessageDelivered","type":"event"}"""))
@@ -101,7 +102,7 @@ class Constants:
 
 @dataclass
 class MessageDeliveredData(Base):
-    msg_hash: Optional[str]
+    msg_hash: str
     block_number: int
     block_timestamp: int
     block_hash: str
@@ -191,7 +192,7 @@ class ArbitrumTransactionBatch(Base):
     l1_transaction_hash: str
     end_block_number: str
     start_block_number: str
-    transaction_count: Optional[int]
+    transaction_count: int
 
 
 @dataclass
@@ -203,9 +204,9 @@ class ArbitrumStateBatchConfirmed(Base):
     l1_block_timestamp: int
     l1_block_hash: str
     l1_transaction_hash: str
-    end_block_number: Optional[int]
-    start_block_number: Optional[int]
-    transaction_count: Optional[int]
+    end_block_number: int
+    start_block_number: int
+    transaction_count: int
 
 
 @dataclass
@@ -352,7 +353,7 @@ def un_marshal_tx_to_l1(data):
     return selector, _token, _from, _to, _amount, restData
 
 
-def un_marshal_inbox_message_delivered_data(raw_kind, data):
+def un_marshal_inbox_message_delivered_data(raw_kind, data, chain_id=Network.Arbitrum.value, ):
     kind = raw_kind
     offset = 0
 
@@ -383,7 +384,7 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
            * extraConfig
            * );
            */
-       
+
         """
         chainId = data[offset: offset + 32]
         offset += 32
@@ -434,8 +435,14 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data):
         dataBytes = Web3.to_hex(data[offset: offset + dataLength])
 
         restData = data[offset:]
-        if (68 <= len(restData)):
-            l1TokenAmount = int.from_bytes(restData[36: 68], 'big')
+        if chain_id == Network.Arbitrum.value:
+            if (68 <= len(restData)):
+                l1TokenAmount = int.from_bytes(restData[36: 68], 'big')
+        elif chain_id == Network.DODO_TESTNET.value:
+            if 36 <= len(restData):
+                l1TokenId = strip_leading_zeros(Web3.to_hex(restData[4: 36]))
+            if 100 <= len(restData):
+                l1TokenAmount = int.from_bytes(restData[100: 132], 'big')
     elif kind == Constants.L2_MSG:
         pass
     elif kind == Constants.L1MessageType_ethDeposit:

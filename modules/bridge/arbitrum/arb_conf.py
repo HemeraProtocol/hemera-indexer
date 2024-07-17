@@ -4,14 +4,14 @@
 # @Author  will
 # @File  arb_conf.py
 # @Brief
-env = {
-    'l2_chain_id': 42161,
-    'transaction_batch_offset': 22207816
-}
 # env = {
-#     'l2_chain_id': 53457,
-#     'transaction_batch_offset': 0
+#     'l2_chain_id': 42161,
+#     'transaction_batch_offset': 22207816
 # }
+env = {
+    'l2_chain_id': 53457,
+    'transaction_batch_offset': 0
+}
 NETWORK = {
     'dodo-test->arb-sepolia': {
         "l1": [],

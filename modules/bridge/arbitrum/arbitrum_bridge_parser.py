@@ -13,7 +13,7 @@ from eth_utils import to_checksum_address
 from modules.bridge.arbitrum.arb_parser import *
 from modules.bridge.arbitrum.arb_rlp import calculate_submit_retryable_id, calculate_deposit_tx_id
 from modules.bridge.extractor import Extractor
-from modules.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L1, ARB_L2ToL1_ON_L2
+from modules.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L1, ARB_L2ToL1_ON_L2, ARB_L1ToL2_ON_L2
 from modules.types import dict_to_dataclass, Transaction
 
 logger = logging.getLogger(__name__)
@@ -124,11 +124,12 @@ class ArbitrumL1BridgeDataExtractor(Extractor):
             if not message_deliver:
                 continue
             kind = message_deliver.kind if message_deliver.kind else -1
+            l2_chain_id = env["l2_chain_id"]
             (destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress,
              callValueRefundAddress,
              maxFeePerGas, dataHex, l1TokenId, l1TokenAmount) = un_marshal_inbox_message_delivered_data(kind,
-                                                                                                          inbox_message.data)
-            l2_chain_id = env["l2_chain_id"]
+                                                                                                          inbox_message.data, l2_chain_id)
+
             if kind == 9:
                 l2_tx_hash = calculate_submit_retryable_id(
                     l2_chain_id,
@@ -320,7 +321,7 @@ class ArbitrumL2BridgeDataExtractor(Extractor):
             x_lis = parse_ticket_created_event(tnx, self.contract_set)
             for x in x_lis:
                 adt = {
-                    'item': ARB_L2ToL1_ON_L2,
+                    'item': ARB_L1ToL2_ON_L2,
                     'msg_hash': x.msg_hash,
                     'l2_block_number': x.block_number,
                     'l2_block_timestamp': x.block_timestamp,
