@@ -526,7 +526,7 @@ def parse_sequencer_batch_delivered(transaction, contract_set) -> list:
                 l1_transaction_hash=transaction.hash,
                 transaction_count=None,
                 end_block_number=newMessageCount + transaction_batch_offset,
-                start_block_number=prevMessageCount + transaction_batch_offset + 1,
+                start_block_number=prevMessageCount + transaction_batch_offset,
             )
             res.append(dataclass_to_dict(at))
     return res

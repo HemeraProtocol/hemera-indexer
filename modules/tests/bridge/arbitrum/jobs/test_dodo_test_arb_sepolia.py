@@ -113,6 +113,8 @@ def test_l1_to_l2_deposit_dodo():
     l2_job.run()
     confirm = l2_job._data_buff[ARB_L1ToL2_ON_L2]
     assert confirm is not None
+    print([se['msg_hash'] for se in send_lis])
+    print([co['msg_hash'] for co in confirm])
     # assert confirm['msg_hash'] == '0xf448aff385bf01d8815d14f01fe5eba92f43631bacb83c467089139c1defe0f4'
     # assert confirm['l2_block_number'] == 232679023
 
@@ -362,5 +364,5 @@ def test_transaction_batch_eth():
     assert txn_batch['batch_index'] == 1
     assert txn_batch['l1_block_number'] == 37291894
     assert txn_batch['l1_transaction_hash'] == '0x26128070a1422082afbb4d17bf690c107f4d30b27c1d9d74bd2fdc57f41c3b78'
-    assert txn_batch['start_block_number'] == 0
+    assert txn_batch['start_block_number'] == 1
     assert txn_batch['end_block_number'] == 18
