@@ -40,6 +40,7 @@ op-batch {
 """
 
 l1_rpc = "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
+#l1_rpc = "https://crimson-magical-uranium.arbitrum-sepolia.quiknode.pro/8e017b6afe915259d38562e178c89a65ec680c39"
 l2_rpc = "https://dodochain-testnet.alt.technology"
 
 @pytest.mark.test_arb_eth
@@ -276,9 +277,10 @@ def test_l2_to_l1_withdraw():
     eth_job.run()
     confirm = eth_job._data_buff[ARB_L2ToL1_ON_L1][0]
     assert confirm is not None
-    assert confirm['msg_hash'] == 119208
-    assert confirm['l1_block_number'] == 19975906
-    assert confirm['l1_transaction_hash'] == '0x1013dea84e83985fa2dd7dbf4ff71dced8c98d1e442e47f0ec39ac5fe4b2008a'
+    assert confirm['msg_hash'] == 0
+    assert confirm['l1_block_number'] == 37326739
+    assert confirm['l1_transaction_hash'] == '0xfea97317e8533d6a0cc3ef49c75a40439793057c3b0f6a414ab3dd57efccb06e'
+    assert confirm['value'] == 100000000000000000
 
 
 @pytest.mark.test_arb_eth
@@ -286,51 +288,53 @@ def test_state_batch_eth():
     # node_created_tnx_hash = '0x3772f60c09379b147a80086f185b9fc3b7151a871fb48fa674e40ffa970b4aa4'
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumStateBatchCreated.type()],
-        start_block=20275296,
-        end_block=20275296,
+        export_keys=[ArbitrumStateBatchCreated.type()],
+        start_block=64428750,
+        end_block=64428750,
         t=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://eth.llamarpc.com", batch=False)
+            lambda: get_provider_from_uri(l1_rpc, batch=False)
         ),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://eth.llamarpc.com", batch=True)
+            lambda: get_provider_from_uri(l1_rpc, batch=True)
         ),
         batch_size=10,
         max_workers=1,
         extractor=ArbitrumL1BridgeDataExtractor(
-            contract_list=['0x5eF0D09d1E6204141B4d37530808eD19f60FBa35'])
+            contract_list=['0xbc4cc964ef0ea5792a398f9e738edf368a34f003'])
     )
     eth_job.run()
     txn_create = eth_job._data_buff[ArbitrumStateBatchCreated.type()][0]
     assert txn_create is not None
-    assert txn_create['node_num'] == 15406
-    assert txn_create['create_l1_block_number'] == 20275296
-    assert txn_create['parent_node_hash'] == '0x119838a50b7f9c34ba3314e1150903045bd9562bf261ae5ccf77b913f9fedb74'
-    assert txn_create['node_hash'] == '0x032624aca1628fd9ffc5206258c2d56562c5c7055482ffba40c757f9409abb5e'
+    assert txn_create['node_num'] == 295
+    assert txn_create['create_l1_block_number'] == 64428750
+    assert txn_create['parent_node_hash'] == '0x60ac3d3c4bed465ca1554ecc149b811ce5bd793f9de6e9034251c0c53919768c'
+    assert txn_create['node_hash'] == '0x2dd9bcdc86b0cc387f7d514ce0a3836537058c89af76f189a3aedf54e2ba5d80'
 
     # node_confirmed_tnx_hash = '0xec745d2444fa77165db936d1661d69da4234050f715ae5d7b1509200339a8a0d'
     eth_job1 = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumStateBatchConfirmed.type()],
-        start_block=20275326,
-        end_block=20275326,
+        export_keys=[ArbitrumStateBatchConfirmed.type()],
+        start_block=64434169,
+        end_block=64434169,
         t=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://eth.llamarpc.com", batch=False)
+            lambda: get_provider_from_uri(l1_rpc, batch=False)
         ),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://eth.llamarpc.com", batch=True)
+            lambda: get_provider_from_uri(l1_rpc, batch=True)
         ),
         batch_size=10,
         max_workers=1,
         extractor=ArbitrumL1BridgeDataExtractor(
-            contract_list=['0x5eF0D09d1E6204141B4d37530808eD19f60FBa35'])
+            contract_list=['0xbc4cc964ef0ea5792a398f9e738edf368a34f003'])
     )
     eth_job1.run()
     txn_confirm = eth_job1._data_buff[ArbitrumStateBatchConfirmed.type()][0]
     assert txn_confirm is not None
-    assert txn_confirm['node_num'] == 15253
-    assert txn_confirm['block_hash'] == '0x3483d1e5a7d0e9625b3ee0df6455ec084b6f37cda8aac0f4543766a506b5eefa'
-    assert txn_confirm['send_root'] == '0x63d44891a7f8aaafe29a97e05c59f8058fb9881c9115e01532963dacd0cf0a89'
-    assert txn_confirm['l1_block_number'] == 20275326
-    assert txn_confirm['l1_transaction_hash'] == '0xec745d2444fa77165db936d1661d69da4234050f715ae5d7b1509200339a8a0d'
+    assert txn_confirm['node_num'] == 295
+    assert txn_confirm['block_hash'] == '0x86451c0dfae6b6fa2cd58357c8ba69a42b3786518e8dd33313a462b944790420'
+    assert txn_confirm['send_root'] == '0x36c9c2cfae0aaf9e860e68e6cd7659796a576c3a3850ce31c93e9740095d9998'
+    assert txn_confirm['l1_block_number'] == 64434169
+    assert txn_confirm['l1_transaction_hash'] == '0x3a1ae1cfefa0b5270d612adc783552c8ede8110b95cdb2bea3b6d22064ea865e'
 
 
 @pytest.mark.test_arb_eth
@@ -338,26 +342,25 @@ def test_transaction_batch_eth():
     # 0xfbeaff030508a0ec169d709a24c5f3c07c2a7c595b9647e45e080a54416c7f82
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumTransactionBatch.type()],
-        start_block=20274992,
-        end_block=20274992,
+        export_keys=[ArbitrumTransactionBatch.type()],
+        start_block=37291894,
+        end_block=37291894,
         t=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://eth.llamarpc.com", batch=False)
+            lambda: get_provider_from_uri(l1_rpc, batch=False)
         ),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://eth.llamarpc.com", batch=True)
+            lambda: get_provider_from_uri(l1_rpc, batch=True)
         ),
         batch_size=10,
         max_workers=1,
         extractor=ArbitrumL1BridgeDataExtractor(
-            contract_list=['0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6'])
+            contract_list=['0x67ad6c79e33ea9e523e0e68961456d0ac7a973cc'])
     )
     eth_job.run()
     data_buf = eth_job._data_buff
-    txn_batch = data_buf['arbitrum_transaction_batch'][0]
-    assert txn_batch['batch_index'] == 643250
-    assert txn_batch['l1_block_number'] == 20274992
-    assert txn_batch['l1_block_timestamp'] == 1720601171
-    assert txn_batch['l1_block_hash'] == '0x97541c0bb58e4e71bdeec02001149e5a9a9e90a29b14e81464be9e89a46bce22'
-    assert txn_batch['l1_transaction_hash'] == '0xfbeaff030508a0ec169d709a24c5f3c07c2a7c595b9647e45e080a54416c7f82'
-    assert txn_batch['start_block_number'] == 230683544
-    assert txn_batch['end_block_number'] == 230683798
+    txn_batch = data_buf[ArbitrumTransactionBatch.type()][0]
+    assert txn_batch['batch_index'] == 1
+    assert txn_batch['l1_block_number'] == 37291894
+    assert txn_batch['l1_transaction_hash'] == '0x26128070a1422082afbb4d17bf690c107f4d30b27c1d9d74bd2fdc57f41c3b78'
+    assert txn_batch['start_block_number'] == 0
+    assert txn_batch['end_block_number'] == 18
