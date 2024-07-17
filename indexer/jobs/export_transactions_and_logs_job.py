@@ -79,6 +79,7 @@ class ExportTransactionsAndLogsJob(BaseJob):
             items.extend(self._extract_from_buff(['enriched_log']))
 
         self._item_exporter.export_items(items)
+        self._data_buff.clear()
 
 
 def receipt_rpc_requests(make_request, transaction_hashes, is_batch):

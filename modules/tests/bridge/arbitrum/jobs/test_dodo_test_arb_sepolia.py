@@ -39,7 +39,7 @@ op-batch {
 
 """
 
-l1_rpc = "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
+l1_rpc = "https://public.stackup.sh/api/v1/node/arbitrum-sepolia"
 l2_rpc = "https://dodochain-testnet.alt.technology"
 
 @pytest.mark.test_arb_eth

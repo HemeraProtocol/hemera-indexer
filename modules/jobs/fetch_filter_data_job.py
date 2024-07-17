@@ -220,12 +220,7 @@ class FetchFilterDataJob(BaseJob):
             self._collect_item(data)
 
     def _collect(self):
-        self._batch_work_executor.execute(
-            self.block_numbers,
-            self._collect_batch,
-            total_items=len(self.block_numbers)
-        )
-        self._batch_work_executor.shutdown()
+        self._collect_batch(self.block_numbers)
 
     def _collect_batch(self, block_number_batch):
         results = blocks_rpc_requests(self._batch_web3_provider.make_request, block_number_batch, self._is_batch)
