@@ -1,21 +1,7 @@
-from alembic import context
-from flask import Flask
-
 from common.services.sqlalchemy_session import RouteSQLAlchemy
 from common.utils.module_loading import import_string
 
 db = RouteSQLAlchemy(session_options={"autoflush": False})
-
-
-def init_app():
-    app = Flask(__name__)
-    config = context.config
-    app.config['SQLALCHEMY_DATABASE_URI'] = config.get_main_option("sqlalchemy.url")
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-    db.init_app(app)
-
-    return app
 
 
 def import_all_models():
@@ -39,6 +25,7 @@ def __getattr__(name):
 __lazy_imports = {
     "SyncRecord": "common.models.sync_record",
     "FixRecord": "common.models.fix_record",
+    "BlockTimestampMapper": "common.models.block_timestamp_mapper",
     "Blocks": "common.models.blocks",
     "Transactions": "common.models.transactions",
     "Logs": "common.models.logs",
@@ -63,4 +50,6 @@ __lazy_imports = {
     "DailyTransactionsAggregates": "common.models.daily_transactions_aggregates",
     "ScheduledWalletCountMetadata": "common.models.scheduled_metadata",
     "ScheduledTokenCountMetadata": "common.models.scheduled_metadata",
+    "WalletAddresses": "common.models.wallet_addresses",
+    "StatisticsWalletAddresses": "common.models.statistics_wallet_addresses",
 }
