@@ -7,7 +7,7 @@
 import pytest
 
 from modules.bridge.arbitrum.arb_parser import *
-from modules.bridge.arbitrum.arbitrum_bridge_parser import ArbitrumBridgeExtractor
+
 from modules.tests.json_rpc_to_dataclass import get_transaction_from_rpc
 
 l2Rpc = "https://arbitrum-one-rpc.publicnode.com"
