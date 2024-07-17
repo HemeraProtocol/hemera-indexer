@@ -95,10 +95,10 @@ def test_l1_to_l2_deposit_dodo():
     # assert k9['msg_hash'] == ''
 
     l2_job = FetchFilterDataJob(
-        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L2],
-        export_keys=[ARB_L2ToL1_ON_L2],
-        start_block=232679023,
-        end_block=232679023,
+        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L2],
+        export_keys=[ARB_L1ToL2_ON_L2],
+        start_block=0,
+        end_block=2174,
         t=ThreadLocalProxy(
             lambda: get_provider_from_uri(l2_rpc, batch=False)
         ),
@@ -110,7 +110,7 @@ def test_l1_to_l2_deposit_dodo():
         extractor=ArbitrumL2BridgeDataExtractor(contract_list=['0x000000000000000000000000000000000000006e'])
     )
     l2_job.run()
-    confirm = l2_job._data_buff[ARB_L2ToL1_ON_L2][0]
+    confirm = l2_job._data_buff[ARB_L1ToL2_ON_L2]
     assert confirm is not None
     assert confirm['msg_hash'] == '0xf448aff385bf01d8815d14f01fe5eba92f43631bacb83c467089139c1defe0f4'
     assert confirm['l2_block_number'] == 232679023
@@ -118,16 +118,59 @@ def test_l1_to_l2_deposit_dodo():
 
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_usdc():
-    # 46298492
-    l1_tnx_hash = '0x022800446360a100034dc5cbc0563813db6ff4136ca7ff4f777badc2603ac4c0'
     #
-    l2_tnx_hash = '0x74e8ac4359905ad27ee403bc13d976640d9febf4e663009cd0a41134a103516a'
-
+    l1_job = FetchFilterDataJob(
+        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
+        export_keys=[ARB_L1ToL2_ON_L1],
+        start_block=46298492,
+        end_block=46298492,
+        t=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l1_rpc, batch=False)
+        ),
+        batch_web3_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l1_rpc, batch=True)
+        ),
+        batch_size=10,
+        max_workers=1,
+        extractor=ArbitrumL1BridgeDataExtractor(contract_list=['0xd62ef8d8c71d190417c6ce71f65795696c069f09', '0xc0856971702b02a5576219540bd92dae79a79288', '0xa97c7633c747a10dfc8150d3a6dae448a0a6b65d'])
+    )
+    l1_job.run()
+    send_lis = l1_job._data_buff[ARB_L1ToL2_ON_L1]
+    assert len(send_lis) == 1
+    assert send_lis[0]['msg_hash'] == '0xcb9ee2ff28bf01623d37596e033f0c77736def463d62bf1bd015bd8bf12b0b3b'
+    assert send_lis[0]['l1_block_number'] == 46298492
+    assert send_lis[0]['l1_transaction_hash'] == '0x022800446360a100034dc5cbc0563813db6ff4136ca7ff4f777badc2603ac4c0'
+    assert send_lis[0]['amount'] == 10000000000000000000
+    assert send_lis[0]['l1_token_address'] == '0xd0cf7dfbf09cafab8aef00e0ce19a4638004a364'
 
 
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_gld():
-    pass
+    l1_job = FetchFilterDataJob(
+        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
+        export_keys=[ARB_L1ToL2_ON_L1],
+        start_block=42230445,
+        end_block=42230445,
+        t=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l1_rpc, batch=False)
+        ),
+        batch_web3_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l1_rpc, batch=True)
+        ),
+        batch_size=10,
+        max_workers=1,
+        extractor=ArbitrumL1BridgeDataExtractor(
+            contract_list=['0xd62ef8d8c71d190417c6ce71f65795696c069f09', '0xc0856971702b02a5576219540bd92dae79a79288',
+                           '0xa97c7633c747a10dfc8150d3a6dae448a0a6b65d'])
+    )
+    l1_job.run()
+    send_lis = l1_job._data_buff[ARB_L1ToL2_ON_L1]
+    assert len(send_lis) == 1
+    assert send_lis[0]['msg_hash'] == '0x747f2148ab85ca5e4c6274312cec7258edf0e2ddaa90030581150ac512152000'
+    assert send_lis[0]['l1_block_number'] == 42230445
+    assert send_lis[0]['l1_transaction_hash'] == '0x1ec81cacb17d39e9521d93f9b22e80590d09a911510fbafa8c48720cfe668ae5'
+    assert send_lis[0]['amount'] == 1000000000000000000
+    assert send_lis[0]['l1_token_address'] == '0xb5b52dfea4b4bbd665ba9c5e9651449614eec96d'
 
 
 @pytest.mark.test_arb_eth
@@ -138,7 +181,6 @@ def test_l1_to_l2_deposit_erc20():
     """
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
-        export_keys=[ARB_L1ToL2_ON_L1],
         start_block=20317463,
         end_block=20317463,
         t=ThreadLocalProxy(
@@ -185,19 +227,19 @@ def test_l1_to_l2_deposit_erc20():
 @pytest.mark.test_arb_eth
 def test_l2_to_l1_withdraw():
     """
-    l2_tnx_hash = '0xe08b22ab1e5849bd19a1d3f4a63abf3d7757e8af21b975f4202d3c5896fad7fd'
-    l1_tnx_hash = '0x1013dea84e83985fa2dd7dbf4ff71dced8c98d1e442e47f0ec39ac5fe4b2008a'
+    l2_tnx_hash = '0x023026939dcbab09a40ca8e83a612bcf280e7fb6f6e4a505b04e2d23b7274648'
+    l1_tnx_hash = '0xfea97317e8533d6a0cc3ef49c75a40439793057c3b0f6a414ab3dd57efccb06e'
     """
     arb_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L2],
         export_keys=[ARB_L2ToL1_ON_L2],
-        start_block=213672440,
-        end_block=213672440,
+        start_block=0,
+        end_block=3000,
         t=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://arbitrum-one-rpc.publicnode.com", batch=False)
+            lambda: get_provider_from_uri(l2_rpc, batch=False)
         ),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://arbitrum-one-rpc.publicnode.com", batch=True)
+            lambda: get_provider_from_uri(l2_rpc, batch=True)
         ),
         batch_size=10,
         max_workers=1,
@@ -215,7 +257,6 @@ def test_l2_to_l1_withdraw():
 
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L1],
-        export_keys=[ARB_L2ToL1_ON_L1],
         start_block=19975906,
         end_block=19975906,
         t=ThreadLocalProxy(
@@ -242,7 +283,6 @@ def test_state_batch_eth():
     # node_created_tnx_hash = '0x3772f60c09379b147a80086f185b9fc3b7151a871fb48fa674e40ffa970b4aa4'
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumStateBatchCreated.type()],
-        export_keys=[ArbitrumStateBatchCreated.type()],
         start_block=20275296,
         end_block=20275296,
         t=ThreadLocalProxy(
@@ -267,7 +307,6 @@ def test_state_batch_eth():
     # node_confirmed_tnx_hash = '0xec745d2444fa77165db936d1661d69da4234050f715ae5d7b1509200339a8a0d'
     eth_job1 = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumStateBatchConfirmed.type()],
-        export_keys=[ArbitrumStateBatchConfirmed.type()],
         start_block=20275326,
         end_block=20275326,
         t=ThreadLocalProxy(
@@ -296,7 +335,6 @@ def test_transaction_batch_eth():
     # 0xfbeaff030508a0ec169d709a24c5f3c07c2a7c595b9647e45e080a54416c7f82
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ArbitrumTransactionBatch.type()],
-        export_keys=[ArbitrumTransactionBatch.type()],
         start_block=20274992,
         end_block=20274992,
         t=ThreadLocalProxy(
