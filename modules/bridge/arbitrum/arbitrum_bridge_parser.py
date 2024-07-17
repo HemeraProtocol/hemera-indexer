@@ -350,7 +350,7 @@ class ArbitrumL2BridgeDataExtractor(Extractor):
                     'from_address': x.caller,
                     'to_address': x.destination,
                     'l1_token_address': None,
-                    'l2_token_address': strip_leading_zeros(x.l2_token_address),
+                    'l2_token_address': strip_leading_zeros(x.l2_token_address) if x.l2_token_address else None,
                     'extra_info': None,
                 }
                 l2_to_l1.append(arb)

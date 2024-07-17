@@ -332,9 +332,9 @@ def un_marshal_tx_to_l1(data):
     """
     offset = 0
     selector = b""
-    _token = ZERO_ADDRESS
-    _from = ZERO_ADDRESS
-    _to = ZERO_ADDRESS
+    _token = None
+    _from = Web3.to_hex(ZERO_ADDRESS)
+    _to = Web3.to_hex(ZERO_ADDRESS)
     _amount = 0
     restData = b""
     if not data:
@@ -475,7 +475,7 @@ def parse_l2_to_l1_tx_64_event(transaction, contract_set):
                 l2_transaction_hash=transaction.hash,
                 l2_from_address=transaction.from_address,
                 l2_to_address=transaction.to_address,
-                l2_token_address=strip_leading_zeros(_token),
+                l2_token_address=strip_leading_zeros(_token) if _token else None,
                 caller=event.get("caller"),
                 destination=event.get("destination"),
                 hash=hex(event.get("hash")),

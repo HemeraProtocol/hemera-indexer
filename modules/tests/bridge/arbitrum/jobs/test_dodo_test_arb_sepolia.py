@@ -246,17 +246,20 @@ def test_l2_to_l1_withdraw():
         extractor=ArbitrumL2BridgeDataExtractor(contract_list=['0x0000000000000000000000000000000000000064'])
     )
     arb_job.run()
-    send = arb_job._data_buff[ARB_L2ToL1_ON_L2][0]
-    assert send is not None
-    assert send['msg_hash'] == 119208
-    assert send['index'] == 119208
-    assert send['l2_block_number'] == 213672440
-    assert send['l2_transaction_hash'] == '0xe08b22ab1e5849bd19a1d3f4a63abf3d7757e8af21b975f4202d3c5896fad7fd'
-    assert send['amount'] == 234577589862530059
-    assert send['l2_token_address'] == '0xfae103dc9cf190ed75350761e95403b7b8afa6c0'
+    send_lis = arb_job._data_buff[ARB_L2ToL1_ON_L2]
+    assert send_lis is not None
+    assert len(send_lis) == 12
+    assert send_lis[0]['msg_hash'] == 0
+    assert send_lis[0]['l2_block_number'] == 18
+    assert send_lis[0]['amount'] == 100000000000000000
+
+    assert send_lis[11]['msg_hash'] == 11
+    assert send_lis[11]['l2_block_number'] == 1915
+    assert send_lis[11]['amount'] == 1900000000000000000
 
     eth_job = FetchFilterDataJob(
         index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L1],
+        export_keys=[ARB_L2ToL1_ON_L1],
         start_block=37326739,
         end_block=37326739,
         t=ThreadLocalProxy(
