@@ -22,6 +22,9 @@ wheels/
 .installed.cfg
 *.egg
 
+# JetBrains IDE
+.idea/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -37,3 +40,4 @@ ENV/
 # Output Data Files
 *.json
 *.csv
+docker-compose/data/
