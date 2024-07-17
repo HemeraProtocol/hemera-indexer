@@ -4,7 +4,7 @@ from common.models import db
 from common.models.contracts import Contracts
 from common.models.tokens import Tokens
 from common.models.wallet_addresses import WalletAddresses
-from common.models.wallet_addresses import WalletAddresses as ExplorerWalletAddresses
+from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.utils.config import get_config
 from common.utils.db_utils import build_entities
 from socialscan_api.app.cache import cache
@@ -19,9 +19,9 @@ else:
     ens_client = None
 
 token_address_transfers_type_column_dict = {
-    "tokentxns": WalletAddresses.erc20_transfer_cnt,
-    "tokentxns-nft": WalletAddresses.erc721_transfer_cnt,
-    "tokentxns-nft1155": WalletAddresses.erc1155_transfer_cnt,
+    "tokentxns": StatisticsWalletAddresses.erc20_transfer_cnt,
+    "tokentxns-nft": StatisticsWalletAddresses.erc721_transfer_cnt,
+    "tokentxns-nft1155": StatisticsWalletAddresses.erc1155_transfer_cnt,
 }
 
 
@@ -42,9 +42,9 @@ def get_token_txn_cnt_by_address(token_type, address):
 
 def get_txn_cnt_by_address(address):
     result = (
-        db.session.query(WalletAddresses)
-        .with_entities(WalletAddresses.txn_cnt)
-        .filter(WalletAddresses.address == address)
+        db.session.query(StatisticsWalletAddresses)
+        .with_entities(StatisticsWalletAddresses.txn_cnt)
+        .filter(StatisticsWalletAddresses.address == address)
         .first()
     )
     return result
@@ -115,10 +115,10 @@ def get_address_display_mapping(wallet_address_list):
 
     # 手动Tag
     addresses = (
-        db.session.query(ExplorerWalletAddresses.address, ExplorerWalletAddresses.tag)
+        db.session.query(StatisticsWalletAddresses.address, StatisticsWalletAddresses.tag)
         .filter(
-            ExplorerWalletAddresses.address.in_(wallet_address_list),
-            ExplorerWalletAddresses.tag != None,
+            StatisticsWalletAddresses.address.in_(wallet_address_list),
+            StatisticsWalletAddresses.tag != None,
         )
         .all()
     )
