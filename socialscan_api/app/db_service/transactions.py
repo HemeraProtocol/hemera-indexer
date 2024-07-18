@@ -71,18 +71,21 @@ def get_tps_latest_10min(timestamp):
 
 def get_address_transaction_cnt(address):
     last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
+    bytes_address = bytes.fromhex(address[2:])
     recently_txn_count = (
         db.session.query(Transactions.hash)
         .filter(
             and_(
                 (Transactions.block_timestamp >= last_timestamp.date() if last_timestamp is not None else True),
                 or_(
-                    Transactions.from_address == bytes(address, 'utf-8'),
-                    Transactions.to_address == bytes(address, 'utf-8'),
+                    Transactions.from_address == bytes_address,
+                    Transactions.to_address == bytes_address,
                 ),
             )
         )
+        .count()
     )
+
     result = get_txn_cnt_by_address(address)
     past_txn_count = 0 if not result else result[0]
     total_count = past_txn_count + recently_txn_count

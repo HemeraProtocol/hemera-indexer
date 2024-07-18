@@ -2,7 +2,7 @@ from alembic import context
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
-from common.models import db, import_all_models, init_app
+from common.models import db, import_all_models
 
 # Make sure everything is imported so that alembic can find it all
 import_all_models()
@@ -21,8 +21,6 @@ config = context.config
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = db.metadata
-
-app = init_app()
 
 
 # other values from the config, defined by the needs of env.py,
@@ -69,9 +67,9 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        with app.app_context():
-            context.configure(
-                connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
 
         with context.begin_transaction():
             context.run_migrations()

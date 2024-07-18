@@ -11,6 +11,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 from common.models import db
 from common.utils.config import get_config
+from socialscan_api.app.cache import cache, redis_db
 from socialscan_api.app.limiter import get_real_ip, limiter
 from common.utils.exception_control import APIError
 
@@ -64,6 +65,9 @@ db.init_app(app)
 from socialscan_api.app.api import api
 
 api.init_app(app)
+
+# Init cache
+cache.init_app(app, config.cache_config.get_cache_config(redis_db))
 
 # Rate limit
 limiter.init_app(app)

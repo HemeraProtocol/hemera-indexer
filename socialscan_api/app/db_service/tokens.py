@@ -45,11 +45,11 @@ def get_address_token_transfer_cnt(token_type, condition, address):
     result = get_token_txn_cnt_by_address(token_type, address)
 
     new_transfer_count = (
-        db.session.query(type_to_token_transfer_table(type))
+        db.session.query(type_to_token_transfer_table(token_type))
         .filter(
             and_(
                 (
-                    type_to_token_transfer_table(type).block_timestamp >= last_timestamp.date()
+                    type_to_token_transfer_table(token_type).block_timestamp >= last_timestamp.date()
                     if last_timestamp is not None
                     else True
                 ),
@@ -63,13 +63,14 @@ def get_address_token_transfer_cnt(token_type, condition, address):
 
 def get_token_address_token_transfer_cnt(token_type, address):
     # Get count last update timestamp
+    bytes_address = bytes.fromhex(address[2:])
     last_timestamp = db.session.query(func.max(ScheduledTokenCountMetadata.last_data_timestamp)).scalar()
 
     # Get historical count
     result = (
         db.session.query(type_to_token_table(token_type))
         .with_entities(type_to_token_table(token_type).transfer_count)
-        .filter(type_to_token_table(token_type).address == address)
+        .filter(type_to_token_table(token_type).address == bytes_address)
         .first()
     )
     return (
@@ -77,11 +78,11 @@ def get_token_address_token_transfer_cnt(token_type, address):
         .filter(
             and_(
                 (
-                    type_to_token_transfer_table(type).block_timestamp >= last_timestamp.date()
+                    type_to_token_transfer_table(token_type).block_timestamp >= last_timestamp.date()
                     if last_timestamp is not None
                     else True
                 ),
-                type_to_token_transfer_table(type).token_address == address,
+                type_to_token_transfer_table(token_type).token_address == bytes_address,
             )
         )
         .count()
@@ -247,10 +248,10 @@ def get_tokens_by_condition(columns='*', filter_condition=None, order=None, limi
 
     statement = db.session.query(Tokens).with_entities(*entities)
 
-    if filter_condition:
+    if filter_condition is not None:
         statement = statement.filter(filter_condition)
 
-    if order:
+    if order is not None:
         statement = statement.order_by(order)
 
     tokens = statement.limit(limit).offset(offset).all()
@@ -277,3 +278,46 @@ def get_token_transfers_with_token_by_hash(hash, model, transfer_columns='*', to
     )
 
     return token_transfers
+
+
+def get_token_holders(token_address, model, columns='*', limit=None, offset=None):
+    bytes_address = bytes.fromhex(token_address[2:])
+    entities = build_entities(model, columns)
+
+    statement = (
+        db.session.query(model)
+        .with_entities(*entities)
+        .filter(
+            model.token_address == bytes_address,
+            model.balance_of > 0,
+        )
+        .order_by(model.balance_of.desc())
+    )
+
+    if limit:
+        statement = statement.limit(limit)
+
+    if offset:
+        statement = statement.offset(offset)
+
+    top_holders = statement.all()
+
+    return top_holders
+
+
+def get_token_holders_cnt(token_address, model, columns='*'):
+    bytes_address = bytes.fromhex(token_address[2:])
+    entities = build_entities(model, columns)
+
+    holders_count = (
+        db.session.query(model)
+        .with_entities(*entities)
+        .filter(
+            model.token_address == bytes_address,
+            model.balance_of > 0,
+        )
+        .count()
+    )
+
+    return holders_count
+

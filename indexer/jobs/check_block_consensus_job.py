@@ -2,7 +2,7 @@ import logging
 import threading
 
 from indexer.controller.fixing_controller import FixingController
-from enumeration.entity_type import all_entities_value
+from enumeration.entity_type import EntityType
 from indexer.jobs.base_job import BaseJob
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,7 @@ class CheckBlockConsensusJob(BaseJob):
 
     def _process(self):
 
-        all_entities = all_entities_value()
+        all_entities = EntityType.combine_all_entity_types()
         if self._entity_types & all_entities == all_entities:
             batch_blocks = self._data_buff['formated_block']
 
