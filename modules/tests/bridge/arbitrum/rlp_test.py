@@ -41,7 +41,7 @@ def test_calculate_deposit_tx_id():
     l2_chain_id = 42161
     message_number = 1605605
     from_address = "0xF45e40e5200615Ba57F66025475571063CD70222"
-    to_address = "0xE34d40E5200615ba57F66025475571063Cd6F111"
+    to_address = "0xE34d40E5200615ba57F66025475571063Cd6f111"
     value = 1000000000000000
     ctx = calculate_deposit_tx_id(l2_chain_id, message_number, from_address, to_address, value)
     print(ctx)

@@ -190,7 +190,7 @@ class ArbitrumL1BridgeDataExtractor(Extractor):
                     'l1_transaction_hash': message_deliver.transaction_hash,
                     'l1_from_address': message_deliver.from_address,
                     'l1_to_address': message_deliver.to_address,
-                    'l1_token_address': strip_leading_zeros(l1TokenId),
+                    'l1_token_address': strip_leading_zeros(l1TokenId) if l1TokenId else None,
                     'l2_token_address': None,
                     'from_address': message_deliver.bridge_from_address,
                     'to_address': message_deliver.bridge_to_address,
