@@ -1,7 +1,40 @@
+from dataclasses import dataclass
+
 from common.models.erc1155_token_holders import ERC1155TokenHolders
 from common.models.erc20_token_holders import ERC20TokenHolders
 from common.models.erc721_token_holders import ERC721TokenHolders
 from eth_utils import to_normalized_address
+
+from indexer.domain import Domain
+
+
+@dataclass
+class ERC20TokenHolder(Domain):
+    token_address: str
+    wallet_address: str
+    balance_of: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class ERC721TokenHolder(Domain):
+    token_address: str
+    wallet_address: str
+    balance_of: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class ERC1155TokenHolder(Domain):
+    token_address: str
+    wallet_address: str
+    token_id: int
+    balance_of: int
+    latest_call_contract_time: int
+    block_number: int
+    block_timestamp: int
 
 
 def format_erc20_token_holder_data(token_balance_dict):

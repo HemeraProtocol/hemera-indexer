@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 
 from eth_abi import abi
 from enumeration.token_type import TokenType
@@ -6,6 +7,8 @@ from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from eth_utils import to_normalized_address
+
+from indexer.domain import Domain
 
 TRANSFER_EVENT_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 TRANSFER_SINGLE_EVENT_TOPIC = '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
@@ -51,6 +54,49 @@ transfer_abi = {
         "type": "event"
     }
 }
+
+
+@dataclass
+class ERC20TokenTransfer(Domain):
+    transaction_hash: str
+    log_index: int
+    from_address: str
+    to_address: str
+    value: int
+    token_type: str
+    token_address: str
+    block_number: int
+    block_hash: str
+    block_timestamp: int
+
+
+@dataclass
+class ERC721TokenTransfer(Domain):
+    transaction_hash: str
+    log_index: int
+    from_address: str
+    to_address: str
+    token_id: int
+    token_type: str
+    token_address: str
+    block_number: int
+    block_hash: str
+    block_timestamp: int
+
+
+@dataclass
+class ERC721TokenTransfer(Domain):
+    transaction_hash: str
+    log_index: int
+    from_address: str
+    to_address: str
+    token_id: int
+    value: int
+    token_type: str
+    token_address: str
+    block_number: int
+    block_hash: str
+    block_timestamp: int
 
 
 def format_erc20_token_transfer_data(token_transfer_dict):

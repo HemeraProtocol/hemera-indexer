@@ -1,5 +1,34 @@
+from dataclasses import dataclass, field
+from typing import List
+
 from common.models.traces import Traces
 from eth_utils import to_int, to_normalized_address
+
+from indexer.domain import Domain
+
+
+@dataclass
+class Trace(Domain):
+    trace_id: str
+    from_address: str
+    to_address: str
+    value: int
+    input: str
+    output: str
+    trace_type: str
+    call_type: str
+    gas: int
+    gas_used: int
+    subtraces: int
+    error: str
+    status: str
+    block_number: int
+    block_hash: str
+    block_timestamp: int
+    transactions_index: int
+    transaction_hash: str
+    trace_index: int
+    trace_address: List[int] = field(default_factory=list)
 
 
 def format_trace_data(trace_dict):

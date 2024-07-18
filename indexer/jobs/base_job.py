@@ -44,12 +44,11 @@ class BaseJob(object):
     def _collect_batch(self, iterator):
         pass
 
-    def _collect_item(self, item):
-        item_type = item.get('item', None)
-        if item_type is None:
-            raise ValueError('type key is not found in item {}'.format(repr(item)))
+    def _collect_item(self, key, data):
+        if key not in self._data_buff:
+            self._data_buff[key] = []
 
-        self._data_buff[item_type].append(item)
+        self._data_buff[key].append(data)
 
     def _process(self):
         pass

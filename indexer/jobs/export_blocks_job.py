@@ -1,9 +1,10 @@
 import json
 import logging
 
-from indexer.domain.block import format_block_data
+from indexer.domain.block import format_block_data, Block
 from indexer.domain.block_ts_mapper import format_block_ts_mapper
 from enumeration.entity_type import EntityType
+from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
@@ -48,15 +49,14 @@ class ExportBlocksJob(BaseJob):
         results = blocks_rpc_requests(self._batch_web3_provider.make_request, block_number_batch, self._is_batch)
 
         for block in results:
-            block['item'] = 'block'
-            self._collect_item(block)
+            self._collect_item('origin_block', block)
+            self._collect_item('block', Block(block))
             for transaction in block['transactions']:
-                transaction['item'] = 'transaction'
-                self._collect_item(transaction)
+                self._collect_item('origin_transaction', transaction)
+                self._collect_item('transaction', Transaction(block, transaction))
 
     def _process(self):
-        self._data_buff['formated_block'] = [format_block_data(block) for block in self._data_buff['block']]
-        self._data_buff['formated_block'] = sorted(self._data_buff['formated_block'], key=lambda x: x['number'])
+        self._data_buff['block'] = sorted(self._data_buff['block'], key=lambda x: x.number)
 
         ts_dict = {}
         for block in self._data_buff['formated_block']:

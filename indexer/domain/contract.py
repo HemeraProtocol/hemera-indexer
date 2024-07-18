@@ -1,4 +1,17 @@
 from common.models.contracts import Contracts
+from indexer.domain import Domain
+
+
+@dataclass
+class Contract(Domain):
+    address: str
+    name: str
+    contract_creator: str
+    creation_code: str
+    deployed_code: str
+    block_number: int
+    transaction_index: int
+    transaction_hash: str
 
 
 def format_contract_data(contract_dict):

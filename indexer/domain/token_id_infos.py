@@ -1,8 +1,41 @@
+from dataclasses import dataclass
+
 from eth_utils import to_normalized_address
 
 from common.models.erc1155_token_id_details import ERC1155TokenIdDetails
 from common.models.erc721_token_id_changes import ERC721TokenIdChanges
 from common.models.erc721_token_id_details import ERC721TokenIdDetails
+from indexer.domain import Domain
+
+
+@dataclass
+class ERC721TokenIdChange(Domain):
+    address: str
+    token_id: int
+    token_owner: str
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class ERC721TokenIdDetail(Domain):
+    address: str
+    token_id: int
+    token_owner: str
+    token_uri_info: str
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class ERC1155TokenIdDetail(Domain):
+    address: str
+    token_id: int
+    token_supply: int
+    token_owner: str
+    token_uri_info: str
+    block_number: int
+    block_timestamp: int
 
 
 def format_erc721_token_id_change(token_id_info):

@@ -1,5 +1,27 @@
+from dataclasses import dataclass
+from typing import Optional
+
 from common.models.tokens import Tokens
 from eth_utils import to_normalized_address
+
+from indexer.domain import Domain
+
+
+@dataclass
+class Token(Domain):
+    address: str
+    token_type: str
+    name: str
+    symbol: str
+    decimals: int
+    total_supply: Optional[int] = None
+
+
+@dataclass
+class UpdateToken(Domain):
+    address: str
+    token_type: str
+    total_supply: Optional[int] = None
 
 
 def format_token_data(token):
