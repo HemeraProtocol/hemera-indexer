@@ -46,6 +46,21 @@ class CacheConfig(YAMLWizard):
 
 
 @dataclass
+class OpRollupDAConfig(YAMLWizard):
+    da_type: str = field(default=None)
+    plasma_api_endpoint: str = field(default=None)
+    blob_scan_endpoint: str = field(default=None)
+
+
+@dataclass
+class L2Config(YAMLWizard):
+    rollup_type: str = field(default=None)
+    bridge_compatible: bool = field(default=False)
+    withdrawal_expired_day: int = field(default=0)
+    da_config: OpRollupDAConfig = field(default_factory=OpRollupDAConfig)
+
+
+@dataclass
 class DatabaseConfig(YAMLWizard):
     host: str = field(default=None)
     port: int = field(default=None)
@@ -99,6 +114,7 @@ class AppConfig(YAMLWizard):
     contract_service: str = field(default=None)
     token_service: str = field(default=None)
     feature_flags: dict = field(default_factory=dict)
+    l2_config: L2Config = field(default_factory=L2Config)
     cache_config: CacheConfig = field(default_factory=CacheConfig)
     sql_alchemy_engine_options: dict = field(default_factory=dict)
     db_read_sql_alchemy_database_config: DatabaseConfig = field(default_factory=DatabaseConfig)
