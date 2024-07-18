@@ -35,7 +35,7 @@ from common.models.bridge import (
     StateBatches,
     ZkEvmBatches,
 )
-from socialscan_api.app.l2_explorer.utils import BridgeTransactionParser
+from common.utils.bridge_utils import BridgeTransactionParser
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict, format_to_dict, format_value_for_json, row_to_dict
 
