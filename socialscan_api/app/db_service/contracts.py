@@ -17,7 +17,7 @@ def get_contract_by_address(address, columns='*'):
     return contract
 
 
-def get_contracts_by_addresses(address_list, columns='*'):
+def get_contracts_by_addresses(address_list: list[bytes], columns='*'):
     entities = build_entities(Contracts, columns)
     contracts = (db.session.query(Contracts)
                  .with_entities(*entities)

@@ -11,7 +11,7 @@ from web3 import Web3
 from common.utils.config import get_config
 from common.models import db
 from common.utils.web3_utils import decode_log_data
-from common.utils.format_utils import as_dict, format_coin_value
+from common.utils.format_utils import as_dict, format_coin_value, format_to_dict
 from socialscan_api.app.contract.contract_verify import get_names_from_method_or_topic_list, get_abis_for_logs
 from socialscan_api.app.db_service.contracts import get_contracts_by_addresses
 from socialscan_api.app.db_service.wallet_addresses import get_address_display_mapping
@@ -41,7 +41,7 @@ def fill_address_display_to_logs(log_list, all_address_list=None):
     if not all_address_list:
         all_address_list = []
     for log in log_list:
-        all_address_list.append(log["address"])
+        all_address_list.append(bytes.fromhex(log["address"][2:]))
 
     address_map = get_address_display_mapping(all_address_list)
     for log in log_list:
@@ -49,12 +49,12 @@ def fill_address_display_to_logs(log_list, all_address_list=None):
             log["address_display_name"] = address_map[log["address"]]
 
 
-def fill_address_display_to_transactions(transaction_list, all_address_list=None):
+def fill_address_display_to_transactions(transaction_list: list[dict], all_address_list: list[bytes] = None):
     if not all_address_list:
         all_address_list = []
         for transaction in transaction_list:
-            all_address_list.append(transaction["from_address"])
-            all_address_list.append(transaction["to_address"])
+            all_address_list.append(bytes.fromhex(transaction["from_address"][2:]))
+            all_address_list.append(bytes.fromhex(transaction["to_address"][2:]))
 
     address_map = get_address_display_mapping(all_address_list)
 
@@ -127,9 +127,11 @@ def parse_transactions(transactions):
     to_address_list = []
     all_address_list = []
     for transaction in transactions:
-        to_address_list.append(bytes(transaction['to_address'], 'utf-8'))
-        all_address_list.append(transaction['from_address'])
-        all_address_list.append(transaction['to_address'])
+        to_address = bytes.fromhex(transaction['to_address'][2:])
+        from_address = bytes.fromhex(transaction['from_address'][2:])
+        to_address_list.append(to_address)
+        all_address_list.append(from_address)
+        all_address_list.append(to_address)
         transaction_list.append(display_transaction(float(GAS_FEE_TOKEN_PRICE), transaction))
 
     # Find contract
@@ -325,24 +327,24 @@ def day_parse_str_to_int(day):
 def process_token_transfer(token_transfers, token_type):
     token_transfer_list = []
     for token_transfer in token_transfers:
-        token_transfer_json = as_dict(token_transfer[0])
+        token_transfer_json = format_to_dict(token_transfer)
         token_transfer_json["type"] = token_type
         token_transfer_json["token_symbol"] = token_transfer.symbol or "UNKNOWN"
         token_transfer_json["token_name"] = token_transfer.name or "Unknown Token"
 
         if token_type == "tokentxns":
             token_transfer_json["value"] = (
-                "{0:.18f}".format(token_transfer[0].value / 10 ** (token_transfer.decimals or 18))
+                "{0:.18f}".format(token_transfer.value / 10 ** (token_transfer.decimals or 18))
                 .rstrip("0")
                 .rstrip(".")
             )
             token_transfer_json[
                 "token_logo_url"] = token_transfer.icon_url or f"/images/empty-token-{app_config.chain}.png"
         else:
-            token_transfer_json["token_id"] = "{:f}".format(token_transfer[0].token_id)
+            token_transfer_json["token_id"] = "{:f}".format(token_transfer.token_id)
             token_transfer_json["token_logo_url"] = f"/images/empty-token-{app_config.chain}.png"
             if token_type == "tokentxns-nft1155":
-                token_transfer_json["value"] = "{:f}".format(token_transfer[0].value)
+                token_transfer_json["value"] = "{:f}".format(token_transfer.value)
 
         token_transfer_list.append(token_transfer_json)
     return token_transfer_list

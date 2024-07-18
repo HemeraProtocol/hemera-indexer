@@ -1,11 +1,11 @@
 from sqlalchemy import Column
-from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, NUMERIC
+from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, NUMERIC,BYTEA
 
 from common.models import db
 
 
 class StatisticsWalletAddresses(db.Model):
-    address = Column(VARCHAR, primary_key=True)
+    address = Column(BYTEA, primary_key=True)
     txn_in_cnt = Column(INTEGER, default=0)
     txn_out_cnt = Column(INTEGER, default=0)
     txn_in_value = Column(NUMERIC(78))

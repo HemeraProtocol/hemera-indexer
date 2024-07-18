@@ -26,6 +26,7 @@ def get_traces_by_condition(filter_condition=None, columns='*', limit=1):
         .with_entities(*entities)
         .filter(filter_condition)
         .limit(limit)
+        .all()
     )
 
     return traces

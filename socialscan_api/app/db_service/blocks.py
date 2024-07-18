@@ -29,7 +29,7 @@ def get_block_by_number(block_number: int, columns='*'):
     return block
 
 
-def get_block_by_hash(hash, columns='*'):
+def get_block_by_hash(hash: str, columns='*'):
     bytes_hash = bytes.fromhex(hash[2:])
     entities = build_entities(Blocks, columns)
 
@@ -48,15 +48,15 @@ def get_blocks_by_condition(filter_condition=None, columns='*', limit=None, offs
 
     statement = db.session.query(Blocks).with_entities(*entities)
 
-    if filter_condition:
+    if filter_condition is not None:
         statement = statement.filter(filter_condition)
 
     statement = statement.order_by(Blocks.number.desc())
 
-    if limit:
+    if limit is not None:
         statement = statement.limit(limit)
 
-    if offset:
+    if offset is not None:
         statement = statement.offset(offset)
 
     return statement.all()

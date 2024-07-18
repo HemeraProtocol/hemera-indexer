@@ -20,13 +20,11 @@ def get_logs_with_input_by_hash(hash, columns='*'):
     return logs
 
 
-def get_logs_with_input_by_address(address, columns='*', limit=None, offset=None):
+def get_logs_with_input_by_address(address, limit=None, offset=None):
     address_bytes = bytes.fromhex(address.lower()[2:])
-    entities = build_entities(Logs, columns)
 
     statement = (
         db.session.query(Logs)
-        .with_entities(*entities)
         .filter(Logs.address == address_bytes)
         .join(Transactions, Logs.transaction_hash == Transactions.hash)
         .add_columns(Transactions.input)

@@ -543,22 +543,24 @@ def generate_type_str(component):
 class ExplorerTransactionDetail(Resource):
     @cache.cached(timeout=60, query_string=True)
     def get(self, hash):
+        hash = hash.lower()
+        bytes_hash = bytes.fromhex(hash[2:])
         transaction = get_transaction_by_hash(hash=hash)
         if transaction:
-            transaction = as_dict(transaction)
+            transaction = format_to_dict(transaction)
             transaction_json = parse_transactions([transaction])[0]
             filter_condition = and_(
-                Traces.transaction_hash == hash,
+                Traces.transaction_hash == bytes_hash,
                 Traces.trace_address == "{}",
             )
 
-            trace = get_traces_by_condition(filter_condition=filter_condition,
+            traces = get_traces_by_condition(filter_condition=filter_condition,
                                             columns=['error'],
                                             limit=1)
 
             # Add trace info to transaction detail
-            if trace and trace.error:
-                transaction_json["trace_error"] = trace.error
+            if traces[0] and traces[0].error:
+                transaction_json["trace_error"] = traces[0].error
 
             abi_dict = get_abis_for_method([(transaction['to_address'], transaction_json["method_id"])])
 
@@ -647,7 +649,7 @@ class ExplorerTransactionInternalTransactions(Resource):
         transaction_list = []
         address_list = []
         for transaction in transactions:
-            transaction_json = as_dict(transaction)
+            transaction_json = format_to_dict(transaction)
             transaction_json["from_address_is_contract"] = False
             transaction_json["to_address_is_contract"] = False
             transaction_json["value"] = format_coin_value_with_unit(transaction.value,
@@ -687,9 +689,9 @@ class ExplorerTransactionInternalTransactions(Resource):
                     from_address = obj.get("from_address")
                     to_address = obj.get("to_address")
                     if to_address:
-                        addresses_set.add(to_address)
+                        addresses_set.add(bytes.fromhex(to_address[2:]))
                     if from_address:
-                        addresses_set.add(from_address)
+                        addresses_set.add(bytes.fromhex(from_address[2:]))
                     input = obj.get("input")
                     if to_address and input and len(input) > 10:
                         function_signature_contracts_set.add((to_address, input[:10]))
@@ -1068,7 +1070,7 @@ class ExplorerBlocks(Resource):
 
             blocks = get_blocks_by_condition(filter_condition=Blocks.number.between(start_block, end_block))
 
-            block_list = [as_dict(block) for block in blocks]
+            block_list = [format_to_dict(block) for block in blocks]
 
             return {
                 "data": block_list,
@@ -1107,10 +1109,10 @@ class ExplorerBlockDetail(Resource):
             number = int(number_or_hash)
             block = get_block_by_number(block_number=int(number))
         else:
-            block = get_block_by_hash(hash=hash)
+            block = get_block_by_hash(hash=number_or_hash)
 
         if block:
-            block_json = as_dict(block)
+            block_json = format_to_dict(block)
             # Need additional data eth_price, block time, internal_transaction_count
 
             internal_transaction_count = get_internal_transactions_cnt_by_condition(
@@ -1276,7 +1278,7 @@ class ExplorerAddressTransactions(Resource):
         else:
             total_count = get_address_transaction_cnt(address)
 
-        transactions = [as_dict(transaction) for transaction in transactions]
+        transactions = [format_to_dict(transaction) for transaction in transactions]
         transaction_list = parse_transactions(transactions)
 
         return {
@@ -1347,7 +1349,7 @@ class ExplorerAddressInternalTransactions(Resource):
         transaction_list = []
         address_list = []
         for transaction in transactions:
-            transaction_json = as_dict(transaction)
+            transaction_json = format_to_dict(transaction)
             transaction_json["from_address_is_contract"] = False
             transaction_json["to_address_is_contract"] = False
             transaction_json["value"] = format_coin_value_with_unit(transaction.value,
@@ -1373,8 +1375,6 @@ class ExplorerAddressInternalTransactions(Resource):
 class ExplorerAddressLogs(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
-        address = address.lower()
-
         logs = get_logs_with_input_by_address(address, limit=25)
 
         log_list = parse_log_with_transaction_input_list(logs)
@@ -1399,8 +1399,6 @@ def get_token_and_token_type(address):
 class ExplorerTokenProfile(Resource):
     @cache.cached(timeout=60, query_string=True)
     def get(self, address):
-        address = address.lower()
-
         token, type = get_token_and_token_type(address)
 
         if not token:
@@ -1450,7 +1448,7 @@ class ExplorerTokenTokenTransfers(Resource):
         address = address.lower()
         address_bytes = bytes.fromhex(address[2:])
 
-        token, type = get_token_and_token_type(address_bytes)
+        token, type = get_token_and_token_type(address)
         if not token:
             raise APIError("Token not found", code=400)
 

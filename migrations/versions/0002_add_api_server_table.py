@@ -90,7 +90,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('statistics_wallet_addresses',
-    sa.Column('address', sa.VARCHAR(), nullable=False),
+    sa.Column('address', postgresql.BYTEA(), nullable=False),
     sa.Column('txn_in_cnt', sa.INTEGER(), nullable=True),
     sa.Column('txn_out_cnt', sa.INTEGER(), nullable=True),
     sa.Column('txn_in_value', sa.NUMERIC(precision=78), nullable=True),
@@ -116,7 +116,7 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('address')
     )
     op.create_table('wallet_addresses',
-    sa.Column('address', sa.VARCHAR(), nullable=False),
+    sa.Column('address', postgresql.BYTEA(), nullable=False),
     sa.Column('ens_name', sa.VARCHAR(), nullable=True),
     sa.PrimaryKeyConstraint('address')
     )

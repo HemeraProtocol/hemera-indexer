@@ -214,7 +214,7 @@ def parse_token_transfers(type, token_transfers):
 
         token_transfer_list.append(token_transfer_json)
 
-    fill_address_display_to_transactions(token_transfer_list, ["0x" + address.hex() for address in address_list])
+    fill_address_display_to_transactions(token_transfer_list, address_list)
     return token_transfer_list
 
 
@@ -233,12 +233,12 @@ def get_token_by_address(address, columns='*'):
 def get_tokens_cnt_by_condition(columns='*', filter_condition=None):
     entities = build_entities(Tokens, columns)
 
-    count = (
-        db.session.query(Tokens)
-        .with_entities(entities)
-        .filter(filter_condition)
-        .count()
-    )
+    statement = db.session.query(Tokens).with_entities(*entities)
+
+    if filter_condition is not None:
+        statement = statement.filter(filter_condition)
+
+    count = statement.count()
 
     return count
 
@@ -294,10 +294,10 @@ def get_token_holders(token_address, model, columns='*', limit=None, offset=None
         .order_by(model.balance_of.desc())
     )
 
-    if limit:
+    if limit is not None:
         statement = statement.limit(limit)
 
-    if offset:
+    if offset is not None:
         statement = statement.offset(offset)
 
     top_holders = statement.all()
@@ -320,4 +320,3 @@ def get_token_holders_cnt(token_address, model, columns='*'):
     )
 
     return holders_count
-

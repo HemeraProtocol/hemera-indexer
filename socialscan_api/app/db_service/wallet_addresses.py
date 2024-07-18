@@ -30,10 +30,11 @@ def type_to_stats_column(type):
 
 
 def get_token_txn_cnt_by_address(token_type, address):
+    bytes_address = bytes.fromhex(address[2:])
     result = (
         db.session.query(WalletAddresses)
         .with_entities(type_to_stats_column(token_type))
-        .filter(WalletAddresses.address == address)
+        .filter(WalletAddresses.address == bytes_address)
         .first()
     )
 
@@ -41,19 +42,21 @@ def get_token_txn_cnt_by_address(token_type, address):
 
 
 def get_txn_cnt_by_address(address):
+    bytes_address = bytes.fromhex(address[2:])
     result = (
         db.session.query(StatisticsWalletAddresses)
         .with_entities(StatisticsWalletAddresses.txn_cnt)
-        .filter(StatisticsWalletAddresses.address == address)
+        .filter(StatisticsWalletAddresses.address == bytes_address)
         .first()
     )
     return result
 
 
 @cache.memoize(3600)
-def get_address_display_mapping(wallet_address_list):
+def get_address_display_mapping(wallet_address_list: list[bytes]):
     # filter not valid address
     wallet_address_list = [address for address in wallet_address_list if address]
+    str_address_list = ['0x' + address.hex() for address in wallet_address_list]
     if not wallet_address_list or len(wallet_address_list) == 0:
         return {}
 
@@ -74,7 +77,7 @@ def get_address_display_mapping(wallet_address_list):
 
     # 获取所有地址的合约名称
     all_addresses = list(wallet_address_list) + list(proxy_mapping.values())
-    addresses = get_contract_names(all_addresses)
+    addresses = get_contract_names(str_address_list)
 
     # 更新地址映射，包含所有地址的合约名称
     address_map.update({address.get("address"): address.get("contract_name") for address in addresses})
@@ -88,7 +91,7 @@ def get_address_display_mapping(wallet_address_list):
     addresses = (
         db.session.query(Tokens.address, Tokens.name, Tokens.symbol)
         .filter(
-            Tokens.address.in_([binascii.unhexlify(token_address[2:]) for token_address in wallet_address_list]),
+            Tokens.address.in_(wallet_address_list),
         )
         .all()
     )
@@ -97,7 +100,7 @@ def get_address_display_mapping(wallet_address_list):
 
     # ENS
     if ens_client:
-        addresses = ens_client.batch_get_address_ens(wallet_address_list)
+        addresses = ens_client.batch_get_address_ens(str_address_list)
         for key, value in addresses.items():
             address_map[key] = value
     else:
