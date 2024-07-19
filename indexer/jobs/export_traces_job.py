@@ -19,13 +19,12 @@ logger = logging.getLogger(__name__)
 # Exports traces
 class ExportTracesJob(BaseJob):
     def __init__(self,
-                 index_keys,
                  entity_types,
                  batch_web3_provider,
                  batch_size,
                  max_workers,
                  item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys=index_keys, entity_types=entity_types)
+        super().__init__(entity_types=entity_types)
 
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)

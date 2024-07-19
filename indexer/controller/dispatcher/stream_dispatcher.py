@@ -42,7 +42,6 @@ class StreamDispatcher(BaseDispatcher):
                 or self._entity_types & EntityType.TOKEN_IDS or self._entity_types & EntityType.TRACE \
                 or self._entity_types & EntityType.COIN_BALANCE:
             ExportBlocksJob(
-                index_keys=['block', 'transaction'],
                 entity_types=self._entity_types,
                 start_block=start_block,
                 end_block=end_block,
@@ -57,7 +56,6 @@ class StreamDispatcher(BaseDispatcher):
                 or self._entity_types & EntityType.TOKEN_BALANCE or self._entity_types & EntityType.TOKEN_IDS \
                 or self._entity_types & EntityType.COIN_BALANCE:
             ExportTransactionsAndLogsJob(
-                index_keys=['receipt', 'log'],
                 entity_types=self._entity_types,
                 batch_web3_provider=self._batch_web3_provider,
                 batch_size=self._batch_size,
@@ -68,8 +66,6 @@ class StreamDispatcher(BaseDispatcher):
         if self._entity_types & EntityType.TOKEN or self._entity_types & EntityType.TOKEN_TRANSFER or \
                 self._entity_types & EntityType.TOKEN_BALANCE or self._entity_types & EntityType.TOKEN_IDS:
             ExportTokensAndTransfersJob(
-                index_keys=['token', 'token_transfer',
-                            'erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers'],
                 entity_types=self._entity_types,
                 web3=self._web3,
                 service=self._db_service,
@@ -81,7 +77,6 @@ class StreamDispatcher(BaseDispatcher):
 
         if self._entity_types & EntityType.TOKEN_BALANCE:
             ExportTokenBalancesAndHoldersJob(
-                index_keys=['token_balance', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'],
                 entity_types=self._entity_types,
                 web3=self._web3,
                 batch_web3_provider=self._batch_web3_provider,
@@ -92,7 +87,6 @@ class StreamDispatcher(BaseDispatcher):
 
         if self._entity_types & EntityType.TOKEN_IDS:
             ExportTokenIdInfosJob(
-                index_keys=['erc721_token_ids', 'erc1155_token_ids'],
                 entity_types=self._entity_types,
                 web3=self._web3,
                 service=self._db_service,
@@ -105,7 +99,6 @@ class StreamDispatcher(BaseDispatcher):
         if self._entity_types & EntityType.TRACE or self._entity_types & EntityType.CONTRACT \
                 or self._entity_types & EntityType.COIN_BALANCE:
             ExportTracesJob(
-                index_keys=['trace'],
                 entity_types=self._entity_types,
                 batch_web3_provider=self._batch_web3_debug_provider,
                 batch_size=self._debug_batch_size,
@@ -115,7 +108,6 @@ class StreamDispatcher(BaseDispatcher):
 
         if self._entity_types & EntityType.TRACE or self._entity_types & EntityType.CONTRACT:
             ExportContractsJob(
-                index_keys=['contract'],
                 entity_types=self._entity_types,
                 web3=self._web3,
                 batch_web3_provider=self._batch_web3_provider,
@@ -126,7 +118,6 @@ class StreamDispatcher(BaseDispatcher):
 
         if self._entity_types & EntityType.COIN_BALANCE:
             ExportCoinBalancesJob(
-                index_keys=['coin_balance'],
                 entity_types=self._entity_types,
                 batch_web3_provider=self._batch_web3_provider,
                 batch_size=self._batch_size,

@@ -14,6 +14,7 @@ class Token(Domain):
     name: str
     symbol: str
     decimals: int
+    block_number: int
     total_supply: Optional[int] = None
 
 
@@ -21,6 +22,7 @@ class Token(Domain):
 class UpdateToken(Domain):
     address: str
     token_type: str
+    block_number: int
     total_supply: Optional[int] = None
 
 

@@ -2,7 +2,7 @@ import re
 from dataclasses import asdict, is_dataclass, dataclass, fields
 from typing import Dict, Any, get_origin, Union, get_args
 
-from common.utils.format_utils import format_to_dict
+from common.utils.format_utils import to_snake_case
 
 
 @dataclass
@@ -14,13 +14,7 @@ class Domain(object):
     @classmethod
     def type(cls) -> str:
         """Return the class name in snake_case."""
-        return cls._to_snake_case(cls.__name__)
-
-    @staticmethod
-    def _to_snake_case(name: str) -> str:
-        """Convert a CamelCase name to snake_case."""
-        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+        return to_snake_case(cls.__name__)
 
     def dict_to_entity(self, data_dict: Dict[str, Any]):
         valid_keys = {field.name for field in fields(self.__class__)}

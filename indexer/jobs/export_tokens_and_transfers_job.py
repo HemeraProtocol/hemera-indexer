@@ -5,10 +5,13 @@ from typing import List
 from eth_abi import abi
 from web3 import Web3
 
+from common.utils.format_utils import to_snake_case
+from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
-from indexer.domain.token import format_token_data
+from indexer.domain.token import Token, UpdateToken
 from indexer.domain.token_transfer import extract_transfer_from_log, \
-    format_erc20_token_transfer_data, format_erc721_token_transfer_data, format_erc1155_token_transfer_data
+    format_erc20_token_transfer_data, format_erc721_token_transfer_data, format_erc1155_token_transfer_data, \
+    ERC20TokenTransfer, ERC1155TokenTransfer, ERC721TokenTransfer
 from enumeration.entity_type import EntityType
 from enumeration.token_type import TokenType
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -62,7 +65,6 @@ erc_token_abi = [
 class ExportTokensAndTransfersJob(BaseJob):
     def __init__(
             self,
-            index_keys,
             entity_types,
             web3,
             service,
@@ -70,7 +72,7 @@ class ExportTokensAndTransfersJob(BaseJob):
             batch_size,
             max_workers,
             item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys=index_keys, entity_types=entity_types)
+        super().__init__(entity_types=entity_types)
 
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider
@@ -106,12 +108,15 @@ class ExportTokensAndTransfersJob(BaseJob):
         tokens, token_transfers = extract_tokens_and_token_transfers(logs)
 
         for token in tokens:
-            token['item'] = 'token'
-            self._collect_item(token)
+            self._collect_item('token', token)
 
         for transfer_event in token_transfers:
-            transfer_event['item'] = 'token_transfer'
-            self._collect_item(transfer_event)
+            if isinstance(transfer_event, ERC20TokenTransfer):
+                self._collect_item('erc20_token_transfer', transfer_event)
+            elif isinstance(transfer_event, ERC721TokenTransfer):
+                self._collect_item('erc721_token_transfer', transfer_event)
+            elif isinstance(transfer_event, ERC1155TokenTransfer):
+                self._collect_item('erc1155_token_transfer', transfer_event)
 
     def _collect_batch(self, tokens):
 
@@ -121,48 +126,46 @@ class ExportTokensAndTransfersJob(BaseJob):
                                           self._is_batch)
 
         for token in tokens_info:
-            token['item'] = 'token'
-            self._collect_item(token)
+            if token['is_new']:
+                self._collect_item('token', dict_to_dataclass(token, Token))
+            else:
+                self._collect_item('update_token', dict_to_dataclass(token, UpdateToken))
 
     def _process(self):
-        self._data_buff['formated_token'] = [format_token_data(token) for token in self._data_buff['token']]
+        if 'erc20_token_transfers' in self._data_buff:
+            self._data_buff['erc20_token_transfers'] = sorted(self._data_buff['erc20_token_transfers'],
+                                                              key=lambda x: (
+                                                                  x.block_number,
+                                                                  x.transaction_hash,
+                                                                  x.log_index))
 
-        (self._data_buff['erc20_token_transfers'],
-         self._data_buff['erc721_token_transfers'],
-         self._data_buff['erc1155_token_transfers']) = split_token_transfers(self._data_buff['token_transfer'])
-
-        self._data_buff['erc20_token_transfers'] = sorted(self._data_buff['erc20_token_transfers'],
-                                                          key=lambda x: (
-                                                              x['block_number'],
-                                                              x['transaction_hash'],
-                                                              x['log_index']))
-
-        self._data_buff['erc721_token_transfers'] = sorted(self._data_buff['erc721_token_transfers'],
-                                                           key=lambda x: (
-                                                               x['block_number'],
-                                                               x['transaction_hash'],
-                                                               x['log_index']))
-
-        self._data_buff['erc1155_token_transfers'] = sorted(self._data_buff['erc1155_token_transfers'],
-                                                            key=lambda x: (
-                                                                x['block_number'],
-                                                                x['transaction_hash'],
-                                                                x['log_index']))
+        if 'erc721_token_transfers' in self._data_buff:
+            self._data_buff['erc721_token_transfers'] = sorted(self._data_buff['erc721_token_transfers'],
+                                                               key=lambda x: (
+                                                                   x.block_number,
+                                                                   x.transaction_hash,
+                                                                   x.log_index))
+        if 'erc1155_token_transfers' in self._data_buff:
+            self._data_buff['erc1155_token_transfers'] = sorted(self._data_buff['erc1155_token_transfers'],
+                                                                key=lambda x: (
+                                                                    x.block_number,
+                                                                    x.transaction_hash,
+                                                                    x.log_index))
 
     def _export(self):
         items = []
 
         if self._entity_types & EntityType.TOKEN:
-            items.extend(self._extract_from_buff(['formated_token']))
+            items.extend(self._extract_from_buff(['token', 'update_token']))
 
         if self._entity_types & EntityType.TOKEN_TRANSFER:
             items.extend(
-                self._extract_from_buff(['erc20_token_transfers', 'erc721_token_transfers', 'erc1155_token_transfers']))
+                self._extract_from_buff(['erc20_token_transfer', 'erc721_token_transfer', 'erc1155_token_transfer']))
 
         self._item_exporter.export_items(items)
 
 
-def get_exist_token(db_service):
+def get_exist_token(db_service) -> dict:
     session = db_service.get_service_session()
     try:
         result = session.query(Tokens.address, Tokens.token_type).all()
@@ -181,26 +184,15 @@ def get_exist_token(db_service):
 def extract_tokens_and_token_transfers(logs: List[Log]):
     tokens, token_transfer = [], []
     for log in logs:
-        transfer_event = extract_transfer_from_log(log)
-        if transfer_event is not None:
-            if type(transfer_event) is list:
-                token_transfer.extend(transfer_event)
+        transfer_events = extract_transfer_from_log(log)
 
-                for event in transfer_event:
-                    tokens.append({
-                        "address": event['tokenAddress'],
-                        "token_type": event['tokenType'],
-                        "block_number": event['blockNumber'],
-                    })
-
-            else:
-                token_transfer.append(transfer_event)
-
-                tokens.append({
-                    "address": transfer_event['tokenAddress'],
-                    "token_type": transfer_event['tokenType'],
-                    "block_number": transfer_event['blockNumber'],
-                })
+        for transfer_event in transfer_events:
+            token_transfer.append(transfer_event)
+            tokens.append({
+                "address": transfer_event.token_address,
+                "token_type": transfer_event.token_type,
+                "block_number": transfer_event.block_number,
+            })
 
     return tokens, token_transfer
 
@@ -291,16 +283,17 @@ def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
 
             token = data[0]
             value = result[2:] if result is not None else None
+            key = to_snake_case(fn_name)
             try:
-                token[fn_name] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
+                token[key] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
                 if token['data_type'] == 'string':
-                    token[fn_name] = token[fn_name].replace('\u0000', '')
+                    token[key] = token[fn_name].replace('\u0000', '')
             except Exception as e:
                 logger.warning(f"Decoding token {fn_name} failed. "
                                f"token: {token}. "
                                f"rpc response: {result}. "
                                f"exception: {e}")
-                token[fn_name] = None
+                token[key] = None
 
     return tokens
 

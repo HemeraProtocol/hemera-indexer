@@ -2,14 +2,12 @@ import json
 import logging
 from typing import List
 
-from indexer.domain.log import format_log_data
 from indexer.domain.receipt import Receipt
-from indexer.domain.transaction import format_transaction_data, Transaction
+from indexer.domain.transaction import Transaction
 from enumeration.entity_type import EntityType
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.utils.enrich import enrich_blocks_timestamp, enrich_transactions
 from indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc
 from indexer.utils.utils import rpc_response_batch_to_results
 
@@ -19,13 +17,12 @@ logger = logging.getLogger(__name__)
 # Exports transactions and logs
 class ExportTransactionsAndLogsJob(BaseJob):
     def __init__(self,
-                 index_keys,
                  entity_types,
                  batch_web3_provider,
                  batch_size,
                  max_workers,
                  item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys=index_keys, entity_types=entity_types)
+        super().__init__(entity_types=entity_types)
 
         self._batch_web3_provider = batch_web3_provider
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
@@ -36,7 +33,7 @@ class ExportTransactionsAndLogsJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        transactions: Transaction = self._data_buff['transaction']
+        transactions: List[Transaction] = self._data_buff['transaction']
         self._batch_work_executor.execute(transactions,
                                           self._collect_batch,
                                           total_items=len(transactions))
@@ -61,10 +58,11 @@ class ExportTransactionsAndLogsJob(BaseJob):
                 self._collect_item('log', log)
 
     def _process(self):
-        self._data_buff['log'] = sorted(self._data_buff['log'],
-                                        key=lambda x: (x.block_number,
-                                                       x.transaction_index,
-                                                       x.log_index))
+        if 'log' in self._data_buff:
+            self._data_buff['log'] = sorted(self._data_buff['log'],
+                                            key=lambda x: (x.block_number,
+                                                           x.transaction_index,
+                                                           x.log_index))
 
     def _export(self):
         items = []

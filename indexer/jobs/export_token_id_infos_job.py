@@ -70,7 +70,6 @@ erc_token_id_info_abi = {
 class ExportTokenIdInfosJob(BaseJob):
     def __init__(
             self,
-            index_keys,
             entity_types,
             web3,
             service,
@@ -78,7 +77,7 @@ class ExportTokenIdInfosJob(BaseJob):
             batch_size,
             max_workers,
             item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys=index_keys, entity_types=entity_types)
+        super().__init__(entity_types=entity_types)
 
         self._web3 = web3
         self._batch_web3_provider = batch_web3_provider

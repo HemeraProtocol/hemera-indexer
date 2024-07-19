@@ -1,21 +1,20 @@
 import logging
+from typing import List, Tuple
 
 import pandas
 import sqlalchemy
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
-from indexer.domain.block import format_block_data
+from indexer.domain.block import Block
 from indexer.domain.coin_balance import format_coin_balance_data
 from indexer.domain.contract import format_contract_data
 from indexer.domain.contract_internal_transaction import trace_to_contract_internal_transaction
-from indexer.domain.log import format_log_data
 from indexer.domain.token import format_token_data
 from indexer.domain.token_balance import format_token_balance_data
 from indexer.domain.token_id_infos import format_erc721_token_id_change, format_erc721_token_id_detail, \
     format_erc1155_token_id_detail
 from indexer.domain.trace import format_trace_data
-from indexer.domain.transaction import format_transaction_data
 from enumeration.token_type import TokenType
 from common.converter.postgresql_model_converter import convert_item
 from common.models.blocks import Blocks
@@ -262,10 +261,10 @@ class FixingBlockConsensusJob(BaseJob):
         finally:
             session.close()
 
-    def collect_fixed_block(self):
+    def collect_fixed_block(self) -> Block:
         block_generator = blocks_rpc_requests(self.batch_web3_provider.make_request, [self.block_number], self.is_batch)
         block = [block for block in block_generator][0]
-        return format_block_data(block), block['transactions']
+        return Block(block)
 
     def collect_fixed_transactions_logs(self, block, transactions):
         logs, receipts = [], []

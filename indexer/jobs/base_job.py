@@ -7,8 +7,7 @@ from enumeration.entity_type import DEFAULT_COLLECTION
 class BaseJob(object):
     _data_buff = {}
 
-    def __init__(self, index_keys=[], entity_types=DEFAULT_COLLECTION):
-        self._index_keys = index_keys
+    def __init__(self, entity_types=DEFAULT_COLLECTION):
         self._entity_types = entity_types
         self.logger = logging.getLogger(self.__class__.__name__)
 
@@ -32,8 +31,7 @@ class BaseJob(object):
             self._end()
 
     def _start(self):
-        for key in self._index_keys:
-            self._data_buff[key] = []
+        pass
 
     def _end(self):
         pass

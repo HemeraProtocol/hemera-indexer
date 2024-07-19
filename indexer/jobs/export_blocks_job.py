@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 # Exports blocks and block number <-> timestamp mapping
 class ExportBlocksJob(BaseJob):
     def __init__(self,
-                 index_keys,
                  entity_types,
                  start_block,
                  end_block,
@@ -24,7 +23,7 @@ class ExportBlocksJob(BaseJob):
                  batch_size,
                  max_workers,
                  item_exporter=ConsoleItemExporter()):
-        super().__init__(index_keys=index_keys, entity_types=entity_types)
+        super().__init__(entity_types=entity_types)
         validate_range(start_block, end_block)
         self._start_block = start_block
         self._end_block = end_block
