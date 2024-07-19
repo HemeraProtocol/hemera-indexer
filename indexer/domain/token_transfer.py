@@ -1,12 +1,9 @@
 import logging
 from dataclasses import dataclass
-from typing import Optional, List, Union
+from typing import List, Union
 
 from eth_abi import abi
 from enumeration.token_type import TokenType
-from common.models.erc1155_token_transfers import ERC1155TokenTransfers
-from common.models.erc20_token_transfers import ERC20TokenTransfers
-from common.models.erc721_token_transfers import ERC721TokenTransfers
 from eth_utils import to_normalized_address
 
 from indexer.domain import Domain
@@ -101,61 +98,6 @@ class ERC1155TokenTransfer(Domain):
     block_timestamp: int
 
 
-def format_erc20_token_transfer_data(token_transfer_dict):
-    erc20_token_transfer = {
-        'model': ERC20TokenTransfers,
-        'transaction_hash': token_transfer_dict['transactionHash'],
-        'log_index': token_transfer_dict['logIndex'],
-        'from_address': to_normalized_address(token_transfer_dict['fromAddress']),
-        'to_address': to_normalized_address(token_transfer_dict['toAddress']),
-        'value': token_transfer_dict['value'],
-        'token_type': token_transfer_dict['tokenType'],
-        'token_address': token_transfer_dict['tokenAddress'],
-
-        'block_number': token_transfer_dict['blockNumber'],
-        'block_hash': token_transfer_dict['blockHash'],
-        'block_timestamp': token_transfer_dict['blockTimestamp']
-    }
-    return erc20_token_transfer
-
-
-def format_erc721_token_transfer_data(token_transfer_dict):
-    erc721_token_transfer = {
-        'model': ERC721TokenTransfers,
-        'transaction_hash': token_transfer_dict['transactionHash'],
-        'log_index': token_transfer_dict['logIndex'],
-        'from_address': to_normalized_address(token_transfer_dict['fromAddress']),
-        'to_address': to_normalized_address(token_transfer_dict['toAddress']),
-        'token_id': token_transfer_dict['tokenId'],
-        'token_type': token_transfer_dict['tokenType'],
-        'token_address': token_transfer_dict['tokenAddress'],
-
-        'block_number': token_transfer_dict['blockNumber'],
-        'block_hash': token_transfer_dict['blockHash'],
-        'block_timestamp': token_transfer_dict['blockTimestamp']
-    }
-    return erc721_token_transfer
-
-
-def format_erc1155_token_transfer_data(token_transfer_dict):
-    erc1155_token_transfer = {
-        'model': ERC1155TokenTransfers,
-        'transaction_hash': token_transfer_dict['transactionHash'],
-        'log_index': token_transfer_dict['logIndex'],
-        'from_address': to_normalized_address(token_transfer_dict['fromAddress']),
-        'to_address': to_normalized_address(token_transfer_dict['toAddress']),
-        'token_id': token_transfer_dict['tokenId'],
-        'value': token_transfer_dict['value'],
-        'token_type': token_transfer_dict['tokenType'],
-        'token_address': token_transfer_dict['tokenAddress'],
-
-        'block_number': token_transfer_dict['blockNumber'],
-        'block_hash': token_transfer_dict['blockHash'],
-        'block_timestamp': token_transfer_dict['blockTimestamp']
-    }
-    return erc1155_token_transfer
-
-
 def handle_transfer_event(log: Log) -> Union[ERC20TokenTransfer, ERC721TokenTransfer]:
     types = build_types_from_abi(log.topic0)
     topics_with_data = join_topics_with_data([log.topic1, log.topic2, log.topic3], log.data)
@@ -171,8 +113,8 @@ def handle_transfer_event(log: Log) -> Union[ERC20TokenTransfer, ERC721TokenTran
     transfer_dict = {
         'transaction_hash': log.transaction_hash,
         'log_index': log.log_index,
-        'from_address': from_address,
-        'to_address': to_address,
+        'from_address': to_normalized_address(from_address),
+        'to_address': to_normalized_address(to_address),
         'token_type': token_type,
         'token_address': log.address,
         'block_number': log.block_number,
@@ -198,8 +140,8 @@ def handle_transfer_single_event(log: Log) -> ERC1155TokenTransfer:
     transfer_dict = {
         'transaction_hash': log.transaction_hash,
         'log_index': log.log_index,
-        'from_address': from_address,
-        'to_address': to_address,
+        'from_address': to_normalized_address(from_address),
+        'to_address': to_normalized_address(to_address),
         'tokenId': token_id,
         'value': value,
         'token_type': TokenType.ERC1155.value,
@@ -228,8 +170,8 @@ def handle_transfer_batch_event(log: Log) -> List[ERC1155TokenTransfer]:
         transfer_dict = {
             'transaction_hash': log.transaction_hash,
             'log_index': log.log_index,
-            'from_address': from_address,
-            'to_address': to_address,
+            'from_address': to_normalized_address(from_address),
+            'to_address': to_normalized_address(to_address),
             'tokenId': token_id,
             'value': values[i],
             'token_type': TokenType.ERC1155.value,
@@ -245,7 +187,6 @@ def handle_transfer_batch_event(log: Log) -> List[ERC1155TokenTransfer]:
 
 def extract_transfer_from_log(log: Log) \
         -> List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]:
-
     token_transfers = []
     topic = log.topic0
 

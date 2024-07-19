@@ -17,6 +17,7 @@ class BaseJob(object):
         return cls.__subclasses__()
 
     def __init__(self, **kwargs):
+        self._entity_types = kwargs['entity_types']
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def run(self, **kwargs):

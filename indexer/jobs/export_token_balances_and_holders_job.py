@@ -1,5 +1,6 @@
 import json
 import logging
+from typing import List, Union
 
 import numpy
 import pandas
@@ -7,15 +8,17 @@ from eth_abi import abi
 
 from web3 import Web3
 
-from indexer.domain.token_balance import format_token_balance_data
-from indexer.domain.token_holder import format_erc20_token_holder_data, format_erc721_token_holder_data, \
-    format_erc1155_token_holder_data
+from enumeration.token_type import TokenType
+from indexer.domain import dict_to_dataclass
+from indexer.domain.token_balance import TokenBalance
+from indexer.domain.token_holder import ERC20TokenHolder, ERC721TokenHolder, ERC1155TokenHolder
 from enumeration.entity_type import EntityType
+from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distinct_collections_by_group
 from common.utils.web3_utils import verify_0_address
 
 logger = logging.getLogger(__name__)
@@ -113,7 +116,9 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        parameters = extract_token_parameters(self._data_buff['token_transfer'], self._web3)
+
+        token_transfers = self._collect_all_token_transfers()
+        parameters = extract_token_parameters(token_transfers, self._web3)
 
         self._batch_work_executor.execute(parameters,
                                           self._collect_batch,
@@ -123,75 +128,62 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
     def _collect_batch(self, parameters):
         token_balances = token_balances_rpc_requests(self._batch_web3_provider.make_request, parameters, self._is_batch)
         for token_balance in token_balances:
-            token_balance['item'] = 'token_balance'
-            self._collect_item(token_balance)
+            self._collect_item(TokenBalance.type(), dict_to_dataclass(token_balance, TokenBalance))
 
     def _process(self):
-        self._data_buff['enriched_token_balances'] = [format_token_balance_data(token_balance)
-                                                      for token_balance in self._data_buff['token_balance']]
+        if TokenBalance.type() in self._data_buff:
+            self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
-        self._data_buff['enriched_token_balances'] = sorted(self._data_buff['enriched_token_balances'],
-                                                            key=lambda x: (x['block_number'], x['address']))
-
-        (self._data_buff['erc20_token_holders'],
-         self._data_buff['erc721_token_holders'],
-         self._data_buff['erc1155_token_holders']) = calculate_token_holders(self._data_buff['enriched_token_balances'])
-
-        total_erc20, total_erc721, total_erc1155 = [], [], []
-        for token_balance in self._data_buff['enriched_token_balances']:
-            if token_balance['token_type'] == "ERC20":
-                total_erc20.append(format_erc20_token_holder_data(token_balance))
-            elif token_balance['token_type'] == "ERC721":
-                total_erc721.append(format_erc721_token_holder_data(token_balance))
-            elif token_balance['token_type'] == "ERC1155":
-                total_erc1155.append(format_erc1155_token_holder_data(token_balance))
-
-        if len(total_erc20) > 0:
-            total_erc20_frame = pandas.DataFrame(total_erc20)
-            self._data_buff['erc20_token_holders'] = total_erc20_frame.loc[total_erc20_frame.groupby(
-                ['token_address', 'wallet_address'])['block_number'].idxmax()].to_dict(orient='records')
-
-        if len(total_erc721) > 0:
-            total_erc721_frame = pandas.DataFrame(total_erc721)
-            self._data_buff['erc721_token_holders'] = total_erc721_frame.loc[total_erc721_frame.groupby(
-                ['token_address', 'wallet_address'])['block_number'].idxmax()].to_dict(orient='records')
-
-        if len(total_erc1155) > 0:
-            total_erc1155_frame = pandas.DataFrame(total_erc1155)
-            self._data_buff['erc1155_token_holders'] = total_erc1155_frame.loc[total_erc1155_frame.groupby(
-                ['token_address', 'wallet_address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
+            (self._data_buff[ERC20TokenHolder.type()],
+             self._data_buff[ERC721TokenHolder.type()],
+             self._data_buff[ERC1155TokenHolder.type()]) = calculate_token_holders(self._data_buff[TokenBalance.type()])
 
     def _export(self):
 
         if self._entity_types & EntityType.TOKEN_BALANCE:
             items = self._extract_from_buff(
-                ['enriched_token_balances', 'erc20_token_holders', 'erc721_token_holders', 'erc1155_token_holders'])
+                [TokenBalance.type(), ERC20TokenHolder.type(), ERC721TokenHolder.type(), ERC1155TokenHolder.type()])
             self._item_exporter.export_items(items)
 
+    def _collect_all_token_transfers(self):
+        token_transfers = []
+        if ERC20TokenTransfer.type() in self._data_buff:
+            token_transfers += self._data_buff[ERC20TokenTransfer.type()]
 
-def extract_token_parameters(token_transfers, web3):
+        if ERC721TokenTransfer.type() in self._data_buff:
+            token_transfers += self._data_buff[ERC721TokenTransfer.type()]
+
+        if ERC1155TokenTransfer.type() in self._data_buff:
+            token_transfers += self._data_buff[ERC1155TokenTransfer.type()]
+
+        return token_transfers
+
+
+def extract_token_parameters(
+        token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]],
+        web3):
     origin_parameters = []
 
     for transfer in token_transfers:
-        from_address = Web3.to_checksum_address(transfer['fromAddress'])
-        to_address = Web3.to_checksum_address(transfer['toAddress'])
-        token_address = Web3.to_checksum_address(transfer['tokenAddress'])
+        from_address = Web3.to_checksum_address(transfer.from_address)
+        to_address = Web3.to_checksum_address(transfer.to_address)
+        token_address = Web3.to_checksum_address(transfer.token_address)
 
         origin_parameters.append({
             'address': from_address,
             'token_address': token_address,
-            'token_id': transfer['tokenId'],
-            'token_type': transfer['tokenType'],
-            'block_number': transfer['blockNumber'],
-            'block_timestamp': transfer['blockTimestamp'],
+            'token_id': transfer.token_id if not isinstance(transfer, ERC20TokenTransfer) else None,
+            'token_type': transfer.token_type,
+            'block_number': transfer.block_number,
+            'block_timestamp': transfer.block_timestamp,
         })
         origin_parameters.append({
             'address': to_address,
             'token_address': token_address,
-            'token_id': transfer['tokenId'],
-            'token_type': transfer['tokenType'],
-            'block_number': transfer['blockNumber'],
-            'block_timestamp': transfer['blockTimestamp'],
+            'token_id': transfer.token_id if not isinstance(transfer, ERC20TokenTransfer) else None,
+            'token_type': transfer.token_type,
+            'block_number': transfer.block_number,
+            'block_timestamp': transfer.block_timestamp,
         })
 
     token_parameters = []
@@ -255,42 +247,36 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
                            f"exception: {e}. ")
 
         token_balances.append({
-            'tokenId': data[0]['token_id'],
             'address': data[0]['address'],
-            'tokenAddress': data[0]['token_address'],
-            'tokenType': data[0]['token_type'],
-            'tokenBalance': balance,
-            'blockNumber': data[0]['block_number'],
-            'blockTimestamp': data[0]['block_timestamp'],
+            'token_id': data[0]['token_id'],
+            'token_type': data[0]['token_type'],
+            'token_address': data[0]['token_address'],
+            'balance': balance,
+            'block_number': data[0]['block_number'],
+            'block_timestamp': data[0]['block_timestamp'],
         })
 
     return token_balances
 
 
-def calculate_token_holders(token_balances):
+def calculate_token_holders(token_balances: List[TokenBalance]):
     total_erc20, total_erc721, total_erc1155 = [], [], []
     for token_balance in token_balances:
-        if token_balance['token_type'] == "ERC20":
-            total_erc20.append(format_erc20_token_holder_data(token_balance))
-        elif token_balance['token_type'] == "ERC721":
-            total_erc721.append(format_erc721_token_holder_data(token_balance))
-        elif token_balance['token_type'] == "ERC1155":
-            total_erc1155.append(format_erc1155_token_holder_data(token_balance))
+        if token_balance.token_type == TokenType.ERC20.value:
+            total_erc20.append(ERC20TokenHolder(token_balance))
+        elif token_balance.token_type == TokenType.ERC721.value:
+            total_erc721.append(ERC721TokenHolder(token_balance))
+        elif token_balance.token_type == TokenType.ERC1155.value:
+            total_erc1155.append(ERC1155TokenHolder(token_balance))
 
-    erc20_token_holders, erc721_token_holders, erc1155_token_holders = [], [], []
-    if len(total_erc20) > 0:
-        total_erc20_frame = pandas.DataFrame(total_erc20)
-        erc20_token_holders = total_erc20_frame.loc[total_erc20_frame.groupby(
-            ['token_address', 'wallet_address'])['block_number'].idxmax()].to_dict(orient='records')
-
-    if len(total_erc721) > 0:
-        total_erc721_frame = pandas.DataFrame(total_erc721)
-        erc721_token_holders = total_erc721_frame.loc[total_erc721_frame.groupby(
-            ['token_address', 'wallet_address'])['block_number'].idxmax()].to_dict(orient='records')
-
-    if len(total_erc1155) > 0:
-        total_erc1155_frame = pandas.DataFrame(total_erc1155)
-        erc1155_token_holders = total_erc1155_frame.loc[total_erc1155_frame.groupby(
-            ['token_address', 'wallet_address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
+    erc20_token_holders = distinct_collections_by_group(total_erc20,
+                                                        group_by=['token_address', 'wallet_address'],
+                                                        max_key='block_number')
+    erc721_token_holders = distinct_collections_by_group(total_erc721,
+                                                         group_by=['token_address', 'wallet_address'],
+                                                         max_key='block_number')
+    erc1155_token_holders = distinct_collections_by_group(total_erc1155,
+                                                          group_by=['token_address', 'wallet_address'],
+                                                          max_key='block_number')
 
     return erc20_token_holders, erc721_token_holders, erc1155_token_holders

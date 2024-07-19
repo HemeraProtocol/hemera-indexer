@@ -10,10 +10,8 @@ from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
 from indexer.domain.token import Token, UpdateToken
 from indexer.domain.token_transfer import extract_transfer_from_log, \
-    format_erc20_token_transfer_data, format_erc721_token_transfer_data, format_erc1155_token_transfer_data, \
     ERC20TokenTransfer, ERC1155TokenTransfer, ERC721TokenTransfer
 from enumeration.entity_type import EntityType
-from enumeration.token_type import TokenType
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from common.models.tokens import Tokens
 from indexer.jobs.base_job import BaseJob
@@ -80,6 +78,7 @@ class ExportTokensAndTransfersJob(BaseJob):
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
         self._exist_token = get_exist_token(service)
+        self._token_params = []
 
     def _start(self):
         super()._start()
@@ -93,8 +92,7 @@ class ExportTokensAndTransfersJob(BaseJob):
 
         self._batch_work_executor.wait()
 
-        tokens = distinct_tokens(self._exist_token, self._data_buff['token'])
-        self._data_buff['token'] = []
+        tokens = distinct_tokens(self._exist_token, self._token_params)
 
         self._batch_work_executor.execute(
             tokens,
@@ -108,7 +106,7 @@ class ExportTokensAndTransfersJob(BaseJob):
         tokens, token_transfers = extract_tokens_and_token_transfers(logs)
 
         for token in tokens:
-            self._collect_item('token', token)
+            self._token_params.append(token)
 
         for transfer_event in token_transfers:
             if isinstance(transfer_event, ERC20TokenTransfer):
@@ -296,19 +294,3 @@ def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
                 token[key] = None
 
     return tokens
-
-
-def split_token_transfers(token_transfers):
-    erc20_token_transfers = []
-    erc721_token_transfers = []
-    erc1155_token_transfers = []
-
-    for token_transfer in token_transfers:
-        if token_transfer['tokenType'] == TokenType.ERC20.value:
-            erc20_token_transfers.append(format_erc20_token_transfer_data(token_transfer))
-        elif token_transfer['tokenType'] == TokenType.ERC721.value:
-            erc721_token_transfers.append(format_erc721_token_transfer_data(token_transfer))
-        elif token_transfer['tokenType'] == TokenType.ERC1155.value:
-            erc1155_token_transfers.append(format_erc1155_token_transfer_data(token_transfer))
-
-    return erc20_token_transfers, erc721_token_transfers, erc1155_token_transfers

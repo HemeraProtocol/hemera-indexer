@@ -20,7 +20,7 @@ class ExportBlocksJob(BaseJob):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._entity_types = kwargs['entity_types']
+
         self._batch_web3_provider = kwargs['batch_web3_provider']
         self._batch_work_executor = BatchWorkExecutor(
             kwargs['batch_size'], kwargs['max_workers'],

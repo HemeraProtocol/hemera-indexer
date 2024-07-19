@@ -1,5 +1,4 @@
 import logging
-from typing import List, Tuple
 
 import pandas
 import sqlalchemy
@@ -11,9 +10,6 @@ from indexer.domain.coin_balance import format_coin_balance_data
 from indexer.domain.contract import format_contract_data
 from indexer.domain.contract_internal_transaction import trace_to_contract_internal_transaction
 from indexer.domain.token import format_token_data
-from indexer.domain.token_balance import format_token_balance_data
-from indexer.domain.token_id_infos import format_erc721_token_id_change, format_erc721_token_id_detail, \
-    format_erc1155_token_id_detail
 from indexer.domain.trace import format_trace_data
 from enumeration.token_type import TokenType
 from common.converter.postgresql_model_converter import convert_item
@@ -40,9 +36,9 @@ from indexer.jobs.export_coin_balances_job import coin_balances_rpc_requests, di
 from indexer.jobs.export_contracts_job import build_contracts
 from indexer.jobs.export_token_balances_and_holders_job import extract_token_parameters, token_balances_rpc_requests, \
     calculate_token_holders
-from indexer.jobs.export_token_id_infos_job import distinct_token_ids, token_ids_info_rpc_requests, get_exist_token_ids
+from indexer.jobs.export_token_id_infos_job import token_ids_info_rpc_requests, get_exist_token_ids
 from indexer.jobs.export_tokens_and_transfers_job import tokens_rpc_requests, extract_tokens_and_token_transfers, \
-    get_exist_token, split_token_transfers, distinct_tokens
+    get_exist_token, distinct_tokens
 from indexer.jobs.export_traces_job import traces_rpc_requests
 from indexer.jobs.export_transactions_and_logs_job import receipt_rpc_requests
 from indexer.utils.enrich import enrich_transactions, enrich_blocks_timestamp, enrich_traces, \

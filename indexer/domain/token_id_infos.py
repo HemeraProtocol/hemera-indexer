@@ -1,10 +1,6 @@
 from dataclasses import dataclass
+from typing import Optional
 
-from eth_utils import to_normalized_address
-
-from common.models.erc1155_token_id_details import ERC1155TokenIdDetails
-from common.models.erc721_token_id_changes import ERC721TokenIdChanges
-from common.models.erc721_token_id_details import ERC721TokenIdDetails
 from indexer.domain import Domain
 
 
@@ -16,15 +12,47 @@ class ERC721TokenIdChange(Domain):
     block_number: int
     block_timestamp: int
 
+    def __init__(self, token_dict: dict):
+        self.address = token_dict['address']
+        self.token_id = token_dict['token_id']
+        self.token_owner = token_dict['ownerOf']
+        self.block_number = token_dict['block_number']
+        self.block_timestamp = token_dict['block_timestamp']
+
 
 @dataclass
 class ERC721TokenIdDetail(Domain):
     address: str
     token_id: int
     token_owner: str
-    token_uri_info: str
+    token_uri: str
     block_number: int
     block_timestamp: int
+    token_uri_info: Optional[str] = None
+
+    def __init__(self, token_dict: dict):
+        self.address = token_dict['address']
+        self.token_id = token_dict['token_id']
+        self.token_owner = token_dict['ownerOf']
+        self.token_uri = token_dict['tokenURI']
+        self.block_number = token_dict['block_number']
+        self.block_timestamp = token_dict['block_timestamp']
+
+
+@dataclass
+class UpdateERC721TokenIdDetail(Domain):
+    address: str
+    token_id: int
+    token_owner: str
+    block_number: int
+    block_timestamp: int
+
+    def __init__(self, token_dict: dict):
+        self.address = token_dict['address']
+        self.token_id = token_dict['token_id']
+        self.token_owner = token_dict['ownerOf']
+        self.block_number = token_dict['block_number']
+        self.block_timestamp = token_dict['block_timestamp']
 
 
 @dataclass
@@ -32,57 +60,30 @@ class ERC1155TokenIdDetail(Domain):
     address: str
     token_id: int
     token_supply: int
-    token_owner: str
-    token_uri_info: str
+    token_uri: str
+    block_number: int
+    block_timestamp: int
+    token_uri_info: Optional[str] = None
+
+    def __init__(self, token_dict: dict):
+        self.address = token_dict['address']
+        self.token_id = token_dict['token_id']
+        self.token_supply = token_dict['totalSupply']
+        self.token_uri = token_dict['uri']
+        self.block_number = token_dict['block_number']
+        self.block_timestamp = token_dict['block_timestamp']
+
+
+class UpdateERC1155TokenIdDetail(Domain):
+    address: str
+    token_id: int
+    token_supply: int
     block_number: int
     block_timestamp: int
 
-
-def format_erc721_token_id_change(token_id_info):
-    erc721_token_id_change = {
-        'model': ERC721TokenIdChanges,
-        'address': to_normalized_address(token_id_info['address']),
-        'token_id': token_id_info['token_id'],
-        'token_owner': token_id_info['ownerOf'],
-        'block_number': token_id_info['block_number'],
-        'block_timestamp': token_id_info['block_timestamp']
-    }
-    return erc721_token_id_change
-
-
-def format_erc721_token_id_detail(token_id_info):
-    erc721_token_id_detail = {
-        'model': ERC721TokenIdDetails,
-        'address': to_normalized_address(token_id_info['address']),
-        'token_id': token_id_info['token_id'],
-        'token_owner': token_id_info['ownerOf'],
-        'token_uri_info': None,
-        'block_number': token_id_info['block_number'],
-        'block_timestamp': token_id_info['block_timestamp'],
-        'update_strategy': "EXCLUDED.block_number >= erc721_token_id_details.block_number",
-        'update_columns': ['token_owner', 'block_number', 'block_timestamp', 'update_time']
-    }
-
-    if 'tokenURI' in token_id_info:
-        erc721_token_id_detail['token_uri'] = token_id_info['tokenURI']
-
-    return erc721_token_id_detail
-
-
-def format_erc1155_token_id_detail(token_id_info):
-    erc1155_token_id_detail = {
-        'model': ERC1155TokenIdDetails,
-        'address': to_normalized_address(token_id_info['address']),
-        'token_id': token_id_info['token_id'],
-        'token_supply': token_id_info['totalSupply'],
-        'token_uri_info': None,
-        'block_number': token_id_info['block_number'],
-        'block_timestamp': token_id_info['block_timestamp'],
-        'update_strategy': "EXCLUDED.block_number >= erc1155_token_id_details.block_number",
-        'update_columns': ['token_supply', 'block_number', 'block_timestamp', 'update_time']
-    }
-
-    if 'tokenURI' in token_id_info:
-        erc1155_token_id_detail['token_uri'] = token_id_info['uri']
-
-    return erc1155_token_id_detail
+    def __init__(self, token_dict: dict):
+        self.address = token_dict['address']
+        self.token_id = token_dict['token_id']
+        self.token_supply = token_dict['totalSupply']
+        self.block_number = token_dict['block_number']
+        self.block_timestamp = token_dict['block_timestamp']

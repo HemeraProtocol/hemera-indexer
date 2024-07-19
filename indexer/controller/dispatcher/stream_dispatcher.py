@@ -48,8 +48,8 @@ class StreamDispatcher(BaseDispatcher):
                 batch_web3_provider=self._batch_web3_provider,
                 batch_size=self._batch_size,
                 max_workers=self._max_workers,
-                item_exporter=self._item_exporter,
-            ).run()
+                item_exporters=[self._item_exporter],
+            ).run(start_block=start_block, end_block=end_block)
 
         if self._entity_types & EntityType.TRANSACTION or self._entity_types & EntityType.LOG \
                 or self._entity_types & EntityType.TOKEN or self._entity_types & EntityType.TOKEN_TRANSFER \

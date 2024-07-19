@@ -1,15 +1,15 @@
 import json
 import logging
-
-import pandas
+from typing import List
 
 from eth_abi import abi
 from web3 import Web3
 
-from indexer.domain.token_id_infos import format_erc721_token_id_change, format_erc721_token_id_detail, \
-    format_erc1155_token_id_detail
+from indexer.domain.token_id_infos import ERC721TokenIdChange, ERC721TokenIdDetail, UpdateERC721TokenIdDetail, \
+    ERC1155TokenIdDetail, UpdateERC1155TokenIdDetail
 from enumeration.entity_type import EntityType
 from enumeration.token_type import TokenType
+from indexer.domain.token_transfer import ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from common.models.erc1155_token_id_details import ERC1155TokenIdDetails
 from common.models.erc721_token_id_details import ERC721TokenIdDetails
@@ -88,23 +88,28 @@ class ExportTokenIdInfosJob(BaseJob):
             "ERC721": get_exist_token_ids(service, ERC721TokenIdDetails),
             "ERC1155": get_exist_token_ids(service, ERC1155TokenIdDetails)
         }
+        self._erc721_token_ids = []
+        self._erc1155_token_ids = []
 
     def _start(self):
         super()._start()
 
     def _collect(self):
 
-        token_721 = distinct_token_ids(self._exist_token, self._data_buff['token_transfer'], TokenType.ERC721)
-        self._batch_work_executor.execute(token_721,
-                                          self._collect_batch,
-                                          total_items=len(token_721))
+        if ERC721TokenTransfer.type() in self._data_buff:
+            token_721 = distinct_erc721_token_ids(self._exist_token['ERC721'],
+                                                  self._data_buff[ERC721TokenTransfer.type()])
+            self._batch_work_executor.execute(token_721,
+                                              self._collect_batch,
+                                              total_items=len(token_721))
+            self._batch_work_executor.wait()
 
-        self._batch_work_executor.wait()
-
-        token_1155 = distinct_token_ids(self._exist_token, self._data_buff['token_transfer'], TokenType.ERC1155)
-        self._batch_work_executor.execute(token_1155,
-                                          self._collect_batch,
-                                          total_items=len(token_1155))
+        if ERC1155TokenTransfer.type() in self._data_buff:
+            token_1155 = distinct_erc1155_token_ids(self._exist_token['ERC1155'],
+                                                    self._data_buff[ERC1155TokenTransfer.type()])
+            self._batch_work_executor.execute(token_1155,
+                                              self._collect_batch,
+                                              total_items=len(token_1155))
 
         self._batch_work_executor.shutdown()
 
@@ -115,32 +120,38 @@ class ExportTokenIdInfosJob(BaseJob):
                                              self._is_batch)
         for token in tokens:
             if token['token_type'] == TokenType.ERC721.value:
-                token['item'] = 'erc721_token_ids'
+                self._erc721_token_ids.append(token)
             else:
-                token['item'] = 'erc1155_token_ids'
-            self._collect_item(token)
+                self._erc1155_token_ids.append(token)
 
     def _process(self):
 
-        if len(self._data_buff['erc721_token_ids']) > 0:
-            self._data_buff['erc721_token_id_changes'] = [format_erc721_token_id_change(token_id_info)
-                                                          for token_id_info in self._data_buff['erc721_token_ids']]
+        if len(self._erc721_token_ids) > 0:
+            self._data_buff[ERC721TokenIdChange.type()] = [ERC721TokenIdChange(token_id_info)
+                                                           for token_id_info in self._erc721_token_ids]
 
-            total_erc721_id_details = pandas.DataFrame([format_erc721_token_id_detail(token_id_info)
-                                                        for token_id_info in self._data_buff['erc721_token_ids']])
-            self._data_buff['erc721_token_id_details'] = total_erc721_id_details.loc[total_erc721_id_details.groupby(
-                ['address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
+            self._data_buff[ERC721TokenIdDetail.type()] = [ERC721TokenIdDetail(token_id_info)
+                                                           for token_id_info in self._erc721_token_ids
+                                                           if token_id_info['is_new']]
 
-        if len(self._data_buff['erc1155_token_ids']) > 0:
-            total_erc1155_id_details = pandas.DataFrame([format_erc1155_token_id_detail(token_id_info)
-                                                         for token_id_info in self._data_buff['erc1155_token_ids']])
-            self._data_buff['erc1155_token_id_details'] = total_erc1155_id_details.loc[total_erc1155_id_details.groupby(
-                ['address', 'token_id'])['block_number'].idxmax()].to_dict(orient='records')
+            self._data_buff[UpdateERC721TokenIdDetail.type()] = [UpdateERC721TokenIdDetail(token_id_info)
+                                                                 for token_id_info in self._erc721_token_ids
+                                                                 if not token_id_info['is_new']]
+
+        if len(self._erc1155_token_ids) > 0:
+            self._data_buff[ERC1155TokenIdDetail.type()] = [ERC1155TokenIdDetail(token_id_info)
+                                                            for token_id_info in self._erc1155_token_ids
+                                                            if token_id_info['is_new']]
+
+            self._data_buff[UpdateERC1155TokenIdDetail.type()] = [UpdateERC1155TokenIdDetail(token_id_info)
+                                                                  for token_id_info in self._erc1155_token_ids
+                                                                  if not token_id_info['is_new']]
 
     def _export(self):
         if self._entity_types & EntityType.TOKEN_IDS:
             items = self._extract_from_buff(
-                ['erc721_token_id_changes', 'erc721_token_id_details', 'erc1155_token_id_details'])
+                [ERC721TokenIdChange.type(), ERC721TokenIdDetail.type(), UpdateERC721TokenIdDetail.type(),
+                 ERC1155TokenIdDetail.type(), UpdateERC1155TokenIdDetail.type()])
             self._item_exporter.export_items(items)
 
 
@@ -159,33 +170,62 @@ def get_exist_token_ids(db_service, model):
     return history_token
 
 
-def distinct_token_ids(exist_tokens, token_transfers, token_type):
-    exist_set = set(exist_tokens[token_type.value])
-
+def distinct_erc721_token_ids(exist_tokens: list, token_transfers: List[ERC721TokenTransfer]):
+    exist_set = set(exist_tokens)
+    dealt_set = set()
     unique_tokens = {}
     for token_transfer in token_transfers:
-        if token_transfer['tokenType'] == token_type.value:
-            key = f"{token_transfer['tokenAddress']}_{token_transfer['tokenId']}_{token_transfer['blockNumber']}"
-            if key not in unique_tokens:
-                is_new = True
-                if (token_transfer['tokenAddress'], token_transfer['tokenId']) in exist_set:
-                    is_new = False
+        key = f"{token_transfer.token_address}_{token_transfer.token_id}_{token_transfer.block_number}"
+        if key not in unique_tokens:
+            is_new = True
+            key = (token_transfer.token_address, token_transfer.token_id)
+            if key in exist_set or key in dealt_set:
+                is_new = False
 
+            if key in dealt_set and unique_tokens[key]['block_number'] < token_transfer.block_number:
+                unique_tokens[key]['block_number'] = token_transfer.block_number
+                unique_tokens[key]['block_timestamp'] = token_transfer.block_timestamp
+            else:
                 unique_tokens[key] = {
-                    'address': token_transfer['tokenAddress'],
-                    'token_id': token_transfer['tokenId'],
-                    'token_type': token_transfer['tokenType'],
-                    'block_number': token_transfer['blockNumber'],
-                    'block_timestamp': token_transfer['blockTimestamp'],
+                    'address': token_transfer.token_address,
+                    'token_id': token_transfer.token_id,
+                    'token_type': token_transfer.token_type,
+                    'block_number': token_transfer.block_number,
+                    'block_timestamp': token_transfer.block_timestamp,
                     'is_new': is_new,
                     'request_id': len(unique_tokens.keys())
                 }
+            dealt_set.add(key)
 
-    tokens_list = []
-    for key in unique_tokens.keys():
-        tokens_list.append(unique_tokens[key])
+    return [unique_tokens[key] for key in unique_tokens.keys()]
 
-    return tokens_list
+
+def distinct_erc1155_token_ids(exist_tokens: list, token_transfers: List[ERC1155TokenTransfer]):
+    exist_set = set(exist_tokens)
+
+    unique_tokens = {}
+    for token_transfer in token_transfers:
+        key = f"{token_transfer.token_address}_{token_transfer.token_id}"
+        if key not in unique_tokens:
+            is_new = True
+            if (token_transfer.token_address, token_transfer.token_id) in exist_set:
+                is_new = False
+
+            unique_tokens[key] = {
+                'address': token_transfer.token_address,
+                'token_id': token_transfer.token_id,
+                'token_type': token_transfer.token_type,
+                'block_number': token_transfer.block_number,
+                'block_timestamp': token_transfer.block_timestamp,
+                'is_new': is_new,
+                'request_id': len(unique_tokens.keys())
+            }
+        else:
+            if unique_tokens[key]['block_number'] < token_transfer.block_number:
+                unique_tokens[key]['block_number'] = token_transfer.block_number
+                unique_tokens[key]['block_timestamp'] = token_transfer.block_timestamp
+
+    return [unique_tokens[key] for key in unique_tokens.keys()]
 
 
 def build_rpc_method_data(web3, tokens, token_type, fn, require_new):
@@ -226,7 +266,7 @@ def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
 
         if len(token_name_rpc) == 0:
             continue
-            
+
         if is_batch:
             response = make_requests(params=json.dumps(token_name_rpc))
         else:

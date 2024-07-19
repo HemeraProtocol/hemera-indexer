@@ -1,7 +1,9 @@
-import configparser
 import itertools
 import warnings
 import random
+from typing import List, Union
+
+from indexer.domain import Domain
 
 
 def to_int_or_none(val):
@@ -151,3 +153,19 @@ def merge_sort(sorted_col_a, sorted_col_b):
     merged.extend(sorted_col_b[b_index:])
 
     return merged
+
+
+def distinct_collections_by_group(collections: List[Domain],
+                                  group_by: List[str],
+                                  max_key: Union[str, None] = None):
+    distinct = {}
+    for item in collections:
+        key = tuple(getattr(item, idx) for idx in group_by)
+
+        if key not in distinct:
+            distinct[key] = item
+        else:
+            if max_key is not None and getattr(distinct[key], max_key) < getattr(item, max_key):
+                distinct[key] = item
+
+    return [distinct[key] for key in distinct.keys()]
