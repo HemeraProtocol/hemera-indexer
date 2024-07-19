@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from hexbytes import HexBytes
-
-from common.models.logs import Logs
 from eth_utils import to_int, to_normalized_address
+from hexbytes import HexBytes
 
 from indexer.domain import Domain
 

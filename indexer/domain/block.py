@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from eth_utils import to_int, to_normalized_address
 
-from indexer.domain import Domain, dict_to_dataclass
+from indexer.domain import Domain
 from indexer.domain.transaction import Transaction
 
 
@@ -29,13 +29,7 @@ class Block(Domain):
     extra_data: Optional[str] = None
     withdrawals_root: Optional[str] = None
 
-    def __init__(self, block_dict: dict, rpc_format=True):
-        if rpc_format:
-            self.init_from_rpc(block_dict)
-        else:
-            self.dict_to_entity(block_dict)
-
-    def init_from_rpc(self, block_dict: dict):
+    def __init__(self, block_dict: dict):
         self.number = to_int(hexstr=block_dict['number'])
         self.timestamp = to_int(hexstr=block_dict['timestamp'])
         self.hash = block_dict['hash']
@@ -50,7 +44,12 @@ class Block(Domain):
         self.miner = to_normalized_address(block_dict['miner'])
         self.sha3_uncles = block_dict['sha3Uncles']
         self.transactions_root = block_dict['transactionsRoot']
-        self.transactions = [Transaction(block_dict, transaction) for transaction in block_dict['transactions']]
+        self.transactions = [Transaction(
+            transaction_dict=transaction,
+            block_timestamp=self.timestamp,
+            block_hash=self.hash,
+            block_number=self.number,
+        ) for transaction in block_dict['transactions']]
         self.state_root = block_dict['stateRoot']
         self.receipts_root = block_dict['receiptsRoot']
         self.extra_data = block_dict['extraData']

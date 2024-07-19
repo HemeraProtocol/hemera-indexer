@@ -85,7 +85,7 @@ class BatchWorkExecutor:
         self.progress_logger.finish()
 
     def shutdown(self):
-        self.executor.shutdown(wait=True)
+        self.executor.shutdown(wait=10)
         self._check_completed_futures()
         assert len(self._futures) == 0
 

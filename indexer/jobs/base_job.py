@@ -1,22 +1,30 @@
 import logging
 from datetime import datetime
 
-from enumeration.entity_type import DEFAULT_COLLECTION
-
 
 class BaseJob(object):
     _data_buff = {}
 
-    def __init__(self, entity_types=DEFAULT_COLLECTION):
-        self._entity_types = entity_types
+    dependency_types = []
+    output_types = []
+
+    @property
+    def job_name(self):
+        return self.__class__.__name__
+
+    @classmethod
+    def discover_jobs(cls):
+        return cls.__subclasses__()
+
+    def __init__(self, **kwargs):
         self.logger = logging.getLogger(self.__class__.__name__)
 
-    def run(self):
+    def run(self, **kwargs):
         try:
             self._start()
 
             start_time = datetime.now()
-            self._collect()
+            self._collect(**kwargs)
             self.logger.info(f"Stage collect finished. Took {datetime.now() - start_time}")
 
             start_time = datetime.now()
@@ -36,7 +44,7 @@ class BaseJob(object):
     def _end(self):
         pass
 
-    def _collect(self):
+    def _collect(self, **kwargs):
         pass
 
     def _collect_batch(self, iterator):

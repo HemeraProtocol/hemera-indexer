@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Optional, List
 
-from common.models.transactions import Transactions
 from eth_utils import to_int, to_normalized_address
 
 from indexer.domain import Domain
@@ -33,13 +32,7 @@ class Transaction(Domain):
     error: Optional[str] = None
     revert_reason: Optional[str] = None
 
-    def __init__(self, block_dict=None, transaction_dict=None, rpc_format=True):
-        if rpc_format:
-            self.init_from_rpc(block_dict, transaction_dict)
-        else:
-            self.dict_to_entity(transaction_dict)
-
-    def init_from_rpc(self, block_dict: dict, transaction_dict: dict):
+    def __init__(self, transaction_dict: dict, block_timestamp, block_hash, block_number):
         self.hash = transaction_dict['hash']
         self.transaction_index = to_int(hexstr=transaction_dict['transactionIndex'])
         self.from_address = to_normalized_address(transaction_dict['from']) if transaction_dict['to'] else None
@@ -48,9 +41,9 @@ class Transaction(Domain):
         self.transaction_type = to_int(hexstr=transaction_dict['type']) if transaction_dict['type'] else None
         self.input = transaction_dict['input']
         self.nonce = to_int(hexstr=transaction_dict['nonce'])
-        self.block_hash = block_dict['hash']
-        self.block_number = to_int(hexstr=block_dict['number'])
-        self.block_timestamp = to_int(hexstr=block_dict['timestamp'])
+        self.block_hash = block_hash
+        self.block_number = block_number
+        self.block_timestamp = block_timestamp
         self.gas = to_int(hexstr=transaction_dict['gas'])
         self.gas_price = to_int(hexstr=transaction_dict['gasPrice'])
         self.max_fee_per_gas = to_int(hexstr=transaction_dict.get('maxFeePerGas')) \
