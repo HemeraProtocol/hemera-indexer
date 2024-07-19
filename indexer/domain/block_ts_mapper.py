@@ -1,6 +1,6 @@
 from dataclasses import dataclass
+from typing import Tuple
 
-from common.models.block_timestamp_mapper import BlockTimestampMapper
 from indexer.domain import Domain
 
 
@@ -9,11 +9,6 @@ class BlockTsMapper(Domain):
     block_number: int
     timestamp: int
 
-
-def format_block_ts_mapper(timestamp, block_number):
-    block_ts_mapper = {
-        "model": BlockTimestampMapper,
-        'block_number': block_number,
-        'timestamp': timestamp,
-    }
-    return block_ts_mapper
+    def __init__(self, mapper: Tuple[int, int]):
+        self.block_number = mapper[1]
+        self.timestamp = mapper[0]

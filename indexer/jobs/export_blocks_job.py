@@ -1,10 +1,9 @@
 import json
 import logging
 
-from indexer.domain.block import format_block_data, Block
-from indexer.domain.block_ts_mapper import format_block_ts_mapper
+from indexer.domain.block import Block
+from indexer.domain.block_ts_mapper import BlockTsMapper
 from enumeration.entity_type import EntityType
-from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
@@ -49,31 +48,34 @@ class ExportBlocksJob(BaseJob):
         results = blocks_rpc_requests(self._batch_web3_provider.make_request, block_number_batch, self._is_batch)
 
         for block in results:
+            block_entity = Block(block)
             self._collect_item('origin_block', block)
-            self._collect_item('block', Block(block))
+            self._collect_item('block', block_entity)
             for transaction in block['transactions']:
                 self._collect_item('origin_transaction', transaction)
-                self._collect_item('transaction', Transaction(block, transaction))
+            for transaction in block_entity.transactions:
+                self._collect_item('transaction', transaction)
 
     def _process(self):
         self._data_buff['block'] = sorted(self._data_buff['block'], key=lambda x: x.number)
+        self._data_buff['transaction'] = sorted(self._data_buff['transaction'],
+                                                key=lambda x: (x.block_number, x.transaction_index))
 
         ts_dict = {}
-        for block in self._data_buff['formated_block']:
-            timestamp = block['timestamp'] // 3600 * 3600
-            block_number = block['number']
+        for block in self._data_buff['block']:
+            timestamp = block.timestamp // 3600 * 3600
+            block_number = block.number
 
-            if timestamp not in ts_dict.keys() or block_number < ts_dict[timestamp]:
+            if timestamp not in ts_dict or block_number < ts_dict[timestamp]:
                 ts_dict[timestamp] = block_number
-        self._data_buff['block_ts_mapping'] = []
-        for timestamp, block_number in ts_dict.items():
-            self._data_buff['block_ts_mapping'].append(format_block_ts_mapper(timestamp, block_number))
+
+        self._data_buff['block_ts_mapper'] = [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()]
 
     def _export(self):
-        export_items = self._extract_from_buff(['block_ts_mapping'])
+        export_items = self._extract_from_buff(['block_ts_mapper'])
 
         if self._entity_types & EntityType.BLOCK:
-            export_items.extend(self._extract_from_buff(['formated_block']))
+            export_items.extend(self._extract_from_buff(['block']))
 
         self._item_exporter.export_items(export_items)
 

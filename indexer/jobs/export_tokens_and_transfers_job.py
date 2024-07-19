@@ -1,9 +1,11 @@
 import json
 import logging
+from typing import List
 
 from eth_abi import abi
 from web3 import Web3
 
+from indexer.domain.log import Log
 from indexer.domain.token import format_token_data
 from indexer.domain.token_transfer import extract_transfer_from_log, \
     format_erc20_token_transfer_data, format_erc721_token_transfer_data, format_erc1155_token_transfer_data
@@ -82,9 +84,9 @@ class ExportTokensAndTransfersJob(BaseJob):
 
     def _collect(self):
         self._batch_work_executor.execute(
-            self._data_buff['enriched_log'],
+            self._data_buff['log'],
             self._extract_batch,
-            total_items=len(self._data_buff['enriched_log'])
+            total_items=len(self._data_buff['log'])
         )
 
         self._batch_work_executor.wait()
@@ -176,7 +178,7 @@ def get_exist_token(db_service):
     return history_token
 
 
-def extract_tokens_and_token_transfers(logs):
+def extract_tokens_and_token_transfers(logs: List[Log]):
     tokens, token_transfer = [], []
     for log in logs:
         transfer_event = extract_transfer_from_log(log)

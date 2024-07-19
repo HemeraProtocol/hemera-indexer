@@ -1,8 +1,10 @@
 import json
 import logging
+from typing import List
 
 from indexer.domain.log import format_log_data
-from indexer.domain.transaction import format_transaction_data
+from indexer.domain.receipt import Receipt
+from indexer.domain.transaction import format_transaction_data, Transaction
 from enumeration.entity_type import EntityType
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
@@ -34,49 +36,43 @@ class ExportTransactionsAndLogsJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        transaction_hashes_iterable = [transaction['hash'] for transaction in self._data_buff['transaction']]
-        self._batch_work_executor.execute(transaction_hashes_iterable,
+        transactions: Transaction = self._data_buff['transaction']
+        self._batch_work_executor.execute(transactions,
                                           self._collect_batch,
-                                          total_items=len(transaction_hashes_iterable))
+                                          total_items=len(transactions))
         self._batch_work_executor.shutdown()
 
-    def _collect_batch(self, transaction_hashes):
-        results = receipt_rpc_requests(self._batch_web3_provider.make_request, transaction_hashes, self._is_batch)
+    def _collect_batch(self, transactions: List[Transaction]):
+        transaction_hash_mapper = {transaction.hash: transaction for transaction in transactions}
+        results = receipt_rpc_requests(self._batch_web3_provider.make_request,
+                                       transaction_hash_mapper.keys(),
+                                       self._is_batch)
 
         for receipt in results:
-            receipt['item'] = 'receipt'
-            self._collect_item(receipt)
+            transaction = transaction_hash_mapper[receipt['transactionHash']]
+            receipt_entity = Receipt(transaction, receipt)
+            transaction.receipt = receipt_entity
+
+            self._collect_item('origin_receipt', receipt)
             for log in receipt['logs']:
-                log['item'] = 'log'
-                self._collect_item(log)
+                self._collect_item('origin_log', log)
+
+            for log in receipt_entity.logs:
+                self._collect_item('log', log)
 
     def _process(self):
-        self._data_buff['enriched_transaction'] = [format_transaction_data(transaction)
-                                                   for transaction in enrich_blocks_timestamp
-                                                   (self._data_buff['formated_block'],
-                                                    enrich_transactions(self._data_buff['transaction'],
-                                                                        self._data_buff['receipt']))]
-
-        self._data_buff['enriched_log'] = [format_log_data(log) for log in
-                                           enrich_blocks_timestamp(self._data_buff['formated_block'],
-                                                                   self._data_buff['log'])]
-
-        self._data_buff['enriched_transaction'] = sorted(self._data_buff['enriched_transaction'],
-                                                         key=lambda x: (x['block_number'],
-                                                                        x['transaction_index']))
-
-        self._data_buff['enriched_log'] = sorted(self._data_buff['enriched_log'],
-                                                 key=lambda x: (x['block_number'],
-                                                                x['transaction_index'],
-                                                                x['log_index']))
+        self._data_buff['log'] = sorted(self._data_buff['log'],
+                                        key=lambda x: (x.block_number,
+                                                       x.transaction_index,
+                                                       x.log_index))
 
     def _export(self):
         items = []
         if self._entity_types & EntityType.TRANSACTION:
-            items.extend(self._extract_from_buff(['enriched_transaction']))
+            items.extend(self._extract_from_buff(['transaction']))
 
         if self._entity_types & EntityType.LOG:
-            items.extend(self._extract_from_buff(['enriched_log']))
+            items.extend(self._extract_from_buff(['log']))
 
         self._item_exporter.export_items(items)
 
