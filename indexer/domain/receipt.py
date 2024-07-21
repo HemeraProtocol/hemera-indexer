@@ -6,7 +6,6 @@ from eth_utils import to_int, to_normalized_address
 from indexer.domain import Domain
 from indexer.domain.log import Log
 
-
 @dataclass
 class Receipt(Domain):
     transaction_hash: str
@@ -14,7 +13,7 @@ class Receipt(Domain):
     contract_address: str
     status: int
     logs: List[Log] = field(default_factory=list)
-    root: str = Optional[None]
+    root: Optional[str] = None
     cumulative_gas_used: Optional[int] = None
     gas_used: Optional[int] = None
     effective_gas_price: Optional[int] = None
@@ -25,20 +24,26 @@ class Receipt(Domain):
     blob_gas_used: Optional[int] = None
     blob_gas_price: Optional[int] = None
 
-    def __init__(self, transaction, receipt_dict: dict):
-        self.transaction_hash = receipt_dict['transactionHash']
-        self.transaction_index = to_int(hexstr=receipt_dict['transactionIndex'])
-        self.contract_address = to_normalized_address(receipt_dict['contractAddress']) \
-            if receipt_dict.get('contractAddress', None) else None
-        self.status = to_int(hexstr=receipt_dict['status'])
-        self.logs = [Log(transaction, log_dict) for log_dict in receipt_dict['logs']]
-        self.root = receipt_dict.get('root')
-        self.cumulative_gas_used = receipt_dict.get('cumulativeGasUsed')
-        self.gas_used = receipt_dict.get('gasUsed')
-        self.effective_gas_price = receipt_dict.get('effectiveGasPrice')
-        self.l1_fee = receipt_dict.get('l1Fee')
-        self.l1_fee_scalar = receipt_dict.get('l1FeeScalar')
-        self.l1_gas_used = receipt_dict.get('l1GasUsed')
-        self.l1_gas_price = receipt_dict.get('l1GasPrice')
-        self.blob_gas_used = receipt_dict.get('blobGasUsed')
-        self.blob_gas_price = receipt_dict.get('blobGasPrice')
+    @staticmethod
+    def from_rpc(receipt_dict: dict, block_timestamp=None, block_hash=None, block_number=None):
+        if isinstance(receipt_dict, int):
+            print('here')
+
+        logs = [Log.from_rpc(log_dict, block_timestamp, block_hash, block_number) for log_dict in receipt_dict.get('logs', [])]
+        return Receipt(
+            transaction_hash=receipt_dict['transactionHash'],
+            transaction_index=to_int(hexstr=receipt_dict['transactionIndex']),
+            contract_address=to_normalized_address(receipt_dict.get('contractAddress')) if receipt_dict.get('contractAddress') else None,
+            status=to_int(hexstr=receipt_dict['status']),
+            logs=logs,
+            root=receipt_dict.get('root'),
+            cumulative_gas_used=receipt_dict.get('cumulativeGasUsed'),
+            gas_used=receipt_dict.get('gasUsed'),
+            effective_gas_price=receipt_dict.get('effectiveGasPrice'),
+            l1_fee=receipt_dict.get('l1Fee'),
+            l1_fee_scalar=receipt_dict.get('l1FeeScalar'),
+            l1_gas_used=receipt_dict.get('l1GasUsed'),
+            l1_gas_price=receipt_dict.get('l1GasPrice'),
+            blob_gas_used=receipt_dict.get('blobGasUsed'),
+            blob_gas_price=receipt_dict.get('blobGasPrice')
+        )

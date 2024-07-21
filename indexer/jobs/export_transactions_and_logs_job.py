@@ -2,12 +2,13 @@ import json
 import logging
 from typing import List
 
+from enumeration.entity_type import EntityType
+from indexer.domain.block import Block
+from indexer.domain.log import Log
 from indexer.domain.receipt import Receipt
 from indexer.domain.transaction import Transaction
-from enumeration.entity_type import EntityType
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.jobs.base_job import BaseJob
 from indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc
 from indexer.utils.utils import rpc_response_batch_to_results
 
@@ -16,24 +17,26 @@ logger = logging.getLogger(__name__)
 
 # Exports transactions and logs
 class ExportTransactionsAndLogsJob(BaseJob):
-    def __init__(self,
-                 entity_types,
-                 batch_web3_provider,
-                 batch_size,
-                 max_workers,
-                 item_exporter=ConsoleItemExporter()):
-        super().__init__(entity_types=entity_types)
 
-        self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
-        self._is_batch = batch_size > 1
-        self._item_exporter = item_exporter
+    dependency_types = [Block]
+    output_types = [Transaction, Log]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._batch_web3_provider = kwargs['batch_web3_provider']
+        self._batch_work_executor = BatchWorkExecutor(
+            kwargs['batch_size'], kwargs['max_workers'],
+            job_name=self.__class__.__name__)
+        self._is_batch = kwargs['batch_size'] > 1
+        self._item_exporter = kwargs['item_exporter']
 
     def _start(self):
         super()._start()
 
-    def _collect(self):
-        transactions: List[Transaction] = self._data_buff['transaction']
+    def _collect(self, **kwargs):
+
+        transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
         self._batch_work_executor.execute(transactions,
                                           self._collect_batch,
                                           total_items=len(transactions))
@@ -47,30 +50,21 @@ class ExportTransactionsAndLogsJob(BaseJob):
 
         for receipt in results:
             transaction = transaction_hash_mapper[receipt['transactionHash']]
-            receipt_entity = Receipt(transaction, receipt)
+            receipt_entity = Receipt.from_rpc(receipt, transaction.block_timestamp, transaction.block_hash, transaction.block_number)
             transaction.receipt = receipt_entity
 
-            self._collect_item('origin_receipt', receipt)
-            for log in receipt['logs']:
-                self._collect_item('origin_log', log)
-
-            for log in receipt_entity.logs:
-                self._collect_item('log', log)
+            for log in transaction.receipt.logs:
+                self._collect_item(Log.type(), log)
 
     def _process(self):
-        if 'log' in self._data_buff:
-            self._data_buff['log'] = sorted(self._data_buff['log'],
-                                            key=lambda x: (x.block_number,
-                                                           x.transaction_index,
-                                                           x.log_index))
+        self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
     def _export(self):
         items = []
         if self._entity_types & EntityType.TRANSACTION:
-            items.extend(self._extract_from_buff(['transaction']))
-
+            items.extend(self._extract_from_buff([Transaction.type()]))
         if self._entity_types & EntityType.LOG:
-            items.extend(self._extract_from_buff(['log']))
+            items.extend(self._extract_from_buff([Log.type()]))
 
         self._item_exporter.export_items(items)
 

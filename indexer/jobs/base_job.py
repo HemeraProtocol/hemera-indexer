@@ -21,6 +21,7 @@ class BaseJob(object):
 
     def __init__(self, **kwargs):
         self._entity_types = kwargs['entity_types']
+        self._item_exporter = kwargs['item_exporter']
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def run(self, **kwargs):

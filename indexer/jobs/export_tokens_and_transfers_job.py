@@ -61,6 +61,7 @@ erc_token_abi = [
 
 
 class ExportTokensAndTransfersJob(BaseJob):
+
     def __init__(
             self,
             entity_types,

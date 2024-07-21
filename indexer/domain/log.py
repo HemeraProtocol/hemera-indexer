@@ -22,19 +22,25 @@ class Log(Domain):
     topic2: Optional[str] = None
     topic3: Optional[str] = None
 
-    def __init__(self, transaction, log_dict: dict):
-        self.log_index = to_int(hexstr=log_dict['logIndex'])
-        self.address = to_normalized_address(log_dict['address'])
-        self.data = log_dict['data']
-        self.topic0 = log_dict['topics'][0] if len(log_dict['topics']) > 0 else None
-        self.topic1 = log_dict['topics'][1] if len(log_dict['topics']) > 1 else None
-        self.topic2 = log_dict['topics'][2] if len(log_dict['topics']) > 2 else None
-        self.topic3 = log_dict['topics'][3] if len(log_dict['topics']) > 3 else None
-        self.transaction_hash = log_dict['transactionHash']
-        self.transaction_index = to_int(hexstr=log_dict['transactionIndex'])
-        self.block_number = transaction.block_number
-        self.block_hash = transaction.block_hash
-        self.block_timestamp = transaction.block_timestamp
+    @staticmethod
+    def from_rpc(log_dict: dict, block_timestamp=None, block_hash=None, block_number=None):
+        if isinstance(log_dict, int):
+            print('here')
+        topics = log_dict.get('topics', [])
+        return Log(
+            log_index=to_int(hexstr=log_dict['logIndex']),
+            address=to_normalized_address(log_dict['address']),
+            data=log_dict['data'],
+            transaction_hash=log_dict['transactionHash'],
+            transaction_index=to_int(hexstr=log_dict['transactionIndex']),
+            block_timestamp=block_timestamp,
+            block_number=block_number,
+            block_hash=block_hash,
+            topic0=topics[0] if len(topics) > 0 else None,
+            topic1=topics[1] if len(topics) > 1 else None,
+            topic2=topics[2] if len(topics) > 2 else None,
+            topic3=topics[3] if len(topics) > 3 else None
+        )
 
     def get_bytes_topics(self) -> HexBytes:
         topics = ""
