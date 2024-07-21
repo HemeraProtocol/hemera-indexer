@@ -1,15 +1,16 @@
 import json
 import logging
+from typing import List
 
 from web3 import Web3
 from eth_abi import abi
 
-from indexer.domain.contract import extract_contract_from_trace, format_contract_data
+from indexer.domain.contract import extract_contract_from_trace, Contract
 from enumeration.entity_type import EntityType
+from indexer.domain.trace import Trace
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.utils.enrich import enrich_contracts
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
@@ -53,7 +54,7 @@ class ExportContractsJob(BaseJob):
         super()._start()
 
     def _collect(self):
-        contracts = build_contracts(self._web3, self._data_buff['trace'])
+        contracts = build_contracts(self._web3, self._data_buff[Trace.type()])
 
         self._batch_work_executor.execute(contracts, self._collect_batch, total_items=len(contracts))
         self._batch_work_executor.shutdown()
@@ -62,31 +63,26 @@ class ExportContractsJob(BaseJob):
         contracts = contract_info_rpc_requests(self._batch_web3_provider.make_request, contracts, self._is_batch)
 
         for contract in contracts:
-            contract['item'] = 'contract'
-            self._collect_item(contract)
+            self._collect_item(Contract.type(), Contract(contract))
 
     def _process(self):
-        self._data_buff['enriched_contract'] = [format_contract_data(contract) for contract in
-                                                enrich_contracts(self._data_buff['formated_block'],
-                                                                 self._data_buff['contract'])]
-
-        self._data_buff['enriched_contract'] = sorted(self._data_buff['enriched_contract'],
-                                                      key=lambda x: (x['block_number'],
-                                                                     x['transaction_index'],
-                                                                     x['address']))
+        self._data_buff[Contract.type()].sort(
+            key=lambda x: (x.block_number,
+                           x.transaction_index,
+                           x.address))
 
     def _export(self):
         if self._entity_types & EntityType.CONTRACT:
-            items = self._extract_from_buff(['enriched_contract'])
+            items = self._extract_from_buff([Contract.type()])
             self._item_exporter.export_items(items)
 
 
-def build_contracts(web3, traces):
+def build_contracts(web3, traces: List[Trace]):
     contracts = []
-    for trace_dict in traces:
-        if trace_dict['trace_type'] in ['create', 'create2'] and trace_dict['to_address'] is not None \
-                and len(trace_dict['to_address']) > 0 and trace_dict['status'] == 1:
-            contract = extract_contract_from_trace(trace_dict)
+    for trace in traces:
+        if trace.trace_type in ['create', 'create2'] and trace.to_address is not None \
+                and len(trace.to_address) > 0 and trace.status == 1:
+            contract = extract_contract_from_trace(trace)
             contract['param_to'] = contract['address']
 
             try:

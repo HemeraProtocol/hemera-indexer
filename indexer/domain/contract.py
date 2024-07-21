@@ -12,26 +12,26 @@ class Contract(Domain):
     creation_code: str
     deployed_code: str
     block_number: int
+    block_hash: str
+    block_timestamp: int
     transaction_index: int
     transaction_hash: str
 
-
-def format_contract_data(contract_dict):
-    contract = contract_dict
-    contract['model'] = Contracts
-
-    return contract
+    def __init__(self, contract: dict):
+        self.dict_to_entity(contract)
 
 
 def extract_contract_from_trace(trace):
     contract = {
-        'address': trace['to_address'],
-        'contract_creator': trace['from_address'],
-        'creation_code': trace['input'],
-        'deployed_code': trace['output'],
-        'block_number': trace['block_number'],
-        'transaction_index': trace['transaction_index'],
-        'transaction_hash': trace['transaction_hash'],
+        'address': trace.to_address,
+        'contract_creator': trace.from_address,
+        'creation_code': trace.input,
+        'deployed_code': trace.output,
+        'block_number': trace.block_number,
+        'block_hash': trace.block_hash,
+        'block_timestamp': trace.block_timestamp,
+        'transaction_index': trace.transaction_index,
+        'transaction_hash': trace.transaction_hash,
     }
 
     return contract

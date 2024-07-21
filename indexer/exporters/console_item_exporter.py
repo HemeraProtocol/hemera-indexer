@@ -1,4 +1,8 @@
+import logging
+
 from indexer.exporters.base_exporter import BaseExporter
+
+logger = logging.getLogger(__name__)
 
 
 class ConsoleItemExporter(BaseExporter):
@@ -11,4 +15,4 @@ class ConsoleItemExporter(BaseExporter):
         print(item)
 
     def batch_finish(self):
-        print("Batch finished")
+        logging.info("Batch finished")

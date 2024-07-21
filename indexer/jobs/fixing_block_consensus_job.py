@@ -6,9 +6,6 @@ from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
 from indexer.domain.block import Block
-from indexer.domain.coin_balance import format_coin_balance_data
-from indexer.domain.contract import format_contract_data
-from indexer.domain.contract_internal_transaction import trace_to_contract_internal_transaction
 from indexer.domain.token import format_token_data
 from indexer.domain.trace import format_trace_data
 from enumeration.token_type import TokenType
@@ -50,21 +47,16 @@ logger = logging.getLogger(__name__)
 
 
 class FixingBlockConsensusJob(BaseJob):
-    def __init__(self,
-                 service,
-                 batch_web3_provider,
-                 batch_web3_debug_provider,
-                 batch_size,
-                 debug_batch_size):
-        super().__init__()
-        self.service = service
-        self.batch_web3_provider = batch_web3_provider
-        self.batch_web3_debug_provider = batch_web3_debug_provider
-        self.batch_size = batch_size
-        self.is_batch = batch_size > 1
-        self.debug_batch_size = debug_batch_size
-        self.is_debug_batch = debug_batch_size > 1
-        self.web3 = build_web3(batch_web3_provider)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.service = kwargs['service']
+        self.batch_web3_provider = kwargs['batch_web3_provider']
+        self.batch_web3_debug_provider = kwargs['batch_web3_debug_provider']
+        self.batch_size = kwargs['batch_size']
+        self.is_batch = kwargs['batch_size'] > 1
+        self.debug_batch_size = kwargs['debug_batch_size']
+        self.is_debug_batch = kwargs['debug_batch_size'] > 1
+        self.web3 = build_web3(kwargs['batch_web3_provider'])
         self.block_number = None
 
     def set_fix_block_number(self, block_number):

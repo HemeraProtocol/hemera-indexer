@@ -1,8 +1,5 @@
 from dataclasses import dataclass
 
-from common.models.coin_balances import CoinBalances
-from eth_utils import to_normalized_address
-
 from indexer.domain import Domain
 
 
@@ -13,14 +10,5 @@ class CoinBalance(Domain):
     block_number: int
     block_timestamp: int
 
-
-def format_coin_balance_data(coin_balance_dict):
-    coin_balance = {
-        'model': CoinBalances,
-        'address': to_normalized_address(coin_balance_dict['address']),
-        'balance': coin_balance_dict['balance'],
-        'block_number': coin_balance_dict['block_number'],
-        'block_timestamp': coin_balance_dict['block_timestamp']
-    }
-
-    return coin_balance
+    def __init__(self, coin_balance: dict):
+        self.dict_to_entity(coin_balance)

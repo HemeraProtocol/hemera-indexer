@@ -1,17 +1,20 @@
 import json
 import logging
+from typing import List
 
 import pandas
 from eth_utils import to_int
 
-from indexer.domain.coin_balance import format_coin_balance_data
+from indexer.domain.block import Block
+from indexer.domain.coin_balance import CoinBalance
 from enumeration.entity_type import EntityType
+from indexer.domain.trace import Trace
+from indexer.domain.transaction import Transaction
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.utils.json_rpc_requests import generate_get_balance_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
-from indexer.domain.trace import trace_is_contract_creation, trace_is_transfer_value
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +40,9 @@ class ExportCoinBalancesJob(BaseJob):
 
     def _collect(self):
 
-        coin_addresses = distinct_addresses(self._data_buff['formated_block'],
-                                            self._data_buff['enriched_transaction'],
-                                            self._data_buff['enriched_traces'])
+        coin_addresses = distinct_addresses(self._data_buff[Block.type()],
+                                            self._data_buff[Transaction.type()],
+                                            self._data_buff[Trace.type()])
         self._batch_work_executor.execute(coin_addresses, self._collect_batch, total_items=len(coin_addresses))
         self._batch_work_executor.shutdown()
 
@@ -49,16 +52,12 @@ class ExportCoinBalancesJob(BaseJob):
                                                    self._is_batch)
 
         for coin_balance in coin_balances:
-            coin_balance['item'] = 'coin_balance'
-            self._collect_item(coin_balance)
+            self._collect_item(CoinBalance.type(), CoinBalance(coin_balance))
 
     def _process(self):
 
-        self._data_buff['formated_coin_balance'] = [format_coin_balance_data(coin_balance) for coin_balance in
-                                                    self._data_buff['coin_balance']]
-
-        self._data_buff['formated_coin_balance'] = sorted(self._data_buff['formated_coin_balance'],
-                                                          key=lambda x: (x['block_number'], x['address']))
+        self._data_buff[CoinBalance.type()].sort(
+            key=lambda x: (x.block_number, x.address))
 
     def _export(self):
         if self._entity_types & EntityType.COIN_BALANCE:
@@ -66,43 +65,43 @@ class ExportCoinBalancesJob(BaseJob):
             self._item_exporter.export_items(items)
 
 
-def distinct_addresses(blocks, transactions, traces):
+def distinct_addresses(blocks: List[Block], transactions: List[Transaction], traces: List[Trace]):
     addresses = []
     for block in blocks:
         addresses.append({
-            'address': block['miner'],
-            'block_number': block['number'],
-            'block_timestamp': block['timestamp']
+            'address': block.miner,
+            'block_number': block.number,
+            'block_timestamp': block.timestamp
         })
 
     for transaction in transactions:
-        if transaction['from_address'] is not None:
+        if transaction.from_address is not None:
             addresses.append({
-                'address': transaction['from_address'],
-                'block_number': transaction['block_number'],
-                'block_timestamp': transaction['block_timestamp']
+                'address': transaction.from_address,
+                'block_number': transaction.block_number,
+                'block_timestamp': transaction.block_timestamp
             })
 
-        if transaction['to_address'] is not None:
+        if transaction.to_address is not None:
             addresses.append({
-                'address': transaction['to_address'],
-                'block_number': transaction['block_number'],
-                'block_timestamp': transaction['block_timestamp']
+                'address': transaction.to_address,
+                'block_number': transaction.block_number,
+                'block_timestamp': transaction.block_timestamp
             })
 
     for trace in traces:
-        if trace_is_contract_creation(trace) or trace_is_transfer_value(trace, True):
-            if trace['to_address'] is not None:
+        if trace.is_contract_creation() or trace.is_transfer_value():
+            if trace.to_address is not None:
                 addresses.append({
-                    'address': trace['to_address'],
-                    'block_number': trace['block_number'],
-                    'block_timestamp': trace['block_timestamp']
+                    'address': trace.to_address,
+                    'block_number': trace.block_number,
+                    'block_timestamp': trace.block_timestamp
                 })
-            if trace['from_address'] is not None:
+            if trace.from_address is not None:
                 addresses.append({
-                    'address': trace['from_address'],
-                    'block_number': trace['block_number'],
-                    'block_timestamp': trace['block_timestamp']
+                    'address': trace.from_address,
+                    'block_number': trace.block_number,
+                    'block_timestamp': trace.block_timestamp
                 })
 
     return pandas.DataFrame(addresses).drop_duplicates().to_dict(orient='records')

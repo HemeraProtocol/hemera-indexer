@@ -1,14 +1,15 @@
 import json
 import logging
+from typing import List
 
 from eth_utils import to_int
 
-from indexer.domain.contract_internal_transaction import trace_to_contract_internal_transaction
-from indexer.domain.trace import format_trace_data, trace_is_contract_creation, trace_is_transfer_value
+from indexer.domain import dataclass_to_dict
+from indexer.domain.contract_internal_transaction import ContractInternalTransaction
+from indexer.domain.trace import Trace
 from enumeration.entity_type import EntityType
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.utils.enrich import enrich_traces
 from indexer.utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from indexer.jobs.base_job import BaseJob
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
@@ -44,30 +45,26 @@ class ExportTracesJob(BaseJob):
         self._batch_work_executor.shutdown()
 
     def _collect_batch(self, blocks):
-        traces = traces_rpc_requests(self._batch_web3_provider.make_request, blocks, self._is_batch)
+        traces = traces_rpc_requests(self._batch_web3_provider.make_request,
+                                     [dataclass_to_dict(block) for block in blocks],
+                                     self._is_batch)
 
         for trace in traces:
-            trace['item'] = 'trace'
-            self._collect_item(trace)
+            trace_entity = Trace(trace)
+            self._collect_item(Trace.type(), trace_entity)
+            if trace_entity.is_contract_creation():
+                self._collect_item(ContractInternalTransaction.type(), ContractInternalTransaction(trace))
 
     def _process(self):
+        self._data_buff[Trace.type()].sort(
+            key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
 
-        self._data_buff['enriched_traces'] = [format_trace_data(trace)
-                                              for trace in enrich_traces(self._data_buff['formated_block'],
-                                                                         self._data_buff['trace'])]
-
-        self._data_buff['enriched_traces'] = sorted(self._data_buff['enriched_traces'],
-                                                    key=lambda x: (
-                                                        x['block_number'], x['transaction_index'], x['trace_index']))
-
-        self._data_buff['internal_transaction'] = [trace_to_contract_internal_transaction(trace)
-                                                   for trace in self._data_buff['enriched_traces']
-                                                   if trace_is_contract_creation(trace) or
-                                                   trace_is_transfer_value(trace, True)]
+        self._data_buff[ContractInternalTransaction.type()].sort(
+            key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
 
     def _export(self):
         if self._entity_types & EntityType.TRACE:
-            items = self._extract_from_buff(['enriched_traces', 'internal_transaction'])
+            items = self._extract_from_buff([Trace.type(), ContractInternalTransaction.type()])
             self._item_exporter.export_items(items)
 
 
@@ -77,7 +74,6 @@ class ExtractTraces:
         self._trace_idx = 0
 
     def geth_trace_to_traces(self, geth_trace):
-        block_number = geth_trace['block_number']
         transaction_traces = geth_trace['transaction_traces']
 
         traces = []
@@ -86,7 +82,7 @@ class ExtractTraces:
             self._trace_idx = 0
 
             traces.extend(self._iterate_transaction_trace(
-                block_number,
+                geth_trace,
                 tx_index,
                 tx['txHash'],
                 tx['result']
@@ -94,8 +90,8 @@ class ExtractTraces:
 
         return traces
 
-    def _iterate_transaction_trace(self, block_number, tx_index, tx_hash, tx_trace, trace_address=[]):
-        block_number = block_number
+    def _iterate_transaction_trace(self, geth_trace, tx_index, tx_hash, tx_trace, trace_address=[]):
+        block_number = geth_trace['block_number']
         transaction_index = tx_index
         trace_index = self._trace_idx
 
@@ -133,7 +129,7 @@ class ExtractTraces:
             'to_address': to_address,
             'input': input,
             'output': output,
-            'value': value,
+            'value': to_int(hexstr=value) if value is not None else None,
             'gas': gas,
             'gas_used': gas_used,
             'trace_type': trace_type,
@@ -143,6 +139,8 @@ class ExtractTraces:
             'error': error,
             'status': status,
             'block_number': block_number,
+            'block_hash': geth_trace['block_hash'],
+            'block_timestamp': geth_trace['block_timestamp'],
             'transaction_index': tx_index,
             'transaction_hash': tx_hash,
             'trace_index': self._trace_idx,
@@ -152,7 +150,7 @@ class ExtractTraces:
 
         for call_index, call_trace in enumerate(calls):
             result.extend(self._iterate_transaction_trace(
-                block_number,
+                geth_trace,
                 tx_index,
                 tx_hash,
                 call_trace,
@@ -162,9 +160,10 @@ class ExtractTraces:
         return result
 
 
-def traces_rpc_requests(make_requests, blocks, is_batch):
+def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
     block_numbers = []
     for block in blocks:
+        block['number'] = hex(block['number'])
         block_numbers.append(block['number'])
     trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_numbers))
 
@@ -188,6 +187,8 @@ def traces_rpc_requests(make_requests, blocks, is_batch):
 
         geth_trace = {
             'block_number': to_int(hexstr=block_number),
+            'block_hash': block['hash'],
+            'block_timestamp': block['timestamp'],
             'transaction_traces': result,
         }
         trace_spliter = ExtractTraces()

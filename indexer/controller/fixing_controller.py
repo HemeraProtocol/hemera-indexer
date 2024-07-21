@@ -26,6 +26,7 @@ class FixingController(BaseController):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
         self.fixing_job = FixingBlockConsensusJob(
+            entity_types=None,
             service=service,
             batch_web3_provider=batch_web3_provider,
             batch_web3_debug_provider=batch_web3_debug_provider,

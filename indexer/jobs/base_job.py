@@ -1,9 +1,12 @@
 import logging
+import threading
+from collections import defaultdict
 from datetime import datetime
 
 
 class BaseJob(object):
-    _data_buff = {}
+    _data_buff = defaultdict(list)
+    locks = defaultdict(threading.Lock)
 
     dependency_types = []
     output_types = []
@@ -52,10 +55,8 @@ class BaseJob(object):
         pass
 
     def _collect_item(self, key, data):
-        if key not in self._data_buff:
-            self._data_buff[key] = []
-
-        self._data_buff[key].append(data)
+        with self.locks[key]:
+            self._data_buff[key].append(data)
 
     def _process(self):
         pass
@@ -63,7 +64,7 @@ class BaseJob(object):
     def _extract_from_buff(self, keys=None):
         items = []
         for key in keys:
-            if key in self._data_buff:
+            with self.locks[key]:
                 items.extend(self._data_buff[key])
 
         return items
