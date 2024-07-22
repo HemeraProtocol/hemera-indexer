@@ -40,12 +40,12 @@ class ArbitrumBridgeOnL2Job(FilterTransactionDataJob):
             for x in x_lis:
                 adt = ArbitrumL1ToL2TransactionOnL2(
                     msg_hash=x.msg_hash,
-                    l2_block_number=x.l2_block_number,
-                    l2_block_timestamp=x.l2_block_timestamp,
-                    l2_block_hash=x.l2_block_hash,
-                    l2_transaction_hash=x.l2_transaction_hash,
-                    l2_from_address=x.l2_from_address,
-                    l2_to_address=x.l2_to_address,
+                    l2_block_number=tnx.block_number,
+                    l2_block_timestamp=tnx.block_timestamp,
+                    l2_block_hash=str(tnx.block_hash),
+                    l2_transaction_hash=str(tnx.hash),
+                    l2_from_address=x.from_address,
+                    l2_to_address=x.to_address,
                 )
                 ticket_created.append(adt)
         # l2 -> l1

@@ -13,7 +13,6 @@ from web3 import Web3
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIEvent, ABIFunction
 
-from indexer.modules.bridge.arbitrum.arb_conf import env
 from indexer.modules.bridge.arbitrum.arb_network import Network
 from indexer.modules.bridge.domain.arbitrum import ArbitrumTransactionBatch, ArbitrumStateBatchCreated, \
     ArbitrumStateBatchConfirmed, InboxMessageDeliveredData, MessageDeliveredData, TicketCreatedData, BridgeToken, \
@@ -377,9 +376,8 @@ def parse_l2_to_l1_tx_64_event(transaction, contract_set):
     return res
 
 
-def parse_sequencer_batch_delivered(transaction, contract_set) -> list:
+def parse_sequencer_batch_delivered(transaction, contract_set, transaction_batch_offset) -> list:
     res = []
-    transaction_batch_offset = env['transaction_batch_offset']
     for log in transaction.receipt.logs:
         if log.topic0 == SEQUENCER_BATCH_DELIVERED_EVENT_SIG and log.address in contract_set:
             input = transaction.input

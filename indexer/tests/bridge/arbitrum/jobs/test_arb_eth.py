@@ -5,6 +5,7 @@
 # @File  test_arb_eth.py
 # @Brief
 import pytest
+from dataclasses import dataclass, asdict
 
 from enumeration.entity_type import EntityType
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -36,7 +37,9 @@ def test_l1_to_l2_deposit_eth_on_l1():
         debug_batch_size=1,
         max_workers=5,
         config={
-            "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f']
+            "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f'],
+            'l2_chain_id': 42161,
+            'transaction_batch_offset': 22207816
         },
         required_output_types=[ArbitrumL1ToL2TransactionOnL1]
     )
@@ -48,7 +51,7 @@ def test_l1_to_l2_deposit_eth_on_l1():
 
     data_buff = job_scheduler.get_data_buff()
     send = data_buff[ArbitrumL1ToL2TransactionOnL1.type()][0]
-
+    send = asdict(send)
     assert send is not None
     assert send['msg_hash'] == '0xf448aff385bf01d8815d14f01fe5eba92f43631bacb83c467089139c1defe0f4'
     assert send['index'] == 1612917
@@ -71,7 +74,9 @@ def test_l2_to_l1_deposit_eth_on_l2():
         debug_batch_size=1,
         max_workers=5,
         config={
-            "contract_list": ['0x000000000000000000000000000000000000006e']
+            "contract_list": ['0x000000000000000000000000000000000000006e'],
+            'l2_chain_id': 42161,
+            'transaction_batch_offset': 22207816
         },
         required_output_types=[ArbitrumL2ToL1TransactionOnL2]
     )
@@ -269,6 +274,28 @@ def test_transaction_batch_eth():
         extractor=ArbitrumL1BridgeDataExtractor(
             contract_list=['0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6'])
     )
+
+    job_scheduler = JobScheduler(
+        entity_types=EntityType.BRIDGE,
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ethereum_public_node, batch=True)),
+        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ethereum_public_node, batch=True)),
+        item_exporter=ConsoleItemExporter(),
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config={
+            "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f'],
+            'l2_chain_id': 42161,
+            'transaction_batch_offset': 22207816
+        },
+        required_output_types=[ArbitrumL1ToL2TransactionOnL1]
+    )
+
+    job_scheduler.run_jobs(
+        start_block=20316414,
+        end_block=20316414,
+    )
+
     eth_job.run()
     data_buf = eth_job._data_buff
     txn_batch = data_buf['arbitrum_transaction_batch'][0]

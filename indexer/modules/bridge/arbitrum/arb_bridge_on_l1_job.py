@@ -27,6 +27,8 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
         config = kwargs['config']
 
         self._contract_list = [address.lower() for address in set(config.get('contract_list'))]
+        self.l2_chain_id = int(config.get('l2_chain_id'))
+        self.transaction_batch_offset = int(config.get('transaction_batch_offset'))
 
     def get_filter(self):
         topics = []
@@ -65,7 +67,7 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
             if not message_deliver:
                 continue
             kind = message_deliver.kind if message_deliver.kind else -1
-            l2_chain_id = env["l2_chain_id"]
+            l2_chain_id = self.l2_chain_id
             (destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress,
              callValueRefundAddress,
              maxFeePerGas, dataHex, l1TokenId, l1TokenAmount) = un_marshal_inbox_message_delivered_data(kind,
@@ -211,7 +213,7 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                 ))
         result += bridge_call_triggered_transaction
 
-        tnx_batches = [item for x in transactions for item in parse_sequencer_batch_delivered(x, self._contract_list)]
+        tnx_batches = [item for x in transactions for item in parse_sequencer_batch_delivered(x, self._contract_list, self.transaction_batch_offset)]
         state_create_batches = [item for x in transactions for item in parse_node_created(x, self._contract_list)]
         state_confirm_batches = [item for x in transactions for item in parse_node_confirmed(x, self._contract_list)]
 
