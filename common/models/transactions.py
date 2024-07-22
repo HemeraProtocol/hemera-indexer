@@ -50,9 +50,16 @@ class Transactions(db.Model):
     reorg = Column(BOOLEAN, default=False)
 
 
+Index('transactions_block_timestamp_index', Transactions.block_timestamp)
+
+Index('transactions_block_number_transaction_index',
+      desc(Transactions.block_number), desc(Transactions.transaction_index))
+
 Index('transactions_block_timestamp_block_number_index',
       desc(Transactions.block_timestamp), desc(Transactions.block_number))
 
-Index('transactions_address_block_number_transaction_idx',
-      Transactions.from_address, Transactions.to_address,
-      desc(Transactions.block_number), desc(Transactions.transaction_index))
+Index('transactions_from_address_block_number_transaction_idx',
+      Transactions.from_address, desc(Transactions.block_number), desc(Transactions.transaction_index))
+
+Index('transactions_to_address_block_number_transaction_idx',
+      Transactions.to_address, desc(Transactions.block_number), desc(Transactions.transaction_index))

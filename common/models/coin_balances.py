@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, desc
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 
 from common.models import db
@@ -20,3 +20,7 @@ class CoinBalances(db.Model):
     __table_args__ = (
         PrimaryKeyConstraint('address', 'block_number'),
     )
+
+
+Index('coin_balance_address_number_desc_index',
+      desc(CoinBalances.address), desc(CoinBalances.block_number))

@@ -26,10 +26,12 @@ class Logs(db.Model):
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
-        PrimaryKeyConstraint('log_index', 'transaction_hash'),
+        PrimaryKeyConstraint('transaction_hash', 'log_index'),
     )
 
 
 Index('logs_block_timestamp_index', desc(Logs.block_timestamp))
-Index('logs_address_block_number_log_index_index',
-      Logs.address, desc(Logs.block_number), desc(Logs.log_index))
+Index('logs_address_block_number_index',
+      Logs.address, desc(Logs.block_number))
+Index('logs_block_number_log_index_index',
+      desc(Logs.block_number), desc(Logs.log_index))

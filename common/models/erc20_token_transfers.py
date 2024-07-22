@@ -29,7 +29,13 @@ class ERC20TokenTransfers(db.Model):
 
 
 Index('erc20_token_transfers_block_timestamp_index', desc(ERC20TokenTransfers.block_timestamp))
+Index('erc20_token_transfers_number_log_index',
+      desc(ERC20TokenTransfers.block_number),
+      desc(ERC20TokenTransfers.log_index))
 
-Index('erc20_token_transfers_address_block_number_log_index_index',
-      ERC20TokenTransfers.token_address, ERC20TokenTransfers.from_address, ERC20TokenTransfers.to_address,
-      desc(ERC20TokenTransfers.block_number), desc(ERC20TokenTransfers.log_index))
+Index('erc20_token_transfers_from_address_number_log_index_index',
+      ERC20TokenTransfers.from_address, desc(ERC20TokenTransfers.block_number), desc(ERC20TokenTransfers.log_index))
+Index('erc20_token_transfers_to_address_number_log_index_index',
+      ERC20TokenTransfers.to_address, desc(ERC20TokenTransfers.block_number), desc(ERC20TokenTransfers.log_index))
+Index('erc20_token_transfers_token_address_number_log_index_index',
+      ERC20TokenTransfers.token_address, desc(ERC20TokenTransfers.block_number), desc(ERC20TokenTransfers.log_index))

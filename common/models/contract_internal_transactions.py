@@ -32,6 +32,14 @@ class ContractInternalTransactions(db.Model):
 
 Index('contract_internal_transactions_transaction_hash_idx', ContractInternalTransactions.transaction_hash)
 Index('internal_transactions_block_timestamp_index', desc(ContractInternalTransactions.block_timestamp))
-Index('internal_transactions_address_number_transaction_index',
-      ContractInternalTransactions.from_address, ContractInternalTransactions.to_address,
-      desc(ContractInternalTransactions.block_number), desc(ContractInternalTransactions.transaction_index))
+Index('internal_transactions_number_transaction_index',
+      desc(ContractInternalTransactions.block_timestamp),
+      desc(ContractInternalTransactions.transaction_index))
+Index('internal_transactions_from_address_number_transaction_index',
+      ContractInternalTransactions.from_address,
+      desc(ContractInternalTransactions.block_number),
+      desc(ContractInternalTransactions.transaction_index))
+Index('internal_transactions_to_address_number_transaction_index',
+      ContractInternalTransactions.to_address,
+      desc(ContractInternalTransactions.block_number),
+      desc(ContractInternalTransactions.transaction_index))

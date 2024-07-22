@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, desc
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, VARCHAR
 
 from common.models import db
@@ -24,3 +24,9 @@ class AddressTokenBalances(db.Model):
     __table_args__ = (
         PrimaryKeyConstraint('address', 'token_address', 'block_number'),
     )
+
+
+Index('token_balance_address_id_number_index',
+      AddressTokenBalances.address, AddressTokenBalances.token_address,
+      desc(AddressTokenBalances.token_id),
+      desc(AddressTokenBalances.block_number))

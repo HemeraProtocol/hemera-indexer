@@ -26,5 +26,6 @@ class ERC1155TokenHolders(db.Model):
     )
 
 
+Index('erc1155_token_holders_wallet_address_index', ERC1155TokenHolders.wallet_address)
 Index('erc1155_token_holders_token_address_balance_of_index',
       ERC1155TokenHolders.token_address, desc(ERC1155TokenHolders.balance_of))

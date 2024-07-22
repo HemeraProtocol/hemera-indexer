@@ -34,6 +34,10 @@ class Traces(db.Model):
 
 
 Index('traces_transaction_hash_index', Traces.transaction_hash)
+Index('traces_block_timestamp_index', desc(Traces.block_timestamp))
 
-Index('traces_address_block_timestamp_index',
-      Traces.from_address, Traces.to_address, desc(Traces.block_timestamp))
+Index('traces_from_address_block_timestamp_index',
+      Traces.from_address, desc(Traces.block_timestamp))
+
+Index('traces_to_address_block_timestamp_index',
+      Traces.to_address, desc(Traces.block_timestamp))
