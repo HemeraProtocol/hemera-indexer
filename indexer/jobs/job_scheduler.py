@@ -6,6 +6,8 @@ from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_transactions_and_logs_job import ExportTransactionsAndLogsJob
+from indexer.jobs.export_tokens_and_transfers_job import ExportTokensAndTransfersJob
+
 from indexer.modules.bridge.bedrock.bedrock_bridge_on_l1_job import BedrockBridgeOnL1Job
 from indexer.modules.bridge.bedrock.bedrock_bridge_on_l2_job import BedrockBridgeOnL2Job
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
@@ -54,6 +56,9 @@ class JobScheduler:
 
     def get_data_buff(self):
         return BaseJob._data_buff
+
+    def clear_data_buff(self):
+        BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
         all_subclasses = get_all_subclasses(BaseJob)

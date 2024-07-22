@@ -32,6 +32,6 @@ class StreamDispatcher(BaseDispatcher):
 
     def run(self, start_block, end_block):
         self._job_scheduler.run_jobs(
-            start_block=20273057,
-            end_block=20273060,
+            start_block=start_block,
+            end_block=end_block,
         )

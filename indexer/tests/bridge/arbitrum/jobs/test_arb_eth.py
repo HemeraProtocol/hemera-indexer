@@ -17,11 +17,10 @@ from indexer.modules.bridge.arbitrum.arb_bridge_on_l2_job import ArbitrumBridgeO
 from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL1, ArbitrumL2ToL1TransactionOnL2, ArbitrumL1ToL2TransactionOnL2
 
 from indexer.modules.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1, ARB_L1ToL2_ON_L2
+from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL, ARBITRUM_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
-ethereum_public_node = "https://ethereum-rpc.publicnode.com"
-arbitrum_public_node = ""
 
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_eth_on_l1():
@@ -30,8 +29,8 @@ def test_l1_to_l2_deposit_eth_on_l1():
     """
     job_scheduler = JobScheduler(
         entity_types=EntityType.BRIDGE,
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ethereum_public_node, batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ethereum_public_node, batch=True)),
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)),
+        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)),
         item_exporter=ConsoleItemExporter(),
         batch_size=100,
         debug_batch_size=1,
@@ -67,8 +66,8 @@ def test_l2_to_l1_deposit_eth_on_l2():
     """
     job_scheduler = JobScheduler(
         entity_types=EntityType.BRIDGE,
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(arbitrum_public_node, batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(arbitrum_public_node, batch=True)),
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)),
+        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)),
         item_exporter=ConsoleItemExporter(),
         batch_size=100,
         debug_batch_size=1,
@@ -104,10 +103,10 @@ def test_l1_to_l2_deposit_erc20():
         entity_types=EntityType.BRIDGE,
         item_exporter=ConsoleItemExporter(),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(ethereum_public_node, batch=True)
+            lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
         batch_web3_debug_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(ethereum_public_node, batch=True)
+            lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
         config={
             "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f', '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'],
@@ -132,14 +131,16 @@ def test_l1_to_l2_deposit_erc20():
     assert send['l1_token_address'] == '0x43d4a3cd90ddd2f8f4f693170c9c8098163502ad'
     assert send['amount'] == 57851710337182203872875
 
+    eth_job.clear_data_buff()
+
     arb_job = JobScheduler(
         entity_types=EntityType.BRIDGE,
 
         batch_web3_debug_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(arbitrum_public_node, batch=True)
+            lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(arbitrum_public_node, batch=True)
+            lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
         item_exporter=ConsoleItemExporter(),
 
@@ -162,6 +163,7 @@ def test_l1_to_l2_deposit_erc20():
     assert confirm['msg_hash'] == '0x7f2e057ff9fe588e822b192636e7dca87982a93666cb5218c8bdae429c283d1b'
     assert confirm['l2_block_number'] == 232729523
 
+    arb_job.clear_data_buff()
 
 @pytest.mark.test_arb_eth
 def test_l2_to_l1_withdraw():

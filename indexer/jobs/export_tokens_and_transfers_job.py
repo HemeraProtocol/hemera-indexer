@@ -6,16 +6,15 @@ from eth_abi import abi
 from web3 import Web3
 
 from common.utils.format_utils import to_snake_case
+from enumeration.entity_type import EntityType
 from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
 from indexer.domain.token import Token, UpdateToken
 from indexer.domain.token_transfer import extract_transfer_from_log, \
     ERC20TokenTransfer, ERC1155TokenTransfer, ERC721TokenTransfer
-from enumeration.entity_type import EntityType
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from common.models.tokens import Tokens
-from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.exporters.console_item_exporter import ConsoleItemExporter
+from indexer.jobs.base_job import BaseJob
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
@@ -62,33 +61,31 @@ erc_token_abi = [
 
 class ExportTokensAndTransfersJob(BaseJob):
 
-    def __init__(
-            self,
-            entity_types,
-            web3,
-            service,
-            batch_web3_provider,
-            batch_size,
-            max_workers,
-            item_exporter=ConsoleItemExporter()):
-        super().__init__(entity_types=entity_types)
+    output_transfer_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
+    output_token_types = [Token, UpdateToken]
 
-        self._web3 = web3
-        self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
-        self._is_batch = batch_size > 1
-        self._item_exporter = item_exporter
-        self._exist_token = get_exist_token(service)
+    dependency_types = [Log]
+    output_types = output_transfer_types + output_token_types
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self._batch_work_executor = BatchWorkExecutor(
+        kwargs['batch_size'], kwargs['max_workers'],
+        job_name=self.__class__.__name__)
+
+        self._is_batch =  kwargs['batch_size'] > 1
+        self._exist_token = {}
         self._token_params = []
 
     def _start(self):
         super()._start()
 
-    def _collect(self):
+    def _collect(self, **kwargs):
         self._batch_work_executor.execute(
-            self._data_buff['log'],
+            self._data_buff[Log.type()],
             self._extract_batch,
-            total_items=len(self._data_buff['log'])
+            total_items=len(self._data_buff[Log.type()])
         )
 
         self._batch_work_executor.wait()
@@ -110,12 +107,7 @@ class ExportTokensAndTransfersJob(BaseJob):
             self._token_params.append(token)
 
         for transfer_event in token_transfers:
-            if isinstance(transfer_event, ERC20TokenTransfer):
-                self._collect_item('erc20_token_transfer', transfer_event)
-            elif isinstance(transfer_event, ERC721TokenTransfer):
-                self._collect_item('erc721_token_transfer', transfer_event)
-            elif isinstance(transfer_event, ERC1155TokenTransfer):
-                self._collect_item('erc1155_token_transfer', transfer_event)
+            self._collect_item(transfer_event.type(), transfer_event)
 
     def _collect_batch(self, tokens):
 
@@ -126,58 +118,27 @@ class ExportTokensAndTransfersJob(BaseJob):
 
         for token in tokens_info:
             if token['is_new']:
-                self._collect_item('token', dict_to_dataclass(token, Token))
+                self._collect_item(Token.type(), dict_to_dataclass(token, Token))
             else:
-                self._collect_item('update_token', dict_to_dataclass(token, UpdateToken))
+                self._collect_item(UpdateToken.type(), dict_to_dataclass(token, UpdateToken))
 
     def _process(self):
-        if 'erc20_token_transfers' in self._data_buff:
-            self._data_buff['erc20_token_transfers'] = sorted(self._data_buff['erc20_token_transfers'],
-                                                              key=lambda x: (
-                                                                  x.block_number,
-                                                                  x.transaction_hash,
-                                                                  x.log_index))
-
-        if 'erc721_token_transfers' in self._data_buff:
-            self._data_buff['erc721_token_transfers'] = sorted(self._data_buff['erc721_token_transfers'],
-                                                               key=lambda x: (
-                                                                   x.block_number,
-                                                                   x.transaction_hash,
-                                                                   x.log_index))
-        if 'erc1155_token_transfers' in self._data_buff:
-            self._data_buff['erc1155_token_transfers'] = sorted(self._data_buff['erc1155_token_transfers'],
-                                                                key=lambda x: (
-                                                                    x.block_number,
-                                                                    x.transaction_hash,
-                                                                    x.log_index))
+        for token_transfer_type in self.output_transfer_types:
+            if token_transfer_type in self._data_buff:
+                self._data_buff[token_transfer_type.type()].sort(key=lambda x: (x.block_number, x.transaction_hash, x.log_index))
 
     def _export(self):
         items = []
 
         if self._entity_types & EntityType.TOKEN:
-            items.extend(self._extract_from_buff(['token', 'update_token']))
+            items.extend(self._extract_from_buff([Token.type(), UpdateToken.type()]))
 
         if self._entity_types & EntityType.TOKEN_TRANSFER:
             items.extend(
-                self._extract_from_buff(['erc20_token_transfer', 'erc721_token_transfer', 'erc1155_token_transfer']))
+                self._extract_from_buff([ERC20TokenTransfer.type(), ERC721TokenTransfer.type(), ERC1155TokenTransfer.type()]))
 
         self._item_exporter.export_items(items)
 
-
-def get_exist_token(db_service) -> dict:
-    session = db_service.get_service_session()
-    try:
-        result = session.query(Tokens.address, Tokens.token_type).all()
-        history_token = {}
-        if result is not None:
-            for item in result:
-                history_token[item[0].hex()] = item[1]
-    except Exception as e:
-        print(e)
-        raise e
-    finally:
-        session.close()
-    return history_token
 
 
 def extract_tokens_and_token_transfers(logs: List[Log]):

@@ -38,35 +38,6 @@ class ArbitrumL2ToL1TransactionOnL1(Domain):
 
 
 @dataclass
-class MessageDeliveredData(Domain):
-    msg_hash: Optional[str]
-    block_number: int
-    block_timestamp: int
-    block_hash: str
-    transaction_hash: str
-    from_address: str
-    to_address: str
-    bridge_from_address: str
-    bridge_to_address: str
-    extra_info: Dict[str, Any]
-    beforeInboxAcc: str
-    messageIndex: int
-    inbox: str
-    kind: int
-    sender: str
-    messageDataHash: str
-    baseFeeL1: int
-    timestamp: int
-
-
-@dataclass
-class InboxMessageDeliveredData(Domain):
-    transaction_hash: str
-    msg_number: int
-    data: str
-
-
-@dataclass
 class TicketCreatedData(Domain):
     msg_hash: str
     transaction_hash: str
@@ -89,27 +60,6 @@ class BridgeCallTriggeredData(Domain):
     outbox: str
     to: str
     value: int
-    data: str
-
-
-@dataclass
-class L2ToL1Tx_64(Domain):
-    msg_hash: str
-    l2_block_number: int
-    l2_block_timestamp: int
-    l2_block_hash: str
-    l2_transaction_hash: str
-    l2_from_address: str
-    l2_to_address: str
-    l2_token_address: str
-    caller: str
-    destination: str
-    hash: str
-    position: int
-    arbBlockNum: int
-    ethBlockNum: int
-    timestamp: int
-    callvalue: int
     data: str
 
 
