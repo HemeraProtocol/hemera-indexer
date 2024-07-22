@@ -5,15 +5,14 @@
 # @File  test_arb_eth.py
 # @Brief
 import pytest
+
+from enumeration.entity_type import EntityType
+from indexer.jobs.job_scheduler import JobScheduler
+from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL1, ArbitrumL1ToL2TransactionOnL2
+from indexer.modules.bridge.items import ARB_L1ToL2_ON_L1
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
-
-from modules.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch, ArbitrumStateBatchCreated, \
-    ArbitrumStateBatchConfirmed
-from modules.bridge.arbitrum.arbitrum_bridge_parser import ArbitrumL1BridgeDataExtractor, \
-    ArbitrumL2BridgeDataExtractor
-from modules.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1, ARB_L1ToL2_ON_L2
-from modules.jobs.fetch_filter_data_job import FetchFilterDataJob
+from dataclasses import dataclass, asdict
 
 """
 DODO 
@@ -39,7 +38,7 @@ op-batch {
 
 """
 
-l1_rpc = "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
+l1_rpc = ""
 #l1_rpc = "https://crimson-magical-uranium.arbitrum-sepolia.quiknode.pro/8e017b6afe915259d38562e178c89a65ec680c39"
 l2_rpc = "https://dodochain-testnet.alt.technology"
 
@@ -51,27 +50,31 @@ def test_l1_to_l2_deposit_dodo():
     "https://dodochain-testnet.alt.technology"
     "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
     """
-    l1_job = FetchFilterDataJob(
-        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
-        export_keys=[ARB_L1ToL2_ON_L1],
-        start_block=37277407,
-        end_block=37277407,
-        t=ThreadLocalProxy(
-            lambda: get_provider_from_uri(l1_rpc, batch=False)
-        ),
-        batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(l1_rpc, batch=True)
-        ),
+    l1_job = JobScheduler(
+        entity_types=EntityType.BRIDGE,
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(l1_rpc, batch=True)),
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l1_rpc, batch=True)),
+
         batch_size=10,
         max_workers=1,
-        extractor=ArbitrumL1BridgeDataExtractor(contract_list=['0xd62ef8d8c71d190417c6ce71f65795696c069f09', '0xc0856971702b02a5576219540bd92dae79a79288', '0xa97c7633c747a10dfc8150d3a6dae448a0a6b65d'])
+        config={
+            "contract_list": ['0xd62ef8d8c71d190417c6ce71f65795696c069f09', '0xc0856971702b02a5576219540bd92dae79a79288', '0xa97c7633c747a10dfc8150d3a6dae448a0a6b65d'],
+            'l2_chain_id': 53457,
+            'transaction_batch_offset': 0
+        },
+        required_output_types=[ArbitrumL1ToL2TransactionOnL1]
     )
-    l1_job.run()
-    send_lis = l1_job._data_buff[ARB_L1ToL2_ON_L1]
+    l1_job.run_jobs(
+        start_block=37277407,
+        end_block=37277407,
+    )
+    send_lis = l1_job.get_data_buff()[ArbitrumL1ToL2TransactionOnL1.type()]
+    l1_job.clear_data_buff()
     assert len(send_lis) == 9
     # all kinds
     # kind 3
-    k3 = send_lis[2]
+    k3 = asdict(send_lis[2])
     assert k3['index'] == 2
     assert k3['l1_block_number'] == 37277407
     assert k3['from_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
@@ -81,7 +84,7 @@ def test_l1_to_l2_deposit_dodo():
     # assert k3['amount'] == 0
 
     # kind 11
-    k11 = send_lis[0]
+    k11 = asdict(send_lis[0])
     assert k11['index'] == 0
     assert k11['l1_block_number'] == 37277407
     assert k11['from_address'] == '0x0000000000000000000000000000000000000000'
@@ -89,7 +92,7 @@ def test_l1_to_l2_deposit_dodo():
     # assert k11['msg_hash'] == ''
     # assert k11['amount'] == 101
     # kind9
-    k9 = send_lis[1]
+    k9 = asdict(send_lis[1])
     assert k9['index'] == 1
     assert k9['l1_block_number'] == 37277407
     assert k9['from_address'] == '0xebc4c123515da9525d72d78af5eea9b11e150691'
@@ -98,26 +101,32 @@ def test_l1_to_l2_deposit_dodo():
     assert k9['msg_hash'] == '0x74e8ac4359905ad27ee403bc13d976640d9febf4e663009cd0a41134a103516a'
     assert k9['amount'] == 0
 
-    l2_job = FetchFilterDataJob(
-        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L2],
-        export_keys=[ARB_L1ToL2_ON_L2],
-        start_block=0,
-        end_block=2174,
-        t=ThreadLocalProxy(
-            lambda: get_provider_from_uri(l2_rpc, batch=False)
+    l2_job = JobScheduler(
+        entity_types=EntityType.BRIDGE,
+
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l2_rpc, batch=True)
         ),
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(l2_rpc, batch=True)
         ),
         batch_size=10,
         max_workers=1,
-        extractor=ArbitrumL2BridgeDataExtractor(contract_list=['0x000000000000000000000000000000000000006e'])
+        config={
+            "contract_list": ['0x000000000000000000000000000000000000006e'],
+            'l2_chain_id': 53457,
+            'transaction_batch_offset': 0
+        },
+        required_output_types=[ArbitrumL1ToL2TransactionOnL2]
     )
-    l2_job.run()
-    confirm = l2_job._data_buff[ARB_L1ToL2_ON_L2]
+    l2_job.run_jobs(
+        start_block=0,
+        end_block=2174,
+    )
+    confirm = l2_job.get_data_buff()[ArbitrumL1ToL2TransactionOnL2.type()]
     assert confirm is not None
-    print([se['msg_hash'] for se in send_lis])
-    print([co['msg_hash'] for co in confirm])
+    print([se.msg_hash for se in send_lis])
+    print([co.msg_hash for co in confirm])
     # assert confirm['msg_hash'] == '0xf448aff385bf01d8815d14f01fe5eba92f43631bacb83c467089139c1defe0f4'
     # assert confirm['l2_block_number'] == 232679023
 
@@ -125,24 +134,31 @@ def test_l1_to_l2_deposit_dodo():
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_usdc():
     #
-    l1_job = FetchFilterDataJob(
-        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
-        export_keys=[ARB_L1ToL2_ON_L1],
-        start_block=46298492,
-        end_block=46298492,
-        t=ThreadLocalProxy(
-            lambda: get_provider_from_uri(l1_rpc, batch=False)
+    l1_job = JobScheduler(
+        entity_types=EntityType.BRIDGE,
+
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(l2_rpc, batch=True)
         ),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(l1_rpc, batch=True)
+            lambda: get_provider_from_uri(l2_rpc, batch=True)
         ),
         batch_size=10,
         max_workers=1,
-        extractor=ArbitrumL1BridgeDataExtractor(contract_list=['0xd62ef8d8c71d190417c6ce71f65795696c069f09', '0xc0856971702b02a5576219540bd92dae79a79288', '0xa97c7633c747a10dfc8150d3a6dae448a0a6b65d'])
+        config={
+            "contract_list": ['0xd62ef8d8c71d190417c6ce71f65795696c069f09', '0xc0856971702b02a5576219540bd92dae79a79288', '0xa97c7633c747a10dfc8150d3a6dae448a0a6b65d'],
+            'l2_chain_id': 53457,
+            'transaction_batch_offset': 0
+        },
+        required_output_types=[ArbitrumL1ToL2TransactionOnL1]
     )
-    l1_job.run()
-    send_lis = l1_job._data_buff[ARB_L1ToL2_ON_L1]
+    l1_job.run_jobs(
+        start_block=46298492,
+        end_block=46298492,
+    )
+    send_lis = l1_job.get_data_buff()[ArbitrumL1ToL2TransactionOnL1.type()]
     assert len(send_lis) == 1
+    send_lis[0] = asdict(send_lis[0])
     assert send_lis[0]['msg_hash'] == '0xcb9ee2ff28bf01623d37596e033f0c77736def463d62bf1bd015bd8bf12b0b3b'
     assert send_lis[0]['l1_block_number'] == 46298492
     assert send_lis[0]['l1_transaction_hash'] == '0x022800446360a100034dc5cbc0563813db6ff4136ca7ff4f777badc2603ac4c0'
