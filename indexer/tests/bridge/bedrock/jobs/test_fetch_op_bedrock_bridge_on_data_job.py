@@ -1,6 +1,7 @@
 import pytest
 
 from enumeration.entity_type import EntityType
+from indexer.domain.transaction import Transaction
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.job_scheduler import JobScheduler
 from indexer.modules.bridge.domain.op_bedrock import OpL1ToL2DepositedTransaction
@@ -31,4 +32,4 @@ def test_fetch_op_bedrock_bridge_on_data():
     )
 
     data_buff = job_scheduler.get_data_buff()
-    print(data_buff)
+    print(data_buff[Transaction.type()])
