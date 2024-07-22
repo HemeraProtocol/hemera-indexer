@@ -2,7 +2,6 @@ import json
 import logging
 
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
 
 from enumeration.entity_type import EntityType
 from indexer.domain.block import Block
@@ -10,8 +9,8 @@ from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
-from indexer.specification.specification import AlwaysTrueSpecification, TransactionFilterByLogs, \
-    AlwaysFalseSpecification, TransactionFilterByTransactionInfo, TransactionHashSpecification
+from indexer.specification.specification import TransactionFilterByLogs, \
+    AlwaysFalseSpecification, TransactionFilterByTransactionInfo, TransactionHashSpecification, AlwaysTrueSpecification
 from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rpc
 from indexer.utils.utils import rpc_response_batch_to_results
 
@@ -33,7 +32,8 @@ class ExportBlocksJob(BaseJob):
         self._is_batch = kwargs['batch_size'] > 1
         self._item_exporter = kwargs['item_exporter']
         self._filters = kwargs.get('filters', None)
-        self._specification = AlwaysFalseSpecification()
+        self._is_filter = self._filters is not None and len(self._filters) > 0
+        self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
         self._w3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
 
     def _start(self):
@@ -64,7 +64,7 @@ class ExportBlocksJob(BaseJob):
                     self._specification |= filter.get_or_specification()
                 else:
                     raise ValueError(f"Unsupported filter type: {type(filter)}")
-        if is_only_log_filter:
+        if self._is_filter and is_only_log_filter:
             blocks = list(filter_blocks)
             total_items = len(blocks)
 
@@ -81,7 +81,7 @@ class ExportBlocksJob(BaseJob):
             block_entity = Block.from_rpc(block_rpc_dict)
             self._collect_item(Block.type(), block_entity)
             for transaction_entity in block_entity.transactions:
-                if self._filters and self._specification.is_satisfied_by(transaction_entity):
+                if self._specification.is_satisfied_by(transaction_entity):
                     self._collect_item(Transaction.type(), transaction_entity)
 
     def _process(self):
