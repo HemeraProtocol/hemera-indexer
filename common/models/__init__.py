@@ -1,3 +1,6 @@
+import os
+import ast
+
 from common.services.sqlalchemy_session import RouteSQLAlchemy
 from common.utils.module_loading import import_string
 
@@ -22,34 +25,21 @@ def __getattr__(name):
     return val
 
 
-__lazy_imports = {
-    "SyncRecord": "common.models.sync_record",
-    "FixRecord": "common.models.fix_record",
-    "BlockTimestampMapper": "common.models.block_timestamp_mapper",
-    "Blocks": "common.models.blocks",
-    "Transactions": "common.models.transactions",
-    "Logs": "common.models.logs",
-    "Traces": "common.models.traces",
-    "ContractInternalTransactions": "common.models.contract_internal_transactions",
-    "Contracts": "common.models.contracts",
-    "CoinBalances": "common.models.coin_balances",
-    "ERC20TokenTransfers": "common.models.erc20_token_transfers",
-    "ERC20TokenHolders": "common.models.erc20_token_holders",
-    "ERC721TokenTransfers": "common.models.erc721_token_transfers",
-    "ERC721TokenHolders": "common.models.erc721_token_holders",
-    "ERC721TokenIdChanges": "common.models.erc721_token_id_changes",
-    "ERC721TokenIdDetails": "common.models.erc721_token_id_details",
-    "ERC1155TokenTransfers": "common.models.erc1155_token_transfers",
-    "ERC1155TokenHolders": "common.models.erc1155_token_holders",
-    "ERC1155TokenIdDetails": "common.models.erc1155_token_id_details",
-    "Tokens": "common.models.tokens",
-    "AddressTokenBalances": "common.models.token_balances",
-    "DailyAddressesAggregates": "common.models.daily_address_aggregates",
-    "DailyBlocksAggregates": "common.models.daily_blocks_aggregates",
-    "DailyTokensAggregates": "common.models.daily_tokens_aggregates",
-    "DailyTransactionsAggregates": "common.models.daily_transactions_aggregates",
-    "ScheduledWalletCountMetadata": "common.models.scheduled_metadata",
-    "ScheduledTokenCountMetadata": "common.models.scheduled_metadata",
-    "WalletAddresses": "common.models.wallet_addresses",
-    "StatisticsWalletAddresses": "common.models.statistics_wallet_addresses",
-}
+def scan_modules(directory):
+    modules = {}
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith(".py") and file != "__init__.py":
+                module_file_path = os.path.join(directory, file)
+                module_path = module_file_path.replace(os.path.sep, ".")
+                with open(module_file_path, "r", encoding="utf-8") as module:
+                    file_content = module.read()
+
+                parsed_content = ast.parse(file_content)
+                class_names = [node.name for node in ast.walk(parsed_content) if isinstance(node, ast.ClassDef)]
+                for cls in class_names:
+                    modules[cls] = module_path[:-3]
+    return modules
+
+
+__lazy_imports = scan_modules("common/models")
