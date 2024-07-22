@@ -14,14 +14,14 @@ from indexer.modules.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch,
     ArbitrumStateBatchConfirmed
 from indexer.modules.bridge.arbitrum.arb_bridge_on_l1_job import ArbitrumBridgeOnL1Job
 from indexer.modules.bridge.arbitrum.arb_bridge_on_l2_job import ArbitrumBridgeOnL2Job
-from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL1, ArbitrumL2ToL1TransactionOnL2
+from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL1, ArbitrumL2ToL1TransactionOnL2, ArbitrumL1ToL2TransactionOnL2
 
-from indexer.modules.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1
+from indexer.modules.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1, ARB_L1ToL2_ON_L2
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
 ethereum_public_node = "https://ethereum-rpc.publicnode.com"
-arbitrum_public_node = "https://arbitrum-one-rpc.publicnode.com"
+arbitrum_public_node = ""
 
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_eth_on_l1():
@@ -78,7 +78,7 @@ def test_l2_to_l1_deposit_eth_on_l2():
             'l2_chain_id': 42161,
             'transaction_batch_offset': 22207816
         },
-        required_output_types=[ArbitrumL2ToL1TransactionOnL2]
+        required_output_types=[ArbitrumL1ToL2TransactionOnL2]
     )
 
     job_scheduler.run_jobs(
@@ -87,7 +87,8 @@ def test_l2_to_l1_deposit_eth_on_l2():
     )
 
     data_buff = job_scheduler.get_data_buff()
-    confirm = data_buff[ArbitrumL2ToL1TransactionOnL2.type()][0]
+    confirm = data_buff[ArbitrumL1ToL2TransactionOnL2.type()][0]
+    confirm = asdict(confirm)
     assert confirm is not None
     assert confirm['msg_hash'] == '0xf448aff385bf01d8815d14f01fe5eba92f43631bacb83c467089139c1defe0f4'
     assert confirm['l2_block_number'] == 232679023
@@ -99,23 +100,30 @@ def test_l1_to_l2_deposit_erc20():
     l1_tnx_hash = '0xfbb5c06259e7e5d86a43a0b1fad25622ed7fd0fe483f8ab2cf547f994725c12c'
     l2_tnx_hash = '0x7f2e057ff9fe588e822b192636e7dca87982a93666cb5218c8bdae429c283d1b'
     """
-    eth_job = FetchFilterDataJob(
-        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L1ToL2_ON_L1],
-        export_keys=[ARB_L1ToL2_ON_L1],
-        start_block=20317463,
-        end_block=20317463,
-        t=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=False)
-        ),
+    eth_job = JobScheduler(
+        entity_types=EntityType.BRIDGE,
+        item_exporter=ConsoleItemExporter(),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)
+            lambda: get_provider_from_uri(ethereum_public_node, batch=True)
         ),
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(ethereum_public_node, batch=True)
+        ),
+        config={
+            "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f', '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'],
+            'l2_chain_id': 42161,
+            'transaction_batch_offset': 22207816
+        },
         batch_size=10,
         max_workers=1,
-        extractor=ArbitrumL1BridgeDataExtractor(contract_list=['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f', '0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef'])
+        required_output_types=[ArbitrumL1ToL2TransactionOnL1]
     )
-    eth_job.run()
-    send = eth_job._data_buff[ARB_L1ToL2_ON_L1][0]
+    eth_job.run_jobs(
+        start_block=20317463,
+        end_block=20317463,
+    )
+    send = eth_job.get_data_buff()[ArbitrumL1ToL2TransactionOnL1.type()][0]
+    send = asdict(send)
     assert send is not None
     assert send['msg_hash'] == '0x7f2e057ff9fe588e822b192636e7dca87982a93666cb5218c8bdae429c283d1b'
     assert send['index'] == 1613082
@@ -124,23 +132,32 @@ def test_l1_to_l2_deposit_erc20():
     assert send['l1_token_address'] == '0x43d4a3cd90ddd2f8f4f693170c9c8098163502ad'
     assert send['amount'] == 57851710337182203872875
 
-    arb_job = FetchFilterDataJob(
-        index_keys=['block', 'transaction', 'receipt', 'log', ARB_L2ToL1_ON_L2],
-        export_keys=[ARB_L1ToL2_ON_L1],
-        start_block=232729523,
-        end_block=232729523,
-        t=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://arbitrum-one-rpc.publicnode.com", batch=False)
+    arb_job = JobScheduler(
+        entity_types=EntityType.BRIDGE,
+
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(arbitrum_public_node, batch=True)
         ),
         batch_web3_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri("https://arbitrum-one-rpc.publicnode.com", batch=True)
+            lambda: get_provider_from_uri(arbitrum_public_node, batch=True)
         ),
+        item_exporter=ConsoleItemExporter(),
+
         batch_size=10,
         max_workers=1,
-        extractor=ArbitrumL2BridgeDataExtractor(contract_list=['0x000000000000000000000000000000000000006e'])
+        config={
+            "contract_list": ['0x000000000000000000000000000000000000006e'],
+            'l2_chain_id': 42161,
+            'transaction_batch_offset': 22207816
+        },
+        required_output_types=[ArbitrumL1ToL2TransactionOnL2]
     )
-    arb_job.run()
-    confirm = arb_job._data_buff[ARB_L2ToL1_ON_L2][0]
+    arb_job.run_jobs(
+        start_block=232729523,
+        end_block=232729523,
+    )
+    confirm = arb_job.get_data_buff()[ArbitrumL1ToL2TransactionOnL2.type()][0]
+    confirm = asdict(confirm)
     assert confirm is not None
     assert confirm['msg_hash'] == '0x7f2e057ff9fe588e822b192636e7dca87982a93666cb5218c8bdae429c283d1b'
     assert confirm['l2_block_number'] == 232729523
