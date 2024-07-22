@@ -7,7 +7,7 @@
 import json
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, cast
+from typing import Any, Dict, cast, Optional
 
 from web3 import Web3
 from web3._utils.contracts import decode_transaction_data
@@ -15,7 +15,7 @@ from web3.types import ABIEvent, ABIFunction
 
 from indexer.modules.bridge.arbitrum.arb_network import Network
 from indexer.modules.bridge.domain.arbitrum import ArbitrumTransactionBatch, ArbitrumStateBatchCreated, \
-    ArbitrumStateBatchConfirmed, InboxMessageDeliveredData, MessageDeliveredData, TicketCreatedData, BridgeToken, \
+    ArbitrumStateBatchConfirmed, TicketCreatedData, BridgeToken, \
     TransactionToken, BridgeCallTriggeredData
 from indexer.modules.bridge.signature import event_log_abi_to_topic, decode_log, function_abi_to_4byte_selector_str
 
@@ -109,7 +109,54 @@ class Constants:
     ZERO_ADDRESS = bytes(20)
     ZERO_ADDRESS_32 = bytes(32)
 
+@dataclass
+class L2ToL1Tx_64():
+    msg_hash: str
+    l2_block_number: int
+    l2_block_timestamp: int
+    l2_block_hash: str
+    l2_transaction_hash: str
+    l2_from_address: str
+    l2_to_address: str
+    l2_token_address: str
+    caller: str
+    destination: str
+    hash: str
+    position: int
+    arbBlockNum: int
+    ethBlockNum: int
+    timestamp: int
+    callvalue: int
+    data: str
 
+
+@dataclass
+class MessageDeliveredData():
+    msg_hash: Optional[str]
+    block_number: int
+    block_timestamp: int
+    block_hash: str
+    transaction_hash: str
+    from_address: str
+    to_address: str
+    bridge_from_address: str
+    bridge_to_address: str
+    extra_info: Dict[str, Any]
+    beforeInboxAcc: str
+    messageIndex: int
+    inbox: str
+    kind: int
+    sender: str
+    messageDataHash: str
+    baseFeeL1: int
+    timestamp: int
+
+
+@dataclass
+class InboxMessageDeliveredData():
+    transaction_hash: str
+    msg_number: int
+    data: str
 
 ZERO_ADDRESS_32 = bytes(32)
 ZERO_ADDRESS = bytes(20)

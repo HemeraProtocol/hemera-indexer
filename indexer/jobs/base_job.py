@@ -3,6 +3,8 @@ import threading
 from collections import defaultdict
 from datetime import datetime
 
+from web3 import Web3
+
 
 class BaseJob(object):
     _data_buff = defaultdict(list)
@@ -22,6 +24,8 @@ class BaseJob(object):
     def __init__(self, **kwargs):
         self._entity_types = kwargs['entity_types']
         self._item_exporter = kwargs['item_exporter']
+        self._batch_web3_provider = kwargs['batch_web3_provider']
+        self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
 
     def run(self, **kwargs):

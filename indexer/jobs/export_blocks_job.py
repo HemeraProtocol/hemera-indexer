@@ -25,16 +25,13 @@ class ExportBlocksJob(BaseJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._batch_web3_provider = kwargs['batch_web3_provider']
         self._batch_work_executor = BatchWorkExecutor(
             kwargs['batch_size'], kwargs['max_workers'],
             job_name=self.__class__.__name__)
         self._is_batch = kwargs['batch_size'] > 1
-        self._item_exporter = kwargs['item_exporter']
         self._filters = kwargs.get('filters', None)
         self._is_filter = self._filters is not None and len(self._filters) > 0
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
-        self._w3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
 
     def _start(self):
         super()._start()
@@ -54,7 +51,7 @@ class ExportBlocksJob(BaseJob):
                 if isinstance(filter, TransactionFilterByLogs):
                     filter_params = filter.get_eth_log_filters_params()
                     filter_params.update({'fromBlock': self._start_block, 'toBlock': self._end_block})
-                    logs = self._w3.eth.get_logs(filter_params)
+                    logs = self._web3.eth.get_logs(filter_params)
                     filter_blocks.update(set([log['blockNumber'] for log in logs]))
                     transaction_hashes = set([log['transactionHash'] for log in logs])
                     transaction_hashes = [h.hex() for h in transaction_hashes]

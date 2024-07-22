@@ -16,7 +16,7 @@ class EntityType(IntFlag):
     TOKEN_BALANCE = 1 << 8
     TOKEN_IDS = 1 << 9
 
-    BRIDGE = 1024
+    BRIDGE = 1 << 10
 
     @staticmethod
     def combine_all_entity_types():
