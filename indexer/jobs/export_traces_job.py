@@ -1,12 +1,13 @@
 import json
 import logging
+from itertools import groupby
 from typing import List
 
 from eth_utils import to_int
 
 from enumeration.entity_type import EntityType
 from indexer.domain import dataclass_to_dict
-from indexer.domain.block import Block
+from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -19,9 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Exports traces
 class ExportTracesJob(BaseJob):
-
     dependency_types = [Block]
-    output_types = [Trace, ContractInternalTransaction]
+    output_types = [Trace, ContractInternalTransaction, UpdateBlockInternalCount]
 
     def __init__(
             self,
@@ -65,6 +65,15 @@ class ExportTracesJob(BaseJob):
 
         self._data_buff[ContractInternalTransaction.type()].sort(
             key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
+
+        self._data_buff[UpdateBlockInternalCount.type()] = [
+            UpdateBlockInternalCount(
+                hash=block_hash,
+                internal_transactions_count=len(list(traces))
+            )
+            for block_hash, traces in
+            groupby(self._data_buff[ContractInternalTransaction.type()], lambda x: x.block_hash)
+        ]
 
     def _export(self):
         if self._entity_types & EntityType.TRACE:
