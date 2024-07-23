@@ -6,6 +6,7 @@ from eth_utils import to_int, to_normalized_address
 from indexer.domain import Domain
 from indexer.domain.receipt import Receipt
 
+
 @dataclass
 class Transaction(Domain):
     hash: str
@@ -45,10 +46,10 @@ class Transaction(Domain):
             block_timestamp=block_timestamp,
             gas=to_int(hexstr=transaction_dict['gas']),
             gas_price=to_int(hexstr=transaction_dict['gasPrice']),
-            max_fee_per_gas= to_int(hexstr=transaction_dict.get('maxFeePerGas')) \
-                if transaction_dict.get('maxFeePerGas', None) else None,
-            max_priority_fee_per_gas=to_int(hexstr=transaction_dict.get('maxPriorityFeePerGas')) \
-                if transaction_dict.get('maxPriorityFeePerGas', None) else None,
+            max_fee_per_gas=to_int(hexstr=transaction_dict.get('maxFeePerGas'))
+            if transaction_dict.get('maxFeePerGas', None) else None,
+            max_priority_fee_per_gas=to_int(hexstr=transaction_dict.get('maxPriorityFeePerGas'))
+            if transaction_dict.get('maxPriorityFeePerGas', None) else None,
             blob_versioned_hashes=transaction_dict.get('blobVersionedHashes', []),
             error=transaction_dict.get('error'),
             exist_error=transaction_dict.get('error') is not None,
@@ -57,3 +58,5 @@ class Transaction(Domain):
 
     def fill_with_receipt(self, receipt: Receipt):
         self.receipt = receipt
+        if self.to_address is None:
+            self.to_address = self.receipt.contract_address

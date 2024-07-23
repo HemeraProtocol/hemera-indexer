@@ -1,10 +1,10 @@
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import DATE, BIGINT, INTEGER
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class DailyTokensAggregates(db.Model):
+class DailyTokensAggregates(HemeraModel):
     block_date = Column(DATE, primary_key=True)
     erc20_active_address_cnt = Column(INTEGER)
     erc20_total_transfer_cnt = Column(BIGINT)

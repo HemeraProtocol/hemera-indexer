@@ -2,10 +2,10 @@ from datetime import datetime
 from sqlalchemy import Column, Index, desc, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, JSONB, BOOLEAN
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class ERC721TokenTransfers(db.Model):
+class ERC721TokenTransfers(HemeraModel):
     __tablename__ = 'erc721_token_transfers'
 
     transaction_hash = Column(BYTEA, primary_key=True)

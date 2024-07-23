@@ -2,10 +2,10 @@ from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class ERC1155TokenHolders(db.Model):
+class ERC1155TokenHolders(HemeraModel):
     __tablename__ = 'erc1155_token_holders'
 
     token_address = Column(BYTEA, primary_key=True)

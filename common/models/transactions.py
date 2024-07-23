@@ -1,11 +1,11 @@
 from datetime import datetime
-from sqlalchemy import Column, Index, desc, func
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT
+from sqlalchemy import Column, Index, desc, func, asc, Computed
+from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT, VARCHAR
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class Transactions(db.Model):
+class Transactions(HemeraModel):
     __tablename__ = 'transactions'
 
     hash = Column(BYTEA, primary_key=True)
@@ -15,6 +15,7 @@ class Transactions(db.Model):
     value = Column(NUMERIC(100))
     transaction_type = Column(INTEGER)
     input = Column(BYTEA)
+    method_id = Column(VARCHAR, Computed("substring((input)::varchar for 8)::bigint::varchar"))
     nonce = Column(INTEGER)
 
     block_hash = Column(BYTEA)
@@ -55,11 +56,9 @@ Index('transactions_block_timestamp_index', Transactions.block_timestamp)
 Index('transactions_block_number_transaction_index',
       desc(Transactions.block_number), desc(Transactions.transaction_index))
 
-Index('transactions_block_timestamp_block_number_index',
-      desc(Transactions.block_timestamp), desc(Transactions.block_number))
-
 Index('transactions_from_address_block_number_transaction_idx',
-      Transactions.from_address, desc(Transactions.block_number), desc(Transactions.transaction_index))
+      asc(Transactions.from_address), desc(Transactions.block_number), desc(Transactions.transaction_index))
 
 Index('transactions_to_address_block_number_transaction_idx',
-      Transactions.to_address, desc(Transactions.block_number), desc(Transactions.transaction_index))
+      asc(Transactions.to_address), desc(Transactions.block_number), desc(Transactions.transaction_index))
+

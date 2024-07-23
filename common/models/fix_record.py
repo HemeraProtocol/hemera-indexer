@@ -4,10 +4,10 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import INTEGER, BIGINT, VARCHAR, TIMESTAMP
 
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class FixRecord(db.Model):
+class FixRecord(HemeraModel):
     __tablename__ = 'fix_record'
     job_id = Column(INTEGER, primary_key=True)
     start_block_number = Column(BIGINT)

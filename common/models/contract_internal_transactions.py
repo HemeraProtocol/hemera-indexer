@@ -2,10 +2,10 @@ from datetime import datetime
 from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT, BOOLEAN, VARCHAR
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class ContractInternalTransactions(db.Model):
+class ContractInternalTransactions(HemeraModel):
     __tablename__ = 'contract_internal_transactions'
 
     trace_id = Column(VARCHAR, primary_key=True)

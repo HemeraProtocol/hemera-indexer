@@ -2,10 +2,10 @@ from datetime import datetime
 from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT, BOOLEAN, VARCHAR
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class Traces(db.Model):
+class Traces(HemeraModel):
     __tablename__ = 'traces'
 
     trace_id = Column(VARCHAR, primary_key=True)

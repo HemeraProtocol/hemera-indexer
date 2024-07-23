@@ -8,7 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
 from indexer.exporters.base_exporter import BaseExporter
-from common.converter.postgresql_model_converter import convert_item
+from common.converter.pg_converter import convert_item
 
 logger = logging.getLogger(__name__)
 

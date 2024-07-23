@@ -1,10 +1,10 @@
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, NUMERIC,BYTEA
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class StatisticsWalletAddresses(db.Model):
+class StatisticsWalletAddresses(HemeraModel):
     address = Column(BYTEA, primary_key=True)
     txn_in_cnt = Column(INTEGER, default=0)
     txn_out_cnt = Column(INTEGER, default=0)

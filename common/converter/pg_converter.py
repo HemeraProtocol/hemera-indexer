@@ -1,6 +1,30 @@
 from datetime import timezone, datetime
+from typing import Type
 
 from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
+
+from common.models import HemeraModel
+
+
+def pg_general_converter(model: Type[HemeraModel], data: dict, is_update=False):
+    converted_data = {}
+    for key in data.keys():
+        column_type = model.get_column_type(key)
+        if isinstance(column_type, BYTEA):
+            converted_data[key] = bytes.fromhex(data[key][2:])
+        elif isinstance(column_type, TIMESTAMP):
+            converted_data[key] = func.to_timestamp(data[key])
+        else:
+            converted_data[key] = data[key]
+
+    if is_update:
+        converted_data['update_time'] = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
+
+    if 'reorg' in model.__table__.columns:
+        converted_data['reorg'] = False
+
+    return converted_data
 
 
 def convert_item(table, data, fixing=False):

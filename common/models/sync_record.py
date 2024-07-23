@@ -2,10 +2,10 @@ from sqlalchemy import Column, PrimaryKeyConstraint
 from sqlalchemy.dialects.postgresql import VARCHAR, BIGINT, TIMESTAMP, INTEGER
 
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class SyncRecord(db.Model):
+class SyncRecord(HemeraModel):
     __tablename__ = 'sync_record'
     mission_type = Column(VARCHAR, primary_key=True)
     entity_types = Column(INTEGER, primary_key=True)

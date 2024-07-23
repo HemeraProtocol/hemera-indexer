@@ -2,10 +2,10 @@ from datetime import datetime
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, desc
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class CoinBalances(db.Model):
+class CoinBalances(HemeraModel):
     __tablename__ = 'address_coin_balances'
 
     address = Column(BYTEA, primary_key=True)

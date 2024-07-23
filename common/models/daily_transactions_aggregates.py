@@ -1,10 +1,10 @@
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import DATE, BIGINT, NUMERIC
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class DailyTransactionsAggregates(db.Model):
+class DailyTransactionsAggregates(HemeraModel):
     block_date = Column(DATE, primary_key=True)
     cnt = Column(BIGINT)
     total_cnt = Column(BIGINT)

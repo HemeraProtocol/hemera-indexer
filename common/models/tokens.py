@@ -2,10 +2,10 @@ from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint, Index, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, TIMESTAMP, NUMERIC, BOOLEAN, JSONB, VARCHAR
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class Tokens(db.Model):
+class Tokens(HemeraModel):
     __tablename__ = 'tokens'
 
     address = Column(BYTEA, primary_key=True)

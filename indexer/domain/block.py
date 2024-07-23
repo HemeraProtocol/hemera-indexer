@@ -6,6 +6,7 @@ from eth_utils import to_int, to_normalized_address
 from indexer.domain import Domain
 from indexer.domain.transaction import Transaction
 
+
 @dataclass
 class Block(Domain):
     number: int
@@ -16,6 +17,8 @@ class Block(Domain):
     gas_limit: int
     gas_used: int
     base_fee_per_gas: int
+    blob_gas_used: int
+    excess_blob_gas: int
     difficulty: int
     size: int
     miner: str
@@ -46,6 +49,8 @@ class Block(Domain):
             gas_limit=to_int(hexstr=block_dict['gasLimit']),
             gas_used=to_int(hexstr=block_dict['gasUsed']),
             base_fee_per_gas=to_int(hexstr=block_dict.get('baseFeePerGas', 0)),
+            blob_gas_used=to_int(hexstr=block_dict.get('blobGasUsed', 0)),
+            excess_blob_gas=to_int(hexstr=block_dict.get('excessBlobGas', 0)),
             difficulty=to_int(hexstr=block_dict['difficulty']),
             total_difficulty=to_int(hexstr=block_dict.get('totalDifficulty', 0)),
             size=to_int(hexstr=block_dict['size']),
@@ -58,3 +63,11 @@ class Block(Domain):
             extra_data=block_dict.get('extraData'),
             withdrawals_root=block_dict.get('withdrawalsRoot', None)
         )
+
+
+@dataclass
+class UpdateBlockInternalCount(Domain):
+    hash: str
+    internal_transactions_count: Optional[int] = 0
+
+

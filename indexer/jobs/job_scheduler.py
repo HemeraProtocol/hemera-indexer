@@ -16,6 +16,7 @@ from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.modules.bridge.arbitrum.arb_bridge_on_l1_job import ArbitrumBridgeOnL1Job
 from indexer.modules.bridge.arbitrum.arb_bridge_on_l2_job import ArbitrumBridgeOnL2Job
 
+
 def get_all_subclasses(cls: Type) -> Set[Type]:
     subclasses = set(cls.__subclasses__())
     for subclass in cls.__subclasses__():
@@ -70,7 +71,8 @@ class JobScheduler:
                 self.job_map[output.type()].append(cls)
             for dependency in cls.dependency_types:
                 self.dependency_map[dependency.type()].append(cls)
-            logging.info(f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}")
+            logging.info(
+                f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}")
 
     def instantiate_jobs(self):
         filters = []
@@ -124,7 +126,6 @@ class JobScheduler:
                     for dependency in job_class.dependency_types:
                         job_queue.append(dependency)
         return required_job_classes
-
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []

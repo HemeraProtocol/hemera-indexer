@@ -2,10 +2,10 @@ from datetime import datetime
 from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, BOOLEAN, JSONB, VARCHAR
 
-from common.models import db
+from common.models import HemeraModel
 
 
-class Contracts(db.Model):
+class Contracts(HemeraModel):
     __tablename__ = 'contracts'
 
     address = Column(BYTEA, primary_key=True)

@@ -51,7 +51,7 @@ class ExportTransactionsAndLogsJob(BaseJob):
         for receipt in results:
             transaction = transaction_hash_mapper[receipt['transactionHash']]
             receipt_entity = Receipt.from_rpc(receipt, transaction.block_timestamp, transaction.block_hash, transaction.block_number)
-            transaction.receipt = receipt_entity
+            transaction.fill_with_receipt(receipt_entity)
 
             for log in transaction.receipt.logs:
                 self._collect_item(Log.type(), log)
