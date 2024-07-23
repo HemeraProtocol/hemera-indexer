@@ -60,7 +60,6 @@ erc_token_abi = [
 
 
 class ExportTokensAndTransfersJob(BaseJob):
-
     output_transfer_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
     output_token_types = [Token, UpdateToken]
 
@@ -71,10 +70,11 @@ class ExportTokensAndTransfersJob(BaseJob):
         super().__init__(**kwargs)
 
         self._batch_work_executor = BatchWorkExecutor(
-        kwargs['batch_size'], kwargs['max_workers'],
-        job_name=self.__class__.__name__)
+            kwargs['batch_size'], kwargs['max_workers'],
+            job_name=self.__class__.__name__
+        )
 
-        self._is_batch =  kwargs['batch_size'] > 1
+        self._is_batch = kwargs['batch_size'] > 1
         self._exist_token = {}
         self._token_params = []
 
@@ -125,7 +125,8 @@ class ExportTokensAndTransfersJob(BaseJob):
     def _process(self):
         for token_transfer_type in self.output_transfer_types:
             if token_transfer_type in self._data_buff:
-                self._data_buff[token_transfer_type.type()].sort(key=lambda x: (x.block_number, x.transaction_hash, x.log_index))
+                self._data_buff[token_transfer_type.type()].sort(
+                    key=lambda x: (x.block_number, x.transaction_hash, x.log_index))
 
     def _export(self):
         items = []
@@ -135,10 +136,10 @@ class ExportTokensAndTransfersJob(BaseJob):
 
         if self._entity_types & EntityType.TOKEN_TRANSFER:
             items.extend(
-                self._extract_from_buff([ERC20TokenTransfer.type(), ERC721TokenTransfer.type(), ERC1155TokenTransfer.type()]))
+                self._extract_from_buff(
+                    [ERC20TokenTransfer.type(), ERC721TokenTransfer.type(), ERC1155TokenTransfer.type()]))
 
         self._item_exporter.export_items(items)
-
 
 
 def extract_tokens_and_token_transfers(logs: List[Log]):

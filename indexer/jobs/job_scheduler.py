@@ -7,6 +7,8 @@ from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_transactions_and_logs_job import ExportTransactionsAndLogsJob
 from indexer.jobs.export_tokens_and_transfers_job import ExportTokensAndTransfersJob
+from indexer.jobs.export_traces_job import ExportTracesJob
+
 
 from indexer.modules.bridge.bedrock.bedrock_bridge_on_l1_job import BedrockBridgeOnL1Job
 from indexer.modules.bridge.bedrock.bedrock_bridge_on_l2_job import BedrockBridgeOnL2Job

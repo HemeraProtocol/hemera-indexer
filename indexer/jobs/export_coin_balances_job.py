@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import dataclass
 from typing import List
 
 import pandas
@@ -8,6 +9,7 @@ from eth_utils import to_int
 from indexer.domain.block import Block
 from indexer.domain.coin_balance import CoinBalance
 from enumeration.entity_type import EntityType
+from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -19,30 +21,40 @@ from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class AddressRecord:
+    address: str
+    block_number: int
+    block_timestamp: int
+
+
 # Exports coin balances
 class ExportCoinBalancesJob(BaseJob):
+    dependency_types = [Block, Transaction, ContractInternalTransaction]
+    output_types = [CoinBalance]
+
     def __init__(
             self,
-            entity_types,
-            batch_web3_provider,
-            batch_size,
-            max_workers,
-            item_exporter=ConsoleItemExporter()):
-        super().__init__(entity_types=entity_types)
+            **kwargs
+    ):
+        super().__init__(**kwargs)
 
-        self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
-        self._is_batch = batch_size > 1
-        self._item_exporter = item_exporter
+        self._batch_work_executor = BatchWorkExecutor(
+            kwargs['batch_size'], kwargs['max_workers'],
+            job_name=self.__class__.__name__
+        )
+        self._is_batch = kwargs['batch_size'] > 1
 
     def _start(self):
         super()._start()
 
     def _collect(self):
 
-        coin_addresses = distinct_addresses(self._data_buff[Block.type()],
-                                            self._data_buff[Transaction.type()],
-                                            self._data_buff[Trace.type()])
+        coin_addresses = distinct_addresses(
+            self._data_buff[Block.type()],
+            self._data_buff[Transaction.type()],
+            self._data_buff[ContractInternalTransaction.type()]
+        )
         self._batch_work_executor.execute(coin_addresses, self._collect_batch, total_items=len(coin_addresses))
         self._batch_work_executor.shutdown()
 
@@ -56,8 +68,7 @@ class ExportCoinBalancesJob(BaseJob):
 
     def _process(self):
 
-        self._data_buff[CoinBalance.type()].sort(
-            key=lambda x: (x.block_number, x.address))
+        self._data_buff[CoinBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
     def _export(self):
         if self._entity_types & EntityType.COIN_BALANCE:
@@ -65,46 +76,44 @@ class ExportCoinBalancesJob(BaseJob):
             self._item_exporter.export_items(items)
 
 
-def distinct_addresses(blocks: List[Block], transactions: List[Transaction], traces: List[Trace]):
-    addresses = []
+def distinct_addresses(blocks: List[Block], transactions: List[Transaction], traces: List[ContractInternalTransaction]):
+    unique_addresses = set()
     for block in blocks:
-        addresses.append({
-            'address': block.miner,
-            'block_number': block.number,
-            'block_timestamp': block.timestamp
-        })
+        unique_addresses.add(AddressRecord(
+            address=block.miner,
+            block_number=block.number,
+            block_timestamp=block.timestamp
+        ))
 
     for transaction in transactions:
         if transaction.from_address is not None:
-            addresses.append({
-                'address': transaction.from_address,
-                'block_number': transaction.block_number,
-                'block_timestamp': transaction.block_timestamp
-            })
+            unique_addresses.add(AddressRecord(
+                address=transaction.from_address,
+                block_number=transaction.block_number,
+                block_timestamp=transaction.block_timestamp
+            ))
 
         if transaction.to_address is not None:
-            addresses.append({
-                'address': transaction.to_address,
-                'block_number': transaction.block_number,
-                'block_timestamp': transaction.block_timestamp
-            })
+            unique_addresses.add(AddressRecord(
+                address=transaction.to_address,
+                block_number=transaction.block_number,
+                block_timestamp=transaction.block_timestamp
+            ))
 
     for trace in traces:
-        if trace.is_contract_creation() or trace.is_transfer_value():
-            if trace.to_address is not None:
-                addresses.append({
-                    'address': trace.to_address,
-                    'block_number': trace.block_number,
-                    'block_timestamp': trace.block_timestamp
-                })
-            if trace.from_address is not None:
-                addresses.append({
-                    'address': trace.from_address,
-                    'block_number': trace.block_number,
-                    'block_timestamp': trace.block_timestamp
-                })
-
-    return pandas.DataFrame(addresses).drop_duplicates().to_dict(orient='records')
+        if trace.to_address is not None:
+            unique_addresses.add(AddressRecord(
+                address=trace.to_address,
+                block_number=trace.block_number,
+                block_timestamp=trace.block_timestamp
+            ))
+        if trace.from_address is not None:
+            unique_addresses.add(AddressRecord(
+                address=trace.from_address,
+                block_number=trace.block_number,
+                block_timestamp=trace.block_timestamp
+            ))
+    return [record.__dict__ for record in unique_addresses]
 
 
 def coin_balances_rpc_requests(make_requests, addresses, is_batch):

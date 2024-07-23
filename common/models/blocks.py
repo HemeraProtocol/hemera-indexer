@@ -35,5 +35,6 @@ class Blocks(db.Model):
     reorg = Column(BOOLEAN, default=False)
 
 
+
 Index('blocks_timestamp_index', desc(Blocks.timestamp))
 Index('blocks_number_index', desc(Blocks.number))

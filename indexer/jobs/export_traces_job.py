@@ -4,14 +4,14 @@ from typing import List
 
 from eth_utils import to_int
 
+from enumeration.entity_type import EntityType
 from indexer.domain import dataclass_to_dict
+from indexer.domain.block import Block
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.trace import Trace
-from enumeration.entity_type import EntityType
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from indexer.jobs.base_job import BaseJob
+from indexer.utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
@@ -19,27 +19,31 @@ logger = logging.getLogger(__name__)
 
 # Exports traces
 class ExportTracesJob(BaseJob):
-    def __init__(self,
-                 entity_types,
-                 batch_web3_provider,
-                 batch_size,
-                 max_workers,
-                 item_exporter=ConsoleItemExporter()):
-        super().__init__(entity_types=entity_types)
 
-        self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
-        self._is_batch = batch_size > 1
-        self._item_exporter = item_exporter
+    dependency_types = [Block]
+    output_types = [Trace, ContractInternalTransaction]
+
+    def __init__(
+            self,
+            **kwargs
+    ):
+        super().__init__(**kwargs)
+
+        self._batch_web3_provider = kwargs['batch_web3_debug_provider']
+        self._batch_work_executor = BatchWorkExecutor(
+            kwargs['batch_size'], kwargs['max_workers'],
+            job_name=self.__class__.__name__
+        )
+        self._is_batch = kwargs['batch_size'] > 1
 
     def _start(self):
         super()._start()
 
-    def _collect(self):
+    def _collect(self, **kwargs):
         self._batch_work_executor.execute(
-            self._data_buff['block'],
+            self._data_buff[Block.type()],
             self._collect_batch,
-            total_items=len(self._data_buff['block'])
+            total_items=len(self._data_buff[Block.type()])
         )
 
         self._batch_work_executor.shutdown()

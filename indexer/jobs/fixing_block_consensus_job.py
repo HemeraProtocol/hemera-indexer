@@ -6,7 +6,6 @@ from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
 from indexer.domain.block import Block
-from indexer.domain.token import format_token_data
 from indexer.domain.trace import format_trace_data
 from enumeration.token_type import TokenType
 from common.converter.postgresql_model_converter import convert_item
@@ -34,8 +33,7 @@ from indexer.jobs.export_contracts_job import build_contracts
 from indexer.jobs.export_token_balances_and_holders_job import extract_token_parameters, token_balances_rpc_requests, \
     calculate_token_holders
 from indexer.jobs.export_token_id_infos_job import token_ids_info_rpc_requests, get_exist_token_ids
-from indexer.jobs.export_tokens_and_transfers_job import tokens_rpc_requests, extract_tokens_and_token_transfers, \
-    get_exist_token, distinct_tokens
+from indexer.jobs.export_tokens_and_transfers_job import tokens_rpc_requests, extract_tokens_and_token_transfers, distinct_tokens
 from indexer.jobs.export_traces_job import traces_rpc_requests
 from indexer.jobs.export_transactions_and_logs_job import receipt_rpc_requests
 from indexer.utils.enrich import enrich_transactions, enrich_blocks_timestamp, enrich_traces, \

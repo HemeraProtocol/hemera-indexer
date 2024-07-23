@@ -40,5 +40,7 @@ class Tokens(db.Model):
     )
 
 
+
+
 Index('tokens_symbol_index', Tokens.symbol)
 Index('tokens_type_index', Tokens.token_type)

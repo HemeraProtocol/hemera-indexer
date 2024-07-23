@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-from common.models.contract_internal_transactions import ContractInternalTransactions
 from indexer.domain import Domain
 
 

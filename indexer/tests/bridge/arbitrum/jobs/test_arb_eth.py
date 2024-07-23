@@ -4,21 +4,18 @@
 # @Author  will
 # @File  test_arb_eth.py
 # @Brief
+from dataclasses import asdict
+
 import pytest
-from dataclasses import dataclass, asdict
 
 from enumeration.entity_type import EntityType
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.job_scheduler import JobScheduler
 from indexer.modules.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch, ArbitrumStateBatchCreated, \
     ArbitrumStateBatchConfirmed
-from indexer.modules.bridge.arbitrum.arb_bridge_on_l1_job import ArbitrumBridgeOnL1Job
-from indexer.modules.bridge.arbitrum.arb_bridge_on_l2_job import ArbitrumBridgeOnL2Job
 from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL1, ArbitrumL2ToL1TransactionOnL2, \
     ArbitrumL1ToL2TransactionOnL2, ArbitrumL2ToL1TransactionOnL1
-
-from indexer.modules.bridge.items import ARB_L1ToL2_ON_L1, ARB_L2ToL1_ON_L2, ARB_L2ToL1_ON_L1, ARB_L1ToL2_ON_L2
-from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL, ARBITRUM_PUBLIC_NODE_RPC_URL
+from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL, ARBITRUM_PUBLIC_NODE_RPC_URL, ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
@@ -174,26 +171,27 @@ def test_l2_to_l1_withdraw():
     """
     arb_job = JobScheduler(
         entity_types=EntityType.BRIDGE,
-
-        batch_web3_debug_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
-        ),
+        item_exporter=ConsoleItemExporter(),
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        batch_size=10,
-        max_workers=1,
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
+        ),
         config={
             "contract_list": ['0x0000000000000000000000000000000000000064'],
             'l2_chain_id': 42161,
             'transaction_batch_offset': 22207816
         },
+        batch_size=10,
+        max_workers=1,
         required_output_types=[ArbitrumL2ToL1TransactionOnL2]
     )
     arb_job.run_jobs(
         start_block=213672440,
         end_block=213672440,
     )
+
     send = arb_job.get_data_buff()[ArbitrumL2ToL1TransactionOnL2.type()][0]
     assert send is not None
     send = asdict(send)
@@ -203,93 +201,104 @@ def test_l2_to_l1_withdraw():
     assert send['l2_transaction_hash'] == '0xe08b22ab1e5849bd19a1d3f4a63abf3d7757e8af21b975f4202d3c5896fad7fd'
     assert send['amount'] == 234577589862530059
     assert send['l2_token_address'] == '0xfae103dc9cf190ed75350761e95403b7b8afa6c0'
+
     arb_job.clear_data_buff()
+
     eth_job = JobScheduler(
         entity_types=EntityType.BRIDGE,
-
-        batch_web3_debug_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
-        ),
+        item_exporter=ConsoleItemExporter(),
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        batch_size=10,
-        max_workers=1,
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL, batch=True)
+        ),
         config={
             "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a'],
             'l2_chain_id': 42161,
             'transaction_batch_offset': 22207816
         },
+        batch_size=10,
+        max_workers=1,
         required_output_types=[ArbitrumL2ToL1TransactionOnL1]
     )
     eth_job.run_jobs(
         start_block=19975906,
         end_block=19975906,
     )
+
+
     confirm = eth_job.get_data_buff()[ArbitrumL2ToL1TransactionOnL1.type()][0]
-    confirm = asdict(confirm)
     assert confirm is not None
+    confirm = asdict(confirm)
     assert confirm['msg_hash'] == 119208
     assert confirm['l1_block_number'] == 19975906
     assert confirm['l1_transaction_hash'] == '0x1013dea84e83985fa2dd7dbf4ff71dced8c98d1e442e47f0ec39ac5fe4b2008a'
 
+    eth_job.clear_data_buff()
 
 @pytest.mark.test_arb_eth
 def test_state_batch_eth():
     # node_created_tnx_hash = '0x3772f60c09379b147a80086f185b9fc3b7151a871fb48fa674e40ffa970b4aa4'
+
     eth_job = JobScheduler(
         entity_types=EntityType.BRIDGE,
-        batch_web3_debug_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
-        ),
+        item_exporter=ConsoleItemExporter(),
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        batch_size=10,
-        max_workers=1,
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL, batch=True)
+        ),
         config={
             "contract_list": ['0x5eF0D09d1E6204141B4d37530808eD19f60FBa35'],
             'l2_chain_id': 42161,
             'transaction_batch_offset': 22207816
         },
-        required_output_types=[ArbitrumStateBatchCreated],
+        batch_size=10,
+        max_workers=1,
+        required_output_types=[ArbitrumStateBatchCreated]
     )
     eth_job.run_jobs(
-        start_block=20275296,
-        end_block=20275296,
+        start_block=19975906,
+        end_block=19975906,
     )
+
+
     txn_create = eth_job.get_data_buff()[ArbitrumStateBatchCreated.type()][0]
-    eth_job.clear_data_buff()
     txn_create = asdict(txn_create)
     assert txn_create is not None
     assert txn_create['node_num'] == 15406
     assert txn_create['create_l1_block_number'] == 20275296
     assert txn_create['parent_node_hash'] == '0x119838a50b7f9c34ba3314e1150903045bd9562bf261ae5ccf77b913f9fedb74'
     assert txn_create['node_hash'] == '0x032624aca1628fd9ffc5206258c2d56562c5c7055482ffba40c757f9409abb5e'
+    eth_job.clear_data_buff()
 
-    # node_confirmed_tnx_hash = '0xec745d2444fa77165db936d1661d69da4234050f715ae5d7b1509200339a8a0d'
-    eth_job1 = JobScheduler(
+
+    eth_job_1 = JobScheduler(
         entity_types=EntityType.BRIDGE,
-        batch_web3_debug_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
-        ),
+        item_exporter=ConsoleItemExporter(),
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        batch_size=10,
-        max_workers=1,
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL, batch=True)
+        ),
         config={
             "contract_list": ['0x5eF0D09d1E6204141B4d37530808eD19f60FBa35'],
             'l2_chain_id': 42161,
             'transaction_batch_offset': 22207816
         },
-        required_output_types=[ArbitrumStateBatchConfirmed],
+        batch_size=10,
+        max_workers=1,
+        required_output_types=[ArbitrumStateBatchConfirmed]
     )
-    eth_job1.run_jobs(
+    eth_job_1.run_jobs(
         start_block=20275326,
         end_block=20275326,
     )
-    txn_confirm = eth_job1.get_data_buff()[ArbitrumStateBatchConfirmed.type()][0]
+
+    txn_confirm = eth_job_1.get_data_buff()[ArbitrumStateBatchConfirmed.type()][0]
     txn_confirm = asdict(txn_confirm)
     assert txn_confirm is not None
     assert txn_confirm['node_num'] == 15253
@@ -298,11 +307,11 @@ def test_state_batch_eth():
     assert txn_confirm['l1_block_number'] == 20275326
     assert txn_confirm['l1_transaction_hash'] == '0xec745d2444fa77165db936d1661d69da4234050f715ae5d7b1509200339a8a0d'
 
+    eth_job_1.clear_data_buff()
 
 @pytest.mark.test_arb_eth
 def test_transaction_batch_eth():
     # 0xfbeaff030508a0ec169d709a24c5f3c07c2a7c595b9647e45e080a54416c7f82
-
     eth_job = JobScheduler(
         entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)),
@@ -312,7 +321,7 @@ def test_transaction_batch_eth():
         debug_batch_size=1,
         max_workers=5,
         config={
-            "contract_list": ['0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6'],
+            "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f'],
             'l2_chain_id': 42161,
             'transaction_batch_offset': 22207816
         },
@@ -320,8 +329,8 @@ def test_transaction_batch_eth():
     )
 
     eth_job.run_jobs(
-        start_block=20274992,
-        end_block=20274992,
+        start_block=20316414,
+        end_block=20316414,
     )
 
     txn_batch = eth_job.get_data_buff()[ArbitrumTransactionBatch.type()][0]
@@ -331,5 +340,5 @@ def test_transaction_batch_eth():
     assert txn_batch['l1_block_timestamp'] == 1720601171
     assert txn_batch['l1_block_hash'] == '0x97541c0bb58e4e71bdeec02001149e5a9a9e90a29b14e81464be9e89a46bce22'
     assert txn_batch['l1_transaction_hash'] == '0xfbeaff030508a0ec169d709a24c5f3c07c2a7c595b9647e45e080a54416c7f82'
-    assert txn_batch['start_block_number'] == 230683543
+    assert txn_batch['start_block_number'] == 230683544
     assert txn_batch['end_block_number'] == 230683798
