@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
 
 
 class ERC20TokenHolders(HemeraModel):
@@ -22,6 +22,17 @@ class ERC20TokenHolders(HemeraModel):
     __table_args__ = (
         PrimaryKeyConstraint('token_address', 'wallet_address'),
     )
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'ERC20TokenHolder',
+                'conflict_do_update': True,
+                'update_strategy': "EXCLUDED.block_number > erc20_token_holders.block_number",
+                'converter': general_converter,
+            }
+        ]
 
 
 Index('erc20_token_holders_wallet_address_index', ERC20TokenHolders.wallet_address)

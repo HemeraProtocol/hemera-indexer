@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, BOOLEAN, JSONB, VARCHAR
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
 
 
 class Contracts(HemeraModel):
@@ -33,3 +33,14 @@ class Contracts(HemeraModel):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
     reorg = Column(BOOLEAN, default=False)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'Contract',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            }
+        ]

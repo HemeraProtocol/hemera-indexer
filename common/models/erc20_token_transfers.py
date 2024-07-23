@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, Index, desc, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
 
 
 class ERC20TokenTransfers(HemeraModel):
@@ -26,6 +26,17 @@ class ERC20TokenTransfers(HemeraModel):
     __table_args__ = (
         PrimaryKeyConstraint('transaction_hash', 'log_index'),
     )
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'ERC20TokenTransfer',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            }
+        ]
 
 
 Index('erc20_token_transfers_block_timestamp_index', desc(ERC20TokenTransfers.block_timestamp))

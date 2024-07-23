@@ -1,10 +1,11 @@
 from datetime import datetime
+from typing import Union, Type
 
 from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 
-from common.models import HemeraModel
-from indexer.domain.block import Block
+from common.models import HemeraModel, general_converter
+from indexer.domain.block import Block, UpdateBlockInternalCount
 
 
 class Blocks(HemeraModel):
@@ -40,20 +41,35 @@ class Blocks(HemeraModel):
     update_time = Column(TIMESTAMP, onupdate=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    def model_domain_mapping(self):
-        return [{
-            'domain': 'Block',
-            'update_strategy': None,
-            'converter': self.converter,
-        }]
-
-    def converter(self, data: Block, is_update=False):
-        converted_data = super().converter(data, is_update)
-        converted_data['transactions_count'] = len(data.transactions) if data.transactions else 0
-
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'Block',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': converter,
+            },
+            {
+                'domain': 'UpdateBlockInternalCount',
+                'conflict_do_update': True,
+                'update_strategy': None,
+                'converter': converter,
+            }
+        ]
 
 
 Index('blocks_timestamp_index', desc(Blocks.timestamp))
 Index('blocks_number_index', desc(Blocks.number))
+Index('blocks_number_unique_when_not_reorg', Blocks.number, unique=True,
+      postgresql_where=(Blocks.reorg == False))
+Index('blocks_hash_unique_when_not_reorg', Blocks.hash, unique=True,
+      postgresql_where=(Blocks.reorg == False))
 
-# +2yueshu
+
+def converter(table: Type[HemeraModel], data: Union[Block, UpdateBlockInternalCount], is_update=False):
+    converted_data = general_converter(table, data, is_update)
+    if isinstance(data, Block):
+        converted_data['transactions_count'] = len(data.transactions) if data.transactions else 0
+
+    return converted_data

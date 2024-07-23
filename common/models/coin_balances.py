@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, desc
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
 
 
 class CoinBalances(HemeraModel):
@@ -20,6 +20,17 @@ class CoinBalances(HemeraModel):
     __table_args__ = (
         PrimaryKeyConstraint('address', 'block_number'),
     )
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'CoinBalance',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            }
+        ]
 
 
 Index('coin_balance_address_number_desc_index',

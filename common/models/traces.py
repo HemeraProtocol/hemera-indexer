@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT, BOOLEAN, VARCHAR
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
 
 
 class Traces(HemeraModel):
@@ -31,6 +31,17 @@ class Traces(HemeraModel):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
     reorg = Column(BOOLEAN, default=False)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'Trace',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            }
+        ]
 
 
 Index('traces_transaction_hash_index', Traces.transaction_hash)

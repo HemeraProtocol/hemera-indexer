@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
 
 
 class ERC721TokenIdChanges(HemeraModel):
@@ -22,6 +22,17 @@ class ERC721TokenIdChanges(HemeraModel):
     __table_args__ = (
         PrimaryKeyConstraint('address', 'token_id', 'block_number'),
     )
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'ERC721TokenIdChange',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            }
+        ]
 
 
 Index('erc721_change_address_id_number_desc_index',

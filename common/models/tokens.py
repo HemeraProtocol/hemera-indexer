@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint, Index, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, TIMESTAMP, NUMERIC, BOOLEAN, JSONB, VARCHAR
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
 
 
 class Tokens(HemeraModel):
@@ -39,7 +39,22 @@ class Tokens(HemeraModel):
         PrimaryKeyConstraint('address'),
     )
 
-
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'Token',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'UpdateToken',
+                'conflict_do_update': True,
+                'update_strategy': "EXCLUDED.block_number > tokens.block_number",
+                'converter': general_converter,
+            }
+        ]
 
 
 Index('tokens_symbol_index', Tokens.symbol)

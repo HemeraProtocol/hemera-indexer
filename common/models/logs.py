@@ -1,8 +1,11 @@
 from datetime import datetime
+from typing import Type
+
 from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, BOOLEAN
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
+from indexer.domain.log import Log
 
 
 class Logs(HemeraModel):
@@ -28,6 +31,17 @@ class Logs(HemeraModel):
     __table_args__ = (
         PrimaryKeyConstraint('transaction_hash', 'block_hash', 'log_index'),
     )
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'Log',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            }
+        ]
 
 
 Index('logs_block_timestamp_index', desc(Logs.block_timestamp))
