@@ -260,8 +260,8 @@ def test_state_batch_eth():
         required_output_types=[ArbitrumStateBatchCreated]
     )
     eth_job.run_jobs(
-        start_block=19975906,
-        end_block=19975906,
+        start_block=20275296,
+        end_block=20275296,
     )
 
 
@@ -321,7 +321,7 @@ def test_transaction_batch_eth():
         debug_batch_size=1,
         max_workers=5,
         config={
-            "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f'],
+            "contract_list": ['0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a', '0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f', '0x1c479675ad559DC151F6Ec7ed3FbF8ceE79582B6'],
             'l2_chain_id': 42161,
             'transaction_batch_offset': 22207816
         },
@@ -329,8 +329,8 @@ def test_transaction_batch_eth():
     )
 
     eth_job.run_jobs(
-        start_block=20316414,
-        end_block=20316414,
+        start_block=20274992,
+        end_block=20274992,
     )
 
     txn_batch = eth_job.get_data_buff()[ArbitrumTransactionBatch.type()][0]
@@ -340,5 +340,5 @@ def test_transaction_batch_eth():
     assert txn_batch['l1_block_timestamp'] == 1720601171
     assert txn_batch['l1_block_hash'] == '0x97541c0bb58e4e71bdeec02001149e5a9a9e90a29b14e81464be9e89a46bce22'
     assert txn_batch['l1_transaction_hash'] == '0xfbeaff030508a0ec169d709a24c5f3c07c2a7c595b9647e45e080a54416c7f82'
-    assert txn_batch['start_block_number'] == 230683544
+    assert txn_batch['start_block_number'] == 230683543
     assert txn_batch['end_block_number'] == 230683798

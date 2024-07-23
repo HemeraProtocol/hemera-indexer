@@ -377,6 +377,8 @@ def un_marshal_inbox_message_delivered_data(raw_kind, data, chain_id=Network.Arb
                 l1TokenAmount = int.from_bytes(restData[100: 132], 'big')
     elif kind == Constants.L2_MSG:
         pass
+    elif kind == Constants.L1MessageType_batchPostingReport:
+        pass
     elif kind == Constants.L1MessageType_ethDeposit:
         destAddress = Web3.to_hex(data[offset: offset + 20])
         offset += 20
