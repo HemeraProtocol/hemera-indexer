@@ -69,7 +69,8 @@ def test_l1_to_l2_deposit_dodo():
         max_workers=5,
         config={
             "contract_list": ['0xd62ef8d8c71d190417c6ce71f65795696c069f09',
-                              '0xc0856971702b02a5576219540bd92dae79a79288'],
+                              '0xc0856971702b02a5576219540bd92dae79a79288',
+                              '0xa97c7633c747a10dfc8150d3a6dae448a0a6b65d'],
             'l2_chain_id': 53457,
             'transaction_batch_offset': 0,
         },
