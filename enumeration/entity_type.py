@@ -5,18 +5,13 @@ from click import BadOptionUsage
 
 
 class EntityType(IntFlag):
-    BLOCK = 1 << 0
-    TRANSACTION = 1 << 1
-    LOG = 1 << 2
-    TOKEN = 1 << 3
-    TOKEN_TRANSFER = 1 << 4
-    TRACE = 1 << 5
-    CONTRACT = 1 << 6
-    COIN_BALANCE = 1 << 7
-    TOKEN_BALANCE = 1 << 8
-    TOKEN_IDS = 1 << 9
+    EXPLORER_BASE = 1 << 0
+    EXPLORER_TOKEN = 1 << 1
+    EXPLORER_TRACE = 1 << 2
 
-    BRIDGE = 1 << 10
+    BRIDGE = 1 << 3
+
+    EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
     @staticmethod
     def combine_all_entity_types():
@@ -28,8 +23,10 @@ class EntityType(IntFlag):
             return True
         return False
 
+
 ALL_ENTITY_COLLECTIONS = EntityType.__members__.keys()
-DEFAULT_COLLECTION = ["BLOCK", "TRANSACTION", "LOG", "TOKEN", "TOKEN_TRANSFER"]
+DEFAULT_COLLECTION = ["EXPLORER_BASE", "EXPLORER_TOKEN"]
+
 
 def calculate_entity_value(entity_types):
     entities = EntityType(0)

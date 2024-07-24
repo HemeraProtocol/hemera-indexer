@@ -128,18 +128,6 @@ class ExportTokensAndTransfersJob(BaseJob):
                 self._data_buff[token_transfer_type.type()].sort(
                     key=lambda x: (x.block_number, x.transaction_hash, x.log_index))
 
-    def _export(self):
-        items = []
-
-        if self._entity_types & EntityType.TOKEN:
-            items.extend(self._extract_from_buff([Token.type(), UpdateToken.type()]))
-
-        if self._entity_types & EntityType.TOKEN_TRANSFER:
-            items.extend(
-                self._extract_from_buff(
-                    [ERC20TokenTransfer.type(), ERC721TokenTransfer.type(), ERC1155TokenTransfer.type()]))
-
-        self._item_exporter.export_items(items)
 
 
 def extract_tokens_and_token_transfers(logs: List[Log]):

@@ -74,10 +74,6 @@ class ExportContractsJob(BaseJob):
                            x.transaction_index,
                            x.address))
 
-    def _export(self):
-        if self._entity_types & EntityType.CONTRACT:
-            items = self._extract_from_buff([Contract.type()])
-            self._item_exporter.export_items(items)
 
 
 def build_contracts(web3, traces: List[Trace]):

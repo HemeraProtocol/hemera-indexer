@@ -102,7 +102,8 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
-        entity_types=entity_types)
+        entity_types=entity_types
+    )
 
     controller = StreamController(
         service=service,

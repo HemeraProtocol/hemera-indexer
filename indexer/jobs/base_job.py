@@ -22,7 +22,9 @@ class BaseJob(object):
         return cls.__subclasses__()
 
     def __init__(self, **kwargs):
+
         self._entity_types = kwargs['entity_types']
+        self._required_output_types = kwargs['required_output_types']
         self._item_exporter = kwargs['item_exporter']
         self._batch_web3_provider = kwargs['batch_web3_provider']
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
@@ -75,7 +77,15 @@ class BaseJob(object):
         return items
 
     def _export(self):
-        pass
+        items = []
+
+        for output_type in self.output_types:
+            if output_type in self._required_output_types:
+                items.extend(self._extract_from_buff([output_type.type()]))
+
+        self._item_exporter.open()
+        self._item_exporter.export_items(items)
+        self._item_exporter.close()
 
     def get_buff(self):
         return self._data_buff

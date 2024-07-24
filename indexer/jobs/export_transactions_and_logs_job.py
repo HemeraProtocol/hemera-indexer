@@ -59,14 +59,6 @@ class ExportTransactionsAndLogsJob(BaseJob):
     def _process(self):
         self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
-    def _export(self):
-        items = []
-        if self._entity_types & EntityType.TRANSACTION:
-            items.extend(self._extract_from_buff([Transaction.type()]))
-        if self._entity_types & EntityType.LOG:
-            items.extend(self._extract_from_buff([Log.type()]))
-
-        self._item_exporter.export_items(items)
 
 
 def receipt_rpc_requests(make_request, transaction_hashes, is_batch):

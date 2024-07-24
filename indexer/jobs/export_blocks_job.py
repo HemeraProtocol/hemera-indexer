@@ -95,13 +95,6 @@ class ExportBlocksJob(BaseJob):
 
         self._data_buff[BlockTsMapper.type()] = [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()]
 
-    def _export(self):
-        items = []
-        if self._entity_types & EntityType.BLOCK:
-            items = self._extract_from_buff([Block.type()])
-        self._item_exporter.open()
-        self._item_exporter.export_items(items)
-        self._item_exporter.close()
 
 
 def blocks_rpc_requests(make_request, block_number_batch, is_batch):

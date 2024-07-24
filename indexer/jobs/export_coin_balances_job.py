@@ -70,10 +70,6 @@ class ExportCoinBalancesJob(BaseJob):
 
         self._data_buff[CoinBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
-    def _export(self):
-        if self._entity_types & EntityType.COIN_BALANCE:
-            items = self._extract_from_buff(['formated_coin_balance'])
-            self._item_exporter.export_items(items)
 
 
 def distinct_addresses(blocks: List[Block], transactions: List[Transaction], traces: List[ContractInternalTransaction]):

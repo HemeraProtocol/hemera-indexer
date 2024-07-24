@@ -140,12 +140,6 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
              self._data_buff[ERC721TokenHolder.type()],
              self._data_buff[ERC1155TokenHolder.type()]) = calculate_token_holders(self._data_buff[TokenBalance.type()])
 
-    def _export(self):
-
-        if self._entity_types & EntityType.TOKEN_BALANCE:
-            items = self._extract_from_buff(
-                [TokenBalance.type(), ERC20TokenHolder.type(), ERC721TokenHolder.type(), ERC1155TokenHolder.type()])
-            self._item_exporter.export_items(items)
 
     def _collect_all_token_transfers(self):
         token_transfers = []

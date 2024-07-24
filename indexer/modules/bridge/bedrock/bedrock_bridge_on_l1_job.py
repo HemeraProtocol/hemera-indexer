@@ -153,11 +153,4 @@ class BedrockBridgeOnL1Job(FilterTransactionDataJob):
         for data in result:
             self._collect_item(data.type(), data)
 
-    def _export(self):
-        items = []
-        if self._entity_types & EntityType.BRIDGE:
-            for output_type in self.output_types:
-                items.extend(self._extract_from_buff([output_type.type()]))
-        self._item_exporter.open()
-        self._item_exporter.export_items(items)
-        self._item_exporter.close()
+

@@ -77,11 +77,6 @@ class ExportTracesJob(BaseJob):
                 )
             )
 
-    def _export(self):
-        if self._entity_types & EntityType.TRACE:
-            items = self._extract_from_buff([Trace.type(), ContractInternalTransaction.type()])
-            self._item_exporter.export_items(items)
-
 
 class ExtractTraces:
 

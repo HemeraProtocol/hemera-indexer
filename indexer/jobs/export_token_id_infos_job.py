@@ -153,13 +153,6 @@ class ExportTokenIdInfosJob(BaseJob):
                                                                   for token_id_info in self._erc1155_token_ids
                                                                   if not token_id_info['is_new']]
 
-    def _export(self):
-        if self._entity_types & EntityType.TOKEN_IDS:
-            items = self._extract_from_buff(
-                [ERC721TokenIdChange.type(), ERC721TokenIdDetail.type(), UpdateERC721TokenIdDetail.type(),
-                 ERC1155TokenIdDetail.type(), UpdateERC1155TokenIdDetail.type()])
-            self._item_exporter.export_items(items)
-
 
 def distinct_erc721_token_ids(exist_tokens: list, token_transfers: List[ERC721TokenTransfer]):
     exist_set = set(exist_tokens)

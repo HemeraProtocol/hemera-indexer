@@ -89,7 +89,8 @@ class JobScheduler:
                 batch_size=self.batch_size,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
-                config=self.config
+                config=self.config,
+                required_output_types=self.required_output_types
             )
             if isinstance(job, FilterTransactionDataJob):
                 filters.append(job.get_filter())

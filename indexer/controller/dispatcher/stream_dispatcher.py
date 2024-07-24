@@ -35,3 +35,5 @@ class StreamDispatcher(BaseDispatcher):
             start_block=start_block,
             end_block=end_block,
         )
+
+        self._job_scheduler.clear_data_buff()
