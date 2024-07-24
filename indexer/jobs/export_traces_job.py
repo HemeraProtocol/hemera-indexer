@@ -5,7 +5,6 @@ from typing import List
 
 from eth_utils import to_int
 
-from enumeration.entity_type import EntityType
 from indexer.domain import dataclass_to_dict
 from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction

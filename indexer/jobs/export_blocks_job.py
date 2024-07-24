@@ -1,9 +1,6 @@
 import json
 import logging
 
-from web3 import Web3
-
-from enumeration.entity_type import EntityType
 from indexer.domain.block import Block
 from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.transaction import Transaction

@@ -2,16 +2,13 @@ import json
 import logging
 from typing import List
 
-from web3 import Web3
 from eth_abi import abi
+from web3 import Web3
 
 from indexer.domain.contract import extract_contract_from_trace, Contract
-from enumeration.entity_type import EntityType
-from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.trace import Trace
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.jobs.base_job import BaseJob
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 

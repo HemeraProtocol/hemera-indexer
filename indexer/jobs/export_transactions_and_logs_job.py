@@ -2,7 +2,6 @@ import json
 import logging
 from typing import List
 
-from enumeration.entity_type import EntityType
 from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.receipt import Receipt

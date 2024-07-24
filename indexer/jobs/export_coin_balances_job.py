@@ -3,18 +3,14 @@ import logging
 from dataclasses import dataclass
 from typing import List
 
-import pandas
 from eth_utils import to_int
 
 from indexer.domain.block import Block
 from indexer.domain.coin_balance import CoinBalance
-from enumeration.entity_type import EntityType
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.jobs.base_job import BaseJob
 from indexer.utils.json_rpc_requests import generate_get_balance_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 

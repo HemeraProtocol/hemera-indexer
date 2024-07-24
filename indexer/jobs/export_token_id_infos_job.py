@@ -5,16 +5,13 @@ from typing import List
 from eth_abi import abi
 from web3 import Web3
 
+from enumeration.token_type import TokenType
 from indexer.domain.token_id_infos import ERC721TokenIdChange, ERC721TokenIdDetail, UpdateERC721TokenIdDetail, \
     ERC1155TokenIdDetail, UpdateERC1155TokenIdDetail
-from enumeration.entity_type import EntityType
-from enumeration.token_type import TokenType
 from indexer.domain.token_transfer import ERC721TokenTransfer, ERC1155TokenTransfer
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from common.models.erc1155_token_id_details import ERC1155TokenIdDetails
-from common.models.erc721_token_id_details import ERC721TokenIdDetails
-from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.exporters.console_item_exporter import ConsoleItemExporter
+from indexer.jobs.base_job import BaseJob
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 

@@ -6,14 +6,12 @@ from eth_abi import abi
 from web3 import Web3
 
 from common.utils.format_utils import to_snake_case
-from enumeration.entity_type import EntityType
 from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
 from indexer.domain.token import Token, UpdateToken
 from indexer.domain.token_transfer import extract_transfer_from_log, \
     ERC20TokenTransfer, ERC1155TokenTransfer, ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response

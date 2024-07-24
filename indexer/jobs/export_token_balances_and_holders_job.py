@@ -5,20 +5,18 @@ from typing import List, Union
 import numpy
 import pandas
 from eth_abi import abi
-
 from web3 import Web3
 
 from enumeration.token_type import TokenType
 from indexer.domain import dict_to_dataclass
 from indexer.domain.token_balance import TokenBalance
 from indexer.domain.token_holder import ERC20TokenHolder, ERC721TokenHolder, ERC1155TokenHolder
-from enumeration.entity_type import EntityType
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.jobs.base_job import BaseJob
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distinct_collections_by_group
+
 
 def verify_0_address(address):
     return set(address[2:]) == {'0'}
