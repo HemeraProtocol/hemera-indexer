@@ -19,7 +19,6 @@ class StreamDispatcher(BaseDispatcher):
                  ):
         super().__init__(service)
         self._job_scheduler = JobScheduler(
-            entity_types=entity_types,
             batch_web3_provider=batch_web3_provider,
             batch_web3_debug_provider=batch_web3_debug_provider,
             item_exporter=item_exporter,

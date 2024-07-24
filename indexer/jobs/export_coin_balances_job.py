@@ -26,7 +26,7 @@ class AddressRecord:
 
 # Exports coin balances
 class ExportCoinBalancesJob(BaseJob):
-    dependency_types = [Block, Transaction, ContractInternalTransaction]
+    dependency_types = [Block, ContractInternalTransaction]
     output_types = [CoinBalance]
 
     def __init__(

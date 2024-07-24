@@ -68,7 +68,7 @@ class ExportTracesJob(BaseJob):
         for block_hash, traces in groupby(self._data_buff[Trace.type()], lambda x: x.block_hash):
             traces_count = len(list(traces))
             internal_transactions_count = sum(1 for trace in traces if trace.is_contract_creation())
-            self._data_buff[ContractInternalTransaction.type()].append(
+            self._data_buff[UpdateBlockInternalCount.type()].append(
                 UpdateBlockInternalCount(
                     hash=block_hash,
                     traces_count=traces_count,
