@@ -13,7 +13,6 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
 def test_fetch_op_bedrock_bridge_on_data():
 
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)),
         item_exporter=ConsoleItemExporter(),

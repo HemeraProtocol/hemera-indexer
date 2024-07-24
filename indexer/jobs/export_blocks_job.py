@@ -30,7 +30,7 @@ class ExportBlocksJob(BaseJob):
             job_name=self.__class__.__name__)
         self._is_batch = kwargs['batch_size'] > 1
         self._filters = kwargs.get('filters', None)
-        self._is_filter = self._filters is not None and len(self._filters) > 0
+        self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
     def _start(self):
@@ -46,21 +46,22 @@ class ExportBlocksJob(BaseJob):
 
         is_only_log_filter = True
         filter_blocks = set()
-        if EntityType.entity_filter_mode(self._entity_types):
-            for filter in self._filters:
-                if isinstance(filter, TransactionFilterByLogs):
-                    filter_params = filter.get_eth_log_filters_params()
-                    filter_params.update({'fromBlock': self._start_block, 'toBlock': self._end_block})
-                    logs = self._web3.eth.get_logs(filter_params)
-                    filter_blocks.update(set([log['blockNumber'] for log in logs]))
-                    transaction_hashes = set([log['transactionHash'] for log in logs])
-                    transaction_hashes = [h.hex() for h in transaction_hashes]
-                    self._specification |= TransactionHashSpecification(transaction_hashes)
-                elif isinstance(filter, TransactionFilterByTransactionInfo):
-                    is_only_log_filter = False
-                    self._specification |= filter.get_or_specification()
-                else:
-                    raise ValueError(f"Unsupported filter type: {type(filter)}")
+
+
+        for filter in self._filters:
+            if isinstance(filter, TransactionFilterByLogs):
+                filter_params = filter.get_eth_log_filters_params()
+                filter_params.update({'fromBlock': self._start_block, 'toBlock': self._end_block})
+                logs = self._web3.eth.get_logs(filter_params)
+                filter_blocks.update(set([log['blockNumber'] for log in logs]))
+                transaction_hashes = set([log['transactionHash'] for log in logs])
+                transaction_hashes = [h.hex() for h in transaction_hashes]
+                self._specification |= TransactionHashSpecification(transaction_hashes)
+            elif isinstance(filter, TransactionFilterByTransactionInfo):
+                is_only_log_filter = False
+                self._specification |= filter.get_or_specification()
+            else:
+                raise ValueError(f"Unsupported filter type: {type(filter)}")
         if self._is_filter and is_only_log_filter:
             blocks = list(filter_blocks)
             total_items = len(blocks)

@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from indexer.domain import Domain
+from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class OpL1ToL2DepositedTransaction(Domain):
+class OpL1ToL2DepositedTransaction(FilterData):
     msg_hash: str
     version: Optional[int]
     index: Optional[int]
@@ -28,7 +28,7 @@ class OpL1ToL2DepositedTransaction(Domain):
 
 
 @dataclass
-class OpL1ToL2DepositedTransactionOnL2(Domain):
+class OpL1ToL2DepositedTransactionOnL2(FilterData):
     msg_hash: str
     l2_block_number: int
     l2_block_timestamp: int
@@ -39,7 +39,7 @@ class OpL1ToL2DepositedTransactionOnL2(Domain):
 
 
 @dataclass
-class OpL2ToL1WithdrawnTransactionFinalized(Domain):
+class OpL2ToL1WithdrawnTransactionFinalized(FilterData):
     msg_hash: str
     l1_block_number: int
     l1_block_timestamp: int
@@ -50,7 +50,7 @@ class OpL2ToL1WithdrawnTransactionFinalized(Domain):
 
 
 @dataclass
-class OpL2ToL1WithdrawnTransactionOnL2(Domain):
+class OpL2ToL1WithdrawnTransactionOnL2(FilterData):
     msg_hash: str
     version: Optional[int]
     index: Optional[int]
@@ -73,7 +73,7 @@ class OpL2ToL1WithdrawnTransactionOnL2(Domain):
 
 
 @dataclass
-class OpL2ToL1WithdrawnTransactionProven(Domain):
+class OpL2ToL1WithdrawnTransactionProven(FilterData):
     msg_hash: str
     l1_proven_block_number: int
     l1_proven_block_timestamp: int
@@ -84,7 +84,7 @@ class OpL2ToL1WithdrawnTransactionProven(Domain):
 
 
 @dataclass
-class OpStateBatch(Domain):
+class OpStateBatch(FilterData):
     batch_index: int
     l1_block_number: int
     l1_block_timestamp: int

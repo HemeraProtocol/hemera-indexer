@@ -31,7 +31,6 @@ def get_all_subclasses(cls: Type) -> Set[Type]:
 class JobScheduler:
     def __init__(
             self,
-            entity_types,
             batch_web3_provider,
             batch_web3_debug_provider,
             batch_size=100,
@@ -41,7 +40,6 @@ class JobScheduler:
             item_exporter=ConsoleItemExporter(),
             required_output_types=[]
     ):
-        self.entity_types = entity_types
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
         self.item_exporter = item_exporter
@@ -82,7 +80,7 @@ class JobScheduler:
             if job_class is ExportBlocksJob:
                 continue
             job = job_class(
-                entity_types=self.entity_types,
+                required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
                 item_exporter=self.item_exporter,
@@ -90,7 +88,6 @@ class JobScheduler:
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
-                required_output_types=self.required_output_types
             )
             if isinstance(job, FilterTransactionDataJob):
                 filters.append(job.get_filter())
@@ -98,7 +95,7 @@ class JobScheduler:
             self.jobs.append(job)
 
         export_blocks_job = ExportBlocksJob(
-            entity_types=self.entity_types,
+            required_output_types=self.required_output_types,
             batch_web3_provider=self.batch_web3_provider,
             batch_web3_debug_provider=self.batch_web3_debug_provider,
             item_exporter=self.item_exporter,

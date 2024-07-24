@@ -23,6 +23,17 @@ class Domain(object):
         for key, value in filtered_data.items():
             setattr(self, key, value)
 
+    @classmethod
+    def is_filter_data(cls):
+        return False
+
+
+@dataclass
+class FilterData(Domain):
+
+    @classmethod
+    def is_filter_data(cls):
+        return True
 
 def dict_to_dataclass(data: Dict[str, Any], cls):
     """

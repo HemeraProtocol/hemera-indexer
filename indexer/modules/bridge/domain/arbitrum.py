@@ -1,11 +1,11 @@
 from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Optional
 
-from indexer.domain import Domain
+from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class ArbitrumL1ToL2TransactionOnL1(Domain):
+class ArbitrumL1ToL2TransactionOnL1(FilterData):
     msg_hash: str
     index: int
     l1_block_number: int
@@ -23,7 +23,7 @@ class ArbitrumL1ToL2TransactionOnL1(Domain):
     _type: int
 
 @dataclass
-class ArbitrumL2ToL1TransactionOnL1(Domain):
+class ArbitrumL2ToL1TransactionOnL1(FilterData):
     msg_hash: str
     l1_transaction_hash: str
     l1_block_number: int
@@ -38,7 +38,7 @@ class ArbitrumL2ToL1TransactionOnL1(Domain):
 
 
 @dataclass
-class TicketCreatedData(Domain):
+class TicketCreatedData(FilterData):
     msg_hash: str
     transaction_hash: str
     block_number: int
@@ -49,7 +49,7 @@ class TicketCreatedData(Domain):
 
 
 @dataclass
-class BridgeCallTriggeredData(Domain):
+class BridgeCallTriggeredData(FilterData):
     msg_hash: str
     l1_transaction_hash: str
     l1_block_number: int
@@ -64,14 +64,14 @@ class BridgeCallTriggeredData(Domain):
 
 
 @dataclass
-class TransactionToken(Domain):
+class TransactionToken(FilterData):
     transaction_hash: str
     l1Token: str
     amount: int
 
 
 @dataclass
-class ArbitrumTransactionBatch(Domain):
+class ArbitrumTransactionBatch(FilterData):
     batch_index: int
     l1_block_number: int
     l1_block_timestamp: int
@@ -83,7 +83,7 @@ class ArbitrumTransactionBatch(Domain):
 
 
 @dataclass
-class ArbitrumStateBatchConfirmed(Domain):
+class ArbitrumStateBatchConfirmed(FilterData):
     node_num: int
     block_hash: str
     send_root: str
@@ -97,7 +97,7 @@ class ArbitrumStateBatchConfirmed(Domain):
 
 
 @dataclass
-class ArbitrumStateBatchCreated(Domain):
+class ArbitrumStateBatchCreated(FilterData):
     node_num: int
     create_l1_block_number: int
     create_l1_block_timestamp: int
@@ -108,13 +108,13 @@ class ArbitrumStateBatchCreated(Domain):
 
 
 @dataclass
-class BridgeToken(Domain):
+class BridgeToken(FilterData):
     l1_token_address: str
     l2_token_address: str
 
 
 @dataclass
-class ArbitrumL2ToL1TransactionOnL2(Domain):
+class ArbitrumL2ToL1TransactionOnL2(FilterData):
     msg_hash: str
     index: Optional[int]
     l2_block_number: int
@@ -131,7 +131,7 @@ class ArbitrumL2ToL1TransactionOnL2(Domain):
     extra_info: dict
 
 @dataclass
-class ArbitrumL1ToL2TransactionOnL2(Domain):
+class ArbitrumL1ToL2TransactionOnL2(FilterData):
     msg_hash: str
     l2_block_number: int
     l2_block_timestamp: int

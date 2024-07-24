@@ -58,7 +58,6 @@ def test_l1_to_l2_deposit_dodo():
     """
 
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -117,7 +116,6 @@ def test_l1_to_l2_deposit_dodo():
     job_scheduler.clear_data_buff()
 
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(DODO_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -150,7 +148,6 @@ def test_l1_to_l2_deposit_dodo():
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_usdc():
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -187,7 +184,6 @@ def test_l1_to_l2_deposit_usdc():
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_kind12():
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -223,7 +219,6 @@ def test_l1_to_l2_deposit_kind12():
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_gld():
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -260,7 +255,6 @@ def test_l1_to_l2_deposit_gld():
 @pytest.mark.test_arb_eth
 def test_l1_to_l2_deposit_erc20():
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -293,7 +287,6 @@ def test_l1_to_l2_deposit_erc20():
 
     job_scheduler.clear_data_buff()
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -328,7 +321,6 @@ def test_l1_to_l2_deposit_erc20():
 @pytest.mark.test_arb_eth
 def test_l2_to_l1_withdraw():
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(l2_rpc, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -363,7 +355,6 @@ def test_l2_to_l1_withdraw():
 
     job_scheduler.clear_data_buff()
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(l1_rpc, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -398,9 +389,7 @@ def test_l2_to_l1_withdraw():
 
 @pytest.mark.test_arb_eth
 def test_state_batch_eth():
-    # 测试状态批处理的创建
     job_scheduler_create = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -432,9 +421,7 @@ def test_state_batch_eth():
 
     job_scheduler_create.clear_data_buff()
 
-    # 测试状态批处理的确认
     job_scheduler_confirm = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
@@ -472,7 +459,6 @@ def test_state_batch_eth():
 @pytest.mark.test_arb_eth
 def test_transaction_batch_eth():
     job_scheduler = JobScheduler(
-        entity_types=EntityType.BRIDGE,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(l1_rpc, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
