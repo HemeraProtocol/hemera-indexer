@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from indexer.domain import Domain
+from indexer.utils.utils import ZERO_ADDRESS
 
 
 @dataclass
@@ -15,7 +16,7 @@ class ERC721TokenIdChange(Domain):
     def __init__(self, token_dict: dict):
         self.address = token_dict['address']
         self.token_id = token_dict['token_id']
-        self.token_owner = token_dict['ownerOf']
+        self.token_owner = token_dict['ownerOf'] if token_dict['ownerOf'] else ZERO_ADDRESS
         self.block_number = token_dict['block_number']
         self.block_timestamp = token_dict['block_timestamp']
 
@@ -33,7 +34,7 @@ class ERC721TokenIdDetail(Domain):
     def __init__(self, token_dict: dict):
         self.address = token_dict['address']
         self.token_id = token_dict['token_id']
-        self.token_owner = token_dict['ownerOf']
+        self.token_owner = token_dict['ownerOf'] if token_dict['ownerOf'] else ZERO_ADDRESS
         self.token_uri = token_dict['tokenURI']
         self.block_number = token_dict['block_number']
         self.block_timestamp = token_dict['block_timestamp']
@@ -50,7 +51,7 @@ class UpdateERC721TokenIdDetail(Domain):
     def __init__(self, token_dict: dict):
         self.address = token_dict['address']
         self.token_id = token_dict['token_id']
-        self.token_owner = token_dict['ownerOf']
+        self.token_owner = token_dict['ownerOf'] if token_dict['ownerOf'] else ZERO_ADDRESS
         self.block_number = token_dict['block_number']
         self.block_timestamp = token_dict['block_timestamp']
 
