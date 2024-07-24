@@ -1,29 +1,16 @@
 import logging
+import os
+import sys
 from collections import defaultdict, deque
 from typing import List, Set, Type
 
+from common.utils.module_loading import get_all_subclasses
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
-from indexer.jobs.export_transactions_and_logs_job import ExportTransactionsAndLogsJob
-from indexer.jobs.export_tokens_and_transfers_job import ExportTokensAndTransfersJob
-from indexer.jobs.export_traces_job import ExportTracesJob
-from indexer.jobs.export_coin_balances_job import ExportCoinBalancesJob
-from indexer.jobs.export_contracts_job import ExportContractsJob
-from indexer.jobs.export_token_balances_and_holders_job import ExportTokenBalancesAndHoldersJob
 
-from indexer.modules.bridge.bedrock.bedrock_bridge_on_l1_job import BedrockBridgeOnL1Job
-from indexer.modules.bridge.bedrock.bedrock_bridge_on_l2_job import BedrockBridgeOnL2Job
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.modules.bridge.arbitrum.arb_bridge_on_l1_job import ArbitrumBridgeOnL1Job
-from indexer.modules.bridge.arbitrum.arb_bridge_on_l2_job import ArbitrumBridgeOnL2Job
 
-
-def get_all_subclasses(cls: Type) -> Set[Type]:
-    subclasses = set(cls.__subclasses__())
-    for subclass in cls.__subclasses__():
-        subclasses.update(get_all_subclasses(subclass))
-    return subclasses
 
 
 # TODO: Import the ExportBlocksJob and ExportTransactionsAndLogsJob classes from the indexer.jobs.export_blocks_job and indexer.jobs.export_transactions_and_logs_job modules
@@ -64,7 +51,7 @@ class JobScheduler:
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
-        all_subclasses = get_all_subclasses(BaseJob)
+        all_subclasses = get_all_subclasses(BaseJob, 'indexer/')
         for cls in all_subclasses:
             self.job_classes.append(cls)
             for output in cls.output_types:
