@@ -12,10 +12,10 @@ from common.utils.config import get_config
 from common.models import db
 from common.utils.web3_utils import decode_log_data
 from common.utils.format_utils import as_dict, format_coin_value, format_to_dict
-from socialscan_api.app.contract.contract_verify import get_names_from_method_or_topic_list, get_abis_for_logs
-from socialscan_api.app.db_service.contracts import get_contracts_by_addresses
-from socialscan_api.app.db_service.wallet_addresses import get_address_display_mapping
-from socialscan_api.app.token.token_prices import get_token_price
+from api.app.contract.contract_verify import get_names_from_method_or_topic_list, get_abis_for_logs
+from api.app.db_service.contracts import get_contracts_by_addresses
+from api.app.db_service.wallet_addresses import get_address_display_mapping
+from api.app.token.token_prices import get_token_price
 
 app_config = get_config()
 

@@ -10,9 +10,9 @@ from common.utils.config import get_config
 from common.utils.db_utils import build_entities
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict
-from socialscan_api.app.db_service.contracts import get_contracts_by_addresses
-from socialscan_api.app.db_service.wallet_addresses import get_token_txn_cnt_by_address
-from socialscan_api.app.utils.utils import get_total_row_count, fill_address_display_to_transactions
+from api.app.db_service.contracts import get_contracts_by_addresses
+from api.app.db_service.wallet_addresses import get_token_txn_cnt_by_address
+from api.app.utils.utils import get_total_row_count, fill_address_display_to_transactions
 
 app_config = get_config()
 

@@ -11,8 +11,8 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 from common.models import db
 from common.utils.config import get_config
-from socialscan_api.app.cache import cache, redis_db
-from socialscan_api.app.limiter import get_real_ip, limiter
+from api.app.cache import cache, redis_db
+from api.app.limiter import get_real_ip, limiter
 from common.utils.exception_control import APIError
 
 # from app.serializing import ma
@@ -62,7 +62,7 @@ app.config.update(
 db.init_app(app)
 
 # Add API Namespace
-from socialscan_api.app.api import api
+from api.app.api import api
 
 api.init_app(app)
 

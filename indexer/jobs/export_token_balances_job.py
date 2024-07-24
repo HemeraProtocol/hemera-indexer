@@ -9,7 +9,7 @@ from web3 import Web3
 
 from enumeration.token_type import TokenType
 from indexer.domain import dict_to_dataclass
-from indexer.domain.token_balance import TokenBalance
+from indexer.domain.token_balance import TokenBalance, CurrentTokenBalance
 from indexer.domain.token_holder import ERC20TokenHolder, ERC721TokenHolder, ERC1155TokenHolder
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -20,6 +20,7 @@ from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distin
 
 def verify_0_address(address):
     return set(address[2:]) == {'0'}
+
 
 logger = logging.getLogger(__name__)
 
@@ -95,10 +96,9 @@ contract_abi = {
 
 
 # Exports token balance
-class ExportTokenBalancesAndHoldersJob(BaseJob):
-
+class ExportTokenBalancesJob(BaseJob):
     dependency_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
-    output_types = [TokenBalance, ERC20TokenHolder, ERC721TokenHolder, ERC1155TokenHolder]
+    output_types = [TokenBalance, CurrentTokenBalance]
 
     def __init__(
             self,
@@ -115,7 +115,7 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
     def _start(self):
         super()._start()
 
-    def _collect(self,  **kwargs):
+    def _collect(self, **kwargs):
 
         token_transfers = self._collect_all_token_transfers()
         parameters = extract_token_parameters(token_transfers, self._web3)
@@ -134,10 +134,11 @@ class ExportTokenBalancesAndHoldersJob(BaseJob):
         if TokenBalance.type() in self._data_buff:
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
-            (self._data_buff[ERC20TokenHolder.type()],
-             self._data_buff[ERC721TokenHolder.type()],
-             self._data_buff[ERC1155TokenHolder.type()]) = calculate_token_holders(self._data_buff[TokenBalance.type()])
-
+            self._data_buff[CurrentTokenBalance.type()] = distinct_collections_by_group(
+                [CurrentTokenBalance.from_token_balance(token_balance)
+                 for token_balance in self._data_buff[TokenBalance.type()]],
+                group_by=['token_address', 'wallet_address'],
+                max_key='block_number')
 
     def _collect_all_token_transfers(self):
         token_transfers = []
@@ -251,26 +252,3 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
         })
 
     return token_balances
-
-
-def calculate_token_holders(token_balances: List[TokenBalance]):
-    total_erc20, total_erc721, total_erc1155 = [], [], []
-    for token_balance in token_balances:
-        if token_balance.token_type == TokenType.ERC20.value:
-            total_erc20.append(ERC20TokenHolder(token_balance))
-        elif token_balance.token_type == TokenType.ERC721.value:
-            total_erc721.append(ERC721TokenHolder(token_balance))
-        elif token_balance.token_type == TokenType.ERC1155.value:
-            total_erc1155.append(ERC1155TokenHolder(token_balance))
-
-    erc20_token_holders = distinct_collections_by_group(total_erc20,
-                                                        group_by=['token_address', 'wallet_address'],
-                                                        max_key='block_number')
-    erc721_token_holders = distinct_collections_by_group(total_erc721,
-                                                         group_by=['token_address', 'wallet_address'],
-                                                         max_key='block_number')
-    erc1155_token_holders = distinct_collections_by_group(total_erc1155,
-                                                          group_by=['token_address', 'wallet_address'],
-                                                          max_key='block_number')
-
-    return erc20_token_holders, erc721_token_holders, erc1155_token_holders

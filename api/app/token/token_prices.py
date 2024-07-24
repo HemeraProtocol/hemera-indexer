@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from socialscan_api.app.cache import cache
+from api.app.cache import cache
 
 
 

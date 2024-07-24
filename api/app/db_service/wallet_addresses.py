@@ -7,9 +7,9 @@ from common.models.wallet_addresses import WalletAddresses
 from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.utils.config import get_config
 from common.utils.db_utils import build_entities
-from socialscan_api.app.cache import cache
-from socialscan_api.app.contract.contract_verify import get_contract_names
-from socialscan_api.app.ens.ens import ENSClient
+from api.app.cache import cache
+from api.app.contract.contract_verify import get_contract_names
+from api.app.ens.ens import ENSClient
 
 app_config = get_config()
 

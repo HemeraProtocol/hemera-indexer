@@ -7,8 +7,8 @@ from common.models.daily_transactions_aggregates import DailyTransactionsAggrega
 from common.models.scheduled_metadata import ScheduledWalletCountMetadata
 from common.models.transactions import Transactions
 from common.utils.db_utils import build_entities
-from socialscan_api.app.cache import cache
-from socialscan_api.app.db_service.wallet_addresses import get_txn_cnt_by_address
+from api.app.cache import cache
+from api.app.db_service.wallet_addresses import get_txn_cnt_by_address
 
 
 def get_last_transaction():

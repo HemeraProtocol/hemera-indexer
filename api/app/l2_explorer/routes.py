@@ -7,8 +7,8 @@ from flask import request
 from flask_restx import Resource
 from sqlalchemy import and_, func
 
-from socialscan_api.app import explorer
-from socialscan_api.app.cache import cache
+from api.app import explorer
+from api.app.cache import cache
 from common.utils.config import get_config
 from common.models import db as postgres_db
 from common.models import (
@@ -18,9 +18,9 @@ from common.models import (
     Tokens,
     Transactions,
 )
-from socialscan_api.app.utils.utils import is_l1_block_finalized
+from api.app.utils.utils import is_l1_block_finalized
 from common.utils.web3_utils import is_eth_address
-from socialscan_api.app.l2_explorer import l2_explorer_namespace
+from api.app.l2_explorer import l2_explorer_namespace
 from common.models.bridge import (
     ArbitrumStateBatches,
     ArbitrumTransactionBatches,
