@@ -5,7 +5,7 @@ import click
 # FOR PRODUCTION
 # https://www.datascienceblog.net/post/programming/flask-api-development/
 ####################
-from socialscan_api.app.main import app
+from api.app.main import app
 
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))

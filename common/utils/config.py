@@ -3,7 +3,7 @@ from configparser import ConfigParser
 
 from sqlalchemy.engine import make_url
 
-from socialscan_api.app.config import AppConfig
+from api.app.config import AppConfig
 
 _config_instance = None
 _is_initialized = False

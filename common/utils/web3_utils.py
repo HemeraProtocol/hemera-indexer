@@ -15,7 +15,7 @@ from web3.middleware import geth_poa_middleware
 from web3.types import ABIFunction
 
 from common.utils.config import get_config
-from socialscan_api.app.cache import cache
+from api.app.cache import cache
 
 ERC721_ABI = [
     {
