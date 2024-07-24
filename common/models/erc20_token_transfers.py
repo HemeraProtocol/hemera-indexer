@@ -16,7 +16,7 @@ class ERC20TokenTransfers(HemeraModel):
     value = Column(NUMERIC(100))
 
     block_number = Column(BIGINT)
-    block_hash = Column(BYTEA)
+    block_hash = Column(BYTEA, primary_key=True)
     block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
@@ -24,7 +24,7 @@ class ERC20TokenTransfers(HemeraModel):
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
-        PrimaryKeyConstraint('transaction_hash', 'log_index'),
+        PrimaryKeyConstraint('transaction_hash', 'block_hash', 'log_index'),
     )
 
     @staticmethod
@@ -39,7 +39,6 @@ class ERC20TokenTransfers(HemeraModel):
         ]
 
 
-Index('erc20_token_transfers_block_timestamp_index', desc(ERC20TokenTransfers.block_timestamp))
 Index('erc20_token_transfers_number_log_index',
       desc(ERC20TokenTransfers.block_number),
       desc(ERC20TokenTransfers.log_index))
@@ -50,3 +49,7 @@ Index('erc20_token_transfers_to_address_number_log_index_index',
       ERC20TokenTransfers.to_address, desc(ERC20TokenTransfers.block_number), desc(ERC20TokenTransfers.log_index))
 Index('erc20_token_transfers_token_address_number_log_index_index',
       ERC20TokenTransfers.token_address, desc(ERC20TokenTransfers.block_number), desc(ERC20TokenTransfers.log_index))
+Index('erc20_token_transfers_token_address_from_index_index',
+      ERC20TokenTransfers.token_address, ERC20TokenTransfers.from_address)
+Index('erc20_token_transfers_token_address_to_index_index',
+      ERC20TokenTransfers.token_address, ERC20TokenTransfers.to_address)

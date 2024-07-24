@@ -24,7 +24,7 @@ class Contracts(HemeraModel):
     description = Column(VARCHAR)
     email = Column(VARCHAR)
     social_list = Column(JSONB)
-    is_verified = Column(BOOLEAN)
+    is_verified = Column(BOOLEAN, default=False)
     is_proxy = Column(BOOLEAN)
     implementation_contract = Column(BYTEA)
     verified_implementation_contract = Column(BYTEA)

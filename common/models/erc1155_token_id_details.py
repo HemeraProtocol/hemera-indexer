@@ -8,8 +8,8 @@ from common.models import HemeraModel, general_converter
 class ERC1155TokenIdDetails(HemeraModel):
     __tablename__ = 'erc1155_token_id_details'
 
-    address = Column(BYTEA, primary_key=True)
-    token_id = Column(NUMERIC(78), primary_key=True)
+    token_address = Column(BYTEA, primary_key=True)
+    token_id = Column(NUMERIC(100), primary_key=True)
     token_supply = Column(NUMERIC(78))
     token_uri = Column(VARCHAR)
     token_uri_info = Column(JSONB)
@@ -22,7 +22,7 @@ class ERC1155TokenIdDetails(HemeraModel):
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
-        PrimaryKeyConstraint('address', 'token_id'),
+        PrimaryKeyConstraint('token_address', 'token_id'),
     )
 
     @staticmethod
@@ -38,4 +38,4 @@ class ERC1155TokenIdDetails(HemeraModel):
 
 
 Index('erc1155_detail_desc_address_id_index',
-      desc(ERC1155TokenIdDetails.address), ERC1155TokenIdDetails.token_id)
+      desc(ERC1155TokenIdDetails.token_address), ERC1155TokenIdDetails.token_id)

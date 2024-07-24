@@ -5,16 +5,16 @@ from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BO
 from common.models import HemeraModel, general_converter
 
 
-class AddressTokenBalances(HemeraModel):
-    __tablename__ = 'address_token_balances'
+class AddressCurrentTokenBalances(HemeraModel):
+    __tablename__ = 'address_current_token_balances'
 
     address = Column(BYTEA, primary_key=True)
-    token_id = Column(NUMERIC(100))
+    token_id = Column(NUMERIC(100), default=-1)
     token_type = Column(VARCHAR)
     token_address = Column(BYTEA, primary_key=True)
     balance = Column(NUMERIC(100))
 
-    block_number = Column(BIGINT, primary_key=True)
+    block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
@@ -22,22 +22,23 @@ class AddressTokenBalances(HemeraModel):
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
-        PrimaryKeyConstraint('address', 'token_address', 'block_number'),
+        PrimaryKeyConstraint('address', 'token_address'),
     )
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                'domain': 'TokenBalance',
-                'conflict_do_update': False,
-                'update_strategy': None,
+                'domain': 'CurrentTokenBalance',
+                'conflict_do_update': True,
+                'update_strategy': "EXCLUDED.block_number > address_current_token_balances.block_number",
                 'converter': general_converter,
             }
         ]
 
 
-Index('token_balance_address_id_number_index',
-      AddressTokenBalances.address, AddressTokenBalances.token_address,
-      desc(AddressTokenBalances.token_id),
-      desc(AddressTokenBalances.block_number))
+Index('current_token_balances_token_address_balance_of_index',
+      AddressCurrentTokenBalances.token_address, desc(AddressCurrentTokenBalances.balance))
+Index('current_token_balances_token_address_id_balance_of_index',
+      AddressCurrentTokenBalances.token_address, AddressCurrentTokenBalances.token_id,
+      desc(AddressCurrentTokenBalances.balance))

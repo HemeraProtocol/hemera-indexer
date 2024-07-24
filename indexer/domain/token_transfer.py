@@ -166,7 +166,8 @@ def handle_transfer_batch_event(log: Log) -> List[ERC1155TokenTransfer]:
     if len(ids) != len(values):
         logging.info(f"ids length not equal to values length, log: {log}")
         raise Exception(f"ids length not equal to values length, log: {log}")
-    token_transfers = []
+
+    token_id_transfers = {}
     for i, token_id in enumerate(ids):
         transfer_dict = {
             'transaction_hash': log.transaction_hash,
@@ -181,7 +182,14 @@ def handle_transfer_batch_event(log: Log) -> List[ERC1155TokenTransfer]:
             'block_hash': log.block_hash,
             'block_timestamp': log.block_timestamp
         }
-        token_transfers.append(ERC1155TokenTransfer(**transfer_dict))
+        if token_id not in token_id_transfers:
+            token_id_transfers[token_id] = ERC1155TokenTransfer(**transfer_dict)
+        else:
+            token_id_transfers[token_id].value += values[i]
+
+    token_transfers = []
+    for token_id in token_id_transfers.keys():
+        token_transfers.append(token_id_transfers[token_id])
 
     return token_transfers
 

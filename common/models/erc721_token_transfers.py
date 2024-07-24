@@ -13,11 +13,10 @@ class ERC721TokenTransfers(HemeraModel):
     from_address = Column(BYTEA)
     to_address = Column(BYTEA)
     token_address = Column(BYTEA)
-    token_id = Column(NUMERIC(78))
-    token_uri = Column(JSONB)
+    token_id = Column(NUMERIC(100))
 
     block_number = Column(BIGINT)
-    block_hash = Column(BYTEA)
+    block_hash = Column(BYTEA, primary_key=True)
     block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
@@ -25,7 +24,7 @@ class ERC721TokenTransfers(HemeraModel):
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
-        PrimaryKeyConstraint('transaction_hash', 'log_index'),
+        PrimaryKeyConstraint('transaction_hash', 'block_hash', 'log_index'),
     )
 
     @staticmethod
@@ -51,3 +50,9 @@ Index('erc721_token_transfers_to_address_number_log_index_index',
       ERC721TokenTransfers.to_address, desc(ERC721TokenTransfers.block_number), desc(ERC721TokenTransfers.log_index))
 Index('erc721_token_transfers_token_address_number_log_index_index',
       ERC721TokenTransfers.token_address, desc(ERC721TokenTransfers.block_number), desc(ERC721TokenTransfers.log_index))
+Index('erc721_token_transfers_token_address_id_index',
+      ERC721TokenTransfers.token_address, ERC721TokenTransfers.token_id)
+Index('erc721_token_transfers_token_address_from_index',
+      ERC721TokenTransfers.token_address, ERC721TokenTransfers.from_address)
+Index('erc721_token_transfers_token_address_to_index',
+      ERC721TokenTransfers.token_address, ERC721TokenTransfers.to_address)

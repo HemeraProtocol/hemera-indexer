@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, Index, func
+from sqlalchemy import Column, PrimaryKeyConstraint, Index, func, desc
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, TIMESTAMP, NUMERIC, BOOLEAN, JSONB, VARCHAR
 
 from common.models import HemeraModel, general_converter
@@ -57,5 +57,10 @@ class Tokens(HemeraModel):
         ]
 
 
+Index('tokens_name_index', Tokens.name)
 Index('tokens_symbol_index', Tokens.symbol)
 Index('tokens_type_index', Tokens.token_type)
+Index('tokens_type_holders_index', Tokens.token_type, desc(Tokens.holder_count))
+Index('tokens_type_on_chain_market_cap_index', Tokens.token_type, desc(Tokens.on_chain_market_cap))
+Index('tokens_tsvector_symbol_name',
+      func.to_tsvector('english', (Tokens.symbol + ' ' + Tokens.name)), postgresql_using='gin')
