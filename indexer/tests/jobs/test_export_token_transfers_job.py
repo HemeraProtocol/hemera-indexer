@@ -27,3 +27,6 @@ def test_export_job():
         start_block=20273057,
         end_block=20273058,
     )
+
+    data_buff = job_scheduler.get_data_buff()
+    job_scheduler.clear_data_buff()

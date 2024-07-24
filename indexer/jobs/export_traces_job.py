@@ -56,7 +56,7 @@ class ExportTracesJob(BaseJob):
         for trace in traces:
             trace_entity = Trace(trace)
             self._collect_item(Trace.type(), trace_entity)
-            if trace_entity.is_contract_creation():
+            if trace_entity.is_contract_creation() or trace_entity.is_transfer_value():
                 self._collect_item(ContractInternalTransaction.type(), ContractInternalTransaction(trace))
 
     def _process(self):

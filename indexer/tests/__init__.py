@@ -1,4 +1,9 @@
 import os
+
+
+LINEA_PUBLIC_NODE_RPC_URL = os.environ.get('LINEA_PUBLIC_NODE_RPC_URL', 'https://rpc.linea.build')
+LINEA_PUBLIC_NODE_DEBUG_RPC_URL = os.environ.get('LINEA_PUBLIC_NODE_DEBUG_RPC_URL', 'https://rpc.linea.build')
+
 ETHEREUM_PUBLIC_NODE_RPC_URL= os.environ.get('ETHEREUM_PUBLIC_NODE_RPC_URL', 'https://ethereum-rpc.publicnode.com')
 ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL = os.environ.get('ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL', 'https://ethereum-rpc.publicnode.com')
 
