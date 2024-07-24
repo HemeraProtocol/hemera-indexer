@@ -30,7 +30,8 @@ class Blocks(HemeraModel):
     sha3_uncles = Column(BYTEA)
     transactions_root = Column(BYTEA)
     transactions_count = Column(BIGINT)
-    internal_transactions_count = Column(BIGINT)
+    traces_count = Column(BIGINT, default=0)
+    internal_transactions_count = Column(BIGINT, default=0)
 
     state_root = Column(BYTEA)
     receipts_root = Column(BYTEA)

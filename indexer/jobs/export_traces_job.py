@@ -66,14 +66,16 @@ class ExportTracesJob(BaseJob):
         self._data_buff[ContractInternalTransaction.type()].sort(
             key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
 
-        self._data_buff[UpdateBlockInternalCount.type()] = [
-            UpdateBlockInternalCount(
-                hash=block_hash,
-                internal_transactions_count=len(list(traces))
+        for block_hash, traces in groupby(self._data_buff[Trace.type()], lambda x: x.block_hash):
+            traces_count = len(list(traces))
+            internal_transactions_count = sum(1 for trace in traces if trace.is_contract_creation())
+            self._data_buff[ContractInternalTransaction.type()].append(
+                UpdateBlockInternalCount(
+                    hash=block_hash,
+                    traces_count=traces_count,
+                    internal_transactions_count=internal_transactions_count
+                )
             )
-            for block_hash, traces in
-            groupby(self._data_buff[ContractInternalTransaction.type()], lambda x: x.block_hash)
-        ]
 
     def _export(self):
         if self._entity_types & EntityType.TRACE:
