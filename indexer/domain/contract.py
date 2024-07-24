@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 
-from common.models.contracts import Contracts
 from indexer.domain import Domain
 
 

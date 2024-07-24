@@ -48,7 +48,7 @@ class ExportCoinBalancesJob(BaseJob):
     def _start(self):
         super()._start()
 
-    def _collect(self):
+    def _collect(self, **kwargs):
 
         coin_addresses = distinct_addresses(
             self._data_buff[Block.type()],

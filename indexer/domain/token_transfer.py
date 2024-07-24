@@ -143,7 +143,7 @@ def handle_transfer_single_event(log: Log) -> ERC1155TokenTransfer:
         'log_index': log.log_index,
         'from_address': to_normalized_address(from_address),
         'to_address': to_normalized_address(to_address),
-        'tokenId': token_id,
+        'token_id': token_id,
         'value': value,
         'token_type': TokenType.ERC1155.value,
         'token_address': log.address,

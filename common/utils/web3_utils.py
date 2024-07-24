@@ -1,7 +1,6 @@
 import base64
 import json
 import re
-from datetime import datetime
 from decimal import Decimal
 from typing import Optional, cast
 
@@ -11,14 +10,12 @@ from eth_abi import abi
 from web3 import Web3
 from web3._utils.abi import named_tree
 from web3._utils.contracts import decode_transaction_data
-from web3._utils.normalizers import BASE_RETURN_NORMALIZERS, normalize_abi
+from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.middleware import geth_poa_middleware
 from web3.types import ABIFunction
 
-from socialscan_api.app.cache import cache
 from common.utils.config import get_config
-from common.models.logs import Logs
-from common.models.transactions import Transactions
+from socialscan_api.app.cache import cache
 
 ERC721_ABI = [
     {

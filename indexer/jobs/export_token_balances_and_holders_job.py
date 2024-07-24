@@ -19,7 +19,9 @@ from indexer.jobs.base_job import BaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distinct_collections_by_group
-from common.utils.web3_utils import verify_0_address
+
+def verify_0_address(address):
+    return set(address[2:]) == {'0'}
 
 logger = logging.getLogger(__name__)
 
@@ -96,26 +98,26 @@ contract_abi = {
 
 # Exports token balance
 class ExportTokenBalancesAndHoldersJob(BaseJob):
+
+    dependency_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
+    output_types = [TokenBalance, ERC20TokenHolder, ERC721TokenHolder, ERC1155TokenHolder]
+
     def __init__(
             self,
-            entity_types,
-            web3,
-            batch_size,
-            batch_web3_provider,
-            max_workers,
-            item_exporter=ConsoleItemExporter()):
-        super().__init__(entity_types=entity_types)
+            **kwargs
+    ):
+        super().__init__(**kwargs)
 
-        self._web3 = web3
-        self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
-        self._is_batch = batch_size > 1
-        self._item_exporter = item_exporter
+        self._batch_work_executor = BatchWorkExecutor(
+            kwargs['batch_size'], kwargs['max_workers'],
+            job_name=self.__class__.__name__
+        )
+        self._is_batch = kwargs['batch_size'] > 1
 
     def _start(self):
         super()._start()
 
-    def _collect(self):
+    def _collect(self,  **kwargs):
 
         token_transfers = self._collect_all_token_transfers()
         parameters = extract_token_parameters(token_transfers, self._web3)
@@ -247,10 +249,10 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
                            f"exception: {e}. ")
 
         token_balances.append({
-            'address': data[0]['address'],
+            'address': data[0]['address'].lower(),
             'token_id': data[0]['token_id'],
             'token_type': data[0]['token_type'],
-            'token_address': data[0]['token_address'],
+            'token_address': data[0]['token_address'].lower(),
             'balance': balance,
             'block_number': data[0]['block_number'],
             'block_timestamp': data[0]['block_timestamp'],

@@ -7,6 +7,7 @@ from eth_abi import abi
 
 from indexer.domain.contract import extract_contract_from_trace, Contract
 from enumeration.entity_type import EntityType
+from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.trace import Trace
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
@@ -35,25 +36,27 @@ contract_abi = [
 
 # Exports contracts
 class ExportContractsJob(BaseJob):
+
+    dependency_types = [Trace]
+    output_types = [Contract]
+
     def __init__(
             self,
-            entity_types,
-            web3,
-            batch_web3_provider,
-            batch_size,
-            max_workers,
-            item_exporter=ConsoleItemExporter()):
-        super().__init__(entity_types=entity_types)
-        self._web3 = web3
-        self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
-        self._is_batch = batch_size > 1
-        self._item_exporter = item_exporter
+            **kwargs
+    ):
+        super().__init__(**kwargs)
+
+        self._batch_work_executor = BatchWorkExecutor(
+            kwargs['batch_size'], kwargs['max_workers'],
+            job_name=self.__class__.__name__
+        )
+        self._is_batch = kwargs['batch_size'] > 1
+
 
     def _start(self):
         super()._start()
 
-    def _collect(self):
+    def _collect(self, **kwargs):
         contracts = build_contracts(self._web3, self._data_buff[Trace.type()])
 
         self._batch_work_executor.execute(contracts, self._collect_batch, total_items=len(contracts))

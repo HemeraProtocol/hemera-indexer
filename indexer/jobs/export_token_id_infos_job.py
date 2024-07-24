@@ -68,6 +68,16 @@ erc_token_id_info_abi = {
 
 
 class ExportTokenIdInfosJob(BaseJob):
+
+    dependency_types = [ERC721TokenTransfer, ERC721TokenTransfer]
+    output_types = [
+        ERC721TokenIdChange,
+        ERC721TokenIdDetail,
+        UpdateERC721TokenIdDetail,
+        ERC1155TokenIdDetail,
+        UpdateERC1155TokenIdDetail
+    ]
+
     def __init__(
             self,
             entity_types,
@@ -84,17 +94,13 @@ class ExportTokenIdInfosJob(BaseJob):
         self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
         self._is_batch = batch_size > 1
         self._item_exporter = item_exporter
-        self._exist_token = {
-            "ERC721": get_exist_token_ids(service, ERC721TokenIdDetails),
-            "ERC1155": get_exist_token_ids(service, ERC1155TokenIdDetails)
-        }
         self._erc721_token_ids = []
         self._erc1155_token_ids = []
 
     def _start(self):
         super()._start()
 
-    def _collect(self):
+    def _collect(self,  **kwargs):
 
         if ERC721TokenTransfer.type() in self._data_buff:
             token_721 = distinct_erc721_token_ids(self._exist_token['ERC721'],
@@ -153,21 +159,6 @@ class ExportTokenIdInfosJob(BaseJob):
                 [ERC721TokenIdChange.type(), ERC721TokenIdDetail.type(), UpdateERC721TokenIdDetail.type(),
                  ERC1155TokenIdDetail.type(), UpdateERC1155TokenIdDetail.type()])
             self._item_exporter.export_items(items)
-
-
-def get_exist_token_ids(db_service, model):
-    session = db_service.get_service_session()
-    try:
-
-        result = session.query(model.address, model.token_id).all()
-        history_token = [('0x' + item[0].hex(), item[1]) for item in result]
-
-    except Exception as e:
-        print(e)
-        raise e
-    finally:
-        session.close()
-    return history_token
 
 
 def distinct_erc721_token_ids(exist_tokens: list, token_transfers: List[ERC721TokenTransfer]):
