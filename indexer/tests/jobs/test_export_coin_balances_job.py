@@ -12,7 +12,6 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
 @pytest.mark.export_job
 def test_export_coin_balance_job():
     job_scheduler = JobScheduler(
-        entity_types=EntityType.TRACE,
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(LINEA_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(LINEA_PUBLIC_NODE_RPC_URL, batch=True)),
         item_exporter=ConsoleItemExporter(),

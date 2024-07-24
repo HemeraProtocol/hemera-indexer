@@ -12,7 +12,6 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
 @pytest.mark.export_job
 def test_export_transaction_job():
     job_scheduler = JobScheduler(
-        entity_types=EntityType.TRANSACTION,
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)),
         item_exporter=ConsoleItemExporter(),
