@@ -226,7 +226,7 @@ def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
             response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
         for data in list(zip_rpc_response(tokens, response)):
-            result = rpc_response_to_result(data[1], ignore_errors=True)
+            result = rpc_response_to_result(data[1])
 
             token = data[0]
             value = result[2:] if result is not None else None

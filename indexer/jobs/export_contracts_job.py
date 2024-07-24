@@ -33,7 +33,6 @@ contract_abi = [
 
 # Exports contracts
 class ExportContractsJob(BaseJob):
-
     dependency_types = [Trace]
     output_types = [Contract]
 
@@ -48,7 +47,6 @@ class ExportContractsJob(BaseJob):
             job_name=self.__class__.__name__
         )
         self._is_batch = kwargs['batch_size'] > 1
-
 
     def _start(self):
         super()._start()
@@ -70,7 +68,6 @@ class ExportContractsJob(BaseJob):
             key=lambda x: (x.block_number,
                            x.transaction_index,
                            x.address))
-
 
 
 def build_contracts(web3, traces: List[Trace]):
@@ -111,7 +108,7 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
         response = [make_requests(params=json.dumps(contract_name_rpc[0]))]
 
     for data in list(zip_rpc_response(contracts, response)):
-        result = rpc_response_to_result(data[1], ignore_errors=True)
+        result = rpc_response_to_result(data[1])
         contract = data[0]
         info = result[2:] if result is not None else None
 

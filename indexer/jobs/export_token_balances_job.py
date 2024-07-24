@@ -228,7 +228,7 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
 
     token_balances = []
     for data in list(zip_rpc_response(tokens, response)):
-        result = rpc_response_to_result(data[1], ignore_errors=True)
+        result = rpc_response_to_result(data[1])
         balance = None
 
         try:

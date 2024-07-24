@@ -1,24 +1,19 @@
-from socialscan_api.app.config import AppConfig, TokenConfiguration
-
-
-class ErrorRollupError(Exception):
-    def __init__(self, message="Invalid rollup type", code=404):
-        super().__init__(message)
-        self.code = code
+from api.app.config import AppConfig, TokenConfiguration
+from common.utils.exception_control import ErrorRollupError
 
 
 class BridgeTransactionParser:
     def __init__(
-        self,
-        chain: str,
-        rollup_type: str,
-        withdrawal_expired_day: int,
-        bridge_compatible: bool,
-        token_configuration: TokenConfiguration = TokenConfiguration(
-            native_token="ETH",
-            dashboard_token="ETH",
-            gas_fee_token="ETH",
-        ),
+            self,
+            chain: str,
+            rollup_type: str,
+            withdrawal_expired_day: int,
+            bridge_compatible: bool,
+            token_configuration: TokenConfiguration = TokenConfiguration(
+                native_token="ETH",
+                dashboard_token="ETH",
+                gas_fee_token="ETH",
+            ),
     ):
         self.chain = chain
         self.rollup_type = rollup_type

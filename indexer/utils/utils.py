@@ -4,6 +4,7 @@ import random
 from typing import List, Union
 
 from indexer.domain import Domain
+from common.utils.exception_control import decode_response_error, RetriableError
 
 ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
 TRANSFER_EVENT_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
@@ -59,7 +60,7 @@ def rpc_response_batch_to_results(response):
         yield rpc_response_to_result(response_item)
 
 
-def rpc_response_to_result(response, ignore_errors=False):
+def rpc_response_to_result(response):
     result = response.get('result')
     if result is None:
         error_message = 'result is None in response {}.'.format(response)
@@ -67,12 +68,9 @@ def rpc_response_to_result(response, ignore_errors=False):
             error_message = error_message + ' Make sure Ethereum node is synced.'
             # When nodes are behind a load balancer it makes sense to retry the request in hopes it will go to other,
             # synced node
-            raise ValueError(error_message)
-        elif response.get('error') is not None and \
-                is_retriable_error(response.get('error').get('code') and not ignore_errors):
-            raise ValueError(error_message)
-        elif not ignore_errors:
-            raise ValueError(error_message)
+            raise RetriableError(error_message)
+        elif response.get('error') is not None:
+            return decode_response_error(response.get('error'))
         else:
             return result
     return result
