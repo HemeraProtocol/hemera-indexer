@@ -206,10 +206,6 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                     l1_block_hash=z.l1_block_hash,
                     l1_from_address=z.l1_from_address,
                     l1_to_address=z.l1_to_address,
-                    outbox=z.outbox,
-                    to=z.to,
-                    value=z.value,
-                    data=z.data
                 ))
         result += bridge_call_triggered_transaction
 

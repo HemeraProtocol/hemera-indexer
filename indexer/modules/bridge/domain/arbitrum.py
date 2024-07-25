@@ -31,10 +31,6 @@ class ArbitrumL2ToL1TransactionOnL1(FilterData):
     l1_block_hash: str
     l1_from_address: str
     l1_to_address: str
-    outbox: str
-    to: str
-    value: int
-    data: str
 
 
 @dataclass
