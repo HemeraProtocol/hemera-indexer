@@ -30,10 +30,10 @@ class ExportTracesJob(BaseJob):
 
         self._batch_web3_provider = kwargs['batch_web3_debug_provider']
         self._batch_work_executor = BatchWorkExecutor(
-            kwargs['batch_size'], kwargs['max_workers'],
+            kwargs['debug_batch_size'], kwargs['max_workers'],
             job_name=self.__class__.__name__
         )
-        self._is_batch = kwargs['batch_size'] > 1
+        self._is_batch = kwargs['debug_batch_size'] > 1
 
     def _start(self):
         super()._start()

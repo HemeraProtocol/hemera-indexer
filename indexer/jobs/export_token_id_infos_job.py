@@ -136,6 +136,9 @@ class ExportTokenIdInfosJob(BaseJob):
             else:
                 raise ValueError(f"Unknown token type: {item['token_type']}")
 
+    def _process(self):
+        pass
+
 
 def generate_token_id_info(
         erc721_token_transfers: List[ERC721TokenTransfer],

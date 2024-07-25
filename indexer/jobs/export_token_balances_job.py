@@ -180,8 +180,9 @@ def extract_token_parameters(
         })
 
     token_parameters = []
-    for parameter in pandas.DataFrame(origin_parameters).drop_duplicates().replace(numpy.NaN, None).to_dict(
-            orient='records'):
+    a = pandas.DataFrame(origin_parameters).drop_duplicates().replace(numpy.NaN, None).to_dict(
+        orient='records')
+    for parameter in a:
         parameter['token_id'] = int(parameter['token_id']) if parameter['token_id'] is not None else None
         if not verify_0_address(parameter['address']):
             contract = web3.eth.contract(address=parameter['token_address'],
