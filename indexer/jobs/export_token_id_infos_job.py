@@ -108,12 +108,11 @@ class ExportTokenIdInfosJob(BaseJob):
             self._data_buff[ERC1155TokenTransfer.type()]
         )
         self._batch_work_executor.execute(
-            token_id_info,
+            [asdict(item) for item in token_id_info],
             self._collect_batch,
             total_items=len(token_id_info))
         self._batch_work_executor.wait()
 
-        self._batch_work_executor.wait()
 
     def _collect_batch(self, token_list):
         items = token_ids_info_rpc_requests(
@@ -159,29 +158,29 @@ def generate_token_id_info(
     return info
 
 
-def build_rpc_method_data(web3, tokens: List[TokenIdInfo], token_type, fn, require_new):
+def build_rpc_method_data(web3, tokens: List[dict], token_type, fn, require_new):
     parameters = []
 
     for token in tokens:
 
-        if not token.is_get_token_uri and require_new:
+        if not token["is_get_token_uri"] and require_new:
             continue
         param = {
-            'request_id': token.request_id,
-            'param_to': token.address,
+            'request_id': token["request_id"],
+            'param_to': token["address"],
             'param_data': '0x',
-            'param_number': hex(token.block_number)
+            'param_number': hex(token["block_number"])
         }
 
         try:
             param['param_data'] = (web3.eth
-                                   .contract(address=Web3.to_checksum_address(token.address),
+                                   .contract(address=Web3.to_checksum_address(token["address"]),
                                              abi=erc_token_id_info_abi[token_type])
-                                   .encodeABI(fn_name=fn, args=[token.token_id]))
+                                   .encodeABI(fn_name=fn, args=[token["token_id"]]))
         except Exception as e:
             logger.warning(f"Encoding token id {fn} abi parameter failed. "
-                           f"token address: {token.address}. "
-                           f"token id: {token.token_id}. "
+                           f"token address: {token['address']}. "
+                           f"token id: {token['token_id']}. "
                            f"exception: {e}. ")
 
         for abi_fn in erc_token_id_info_abi[token_type]:
@@ -194,7 +193,7 @@ def build_rpc_method_data(web3, tokens: List[TokenIdInfo], token_type, fn, requi
 def token_ids_info_rpc_requests(web3, make_requests, token_info_items, is_batch):
     grouped_tokens = defaultdict(list)
     for token in token_info_items:
-        grouped_tokens[token.token_type].append(token)
+        grouped_tokens[token["token_type"]].append(token)
 
     for token_type, tokens in grouped_tokens.items():
         for abi_json in erc_token_id_info_abi[token_type]:
@@ -214,17 +213,17 @@ def token_ids_info_rpc_requests(web3, make_requests, token_info_items, is_batch)
 
                 value = result[2:] if result is not None else None
                 try:
-                    decoded_value = abi.decode([abi_json['data_type']], bytes.fromhex(value))[0]
-                    if abi_json['data_type'] == 'string':
+                    decoded_value = abi.decode([abi_json['outputs'][0]['type']], bytes.fromhex(value))[0]
+                    if abi_json['outputs'][0]['type'] == 'string':
                         decoded_value = decoded_value.replace('\u0000', '')
 
                     # Create a new TokenIdInfo object with the updated field
-                    token = replace(token, **{abi_json['name']: decoded_value})
+                    token.update(**{abi_json['name']: decoded_value})
                 except Exception as e:
                     logger.warning(f"Decoding token id {abi_json['name']} failed. "
-                                   f"token: {asdict(token)}. "
+                                   f"token: {token}. "
                                    f"rpc response: {result}. "
                                    f"exception: {e}.")
-                    token = replace(token, **{abi_json['name']: None})
+                    token.update(**{abi_json['name']: None})
 
     return token_info_items
