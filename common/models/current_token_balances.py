@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BO
 from common.models import HemeraModel, general_converter
 
 
-class AddressCurrentTokenBalances(HemeraModel):
+class CurrentTokenBalances(HemeraModel):
     __tablename__ = 'address_current_token_balances'
 
     address = Column(BYTEA, primary_key=True)
@@ -38,7 +38,7 @@ class AddressCurrentTokenBalances(HemeraModel):
 
 
 Index('current_token_balances_token_address_balance_of_index',
-      AddressCurrentTokenBalances.token_address, desc(AddressCurrentTokenBalances.balance))
+      CurrentTokenBalances.token_address, desc(CurrentTokenBalances.balance))
 Index('current_token_balances_token_address_id_balance_of_index',
-      AddressCurrentTokenBalances.token_address, AddressCurrentTokenBalances.token_id,
-      desc(AddressCurrentTokenBalances.balance))
+      CurrentTokenBalances.token_address, CurrentTokenBalances.token_id,
+      desc(CurrentTokenBalances.balance))
