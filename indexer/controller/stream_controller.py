@@ -19,12 +19,10 @@ class StreamController(BaseController):
     def __init__(self,
                  service,
                  batch_web3_provider,
-                 entity_types,
                  job_dispatcher=BaseDispatcher(),
                  max_retries=5):
         super().__init__(service)
         self.web3 = build_web3(batch_web3_provider)
-        self.entity_types = entity_types
         self.job_dispatcher = job_dispatcher
         self.max_retries = max_retries
 

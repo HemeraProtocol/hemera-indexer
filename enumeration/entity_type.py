@@ -3,6 +3,17 @@ from functools import reduce
 
 from click import BadOptionUsage
 
+from indexer.domain.block import Block, UpdateBlockInternalCount
+from indexer.domain.contract import Contract
+from indexer.domain.contract_internal_transaction import ContractInternalTransaction
+from indexer.domain.log import Log
+from indexer.domain.token import *
+from indexer.domain.token_balance import CurrentTokenBalance, TokenBalance
+from indexer.domain.token_id_infos import *
+from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
+from indexer.domain.trace import Trace
+from indexer.domain.transaction import Transaction
+
 
 class EntityType(IntFlag):
     EXPLORER_BASE = 1 << 0
@@ -38,3 +49,31 @@ def calculate_entity_value(entity_types):
             raise ValueError(
                 f'{entity_type} is not an available entity type. Supply a comma-separated list of types from {available_types}')
     return entities
+
+
+def generate_output_types(entity_types):
+    if entity_types & EntityType.EXPLORER_BASE:
+        yield Block
+        yield Transaction
+        yield Log
+
+    if entity_types & EntityType.EXPLORER_TOKEN:
+        yield Token
+        yield UpdateToken
+        yield ERC20TokenTransfer
+        yield ERC721TokenTransfer
+        yield ERC1155TokenTransfer
+        yield TokenBalance
+        yield CurrentTokenBalance
+
+        yield UpdateERC1155TokenIdDetail
+        yield ERC1155TokenIdDetail
+        yield UpdateERC721TokenIdDetail
+        yield ERC721TokenIdDetail
+        yield ERC721TokenIdChange
+
+    if entity_types & EntityType.EXPLORER_TRACE:
+        yield Trace
+        yield Contract
+        yield ContractInternalTransaction
+        yield UpdateBlockInternalCount

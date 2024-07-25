@@ -4,7 +4,7 @@ import click
 
 from indexer.controller.stream_controller import StreamController
 from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
-from enumeration.entity_type import calculate_entity_value, DEFAULT_COLLECTION
+from enumeration.entity_type import calculate_entity_value, DEFAULT_COLLECTION, generate_output_types
 from common.services.postgresql_service import PostgreSQLService
 from indexer.utils.logging_utils import configure_signals, configure_logging
 from indexer.utils.provider import get_provider_from_uri
@@ -38,6 +38,14 @@ from common.utils.config import init_config_setting
               envvar='ENTITY_TYPES',
               help='The list of entity types to export. '
                    'e.g. block,transaction,log,token,token_transfer,token_balance,token_ids,trace,contract,coin_balance')
+@click.option('-O', '--output-types', default=None, show_default=True, type=str,
+              envvar='OUTPUT_TYPES',
+              help='The list of output types to export, corresponding to more detailed data models. '
+                   'Specifying this option will prioritize these settings over the entity types specified in -E. '
+                   'Examples include: block, transaction, log, '
+                   'token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, '
+                   'trace, contract, coin_balance.'
+              )
 @click.option('-v', '--db-version', default="head", show_default=True, type=str,
               envvar='DB_VERSION',
               help='The database version to initialize the database. using the alembic script\'s revision ID to '
@@ -66,7 +74,7 @@ from common.utils.config import init_config_setting
 @click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers',
               envvar='MAX_WORKERS')
 @click.option('--log-file', default=None, show_default=True, type=str, envvar='LOG_FILE', help='Log file')
-def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, end_block, entity_types,
+def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, end_block, entity_types, output_types,
            partition_size, period_seconds=10, batch_size=10, debug_batch_size=1, block_batch_size=1, max_workers=5,
            log_file=None, pid_file=None):
     configure_logging(log_file)
@@ -89,8 +97,9 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
         "db_service": service,
         "partition_size": partition_size,
     }
-
-    entity_types = calculate_entity_value(entity_types)
+    if output_types is None:
+        entity_types = calculate_entity_value(entity_types)
+        output_types = generate_output_types(entity_types)
 
     stream_dispatcher = StreamDispatcher(
         service=service,
@@ -102,14 +111,13 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
-        entity_types=entity_types
+        required_output_types=output_types
     )
 
     controller = StreamController(
         service=service,
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(provider_uri, batch=False)),
-        entity_types=entity_types,
         job_dispatcher=stream_dispatcher,
     )
 
