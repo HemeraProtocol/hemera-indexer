@@ -20,15 +20,13 @@ from common.models import db
 from common.models.blocks import Blocks
 from common.models.contract_internal_transactions import ContractInternalTransactions
 from common.models.contracts import Contracts
+from common.models.current_token_balances import CurrentTokenBalances
 from common.models.daily_address_aggregates import DailyAddressesAggregates
 from common.models.daily_blocks_aggregates import DailyBlocksAggregates
 from common.models.daily_tokens_aggregates import DailyTokensAggregates
 from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
-from common.models.erc1155_token_holders import ERC1155TokenHolders
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
-from common.models.erc20_token_holders import ERC20TokenHolders
 from common.models.erc20_token_transfers import ERC20TokenTransfers
-from common.models.erc721_token_holders import ERC721TokenHolders
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.tokens import Tokens
 from common.models.traces import Traces
@@ -76,8 +74,7 @@ from common.utils.web3_utils import (
 )
 
 from common.utils.exception_control import APIError
-from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping, \
-    get_wallet_addresses_by_ens_name
+from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
 from api.app.token.token_prices import get_token_price
 
 PAGE_SIZE = 25
@@ -343,16 +340,6 @@ class ExplorerSearch(Resource):
                     }
                 )
 
-            ens_match_wallets = get_wallet_addresses_by_ens_name(ens_name=query_string, limit=5)
-            for wallet in ens_match_wallets:
-                search_result.append(
-                    {
-                        "wallet_address": '0x' + wallet.address.hex(),
-                        "ens_name": wallet.ens_name,
-                        "type": "address",
-                    }
-                )
-
         return search_result, 200
 
 
@@ -555,8 +542,8 @@ class ExplorerTransactionDetail(Resource):
             )
 
             traces = get_traces_by_condition(filter_condition=filter_condition,
-                                            columns=['error'],
-                                            limit=1)
+                                             columns=['error'],
+                                             limit=1)
 
             # Add trace info to transaction detail
             if traces[0] and traces[0].error:
@@ -1489,37 +1476,15 @@ class ExplorerTokenTopHolders(Resource):
         if not token:
             raise APIError("Token not found", code=400)
 
-        if type == "tokentxns":
-            top_holders = get_token_holders(token_address=address,
-                                            model=ERC20TokenHolders,
-                                            columns=['balance_of', 'wallet_address'],
-                                            limit=page_size,
-                                            offset=(page_index - 1) * page_size)
+        top_holders = get_token_holders(token_address=address,
+                                        model=CurrentTokenBalances,
+                                        columns=['balance', 'address'],
+                                        limit=page_size,
+                                        offset=(page_index - 1) * page_size)
 
-            total_records = get_token_holders_cnt(token_address=address,
-                                                  model=ERC20TokenHolders,
-                                                  columns=['wallet_address'])
-
-        elif type == "tokentxns-nft":
-            top_holders = get_token_holders(token_address=address,
-                                            model=ERC721TokenHolders,
-                                            columns=['balance_of', 'wallet_address'],
-                                            limit=page_size,
-                                            offset=(page_index - 1) * page_size)
-
-            total_records = get_token_holders_cnt(token_address=address,
-                                                  model=ERC721TokenHolders,
-                                                  columns=['wallet_address'])
-        elif type == "tokentxns-nft1155":
-            top_holders = get_token_holders(token_address=address,
-                                            model=ERC1155TokenHolders,
-                                            columns=['balance_of', 'wallet_address'],
-                                            limit=page_size,
-                                            offset=(page_index - 1) * page_size)
-
-            total_records = get_token_holders_cnt(token_address=address,
-                                                  model=ERC1155TokenHolders,
-                                                  columns=['wallet_address'])
+        total_records = get_token_holders_cnt(token_address=address,
+                                              model=CurrentTokenBalances,
+                                              columns=['address'])
 
         token_holder_list = []
         for token_holder in top_holders:
@@ -1995,17 +1960,17 @@ token_relationships = {
     "ERC20": {
         "TokenTable": Tokens,
         "TokenTransferTable": ERC20TokenTransfers,
-        "TokenHoldersTable": ERC20TokenHolders,
+        "TokenHoldersTable": CurrentTokenBalances,
     },
     "ERC721": {
         "TokenTable": Tokens,
         "TokenTransferTable": ERC721TokenTransfers,
-        "TokenHoldersTable": ERC721TokenHolders,
+        "TokenHoldersTable": CurrentTokenBalances,
     },
     "ERC1155": {
         "TokenTable": Tokens,
         "TokenTransferTable": ERC1155TokenTransfers,
-        "TokenHoldersTable": ERC1155TokenHolders,
+        "TokenHoldersTable": CurrentTokenBalances,
     },
 }
 

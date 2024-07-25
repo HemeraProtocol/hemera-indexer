@@ -289,7 +289,7 @@ def get_token_holders(token_address, model, columns='*', limit=None, offset=None
         .with_entities(*entities)
         .filter(
             model.token_address == bytes_address,
-            model.balance_of > 0,
+            model.balance > 0,
         )
         .order_by(model.balance_of.desc())
     )
@@ -314,7 +314,7 @@ def get_token_holders_cnt(token_address, model, columns='*'):
         .with_entities(*entities)
         .filter(
             model.token_address == bytes_address,
-            model.balance_of > 0,
+            model.balance > 0,
         )
         .count()
     )

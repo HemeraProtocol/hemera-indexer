@@ -3,7 +3,6 @@ import binascii
 from common.models import db
 from common.models.contracts import Contracts
 from common.models.tokens import Tokens
-from common.models.wallet_addresses import WalletAddresses
 from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.utils.config import get_config
 from common.utils.db_utils import build_entities
@@ -32,9 +31,9 @@ def type_to_stats_column(type):
 def get_token_txn_cnt_by_address(token_type, address):
     bytes_address = bytes.fromhex(address[2:])
     result = (
-        db.session.query(WalletAddresses)
+        db.session.query(StatisticsWalletAddresses)
         .with_entities(type_to_stats_column(token_type))
-        .filter(WalletAddresses.address == bytes_address)
+        .filter(StatisticsWalletAddresses.address == bytes_address)
         .first()
     )
 
@@ -103,18 +102,6 @@ def get_address_display_mapping(wallet_address_list: list[bytes]):
         addresses = ens_client.batch_get_address_ens(str_address_list)
         for key, value in addresses.items():
             address_map[key] = value
-    else:
-        addresses = (
-            db.session.query(WalletAddresses.address, WalletAddresses.ens_name)
-            .filter(
-                WalletAddresses.address.in_(wallet_address_list),
-                WalletAddresses.ens_name != None,
-            )
-            .all()
-        )
-
-        for address in addresses:
-            address_map[address.address] = address.ens_name
 
     # 手动Tag
     addresses = (
@@ -136,31 +123,5 @@ def get_address_display_mapping(wallet_address_list: list[bytes]):
 def get_ens_mapping(wallet_address_list):
     if ens_client:
         address_map = ens_client.batch_get_address_ens(wallet_address_list)
-    else:
-        addresses = (
-            db.session.query(WalletAddresses)
-            .filter(
-                WalletAddresses.address.in_(wallet_address_list),
-                WalletAddresses.ens_name is not None,
-            )
-            .all()
-        )
-        address_map = {}
-        for address in addresses:
-            address_map[address.address] = address.ens_name
+
     return address_map
-
-
-def get_wallet_addresses_by_ens_name(ens_name, columns='*', limit=1):
-    entities = build_entities(WalletAddresses, columns)
-    wallets = (
-        db.session.query(WalletAddresses)
-        .with_entities(*entities)
-        .filter(
-            WalletAddresses.ens_name.ilike(f"%{ens_name}%"),
-        )
-        .limit(limit)
-        .all()
-    )
-
-    return wallets
