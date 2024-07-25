@@ -9,9 +9,7 @@ from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 
-from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-
-
+from indexer.jobs import *
 
 # TODO: Import the ExportBlocksJob and ExportTransactionsAndLogsJob classes from the indexer.jobs.export_blocks_job and indexer.jobs.export_transactions_and_logs_job modules
 
@@ -51,8 +49,7 @@ class JobScheduler:
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
-        module_dir = os.path.dirname(os.path.abspath(__file__))
-        all_subclasses = get_all_subclasses(BaseJob, module_dir)
+        all_subclasses = get_all_subclasses(BaseJob)
         for cls in all_subclasses:
             self.job_classes.append(cls)
             for output in cls.output_types:
