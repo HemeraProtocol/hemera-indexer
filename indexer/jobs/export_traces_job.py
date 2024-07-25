@@ -45,7 +45,7 @@ class ExportTracesJob(BaseJob):
             total_items=len(self._data_buff[Block.type()])
         )
 
-        self._batch_work_executor.shutdown()
+        self._batch_work_executor.wait()
 
     def _collect_batch(self, blocks):
         traces = traces_rpc_requests(self._batch_web3_provider.make_request,

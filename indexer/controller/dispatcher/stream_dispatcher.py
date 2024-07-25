@@ -34,4 +34,7 @@ class StreamDispatcher(BaseDispatcher):
             end_block=end_block,
         )
 
+        for key, value in self._job_scheduler.get_data_buff().items():
+            print(f'{key}: {len(value)}')
+
         self._job_scheduler.clear_data_buff()

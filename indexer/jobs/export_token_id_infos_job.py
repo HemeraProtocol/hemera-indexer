@@ -114,7 +114,7 @@ class ExportTokenIdInfosJob(BaseJob):
                                               self._collect_batch,
                                               total_items=len(token_1155))
 
-        self._batch_work_executor.shutdown()
+        self._batch_work_executor.wait()
 
     def _collect_batch(self, token_list):
         tokens = token_ids_info_rpc_requests(self._web3,

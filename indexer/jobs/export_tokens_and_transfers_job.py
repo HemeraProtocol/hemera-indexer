@@ -96,7 +96,7 @@ class ExportTokensAndTransfersJob(BaseJob):
             total_items=len(tokens)
         )
 
-        self._batch_work_executor.shutdown()
+        self._batch_work_executor.wait()
 
     def _extract_batch(self, logs):
         tokens, token_transfers = extract_tokens_and_token_transfers(logs)

@@ -68,7 +68,7 @@ class ExportBlocksJob(BaseJob):
             self._collect_batch,
             total_items=total_items
         )
-        self._batch_work_executor.shutdown()
+        self._batch_work_executor.wait()
 
     def _collect_batch(self, block_number_batch):
         results = blocks_rpc_requests(self._batch_web3_provider.make_request, block_number_batch, self._is_batch)

@@ -99,7 +99,7 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
     }
     if output_types is None:
         entity_types = calculate_entity_value(entity_types)
-        output_types = generate_output_types(entity_types)
+        output_types = list(generate_output_types(entity_types))
 
     stream_dispatcher = StreamDispatcher(
         service=service,

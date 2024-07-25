@@ -99,7 +99,6 @@ class JobScheduler:
             self.instantiate_jobs()
         for job in self.jobs:
             job.run(start_block=start_block, end_block=end_block)
-
         # TODO: clean data buffer after all jobs are run
 
     def get_required_job_classes(self, output_types):

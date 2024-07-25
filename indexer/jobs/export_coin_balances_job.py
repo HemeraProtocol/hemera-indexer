@@ -52,7 +52,7 @@ class ExportCoinBalancesJob(BaseJob):
             self._data_buff[ContractInternalTransaction.type()]
         )
         self._batch_work_executor.execute(coin_addresses, self._collect_batch, total_items=len(coin_addresses))
-        self._batch_work_executor.shutdown()
+        self._batch_work_executor.wait()
 
     def _collect_batch(self, coin_addresses):
         coin_balances = coin_balances_rpc_requests(self._batch_web3_provider.make_request,

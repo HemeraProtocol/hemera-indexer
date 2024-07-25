@@ -1,50 +1,34 @@
 import logging
 
-import pandas
 import sqlalchemy
 from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import insert
 
-from indexer.domain.block import Block
-from indexer.domain.trace import format_trace_data
-from enumeration.token_type import TokenType
-from common.converter.postgresql_model_converter import convert_item
 from common.models.blocks import Blocks
 from common.models.coin_balances import CoinBalances
 from common.models.contract_internal_transactions import ContractInternalTransactions
 from common.models.contracts import Contracts
-from common.models.erc1155_token_holders import ERC1155TokenHolders
 from common.models.erc1155_token_id_details import ERC1155TokenIdDetails
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
-from common.models.erc20_token_holders import ERC20TokenHolders
 from common.models.erc20_token_transfers import ERC20TokenTransfers
-from common.models.erc721_token_holders import ERC721TokenHolders
 from common.models.erc721_token_id_changes import ERC721TokenIdChanges
 from common.models.erc721_token_id_details import ERC721TokenIdDetails
-from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.logs import Logs
 from common.models.token_balances import AddressTokenBalances
 from common.models.traces import Traces
 from common.models.transactions import Transactions
+from common.utils.web3_utils import build_web3
+from enumeration.token_type import TokenType
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import blocks_rpc_requests
-from indexer.jobs.export_coin_balances_job import coin_balances_rpc_requests, distinct_addresses
-from indexer.jobs.export_contracts_job import build_contracts
-from indexer.jobs.export_token_balances_and_holders_job import extract_token_parameters, token_balances_rpc_requests, \
-    calculate_token_holders
-from indexer.jobs.export_token_id_infos_job import token_ids_info_rpc_requests, get_exist_token_ids
-from indexer.jobs.export_tokens_and_transfers_job import tokens_rpc_requests, extract_tokens_and_token_transfers, distinct_tokens
 from indexer.jobs.export_traces_job import traces_rpc_requests
 from indexer.jobs.export_transactions_and_logs_job import receipt_rpc_requests
-from indexer.utils.enrich import enrich_transactions, enrich_blocks_timestamp, enrich_traces, \
-    enrich_contracts
 from indexer.utils.utils import dynamic_batch_iterator
-from common.utils.web3_utils import build_web3
 
 logger = logging.getLogger(__name__)
 
 
 class FixingBlockConsensusJob(BaseJob):
+   '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.service = kwargs['service']
@@ -362,3 +346,4 @@ class FixingBlockConsensusJob(BaseJob):
         formated_coin_balance = [format_coin_balance_data(coin_balance) for coin_balance in coin_balances]
 
         return formated_coin_balance
+    '''

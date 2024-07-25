@@ -123,7 +123,7 @@ class ExportTokenBalancesJob(BaseJob):
         self._batch_work_executor.execute(parameters,
                                           self._collect_batch,
                                           total_items=len(parameters))
-        self._batch_work_executor.shutdown()
+        self._batch_work_executor.wait()
 
     def _collect_batch(self, parameters):
         token_balances = token_balances_rpc_requests(self._batch_web3_provider.make_request, parameters, self._is_batch)

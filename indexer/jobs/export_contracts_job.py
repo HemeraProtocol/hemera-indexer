@@ -55,7 +55,7 @@ class ExportContractsJob(BaseJob):
         contracts = build_contracts(self._web3, self._data_buff[Trace.type()])
 
         self._batch_work_executor.execute(contracts, self._collect_batch, total_items=len(contracts))
-        self._batch_work_executor.shutdown()
+        self._batch_work_executor.wait()
 
     def _collect_batch(self, contracts):
         contracts = contract_info_rpc_requests(self._batch_web3_provider.make_request, contracts, self._is_batch)
