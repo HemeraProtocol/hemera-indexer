@@ -159,37 +159,39 @@ def generate_token_id_info(
     return info
 
 
-def build_rpc_method_data(web3, tokens, token_type, fn, require_new):
+def build_rpc_method_data(web3, tokens: List[TokenIdInfo], token_type, fn, require_new):
     parameters = []
 
     for token in tokens:
 
-        if not token['is_new'] and require_new:
+        if not token.is_get_token_uri and require_new:
             continue
-
-        token['param_to'] = token['address']
-        token['param_data'] = '0x'
-        token['param_number'] = hex(token['block_number'])
+        param = {
+            'request_id': token.request_id,
+            'param_to': token.address,
+            'param_data': '0x',
+            'param_number': hex(token.block_number)
+        }
 
         try:
-            token['param_data'] = (web3.eth
-                                   .contract(address=Web3.to_checksum_address(token['address']),
+            param['param_data'] = (web3.eth
+                                   .contract(address=Web3.to_checksum_address(token.address),
                                              abi=erc_token_id_info_abi[token_type])
-                                   .encodeABI(fn_name=fn, args=[token['token_id']]))
+                                   .encodeABI(fn_name=fn, args=[token.token_id]))
         except Exception as e:
             logger.warning(f"Encoding token id {fn} abi parameter failed. "
-                           f"token address: {token['address']}. "
-                           f"token id: {token['token_id']}. "
+                           f"token address: {token.address}. "
+                           f"token id: {token.token_id}. "
                            f"exception: {e}. ")
 
         for abi_fn in erc_token_id_info_abi[token_type]:
             if fn == abi_fn['name']:
-                token['data_type'] = abi_fn['outputs'][0]['type']
-        parameters.append(token)
+                param['data_type'] = abi_fn['outputs'][0]['type']
+        parameters.append(param)
     return parameters
 
 
-def token_ids_info_rpc_requests(web3, make_requests, token_info_items, is_batch, decoded_value):
+def token_ids_info_rpc_requests(web3, make_requests, token_info_items, is_batch):
     grouped_tokens = defaultdict(list)
     for token in token_info_items:
         grouped_tokens[token.token_type].append(token)
