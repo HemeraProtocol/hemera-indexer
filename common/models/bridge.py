@@ -1,350 +1,416 @@
-from sqlalchemy import ARRAY, JSON, BigInteger, Boolean, Column, DateTime, Integer, LargeBinary, Numeric, String
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, VARCHAR, INTEGER, TIMESTAMP, ARRAY, BOOLEAN, JSON
 
 from common.utils.config import get_config
-from common.models import db as postgres_db
+from common.models import HemeraModel, general_converter
 
 app_config = get_config()
 schema = app_config.db_read_sql_alchemy_database_config.schema
 
 
-class AbstractTransactions(postgres_db.Model):
+class AbstractTransactions(HemeraModel):
     __abstract__ = True
 
-    hash = Column(String, primary_key=True)
-    nonce = Column(BigInteger)
-    transaction_index = Column(BigInteger)
-    from_address = Column(String)
-    to_address = Column(String)
-    value = Column(Numeric)
-    gas = Column(BigInteger)
-    gas_price = Column(BigInteger)
-    input = Column(String)
-    receipt_cumulative_gas_used = Column(BigInteger)
-    receipt_gas_used = Column(BigInteger)
-    receipt_contract_address = Column(String)
-    receipt_root = Column(String)
-    receipt_status = Column(BigInteger)
-    block_timestamp = Column(DateTime)
-    block_number = Column(BigInteger)
-    block_hash = Column(String)
-    max_fee_per_gas = Column(BigInteger)
-    max_priority_fee_per_gas = Column(BigInteger)
-    transaction_type = Column(BigInteger)
-    receipt_effective_gas_price = Column(BigInteger)
+    hash = Column(VARCHAR, primary_key=True)
+    nonce = Column(INTEGER)
+    transaction_index = Column(INTEGER)
+    from_address = Column(VARCHAR)
+    to_address = Column(VARCHAR)
+    value = Column(NUMERIC)
+    gas = Column(INTEGER)
+    gas_price = Column(INTEGER)
+    input = Column(VARCHAR)
+    receipt_cumulative_gas_used = Column(INTEGER)
+    receipt_gas_used = Column(INTEGER)
+    receipt_contract_address = Column(VARCHAR)
+    receipt_root = Column(VARCHAR)
+    receipt_status = Column(INTEGER)
+    block_timestamp = Column(TIMESTAMP)
+    block_number = Column(INTEGER)
+    block_hash = Column(VARCHAR)
+    max_fee_per_gas = Column(INTEGER)
+    max_priority_fee_per_gas = Column(INTEGER)
+    transaction_type = Column(INTEGER)
+    receipt_effective_gas_price = Column(INTEGER)
 
 
-class AbstractTokens(postgres_db.Model):
+class AbstractTokens(HemeraModel):
     __abstract__ = True
 
-    address = Column(String, primary_key=True)
-    name = Column(String)
-    symbol = Column(String)
-    total_supply = Column(Numeric)
-    block_number = Column(BigInteger)
-    block_hash = Column(String)
-    block_timestamp = Column(DateTime)
-    holder_count = Column(BigInteger)
-    transfer_count = Column(BigInteger)
-    logo = Column(String)
+    address = Column(VARCHAR, primary_key=True)
+    name = Column(VARCHAR)
+    symbol = Column(VARCHAR)
+    total_supply = Column(NUMERIC)
+    block_number = Column(INTEGER)
+    block_hash = Column(VARCHAR)
+    block_timestamp = Column(TIMESTAMP)
+    holder_count = Column(INTEGER)
+    transfer_count = Column(INTEGER)
+    logo = Column(VARCHAR)
     urls = Column(JSON)
-    description = Column(String)
+    description = Column(VARCHAR)
 
 
-class L1ToL2Transactions(postgres_db.Model):
-    __table_args__ = {"schema": schema}
-    __tablename__ = "l1_to_l2_txns"
-
-    index = Column(BigInteger, primary_key=True)
-    l1_from_address = Column(String)
-    l1_block_number = Column(BigInteger)
-    l1_block_timestamp = Column(DateTime)
-    l1_block_hash = Column(String)
-    l1_transaction_hash = Column(String)
-    l1_token_address = Column(String)
-    l2_block_number = Column(BigInteger)
-    l2_block_timestamp = Column(DateTime)
-    l2_block_hash = Column(String)
-    l2_transaction_hash = Column(String)
-    l2_token_address = Column(String)
-    from_address = Column(String)
-    to_address = Column(String)
-    amount = Column(Numeric)
-    _type = Column(Integer)
-
-
-class L2ToL1Transactions(postgres_db.Model):
-    __table_args__ = {"schema": schema}
-    __tablename__ = "l2_to_l1_txns"
-
-    index = Column(BigInteger, primary_key=True)
-    l2_from_address = Column(String)
-    l2_block_number = Column(BigInteger)
-    l2_block_timestamp = Column(DateTime)
-    l2_block_hash = Column(String)
-    l2_transaction_hash = Column(String)
-    l2_token_address = Column(String)
-    l1_from_address = Column(String)
-    l1_block_number = Column(BigInteger)
-    l1_block_timestamp = Column(DateTime)
-    l1_block_hash = Column(String)
-    l1_transaction_hash = Column(String)
-    l1_token_address = Column(String)
-    from_address = Column(String)
-    to_address = Column(String)
-    amount = Column(Numeric)
-
-    l1_proven_block_number = Column(BigInteger)
-    l1_proven_block_timestamp = Column(DateTime)
-    l1_proven_txn_hash = Column(String)
-
-    l1_finalized_block_number = Column(BigInteger)
-    l1_finalized_block_timestamp = Column(DateTime)
-    l1_finalized_txn_hash = Column(String)
-
-
-class BridgeTokens(postgres_db.Model):
-    __table_args__ = {"schema": schema}
-    __tablename__ = "bridge_tokens"
-
-    l1_token_address = Column(LargeBinary, primary_key=True)
-    l2_token_address = Column(LargeBinary, primary_key=True)
-
-
-class L1ToL2BridgeTransactions(postgres_db.Model):
+class L1ToL2BridgeTransactions(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "l1_to_l2_bridge_transactions"
 
-    msg_hash = Column(LargeBinary, primary_key=True)
-    version = Column(BigInteger)
-    index = Column(BigInteger)
-    l1_block_number = Column(BigInteger)
-    l1_block_timestamp = Column(DateTime)
-    l1_block_hash = Column(LargeBinary)
-    l1_transaction_hash = Column(LargeBinary)
-    l1_from_address = Column(LargeBinary)
-    l1_to_address = Column(LargeBinary)
-    l2_block_number = Column(BigInteger)
-    l2_block_timestamp = Column(DateTime)
-    l2_block_hash = Column(LargeBinary)
-    l2_transaction_hash = Column(LargeBinary)
-    l2_from_address = Column(LargeBinary)
-    l2_to_address = Column(LargeBinary)
-    amount = Column(Numeric(78))
-    from_address = Column(LargeBinary)
-    to_address = Column(LargeBinary)
-    l1_token_address = Column(LargeBinary)
-    l2_token_address = Column(LargeBinary)
+    msg_hash = Column(BYTEA, primary_key=True)
+    version = Column(INTEGER)
+    index = Column(INTEGER)
+    l1_block_number = Column(INTEGER)
+    l1_block_timestamp = Column(TIMESTAMP)
+    l1_block_hash = Column(BYTEA)
+    l1_transaction_hash = Column(BYTEA)
+    l1_from_address = Column(BYTEA)
+    l1_to_address = Column(BYTEA)
+    l2_block_number = Column(INTEGER)
+    l2_block_timestamp = Column(TIMESTAMP)
+    l2_block_hash = Column(BYTEA)
+    l2_transaction_hash = Column(BYTEA)
+    l2_from_address = Column(BYTEA)
+    l2_to_address = Column(BYTEA)
+    amount = Column(NUMERIC(78))
+    from_address = Column(BYTEA)
+    to_address = Column(BYTEA)
+    l1_token_address = Column(BYTEA)
+    l2_token_address = Column(BYTEA)
     extra_info = Column(JSON)
-    _type = Column(BigInteger)
+    _type = Column(INTEGER)
+    sender = Column(BYTEA)
+    target = Column(BYTEA)
+    data = Column(BYTEA)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'ArbitrumL1ToL2TransactionOnL1',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'ArbitrumL1ToL2TransactionOnL2',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'OpL1ToL2DepositedTransaction',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'OpL1ToL2DepositedTransactionOnL2',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            }
+        ]
 
 
-class L2ToL1BridgeTransactions(postgres_db.Model):
+class L2ToL1BridgeTransactions(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "l2_to_l1_bridge_transactions"
 
-    msg_hash = Column(LargeBinary, primary_key=True)
-    version = Column(BigInteger)
-    index = Column(BigInteger)
-    l2_block_number = Column(BigInteger)
-    l2_block_timestamp = Column(DateTime)
-    l2_block_hash = Column(LargeBinary)
-    l2_transaction_hash = Column(LargeBinary)
-    l2_from_address = Column(LargeBinary)
-    l2_to_address = Column(LargeBinary)
-    l1_block_number = Column(BigInteger)
-    l1_block_timestamp = Column(DateTime)
-    l1_block_hash = Column(LargeBinary)
-    l1_transaction_hash = Column(LargeBinary)
-    l1_from_address = Column(LargeBinary)
-    l1_to_address = Column(LargeBinary)
-    amount = Column(Numeric(78))
-    from_address = Column(LargeBinary)
-    to_address = Column(LargeBinary)
-    l1_token_address = Column(LargeBinary)
-    l2_token_address = Column(LargeBinary)
+    msg_hash = Column(BYTEA, primary_key=True)
+    version = Column(INTEGER)
+    index = Column(INTEGER)
+    l2_block_number = Column(INTEGER)
+    l2_block_timestamp = Column(TIMESTAMP)
+    l2_block_hash = Column(BYTEA)
+    l2_transaction_hash = Column(BYTEA)
+    l2_from_address = Column(BYTEA)
+    l2_to_address = Column(BYTEA)
+    l1_block_number = Column(INTEGER)
+    l1_block_timestamp = Column(TIMESTAMP)
+    l1_block_hash = Column(BYTEA)
+    l1_transaction_hash = Column(BYTEA)
+    l1_from_address = Column(BYTEA)
+    l1_to_address = Column(BYTEA)
+    amount = Column(NUMERIC(78))
+    from_address = Column(BYTEA)
+    to_address = Column(BYTEA)
+    l1_token_address = Column(BYTEA)
+    l2_token_address = Column(BYTEA)
     extra_info = Column(JSON)
-    _type = Column(BigInteger)
-    l1_proven_transaction_hash = Column(LargeBinary)
-    l1_proven_block_number = Column(BigInteger)
-    l1_proven_block_timestamp = Column(DateTime)
-    l1_proven_block_hash = Column(LargeBinary)
-    l1_proven_from_address = Column(LargeBinary)
-    l1_proven_to_address = Column(LargeBinary)
+    _type = Column(INTEGER)
+    l1_proven_transaction_hash = Column(BYTEA)
+    l1_proven_block_number = Column(INTEGER)
+    l1_proven_block_timestamp = Column(TIMESTAMP)
+    l1_proven_block_hash = Column(BYTEA)
+    l1_proven_from_address = Column(BYTEA)
+    l1_proven_to_address = Column(BYTEA)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'ArbitrumL2ToL1TransactionOnL1',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'ArbitrumL2ToL1TransactionOnL2',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'OpL2ToL1WithdrawnTransactionFinalized',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'OpL2ToL1WithdrawnTransactionOnL2',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'OpL2ToL1WithdrawnTransactionProven',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+        ]
 
 
-class StateBatches(postgres_db.Model):
+class BridgeTokens(HemeraModel):
+    __table_args__ = {"schema": schema}
+    __tablename__ = "bridge_tokens"
+
+    l1_token_address = Column(BYTEA, primary_key=True)
+    l2_token_address = Column(BYTEA, primary_key=True)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'BridgeToken',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+        ]
+
+
+class StateBatches(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "l1_state_batches"
 
-    batch_index = Column(BigInteger, primary_key=True)
-    previous_total_elements = Column(BigInteger)
-    batch_size = Column(Integer)
-    l1_block_number = Column(BigInteger)
-    l1_block_timestamp = Column(DateTime)
-    l1_block_hash = Column(String)
-    l1_transaction_hash = Column(String)
-    extra_data = Column(String)
-    batch_root = Column(String)
+    batch_index = Column(INTEGER, primary_key=True)
+    previous_total_elements = Column(INTEGER)
+    batch_size = Column(INTEGER)
+    l1_block_number = Column(INTEGER)
+    l1_block_timestamp = Column(TIMESTAMP)
+    l1_block_hash = Column(VARCHAR)
+    l1_transaction_hash = Column(VARCHAR)
+    extra_data = Column(VARCHAR)
+    batch_root = Column(VARCHAR)
 
 
-class OpBedrockStateBatches(postgres_db.Model):
+class OpBedrockStateBatches(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "op_bedrock_state_batches"
 
-    batch_index = Column(BigInteger, primary_key=True)
-    l1_block_number = Column(BigInteger)
-    l1_block_timestamp = Column(DateTime)
-    l1_block_hash = Column(String)
-    l1_transaction_hash = Column(String)
-    start_block_number = Column(BigInteger)
-    end_block_number = Column(BigInteger)
-    batch_root = Column(String)
-    transaction_count = Column(Integer)
-    block_count = Column(Integer)
+    batch_index = Column(INTEGER, primary_key=True)
+    l1_block_number = Column(INTEGER)
+    l1_block_timestamp = Column(TIMESTAMP)
+    l1_block_hash = Column(VARCHAR)
+    l1_transaction_hash = Column(VARCHAR)
+    start_block_number = Column(INTEGER)
+    end_block_number = Column(INTEGER)
+    batch_root = Column(VARCHAR)
+    transaction_count = Column(INTEGER)
+    block_count = Column(INTEGER)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'OpStateBatch',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+        ]
 
 
-class ArbitrumStateBatches(postgres_db.Model):
+class ArbitrumStateBatches(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "arbitrum_state_batches"
 
-    node_num = Column(BigInteger, primary_key=True)
-    create_l1_block_number = Column(BigInteger)
-    create_l1_block_timestamp = Column(DateTime)
-    create_l1_block_hash = Column(String)
-    create_l1_transaction_hash = Column(String)
+    node_num = Column(INTEGER, primary_key=True)
+    create_l1_block_number = Column(INTEGER)
+    create_l1_block_timestamp = Column(TIMESTAMP)
+    create_l1_block_hash = Column(VARCHAR)
+    create_l1_transaction_hash = Column(VARCHAR)
 
-    l1_block_number = Column(BigInteger)
-    l1_block_timestamp = Column(DateTime)
-    l1_block_hash = Column(String)
-    l1_transaction_hash = Column(String)
+    l1_block_number = Column(INTEGER)
+    l1_block_timestamp = Column(TIMESTAMP)
+    l1_block_hash = Column(VARCHAR)
+    l1_transaction_hash = Column(VARCHAR)
 
-    parent_node_hash = Column(String)
-    node_hash = Column(String)
-    block_hash = Column(String)
-    send_root = Column(String)
-    start_block_number = Column(BigInteger)
-    end_block_number = Column(BigInteger)
-    transaction_count = Column(Integer)
-    block_count = Column(Integer)
+    parent_node_hash = Column(VARCHAR)
+    node_hash = Column(VARCHAR)
+    block_hash = Column(VARCHAR)
+    send_root = Column(VARCHAR)
+    start_block_number = Column(INTEGER)
+    end_block_number = Column(INTEGER)
+    transaction_count = Column(INTEGER)
+    block_count = Column(INTEGER)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'ArbitrumStateBatchCreated',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'ArbitrumStateBatchConfirmed',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+        ]
 
 
-class MantleDABatches(postgres_db.Model):
+class MantleDABatches(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "mantle_batches"
 
-    index = Column(BigInteger, primary_key=True)
-    data_store_index = Column(Integer)
-    upgrade_data_store_id = Column(BigInteger)
-    data_store_id = Column(BigInteger)
-    status = Column(Integer)
-    confirm_at = Column(DateTime)
+    index = Column(INTEGER, primary_key=True)
+    data_store_index = Column(INTEGER)
+    upgrade_data_store_id = Column(INTEGER)
+    data_store_id = Column(INTEGER)
+    status = Column(INTEGER)
+    confirm_at = Column(TIMESTAMP)
 
 
-class MantleDAStores(postgres_db.Model):
+class MantleDAStores(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "data_stores"
 
-    id = Column(BigInteger, primary_key=True)
-    store_number = Column(BigInteger)
-    duration_data_store_id = Column(BigInteger)
-    index = Column(Integer)
-    data_commitment = Column(String)
-    msg_hash = Column(String)
-    init_time = Column(DateTime)
-    expire_time = Column(DateTime)
-    duration = Column(Integer)
-    # num_sys = Column(Integer)
-    # num_par = Column(Integer)
-    # degree = Column(BigInteger)
-    store_period_length = Column(BigInteger)
-    fee = Column(BigInteger)
-    confirmer = Column(String)
-    header = Column(String)
-    init_tx_hash = Column(String)
-    init_gas_used = Column(BigInteger)
-    init_block_number = Column(BigInteger)
-    confirmed = Column(Boolean)
-    # eth_signed = Column(Numeric)
-    # eigen_signed = Column(Numeric)
-    # non_signer_pub_key_hashes = Column(ARRAY(String))
-    signatory_record = Column(String)
-    confirm_tx_hash = Column(String)
-    confirm_gas_used = Column(BigInteger)
-    batch_index = Column(BigInteger)
-    tx_count = Column(Integer)
-    block_count = Column(Integer)
+    id = Column(INTEGER, primary_key=True)
+    store_number = Column(INTEGER)
+    duration_data_store_id = Column(INTEGER)
+    index = Column(INTEGER)
+    data_commitment = Column(VARCHAR)
+    msg_hash = Column(VARCHAR)
+    init_time = Column(TIMESTAMP)
+    expire_time = Column(TIMESTAMP)
+    duration = Column(INTEGER)
+    # num_sys = Column(INTEGER)
+    # num_par = Column(INTEGER)
+    # degree = Column(INTEGER)
+    store_period_length = Column(INTEGER)
+    fee = Column(INTEGER)
+    confirmer = Column(VARCHAR)
+    header = Column(VARCHAR)
+    init_tx_hash = Column(VARCHAR)
+    init_gas_used = Column(INTEGER)
+    init_block_number = Column(INTEGER)
+    confirmed = Column(BOOLEAN)
+    # eth_signed = Column(NUMERIC)
+    # eigen_signed = Column(NUMERIC)
+    # non_signer_pub_key_hashes = Column(ARRAY(VARCHAR))
+    signatory_record = Column(VARCHAR)
+    confirm_tx_hash = Column(VARCHAR)
+    confirm_gas_used = Column(INTEGER)
+    batch_index = Column(INTEGER)
+    tx_count = Column(INTEGER)
+    block_count = Column(INTEGER)
 
 
-class MantleDAStoreTransactionMapping(postgres_db.Model):
+class MantleDAStoreTransactionMapping(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "data_store_tx_mapping"
 
-    data_store_id = Column(BigInteger, primary_key=True)
-    index = Column(Integer, primary_key=True)
-    block_number = Column(BigInteger)
-    transaction_hash = Column(String)
+    data_store_id = Column(INTEGER, primary_key=True)
+    index = Column(INTEGER, primary_key=True)
+    block_number = Column(INTEGER)
+    transaction_hash = Column(VARCHAR)
 
 
-class LineaBatches(postgres_db.Model):
+class LineaBatches(HemeraModel):
     __table_args__ = {"schema": schema}
 
-    number = Column(BigInteger, primary_key=True)
-    verify_tx_hash = Column(String)
-    verify_block_number = Column(BigInteger)
-    timestamp = Column(DateTime)
-    blocks = Column(ARRAY(BigInteger))
-    transactions = Column(ARRAY(String))
-    last_finalized_block_number = Column(BigInteger)
-    tx_count = Column(Integer)
-    block_count = Column(Integer)
+    number = Column(INTEGER, primary_key=True)
+    verify_tx_hash = Column(VARCHAR)
+    verify_block_number = Column(INTEGER)
+    timestamp = Column(TIMESTAMP)
+    blocks = Column(ARRAY(INTEGER))
+    transactions = Column(ARRAY(VARCHAR))
+    last_finalized_block_number = Column(INTEGER)
+    tx_count = Column(INTEGER)
+    block_count = Column(INTEGER)
 
 
-class ZkEvmBatches(postgres_db.Model):
+class ZkEvmBatches(HemeraModel):
     __table_args__ = {"schema": schema}
     __tablename__ = "zkevm_batches"
-    batch_index = Column(BigInteger, primary_key=True)
-    coinbase = Column(String)
-    state_root = Column(String)
-    global_exit_root = Column(String)
-    mainnet_exit_root = Column(String)
-    rollup_exit_root = Column(String)
-    local_exit_root = Column(String)
-    acc_input_hash = Column(String)
-    timestamp = Column(DateTime)
-    transactions = Column(ARRAY(String))
-    blocks = Column(ARRAY(BigInteger))
-    start_block_number = Column(BigInteger)
-    end_block_number = Column(BigInteger)
-    block_count = Column(Integer)
-    transaction_count = Column(Integer)
-    sequence_batch_tx_hash = Column(String)
-    sequence_batch_block_number = Column(BigInteger)
-    sequence_batch_block_timestamp = Column(DateTime)
-    verify_batch_tx_hash = Column(String)
-    verify_batch_block_number = Column(BigInteger)
-    verify_batch_block_timestamp = Column(DateTime)
-    number = Column(BigInteger)
-    send_sequences_tx_hash = Column(String)
+    batch_index = Column(INTEGER, primary_key=True)
+    coinbase = Column(VARCHAR)
+    state_root = Column(VARCHAR)
+    global_exit_root = Column(VARCHAR)
+    mainnet_exit_root = Column(VARCHAR)
+    rollup_exit_root = Column(VARCHAR)
+    local_exit_root = Column(VARCHAR)
+    acc_input_hash = Column(VARCHAR)
+    timestamp = Column(TIMESTAMP)
+    transactions = Column(ARRAY(VARCHAR))
+    blocks = Column(ARRAY(INTEGER))
+    start_block_number = Column(INTEGER)
+    end_block_number = Column(INTEGER)
+    block_count = Column(INTEGER)
+    transaction_count = Column(INTEGER)
+    sequence_batch_tx_hash = Column(VARCHAR)
+    sequence_batch_block_number = Column(INTEGER)
+    sequence_batch_block_timestamp = Column(TIMESTAMP)
+    verify_batch_tx_hash = Column(VARCHAR)
+    verify_batch_block_number = Column(INTEGER)
+    verify_batch_block_timestamp = Column(TIMESTAMP)
+    number = Column(INTEGER)
+    send_sequences_tx_hash = Column(VARCHAR)
 
 
 class OpDATransactions(AbstractTransactions):
     __tablename__ = "op_da_transactions"
 
-    receipt_blob_gas_used = Column(BigInteger)
-    receipt_blob_gas_price = Column(Numeric)
-    blob_versioned_hashes = Column(ARRAY(String))
+    receipt_blob_gas_used = Column(INTEGER)
+    receipt_blob_gas_price = Column(NUMERIC)
+    blob_versioned_hashes = Column(ARRAY(VARCHAR))
 
 
-class ArbitrumTransactionBatches(postgres_db.Model):
+class ArbitrumTransactionBatches(HemeraModel):
     __tablename__ = "arbitrum_transaction_batches"
 
-    batch_index = Column(BigInteger, primary_key=True)
-    l1_block_number = Column(BigInteger)
-    l1_block_timestamp = Column(DateTime)
-    l1_block_hash = Column(String)
-    l1_transaction_hash = Column(String)
-    batch_root = Column(String)
-    start_block_number = Column(BigInteger)
-    end_block_number = Column(BigInteger)
-    transaction_count = Column(Integer)
-    block_count = Column(Integer)
+    batch_index = Column(INTEGER, primary_key=True)
+    l1_block_number = Column(INTEGER)
+    l1_block_timestamp = Column(TIMESTAMP)
+    l1_block_hash = Column(VARCHAR)
+    l1_transaction_hash = Column(VARCHAR)
+    batch_root = Column(VARCHAR)
+    start_block_number = Column(INTEGER)
+    end_block_number = Column(INTEGER)
+    transaction_count = Column(INTEGER)
+    block_count = Column(INTEGER)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                'domain': 'ArbitrumTransactionBatch',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            }
+        ]
