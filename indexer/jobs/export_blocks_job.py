@@ -26,7 +26,7 @@ class ExportBlocksJob(BaseJob):
             kwargs['batch_size'], kwargs['max_workers'],
             job_name=self.__class__.__name__)
         self._is_batch = kwargs['batch_size'] > 1
-        self._filters = kwargs.get('filters', None)
+        self._filters = kwargs.get('filters', [])
         self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 

@@ -51,7 +51,8 @@ class JobScheduler:
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
-        all_subclasses = get_all_subclasses(BaseJob, 'indexer/')
+        module_dir = os.path.dirname(os.path.abspath(__file__))
+        all_subclasses = get_all_subclasses(BaseJob, module_dir)
         for cls in all_subclasses:
             self.job_classes.append(cls)
             for output in cls.output_types:

@@ -1,9 +1,9 @@
 import pytest
 
-from enumeration.entity_type import EntityType
-from indexer.domain.block import Block
+from indexer.domain.token_id_infos import *
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.job_scheduler import JobScheduler
+from indexer.tests import LINEA_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
@@ -11,17 +11,23 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
 @pytest.mark.export_job
 def test_export_token_id_info_job():
     job_scheduler = JobScheduler(
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)),
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(LINEA_PUBLIC_NODE_RPC_URL, batch=True)),
+        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(LINEA_PUBLIC_NODE_RPC_URL, batch=True)),
         item_exporter=ConsoleItemExporter(),
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
         config=None,
-        required_output_types=[]
+        required_output_types=[
+            ERC721TokenIdChange,
+            ERC721TokenIdDetail,
+            UpdateERC721TokenIdDetail,
+            ERC1155TokenIdDetail,
+            UpdateERC1155TokenIdDetail
+        ]
     )
 
     job_scheduler.run_jobs(
-        start_block=20273057,
-        end_block=20273058,
+        start_block=7248193,
+        end_block=7248194,
     )

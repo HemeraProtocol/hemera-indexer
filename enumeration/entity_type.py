@@ -4,6 +4,7 @@ from functools import reduce
 from click import BadOptionUsage
 
 from indexer.domain.block import Block, UpdateBlockInternalCount
+from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract import Contract
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.log import Log
@@ -75,5 +76,6 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.EXPLORER_TRACE:
         yield Trace
         yield Contract
+        yield CoinBalance
         yield ContractInternalTransaction
         yield UpdateBlockInternalCount

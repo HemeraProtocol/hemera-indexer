@@ -1,5 +1,7 @@
 import json
 import logging
+from collections import defaultdict
+from dataclasses import dataclass, replace, asdict
 from typing import List
 
 from eth_abi import abi
@@ -13,7 +15,7 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 erc_token_id_info_abi = {
@@ -64,9 +66,19 @@ erc_token_id_info_abi = {
 }
 
 
-class ExportTokenIdInfosJob(BaseJob):
+@dataclass(frozen=True)
+class TokenIdInfo:
+    address: str
+    token_id: int
+    token_type: str
+    block_number: int
+    block_timestamp: int
+    is_get_token_uri: bool
+    request_id: int
 
-    dependency_types = [ERC721TokenTransfer, ERC721TokenTransfer]
+
+class ExportTokenIdInfosJob(BaseJob):
+    dependency_types = [ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [
         ERC721TokenIdChange,
         ERC721TokenIdDetail,
@@ -77,136 +89,74 @@ class ExportTokenIdInfosJob(BaseJob):
 
     def __init__(
             self,
-            entity_types,
-            web3,
-            service,
-            batch_web3_provider,
-            batch_size,
-            max_workers,
-            item_exporter=ConsoleItemExporter()):
-        super().__init__(entity_types=entity_types)
+            **kwargs
+    ):
+        super().__init__(**kwargs)
 
-        self._web3 = web3
-        self._batch_web3_provider = batch_web3_provider
-        self._batch_work_executor = BatchWorkExecutor(batch_size, max_workers, job_name=self.__class__.__name__)
-        self._is_batch = batch_size > 1
-        self._item_exporter = item_exporter
-        self._erc721_token_ids = []
-        self._erc1155_token_ids = []
+        self._batch_work_executor = BatchWorkExecutor(
+            kwargs['batch_size'], kwargs['max_workers'],
+            job_name=self.__class__.__name__)
+        self._is_batch = kwargs['batch_size'] > 1
 
     def _start(self):
         super()._start()
 
-    def _collect(self,  **kwargs):
+    def _collect(self, **kwargs):
 
-        if ERC721TokenTransfer.type() in self._data_buff:
-            token_721 = distinct_erc721_token_ids(self._exist_token['ERC721'],
-                                                  self._data_buff[ERC721TokenTransfer.type()])
-            self._batch_work_executor.execute(token_721,
-                                              self._collect_batch,
-                                              total_items=len(token_721))
-            self._batch_work_executor.wait()
-
-        if ERC1155TokenTransfer.type() in self._data_buff:
-            token_1155 = distinct_erc1155_token_ids(self._exist_token['ERC1155'],
-                                                    self._data_buff[ERC1155TokenTransfer.type()])
-            self._batch_work_executor.execute(token_1155,
-                                              self._collect_batch,
-                                              total_items=len(token_1155))
+        token_id_info = generate_token_id_info(
+            self._data_buff[ERC721TokenTransfer.type()],
+            self._data_buff[ERC1155TokenTransfer.type()]
+        )
+        self._batch_work_executor.execute(
+            token_id_info,
+            self._collect_batch,
+            total_items=len(token_id_info))
+        self._batch_work_executor.wait()
 
         self._batch_work_executor.wait()
 
     def _collect_batch(self, token_list):
-        tokens = token_ids_info_rpc_requests(self._web3,
-                                             self._batch_web3_provider.make_request,
-                                             token_list,
-                                             self._is_batch)
-        for token in tokens:
-            if token['token_type'] == TokenType.ERC721.value:
-                self._erc721_token_ids.append(token)
+        items = token_ids_info_rpc_requests(
+            self._web3,
+            self._batch_web3_provider.make_request,
+            token_list,
+            self._is_batch
+        )
+        for item in items:
+            if item['token_type'] == TokenType.ERC721.value:
+                self._collect_item(ERC721TokenIdChange.type(), item)
+                if item['is_get_token_uri']:
+                    self._collect_item(ERC721TokenIdDetail.type(), item)
+                else:
+                    self._collect_item(UpdateERC721TokenIdDetail.type(), item)
+            elif item['token_type'] == TokenType.ERC1155.value:
+                if item['is_get_token_uri']:
+                    self._collect_item(ERC1155TokenIdDetail.type(), item)
+                else:
+                    self._collect_item(UpdateERC1155TokenIdDetail.type(), item)
             else:
-                self._erc1155_token_ids.append(token)
-
-    def _process(self):
-
-        if len(self._erc721_token_ids) > 0:
-            self._data_buff[ERC721TokenIdChange.type()] = [ERC721TokenIdChange(token_id_info)
-                                                           for token_id_info in self._erc721_token_ids]
-
-            self._data_buff[ERC721TokenIdDetail.type()] = [ERC721TokenIdDetail(token_id_info)
-                                                           for token_id_info in self._erc721_token_ids
-                                                           if token_id_info['is_new']]
-
-            self._data_buff[UpdateERC721TokenIdDetail.type()] = [UpdateERC721TokenIdDetail(token_id_info)
-                                                                 for token_id_info in self._erc721_token_ids
-                                                                 if not token_id_info['is_new']]
-
-        if len(self._erc1155_token_ids) > 0:
-            self._data_buff[ERC1155TokenIdDetail.type()] = [ERC1155TokenIdDetail(token_id_info)
-                                                            for token_id_info in self._erc1155_token_ids
-                                                            if token_id_info['is_new']]
-
-            self._data_buff[UpdateERC1155TokenIdDetail.type()] = [UpdateERC1155TokenIdDetail(token_id_info)
-                                                                  for token_id_info in self._erc1155_token_ids
-                                                                  if not token_id_info['is_new']]
+                raise ValueError(f"Unknown token type: {item['token_type']}")
 
 
-def distinct_erc721_token_ids(exist_tokens: list, token_transfers: List[ERC721TokenTransfer]):
-    exist_set = set(exist_tokens)
-    dealt_set = set()
-    unique_tokens = {}
-    for token_transfer in token_transfers:
+def generate_token_id_info(
+        erc721_token_transfers: List[ERC721TokenTransfer],
+        erc1155_token_transfers: List[ERC1155TokenTransfer]
+):
+    info = set()
+    for token_transfer in erc721_token_transfers + erc1155_token_transfers:
         key = f"{token_transfer.token_address}_{token_transfer.token_id}_{token_transfer.block_number}"
-        if key not in unique_tokens:
-            is_new = True
-            key = (token_transfer.token_address, token_transfer.token_id)
-            if key in exist_set or key in dealt_set:
-                is_new = False
+        need_call_uri = token_transfer.from_address == ZERO_ADDRESS
+        info.add(TokenIdInfo(
+            address=token_transfer.token_address,
+            token_id=token_transfer.token_id,
+            token_type=token_transfer.token_type,
+            block_number=token_transfer.block_number,
+            block_timestamp=token_transfer.block_timestamp,
+            is_get_token_uri=need_call_uri,
+            request_id=hash(key)
+        ))
 
-            if key in dealt_set and unique_tokens[key]['block_number'] < token_transfer.block_number:
-                unique_tokens[key]['block_number'] = token_transfer.block_number
-                unique_tokens[key]['block_timestamp'] = token_transfer.block_timestamp
-            else:
-                unique_tokens[key] = {
-                    'address': token_transfer.token_address,
-                    'token_id': token_transfer.token_id,
-                    'token_type': token_transfer.token_type,
-                    'block_number': token_transfer.block_number,
-                    'block_timestamp': token_transfer.block_timestamp,
-                    'is_new': is_new,
-                    'request_id': len(unique_tokens.keys())
-                }
-            dealt_set.add(key)
-
-    return [unique_tokens[key] for key in unique_tokens.keys()]
-
-
-def distinct_erc1155_token_ids(exist_tokens: list, token_transfers: List[ERC1155TokenTransfer]):
-    exist_set = set(exist_tokens)
-
-    unique_tokens = {}
-    for token_transfer in token_transfers:
-        key = f"{token_transfer.token_address}_{token_transfer.token_id}"
-        if key not in unique_tokens:
-            is_new = True
-            if (token_transfer.token_address, token_transfer.token_id) in exist_set:
-                is_new = False
-
-            unique_tokens[key] = {
-                'address': token_transfer.token_address,
-                'token_id': token_transfer.token_id,
-                'token_type': token_transfer.token_type,
-                'block_number': token_transfer.block_number,
-                'block_timestamp': token_transfer.block_timestamp,
-                'is_new': is_new,
-                'request_id': len(unique_tokens.keys())
-            }
-        else:
-            if unique_tokens[key]['block_number'] < token_transfer.block_number:
-                unique_tokens[key]['block_number'] = token_transfer.block_number
-                unique_tokens[key]['block_timestamp'] = token_transfer.block_timestamp
-
-    return [unique_tokens[key] for key in unique_tokens.keys()]
+    return info
 
 
 def build_rpc_method_data(web3, tokens, token_type, fn, require_new):
@@ -239,34 +189,40 @@ def build_rpc_method_data(web3, tokens, token_type, fn, require_new):
     return parameters
 
 
-def token_ids_info_rpc_requests(web3, make_requests, tokens, is_batch):
-    token_type = tokens[0]['token_type']
-    for abi_json in erc_token_id_info_abi[token_type]:
-        token_name_rpc = list(generate_eth_call_json_rpc(
-            build_rpc_method_data(web3, tokens, token_type, abi_json['name'], abi_json['require_new'])))
+def token_ids_info_rpc_requests(web3, make_requests, token_info_items, is_batch, decoded_value):
+    grouped_tokens = defaultdict(list)
+    for token in token_info_items:
+        grouped_tokens[token.token_type].append(token)
 
-        if len(token_name_rpc) == 0:
-            continue
+    for token_type, tokens in grouped_tokens.items():
+        for abi_json in erc_token_id_info_abi[token_type]:
+            token_name_rpc = list(generate_eth_call_json_rpc(
+                build_rpc_method_data(web3, tokens, token_type, abi_json['name'], abi_json['require_new'])))
 
-        if is_batch:
-            response = make_requests(params=json.dumps(token_name_rpc))
-        else:
-            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+            if len(token_name_rpc) == 0:
+                continue
 
-        for data in list(zip_rpc_response(tokens, response)):
-            result = rpc_response_to_result(data[1])
+            if is_batch:
+                response = make_requests(params=json.dumps(token_name_rpc))
+            else:
+                response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
-            token = data[0]
-            value = result[2:] if result is not None else None
-            try:
-                token[abi_json['name']] = abi.decode([token['data_type']], bytes.fromhex(value))[0]
-                if token['data_type'] == 'string':
-                    token[abi_json['name']] = token[abi_json['name']].replace('\u0000', '')
-            except Exception as e:
-                logger.warning(f"Decoding token id {abi_json['name']} failed. "
-                               f"token: {token}. "
-                               f"rpc response: {result}. "
-                               f"exception: {e}.")
-                token[abi_json['name']] = None
+            for token, data in zip(tokens, response):
+                result = rpc_response_to_result(data)
 
-    return tokens
+                value = result[2:] if result is not None else None
+                try:
+                    decoded_value = abi.decode([abi_json['data_type']], bytes.fromhex(value))[0]
+                    if abi_json['data_type'] == 'string':
+                        decoded_value = decoded_value.replace('\u0000', '')
+
+                    # Create a new TokenIdInfo object with the updated field
+                    token = replace(token, **{abi_json['name']: decoded_value})
+                except Exception as e:
+                    logger.warning(f"Decoding token id {abi_json['name']} failed. "
+                                   f"token: {asdict(token)}. "
+                                   f"rpc response: {result}. "
+                                   f"exception: {e}.")
+                    token = replace(token, **{abi_json['name']: None})
+
+    return token_info_items

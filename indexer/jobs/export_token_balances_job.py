@@ -7,10 +7,8 @@ import pandas
 from eth_abi import abi
 from web3 import Web3
 
-from enumeration.token_type import TokenType
 from indexer.domain import dict_to_dataclass
 from indexer.domain.token_balance import TokenBalance, CurrentTokenBalance
-from indexer.domain.token_holder import ERC20TokenHolder, ERC721TokenHolder, ERC1155TokenHolder
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob

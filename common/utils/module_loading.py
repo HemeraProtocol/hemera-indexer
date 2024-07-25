@@ -1,8 +1,7 @@
-import ast
+import importlib.util
 import os
 import sys
 from importlib import import_module
-from typing import Type, List
 
 
 def import_string(dotted_path: str):
@@ -24,32 +23,36 @@ def import_string(dotted_path: str):
         raise ImportError(f'Module "{module_path}" does not define a "{class_name}" attribute/class')
 
 
-def get_all_subclasses(base_class: Type[object], directory) -> List[object]:
+
+def get_all_subclasses(base_class, directory):
     subclasses = []
-    for dir_path, dir_names, filenames in os.walk(directory):
-        for filename in filenames:
-            if filename.endswith(".py") and filename != "__init__.py":
-                file_path = os.path.join(dir_path, filename)
-                with open(file_path, "r", encoding="utf-8") as file:
-                    file_content = file.read()
 
-                parsed_content = ast.parse(file_content)
-                class_names = [node.name for node in ast.walk(parsed_content) if isinstance(node, ast.ClassDef)]
+    def import_module(file_path):
+        module_name = os.path.splitext(os.path.basename(file_path))[0]
+        spec = importlib.util.spec_from_file_location(module_name, file_path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module
 
-                for cls in class_names:
-                    full_class_path = os.path.join(file_path[:-3], cls)
-                    dot_path = full_class_path.replace(os.path.sep, ".")
+    def recurse(cls):
+        for subclass in cls.__subclasses__():
+            if subclass not in subclasses:
+                subclasses.append(subclass)
+                recurse(subclass)
 
-                    # may accrue circular dependency error
-                    try:
-                        subclass = import_string(dot_path)
-                    except ImportError as e:
-                        continue
-
-                    if issubclass(subclass, base_class) and subclass is not base_class:
-                        subclasses.append(subclass)
-
-                    if full_class_path in sys.modules:
-                        del sys.modules[full_class_path]
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith('.py') and file != '__init__.py':
+                file_path = os.path.join(root, file)
+                try:
+                    module = import_module(file_path)
+                    for name, obj in module.__dict__.items():
+                        if isinstance(obj, type) and issubclass(obj, base_class) and obj != base_class:
+                            if obj not in subclasses:
+                                subclasses.append(obj)
+                                recurse(obj)
+                except Exception as e:
+                    print(f"Error importing {file_path}: {e}")
 
     return subclasses
