@@ -65,7 +65,7 @@ from common.utils.config import init_config_setting
 @click.option('-b', '--batch-size', default=10, show_default=True, type=int,
               envvar='BATCH_SIZE',
               help='The number of non-debug RPC requests to batch in a single request')
-@click.option('-db', '--debug-batch-size', default=1, show_default=True, type=int,
+@click.option('--debug-batch-size', default=1, show_default=True, type=int,
               envvar='DEBUG_BATCH_SIZE',
               help='The number of debug RPC requests to batch in a single request')
 @click.option('-B', '--block-batch-size', default=1, show_default=True, type=int,
