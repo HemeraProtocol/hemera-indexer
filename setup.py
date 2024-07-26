@@ -37,7 +37,6 @@ setup(
         'python-dateutil>=2.8.0,<3',
         'click>=8.0.4,<9',
         'ethereum-dasm==0.1.5',
-        # 'base58',
         'requests',
         "sqlalchemy==2.0.31",
         "psycopg2-binary==2.9.9",
@@ -52,24 +51,29 @@ setup(
         'blinker>=1.8.2',
         'Werkzeug==3.0.3',
         'openpyxl==3.1.3',
-        # 'protobuf==4.21.6',
-        # 'pycryptodome==3.17',
-        # # 'bcrypt==4.0.1',
-        'redis==4.5.4',
+        'redis==5.0.7',
         'urllib3==2.2.2',
-        # 'pytz~=2023.3',
-        # 'PyJWT==2.7.0',
-        # 'gunicorn==21.2.0',
-        # # 'chardet==5.2.0',
-        # 'hexbytes==0.3.1',
         'dataclass-wizard==0.22.3',
         "pytest"
+        #  old version
         # 'Flask==2.1.3',
         # 'flask-limiter==2.6.3',
         # 'flask-restx==0.5.1',
         # 'Flask-SQLAlchemy==2.5.1',
         # 'Werkzeug==2.0.1',
         # 'openpyxl==3.0.7',
+        # 'redis==4.5.4',
+
+        #  not need
+        # 'chardet==5.2.0',         文件编码识别
+        # 'base58',                 对数据进行Base58编码和解码    2.1.1
+        # 'pytz~=2023.3',           时区控制                    2024.1
+        # 'bcrypt==4.0.1',          密码生成                    4.2.0
+        # 'pycryptodome==3.17',     非对称加密                  3.20.0
+        # 'protobuf==4.21.6',       序列化&反序列化              5.27.2
+        # 'PyJWT==2.7.0',           json加密传输                2.8.0
+        # 'gunicorn==21.2.0',       wsgi http服务器             22.0.0
+        # 'hexbytes==0.3.1',        处理十六进制数据              1.2.1
     ],
     extras_require={
         'streaming': [
