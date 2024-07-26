@@ -1,4 +1,5 @@
 import logging
+import time
 
 import click
 
@@ -13,6 +14,16 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
 from indexer.utils.utils import pick_random_provider_uri, verify_db_connection_url
 from common.utils.config import init_config_setting
 
+
+def calculate_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"function {func.__name__} time: {execution_time:.6f} s")
+        return result
+    return wrapper
 
 @click.command(context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('-p', '--provider-uri', default='https://mainnet.infura.io', show_default=True, type=str,
@@ -74,6 +85,7 @@ from common.utils.config import init_config_setting
 @click.option('-w', '--max-workers', default=5, show_default=True, type=int, help='The number of workers',
               envvar='MAX_WORKERS')
 @click.option('--log-file', default=None, show_default=True, type=str, envvar='LOG_FILE', help='Log file')
+@calculate_execution_time
 def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, end_block, entity_types, output_types,
            partition_size, period_seconds=10, batch_size=10, debug_batch_size=1, block_batch_size=1, max_workers=5,
            log_file=None, pid_file=None):
@@ -126,3 +138,4 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
                       block_batch_size=block_batch_size,
                       period_seconds=period_seconds,
                       pid_file=pid_file)
+
