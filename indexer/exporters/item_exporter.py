@@ -19,7 +19,11 @@ def create_item_exporter(output, config):
         item_exporter = ConsoleItemExporter()
 
     elif item_exporter_type == ItemExporterType.POSTGRES:
-        item_exporter = PostgresItemExporter(config['db_service'])
+        try:
+            service = config['db_service']
+        except KeyError:
+            raise ValueError(f'Postgresql item exporter must provide pg config.')
+        item_exporter = PostgresItemExporter(service)
 
     elif item_exporter_type == ItemExporterType.JSONFILE:
         item_exporter = JSONFileItemExporter(output, config)
