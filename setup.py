@@ -43,7 +43,7 @@ setup(
         "alembic",
         "pandas",
         'Flask==3.0.3',
-        'Flask-Caching==2.0.1',
+        'Flask-Caching==2.3.0',
         'Flask-Cors==3.0.9',
         'flask-limiter==3.8.0',
         'flask-restx==1.3.0',
