@@ -15,10 +15,6 @@ from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distinct_collections_by_group, ZERO_ADDRESS
 
 
-def verify_0_address(address):
-    return set(address[2:]) == {'0'}
-
-
 logger = logging.getLogger(__name__)
 
 BALANCE_OF_ABI_FUNCTION = {
