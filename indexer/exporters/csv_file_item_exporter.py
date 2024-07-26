@@ -4,11 +4,13 @@ import collections
 import os
 import subprocess
 from datetime import datetime, timezone
+from typing import List
 
 import pandas
 from dateutil.tz import tzlocal
 
-from indexer.exporters.base_exporter import BaseExporter
+from indexer.domain import Domain, dataclass_to_dict
+from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 from common.utils.file_utils import smart_delete, smart_open, scan_tmp_files
 
 logger = logging.getLogger(__name__)
@@ -24,7 +26,7 @@ class CSVFileItemExporter(BaseExporter):
         self.partition_size = partition_size
         self.time_range = time_range
 
-    def export_items(self, items):
+    def export_items(self, items: List[Domain]):
         start_time = datetime.now(tzlocal())
 
         try:
@@ -47,12 +49,12 @@ class CSVFileItemExporter(BaseExporter):
     def batch_finish(self):
         self.merge_tmp_files()
 
-    def write_items_to_tmp_file(self, item_type, items):
+    def write_items_to_tmp_file(self, item_type: str, items: List[Domain]):
         first, last = items[0], items[-1]
-        if 'timestamp' in first:
-            time_range = f"{first['timestamp']}_{last['timestamp']}"
-        elif 'block_timestamp' in first:
-            time_range = f"{first['block_timestamp']}_{last['block_timestamp']}"
+        if hasattr(first, 'timestamp'):
+            time_range = f"{first.timestamp}_{last.timestamp}"
+        elif hasattr(first, 'block_timestamp'):
+            time_range = f"{first.block_timestamp}_{last.block_timestamp}"
         else:
             time_range = None
 
@@ -66,12 +68,11 @@ class CSVFileItemExporter(BaseExporter):
 
         tmp_file_name = basic_file_path + ".csv.tmp"
         with smart_open(tmp_file_name, mode='w') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=items[0].keys())
+            writer = csv.DictWriter(csvfile, fieldnames=dataclass_to_dict(items[0]).keys())
             writer.writeheader()
             for item in items:
-                copy_item = item.copy()
-                copy_item['model'] = copy_item['model'].__name__
-                writer.writerow(copy_item)
+                dict_item = dataclass_to_dict(item)
+                writer.writerow(dict_item)
 
     def merge_tmp_files(self):
         tmp_files = scan_tmp_files(self.dir)
@@ -135,12 +136,3 @@ class CSVFileItemExporter(BaseExporter):
             sub_data.to_csv(f"{basic_file_path}({i}).csv", index=False)
 
         smart_delete(file)
-
-
-def group_by_item_type(items):
-    result = collections.defaultdict(list)
-    for item in items:
-        key = item["model"].__tablename__
-        result[key].append(item)
-
-    return result

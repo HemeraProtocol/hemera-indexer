@@ -5,10 +5,12 @@ import os
 import subprocess
 from datetime import datetime, timezone
 from glob import glob
+from typing import List
 
 from dateutil.tz import tzlocal
 
-from indexer.exporters.base_exporter import BaseExporter
+from indexer.domain import Domain, dataclass_to_dict
+from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 from common.utils.file_utils import smart_delete, smart_open, scan_tmp_files
 
 logger = logging.getLogger(__name__)
@@ -22,7 +24,7 @@ class JSONFileItemExporter(BaseExporter):
         self.dir = direction.replace("jsonfile://", "")
         self.partition_size = partition_size
 
-    def export_items(self, items):
+    def export_items(self, items: List[Domain]):
         start_time = datetime.now(tzlocal())
 
         try:
@@ -45,12 +47,12 @@ class JSONFileItemExporter(BaseExporter):
     def batch_finish(self):
         self.merge_tmp_files()
 
-    def write_items_to_tmp_file(self, item_type, items):
+    def write_items_to_tmp_file(self, item_type: str, items: List[Domain]):
         first, last = items[0], items[-1]
-        if 'timestamp' in first:
-            time_range = f"{first['timestamp']}_{last['timestamp']}"
-        elif 'block_timestamp' in first:
-            time_range = f"{first['block_timestamp']}_{last['block_timestamp']}"
+        if hasattr(first, 'timestamp'):
+            time_range = f"{first.timestamp}_{last.timestamp}"
+        elif hasattr(first, 'block_timestamp'):
+            time_range = f"{first.block_timestamp}_{last.block_timestamp}"
         else:
             time_range = None
 
@@ -65,9 +67,7 @@ class JSONFileItemExporter(BaseExporter):
         tmp_file_name = basic_file_path + ".json.tmp"
         with smart_open(tmp_file_name, mode='w') as file_handle:
             for item in items:
-                copy_item = item.copy()
-                copy_item['model'] = copy_item['model'].__name__
-                file_handle.write(json.dumps(copy_item) + '\n')
+                file_handle.write(json.dumps(dataclass_to_dict(item)) + '\n')
 
     def merge_tmp_files(self):
         tmp_files = scan_tmp_files(self.dir)
@@ -93,7 +93,7 @@ class JSONFileItemExporter(BaseExporter):
                         time_range = dt.strftime("%Y-%m-%d_%H:00:00")
                         exist_files = glob(f"{self.dir}/{model}/{model}-{time_range}*")
                         if len(exist_files) > 1:
-                            to_file = f"{self.dir}/{model}/{model}-{time_range}_{len(exist_files)-1}.json"
+                            to_file = f"{self.dir}/{model}/{model}-{time_range}_{len(exist_files) - 1}.json"
                         else:
                             to_file = f"{self.dir}/{model}/{model}-{time_range}.json"
                     else:
@@ -140,12 +140,3 @@ class JSONFileItemExporter(BaseExporter):
                 sub_file.close()
 
         smart_delete(file)
-
-
-def group_by_item_type(items):
-    result = collections.defaultdict(list)
-    for item in items:
-        key = item["model"].__tablename__
-        result[key].append(item)
-
-    return result

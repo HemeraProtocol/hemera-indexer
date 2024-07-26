@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import insert
 
 from common.models import HemeraModel
 from indexer.domain import Domain
-from indexer.exporters.base_exporter import BaseExporter
+from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 from common.converter.pg_converter import domain_model_mapping
 
 logger = logging.getLogger(__name__)
@@ -85,11 +85,3 @@ class PostgresItemExporter(BaseExporter):
         statement = statement.on_conflict_do_update(index_elements=pk_list, set_=update_set, where=where_clause)
         return statement
 
-
-def group_by_item_type(items: List[Domain]):
-    result = collections.defaultdict(list)
-    for item in items:
-        key = item.__class__
-        result[key].append(item)
-
-    return result
