@@ -53,10 +53,10 @@ class ExportTracesJob(BaseJob):
                                      self._is_batch)
 
         for trace in traces:
-            trace_entity = Trace(trace)
+            trace_entity = Trace.from_rpc(trace)
             self._collect_item(Trace.type(), trace_entity)
             if trace_entity.is_contract_creation() or trace_entity.is_transfer_value():
-                self._collect_item(ContractInternalTransaction.type(), ContractInternalTransaction(trace))
+                self._collect_item(ContractInternalTransaction.type(), ContractInternalTransaction.from_rpc(trace))
 
     def _process(self):
         self._data_buff[Trace.type()].sort(
@@ -107,19 +107,6 @@ class ExtractTraces:
         self._trace_idx += 1
         trace_id = f"{block_number}_{transaction_index}_{trace_index}"
 
-        from_address = tx_trace.get('from')
-        to_address = tx_trace.get('to')
-
-        input = tx_trace.get('input')
-        output = tx_trace.get('output')
-
-        value = tx_trace.get('value')
-        gas = tx_trace.get('gas')
-        gas_used = tx_trace.get('gasUsed')
-
-        error = tx_trace.get('error')
-        status = 1 if error is None else 0
-
         # lowercase for compatibility with parity traces
         trace_type = tx_trace.get('type').lower()
         call_type = ''
@@ -134,19 +121,19 @@ class ExtractTraces:
 
         trace = {
             'trace_id': trace_id,
-            'from_address': from_address,
-            'to_address': to_address,
-            'input': input,
-            'output': output,
-            'value': to_int(hexstr=value) if value is not None else None,
-            'gas': gas,
-            'gas_used': gas_used,
+            'from_address': tx_trace.get('from'),
+            'to_address': tx_trace.get('to'),
+            'input': tx_trace.get('input'),
+            'output': tx_trace.get('output'),
+            'value': tx_trace.get('value'),
+            'gas': tx_trace.get('gas'),
+            'gas_used': tx_trace.get('gasUsed'),
             'trace_type': trace_type,
             'call_type': call_type,
             'subtraces': len(calls),
             'trace_address': trace_address,
-            'error': error,
-            'status': status,
+            'error': tx_trace.get('error'),
+            'status': 1 if tx_trace.get('error') is None else 0,
             'block_number': block_number,
             'block_hash': geth_trace['block_hash'],
             'block_timestamp': geth_trace['block_timestamp'],

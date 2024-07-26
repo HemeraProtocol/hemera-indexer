@@ -118,7 +118,7 @@ def upgrade() -> None:
     op.create_index('traces_block_number_index', 'traces', [sa.text('block_number DESC')], unique=False)
     op.create_index('traces_from_address_block_number_index', 'traces', ['from_address', sa.text('block_number DESC')], unique=False)
     op.create_index('traces_to_address_block_number_index', 'traces', ['to_address', sa.text('block_number DESC')], unique=False)
-    op.add_column('transactions', sa.Column('method_id', sa.VARCHAR(), sa.Computed('substring((input)::varchar for 8)::bigint::varchar', ), nullable=True))
+    op.add_column('transactions', sa.Column('method_id', sa.VARCHAR(), sa.Computed('substr(input :: pg_catalog.varchar, 3, 8)', ), nullable=True))
     op.drop_index('transactions_address_block_number_transaction_idx', table_name='transactions')
     op.drop_index('transactions_block_timestamp_block_number_index', table_name='transactions')
     op.create_index('transactions_block_number_transaction_index', 'transactions', [sa.text('block_number DESC'), sa.text('transaction_index DESC')], unique=False)

@@ -62,8 +62,13 @@ Index('tokens_symbol_index', Tokens.symbol)
 Index('tokens_type_index', Tokens.token_type)
 Index('tokens_type_holders_index', Tokens.token_type, desc(Tokens.holder_count))
 Index('tokens_type_on_chain_market_cap_index', Tokens.token_type, desc(Tokens.on_chain_market_cap))
-Index('tokens_tsvector_symbol_name_index',
-      func.to_tsvector('english', (Tokens.symbol + ' ' + Tokens.name)), postgresql_using='gin')
+
+# because of sqlalchemy doesn't recognize 'english' with datatype REGCONFIG
+# alembic could not track this index
+# before sqlalchemy support this case, we suggest running this sql manually
+
+# Index('tokens_tsvector_symbol_name_index',
+#       func.to_tsvector('english', (Tokens.symbol + ' ' + Tokens.name)), postgresql_using='gin')
 
 # CREATE INDEX tokens_tsvector_symbol_name_index
 # ON tokens
