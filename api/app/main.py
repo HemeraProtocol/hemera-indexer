@@ -4,10 +4,8 @@
 import logging
 
 import flask
-import sentry_sdk
 from flask import Flask, request
 from flask_cors import CORS
-from sentry_sdk.integrations.flask import FlaskIntegration
 
 from common.models import db
 from common.utils.config import get_config
@@ -22,23 +20,6 @@ config = get_config()
 logging.basicConfig(level=logging.INFO)
 # logging.basicConfig()
 # logging.getLogger("sqlalchemy.pool").setLevel(logging.DEBUG)
-
-sentry_sdk.init(
-    dsn="https://86881b1d137645f094afed7f0ee3c174@o1376794.ingest.sentry.io/4505464387862528",
-    integrations=[
-        FlaskIntegration(),
-    ],
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    # We recommend adjusting this value in production.
-    traces_sample_rate=0.01,
-    # By default the SDK will try to use the SENTRY_RELEASE
-    # environment variable, or infer a git commit
-    # SHA as release, however you may want to set
-    # something more human-readable.
-    # release="myapp@1.0.0",
-    environment='local',
-)
 
 app = Flask(__name__)
 

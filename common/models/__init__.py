@@ -3,6 +3,7 @@ import ast
 from datetime import datetime, timezone
 from typing import Type
 
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP, ARRAY
 
@@ -10,7 +11,8 @@ from common.services.sqlalchemy_session import RouteSQLAlchemy
 from common.utils.module_loading import import_string
 from indexer.domain import Domain
 
-db = RouteSQLAlchemy(session_options={"autoflush": False})
+# db = RouteSQLAlchemy(session_options={"autoflush": False})
+db = SQLAlchemy(session_options={"autoflush": False})
 
 
 class HemeraModel(db.Model):

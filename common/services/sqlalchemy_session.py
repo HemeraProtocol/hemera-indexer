@@ -4,7 +4,7 @@
 from functools import partial
 
 from flask import current_app
-from flask_sqlalchemy import SQLAlchemy, get_state
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 
 
@@ -23,22 +23,22 @@ class RoutingSession(orm.Session):
         )
 
     def get_bind(self, mapper=None, clause=None):
-        try:
-            state = get_state(self.app)
-        except (AssertionError, AttributeError, TypeError) as err:
-            current_app.logger.info("cant get configuration. default bind. Error:" + err)
-            return orm.Session.get_bind(self, mapper, clause)
+        # try:
+        #     state = get_state(self.app)
+        # except (AssertionError, AttributeError, TypeError) as err:
+        #     current_app.logger.info("cant get configuration. default bind. Error:" + err)
+        #     return orm.Session.get_bind(self, mapper, clause)
 
         # If there are no binds configured, use default SQLALCHEMY_DATABASE_URI
-        if not state or not self.app.config["SQLALCHEMY_BINDS"]:
+        if not self.app.config["SQLALCHEMY_BINDS"]:
             return orm.Session.get_bind(self, mapper, clause)
 
         # if want to user exact bind
-        if self._bind_name:
-            return state.db.get_engine(self.app, bind=self._bind_name)
-        else:
-            # if no bind is used connect to default
-            return orm.Session.get_bind(self, mapper, clause)
+        # if self._bind_name:
+        #     return state.db.get_engine(self.app, bind=self._bind_name)
+        # else:
+        # if no bind is used connect to default
+        return orm.Session.get_bind(self, mapper, clause)
 
     def using_bind(self, name):
         bind_session = RoutingSession(self.db)
