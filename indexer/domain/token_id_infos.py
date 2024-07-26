@@ -28,7 +28,6 @@ class ERC721TokenIdChange(Domain):
 class ERC721TokenIdDetail(Domain):
     token_address: str
     token_id: int
-    token_owner: str
     token_uri: str
     block_number: int
     block_timestamp: int
@@ -39,7 +38,6 @@ class ERC721TokenIdDetail(Domain):
         return ERC721TokenIdDetail(
             token_address=token_dict['address'],
             token_id=token_dict['token_id'],
-            token_owner=token_dict['ownerOf'] if token_dict['ownerOf'] else ZERO_ADDRESS,
             token_uri=token_dict['tokenURI'],
             block_number=token_dict['block_number'],
             block_timestamp=token_dict['block_timestamp'],
@@ -69,7 +67,6 @@ class UpdateERC721TokenIdDetail(Domain):
 class ERC1155TokenIdDetail(Domain):
     token_address: str
     token_id: int
-    token_supply: int
     token_uri: str
     block_number: int
     block_timestamp: int
@@ -80,7 +77,6 @@ class ERC1155TokenIdDetail(Domain):
         return ERC1155TokenIdDetail(
             token_address=token_dict['address'],
             token_id=token_dict['token_id'],
-            token_supply=token_dict['totalSupply'],
             token_uri=token_dict['uri'],
             block_number=token_dict['block_number'],
             block_timestamp=token_dict['block_timestamp'],

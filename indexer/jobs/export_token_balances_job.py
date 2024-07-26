@@ -11,9 +11,9 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
+from indexer.utils.abi import encode_abi
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distinct_collections_by_group, ZERO_ADDRESS
-
 
 logger = logging.getLogger(__name__)
 
@@ -137,9 +137,11 @@ class ExportTokenBalancesJob(BaseJob):
 def encode_balance_abi_parameter(address, token_type, token_id):
 
     if token_type == 'ERC1155':
-        return balance_of_token_id_sig_prefix + address[2:].zfill(64) + hex(token_id)[2:].zfill(64)
+
+        return encode_abi(BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION, [address, token_id], balance_of_token_id_sig_prefix)
     else:
-        return balance_of_sig_prefix + address[2:].zfill(64)
+        return encode_abi(BALANCE_OF_ABI_FUNCTION, [address], balance_of_sig_prefix)
+
 
 def extract_token_parameters(
         token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]):
