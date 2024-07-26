@@ -13,6 +13,8 @@ from indexer.domain.token_transfer import extract_transfer_from_log, \
     ERC20TokenTransfer, ERC1155TokenTransfer, ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
+from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
+from indexer.utils.abi import encode_abi
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
@@ -55,6 +57,53 @@ erc_token_abi = [
         "type": "function"
     }
 ]
+
+NAME_ABI_FUNCTION = {
+    "constant": True,
+    "inputs": [],
+    "name": "name",
+    "outputs": [{"name": "", "type": "string"}],
+    "payable": False,
+    "stateMutability": "view",
+    "type": "function"
+}
+
+SYMBOL_ABI_FUNCTION = {
+    "constant": True,
+    "inputs": [],
+    "name": "symbol",
+    "outputs": [{"name": "", "type": "string"}],
+    "payable": False,
+    "stateMutability": "view",
+    "type": "function"
+}
+
+DECIMALS_ABI_FUNCTION = {
+    "constant": True,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"name": "", "type": "uint8"}],
+    "payable": False,
+    "stateMutability": "view",
+    "type": "function"
+}
+
+TOTAL_SUPPLY_ABI_FUNCTION = {
+    "constant": True,
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "payable": False,
+    "stateMutability": "view",
+    "type": "function"
+}
+
+abi_mapping = {
+    "name": NAME_ABI_FUNCTION,
+    "symbol": SYMBOL_ABI_FUNCTION,
+    "decimals": DECIMALS_ABI_FUNCTION,
+    "totalSupply": TOTAL_SUPPLY_ABI_FUNCTION,
+}
 
 
 class ExportTokensAndTransfersJob(BaseJob):
@@ -127,7 +176,6 @@ class ExportTokensAndTransfersJob(BaseJob):
                     key=lambda x: (x.block_number, x.transaction_hash, x.log_index))
 
 
-
 def extract_tokens_and_token_transfers(logs: List[Log]):
     tokens, token_transfer = [], []
     for log in logs:
@@ -173,7 +221,7 @@ def distinct_tokens(exist_tokens, origin_tokens):
     return tokens_info
 
 
-def build_rpc_method_data(web3, tokens, fn, require_new):
+def build_rpc_method_data(tokens, fn, require_new):
     parameters = []
 
     for token in tokens:
@@ -187,14 +235,13 @@ def build_rpc_method_data(web3, tokens, fn, require_new):
         token['data_type'] = ''
 
         try:
-            token['param_data'] = (web3.eth
-                                   .contract(address=Web3.to_checksum_address(token['address']),
-                                             abi=erc_token_abi)
-                                   .encodeABI(fn_name=fn))
-            for abi_fn in erc_token_abi:
-                if fn == abi_fn['name']:
-                    token['data_type'] = abi_fn['outputs'][0]['type']
-
+            NAME_ABI_FUNCTION = abi_mapping.get(fn)
+            token['param_data'] = encode_abi(
+                NAME_ABI_FUNCTION,
+                [],
+                function_abi_to_4byte_selector_str(NAME_ABI_FUNCTION)
+            )
+            token['data_type'] = NAME_ABI_FUNCTION['outputs'][0]['type']
         except Exception as e:
             logger.warning(
                 f"Encoding token abi parameter failed. "
@@ -215,7 +262,7 @@ def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
     for fn_name in fn_names.keys():
 
         token_name_rpc = list(
-            generate_eth_call_json_rpc(build_rpc_method_data(web3, tokens, fn_name, fn_names[fn_name])))
+            generate_eth_call_json_rpc(build_rpc_method_data(tokens, fn_name, fn_names[fn_name])))
 
         if len(token_name_rpc) == 0:
             continue
