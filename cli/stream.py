@@ -89,7 +89,7 @@ def calculate_execution_time(func):
               envvar='MAX_WORKERS')
 @click.option('--log-file', default=None, show_default=True, type=str, envvar='LOG_FILE', help='Log file')
 @click.option('--pid-file', default=None, show_default=True, type=str, envvar='PID_FILE', help='Pid file')
-@click.option('--sync-recorder', default=None, show_default=True, type=str, envvar='SYNC_RECORDER',
+@click.option('--sync-recorder', default='file_sync_record', show_default=True, type=str, envvar='SYNC_RECORDER',
               help='How to store the sync record data.'
                    'e.g pg_base. means sync record data will store in pg as "base" be key'
                    'or file_base. means sync record data will store in file as "base" be file name')
