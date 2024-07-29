@@ -15,7 +15,6 @@ from common.utils.web3_utils import to_checksum_address
 codec = ABICodec(build_strict_registry())
 
 
-
 @implicitly_identity
 def abi_string_to_text(type_str: TypeStr, data: Any) -> Optional[Tuple[TypeStr, str]]:
     if type_str == "string":
@@ -41,6 +40,7 @@ def abi_address_to_hex(
         if is_binary_address(data):
             return type_str, to_checksum_address(data)
     return None
+
 
 def encode_abi(
         abi: ABIFunction,

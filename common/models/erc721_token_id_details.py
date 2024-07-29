@@ -30,8 +30,14 @@ class ERC721TokenIdDetails(HemeraModel):
         return [
             {
                 'domain': 'ERC721TokenIdDetail',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'UpdateERC721TokenIdDetail',
                 'conflict_do_update': True,
-                'update_strategy': "EXCLUDED.block_number > erc721_token_id_details.block_number",
+                'update_strategy': "EXCLUDED.block_number >= erc721_token_id_details.block_number",
                 'converter': general_converter,
             }
         ]

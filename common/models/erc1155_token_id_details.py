@@ -30,8 +30,14 @@ class ERC1155TokenIdDetails(HemeraModel):
         return [
             {
                 'domain': 'ERC1155TokenIdDetail',
+                'conflict_do_update': False,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'UpdateERC1155TokenIdDetail',
                 'conflict_do_update': True,
-                'update_strategy': "EXCLUDED.block_number > erc1155_token_id_details.block_number",
+                'update_strategy': "EXCLUDED.block_number >= erc1155_token_id_details.block_number",
                 'converter': general_converter,
             }
         ]

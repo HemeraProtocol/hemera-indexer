@@ -34,8 +34,7 @@ class FileSyncRecorder(BaseRecorder):
 
 class PGSyncRecorder(BaseRecorder):
 
-    def __init__(self, mission, key, service):
-        self.mission = mission
+    def __init__(self, key, service):
         self.key = key
         self.service = service
 
@@ -44,11 +43,10 @@ class PGSyncRecorder(BaseRecorder):
         update_time = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
         try:
             statement = insert(SyncRecord).values({
-                "mission_type": self.mission,
                 "mission_sign": self.key,
                 "last_block_number": last_synced_block,
                 "update_time": update_time
-            }).on_conflict_do_update(index_elements=[SyncRecord.mission_type, SyncRecord.mission_sign],
+            }).on_conflict_do_update(index_elements=[SyncRecord.mission_sign],
                                      set_=
                                      {
                                          "last_block_number": last_synced_block,
@@ -67,8 +65,7 @@ class PGSyncRecorder(BaseRecorder):
         session = self.service.get_service_session()
         try:
             result = session.query(SyncRecord.last_block_number).filter(
-                and_(SyncRecord.mission_type == self.mission,
-                     SyncRecord.mission_sign == self.key)
+                SyncRecord.mission_sign == self.key
             ).scalar()
         except Exception as e:
             print(e)
@@ -80,7 +77,7 @@ class PGSyncRecorder(BaseRecorder):
         return 0
 
 
-def create_recorder(mission: str, sync_recorder: str, config: dict) -> BaseRecorder:
+def create_recorder(sync_recorder: str, config: dict) -> BaseRecorder:
     cut_begin = sync_recorder.find('_')
     if cut_begin == -1:
         raise ValueError(f'Invalid sync recorder: {sync_recorder}''')
@@ -92,10 +89,10 @@ def create_recorder(mission: str, sync_recorder: str, config: dict) -> BaseRecor
             service = config['db_service']
         except KeyError:
             raise ValueError(f'postgresql sync record must provide pg config.')
-        return PGSyncRecorder(mission, recorder, service)
+        return PGSyncRecorder(recorder, service)
 
     elif sync_recorder.startswith('file'):
-        return FileSyncRecorder(mission, recorder)
+        return FileSyncRecorder(recorder)
 
     else:
         raise ValueError('Unable to determine sync recorder type: ' + sync_recorder)

@@ -1,4 +1,3 @@
-import re
 from dataclasses import asdict, is_dataclass, dataclass, fields
 from typing import Dict, Any, get_origin, Union, get_args
 
@@ -34,6 +33,7 @@ class FilterData(Domain):
     @classmethod
     def is_filter_data(cls):
         return True
+
 
 def dict_to_dataclass(data: Dict[str, Any], cls):
     """
