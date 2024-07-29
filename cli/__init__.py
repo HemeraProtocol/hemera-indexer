@@ -1,6 +1,5 @@
 import click
 
-from cli.wsgi import wsgi
 from cli.fixing import fixing
 from cli.stream import stream
 from indexer.utils.logging_utils import logging_basic_config
@@ -17,4 +16,3 @@ def cli(ctx):
 
 cli.add_command(stream, "stream")
 cli.add_command(fixing, "fixing")
-cli.add_command(wsgi, "api")
