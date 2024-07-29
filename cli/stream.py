@@ -140,7 +140,7 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_dispatcher=stream_dispatcher,
-        sync_recorder=create_recorder(sync_recorder, config),
+        sync_recorder=create_recorder(__name__, sync_recorder, config),
     )
 
     controller.action(start_block=start_block,

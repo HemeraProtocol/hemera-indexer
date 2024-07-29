@@ -137,7 +137,6 @@ class ExportTokenBalancesJob(BaseJob):
 def encode_balance_abi_parameter(address, token_type, token_id):
 
     if token_type == 'ERC1155':
-
         return encode_abi(BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION, [address, token_id], balance_of_token_id_sig_prefix)
     else:
         return encode_abi(BALANCE_OF_ABI_FUNCTION, [address], balance_of_sig_prefix)
