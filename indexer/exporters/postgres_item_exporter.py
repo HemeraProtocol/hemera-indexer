@@ -43,7 +43,7 @@ class PostgresItemExporter(BaseExporter):
 
                     if do_update:
                         statement = insert(table).values(data)
-                        statement = self.on_conflict_do_update(table, statement, update_strategy)
+                        statement = self.on_conflict_do_update(item_type, table, statement, update_strategy)
                         session.execute(statement)
                         session.commit()
 
@@ -67,7 +67,7 @@ class PostgresItemExporter(BaseExporter):
             .format(", ".join(tables), len(items), (end_time - start_time)))
 
     @staticmethod
-    def on_conflict_do_update(model: Type[HemeraModel], statement, where_clause=None):
+    def on_conflict_do_update(domain: Type[Domain], model: Type[HemeraModel], statement, where_clause=None):
         pk_list = []
         for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
             if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
@@ -76,7 +76,7 @@ class PostgresItemExporter(BaseExporter):
 
         update_set = {}
         for exc in statement.excluded:
-            if exc.name not in pk_list:
+            if exc.name not in pk_list and hasattr(domain, exc.name):
                 update_set[exc.name] = exc
 
         if where_clause:
@@ -84,4 +84,3 @@ class PostgresItemExporter(BaseExporter):
 
         statement = statement.on_conflict_do_update(index_elements=pk_list, set_=update_set, where=where_clause)
         return statement
-

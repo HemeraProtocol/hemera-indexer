@@ -83,7 +83,7 @@ def converter(table: Type[HemeraModel], data: Transaction, is_update=False):
 
     converted_data['receipt_root'] = bytes.fromhex(receipt.root[2:]) if receipt.root else None
     converted_data['receipt_status'] = receipt.status
-    converted_data['receipt_gas_used']: receipt.gas_used
+    converted_data['receipt_gas_used'] = receipt.gas_used
     converted_data['receipt_cumulative_gas_used'] = receipt.cumulative_gas_used
     converted_data['receipt_effective_gas_price'] = receipt.effective_gas_price
     converted_data['receipt_l1_fee'] = receipt.l1_fee
