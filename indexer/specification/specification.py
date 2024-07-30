@@ -1,6 +1,7 @@
 from typing import List
 
 from eth_utils import to_checksum_address
+from web3 import Web3
 
 from indexer.domain.transaction import Transaction
 
@@ -91,6 +92,13 @@ class TopicSpecification(Specification):
                     return True
         return False
 
+    def to_filter_params(self):
+        params = {}
+        if self.topics:
+            params["topics"] = self.topics
+        if self.addresses:
+            params["address"] = [Web3.to_checksum_address(address) for address in self.addresses]
+        return params
 
 class TransactionHashSpecification(Specification):
     def __init__(self, hashes: List[str]):
@@ -111,7 +119,9 @@ class TransactionFilterByLogs:
             self.eth_log_filters_params['address'] = filter_addresses
 
     def get_eth_log_filters_params(self):
-        return self.eth_log_filters_params
+        return [
+            spec.to_filter_params() for spec in self.specifications
+        ]
 
     def is_satisfied_by(self, item: Transaction):
         return any(spec.is_satisfied_by(item) for spec in self.specifications)
