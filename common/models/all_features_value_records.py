@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
-from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, VARCHAR
+from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, VARCHAR, JSONB
 
 from common.models import db, HemeraModel, general_converter
 
@@ -12,7 +12,7 @@ class AllFeatureValueRecords(HemeraModel):
     block_number = Column(BIGINT, primary_key=True)
     address = Column(BYTEA, primary_key=True)
 
-    value = Column(VARCHAR)
+    value = Column(JSONB)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
@@ -25,7 +25,7 @@ class AllFeatureValueRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                'domain': 'AllFeatureValueRecords',
+                'domain': 'AllFeatureValueRecord',
                 'conflict_do_update': True,
                 'update_strategy': None,
                 'converter': general_converter,

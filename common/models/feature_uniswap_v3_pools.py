@@ -29,7 +29,7 @@ class UniswapV3Pools(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                'domain': 'UniswapV3Pools',
+                'domain': 'UniswapV3Pool',
                 'conflict_do_update': True,
                 'update_strategy': None,
                 'converter': general_converter,

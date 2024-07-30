@@ -1,8 +1,8 @@
 """add uniswap v3 pools
 
-Revision ID: 981967835f71
+Revision ID: 7fd4767eb055
 Revises: 0b922153e040
-Create Date: 2024-07-30 14:18:04.115207
+Create Date: 2024-07-30 17:44:43.587378
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '981967835f71'
+revision: str = '7fd4767eb055'
 down_revision: Union[str, None] = '0b922153e040'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,7 +24,7 @@ def upgrade() -> None:
     sa.Column('feature_id', sa.NUMERIC(precision=100), nullable=False),
     sa.Column('block_number', sa.BIGINT(), nullable=False),
     sa.Column('address', postgresql.BYTEA(), nullable=False),
-    sa.Column('value', sa.VARCHAR(), nullable=True),
+    sa.Column('value', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
     sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint('block_number', 'feature_id', 'address')
