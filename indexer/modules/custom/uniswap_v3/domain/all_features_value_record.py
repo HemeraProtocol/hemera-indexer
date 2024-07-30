@@ -10,3 +10,4 @@ class AllFeatureValueRecord(FilterData):
     block_number: int
     address: str
     value: dict
+    update_time: Optional[int] = None
