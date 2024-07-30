@@ -10,7 +10,8 @@ __all__ = [
 
     'ExportTracesJob',
     'ExportContractsJob',
-    'ExportCoinBalancesJob'
+    'ExportCoinBalancesJob',
+    'ExportUniSwapV3PoolJob'
 ]
 
 from indexer.jobs.export_blocks_job import ExportBlocksJob
@@ -24,6 +25,7 @@ from indexer.jobs.export_token_balances_job import ExportTokenBalancesJob
 from indexer.jobs.export_traces_job import ExportTracesJob
 from indexer.jobs.export_contracts_job import ExportContractsJob
 from indexer.jobs.export_coin_balances_job import ExportCoinBalancesJob
+from indexer.modules.custom.uniswap_v3.export_uniswap_v3_pool_job import ExportUniSwapV3PoolJob
 
 
 

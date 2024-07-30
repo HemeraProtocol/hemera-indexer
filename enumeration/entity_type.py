@@ -7,6 +7,7 @@ from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract import Contract
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
+from indexer.domain.feature_uniswap_v3 import UniswapV3Pools
 from indexer.domain.log import Log
 from indexer.domain.token import *
 from indexer.domain.token_balance import TokenBalance
@@ -23,6 +24,7 @@ class EntityType(IntFlag):
     EXPLORER_TRACE = 1 << 2
 
     BRIDGE = 1 << 3
+    UNISWAP_V3_POOL = 1 << 4
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -80,3 +82,6 @@ def generate_output_types(entity_types):
         yield CoinBalance
         yield ContractInternalTransaction
         yield UpdateBlockInternalCount
+
+    if entity_types & EntityType.UNISWAP_V3_POOL:
+        yield UniswapV3Pools
