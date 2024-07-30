@@ -88,7 +88,7 @@ class TopicSpecification(Specification):
     def is_satisfied_by(self, item: Transaction):
         if item.receipt is not None and item.receipt.logs is not None:
             for log in item.receipt.logs:
-                if log.topic0 in self.topics and (len(self.addresses) == 0 or log.address in self.addresses):
+                if (len(self.topics) == 0 or log.topic0 in self.topics) and (len(self.addresses) == 0 or log.address in self.addresses):
                     return True
         return False
 

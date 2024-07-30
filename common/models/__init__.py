@@ -32,7 +32,7 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
     for key in data.__dict__.keys():
         if key in table.__table__.c:
             column_type = get_column_type(table, key)
-            if isinstance(column_type, BYTEA) and getattr(data, key) is not bytes:
+            if isinstance(column_type, BYTEA) and not isinstance(getattr(data, key), bytes):
                 converted_data[key] = bytes.fromhex(getattr(data, key)[2:]) if getattr(data, key) else None
             elif isinstance(column_type, TIMESTAMP):
                 converted_data[key] = func.to_timestamp(getattr(data, key))

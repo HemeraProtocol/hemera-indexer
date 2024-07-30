@@ -16,6 +16,7 @@ from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.feature_type import FeatureType
+from indexer.modules.custom.uniswap_v3.util import load_abi
 from indexer.specification.specification import TransactionFilterByLogs, TopicSpecification
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._pool_prices = {}
         self._pool_prices_lock = threading.Lock()
         self._load_config('config.ini')
-        self._abi_list = _load_abi('abi.json')
+        self._abi_list = load_abi('abi.json')
         self._exist_pools = get_exist_pools(self._service[0], self._nft_address)
 
     def get_filter(self):
@@ -49,7 +50,6 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
 
     def _load_config(self, filename):
         base_path = os.path.dirname(os.path.abspath(__file__))
-        # 构建配置文件的完整路径
         full_path = os.path.join(base_path, filename)
         config = configparser.ConfigParser()
         config.read(full_path)
@@ -66,7 +66,6 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         super()._start()
 
     def _collect(self, **kwargs):
-        # each address and each topic0 save one record
         logs = self._data_buff[Log.type()]
         grouped_logs = defaultdict(dict)
         for log in logs:
@@ -101,12 +100,6 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     def _process(self):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.mint_block_number)
         self._data_buff[AllFeatureValueRecord.type()].sort(key=lambda x: x.block_number)
-
-        for entity in self._data_buff[UniswapV3Pool.type()]:
-            print(f'the new pool : {entity}')
-
-        for entity in self._data_buff[AllFeatureValueRecord.type()]:
-            print(f'the new price : {entity}')
 
     def update_pool_prices(self, new_pool_prices):
         if not new_pool_prices or len(new_pool_prices) == 0:
@@ -262,11 +255,3 @@ def encode_data_together(topic1, topic2, topic3, data):
             else:
                 encode_data += str(topic)
     return encode_data
-
-
-def _load_abi(filename):
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    full_path = os.path.join(base_path, filename)
-    with open(full_path, 'r') as file:
-        data = json.load(file)
-    return data
