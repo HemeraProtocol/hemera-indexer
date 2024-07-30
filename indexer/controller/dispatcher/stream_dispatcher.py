@@ -9,7 +9,7 @@ class StreamDispatcher(BaseDispatcher):
                  service,
                  batch_web3_provider,
                  batch_web3_debug_provider,
-                 item_exporter=ConsoleItemExporter(),
+                 item_exporters=[ConsoleItemExporter()],
                  batch_size=100,
                  debug_batch_size=1,
                  max_workers=5,
@@ -20,7 +20,7 @@ class StreamDispatcher(BaseDispatcher):
         self._job_scheduler = JobScheduler(
             batch_web3_provider=batch_web3_provider,
             batch_web3_debug_provider=batch_web3_debug_provider,
-            item_exporter=item_exporter,
+            item_exporters=item_exporters,
             batch_size=batch_size,
             debug_batch_size=debug_batch_size,
             max_workers=max_workers,
