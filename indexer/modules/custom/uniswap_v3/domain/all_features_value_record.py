@@ -9,4 +9,4 @@ class AllFeatureValueRecord(FilterData):
     feature_id: int
     block_number: int
     address: str
-    value: str
+    value: dict

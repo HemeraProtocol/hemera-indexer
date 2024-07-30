@@ -153,7 +153,7 @@ def format_value_records(exist_pools, pool_prices, feature_id):
                 feature_id=feature_id,
                 block_number=block_number,
                 address=address,
-                value=json.dumps(value),
+                value=value,
             )
         )
     return result
