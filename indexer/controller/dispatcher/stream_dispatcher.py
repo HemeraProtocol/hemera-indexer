@@ -33,12 +33,16 @@ class StreamDispatcher(BaseDispatcher):
         self.logger.info("Export output types: %s", required_output_types)
 
     def run(self, start_block, end_block):
-        self._job_scheduler.run_jobs(
-            start_block=start_block,
-            end_block=end_block,
-        )
+        try:
+            self._job_scheduler.run_jobs(
+                start_block=start_block,
+                end_block=end_block,
+            )
 
-        for key, value in self._job_scheduler.get_data_buff().items():
-            print(f'{key}: {len(value)}')
+            for key, value in self._job_scheduler.get_data_buff().items():
+                print(f'{key}: {len(value)}')
 
-        self._job_scheduler.clear_data_buff()
+        except Exception as e:
+            raise e
+        finally:
+            self._job_scheduler.clear_data_buff()
