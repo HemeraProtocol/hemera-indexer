@@ -7,7 +7,6 @@ from typing import List, Set, Type
 from common.utils.module_loading import get_all_subclasses
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.base_job import BaseJob
-from indexer.jobs.export_blocks_job import ExportBlocksJob
 
 from indexer.jobs import *
 
