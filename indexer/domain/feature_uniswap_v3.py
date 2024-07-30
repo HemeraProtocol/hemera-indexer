@@ -5,7 +5,7 @@ from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class UniswapV3Pools(FilterData):
+class UniswapV3Pool(FilterData):
     nft_address: str
     pool_address: str
     token0_address: str

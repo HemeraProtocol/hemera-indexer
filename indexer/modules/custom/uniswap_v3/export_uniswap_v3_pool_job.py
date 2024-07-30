@@ -15,9 +15,9 @@ from enumeration.token_type import TokenType
 import math
 
 from indexer.domain import dict_to_dataclass
-from indexer.domain.all_features_value_records import AllFeatureValueRecords
+from indexer.domain.all_features_value_records import AllFeatureValueRecord
 from indexer.domain.block import Block
-from indexer.domain.feature_uniswap_v3 import UniswapV3Pools
+from indexer.domain.feature_uniswap_v3 import UniswapV3Pool
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -273,7 +273,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
 
 class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
-    output_types = [AllFeatureValueRecords, UniswapV3Pools]
+    output_types = [AllFeatureValueRecord, UniswapV3Pool]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -353,19 +353,19 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self.update_pool_prices(pool_prices)
 
         for pools in format_pool_item(need_add_in_exists_pools):
-            self._collect_item(UniswapV3Pools.type(), pools)
+            self._collect_item(UniswapV3Pool.type(), pools)
 
         for record in format_value_records(self._exist_pools, pool_prices, FEATURE_ID):
-            self._collect_item(AllFeatureValueRecords.type(), record)
+            self._collect_item(AllFeatureValueRecord.type(), record)
 
     def _process(self):
-        self._data_buff[UniswapV3Pools.type()].sort(key=lambda x: x.mint_block_number)
-        self._data_buff[AllFeatureValueRecords.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.mint_block_number)
+        self._data_buff[AllFeatureValueRecord.type()].sort(key=lambda x: x.block_number)
 
-        for entity in self._data_buff[UniswapV3Pools.type()]:
+        for entity in self._data_buff[UniswapV3Pool.type()]:
             print(f'the new pool : {entity}')
 
-        for entity in self._data_buff[AllFeatureValueRecords.type()]:
+        for entity in self._data_buff[AllFeatureValueRecord.type()]:
             print(f'the new price : {entity}')
 
     def update_pool_prices(self, new_pool_prices):
@@ -386,7 +386,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
 def format_pool_item(new_pools):
     result = []
     for pool_address, pool in new_pools.items():
-        result.append(dict_to_dataclass(pool, UniswapV3Pools))
+        result.append(dict_to_dataclass(pool, UniswapV3Pool))
     return result
 
 
@@ -409,7 +409,7 @@ def format_value_records(exist_pools, pool_prices, feature_id):
             'block_number': block_number
         }
         result.append(
-            AllFeatureValueRecords(
+            AllFeatureValueRecord(
                 feature_id=feature_id,
                 block_number=block_number,
                 address=address,

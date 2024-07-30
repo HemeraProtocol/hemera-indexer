@@ -5,7 +5,7 @@ from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class AllFeatureValueRecords(FilterData):
+class AllFeatureValueRecord(FilterData):
     feature_id: int
     block_number: int
     address: str
