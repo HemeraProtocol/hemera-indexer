@@ -23,7 +23,6 @@ def import_submodules(package_name):
         if is_pkg:
             import_submodules(full_name)
 
-
 def to_int_or_none(val):
     if isinstance(val, int):
         return val

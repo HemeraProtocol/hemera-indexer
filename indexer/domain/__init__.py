@@ -1,5 +1,6 @@
 from dataclasses import asdict, is_dataclass, dataclass, fields
-from typing import Dict, Any, get_origin, Union, get_args, Type
+from typing import Any, get_origin, Union, get_args
+from typing import Dict
 
 from common.utils.format_utils import to_snake_case
 
@@ -14,7 +15,8 @@ class DomainMeta(type):
 
         return new_cls
 
-    def get_all_subclasses(mcs):
+    @classmethod
+    def get_all_subclasses_with_type(mcs):
         def get_subclasses(cls):
             subclasses = set()
             for subclass in cls.__subclasses__():
@@ -23,7 +25,7 @@ class DomainMeta(type):
             return subclasses
 
         all_subclasses = get_subclasses(Domain)
-        return {cls.__name__: cls for cls in all_subclasses}
+        return {subclass.type(): subclass for subclass in all_subclasses if hasattr(subclass, 'type')}
 
 
 @dataclass
@@ -33,8 +35,8 @@ class Domain(metaclass=DomainMeta):
         return dataclass_to_dict(self)
 
     @classmethod
-    def discover_domains(cls):
-        return list(DomainMeta.get_all_subclasses())
+    def get_all_domain_dict(cls):
+        return DomainMeta.get_all_subclasses_with_type()
 
     @classmethod
     def type(cls) -> str:
@@ -53,35 +55,15 @@ class Domain(metaclass=DomainMeta):
         return False
 
 
-def get_all_domain_subclasses(base_class):
-    subclasses = set()
-    to_process = list(base_class.__subclasses__())
-    while to_process:
-        current = to_process.pop()
-        subclasses.add(current)
-        to_process.extend(current.__subclasses__())
-    return subclasses
-
-
-def string_to_domain_class(output_type: str) -> Type[Domain]:
-    domain_class = domain_classes.get(output_type)
-    if domain_class is None:
-        raise ValueError(f"Unknown output type: {output_type}")
-    return domain_class
-
-
-from typing import Dict, Type
-
-domain_classes: Dict[str, Type[Domain]] = {
-    cls.type(): cls for cls in get_all_domain_subclasses(Domain)
-}
-
 @dataclass
 class FilterData(Domain):
 
     @classmethod
     def is_filter_data(cls):
         return True
+
+
+from typing import Dict
 
 
 def dict_to_dataclass(data: Dict[str, Any], cls):

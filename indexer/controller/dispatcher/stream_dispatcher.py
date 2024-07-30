@@ -1,3 +1,5 @@
+import logging
+
 from indexer.controller.dispatcher.base_dispatcher import BaseDispatcher
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.job_scheduler import JobScheduler
@@ -27,6 +29,8 @@ class StreamDispatcher(BaseDispatcher):
             config=config,
             required_output_types=required_output_types,
         )
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Export output types: %s", required_output_types)
 
     def run(self, start_block, end_block):
         self._job_scheduler.run_jobs(

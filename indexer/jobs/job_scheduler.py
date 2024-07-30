@@ -2,7 +2,6 @@ import logging
 from collections import defaultdict, deque
 from typing import List, Set, Type
 
-
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
