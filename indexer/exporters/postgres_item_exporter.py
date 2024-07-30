@@ -76,7 +76,7 @@ class PostgresItemExporter(BaseExporter):
 
         update_set = {}
         for exc in statement.excluded:
-            if exc.name not in pk_list and hasattr(domain, exc.name):
+            if exc.name not in pk_list and exc.name in domain.__annotations__.keys():
                 update_set[exc.name] = exc
 
         if where_clause:

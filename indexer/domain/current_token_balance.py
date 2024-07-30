@@ -4,7 +4,7 @@ from indexer.domain import Domain
 
 
 @dataclass
-class TokenBalance(Domain):
+class CurrentTokenBalance(Domain):
     address: str
     token_id: int
     token_type: str

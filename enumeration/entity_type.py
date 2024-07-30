@@ -9,7 +9,8 @@ from indexer.domain.contract import Contract
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.log import Log
 from indexer.domain.token import *
-from indexer.domain.token_balance import CurrentTokenBalance, TokenBalance
+from indexer.domain.token_balance import TokenBalance
+from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace

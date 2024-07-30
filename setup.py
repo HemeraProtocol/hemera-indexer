@@ -55,7 +55,7 @@ setup(
         'urllib3==2.2.2',
         'dataclass-wizard==0.22.3',
         "pytest",
-        "redis_dict"
+        "redis-dict"
         #  old version
         # 'Flask==2.1.3',
         # 'flask-limiter==2.6.3',
