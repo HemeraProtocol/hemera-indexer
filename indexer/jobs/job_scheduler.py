@@ -1,16 +1,14 @@
 import logging
-import os
-import sys
 from collections import defaultdict, deque
 from typing import List, Set, Type
 
-from common.utils.module_loading import get_all_subclasses
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
+
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
+from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
+from indexer.utils.utils import import_submodules
 
-from indexer.jobs import *
-
+import_submodules('indexer.modules')
 # TODO: Import the ExportBlocksJob and ExportTransactionsAndLogsJob classes from the indexer.jobs.export_blocks_job and indexer.jobs.export_transactions_and_logs_job modules
 
 class JobScheduler:
@@ -42,6 +40,7 @@ class JobScheduler:
         self.required_job_classes = self.get_required_job_classes(required_output_types)
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
 
+
     def get_data_buff(self):
         return BaseJob._data_buff
 
@@ -49,7 +48,7 @@ class JobScheduler:
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
-        all_subclasses = get_all_subclasses(BaseJob)
+        all_subclasses = BaseJob.discover_jobs()
         for cls in all_subclasses:
             self.job_classes.append(cls)
             for output in cls.output_types:
@@ -137,15 +136,3 @@ class JobScheduler:
             raise Exception("Dependency cycle detected")
 
         return sorted_order
-
-    def instantiate_job(self, job_class):
-        return job_class(
-            entity_types=self.entity_types,
-            batch_web3_provider=self.batch_web3_provider,
-            batch_web3_debug_provider=self.batch_web3_debug_provider,
-            item_exporter=self.item_exporter,
-            batch_size=self.batch_size,
-            debug_batch_size=self.debug_batch_size,
-            max_workers=self.max_workers,
-            config=self.config
-        )

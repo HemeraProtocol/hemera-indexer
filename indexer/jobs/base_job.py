@@ -6,7 +6,30 @@ from datetime import datetime
 from web3 import Web3
 
 
-class BaseJob(object):
+class BaseJobMeta(type):
+    _registry = {}
+    logger = logging.getLogger("BaseJobMeta")
+    def __new__(mcs, name, bases, attrs):
+        new_cls = super().__new__(mcs, name, bases, attrs)
+
+        if name != 'BaseJob' and issubclass(new_cls, BaseJob):
+            mcs._registry[name] = new_cls
+
+        return new_cls
+
+    @classmethod
+    def get_all_subclasses(mcs):
+        def get_subclasses(cls):
+            subclasses = set()
+            for subclass in cls.__subclasses__():
+                subclasses.add(subclass)
+                subclasses.update(get_subclasses(subclass))
+            return subclasses
+
+        return get_subclasses(BaseJob)
+
+
+class BaseJob(metaclass=BaseJobMeta):
     _data_buff = defaultdict(list)
     locks = defaultdict(threading.Lock)
 
@@ -15,13 +38,13 @@ class BaseJob(object):
     dependency_types = []
     output_types = []
 
+    @classmethod
+    def discover_jobs(cls):
+        return list(BaseJobMeta.get_all_subclasses())
+
     @property
     def job_name(self):
         return self.__class__.__name__
-
-    @classmethod
-    def discover_jobs(cls):
-        return cls.__subclasses__()
 
     @classmethod
     def init_token_cache(cls, _token=None):

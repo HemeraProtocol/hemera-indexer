@@ -1,20 +1,22 @@
+import importlib
 import logging
+import pkgutil
 import time
 
 import click
 
-from indexer.controller.stream_controller import StreamController
-from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
-from enumeration.entity_type import calculate_entity_value, DEFAULT_COLLECTION, generate_output_types
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.config import init_config_setting
+from enumeration.entity_type import calculate_entity_value, DEFAULT_COLLECTION, generate_output_types
+from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
+from indexer.controller.stream_controller import StreamController
+from indexer.domain import DomainMeta, Domain
+from indexer.exporters.item_exporter import create_item_exporters
 from indexer.utils.logging_utils import configure_signals, configure_logging
 from indexer.utils.provider import get_provider_from_uri
-from indexer.exporters.item_exporter import create_item_exporters
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 from indexer.utils.utils import pick_random_provider_uri, verify_db_connection_url
-from common.utils.config import init_config_setting
-
 
 def calculate_execution_time(func):
     def wrapper(*args, **kwargs):
@@ -100,7 +102,7 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
            max_workers=5, log_file=None, pid_file=None, sync_recorder='file_sync_record', cache=None):
     configure_logging(log_file)
     configure_signals()
-
+    print(Domain.discover_domains())
     provider_uri = pick_random_provider_uri(provider_uri)
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.info('Using provider ' + provider_uri)
@@ -110,6 +112,7 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
     config = {
         "partition_size": partition_size,
     }
+
 
     # set alembic.ini and build postgresql service
     if postgres_url:
@@ -123,7 +126,8 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
     if output_types is None:
         entity_types = calculate_entity_value(entity_types)
         output_types = list(generate_output_types(entity_types))
-
+    else:
+        output_types = output_types.split(',')
     stream_dispatcher = StreamDispatcher(
         service=config.get('db_service', None),
         batch_web3_provider=ThreadLocalProxy(
@@ -150,3 +154,4 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
                       block_batch_size=block_batch_size,
                       period_seconds=period_seconds,
                       pid_file=pid_file)
+

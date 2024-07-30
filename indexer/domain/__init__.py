@@ -1,14 +1,40 @@
 from dataclasses import asdict, is_dataclass, dataclass, fields
-from typing import Dict, Any, get_origin, Union, get_args
+from typing import Dict, Any, get_origin, Union, get_args, Type
 
 from common.utils.format_utils import to_snake_case
 
 
+class DomainMeta(type):
+    _registry = {}
+    def __new__(mcs, name, bases, attrs):
+        new_cls = super().__new__(mcs, name, bases, attrs)
+
+        if name != 'Domain' and issubclass(new_cls, Domain):
+            mcs._registry[name] = new_cls
+
+        return new_cls
+
+    def get_all_subclasses(mcs):
+        def get_subclasses(cls):
+            subclasses = set()
+            for subclass in cls.__subclasses__():
+                subclasses.add(subclass)
+                subclasses.update(get_subclasses(subclass))
+            return subclasses
+
+        all_subclasses = get_subclasses(Domain)
+        return {cls.__name__: cls for cls in all_subclasses}
+
+
 @dataclass
-class Domain(object):
+class Domain(metaclass=DomainMeta):
 
     def __repr__(self):
         return dataclass_to_dict(self)
+
+    @classmethod
+    def discover_domains(cls):
+        return list(DomainMeta.get_all_subclasses())
 
     @classmethod
     def type(cls) -> str:
@@ -26,6 +52,29 @@ class Domain(object):
     def is_filter_data(cls):
         return False
 
+
+def get_all_domain_subclasses(base_class):
+    subclasses = set()
+    to_process = list(base_class.__subclasses__())
+    while to_process:
+        current = to_process.pop()
+        subclasses.add(current)
+        to_process.extend(current.__subclasses__())
+    return subclasses
+
+
+def string_to_domain_class(output_type: str) -> Type[Domain]:
+    domain_class = domain_classes.get(output_type)
+    if domain_class is None:
+        raise ValueError(f"Unknown output type: {output_type}")
+    return domain_class
+
+
+from typing import Dict, Type
+
+domain_classes: Dict[str, Type[Domain]] = {
+    cls.type(): cls for cls in get_all_domain_subclasses(Domain)
+}
 
 @dataclass
 class FilterData(Domain):

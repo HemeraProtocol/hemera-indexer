@@ -14,7 +14,7 @@ def test_export_token_id_info_job():
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://rpc-tob.mantle.xyz/v1/NTdlM2E1MGM4YTQ5OTg2Yjk0MWYyMWY5", batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri("https://rpc-tob.mantle.xyz/v1/NTdlM2E1MGM4YTQ5OTg2Yjk0MWYyMWY5", batch=True)),
-        item_exporter=ConsoleItemExporter(),
+        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,

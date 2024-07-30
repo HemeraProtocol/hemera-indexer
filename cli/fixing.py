@@ -44,8 +44,9 @@ from common.utils.config import init_config_setting
               envvar='BATCH_SIZE',
               help='How many parameters to batch in single request')
 @click.option('--log-file', default=None, show_default=True, type=str, envvar='LOG_FILE', help='Log file')
+@click.option('--cache', default=None, show_default=True, type=str, envvar='CACHE', help='Cache')
 def fixing(provider_uri, debug_provider_uri, postgres_url, db_version, block_number, ranges,
-           batch_size, debug_batch_size, log_file=None):
+           batch_size, debug_batch_size, log_file=None, cache=None):
     configure_logging(log_file)
     configure_signals()
 

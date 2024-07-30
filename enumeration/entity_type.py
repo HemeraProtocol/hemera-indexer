@@ -1,8 +1,6 @@
 from enum import IntFlag
 from functools import reduce
 
-from click import BadOptionUsage
-
 from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract import Contract

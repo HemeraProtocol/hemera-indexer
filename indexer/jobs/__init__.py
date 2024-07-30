@@ -26,7 +26,3 @@ from indexer.jobs.export_traces_job import ExportTracesJob
 from indexer.jobs.export_contracts_job import ExportContractsJob
 from indexer.jobs.export_coin_balances_job import ExportCoinBalancesJob
 from indexer.modules.custom.uniswap_v3.export_uniswap_v3_pool_job import ExportUniSwapV3PoolJob
-
-
-
-

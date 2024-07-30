@@ -6,11 +6,10 @@ from eth_abi.grammar import BasicType
 from eth_typing import HexStr, TypeStr, ChecksumAddress
 from eth_utils import to_hex, encode_hex, text_if_str, to_text, hexstr_if_str, is_binary_address
 from hexbytes import HexBytes
+from web3 import Web3
 from web3._utils.abi import get_abi_input_types, build_strict_registry, map_abi_data
 from web3._utils.normalizers import implicitly_identity, parse_basic_type_str
 from web3.types import ABIFunction
-
-from common.utils.web3_utils import to_checksum_address
 
 codec = ABICodec(build_strict_registry())
 
@@ -38,7 +37,7 @@ def abi_address_to_hex(
 ) -> Optional[Tuple[TypeStr, ChecksumAddress]]:
     if type_str == "address":
         if is_binary_address(data):
-            return type_str, to_checksum_address(data)
+            return type_str, Web3.to_checksum_address(data)
     return None
 
 
