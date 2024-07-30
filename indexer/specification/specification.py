@@ -80,14 +80,14 @@ class FuncSignSpecification(Specification):
 
 
 class TopicSpecification(Specification):
-    def __init__(self, topics: List[str], addresses: List[str]):
+    def __init__(self, topics: List[str] = [], addresses: List[str] = []):
         self.topics = topics
         self.addresses = addresses
 
     def is_satisfied_by(self, item: Transaction):
         if item.receipt is not None and item.receipt.logs is not None:
             for log in item.receipt.logs:
-                if log.topic0 in self.topics and log.address in self.addresses:
+                if log.topic0 in self.topics and (len(self.addresses) == 0 or log.address in self.addresses):
                     return True
         return False
 
@@ -104,9 +104,11 @@ class TransactionFilterByLogs:
     def __init__(self, topics_filters: List[TopicSpecification]):
         self.specifications = topics_filters
         self.eth_log_filters_params = {
-            "address": [to_checksum_address(address) for spec in self.specifications for address in spec.addresses],
             "topics": [[topic for spec in self.specifications for topic in spec.topics]],
         }
+        filter_addresses = [to_checksum_address(address) for spec in self.specifications for address in spec.addresses]
+        if len(filter_addresses) > 0:
+            self.eth_log_filters_params['address'] = filter_addresses
 
     def get_eth_log_filters_params(self):
         return self.eth_log_filters_params
