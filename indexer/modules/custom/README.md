@@ -5,3 +5,8 @@
 3. If required, define your middle table model in common/models.
 4. Create a dataclass for your middle table in the respective job package.
 5. Optionally, run the Alembic command **alembic -c resource/hemera.ini revision --autogenerate -m "description"** to generate migrations for your middle table. Rename the migration file in migrations/versions according to the indexing scheme.
+
+### Points to Note:
+1. Entities in the `models` directory relate to the database and require setting primary keys, indexes, etc. The `model_domain_mapping` maps the `dataclass` entities to database tables and includes settings for update strategies.
+2. Entities in the `domain` directory inherit from either `Domain` or `FilterData`, depending on whether your job requires preliminary filtering.
+3. The output within the `job` is handled through the method `self._collect_item`, where each entity instance is added one by one.
