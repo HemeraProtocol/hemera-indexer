@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from indexer.domain import Domain
+from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class UniswapV3Pools(Domain):
+class UniswapV3Pools(FilterData):
     nft_address: str
     pool_address: str
     token0_address: str
