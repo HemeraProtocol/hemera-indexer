@@ -25,6 +25,8 @@ class EntityType(IntFlag):
     BRIDGE = 1 << 3
     UNISWAP_V3_POOL = 1 << 4
 
+    USER_OPS = 1 << 5
+
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
     @staticmethod
@@ -59,8 +61,6 @@ def generate_output_types(entity_types):
         yield Block
         yield Transaction
         yield Log
-        # todo: remove
-        yield UserOperationsResult
 
     if entity_types & EntityType.EXPLORER_TOKEN:
         yield Token
@@ -86,3 +86,6 @@ def generate_output_types(entity_types):
 
     if entity_types & EntityType.UNISWAP_V3_POOL:
         yield UniswapV3Pool
+
+    if entity_types & EntityType.USER_OPS:
+        yield UserOperationsResult

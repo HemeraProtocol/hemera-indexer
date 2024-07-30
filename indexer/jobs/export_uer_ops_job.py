@@ -12,39 +12,7 @@ from indexer.domain.user_operations import UserOperationsResult
 from indexer.jobs.base_job import BaseJob
 from indexer.modules.bridge.signature import decode_log
 
-# def dict_to_user_operation_result(data):
-#     return UserOperationResult(
-#         sender=data['sender'].lower(),
-#         nonce=data['nonce'],
-#         init_code='0x' + data['initCode'].hex(),
-#         call_data='0x' + data['callData'].hex(),
-#         call_gas_limit=data['callGasLimit'],
-#         verification_gas_limit=data['verificationGasLimit'],
-#         pre_verification_gas=data['preVerificationGas'],
-#         max_fee_per_gas=data['maxFeePerGas'],
-#         max_priority_fee_per_gas=data['maxPriorityFeePerGas'],
-#         paymaster_and_data='0x' + data['paymasterAndData'].hex(),
-#         signature='0x' + data['signature'].hex(),
-#
-#         user_op_hash='0x' + data['userOpHash'].hex(),
-#         paymaster=data['paymaster'].lower(),
-#         status=data['success'],
-#         actual_gas_cost=data['actualGasCost'],
-#         actual_gas_used=data['actualGasUsed'],
-#
-#         transactions_hash=data['transactions_hash'],
-#         transactions_index=int(data['transactions_index'], 16) if is_hex(
-#             data['transactions_index']) else data['transactions_index'],
-#         block_number=int(data['block_number'], 16) if is_hex(
-#             data['block_number']) else data['block_number'],
-#         block_timestamp=data['block_timestamp'],
-#         bundler=data['bundler'],
-#         start_log_index=int(data['start_log_index'], 16) if is_hex(
-#             data['start_log_index']) else data['start_log_index'],
-#         end_log_index=int(data['end_log_index'], 16) if is_hex(
-#             data['end_log_index']) else data['end_log_index'],
-#
-#     )
+
 
 
 CONTRACT_ADDRESS = '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789'
@@ -147,5 +115,3 @@ class ExportUserOpsJob(BaseJob):
             user_operation_result_list.append(user_operations_result)
         return user_operation_result_list
 
-    # def _export(self, **kwargs):
-    #     pass
