@@ -1,7 +1,5 @@
 import pytest
 
-from enumeration.entity_type import EntityType
-from indexer.domain.block import Block
 from indexer.domain.token_transfer import ERC20TokenTransfer
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.job_scheduler import JobScheduler
@@ -14,7 +12,7 @@ def test_export_job():
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri("https://ethereum-rpc.publicnode.com", batch=True)),
-        item_exporter=ConsoleItemExporter(),
+        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,

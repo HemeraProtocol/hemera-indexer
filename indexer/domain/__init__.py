@@ -1,14 +1,42 @@
 from dataclasses import asdict, is_dataclass, dataclass, fields
-from typing import Dict, Any, get_origin, Union, get_args
+from typing import Any, get_origin, Union, get_args
+from typing import Dict
 
 from common.utils.format_utils import to_snake_case
 
 
+class DomainMeta(type):
+    _registry = {}
+    def __new__(mcs, name, bases, attrs):
+        new_cls = super().__new__(mcs, name, bases, attrs)
+
+        if name != 'Domain' and issubclass(new_cls, Domain):
+            mcs._registry[name] = new_cls
+
+        return new_cls
+
+    @classmethod
+    def get_all_subclasses_with_type(mcs):
+        def get_subclasses(cls):
+            subclasses = set()
+            for subclass in cls.__subclasses__():
+                subclasses.add(subclass)
+                subclasses.update(get_subclasses(subclass))
+            return subclasses
+
+        all_subclasses = get_subclasses(Domain)
+        return {subclass.type(): subclass for subclass in all_subclasses if hasattr(subclass, 'type')}
+
+
 @dataclass
-class Domain(object):
+class Domain(metaclass=DomainMeta):
 
     def __repr__(self):
         return dataclass_to_dict(self)
+
+    @classmethod
+    def get_all_domain_dict(cls):
+        return DomainMeta.get_all_subclasses_with_type()
 
     @classmethod
     def type(cls) -> str:
@@ -33,6 +61,9 @@ class FilterData(Domain):
     @classmethod
     def is_filter_data(cls):
         return True
+
+
+from typing import Dict
 
 
 def dict_to_dataclass(data: Dict[str, Any], cls):

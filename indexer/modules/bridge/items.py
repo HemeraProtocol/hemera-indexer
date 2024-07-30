@@ -2,7 +2,7 @@ from sqlalchemy import Column, BIGINT, TIMESTAMP, NUMERIC, INT, JSON, TEXT, func
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import declarative_base
 
-from modules.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch, ArbitrumStateBatchConfirmed, \
+from indexer.modules.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch, ArbitrumStateBatchConfirmed, \
     ArbitrumStateBatchCreated
 
 Base = declarative_base()

@@ -16,3 +16,4 @@ def cli(ctx):
 
 cli.add_command(stream, "stream")
 cli.add_command(fixing, "fixing")
+

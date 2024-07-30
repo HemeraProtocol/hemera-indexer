@@ -6,7 +6,8 @@ from typing import List, Union, Optional
 from eth_abi import abi
 
 from indexer.domain import dict_to_dataclass
-from indexer.domain.token_balance import TokenBalance, CurrentTokenBalance
+from indexer.domain.token_balance import TokenBalance
+from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
@@ -61,9 +62,9 @@ BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION = {
     "type": "function"
 }
 
-
 balance_of_sig_prefix = function_abi_to_4byte_selector_str(BALANCE_OF_ABI_FUNCTION)
 balance_of_token_id_sig_prefix = function_abi_to_4byte_selector_str(BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION)
+
 
 @dataclass(frozen=True)
 class TokenBalanceParam:
@@ -115,8 +116,15 @@ class ExportTokenBalancesJob(BaseJob):
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
             self._data_buff[CurrentTokenBalance.type()] = distinct_collections_by_group(
-                [CurrentTokenBalance.from_token_balance(token_balance)
-                 for token_balance in self._data_buff[TokenBalance.type()]],
+                [CurrentTokenBalance(
+                    address=token_balance.address,
+                    token_id=token_balance.token_id,
+                    token_type=token_balance.token_type,
+                    token_address=token_balance.token_address,
+                    balance=token_balance.balance,
+                    block_number=token_balance.block_number,
+                    block_timestamp=token_balance.block_timestamp)
+                    for token_balance in self._data_buff[TokenBalance.type()]],
                 group_by=['token_address', 'address'],
                 max_key='block_number')
 
@@ -135,7 +143,6 @@ class ExportTokenBalancesJob(BaseJob):
 
 
 def encode_balance_abi_parameter(address, token_type, token_id):
-
     if token_type == 'ERC1155':
         return encode_abi(BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION, [address, token_id], balance_of_token_id_sig_prefix)
     else:

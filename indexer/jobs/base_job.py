@@ -6,28 +6,58 @@ from datetime import datetime
 from web3 import Web3
 
 
-class BaseJob(object):
+class BaseJobMeta(type):
+    _registry = {}
+    logger = logging.getLogger("BaseJobMeta")
+    def __new__(mcs, name, bases, attrs):
+        new_cls = super().__new__(mcs, name, bases, attrs)
+
+        if name != 'BaseJob' and issubclass(new_cls, BaseJob):
+            mcs._registry[name] = new_cls
+
+        return new_cls
+
+    @classmethod
+    def get_all_subclasses(mcs):
+        def get_subclasses(cls):
+            subclasses = set()
+            for subclass in cls.__subclasses__():
+                subclasses.add(subclass)
+                subclasses.update(get_subclasses(subclass))
+            return subclasses
+
+        return get_subclasses(BaseJob)
+
+
+class BaseJob(metaclass=BaseJobMeta):
     _data_buff = defaultdict(list)
     locks = defaultdict(threading.Lock)
 
+    tokens = None
+
     dependency_types = []
     output_types = []
+
+    @classmethod
+    def discover_jobs(cls):
+        return list(BaseJobMeta.get_all_subclasses())
 
     @property
     def job_name(self):
         return self.__class__.__name__
 
     @classmethod
-    def discover_jobs(cls):
-        return cls.__subclasses__()
+    def init_token_cache(cls, _token=None):
+        cls.tokens = _token
 
     def __init__(self, **kwargs):
 
         self._required_output_types = kwargs['required_output_types']
-        self._item_exporter = kwargs['item_exporter']
+        self._item_exporters = kwargs['item_exporters']
         self._batch_web3_provider = kwargs['batch_web3_provider']
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
+
 
     def run(self, **kwargs):
         try:
@@ -82,9 +112,10 @@ class BaseJob(object):
             if output_type in self._required_output_types:
                 items.extend(self._extract_from_buff([output_type.type()]))
 
-        self._item_exporter.open()
-        self._item_exporter.export_items(items)
-        self._item_exporter.close()
+        for item_exporter in self._item_exporters:
+            item_exporter.open()
+            item_exporter.export_items(items)
+            item_exporter.close()
 
     def get_buff(self):
         return self._data_buff
