@@ -186,15 +186,6 @@ def get_exist_pools(db_service, nft_address):
         raise e
     finally:
         session.close()
-    history_pools['0x262255f4770aebe2d0c8b97a46287dcecc2a0aff'] = {
-        "nft_address": "0x5752f085206ab87d8a5ef6166779658add455774",
-        "pool_address": "0x262255f4770aebe2d0c8b97a46287dcecc2a0aff",
-        "token0_address": "0x201eba5cc46d216ce6dc03f6a759e8e766e956ae",
-        "token1_address": "0x78c1b0c915c4faa5fffa6cabf0219da63d7f4cb8",
-        "fee": 500,
-        "tick_spacing": 10,
-        "mint_block_number": 2977
-    }
 
     return history_pools
 
