@@ -10,6 +10,8 @@ class BaseJob(object):
     _data_buff = defaultdict(list)
     locks = defaultdict(threading.Lock)
 
+    tokens = None
+
     dependency_types = []
     output_types = []
 
@@ -21,6 +23,10 @@ class BaseJob(object):
     def discover_jobs(cls):
         return cls.__subclasses__()
 
+    @classmethod
+    def init_token_cache(cls, _token=None):
+        cls.tokens = _token
+
     def __init__(self, **kwargs):
 
         self._required_output_types = kwargs['required_output_types']
@@ -28,6 +34,7 @@ class BaseJob(object):
         self._batch_web3_provider = kwargs['batch_web3_provider']
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
+
 
     def run(self, **kwargs):
         try:

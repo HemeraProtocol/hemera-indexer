@@ -1,15 +1,12 @@
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.exporters.csv_file_item_exporter import CSVFileItemExporter
 from indexer.exporters.json_file_item_exporter import JSONFileItemExporter
-from indexer.exporters.multi_item_exporter import MultiItemExporter
 from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 
 
 def create_item_exporters(outputs, config):
-    split_outputs = [output.strip() for output in outputs.split(',')] if outputs else ['postgresql']
-
-    item_exporters = [create_item_exporter(output, config) for output in split_outputs]
-    return MultiItemExporter(item_exporters)
+    split_outputs = [output.strip() for output in outputs.split(',')] if outputs else []
+    return [create_item_exporter(output, config) for output in split_outputs]
 
 
 def create_item_exporter(output, config):
@@ -17,25 +14,16 @@ def create_item_exporter(output, config):
 
     if item_exporter_type == ItemExporterType.CONSOLE:
         item_exporter = ConsoleItemExporter()
-
     elif item_exporter_type == ItemExporterType.POSTGRES:
-        try:
-            service = config['db_service']
-        except KeyError:
-            raise ValueError(f'Postgresql item exporter must provide pg config.')
-        item_exporter = PostgresItemExporter(service)
-
+        item_exporter = PostgresItemExporter(config['db_service'])
     elif item_exporter_type == ItemExporterType.JSONFILE:
         item_exporter = JSONFileItemExporter(output, config)
-
     elif item_exporter_type == ItemExporterType.CSVFILE:
         item_exporter = CSVFileItemExporter(output, config)
-
     else:
         raise ValueError('Unable to determine item exporter type for output ' + output)
 
     return item_exporter
-
 
 def get_bucket_and_path_from_gcs_output(output):
     output = output.replace('gs://', '')

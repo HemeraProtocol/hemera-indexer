@@ -93,10 +93,11 @@ def calculate_execution_time(func):
               help='How to store the sync record data.'
                    'e.g pg_base. means sync record data will store in pg as "base" be key'
                    'or file_base. means sync record data will store in file as "base" be file name')
+@click.option('--cache', default=None, show_default=True, type=str, envvar='CACHE', help='Cache')
 @calculate_execution_time
 def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, end_block, entity_types,
            output_types, partition_size, period_seconds=10, batch_size=10, debug_batch_size=1, block_batch_size=1,
-           max_workers=5, log_file=None, pid_file=None, sync_recorder='file_sync_record'):
+           max_workers=5, log_file=None, pid_file=None, sync_recorder='file_sync_record', cache=None):
     configure_logging(log_file)
     configure_signals()
 
@@ -129,7 +130,7 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
             lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporter=create_item_exporters(output, config),
+        item_exporters=create_item_exporters(output, config),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
