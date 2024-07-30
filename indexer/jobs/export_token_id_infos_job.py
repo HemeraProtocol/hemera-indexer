@@ -1,6 +1,7 @@
 import json
 import logging
 from dataclasses import dataclass, asdict
+from itertools import groupby
 from typing import List
 
 from eth_abi import abi
@@ -121,7 +122,21 @@ class ExportTokenIdInfosJob(BaseJob):
             self._collect_item(item.type(), item)
 
     def _process(self):
-        pass
+        self._data_buff[UpdateERC721TokenIdDetail.type()].sort(
+            key=lambda x: (x.token_address, x.token_id, x.block_number))
+        self._data_buff[UpdateERC1155TokenIdDetail.type()].sort(
+            key=lambda x: (x.token_address, x.token_id, x.block_number))
+
+        self._data_buff[UpdateERC721TokenIdDetail.type()] = [list(group)[-1]
+                                                             for key, group in
+                                                             groupby(self._data_buff[UpdateERC721TokenIdDetail.type()],
+                                                                     lambda x: (x.token_address, x.token_id))]
+
+        self._data_buff[UpdateERC1155TokenIdDetail.type()] = [list(group)[-1]
+                                                              for key, group in
+                                                              groupby(
+                                                                  self._data_buff[UpdateERC1155TokenIdDetail.type()],
+                                                                  lambda x: (x.token_address, x.token_id))]
 
 
 def generate_token_id_info(
