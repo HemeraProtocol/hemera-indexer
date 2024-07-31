@@ -6,7 +6,7 @@ import queue
 
 import eth_abi
 
-from build.lib.indexer.modules.custom.uniswap_v3 import constants
+from indexer.modules.custom.uniswap_v3 import constants
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.feature_type import FeatureType
