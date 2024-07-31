@@ -1,5 +1,4 @@
 import configparser
-import json
 import logging
 import os
 import threading
@@ -10,7 +9,7 @@ import eth_abi
 from common import models
 
 from indexer.domain import dict_to_dataclass
-from indexer.modules.custom.uniswap_v3.domain.all_features_value_record import AllFeatureValueRecord
+from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Pool
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -25,7 +24,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
 
 class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
-    output_types = [AllFeatureValueRecord, UniswapV3Pool]
+    output_types = [AllFeatureValueRecordUniswapV3Pool, UniswapV3Pool]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -95,11 +94,11 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             self._collect_item(UniswapV3Pool.type(), pools)
 
         for record in format_value_records(self._exist_pools, pool_prices, FEATURE_ID):
-            self._collect_item(AllFeatureValueRecord.type(), record)
+            self._collect_item(AllFeatureValueRecordUniswapV3Pool.type(), record)
 
     def _process(self):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.mint_block_number)
-        self._data_buff[AllFeatureValueRecord.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AllFeatureValueRecordUniswapV3Pool.type()].sort(key=lambda x: x.block_number)
 
     def update_pool_prices(self, new_pool_prices):
         if not new_pool_prices or len(new_pool_prices) == 0:
@@ -142,7 +141,7 @@ def format_value_records(exist_pools, pool_prices, feature_id):
             'block_number': block_number
         }
         result.append(
-            AllFeatureValueRecord(
+            AllFeatureValueRecordUniswapV3Pool(
                 feature_id=feature_id,
                 block_number=block_number,
                 address=address,
