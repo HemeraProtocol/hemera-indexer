@@ -9,7 +9,8 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.domain.user_operations import UserOperationsResult
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.specification.specification import TransactionFilterByTransactionInfo, ToAddressSpecification
+from indexer.specification.specification import TransactionFilterByTransactionInfo, ToAddressSpecification, \
+    TopicSpecification
 from indexer.utils.signature import decode_log
 
 CONTRACT_ADDRESS = '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789'
@@ -24,37 +25,27 @@ USEROPERATIONEVENT_EVENT = cast(ABIEvent, json.loads(
 
 
 class ExportUserOpsJob(FilterTransactionDataJob):
-    dependency_types = [Transaction, Log]
+    # dependency_types = [Transaction, Log]
     output_types = [UserOperationsResult]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
     def get_filter(self):
-        # filter_condition = TopicSpecification(addresses=[CONTRACT_ADDRESS], topics=[BEFOREEXECUTION_FUNCTION_SIGN,
-        #                                                                             USEROPERATIONEVENT_FUNCTION_SIGN]) and ToAddressSpecification(CONTRACT_ADDRESS)
-
-        filter_condition = ToAddressSpecification(CONTRACT_ADDRESS)
-
-        return TransactionFilterByTransactionInfo(filter_condition)
+        return TransactionFilterByTransactionInfo(ToAddressSpecification(CONTRACT_ADDRESS))
 
     def _collect(self, **kwargs):
-        transactions = list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
         pass
 
     def _process(self, **kwargs):
-        if 'transaction' in self._data_buff:
-            transactions = self._data_buff.get('transaction')
+        transactions = list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
+        if transactions:
             logs = self._data_buff.get('log')
-
             for transaction in transactions:
-                if transaction.to_address == CONTRACT_ADDRESS and transaction.input.startswith(
-                        '0x1fad948c'):
-                    _logs = [log for log in logs if log.transaction_hash == transaction.hash]
-
-                    user_operation_result_list = self._export_results_from_transaction(transaction, _logs)
-                    for user_operation_result in user_operation_result_list:
-                        self._collect_item(UserOperationsResult.type(), user_operation_result)
+                _logs = [log for log in logs if log.transaction_hash == transaction.hash]
+                user_operation_result_list = self._export_results_from_transaction(transaction, _logs)
+                for user_operation_result in user_operation_result_list:
+                    self._collect_item(UserOperationsResult.type(), user_operation_result)
 
     @staticmethod
     def _export_results_from_transaction(transaction, logs):
