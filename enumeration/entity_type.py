@@ -14,6 +14,7 @@ from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
+from indexer.domain.user_operations import UserOperationsResult
 
 
 class EntityType(IntFlag):
@@ -23,6 +24,8 @@ class EntityType(IntFlag):
 
     BRIDGE = 1 << 3
     UNISWAP_V3_POOL = 1 << 4
+
+    USER_OPS = 1 << 5
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -83,3 +86,6 @@ def generate_output_types(entity_types):
 
     if entity_types & EntityType.UNISWAP_V3_POOL:
         yield UniswapV3Pool
+
+    if entity_types & EntityType.USER_OPS:
+        yield UserOperationsResult

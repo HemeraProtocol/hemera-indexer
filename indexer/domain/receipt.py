@@ -27,9 +27,6 @@ class Receipt(Domain):
 
     @staticmethod
     def from_rpc(receipt_dict: dict, block_timestamp=None, block_hash=None, block_number=None):
-        if isinstance(receipt_dict, int):
-            print('here')
-
         logs = [Log.from_rpc(log_dict, block_timestamp, block_hash, block_number)
                 for log_dict in receipt_dict.get('logs', [])]
         return Receipt(
