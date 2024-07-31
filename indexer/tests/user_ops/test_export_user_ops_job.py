@@ -1,6 +1,6 @@
 import pytest
 
-from indexer.domain.user_operations import UserOperationsResult
+from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.job_scheduler import JobScheduler
 from indexer.utils.provider import get_provider_from_uri
