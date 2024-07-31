@@ -12,7 +12,7 @@ class UserOperationResult(HemeraModel):
     user_op_hash = Column(BYTEA, primary_key=True)
     sender = Column(VARCHAR(42))
     paymaster = Column(VARCHAR(42))
-    nonce = Column(INTEGER)
+    nonce = Column(NUMERIC)
     status = Column(BOOLEAN)
     actual_gas_cost = Column(NUMERIC)
     actual_gas_used = Column(INTEGER)
