@@ -9,8 +9,7 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.domain.user_operations import UserOperationsResult
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.specification.specification import TransactionFilterByTransactionInfo, ToAddressSpecification, \
-    TopicSpecification
+from indexer.specification.specification import TransactionFilterByTransactionInfo, ToAddressSpecification
 from indexer.utils.signature import decode_log
 
 CONTRACT_ADDRESS = '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789'
@@ -25,7 +24,7 @@ USEROPERATIONEVENT_EVENT = cast(ABIEvent, json.loads(
 
 
 class ExportUserOpsJob(FilterTransactionDataJob):
-    # dependency_types = [Transaction, Log]
+    dependency_types = [Transaction, Log]
     output_types = [UserOperationsResult]
 
     def __init__(self, **kwargs):
