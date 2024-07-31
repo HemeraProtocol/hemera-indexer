@@ -7,11 +7,6 @@ from common.models import HemeraModel
 
 class SyncRecord(HemeraModel):
     __tablename__ = 'sync_record'
-    mission_type = Column(VARCHAR, primary_key=True)
     mission_sign = Column(VARCHAR, primary_key=True)
     last_block_number = Column(BIGINT)
     update_time = Column(TIMESTAMP)
-
-    __table_args__ = (
-        PrimaryKeyConstraint('mission_type', 'mission_sign'),
-    )

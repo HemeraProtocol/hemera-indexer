@@ -6,12 +6,13 @@ import re
 from datetime import datetime, timedelta
 
 from flask import current_app
+from sqlalchemy import text
 from web3 import Web3
 
 from common.utils.config import get_config
 from common.models import db
 from common.utils.web3_utils import decode_log_data
-from common.utils.format_utils import as_dict, format_coin_value, format_to_dict
+from common.utils.format_utils import format_coin_value, format_to_dict, row_to_dict
 from api.app.contract.contract_verify import get_names_from_method_or_topic_list, get_abis_for_logs
 from api.app.db_service.contracts import get_contracts_by_addresses
 from api.app.db_service.wallet_addresses import get_address_display_mapping
@@ -29,10 +30,11 @@ def get_count_by_address(table, chain, wallet_address=None):
 
 
 def get_total_row_count(table):
+
     estimate_transaction = db.session.execute(
-        f"""
+        text(f"""
             SELECT reltuples::bigint AS estimate FROM pg_class where oid = '{app_config.db_read_sql_alchemy_database_config.schema}.{table}'::regclass;
-        """
+        """)
     ).fetchone()
     return estimate_transaction[0]
 
@@ -209,10 +211,10 @@ def parse_log_with_transaction_input_list(log_with_transaction_input_list):
     count_non_none = lambda x: 0 if x is None else 1
     for log_with_transaction_input in log_with_transaction_input_list:
         # values as dict format
-        log = as_dict(log_with_transaction_input['Logs'])  # log_with_transaction_input[0]
+        log = row_to_dict(log_with_transaction_input)  # log_with_transaction_input[0]
         indexed_true_count = sum(count_non_none(topic) for topic in [log['topic1'], log['topic2'], log['topic3']])
         contract_topic_list.append((log['address'], log['topic0'], indexed_true_count))
-        log_input = "0x" + log_with_transaction_input['input'].hex()
+        log_input = log['input']
         if log_input and len(log_input) >= 10:
             transaction_method = log_input[0:10]
             transaction_method_list.append(transaction_method)
