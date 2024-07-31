@@ -9,9 +9,7 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.domain.user_operations import UserOperationsResult
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.specification.specification import TransactionFilterByTransactionInfo, TopicSpecification, \
-    ToAddressSpecification
-
+from indexer.specification.specification import TransactionFilterByTransactionInfo, ToAddressSpecification
 from indexer.utils.signature import decode_log
 
 CONTRACT_ADDRESS = '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789'
