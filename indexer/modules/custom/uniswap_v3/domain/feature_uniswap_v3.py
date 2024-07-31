@@ -13,3 +13,14 @@ class UniswapV3Pool(FilterData):
     fee: int
     tick_spacing: int
     mint_block_number: int
+
+
+@dataclass
+class UniswapV3Token(FilterData):
+    nft_address: str
+    token_id: int
+    pool_address: str
+    tick_lower: int
+    tick_upper: int
+    fee: int
+    mint_block_number: int
