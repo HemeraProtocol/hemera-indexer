@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
-from indexer.domain import Domain
+from indexer.domain import Domain, FilterData
 from typing import Optional
 
 
 @dataclass
-class UserOperationsResult(Domain):
+class UserOperationsResult(FilterData):
     user_op_hash: str
     sender: Optional[str]
     paymaster: Optional[str]

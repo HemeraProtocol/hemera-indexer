@@ -39,7 +39,7 @@ class ExportUserOpsJob(FilterTransactionDataJob):
         return TransactionFilterByTransactionInfo(filter_condition)
 
     def _collect(self, **kwargs):
-        transactions = self._data_buff[Transaction.type()]
+        transactions = list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
         pass
 
     def _process(self, **kwargs):
