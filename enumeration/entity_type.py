@@ -14,7 +14,7 @@ from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
-from indexer.domain.user_operations import UserOperationsResult
+from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
 class EntityType(IntFlag):
