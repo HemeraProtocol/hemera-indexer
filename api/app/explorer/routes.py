@@ -1460,43 +1460,43 @@ class ExplorerTokenTokenTransfers(Resource):
         }, 200
 
 
-@explorer_namespace.route("/v2/explorer/token/<address>/top_holders")
+@explorer_namespace.route("/v2/explorer/token/<token_address>/top_holders")
 class ExplorerTokenTopHolders(Resource):
     @cache.cached(timeout=360, query_string=True)
-    def get(self, address):
-        address = address.lower()
+    def get(self, token_address):
+        token_address = token_address.lower()
 
         page_index = int(flask.request.args.get("page", 1))
         page_size = int(flask.request.args.get("size", PAGE_SIZE))
         if page_index <= 0 or page_size <= 0:
             raise APIError("Invalid page or size", code=400)
 
-        token, type = get_token_and_token_type(address)
+        token, type = get_token_and_token_type(token_address)
 
         if not token:
             raise APIError("Token not found", code=400)
 
-        top_holders = get_token_holders(token_address=address,
+        top_holders = get_token_holders(token_address=token_address,
                                         model=CurrentTokenBalances,
                                         columns=['balance', 'address'],
                                         limit=page_size,
                                         offset=(page_index - 1) * page_size)
 
-        total_records = get_token_holders_cnt(token_address=address,
+        total_records = get_token_holders_cnt(token_address=token_address,
                                               model=CurrentTokenBalances,
                                               columns=['address'])
 
         token_holder_list = []
         for token_holder in top_holders:
             token_holder_json = {}
-            token_holder_json["token_address"] = address
+            token_holder_json["token_address"] = token_address
             decimals = 0
             # if type == "tokentxns-nft1155":
             #    token_holder_json["token_id"] = int(token_holder.token_id)
             if type == "tokentxns":
                 decimals = token.decimals
-            token_holder_json["wallet_address"] = '0x' + token_holder.wallet_address.hex()
-            token_holder_json["balance"] = "{0:.6f}".format((token_holder.balance_of / 10 ** (decimals)) or 0)
+            token_holder_json["wallet_address"] = '0x' + token_holder.address.hex()
+            token_holder_json["balance"] = "{0:.6f}".format((token_holder.balance / 10 ** (decimals)) or 0)
             token_holder_list.append(token_holder_json)
 
         return {"data": token_holder_list, "total": total_records}
