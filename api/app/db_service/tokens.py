@@ -291,7 +291,7 @@ def get_token_holders(token_address, model, columns='*', limit=None, offset=None
             model.token_address == bytes_address,
             model.balance > 0,
         )
-        .order_by(model.balance_of.desc())
+        .order_by(model.balance.desc())
     )
 
     if limit is not None:
