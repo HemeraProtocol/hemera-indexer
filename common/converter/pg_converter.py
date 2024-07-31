@@ -1,12 +1,9 @@
 import ast
 import glob
 import os
-from datetime import timezone, datetime
-from sqlalchemy import func
 
+from common.models import model_path_patterns
 from common.utils.module_loading import import_string
-
-model_path_patterns = ['common/models', 'indexer/modules/*/*/models']
 
 
 def scan_convert_config():

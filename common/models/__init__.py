@@ -12,7 +12,7 @@ from common.services.sqlalchemy_session import RouteSQLAlchemy
 from common.utils.module_loading import import_string
 from indexer.domain import Domain
 
-model_path_patterns = ['common/models', 'indexer/modules/*/*/models']
+model_path_patterns = ['common/models', 'indexer/modules/*/models', 'indexer/modules/custom/*/models']
 
 # db = RouteSQLAlchemy(session_options={"autoflush": False})
 db = SQLAlchemy(session_options={"autoflush": False})
