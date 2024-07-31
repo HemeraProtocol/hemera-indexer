@@ -9,7 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP, ARRAY
 
 from common.services.sqlalchemy_session import RouteSQLAlchemy
-from common.utils.module_loading import import_string
+from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 from indexer.domain import Domain
 
 model_path_patterns = ['common/models', 'indexer/modules/*/models', 'indexer/modules/custom/*/models']
@@ -97,5 +97,4 @@ def scan_modules():
     return modules
 
 
-__lazy_imports = scan_modules()
-# __lazy_imports = scan_modules("common/models")
+__lazy_imports = scan_subclass_by_path_patterns(model_path_patterns, HemeraModel)
