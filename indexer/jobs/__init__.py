@@ -17,7 +17,7 @@ __all__ = [
 
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_transactions_and_logs_job import ExportTransactionsAndLogsJob
-from indexer.jobs.export_uer_ops_job import ExportUserOpsJob
+from indexer.modules.user_ops.export_uer_ops_job import ExportUserOpsJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 
 from indexer.jobs.export_tokens_and_transfers_job import ExportTokensAndTransfersJob
