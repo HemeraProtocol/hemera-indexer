@@ -91,7 +91,7 @@ def upgrade() -> None:
     op.drop_index('erc721_change_address_id_number_desc_index', table_name='erc721_token_id_changes')
     op.drop_constraint('erc721_token_id_changes_pkey', 'erc721_token_id_changes', type_='primary')
     op.alter_column('erc721_token_id_changes', 'address', new_column_name='token_address')
-    op.create_index('erc721_change_address_id_number_desc_index', 'erc721_token_id_changes',[sa.text('token_address DESC'), 'token_id'], unique=False)
+    op.create_index('erc721_change_address_id_number_desc_index', 'erc721_token_id_changes', ['token_address', 'token_id', sa.text('block_number DESC')], unique=False)
     op.create_primary_key('erc721_token_id_changes_pkey', 'erc721_token_id_changes', ['token_address', 'token_id', 'block_number'])
 
     op.drop_index('erc721_detail_owner_address_id_index', table_name='erc721_token_id_details')
