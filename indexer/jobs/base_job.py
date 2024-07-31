@@ -94,6 +94,10 @@ class BaseJob(metaclass=BaseJobMeta):
         with self.locks[key]:
             self._data_buff[key].append(data)
 
+    def _collect_domain(self, domain):
+        with self.locks[domain.type()]:
+            self._data_buff[domain.type()].append(domain)
+
     def _process(self):
         pass
 

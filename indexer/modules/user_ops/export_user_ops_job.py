@@ -10,7 +10,7 @@ from indexer.domain.transaction import Transaction
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.specification.specification import TransactionFilterByTransactionInfo, ToAddressSpecification
-from indexer.utils.signature import decode_log
+from indexer.utils.abi import decode_log
 
 CONTRACT_ADDRESS = '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789'
 BEFOREEXECUTION_FUNCTION_SIGN = '0xbb47ee3e183a558b1a2ff0874b079f3fc5478b7454eacf2bfc5af2ff5878f972'

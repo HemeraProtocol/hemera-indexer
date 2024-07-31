@@ -55,3 +55,6 @@ class Log(Domain):
         if data.startswith("0x"):
             data = self.data[2:]
         return HexBytes(bytearray.fromhex(data))
+
+    def get_topic_with_data(self) -> HexBytes:
+        return self.get_bytes_topics() + self.get_bytes_data()

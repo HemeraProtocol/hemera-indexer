@@ -102,7 +102,7 @@ def stream(provider_uri, debug_provider_uri, output, db_version, start_block, en
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.info('Using provider ' + provider_uri)
     logging.info('Using debug provider ' + debug_provider_uri)
-
+    print(Domain.get_all_domain_dict())
     # build config
     config = {
         "partition_size": partition_size,
