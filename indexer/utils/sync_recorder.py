@@ -1,7 +1,7 @@
 import os
 from datetime import timezone, datetime
 
-from sqlalchemy import func, and_
+from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 
 from common.models.sync_record import SyncRecord
@@ -52,7 +52,6 @@ class PGSyncRecorder(BaseRecorder):
                                          "last_block_number": last_synced_block,
                                          "update_time": update_time
                                      })
-
             session.execute(statement)
             session.commit()
         except Exception as e:
