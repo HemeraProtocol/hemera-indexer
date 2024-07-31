@@ -33,6 +33,9 @@ class ExportBlocksJob(BaseJob):
     def _start(self):
         super()._start()
 
+    def _end(self):
+        self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
+
     def _collect(self, **kwargs):
 
         self._start_block = int(kwargs['start_block'])
