@@ -1,3 +1,4 @@
+import glob
 import os
 import ast
 from datetime import datetime, timezone
@@ -10,6 +11,8 @@ from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP, ARRAY
 from common.services.sqlalchemy_session import RouteSQLAlchemy
 from common.utils.module_loading import import_string
 from indexer.domain import Domain
+
+model_path_patterns = ['common/models', 'indexer/modules/*/*/models']
 
 # db = RouteSQLAlchemy(session_options={"autoflush": False})
 db = SQLAlchemy(session_options={"autoflush": False})
@@ -68,29 +71,31 @@ def __getattr__(name):
     return val
 
 
-def scan_modules(directory):
+def scan_modules():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
     modules = {}
 
-    for root, _, files in os.walk(directory):
-        for file in files:
-            if os.path.isfile(os.path.join(directory, file)) and \
-                    file.endswith(".py") and file != "__init__.py" and file != "bridge.py":
-                module_file_path = os.path.join(root, file)
-                module_relative_path = os.path.relpath(module_file_path, start=directory)
-                module_path = os.path.join("common/models", module_relative_path).replace(os.path.sep, ".")
-                with open(module_file_path, "r", encoding="utf-8") as module:
-                    file_content = module.read()
+    for model_pattern in model_path_patterns:
+        pattern_path = os.path.join(project_root, model_pattern)
+        for models_dir in glob.glob(pattern_path):
+            if os.path.isdir(models_dir):
+                for file in os.listdir(models_dir):
+                    if file.endswith('.py') and file != "__init__.py":
+                        module_file_path = os.path.join(models_dir, file)
+                        module_relative_path = os.path.relpath(module_file_path, start=project_root)
+                        module_import_path = module_relative_path.replace(os.path.sep, '.')
 
-                parsed_content = ast.parse(file_content)
-                class_names = [node.name for node in ast.walk(parsed_content) if isinstance(node, ast.ClassDef)]
-                for cls in class_names:
-                    modules[cls] = module_path[:-3]
+                        with open(module_file_path, "r", encoding="utf-8") as module:
+                            file_content = module.read()
+
+                        parsed_content = ast.parse(file_content)
+                        class_names = [node.name for node in ast.walk(parsed_content) if isinstance(node, ast.ClassDef)]
+                        for cls in class_names:
+                            modules[cls] = module_import_path[:-3]
 
     return modules
 
 
-# 获取当前文件所在目录的绝对路径
-current_file_path = os.path.abspath(__file__)
-current_dir = os.path.dirname(current_file_path)
-__lazy_imports = scan_modules(current_dir)
+__lazy_imports = scan_modules()
 # __lazy_imports = scan_modules("common/models")
