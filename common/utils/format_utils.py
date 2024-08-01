@@ -54,7 +54,15 @@ def format_value_for_json(value):
         return value
 
 
-def format_coin_value(value: int) -> str:
+def format_dollar_value(value: float) -> str:
+    """
+    """
+    if value > 1:
+        return "{0:.2f}".format(value)
+    return "{0:.6}".format(value)
+
+
+def format_coin_value(value: int, decimal: int = 18) -> str:
     """
     Formats a given integer value into a string that represents a token value.
     Parameters:

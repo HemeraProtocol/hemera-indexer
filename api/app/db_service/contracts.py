@@ -3,7 +3,7 @@ from common.models.contracts import Contracts
 from common.utils.db_utils import build_entities
 
 
-def get_contract_by_address(address, columns='*'):
+def get_contract_by_address(address: str, columns='*'):
     bytes_address = bytes.fromhex(address[2:])
     entities = build_entities(Contracts, columns)
 
