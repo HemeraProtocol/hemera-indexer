@@ -56,10 +56,11 @@ def upgrade() -> None:
     op.create_index('internal_transactions_from_address_number_transaction_index', 'contract_internal_transactions', ['from_address', sa.text('block_number DESC'), sa.text('transaction_index DESC')], unique=False)
     op.create_index('internal_transactions_number_transaction_index', 'contract_internal_transactions', [sa.text('block_number DESC'), sa.text('transaction_index DESC')], unique=False)
     op.create_index('internal_transactions_to_address_number_transaction_index', 'contract_internal_transactions', ['to_address', sa.text('block_number DESC'), sa.text('transaction_index DESC')], unique=False)
-    op.add_column('erc1155_token_id_details', sa.Column('token_address', postgresql.BYTEA(), nullable=False))
     op.drop_index('erc1155_detail_desc_address_id_index', table_name='erc1155_token_id_details')
+    op.drop_constraint('erc1155_token_id_details_pkey', 'erc1155_token_id_details', type_='primary')
+    op.alter_column('erc1155_token_id_details', 'address', new_column_name='token_address')
     op.create_index('erc1155_detail_desc_address_id_index', 'erc1155_token_id_details', [sa.text('token_address DESC'), 'token_id'], unique=False)
-    op.drop_column('erc1155_token_id_details', 'address')
+    op.create_primary_key('erc1155_token_id_details_pkey', 'erc1155_token_id_details', ['token_address', 'token_id'])
     op.alter_column('erc1155_token_transfers', 'token_id',
                existing_type=sa.NUMERIC(precision=78, scale=0),
                nullable=False)
@@ -86,14 +87,20 @@ def upgrade() -> None:
     op.create_index('erc20_token_transfers_token_address_from_index_index', 'erc20_token_transfers', ['token_address', 'from_address'], unique=False)
     op.create_index('erc20_token_transfers_token_address_number_log_index_index', 'erc20_token_transfers', ['token_address', sa.text('block_number DESC'), sa.text('log_index DESC')], unique=False)
     op.create_index('erc20_token_transfers_token_address_to_index_index', 'erc20_token_transfers', ['token_address', 'to_address'], unique=False)
-    op.add_column('erc721_token_id_changes', sa.Column('token_address', postgresql.BYTEA(), nullable=False))
+
     op.drop_index('erc721_change_address_id_number_desc_index', table_name='erc721_token_id_changes')
+    op.drop_constraint('erc721_token_id_changes_pkey', 'erc721_token_id_changes', type_='primary')
+    op.alter_column('erc721_token_id_changes', 'address', new_column_name='token_address')
     op.create_index('erc721_change_address_id_number_desc_index', 'erc721_token_id_changes', ['token_address', 'token_id', sa.text('block_number DESC')], unique=False)
-    op.drop_column('erc721_token_id_changes', 'address')
-    op.add_column('erc721_token_id_details', sa.Column('token_address', postgresql.BYTEA(), nullable=False))
+    op.create_primary_key('erc721_token_id_changes_pkey', 'erc721_token_id_changes', ['token_address', 'token_id', 'block_number'])
+
     op.drop_index('erc721_detail_owner_address_id_index', table_name='erc721_token_id_details')
+    op.drop_constraint('erc721_token_id_details_pkey', 'erc721_token_id_details', type_='primary')
+    op.alter_column('erc721_token_id_details', 'address', new_column_name='token_address')
     op.create_index('erc721_detail_owner_address_id_index', 'erc721_token_id_details', [sa.text('token_owner DESC'), 'token_address', 'token_id'], unique=False)
-    op.drop_column('erc721_token_id_details', 'address')
+    op.create_primary_key('erc721_token_id_details_pkey', 'erc721_token_id_details', ['token_address', 'token_id'])
+
+
     op.alter_column('erc721_token_transfers', 'block_hash',
                existing_type=postgresql.BYTEA(),
                nullable=False)
@@ -161,14 +168,20 @@ def downgrade() -> None:
     op.alter_column('erc721_token_transfers', 'block_hash',
                existing_type=postgresql.BYTEA(),
                nullable=True)
-    op.add_column('erc721_token_id_details', sa.Column('address', postgresql.BYTEA(), autoincrement=False, nullable=False))
+
     op.drop_index('erc721_detail_owner_address_id_index', table_name='erc721_token_id_details')
+    op.drop_constraint('erc721_token_id_details_pkey', 'erc721_token_id_details', type_='primary')
+    op.alter_column('erc721_token_id_details', 'token_address', new_column_name='address')
     op.create_index('erc721_detail_owner_address_id_index', 'erc721_token_id_details', [sa.text('token_owner DESC'), 'address', 'token_id'], unique=False)
-    op.drop_column('erc721_token_id_details', 'token_address')
-    op.add_column('erc721_token_id_changes', sa.Column('address', postgresql.BYTEA(), autoincrement=False, nullable=False))
+    op.create_primary_key('erc721_token_id_details_pkey', 'erc721_token_id_details', ['address', 'token_id'])
+
     op.drop_index('erc721_change_address_id_number_desc_index', table_name='erc721_token_id_changes')
+    op.drop_constraint('erc721_token_id_changes_pkey', 'erc721_token_id_changes', type_='primary')
+    op.alter_column('erc721_token_id_changes', 'token_address', new_column_name='address')
     op.create_index('erc721_change_address_id_number_desc_index', 'erc721_token_id_changes', ['address', 'token_id', sa.text('block_number DESC')], unique=False)
-    op.drop_column('erc721_token_id_changes', 'token_address')
+    op.create_primary_key('erc721_token_id_changes_pkey', 'erc721_token_id_changes', ['address', 'token_id', 'block_number'])
+
+
     op.drop_index('erc20_token_transfers_token_address_to_index_index', table_name='erc20_token_transfers')
     op.drop_index('erc20_token_transfers_token_address_number_log_index_index', table_name='erc20_token_transfers')
     op.drop_index('erc20_token_transfers_token_address_from_index_index', table_name='erc20_token_transfers')
@@ -195,10 +208,11 @@ def downgrade() -> None:
     op.alter_column('erc1155_token_transfers', 'token_id',
                existing_type=sa.NUMERIC(precision=78, scale=0),
                nullable=True)
-    op.add_column('erc1155_token_id_details', sa.Column('address', postgresql.BYTEA(), autoincrement=False, nullable=False))
     op.drop_index('erc1155_detail_desc_address_id_index', table_name='erc1155_token_id_details')
+    op.drop_constraint('erc1155_token_id_details_pkey', 'erc1155_token_id_details', type_='primary')
+    op.alter_column('erc1155_token_id_details', 'token_address', new_column_name='address')
     op.create_index('erc1155_detail_desc_address_id_index', 'erc1155_token_id_details', [sa.text('address DESC'), 'token_id'], unique=False)
-    op.drop_column('erc1155_token_id_details', 'token_address')
+    op.create_primary_key('erc1155_token_id_details_pkey', 'erc1155_token_id_details', ['address', 'token_id'])
     op.drop_index('internal_transactions_to_address_number_transaction_index', table_name='contract_internal_transactions')
     op.drop_index('internal_transactions_number_transaction_index', table_name='contract_internal_transactions')
     op.drop_index('internal_transactions_from_address_number_transaction_index', table_name='contract_internal_transactions')

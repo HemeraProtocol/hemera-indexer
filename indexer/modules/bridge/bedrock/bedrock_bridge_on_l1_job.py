@@ -6,7 +6,8 @@ from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import parse_transaction_deposited_event, \
     parse_relayed_message, parse_propose_l2_output, BEDROCK_EVENT_ABI_SIGNATURE_MAPPING
 from indexer.modules.bridge.domain.op_bedrock import *
-from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
+from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs, \
+    TransactionFilterByTransactionInfo
 
 logger = logging.getLogger(__name__)
 

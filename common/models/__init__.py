@@ -1,3 +1,4 @@
+import glob
 import os
 import ast
 from datetime import datetime, timezone
@@ -8,8 +9,10 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP, ARRAY
 
 from common.services.sqlalchemy_session import RouteSQLAlchemy
-from common.utils.module_loading import import_string
+from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 from indexer.domain import Domain
+
+model_path_patterns = ['common/models', 'indexer/modules/*/models', 'indexer/modules/custom/*/models']
 
 # db = RouteSQLAlchemy(session_options={"autoflush": False})
 db = SQLAlchemy(session_options={"autoflush": False})
@@ -32,7 +35,7 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
     for key in data.__dict__.keys():
         if key in table.__table__.c:
             column_type = get_column_type(table, key)
-            if isinstance(column_type, BYTEA):
+            if isinstance(column_type, BYTEA) and not isinstance(getattr(data, key), bytes):
                 converted_data[key] = bytes.fromhex(getattr(data, key)[2:]) if getattr(data, key) else None
             elif isinstance(column_type, TIMESTAMP):
                 converted_data[key] = func.to_timestamp(getattr(data, key))
@@ -68,23 +71,30 @@ def __getattr__(name):
     return val
 
 
-def scan_modules(directory):
+def scan_modules():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
     modules = {}
 
-    for file in os.listdir(directory):
-        if os.path.isfile(os.path.join(directory, file)) and \
-                file.endswith(".py") and file != "__init__.py" and file != "bridge.py":
-            module_file_path = os.path.join(directory, file)
-            module_path = module_file_path.replace(os.path.sep, ".")
-            with open(module_file_path, "r", encoding="utf-8") as module:
-                file_content = module.read()
+    for model_pattern in model_path_patterns:
+        pattern_path = os.path.join(project_root, model_pattern)
+        for models_dir in glob.glob(pattern_path):
+            if os.path.isdir(models_dir):
+                for file in os.listdir(models_dir):
+                    if file.endswith('.py') and file != "__init__.py":
+                        module_file_path = os.path.join(models_dir, file)
+                        module_relative_path = os.path.relpath(module_file_path, start=project_root)
+                        module_import_path = module_relative_path.replace(os.path.sep, '.')
 
-            parsed_content = ast.parse(file_content)
-            class_names = [node.name for node in ast.walk(parsed_content) if isinstance(node, ast.ClassDef)]
-            for cls in class_names:
-                modules[cls] = module_path[:-3]
+                        with open(module_file_path, "r", encoding="utf-8") as module:
+                            file_content = module.read()
+
+                        parsed_content = ast.parse(file_content)
+                        class_names = [node.name for node in ast.walk(parsed_content) if isinstance(node, ast.ClassDef)]
+                        for cls in class_names:
+                            modules[cls] = module_import_path[:-3]
 
     return modules
 
 
-__lazy_imports = scan_modules("common/models")
+__lazy_imports = scan_subclass_by_path_patterns(model_path_patterns, HemeraModel)

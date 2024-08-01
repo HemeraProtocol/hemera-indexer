@@ -1,5 +1,4 @@
 """Web Server Gateway Interface"""
-import click
 
 ##################
 # FOR PRODUCTION
@@ -8,8 +7,7 @@ import click
 from api.app.main import app
 
 
-@click.command(context_settings=dict(help_option_names=['-h', '--help']))
-def wsgi():
+if __name__ == "__main__":
     ####################
     # FOR DEVELOPMENT
     ####################

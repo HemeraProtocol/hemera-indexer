@@ -1,19 +1,22 @@
 from enum import IntFlag
 from functools import reduce
 
-from click import BadOptionUsage
-
 from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract import Contract
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
+from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Pool, \
+    AllFeatureValueRecordUniswapV3Token
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
 from indexer.domain.log import Log
 from indexer.domain.token import *
-from indexer.domain.token_balance import CurrentTokenBalance, TokenBalance
+from indexer.domain.token_balance import TokenBalance
+from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
+from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
 class EntityType(IntFlag):
@@ -22,6 +25,9 @@ class EntityType(IntFlag):
     EXPLORER_TRACE = 1 << 2
 
     BRIDGE = 1 << 3
+    UNISWAP_V3_POOL = 1 << 4
+
+    USER_OPS = 1 << 5
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -79,3 +85,12 @@ def generate_output_types(entity_types):
         yield CoinBalance
         yield ContractInternalTransaction
         yield UpdateBlockInternalCount
+
+    if entity_types & EntityType.UNISWAP_V3_POOL:
+        yield UniswapV3Pool
+        yield UniswapV3Token
+        yield AllFeatureValueRecordUniswapV3Pool
+        yield AllFeatureValueRecordUniswapV3Token
+
+    if entity_types & EntityType.USER_OPS:
+        yield UserOperationsResult

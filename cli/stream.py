@@ -3,17 +3,18 @@ import time
 
 import click
 
-from indexer.controller.stream_controller import StreamController
-from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
-from enumeration.entity_type import calculate_entity_value, DEFAULT_COLLECTION, generate_output_types
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.config import init_config_setting
+from enumeration.entity_type import calculate_entity_value, DEFAULT_COLLECTION, generate_output_types
+from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
+from indexer.controller.stream_controller import StreamController
+from indexer.domain import Domain
+from indexer.exporters.item_exporter import create_item_exporters
 from indexer.utils.logging_utils import configure_signals, configure_logging
 from indexer.utils.provider import get_provider_from_uri
-from indexer.exporters.item_exporter import create_item_exporters
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
-from indexer.utils.utils import pick_random_provider_uri, verify_db_connection_url
-from common.utils.config import init_config_setting
+from indexer.utils.utils import pick_random_provider_uri, extract_pg_url_from_output
 
 
 def calculate_execution_time(func):
@@ -37,14 +38,11 @@ def calculate_execution_time(func):
               envvar="DEBUG_PROVIDER_URI",
               help='The URI of the web3 debug provider e.g. '
                    'file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io')
-@click.option('-pg', '--postgres-url', type=str, required=False, default=None,
-              envvar="POSTGRES_URL",
-              help='The required postgres connection url.'
-                   'e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum')
 @click.option('-o', '--output', type=str,
               envvar='OUTPUT',
-              help='The extra output selection.'
+              help='The output selection.'
                    'Print to console e.g. console; '
+                   'or postgresql e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/hemera_indexer;'
                    'or local json file e.g. jsonfile://your-file-path; '
                    'or local csv file e.g. csvfile://your-file-path; '
                    'or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path')
@@ -93,35 +91,44 @@ def calculate_execution_time(func):
               help='How to store the sync record data.'
                    'e.g pg_base. means sync record data will store in pg as "base" be key'
                    'or file_base. means sync record data will store in file as "base" be file name')
+@click.option('--cache', default=None, show_default=True, type=str, envvar='CACHE', help='Cache')
 @calculate_execution_time
-def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, start_block, end_block, entity_types,
-           output_types, partition_size, period_seconds=10, batch_size=10, debug_batch_size=1, block_batch_size=1,
-           max_workers=5, log_file=None, pid_file=None, sync_recorder='file_sync_record'):
+def stream(provider_uri, debug_provider_uri, output, db_version, start_block, end_block, entity_types, output_types,
+           partition_size, period_seconds=10, batch_size=10, debug_batch_size=1, block_batch_size=1, max_workers=5,
+           log_file=None, pid_file=None, sync_recorder='file_sync_record', cache=None):
     configure_logging(log_file)
     configure_signals()
-
     provider_uri = pick_random_provider_uri(provider_uri)
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.info('Using provider ' + provider_uri)
     logging.info('Using debug provider ' + debug_provider_uri)
-
     # build config
     config = {
         "partition_size": partition_size,
     }
 
     # set alembic.ini and build postgresql service
+    postgres_url = extract_pg_url_from_output(output)
     if postgres_url:
-        service_url = verify_db_connection_url(postgres_url)
-        if service_url is None:
-            raise click.ClickException('postgresql url must be provided.')
-        init_config_setting(db_url=service_url, rpc_endpoint=provider_uri)
-        service = PostgreSQLService(service_url, db_version=db_version)
+        init_config_setting(db_url=postgres_url, rpc_endpoint=provider_uri)
+        service = PostgreSQLService(postgres_url, db_version=db_version)
         config['db_service'] = service
 
     if output_types is None:
         entity_types = calculate_entity_value(entity_types)
         output_types = list(generate_output_types(entity_types))
+    else:
+        domain_dict = Domain.get_all_domain_dict()
+        parse_output_types = set()
+
+        for output_type in output_types.split(','):
+            if output_type not in domain_dict:
+                raise click.ClickException(f'Output type {output_type} is not supported')
+            parse_output_types.add(domain_dict[output_type])
+
+        if not output_types:
+            raise click.ClickException('No output types provided')
+        output_types = list(parse_output_types)
 
     stream_dispatcher = StreamDispatcher(
         service=config.get('db_service', None),
@@ -129,18 +136,19 @@ def stream(provider_uri, debug_provider_uri, postgres_url, output, db_version, s
             lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporter=create_item_exporters(output, config),
+        item_exporters=create_item_exporters(output, config),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
-        required_output_types=output_types
+        required_output_types=output_types,
+        config=config,
     )
 
     controller = StreamController(
         batch_web3_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_dispatcher=stream_dispatcher,
-        sync_recorder=create_recorder(__name__, sync_recorder, config),
+        sync_recorder=create_recorder(sync_recorder, config),
     )
 
     controller.action(start_block=start_block,

@@ -33,6 +33,9 @@ class ExportBlocksJob(BaseJob):
     def _start(self):
         super()._start()
 
+    def _end(self):
+        self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
+
     def _collect(self, **kwargs):
 
         self._start_block = int(kwargs['start_block'])
@@ -44,16 +47,15 @@ class ExportBlocksJob(BaseJob):
         is_only_log_filter = True
         filter_blocks = set()
 
-
         for filter in self._filters:
             if isinstance(filter, TransactionFilterByLogs):
-                filter_params = filter.get_eth_log_filters_params()
-                filter_params.update({'fromBlock': self._start_block, 'toBlock': self._end_block})
-                logs = self._web3.eth.get_logs(filter_params)
-                filter_blocks.update(set([log['blockNumber'] for log in logs]))
-                transaction_hashes = set([log['transactionHash'] for log in logs])
-                transaction_hashes = [h.hex() for h in transaction_hashes]
-                self._specification |= TransactionHashSpecification(transaction_hashes)
+                for filter_param in filter.get_eth_log_filters_params():
+                    filter_param.update({'fromBlock': self._start_block, 'toBlock': self._end_block})
+                    logs = self._web3.eth.get_logs(filter_param)
+                    filter_blocks.update(set([log['blockNumber'] for log in logs]))
+                    transaction_hashes = set([log['transactionHash'] for log in logs])
+                    transaction_hashes = [h.hex() for h in transaction_hashes]
+                    self._specification |= TransactionHashSpecification(transaction_hashes)
             elif isinstance(filter, TransactionFilterByTransactionInfo):
                 is_only_log_filter = False
                 self._specification |= filter.get_or_specification()

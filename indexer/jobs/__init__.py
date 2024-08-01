@@ -10,7 +10,8 @@ __all__ = [
 
     'ExportTracesJob',
     'ExportContractsJob',
-    'ExportCoinBalancesJob'
+    'ExportCoinBalancesJob',
+
 ]
 
 from indexer.jobs.export_blocks_job import ExportBlocksJob

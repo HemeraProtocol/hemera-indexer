@@ -74,10 +74,3 @@ class Network(Enum):
             if network.value == value:
                 return network
         raise ValueError(f"Invalid network value: {value}")
-
-# 示例
-try:
-    network = Network.from_value(56)
-    print(network)  # 输出: Network.Bsc
-except ValueError as e:
-    print(e)

@@ -47,7 +47,7 @@ class Blocks(HemeraModel):
         return [
             {
                 'domain': 'Block',
-                'conflict_do_update': False,
+                'conflict_do_update': True,
                 'update_strategy': None,
                 'converter': converter,
             },

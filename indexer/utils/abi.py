@@ -1,19 +1,71 @@
-from typing import Sequence, Any, Optional, Tuple
+from typing import Sequence, Any, Optional, Tuple, Dict
 from urllib.parse import to_bytes
 
+import eth_abi
 from eth_abi.codec import ABICodec
 from eth_abi.grammar import BasicType
 from eth_typing import HexStr, TypeStr, ChecksumAddress
-from eth_utils import to_hex, encode_hex, text_if_str, to_text, hexstr_if_str, is_binary_address
+from eth_utils import to_hex, encode_hex, text_if_str, to_text, hexstr_if_str, is_binary_address, \
+    function_abi_to_4byte_selector, event_abi_to_log_topic
 from hexbytes import HexBytes
-from web3._utils.abi import get_abi_input_types, build_strict_registry, map_abi_data
+from web3 import Web3
+from web3._utils.abi import get_abi_input_types, build_strict_registry, map_abi_data, named_tree, \
+    exclude_indexed_event_inputs, get_indexed_event_inputs
 from web3._utils.normalizers import implicitly_identity, parse_basic_type_str
-from web3.types import ABIFunction
+from web3.types import ABIFunction, ABIEvent
 
-from common.utils.web3_utils import to_checksum_address
+from indexer.domain.log import Log
 
 codec = ABICodec(build_strict_registry())
+import eth_abi.registry
 
+
+def bytes_to_hex_str(b: bytes) -> str:
+    return "0x" + b.hex()
+
+
+def event_log_abi_to_topic(event_abi: ABIEvent) -> str:
+    return "0x" + event_abi_to_log_topic(event_abi).hex()
+
+
+def function_abi_to_4byte_selector_str(function_abi: ABIFunction) -> str:
+    # return 10 hex string
+    return "0x" + function_abi_to_4byte_selector(function_abi).hex()
+
+
+def decode_log(
+        fn_abi: ABIEvent,
+        log: Log,
+) -> Optional[Dict[str, Any]]:
+    try :
+        indexed_types = get_indexed_event_inputs(fn_abi)
+        for indexed_type in indexed_types:
+            if indexed_type["type"] == "string":
+                indexed_type["type"] = "bytes32"
+
+        data_types = exclude_indexed_event_inputs(fn_abi)
+
+        abi_codec = ABICodec(eth_abi.registry.registry)
+        decode_indexed = abi_codec.decode([t["type"] for t in indexed_types], log.get_bytes_topics())
+        indexed = named_tree(indexed_types, decode_indexed)
+
+        decoded_data = abi_codec.decode([t["type"] for t in data_types], log.get_bytes_data())
+        data = named_tree(data_types, decoded_data)
+    except Exception as e:
+        print(e)
+        raise e
+
+    return {**indexed, **data}
+
+def decode_log_ignore_indexed(
+        fn_abi: ABIEvent,
+        log: Log,
+) -> Optional[Dict[str, Any]]:
+    data_types = get_indexed_event_inputs(fn_abi) + exclude_indexed_event_inputs(fn_abi)
+    abi_codec = ABICodec(eth_abi.registry.registry)
+    decoded_data = abi_codec.decode([t["type"] for t in data_types], log.get_topic_with_data())
+    data = named_tree(data_types, decoded_data)
+    return data
 
 
 @implicitly_identity
@@ -39,8 +91,9 @@ def abi_address_to_hex(
 ) -> Optional[Tuple[TypeStr, ChecksumAddress]]:
     if type_str == "address":
         if is_binary_address(data):
-            return type_str, to_checksum_address(data)
+            return type_str, Web3.to_checksum_address(data)
     return None
+
 
 def encode_abi(
         abi: ABIFunction,
@@ -68,3 +121,18 @@ def encode_abi(
         return to_hex(HexBytes(data) + encoded_arguments)
     else:
         return encode_hex(encoded_arguments)
+
+
+class Event:
+    def __init__(self, event_abi: ABIEvent):
+        self._event_abi = event_abi
+        self._signature = event_log_abi_to_topic(event_abi)
+
+    def get_signature(self) -> str:
+        return self._signature
+
+    def decode_log(self, log: Log) -> Optional[Dict[str, Any]]:
+        return decode_log(self._event_abi, log)
+
+    def decode_log_ignore_indexed(self, log: Log) -> Optional[Dict[str, Any]]:
+        return decode_log_ignore_indexed(self._event_abi, log)
