@@ -1,5 +1,5 @@
 [project]
-name = "hemera-protocol"
+name = "hemera"
 dynamic = ["version"]
 authors = [
     {name = "xuzh", email = "zihao.xu@thehemera.com"},
@@ -48,6 +48,9 @@ dependencies = [
     "redis-dict",
 ]
 
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
+
 [project.optional-dependencies]
 streaming = ["grpcio==1.46.3"]
 dev = ["pytest~=4.3.0"]
@@ -60,11 +63,11 @@ dev = ["pytest~=4.3.0"]
 [project.scripts]
 hemera = "hemera.cli:cli"
 
+[tool.setuptools]
+packages = ["cli", "common", "api", "indexer"]
+
 [tool.setuptools.package-data]
 hemera = ["*.json", "*.yaml"]
-
-[tool.setuptools.packages.find]
-exclude = ["schemas", "tests"]
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]

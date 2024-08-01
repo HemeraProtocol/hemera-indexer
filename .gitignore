@@ -44,3 +44,4 @@ docker-compose/data/
 
 # Local Config
 resource/hemera.ini
+sync_record*
