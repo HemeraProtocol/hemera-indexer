@@ -17,45 +17,27 @@ from sqlalchemy.sql.sqltypes import Numeric, VARCHAR
 
 from api.app.cache import cache
 from api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
-from api.app.db_service.blocks import get_block_by_hash, get_block_by_number, get_blocks_by_condition, get_last_block
-from api.app.db_service.contract_internal_transactions import (
-    get_internal_transactions_by_condition,
-    get_internal_transactions_by_transaction_hash,
-    get_internal_transactions_cnt_by_condition,
-)
-from api.app.db_service.contracts import get_contract_by_address, get_contracts_by_addresses
+from api.app.db_service.blocks import get_last_block, get_block_by_number, get_block_by_hash, \
+    get_blocks_by_condition
+from api.app.db_service.contract_internal_transactions import get_internal_transactions_by_condition, \
+    get_internal_transactions_cnt_by_condition, get_internal_transactions_by_transaction_hash
+from api.app.db_service.contracts import get_contract_by_address
 from api.app.db_service.daily_transactions_aggregates import get_daily_transactions_cnt
-from api.app.db_service.logs import get_logs_with_input_by_address, get_logs_with_input_by_hash
-from api.app.db_service.tokens import (
-    get_address_token_transfer_cnt,
-    get_raw_token_transfers,
-    get_token_address_token_transfer_cnt,
-    get_token_by_address,
-    get_token_holders,
-    get_token_holders_cnt,
-    get_token_transfers_with_token_by_hash,
-    get_tokens_by_condition,
-    get_tokens_cnt_by_condition,
-    parse_token_transfers,
-    type_to_token_transfer_table,
-)
+from api.app.db_service.logs import get_logs_with_input_by_hash, get_logs_with_input_by_address
+from api.app.db_service.tokens import get_address_token_transfer_cnt, get_token_address_token_transfer_cnt, \
+    type_to_token_transfer_table, get_raw_token_transfers, parse_token_transfers, \
+    get_token_transfers_with_token_by_hash, get_tokens_by_condition, get_tokens_cnt_by_condition, get_token_by_address, \
+    get_token_holders, get_token_holders_cnt
 from api.app.db_service.traces import get_traces_by_condition, get_traces_by_transaction_hash
-from api.app.db_service.transactions import (
-    get_address_transaction_cnt,
-    get_last_transaction,
-    get_total_txn_count,
-    get_tps_latest_10min,
-    get_transaction_by_hash,
-    get_transactions_by_condition,
-    get_transactions_by_from_address,
-    get_transactions_by_to_address,
-    get_transactions_cnt_by_condition,
-)
+from api.app.db_service.transactions import get_address_transaction_cnt, \
+    get_total_txn_count, get_tps_latest_10min, get_transactions_by_from_address, get_transactions_by_to_address, \
+    get_transaction_by_hash, get_transactions_by_condition, get_transactions_cnt_by_condition
 from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
 from api.app.explorer import explorer_namespace
 from api.app.token.token_prices import get_token_price
 from api.app.utils.utils import (
     fill_address_display_to_transactions,
+    fill_is_contract_to_transactions,
     get_total_row_count,
     parse_log_with_transaction_input_list,
     parse_transactions,
@@ -70,44 +52,18 @@ from common.models.daily_address_aggregates import DailyAddressesAggregates
 from common.models.daily_blocks_aggregates import DailyBlocksAggregates
 from common.models.daily_tokens_aggregates import DailyTokensAggregates
 from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
+from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
-from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.models.token_balances import AddressTokenBalances
 from common.models.tokens import Tokens
 from common.models.traces import Traces
 from common.models.transactions import Transactions
 from common.utils.config import get_config
-from common.utils.format_utils import as_dict, format_coin_value_with_unit, row_to_dict, format_to_dict, format_dollar_value
-from api.app.cache import cache
-from api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
-from api.app.db_service.blocks import get_last_block, get_block_by_number, get_block_by_hash, \
-    get_blocks_by_condition
-from api.app.db_service.contract_internal_transactions import get_internal_transactions_by_condition, \
-    get_internal_transactions_cnt_by_condition, get_internal_transactions_by_transaction_hash
-from api.app.db_service.contracts import get_contract_by_address, get_contracts_by_addresses
-from api.app.db_service.daily_transactions_aggregates import get_daily_transactions_cnt
-from api.app.db_service.logs import get_logs_with_input_by_hash, get_logs_with_input_by_address
-from api.app.db_service.tokens import get_address_token_transfer_cnt, get_token_address_token_transfer_cnt, \
-    type_to_token_transfer_table, get_raw_token_transfers, parse_token_transfers, \
-    get_token_transfers_with_token_by_hash, get_tokens_by_condition, get_tokens_cnt_by_condition, get_token_by_address, \
-    get_token_holders, get_token_holders_cnt
-from api.app.db_service.traces import get_traces_by_condition, get_traces_by_transaction_hash
-from api.app.db_service.transactions import get_last_transaction, get_address_transaction_cnt, \
-    get_total_txn_count, get_tps_latest_10min, get_transactions_by_from_address, get_transactions_by_to_address, \
-    get_transaction_by_hash, get_transactions_by_condition, get_transactions_cnt_by_condition
-from api.app.explorer import explorer_namespace
-from common.models.token_balances import AddressTokenBalances
-
-from api.app.utils.utils import (
-    fill_address_display_to_transactions,
-    fill_is_contract_to_transactions,
-    get_total_row_count,
-    parse_log_with_transaction_input_list,
-    parse_transactions,
-    process_token_transfer,
-)
+from common.utils.exception_control import APIError
+from common.utils.format_utils import as_dict, format_coin_value_with_unit, row_to_dict, format_to_dict, \
+    format_dollar_value
 from common.utils.web3_utils import (
     decode_function,
     decode_log_data,
