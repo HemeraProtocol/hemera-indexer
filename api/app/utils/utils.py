@@ -82,22 +82,6 @@ def fill_address_display_to_transactions(transaction_list: list[dict], bytea_add
     address_map = get_address_display_mapping(bytea_address_list)
 
     for transaction_json in transaction_list:
-        if transaction_json["to_address"] in contract_list:
-            transaction_json["to_address_is_contract"] = True
-        if transaction_json["from_address"] in contract_list:
-            transaction_json["from_address_is_contract"] = True
-
-
-def fill_address_display_to_transactions(transaction_list: list[dict], bytea_address_list: list[bytes] = None):
-    if not bytea_address_list:
-        bytea_address_list = []
-        for transaction in transaction_list:
-            bytea_address_list.append(bytes.fromhex(transaction["from_address"][2:]))
-            bytea_address_list.append(bytes.fromhex(transaction["to_address"][2:]))
-
-    address_map = get_address_display_mapping(bytea_address_list)
-
-    for transaction_json in transaction_list:
         if transaction_json["from_address"] in address_map:
             transaction_json["from_address_display_name"] = address_map[transaction_json["from_address"]]
         else:
@@ -153,19 +137,28 @@ def parse_transactions(transactions: list[Transactions]):
     if len(transactions) <= 0:
         return transaction_list
 
-    GAS_FEE_TOKEN_PRICE = get_token_price(
-        app_config.token_configuration.gas_fee_token, transactions[0]["block_timestamp"]
-    )
+    GAS_FEE_TOKEN_PRICE = get_token_price(app_config.token_configuration.gas_fee_token, transactions[0].block_timestamp)
 
     to_address_list = []
     bytea_address_list = []
     for transaction in transactions:
-        to_address = bytes.fromhex(transaction["to_address"][2:])
-        from_address = bytes.fromhex(transaction["from_address"][2:])
-        to_address_list.append(to_address)
-        all_address_list.append(from_address)
-        all_address_list.append(to_address)
-        transaction_list.append(display_transaction(float(GAS_FEE_TOKEN_PRICE), transaction))
+        to_address_list.append(transaction.to_address)
+        bytea_address_list.append(transaction.from_address)
+        bytea_address_list.append(transaction.to_address)
+
+        transaction_json = format_to_dict(transaction)
+
+        transaction_json["method"] = transaction_json["method_id"]
+        transaction_json["is_contract"] = False
+        transaction_json["contract_name"] = None
+
+        if not transaction_json["to_address"]:
+            transaction_json["to_address"] = transaction_json["receipt_contract_address"]
+
+        transaction_list.append(format_transaction(float(GAS_FEE_TOKEN_PRICE), transaction_json))
+
+    # Doing this early so we don't need to query contracts twice
+    fill_address_display_to_transactions(transaction_list, bytea_address_list)
 
     # Find contract
     contracts = get_contracts_by_addresses(address_list=to_address_list, columns=["address"])
@@ -241,10 +234,13 @@ def parse_log_with_transaction_input_list(log_with_transaction_input_list):
     for log in log_with_transaction_input_list:
 
         # values as dict format
-        log = row_to_dict(log_with_transaction_input)  # log_with_transaction_input[0]
-        indexed_true_count = sum(count_non_none(topic) for topic in [log["topic1"], log["topic2"], log["topic3"]])
-        contract_topic_list.append((log["address"], log["topic0"], indexed_true_count))
-        log_input = log["input"]
+        log_json = format_to_dict(log.Logs)  # log_with_transaction_input[0]
+        indexed_true_count = sum(
+            count_non_none(topic) for topic in [log_json["topic1"], log_json["topic2"], log_json["topic3"]]
+        )
+        contract_topic_list.append((log_json["address"], log_json["topic0"], indexed_true_count))
+        log_input = "0x" + log.input.hex()
+
         if log_input and len(log_input) >= 10:
             transaction_method = log_input[0:10]
             transaction_method_list.append(transaction_method)

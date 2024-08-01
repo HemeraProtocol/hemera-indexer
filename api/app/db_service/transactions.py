@@ -21,7 +21,7 @@ def get_last_transaction():
     return last_transaction
 
 
-def get_transaction_by_hash(hash, columns="*"):
+def get_transaction_by_hash(hash: str, columns="*"):
     bytes_hash = bytes.fromhex(hash[2:])
     entities = build_entities(Transactions, columns)
 
@@ -61,7 +61,7 @@ def get_tps_latest_10min(timestamp):
     return float(cnt / 600)
 
 
-def get_address_transaction_cnt(address):
+def get_address_transaction_cnt(address: str):
     last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
     bytes_address = bytes.fromhex(address[2:])
     recently_txn_count = (
