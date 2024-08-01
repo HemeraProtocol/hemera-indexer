@@ -9,18 +9,18 @@ from common.utils.config import get_config
 from common.utils.exception_control import APIError
 from common.utils.web3_utils import get_code, get_storage_at
 
+
 config = get_config()
 
 VERIFY_HOST = config.contract_service or ""
 VERIFY_SERVICE_VALIDATION = VERIFY_HOST is not None and VERIFY_HOST != ""
 
-NORMAL_TIMEOUT = 0.5
+NORMAL_TIMEOUT = 0.5 
 VERIFY_TIMEOUT = 30
 
 CONTRACT_VERIFY_URL = f"{VERIFY_HOST}/v1/contract_verify/sync_verify"
 COMMON_CONTRACT_VERIFY_URL = f"{VERIFY_HOST}/v1/contract_verify/async_verify"
 ABI_HOST = f"{VERIFY_HOST}/v1/contract_verify/method"
-
 
 def initial_chain_id():
     try:
@@ -33,6 +33,7 @@ def initial_chain_id():
 
 
 CHAIN_ID = initial_chain_id()
+
 
 
 class MockResponse:
@@ -66,11 +67,19 @@ def get_json_response_from_contract_verify_service(endpoint):
 # 1. verify function
 # ==========================
 
+def validate_input(address, compiler_type, compiler_version):
+    if not address or not compiler_type or not compiler_version:
+        raise APIError("Missing base required data", code=400)
 
 def validate_input(address, compiler_type, compiler_version):
     if not address or not compiler_type or not compiler_version:
         raise APIError("Missing base required data", code=400)
 
+def get_contract_by_address(address: str):
+    contract = db.session().query(Contracts).filter_by(address=address).first()
+    if not contract:
+        raise APIError("The address is not a contract", code=400)
+    return contract
 
 def get_contract_by_address(address: str):
     contract = db.session().query(Contracts).filter_by(address=address).first()
@@ -122,107 +131,18 @@ def send_async_verification_request(payload):
         payload["compiler_type"] = "Solidity (Standard-Json-Input)"
         files = [("files", (payload["address"] + ".json", payload["input_str"], "application/octet-stream"))]
 
-
-def get_abis_for_method(address_signed_prefix_list: List[Tuple[str, str]]):
-    enrich_address_signed_prefix_list = [(l[0], l[1], 0) for l in address_signed_prefix_list]
-    return get_abis_by_address_signed_prefix(enrich_address_signed_prefix_list)
+    elif compiler_type == "solidity-single-file":
+        payload["compiler_type"] = "Solidity (Single file)"
+    try:
+        return requests.post(COMMON_CONTRACT_VERIFY_URL, data=payload, files=files, timeout=VERIFY_TIMEOUT)
+    except Exception as e:
+        return MockResponse(str(e), 400)
 
 
 def command_normal_contract_data(module, action, address, guid):
     if not VERIFY_SERVICE_VALIDATION:
         return {"message": "No valid verify service is set", "status": "0"}, 200
 
-
-def get_abis_by_address_signed_prefix(address_signed_prefix_list: List[Tuple[str, str, int]]):
-    result_list = []
-    for address, signed_prefix, indexed_true_count in address_signed_prefix_list:
-        contract = db.session.query(Contracts).get(bytes(address, "utf-8"))
-        signed_prefix = signed_prefix
-        if not contract:
-            continue
-        deployed_code_hash = contract.deployed_code.decode("utf-8")
-        if contract.is_proxy:
-            if not contract.implementation_contract:
-                implementation_contract_address = get_implementation_contract(address)
-                contract.implementation_contract = bytes(implementation_contract_address, "utf-8")
-                db.session.commit()
-            else:
-                implementation_contract_address = contract.implementation_contract
-            implementation_contract = db.session.query(Contracts).get(implementation_contract_address)
-            if implementation_contract:
-                implementation_deployed_hash = implementation_contract.deployed_code.decode("utf-8")
-                result_list.append(
-                    (1, indexed_true_count, address, (deployed_code_hash, implementation_deployed_hash), signed_prefix)
-                )
-            else:
-                result_list.append((0, indexed_true_count, address, deployed_code_hash, signed_prefix))
-        else:
-            result_list.append((0, indexed_true_count, address, deployed_code_hash, signed_prefix))
-
-    request_json = {"request_type": 1, "request_list": result_list}
-
-    response = requests.post(url=ABI_HOST, json=request_json)
-    if response.status_code == 200:
-        return {(address, topic0): result_map for address, topic0, result_map in response.json()}
-    return {}
-
-
-def get_json_response_from_contract_verify_service(endpoint):
-    request_url = f"{VERIFY_HOST}{endpoint}"
-    response = requests.get(request_url)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return []
-
-
-def get_contract_code_by_address(address):
-    endpoint = f"/v1/contract_verify/{CHAIN_ID}/{address}/code"
-    return get_json_response_from_contract_verify_service(endpoint)
-
-
-def get_similar_addresses(deployed_code_hash):
-    endpoint = f"/v1/contract_verify/similar_address/{CHAIN_ID}/{deployed_code_hash}"
-    return get_json_response_from_contract_verify_service(endpoint)
-
-
-def get_solidity_version():
-    return get_json_response_from_contract_verify_service("/v1/contract_verify/solidity_versions")
-
-
-def get_vyper_version():
-    return get_json_response_from_contract_verify_service("/v1/contract_verify/vyper_versions")
-
-
-def get_evm_versions():
-    return get_json_response_from_contract_verify_service("/v1/contract_verify/evm_versions")
-
-
-def get_explorer_license_type():
-    return get_json_response_from_contract_verify_service("/v1/contract_verify/license_types")
-
-
-def get_abi_by_chain_id_address(address):
-    endpoint = f"/v1/contract_verify/contract_abi/{CHAIN_ID}/{address}"
-    return get_json_response_from_contract_verify_service(endpoint)
-
-
-def get_contract_verification_abi_by_address(address):
-    endpoint = f"/v1/contract_verify/contract_verification_abi/{CHAIN_ID}/{address}"
-    return get_json_response_from_contract_verify_service(endpoint)
-
-
-def get_check_verified_status(guid):
-    endpoint = f"/v1/contract_verify/get_verified_status/{CHAIN_ID}/{guid}"
-    return get_json_response_from_contract_verify_service(endpoint)
-
-
-def get_contract_verification_history_by_address(address):
-    endpoint = f"/v1/contract_verify/get_verification_history/{CHAIN_ID}/{address}"
-    return get_json_response_from_contract_verify_service(endpoint)
-
-
-def command_normal_contract_data(module, action, address, guid):
     if module != "contract":
         return {"message": "The parameter is error", "status": "0"}, 200
     if action == "getabi":

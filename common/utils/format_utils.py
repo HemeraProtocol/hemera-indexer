@@ -55,7 +55,8 @@ def format_value_for_json(value):
 
 
 def format_dollar_value(value: float) -> str:
-    """ """
+    """
+    """
     if value > 1:
         return "{0:.2f}".format(value)
     return "{0:.6}".format(value)

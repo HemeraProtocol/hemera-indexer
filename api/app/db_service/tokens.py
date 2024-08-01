@@ -17,6 +17,9 @@ from common.utils.config import get_config
 from common.utils.db_utils import build_entities
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict
+from api.app.db_service.contracts import get_contracts_by_addresses
+from api.app.db_service.wallet_addresses import get_token_txn_cnt_by_address
+from api.app.utils.utils import get_total_row_count, fill_address_display_to_transactions, fill_is_contract_to_transactions
 
 app_config = get_config()
 
@@ -68,7 +71,10 @@ def get_token_address_token_transfer_cnt(token_type: str, address: str):
 
     # Get historical count
     result = (
-        db.session.query(Tokens).with_entities(Tokens.transfer_count).filter(Tokens.address == bytes_address).first()
+        db.session.query(Tokens)
+        .with_entities(Tokens.transfer_count)
+        .filter(Tokens.address == bytes_address)
+        .first()
     )
     return (
         db.session.query(type_to_token_transfer_table(token_type))
@@ -89,7 +95,7 @@ def get_token_address_token_transfer_cnt(token_type: str, address: str):
 def get_raw_token_transfers(type, condition, page_index, page_size, is_count=True):
     if type not in token_transfer_type_table_dict:
         raise APIError("Invalid type", code=400)
-
+    
     token_trasfer_table = token_transfer_type_table_dict[type]
 
     if type in ["tokentxns", "erc20", "ERC20", "tokentxns-nft", "erc721", "ERC721"]:
@@ -128,9 +134,9 @@ def get_raw_token_transfers(type, condition, page_index, page_size, is_count=Tru
         if (len(token_transfers) > 0 or page_index == 1) and len(token_transfers) < page_size:
             total_count = (page_index - 1) * page_size + len(token_transfers)
         elif condition:
-            total_count = get_total_row_count(type_to_token_transfer_table(type).__tablename__)
+            total_count = get_total_row_count(token_trasfer_table.__tablename__)
         else:
-            total_count = db.session.query(type_to_token_transfer_table(type)).filter(condition).count()
+            total_count = db.session.query(token_trasfer_table).filter(condition).count()
     else:
         total_count = 0
 
@@ -148,31 +154,20 @@ def parse_token_transfers(token_transfers, type=None):
     bytea_address_list = list(set(bytea_address_list))
 
     # Find token
-    if type == "tokentxns":
-        tokens = (
-            db.session.query(Tokens)
-            .filter(and_(Tokens.address.in_(token_address_list), Tokens.token_type == "ERC20"))
-            .all()
-        )
-    elif type == "tokentxns-nft":
-        tokens = (
-            db.session.query(Tokens)
-            .filter(and_(Tokens.address.in_(token_address_list), Tokens.token_type == "ERC721"))
-            .all()
-        )
-    elif type == "tokentxns-nft1155":
-        tokens = (
-            db.session.query(Tokens)
-            .filter(and_(Tokens.address.in_(token_address_list), Tokens.token_type == "ERC1155"))
-            .all()
-        )
-    token_map = {}
+    if type in ["tokentxns", "erc20", "ERC20"]:
+        tokens = db.session.query(Tokens).filter(
+            and_(Tokens.address.in_(bytea_token_address_list), Tokens.token_type == 'ERC20')).all()
+    elif type in ["tokentxns-nft", "erc721", "ERC721"]:
+        tokens = db.session.query(Tokens).filter(
+            and_(Tokens.address.in_(bytea_token_address_list), Tokens.token_type == 'ERC721')).all()
+    elif type in ["tokentxns-nft1155", "erc1155", "ERC1155"]:
+        tokens = db.session.query(Tokens).filter(
+            and_(Tokens.address.in_(bytea_token_address_list), Tokens.token_type == 'ERC1155')).all()
+    else:
+        tokens = db.session.query(Tokens).filter(Tokens.address.in_(bytea_token_address_list)).all()
+    token_map = {} # bytea -> token
     for token in tokens:
         token_map[token.address] = token
-
-    # Find contract
-    contracts = get_contracts_by_addresses(address_list=address_list, columns=["address"])
-    contract_list = set(map(lambda x: x.address, contracts))
 
     token_transfer_list = []
     for token_transfer in token_transfers:
@@ -195,27 +190,21 @@ def parse_token_transfers(token_transfers, type=None):
         if token:
             token_transfer_json["token_symbol"] = token.symbol or "UNKNOWN"
             token_transfer_json["token_name"] = token.name or "Unknown Token"
-            if type == "tokentxns" and token.icon_url:
-                token_transfer_json["token_logo_url"] = token.icon_url
-            else:
-                token_transfer_json["token_logo_url"] = f"/images/empty-token-{app_config.chain}.png"
+            token_transfer_json["token_logo_url"] = token.icon_url
         else:
             token_transfer_json["token_symbol"] = "UNKNOWN"
             token_transfer_json["token_name"] = "Unknown Token"
             token_transfer_json["token_logo_url"] = f"/images/empty-token-{app_config.chain}.png"
 
-        token_transfer_json["to_address_is_contract"] = token_transfer_json["to_address"] in contract_list
-        token_transfer_json["from_address_is_contract"] = token_transfer_json["from_address"] in contract_list
-
         token_transfer_list.append(token_transfer_json)
-
+    
     fill_is_contract_to_transactions(token_transfer_list, bytea_address_list)
     fill_address_display_to_transactions(token_transfer_list, bytea_address_list)
-
+    
     return token_transfer_list
 
 
-def get_token_by_address(address, columns="*"):
+def get_token_by_address(address: str, columns='*'):
     bytes_address = bytes.fromhex(address[2:])
     entities = build_entities(Tokens, columns)
 
@@ -274,8 +263,8 @@ def get_token_transfers_with_token_by_hash(hash, model, transfer_columns="*", to
     return token_transfers
 
 
-def get_token_holders(token_address, model, columns="*", limit=None, offset=None):
-    bytes_address = bytes.fromhex(token_address[2:])
+def get_token_holders(token_address: str, model, columns='*', limit=None, offset=None):
+    bytes_token_address = bytes.fromhex(token_address[2:])
     entities = build_entities(model, columns)
 
     statement = (
@@ -299,8 +288,8 @@ def get_token_holders(token_address, model, columns="*", limit=None, offset=None
     return top_holders
 
 
-def get_token_holders_cnt(token_address, model, columns="*"):
-    bytes_address = bytes.fromhex(token_address[2:])
+def get_token_holders_cnt(token_address: str, model, columns='*'):
+    bytes_token_address = bytes.fromhex(token_address[2:])
     entities = build_entities(model, columns)
 
     holders_count = (
