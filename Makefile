@@ -13,7 +13,11 @@ image:
 	docker build $(IMAGE_FLAGS) --network host -t hemera-protocol:$(VERSION)-$(BUILD) . -q
 
 test:
-	pytest -vv
+	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
+		pytest -vv; \
+	else \
+		pytest -vv -m $(filter-out $@,$(MAKECMDGOALS)); \
+	fi
 
 PRE_COMMIT_INSTALLED := $(shell command -v pre-commit > /dev/null 2>&1 && echo yes || echo no)
 
