@@ -467,12 +467,12 @@ class ExplorerTransactions(Resource):
                 total_records = chain_block.transactions_count
                 filter_condition = Transactions.block_number == block
             else:
-                block = bytes.fromhex(block.lower()[2:])
+                bytea_block_hash = bytes.fromhex(block[2:])
                 chain_block = get_block_by_hash(hash=block)
                 if not chain_block:
                     raise APIError("Block not exist", code=400)
                 total_records = chain_block.transactions_count
-                filter_condition = Transactions.block_hash == block
+                filter_condition = Transactions.block_hash == bytea_block_hash
 
         elif address:
             address_str = address.lower()
@@ -1163,7 +1163,7 @@ class ExplorerBlockDetail(Resource):
             # Added by indexer now
             # internal_transaction_count = get_internal_transactions_cnt_by_condition(
             #     filter_condition=ContractInternalTransactions.block_number == block.number)
-            # block_json["internal_transaction_count"] = internal_transaction_count
+            block_json["internal_transaction_count"] = block.internal_transactions_count
 
             block_json["gas_fee_token_price"] = "{0:.2f}".format(
                 get_token_price(app_config.token_configuration.gas_fee_token, block.timestamp)
@@ -1341,29 +1341,29 @@ class ExplorerAddressTokenTransfers(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        bytea_address = bytes.fromhex(address[2:])
         type = flask.request.args.get("type", "").lower()
 
         if type in ["tokentxns", "erc20"]:
             condition = or_(
-                ERC20TokenTransfers.from_address == address_bytes,
-                ERC20TokenTransfers.to_address == address_bytes,
+                ERC20TokenTransfers.from_address == bytea_address,
+                ERC20TokenTransfers.to_address == bytea_address,
             )
         elif type in ["tokentxns-nft", "erc721"]:
             condition = or_(
-                ERC721TokenTransfers.from_address == address_bytes,
-                ERC721TokenTransfers.to_address == address_bytes,
+                ERC721TokenTransfers.from_address == bytea_address,
+                ERC721TokenTransfers.to_address == bytea_address,
             )
         elif type in ["tokentxns-nft1155", "erc1155"]:
             condition = or_(
-                ERC1155TokenTransfers.from_address == address_bytes,
-                ERC1155TokenTransfers.to_address == address_bytes,
+                ERC1155TokenTransfers.from_address == bytea_address,
+                ERC1155TokenTransfers.to_address == bytea_address,
             )
         else:
             raise APIError("Invalid type", code=400)
 
         token_transfers, _ = get_raw_token_transfers(type, condition, 1, PAGE_SIZE, is_count=False)
-        total_count = get_address_token_transfer_cnt(type, condition, address)
+        total_count = get_address_token_transfer_cnt(type, condition, bytea_address)
         token_transfer_list = parse_token_transfers(token_transfers, type)
 
         return {

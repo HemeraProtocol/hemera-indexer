@@ -72,18 +72,6 @@ def validate_input(address, compiler_type, compiler_version):
         raise APIError("Missing base required data", code=400)
 
 
-def validate_input(address, compiler_type, compiler_version):
-    if not address or not compiler_type or not compiler_version:
-        raise APIError("Missing base required data", code=400)
-
-
-def get_contract_by_address(address: str):
-    contract = db.session().query(Contracts).filter_by(address=address).first()
-    if not contract:
-        raise APIError("The address is not a contract", code=400)
-    return contract
-
-
 def get_contract_by_address(address: str):
     contract = db.session().query(Contracts).filter_by(address=address).first()
     if not contract:
@@ -309,7 +297,7 @@ def get_abis_for_logs(address_signed_prefix_list: List[Tuple[str, str, int]]):
 def get_abis_by_address_signed_prefix(address_signed_prefix_list: List[Tuple[str, str, int]]):
     result_list = []
     for address, signed_prefix, indexed_true_count in address_signed_prefix_list:
-        contract = db.session.query(Contracts).get(address)
+        contract = db.session.get(Contracts, address)
         if not contract:
             continue
         deployed_code_hash = contract.deployed_code_hash

@@ -31,8 +31,7 @@ def type_to_stats_column(type):
     return token_address_transfers_type_column_dict[type]
 
 
-def get_token_txn_cnt_by_address(token_type, address):
-    bytes_address = bytes.fromhex(address[2:])
+def get_token_txn_cnt_by_address(token_type, bytes_address: bytes):
     result = (
         db.session.query(StatisticsWalletAddresses)
         .with_entities(type_to_stats_column(token_type))
@@ -43,7 +42,7 @@ def get_token_txn_cnt_by_address(token_type, address):
     return result
 
 
-def get_txn_cnt_by_address(address):
+def get_txn_cnt_by_address(address: str):
     bytes_address = bytes.fromhex(address[2:])
     result = (
         db.session.query(StatisticsWalletAddresses)

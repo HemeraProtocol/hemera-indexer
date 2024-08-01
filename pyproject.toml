@@ -41,4 +41,5 @@ markers = [
     "indexer_jobs_user_ops: Tests related to the indexer jobs user ops",
 
     # API related
+    "explorer_api: Test explorer related API",
 ]
