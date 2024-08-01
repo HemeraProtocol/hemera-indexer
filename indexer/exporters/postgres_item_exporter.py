@@ -15,6 +15,7 @@ from common.converter.pg_converter import domain_model_mapping
 
 logger = logging.getLogger(__name__)
 
+COMMIT_BATCH_SIZE = 10000
 
 class PostgresItemExporter(BaseExporter):
     def __init__(self, service):
@@ -40,17 +41,20 @@ class PostgresItemExporter(BaseExporter):
                     converter = pg_config['converter']
 
                     data = [converter(table, item, do_update) for item in item_group]
+                    split_data = [data[i: COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
 
                     if do_update:
-                        statement = insert(table).values(data)
-                        statement = self.on_conflict_do_update(item_type, table, statement, update_strategy)
-                        session.execute(statement)
-                        session.commit()
+                        for batch in split_data:
+                            statement = insert(table).values(batch)
+                            statement = self.on_conflict_do_update(item_type, table, statement, update_strategy)
+                            session.execute(statement)
+                            session.commit()
 
                     else:
-                        statement = insert(table).values(data).on_conflict_do_nothing()
-                        session.execute(statement)
-                        session.commit()
+                        for batch in split_data:
+                            statement = insert(table).values(batch).on_conflict_do_nothing()
+                            session.execute(statement)
+                            session.commit()
 
                     tables.append(table.__tablename__)
 
