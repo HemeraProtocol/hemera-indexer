@@ -27,7 +27,7 @@ class EntityType(IntFlag):
     EXPLORER_TRACE = 1 << 2
 
     BRIDGE = 1 << 3
-    UNISWAP_V3_POOL = 1 << 4
+    UNISWAP_V3 = 1 << 4
 
     USER_OPS = 1 << 5
 
@@ -89,7 +89,7 @@ def generate_output_types(entity_types):
         yield ContractInternalTransaction
         yield UpdateBlockInternalCount
 
-    if entity_types & EntityType.UNISWAP_V3_POOL:
+    if entity_types & EntityType.UNISWAP_V3:
         yield UniswapV3Pool
         yield UniswapV3Token
         yield AllFeatureValueRecordUniswapV3Pool
