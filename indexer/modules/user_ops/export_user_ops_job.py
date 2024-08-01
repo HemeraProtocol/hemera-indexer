@@ -9,7 +9,8 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.specification.specification import TransactionFilterByTransactionInfo, ToAddressSpecification
+from indexer.specification.specification import TransactionFilterByTransactionInfo, ToAddressSpecification, \
+    TopicSpecification
 from indexer.utils.signature import decode_log
 
 CONTRACT_ADDRESS = '0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789'
@@ -31,7 +32,9 @@ class ExportUserOpsJob(FilterTransactionDataJob):
         super().__init__(**kwargs)
 
     def get_filter(self):
-        return TransactionFilterByTransactionInfo(ToAddressSpecification(CONTRACT_ADDRESS))
+        # return TransactionFilterByTransactionInfo(ToAddressSpecification(CONTRACT_ADDRESS))
+        return TransactionFilterByTransactionInfo(
+            TopicSpecification(addresses=[CONTRACT_ADDRESS], topics=[USEROPERATIONEVENT_FUNCTION_SIGN]))
 
     def _collect(self, **kwargs):
         pass
