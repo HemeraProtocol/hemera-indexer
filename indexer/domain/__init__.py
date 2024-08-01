@@ -38,7 +38,7 @@ class Domain(metaclass=DomainMeta):
     def get_all_annotation_keys(cls):
         keys = set()
         for clz in cls.__mro__:
-            if '__annotations__' in clz.__dict__:
+            if "__annotations__" in clz.__dict__:
                 keys.update(clz.__annotations__.keys())
 
         return keys

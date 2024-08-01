@@ -9,18 +9,18 @@ from common.utils.config import get_config
 from common.utils.exception_control import APIError
 from common.utils.web3_utils import get_code, get_storage_at
 
-
 config = get_config()
 
 VERIFY_HOST = config.contract_service or ""
 VERIFY_SERVICE_VALIDATION = VERIFY_HOST is not None and VERIFY_HOST != ""
 
-NORMAL_TIMEOUT = 0.5 
+NORMAL_TIMEOUT = 0.5
 VERIFY_TIMEOUT = 30
 
 CONTRACT_VERIFY_URL = f"{VERIFY_HOST}/v1/contract_verify/sync_verify"
 COMMON_CONTRACT_VERIFY_URL = f"{VERIFY_HOST}/v1/contract_verify/async_verify"
 ABI_HOST = f"{VERIFY_HOST}/v1/contract_verify/method"
+
 
 def initial_chain_id():
     try:
@@ -33,7 +33,6 @@ def initial_chain_id():
 
 
 CHAIN_ID = initial_chain_id()
-
 
 
 class MockResponse:
@@ -67,19 +66,23 @@ def get_json_response_from_contract_verify_service(endpoint):
 # 1. verify function
 # ==========================
 
-def validate_input(address, compiler_type, compiler_version):
-    if not address or not compiler_type or not compiler_version:
-        raise APIError("Missing base required data", code=400)
 
 def validate_input(address, compiler_type, compiler_version):
     if not address or not compiler_type or not compiler_version:
         raise APIError("Missing base required data", code=400)
+
+
+def validate_input(address, compiler_type, compiler_version):
+    if not address or not compiler_type or not compiler_version:
+        raise APIError("Missing base required data", code=400)
+
 
 def get_contract_by_address(address: str):
     contract = db.session().query(Contracts).filter_by(address=address).first()
     if not contract:
         raise APIError("The address is not a contract", code=400)
     return contract
+
 
 def get_contract_by_address(address: str):
     contract = db.session().query(Contracts).filter_by(address=address).first()

@@ -25,12 +25,12 @@ rpc_endpoint = https://cyber-mainnet-archive.alt.technology
 debug_rpc_endpoint = https://cyber-mainnet-archive.alt.technology
 
 [ONCHAIN_BADGE]
-onchain_badge_info = 
+onchain_badge_info =
 
 [REMOTE_SERVICE]
-ens_service = 
-contract_service = 
-token_service = 
+ens_service =
+contract_service =
+token_service =
 
 [alembic]
 script_location = migrations
@@ -52,16 +52,16 @@ keys = generic
 [logger_root]
 level = WARN
 handlers = console
-qualname = 
+qualname =
 
 [logger_sqlalchemy]
 level = WARN
-handlers = 
+handlers =
 qualname = sqlalchemy.engine
 
 [logger_alembic]
 level = INFO
-handlers = 
+handlers =
 qualname = alembic
 
 [handler_console]

@@ -12,26 +12,44 @@ from decimal import Decimal
 import flask
 from flask import Response
 from flask_restx import Resource, reqparse
-from sqlalchemy.sql import and_, func, or_, nullslast, cast
-from sqlalchemy.sql.sqltypes import Numeric, VARCHAR
+from sqlalchemy.sql import and_, cast, func, nullslast, or_
+from sqlalchemy.sql.sqltypes import VARCHAR, Numeric
 
 from api.app.cache import cache
 from api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
-from api.app.db_service.blocks import get_last_block, get_block_by_number, get_block_by_hash, \
-    get_blocks_by_condition
-from api.app.db_service.contract_internal_transactions import get_internal_transactions_by_condition, \
-    get_internal_transactions_cnt_by_condition, get_internal_transactions_by_transaction_hash
+from api.app.db_service.blocks import get_block_by_hash, get_block_by_number, get_blocks_by_condition, get_last_block
+from api.app.db_service.contract_internal_transactions import (
+    get_internal_transactions_by_condition,
+    get_internal_transactions_by_transaction_hash,
+    get_internal_transactions_cnt_by_condition,
+)
 from api.app.db_service.contracts import get_contract_by_address
 from api.app.db_service.daily_transactions_aggregates import get_daily_transactions_cnt
-from api.app.db_service.logs import get_logs_with_input_by_hash, get_logs_with_input_by_address
-from api.app.db_service.tokens import get_address_token_transfer_cnt, get_token_address_token_transfer_cnt, \
-    type_to_token_transfer_table, get_raw_token_transfers, parse_token_transfers, \
-    get_token_transfers_with_token_by_hash, get_tokens_by_condition, get_tokens_cnt_by_condition, get_token_by_address, \
-    get_token_holders, get_token_holders_cnt
+from api.app.db_service.logs import get_logs_with_input_by_address, get_logs_with_input_by_hash
+from api.app.db_service.tokens import (
+    get_address_token_transfer_cnt,
+    get_raw_token_transfers,
+    get_token_address_token_transfer_cnt,
+    get_token_by_address,
+    get_token_holders,
+    get_token_holders_cnt,
+    get_token_transfers_with_token_by_hash,
+    get_tokens_by_condition,
+    get_tokens_cnt_by_condition,
+    parse_token_transfers,
+    type_to_token_transfer_table,
+)
 from api.app.db_service.traces import get_traces_by_condition, get_traces_by_transaction_hash
-from api.app.db_service.transactions import get_address_transaction_cnt, \
-    get_total_txn_count, get_tps_latest_10min, get_transactions_by_from_address, get_transactions_by_to_address, \
-    get_transaction_by_hash, get_transactions_by_condition, get_transactions_cnt_by_condition
+from api.app.db_service.transactions import (
+    get_address_transaction_cnt,
+    get_total_txn_count,
+    get_tps_latest_10min,
+    get_transaction_by_hash,
+    get_transactions_by_condition,
+    get_transactions_by_from_address,
+    get_transactions_by_to_address,
+    get_transactions_cnt_by_condition,
+)
 from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
 from api.app.explorer import explorer_namespace
 from api.app.token.token_prices import get_token_price
@@ -52,9 +70,9 @@ from common.models.daily_address_aggregates import DailyAddressesAggregates
 from common.models.daily_blocks_aggregates import DailyBlocksAggregates
 from common.models.daily_tokens_aggregates import DailyTokensAggregates
 from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
-from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
+from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.models.token_balances import AddressTokenBalances
 from common.models.tokens import Tokens
@@ -62,8 +80,13 @@ from common.models.traces import Traces
 from common.models.transactions import Transactions
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict, format_coin_value_with_unit, row_to_dict, format_to_dict, \
-    format_dollar_value
+from common.utils.format_utils import (
+    as_dict,
+    format_coin_value_with_unit,
+    format_dollar_value,
+    format_to_dict,
+    row_to_dict,
+)
 from common.utils.web3_utils import (
     decode_function,
     decode_log_data,
@@ -82,7 +105,21 @@ MAX_TRANSACTION_WITH_CONDITION = 10000
 MAX_INTERNAL_TRANSACTION = 10000
 MAX_TOKEN_TRANSFER = 10000
 
-TRANSACTION_LIST_COLUMNS = ["hash", "from_address", "to_address", "value", "method_id", "block_number", "block_timestamp", "gas_price", "receipt_gas_used", "receipt_l1_fee", "receipt_l1_gas_used", "receipt_l1_gas_price", "receipt_contract_address"]
+TRANSACTION_LIST_COLUMNS = [
+    "hash",
+    "from_address",
+    "to_address",
+    "value",
+    "method_id",
+    "block_number",
+    "block_timestamp",
+    "gas_price",
+    "receipt_gas_used",
+    "receipt_l1_fee",
+    "receipt_l1_gas_used",
+    "receipt_l1_gas_price",
+    "receipt_contract_address",
+]
 
 app_config = get_config()
 
@@ -90,7 +127,7 @@ app_config = get_config()
 @explorer_namespace.route("/v1/explorer/health")
 class ExplorerHealthCheck(Resource):
     def get(self):
-        block = get_last_block(columns=['number', 'timestamp'])
+        block = get_last_block(columns=["number", "timestamp"])
         return {
             "latest_block_number": block.number,
             "latest_block_timestamp": block.timestamp.isoformat(),
@@ -103,18 +140,18 @@ class ExplorerHealthCheck(Resource):
 class ExplorerMainStats(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self):
-        # Get total transactions count. 
+        # Get total transactions count.
         # This can be slow without daily aggregation job ~300ms
         transaction_count = get_total_txn_count()
 
-        # Get latest block 
-        latest_block = get_last_block(columns=['number', 'timestamp'])
+        # Get latest block
+        latest_block = get_last_block(columns=["number", "timestamp"])
         latest_block_number = latest_block.number
 
         # Get 5000 block earlier to calculate avg block time
         # If there is no enough block, use the first one
         earlier_block_number = max(latest_block_number - 5000, 1)
-        earlier_block = get_block_by_number(block_number=earlier_block_number, columns=['number', 'timestamp'])
+        earlier_block = get_block_by_number(block_number=earlier_block_number, columns=["number", "timestamp"])
         if earlier_block is None:
             earlier_block = latest_block
 
@@ -135,7 +172,7 @@ class ExplorerMainStats(Resource):
             "ETH",
             datetime.combine(datetime.now() - timedelta(days=1), time.min),
         )
-      
+
         if app_config.token_configuration.native_token == "ETH":
             NATIVE_TOKEN_PRICE = ETH_PRICE
             NATIVE_TOKEN_PRICE_PRIVIOUS = ETH_PRICE_PRIVIOUS
@@ -236,8 +273,7 @@ class ExplorerSearch(Resource):
                 )
                 return search_result
             else:
-                wallet = get_transactions_by_from_address(address=query_string,
-                                                          columns=[('from_address', 'address')])
+                wallet = get_transactions_by_from_address(address=query_string, columns=[("from_address", "address")])
                 if wallet:
                     search_result.append(
                         {
@@ -247,8 +283,7 @@ class ExplorerSearch(Resource):
                     )
                     return search_result
                 else:
-                    wallet = get_transactions_by_to_address(address=query_string,
-                                                            columns=[('to_address', 'address')])
+                    wallet = get_transactions_by_to_address(address=query_string, columns=[("to_address", "address")])
                     if wallet:
                         search_result.append(
                             {
@@ -290,9 +325,9 @@ class ExplorerSearch(Resource):
                     Tokens.symbol.ilike(f"%{query_string}%"),
                 ),
             )
-            tokens = get_tokens_by_condition(columns=['name', 'symbol', 'address', 'icon_url'],
-                                                     filter_condition=filter_condition,
-                                                     limit=5)
+            tokens = get_tokens_by_condition(
+                columns=["name", "symbol", "address", "icon_url"], filter_condition=filter_condition, limit=5
+            )
 
             for token in tokens:
                 search_result.append(
@@ -336,11 +371,25 @@ class ExplorerInternalTransactions(Resource):
         elif block:
             filter_condition = ContractInternalTransactions.block_number == block
 
-        response_columns = ['trace_id', 'from_address', 'to_address', 'value', 'trace_type', 'call_type', 'error', 'status', 'block_number', 'block_timestamp', 'transaction_hash']
-        transactions = get_internal_transactions_by_condition(columns=response_columns,
-                                                              filter_condition=filter_condition,
-                                                              limit=page_size,
-                                                              offset=(page_index - 1) * page_size)
+        response_columns = [
+            "trace_id",
+            "from_address",
+            "to_address",
+            "value",
+            "trace_type",
+            "call_type",
+            "error",
+            "status",
+            "block_number",
+            "block_timestamp",
+            "transaction_hash",
+        ]
+        transactions = get_internal_transactions_by_condition(
+            columns=response_columns,
+            filter_condition=filter_condition,
+            limit=page_size,
+            offset=(page_index - 1) * page_size,
+        )
 
         # Count the total number of result
         if (len(transactions) > 0 or page_index == 1) and len(transactions) < page_size:
@@ -348,8 +397,9 @@ class ExplorerInternalTransactions(Resource):
         elif filter_condition == True:
             total_records = get_total_row_count("contract_internal_transactions")
         else:
-            total_records = get_internal_transactions_cnt_by_condition(columns=['trace_id'],
-                                                                       filter_condition=filter_condition)
+            total_records = get_internal_transactions_cnt_by_condition(
+                columns=["trace_id"], filter_condition=filter_condition
+            )
 
         transaction_list = []
         bytea_address_list = []
@@ -368,7 +418,7 @@ class ExplorerInternalTransactions(Resource):
         fill_is_contract_to_transactions(transaction_list, bytea_address_list)
         # Add display name for from/to address
         fill_address_display_to_transactions(transaction_list, bytea_address_list)
-       
+
         return {
             "data": transaction_list,
             "total": total_records,
@@ -439,10 +489,12 @@ class ExplorerTransactions(Resource):
 
             filter_condition = (Transactions.block_timestamp >= start_time) & (Transactions.block_timestamp < end_time)
 
-        transactions = get_transactions_by_condition(columns=TRANSACTION_LIST_COLUMNS,
-                                                    filter_condition=filter_condition,
-                                                    limit=page_size,
-                                                    offset=(page_index - 1) * page_size)
+        transactions = get_transactions_by_condition(
+            columns=TRANSACTION_LIST_COLUMNS,
+            filter_condition=filter_condition,
+            limit=page_size,
+            offset=(page_index - 1) * page_size,
+        )
 
         if (len(transactions) > 0 or page_index == 1) and len(transactions) < page_size:
             total_records = (page_index - 1) * page_size + len(transactions)
@@ -452,7 +504,7 @@ class ExplorerTransactions(Resource):
             total_records = get_transactions_cnt_by_condition(filter_condition=filter_condition, columns=["hash"])
         elif total_records == 0:
             total_records = get_total_txn_count()
-        
+
         transaction_list = parse_transactions(transactions)
 
         return {
@@ -509,7 +561,7 @@ class ExplorerTransactionDetail(Resource):
             if len(traces) > 0 and traces[0] and traces[0].error:
                 transaction_json["trace_error"] = traces[0].error
 
-            abi_dict = get_abis_for_method([(transaction_json['to_address'], transaction_json["method_id"])])
+            abi_dict = get_abis_for_method([(transaction_json["to_address"], transaction_json["method_id"])])
 
             try:
                 if abi_dict:
@@ -594,7 +646,7 @@ class ExplorerTransactionInternalTransactions(Resource):
     @cache.cached(timeout=360, query_string=True)
     def get(self, hash):
         transactions = get_internal_transactions_by_transaction_hash(transaction_hash=hash)
-        
+
         transaction_list = []
         bytea_address_list = []
         for transaction in transactions:
@@ -963,7 +1015,7 @@ class ExplorerTokenTransfers(Resource):
         page_size = int(flask.request.args.get("size", 25))
         if page_index <= 0 or page_size <= 0:
             raise APIError("Invalid page or size", code=400)
-        
+
         # type must be one of tokentxns, tokentxns-nft, tokentxns-nft1155
         # type must be one of erc20, erc721, erc1155
         type = flask.request.args.get("type", "").lower()
@@ -1034,7 +1086,18 @@ class ExplorerBlocks(Resource):
         state_batch = flask.request.args.get("state_batch", None)
         batch = flask.request.args.get("batch", None)
 
-        block_list_columns = ["hash", "number", "timestamp", "parent_hash", "gas_limit", "gas_used", "base_fee_per_gas", "miner", "transactions_count", "internal_transactions_count"]
+        block_list_columns = [
+            "hash",
+            "number",
+            "timestamp",
+            "parent_hash",
+            "gas_limit",
+            "gas_used",
+            "base_fee_per_gas",
+            "miner",
+            "transactions_count",
+            "internal_transactions_count",
+        ]
 
         if state_batch is None and batch is None:
             latest_block = get_last_block(columns=["number"])
@@ -1046,8 +1109,7 @@ class ExplorerBlocks(Resource):
             start_block = max(0, start_block)
 
             blocks = get_blocks_by_condition(
-                columns=block_list_columns,
-                filter_condition=Blocks.number.between(start_block, end_block)
+                columns=block_list_columns, filter_condition=Blocks.number.between(start_block, end_block)
             )
 
             block_list = [format_to_dict(block) for block in blocks]
@@ -1065,7 +1127,7 @@ class ExplorerBlocks(Resource):
             columns=block_list_columns,
             filter_condition=filter_condition,
             limit=page_size,
-            offset=(page_index - 1) * page_size
+            offset=(page_index - 1) * page_size,
         )
 
         block_list = []
@@ -1159,7 +1221,7 @@ class ExplorerAddressProfile(Resource):
 
             if token:
                 profile_json["is_token"] = True
-                profile_json["token_type"] = token.type # ERC20/ERC721/ERC1155
+                profile_json["token_type"] = token.type  # ERC20/ERC721/ERC1155
                 profile_json["token_name"] = token.name or "Unknown Token"
                 profile_json["token_symbol"] = token.symbol or "UNKNOWN"
                 profile_json["token_logo_url"] = token.icon_url or app_config.get_default_token_image_url()
@@ -1428,7 +1490,9 @@ class ExplorerTokenTokenTransfers(Resource):
         else:
             raise APIError("Invalid type", code=400)
 
-        token_transfers, total_count = get_raw_token_transfers(token.token_type, condition, 1, PAGE_SIZE, is_count=False)
+        token_transfers, total_count = get_raw_token_transfers(
+            token.token_type, condition, 1, PAGE_SIZE, is_count=False
+        )
 
         total_count = get_token_address_token_transfer_cnt(token.token_type, address)
 

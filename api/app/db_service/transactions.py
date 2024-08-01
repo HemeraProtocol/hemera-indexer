@@ -30,7 +30,7 @@ def get_transaction_by_hash(hash, columns="*"):
     return results
 
 
-def get_transactions_by_from_address(address, columns='*'):
+def get_transactions_by_from_address(address, columns="*"):
     bytes_address = bytes.fromhex(address[2:])
     entities = build_entities(Transactions, columns)
 
@@ -49,10 +49,7 @@ def get_transactions_by_to_address(address, columns="*", limit=1):
     entities = build_entities(Transactions, columns)
 
     results = (
-        db.session.query(Transactions)
-        .with_entities(*entities)
-        .filter(Transactions.to_address == bytes_address)
-        .first()
+        db.session.query(Transactions).with_entities(*entities).filter(Transactions.to_address == bytes_address).first()
     )
 
     return results
