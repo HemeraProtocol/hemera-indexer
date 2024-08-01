@@ -1,6 +1,6 @@
 import click
 
-from cli.fixing import fixing
+# from cli.fixing import fixing
 from cli.stream import stream
 from indexer.utils.logging_utils import logging_basic_config
 
