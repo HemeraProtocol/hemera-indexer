@@ -1,11 +1,3 @@
-FROM python:3.9-slim AS builder
-
-WORKDIR /app
-COPY . .
-
-RUN pip install --no-cache-dir build && \
-    python -m build --wheel --no-isolation
-
 FROM python:3.9-slim
 
 LABEL org.opencontainers.image.title="Hemera Protocol"
@@ -14,11 +6,10 @@ LABEL org.opencontainers.image.source="https://github.com/HemeraProtocol/hemera-
 
 WORKDIR /app
 
-COPY --from=builder /app/dist/*.whl .
+COPY . .
 
-RUN pip install --no-cache-dir *.whl && \
-    rm *.whl
+RUN pip install --no-cache-dir .
 
-COPY hemera.py .
+ENV PYTHONPATH=/app:$PYTHONPATH
 
-CMD ["python", "hemera.py", "stream"]
+ENTRYPOINT ["hemera"]

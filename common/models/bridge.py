@@ -1,12 +1,7 @@
-"""
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import ARRAY, BOOLEAN, BYTEA, INTEGER, JSON, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from common.utils.config import get_config
-
-app_config = get_config()
-schema = app_config.db_read_sql_alchemy_database_config.schema
 
 
 class AbstractTransactions(HemeraModel):
@@ -53,7 +48,7 @@ class AbstractTokens(HemeraModel):
 
 
 class L1ToL2BridgeTransactions(HemeraModel):
-    __table_args__ = {"schema": schema}
+
     __tablename__ = "l1_to_l2_bridge_transactions"
 
     msg_hash = Column(BYTEA, primary_key=True)
@@ -113,7 +108,6 @@ class L1ToL2BridgeTransactions(HemeraModel):
 
 
 class L2ToL1BridgeTransactions(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "l2_to_l1_bridge_transactions"
 
     msg_hash = Column(BYTEA, primary_key=True)
@@ -182,7 +176,6 @@ class L2ToL1BridgeTransactions(HemeraModel):
 
 
 class BridgeTokens(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "bridge_tokens"
 
     l1_token_address = Column(BYTEA, primary_key=True)
@@ -201,7 +194,6 @@ class BridgeTokens(HemeraModel):
 
 
 class StateBatches(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "l1_state_batches"
 
     batch_index = Column(INTEGER, primary_key=True)
@@ -216,7 +208,6 @@ class StateBatches(HemeraModel):
 
 
 class OpBedrockStateBatches(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "op_bedrock_state_batches"
 
     batch_index = Column(INTEGER, primary_key=True)
@@ -243,7 +234,6 @@ class OpBedrockStateBatches(HemeraModel):
 
 
 class ArbitrumStateBatches(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "arbitrum_state_batches"
 
     node_num = Column(INTEGER, primary_key=True)
@@ -285,7 +275,6 @@ class ArbitrumStateBatches(HemeraModel):
 
 
 class MantleDABatches(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "mantle_batches"
 
     index = Column(INTEGER, primary_key=True)
@@ -297,7 +286,6 @@ class MantleDABatches(HemeraModel):
 
 
 class MantleDAStores(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "data_stores"
 
     id = Column(INTEGER, primary_key=True)
@@ -332,7 +320,6 @@ class MantleDAStores(HemeraModel):
 
 
 class MantleDAStoreTransactionMapping(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "data_store_tx_mapping"
 
     data_store_id = Column(INTEGER, primary_key=True)
@@ -342,7 +329,6 @@ class MantleDAStoreTransactionMapping(HemeraModel):
 
 
 class LineaBatches(HemeraModel):
-    __table_args__ = {"schema": schema}
 
     number = Column(INTEGER, primary_key=True)
     verify_tx_hash = Column(VARCHAR)
@@ -356,7 +342,6 @@ class LineaBatches(HemeraModel):
 
 
 class ZkEvmBatches(HemeraModel):
-    __table_args__ = {"schema": schema}
     __tablename__ = "zkevm_batches"
     batch_index = Column(INTEGER, primary_key=True)
     coinbase = Column(VARCHAR)
@@ -415,4 +400,3 @@ class ArbitrumTransactionBatches(HemeraModel):
                 "converter": general_converter,
             }
         ]
-"""

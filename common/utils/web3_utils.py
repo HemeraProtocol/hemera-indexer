@@ -1,8 +1,7 @@
 import base64
 import json
 import re
-from decimal import Decimal
-from typing import Optional, cast
+from typing import cast
 
 import requests
 from ens.utils import get_abi_output_types
@@ -13,9 +12,6 @@ from web3._utils.contracts import decode_transaction_data
 from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.middleware import geth_poa_middleware
 from web3.types import ABIFunction
-
-from api.app.cache import cache
-from common.utils.config import get_config
 
 ERC721_ABI = [
     {
@@ -105,10 +101,6 @@ ERC1155_ABI = [
     },
 ]
 
-app_config = get_config()
-
-w3 = Web3(Web3.HTTPProvider(app_config.rpc))
-
 
 def build_web3(provider):
     w3 = Web3(provider)
@@ -118,18 +110,6 @@ def build_web3(provider):
 
 def verify_0_address(address):
     return set(address[2:]) == {"0"}
-
-
-@cache.memoize(600)
-def get_balance(address) -> Decimal:
-    try:
-        if not w3.is_address(address):
-            return Decimal(0)
-        address = w3.to_checksum_address(address)
-        balance = w3.eth.get_balance(address)
-        return Decimal(balance)
-    except Exception as e:
-        return Decimal(0)
 
 
 def get_debug_trace_transaction(traces):
@@ -183,18 +163,6 @@ def get_debug_trace_transaction(traces):
     return prune_delegates(root)
 
 
-@cache.memoize(600)
-def get_code(address) -> Optional[str]:
-    try:
-        if not w3.is_address(address):
-            return None
-        address = w3.to_checksum_address(address)
-        code = w3.eth.get_code(address)
-        return code.hex()
-    except Exception as e:
-        return None
-
-
 ERC20ABI = """
   [{
     "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
@@ -204,24 +172,6 @@ ERC20ABI = """
     "type": "function"
   }]
 """
-
-
-@cache.memoize(300)
-def get_gas_price():
-    try:
-        return w3.eth.gas_price
-    except Exception as e:
-        return 0
-
-
-def get_storage_at(contract_address, location):
-    try:
-        contract_address = w3.to_checksum_address(contract_address)
-        data = w3.eth.get_storage_at(contract_address, location)
-        return abi.decode(["address"], data)[0]
-    except Exception as e:
-        print(e)
-        return None
 
 
 def generate_type_str(component):

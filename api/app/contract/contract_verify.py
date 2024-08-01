@@ -3,11 +3,11 @@ from typing import List, Tuple
 
 import requests
 
+from api.app.web3_utils import get_code, get_storage_at, w3
 from common.models import db
 from common.models.contracts import Contracts
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
-from common.utils.web3_utils import get_code, get_storage_at
 
 config = get_config()
 
@@ -26,7 +26,6 @@ def initial_chain_id():
     try:
         CHAIN_ID = config.chain_id
     except AttributeError:
-        from common.utils.web3_utils import w3
 
         CHAIN_ID = w3.eth.chain_id
     return CHAIN_ID
