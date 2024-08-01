@@ -4,16 +4,16 @@ from common.utils.exception_control import ErrorRollupError
 
 class BridgeTransactionParser:
     def __init__(
-            self,
-            chain: str,
-            rollup_type: str,
-            withdrawal_expired_day: int,
-            bridge_compatible: bool,
-            token_configuration: TokenConfiguration = TokenConfiguration(
-                native_token="ETH",
-                dashboard_token="ETH",
-                gas_fee_token="ETH",
-            ),
+        self,
+        chain: str,
+        rollup_type: str,
+        withdrawal_expired_day: int,
+        bridge_compatible: bool,
+        token_configuration: TokenConfiguration = TokenConfiguration(
+            native_token="ETH",
+            dashboard_token="ETH",
+            gas_fee_token="ETH",
+        ),
     ):
         self.chain = chain
         self.rollup_type = rollup_type
@@ -45,7 +45,9 @@ class BridgeTransactionParser:
                 return parse_mantle_bridge_l1_to_l2_transaction(l1_to_l2_transaction, token_info)
             else:
                 transaction_json = parse_bedrock_bridge_l1_to_l2_transaction(
-                    l1_to_l2_transaction, token_info, self.token_configuration.native_token
+                    l1_to_l2_transaction,
+                    token_info,
+                    self.token_configuration.native_token,
                 )
         elif self.rollup_type == "zk":
             if self.chain == "taiko":
@@ -69,7 +71,9 @@ class BridgeTransactionParser:
                 transaction_json = parse_mantle_bridge_l2_to_l1_transaction(l2_to_l1_transaction, token_info)
             else:
                 transaction_json = parse_bedrock_bridge_l2_to_l1_transaction(
-                    l2_to_l1_transaction, token_info, self.token_configuration.native_token
+                    l2_to_l1_transaction,
+                    token_info,
+                    self.token_configuration.native_token,
                 )
             transaction_json["status"] = determine_op_bedrock_withdrawal_state(
                 transaction_json,

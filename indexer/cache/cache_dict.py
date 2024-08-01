@@ -31,24 +31,24 @@ class CacheDict:
         if not uri:
             self._dict = ThreadSafeMemoryDict()
         else:
-            if uri.startswith('redis://'):
+            if uri.startswith("redis://"):
                 redis_config = self._parse_redis_uri(uri)
                 self._dict = RedisDict(**redis_config)
             else:
-                raise ValueError('Unsupported URI scheme')
+                raise ValueError("Unsupported URI scheme")
 
     def _parse_redis_uri(self, uri):
         parsed = urlparse(uri)
         redis_config = {
-            'host': parsed.hostname or '127.0.0.1',
-            'port': parsed.port or 6379,
+            "host": parsed.hostname or "127.0.0.1",
+            "port": parsed.port or 6379,
         }
         if parsed.username:
-            redis_config['username'] = parsed.username
+            redis_config["username"] = parsed.username
         if parsed.password:
-            redis_config['password'] = parsed.password
-        if parsed.path and parsed.path != '/':
-            redis_config['db'] = int(parsed.path.strip('/'))
+            redis_config["password"] = parsed.password
+        if parsed.path and parsed.path != "/":
+            redis_config["db"] = int(parsed.path.strip("/"))
         return redis_config
 
     def __getitem__(self, key):

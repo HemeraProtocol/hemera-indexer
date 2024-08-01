@@ -2,45 +2,48 @@ import logging
 import os
 import time
 
+from common.utils.exception_control import HemeraBaseException
+from common.utils.file_utils import delete_file, write_to_file
+from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.dispatcher.base_dispatcher import BaseDispatcher
-from common.utils.file_utils import write_to_file, delete_file
-from common.utils.web3_utils import build_web3
-from common.utils.exception_control import HemeraBaseException
 from indexer.utils.sync_recorder import BaseRecorder
 
 
 class StreamController(BaseController):
 
-    def __init__(self,
-                 batch_web3_provider,
-                 sync_recorder: BaseRecorder,
-                 job_dispatcher=BaseDispatcher(),
-                 max_retries=5
-                 ):
+    def __init__(
+        self,
+        batch_web3_provider,
+        sync_recorder: BaseRecorder,
+        job_dispatcher=BaseDispatcher(),
+        max_retries=5,
+    ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
         self.web3 = build_web3(batch_web3_provider)
         self.job_dispatcher = job_dispatcher
         self.max_retries = max_retries
 
-    def action(self,
-               start_block=None,
-               end_block=None,
-               block_batch_size=10,
-               period_seconds=10,
-               retry_errors=True,
-               pid_file=None):
+    def action(
+        self,
+        start_block=None,
+        end_block=None,
+        block_batch_size=10,
+        period_seconds=10,
+        retry_errors=True,
+        pid_file=None,
+    ):
         try:
             if pid_file is not None:
-                logging.info('Creating pid file {}'.format(pid_file))
+                logging.info("Creating pid file {}".format(pid_file))
                 write_to_file(pid_file, str(os.getpid()))
 
             self._do_stream(start_block, end_block, block_batch_size, retry_errors, period_seconds)
 
         finally:
             if pid_file is not None:
-                logging.info('Deleting pid file {}'.format(pid_file))
+                logging.info("Deleting pid file {}".format(pid_file))
                 delete_file(pid_file)
 
     def _shutdown(self):
@@ -48,8 +51,8 @@ class StreamController(BaseController):
 
     def _do_stream(self, start_block, end_block, steps, retry_errors, period_seconds):
         last_synced_block = self.sync_recorder.get_last_synced_block()
-        if start_block is not None or last_synced_block == -1:
-            last_synced_block = (start_block or 0) - 1
+        if start_block is not None:
+            last_synced_block = start_block - 1
 
         tries, tries_reset = 0, True
         while True and (end_block is None or last_synced_block < end_block):
@@ -62,21 +65,24 @@ class StreamController(BaseController):
                 target_block = self._calculate_target_block(current_block, last_synced_block, end_block, steps)
                 synced_blocks = max(target_block - last_synced_block, 0)
 
-                logging.info('Current block {}, target block {}, last synced block {}, blocks to sync {}'.format(
-                    current_block, target_block, last_synced_block, synced_blocks))
+                logging.info(
+                    "Current block {}, target block {}, last synced block {}, blocks to sync {}".format(
+                        current_block, target_block, last_synced_block, synced_blocks
+                    )
+                )
 
                 if synced_blocks != 0:
                     # ETL program's main logic
                     self.job_dispatcher.run(last_synced_block + 1, target_block)
 
-                    logging.info('Writing last synced block {}'.format(target_block))
+                    logging.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
                     last_synced_block = target_block
 
             except HemeraBaseException as e:
-                logging.exception(f'An rpc response exception occurred while syncing block data. error: {e}')
+                logging.exception(f"An rpc response exception occurred while syncing block data. error: {e}")
                 if e.crashable:
-                    logging.exception('Mission will crash immediately.')
+                    logging.exception("Mission will crash immediately.")
                     raise e
 
                 if e.retriable:
@@ -86,26 +92,26 @@ class StreamController(BaseController):
                         logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                         raise e
                     else:
-                        logging.info(f'No: {tries} retry is about to start.')
+                        logging.info(f"No: {tries} retry is about to start.")
                 else:
-                    logging.exception('Mission will not retry, and exit immediately.')
+                    logging.exception("Mission will not retry, and exit immediately.")
                     raise e
 
             except Exception as e:
-                logging.exception('An exception occurred while syncing block data.')
+                logging.exception("An exception occurred while syncing block data.")
                 tries += 1
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
                     logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     raise e
                 else:
-                    logging.info(f'No: {tries} retry is about to start.')
+                    logging.info(f"No: {tries} retry is about to start.")
             finally:
                 if tries_reset:
                     tries = 0
 
             if synced_blocks <= 0:
-                logging.info('Nothing to sync. Sleeping for {} seconds...'.format(period_seconds))
+                logging.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
                 time.sleep(period_seconds)
 
     def _get_current_block_number(self):

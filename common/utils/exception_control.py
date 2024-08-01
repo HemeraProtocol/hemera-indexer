@@ -39,6 +39,14 @@ class RetriableError(HemeraBaseException):
         super().__init__(message)
 
 
+class HistoryUnavailableError(HemeraBaseException):
+    def __init__(self, message=""):
+        self.crashable = False
+        self.retriable = False
+        self.message = message
+        super().__init__(message)
+
+
 class NoBatchModeError(HemeraBaseException):
     def __init__(self, message=""):
         self.crashable = False
@@ -78,16 +86,16 @@ class ErrorRollupError(Exception):
 # -32603	        Internal error	        Internal JSON-RPC error.
 # -32000 to -32099	Server error	        Reserved for implementation-defined server-errors.
 def decode_response_error(error):
-    code = error['code'] if 'code' in error else 0
-    message = error['message'] if 'message' in error else ''
+    code = error["code"] if "code" in error else 0
+    message = error["message"] if "message" in error else ""
 
     if code == -32000:
-        if message == 'execution reverted' or message == 'out of gas':
+        if message == "execution reverted" or message == "out of gas":
             return None
+        elif message.find("required historical state unavailable") != -1:
+            raise HistoryUnavailableError(message)
         else:
-            # for test
-            # raise RPCNotReachable(message)
-            return None
+            raise RPCNotReachable(message)
     elif code == -32700 or code == -32600 or code == -32602:
         raise FastShutdownError(message)
     elif (-32000 > code >= -32099) or code == -32603:

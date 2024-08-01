@@ -4,9 +4,9 @@ from enumeration.entity_type import EntityType
 from indexer.domain.transaction import Transaction
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.modules.bridge.arbitrum.arb_parser import *
-from indexer.modules.bridge.arbitrum.arb_rlp import calculate_submit_retryable_id, calculate_deposit_tx_id
+from indexer.modules.bridge.arbitrum.arb_rlp import calculate_deposit_tx_id, calculate_submit_retryable_id
 from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL1, ArbitrumL2ToL1TransactionOnL1
-from indexer.specification.specification import TransactionFilterByLogs, TopicSpecification
+from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
 
@@ -24,11 +24,11 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        config = kwargs['config']
+        config = kwargs["config"]
 
-        self._contract_list = [address.lower() for address in set(config.get('contract_list'))]
-        self.l2_chain_id = int(config.get('l2_chain_id'))
-        self.transaction_batch_offset = int(config.get('transaction_batch_offset'))
+        self._contract_list = [address.lower() for address in set(config.get("contract_list"))]
+        self.l2_chain_id = int(config.get("l2_chain_id"))
+        self.transaction_batch_offset = int(config.get("transaction_batch_offset"))
 
     def get_filter(self):
         topics = []
@@ -53,12 +53,18 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
         for tnx in tnx_input:
             tnx_input_map[str(tnx.transaction_hash)] = tnx
         message_delivered_event_list = list(
-            map(lambda x: parse_message_delivered(x, self._contract_list), transactions))
+            map(lambda x: parse_message_delivered(x, self._contract_list), transactions)
+        )
         message_delivered_event_map = {m.messageIndex: m for sublist in message_delivered_event_list for m in sublist}
         inbox_message_delivered_event_list = list(
-            map(lambda x: parse_inbox_message_delivered(x, self._contract_list), transactions))
-        inbox_message_delivered_event_map = {m.msg_number: m for sublist in inbox_message_delivered_event_list for m in
-                                             sublist}
+            map(
+                lambda x: parse_inbox_message_delivered(x, self._contract_list),
+                transactions,
+            )
+        )
+        inbox_message_delivered_event_map = {
+            m.msg_number: m for sublist in inbox_message_delivered_event_list for m in sublist
+        }
         # merge two objects by msgNumber, l1 -> l2
         arb_deposit_lis = []
         for msg_num, inbox_message in inbox_message_delivered_event_map.items():
@@ -68,11 +74,19 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                 continue
             kind = message_deliver.kind if message_deliver.kind else -1
             l2_chain_id = self.l2_chain_id
-            (destAddress, l2CallValue, msgValue, gasLimit, maxSubmissionCost, excessFeeRefundAddress,
-             callValueRefundAddress,
-             maxFeePerGas, dataHex, l1TokenId, l1TokenAmount) = un_marshal_inbox_message_delivered_data(kind,
-                                                                                                        inbox_message.data,
-                                                                                                        l2_chain_id)
+            (
+                destAddress,
+                l2CallValue,
+                msgValue,
+                gasLimit,
+                maxSubmissionCost,
+                excessFeeRefundAddress,
+                callValueRefundAddress,
+                maxFeePerGas,
+                dataHex,
+                l1TokenId,
+                l1TokenAmount,
+            ) = un_marshal_inbox_message_delivered_data(kind, inbox_message.data, l2_chain_id)
 
             if kind == 9:
                 l2_tx_hash = calculate_submit_retryable_id(
@@ -88,7 +102,7 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                     strip_leading_zeros(callValueRefundAddress),
                     gasLimit,
                     maxFeePerGas,
-                    dataHex
+                    dataHex,
                 )
                 if token_transaction:
                     if token_transaction.l1Token:
@@ -111,7 +125,7 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                     to_address=message_deliver.bridge_to_address,
                     amount=l1TokenAmount,
                     extra_info=message_deliver.extra_info,
-                    _type=ArbType.BRIDGE_NATIVE.value
+                    _type=ArbType.BRIDGE_NATIVE.value,
                 )
                 arb_deposit_lis.append(qdt)
             elif kind == 12:
@@ -120,7 +134,7 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                     msg_num,
                     message_deliver.sender,
                     message_deliver.from_address,
-                    msgValue
+                    msgValue,
                 )
                 qdt = ArbitrumL1ToL2TransactionOnL1(
                     msg_hash=l2_tx_hash,
@@ -131,13 +145,13 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                     l1_transaction_hash=message_deliver.transaction_hash,
                     l1_from_address=message_deliver.from_address,
                     l1_to_address=message_deliver.to_address,
-                    l1_token_address=strip_leading_zeros(l1TokenId) if l1TokenId else None,
+                    l1_token_address=(strip_leading_zeros(l1TokenId) if l1TokenId else None),
                     l2_token_address=None,
                     from_address=message_deliver.bridge_from_address,
                     to_address=message_deliver.bridge_to_address,
                     amount=l1TokenAmount,
                     extra_info=message_deliver.extra_info,
-                    _type=1
+                    _type=1,
                 )
 
                 arb_deposit_lis.append(qdt)
@@ -147,7 +161,7 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                     msg_num,
                     message_deliver.sender,
                     message_deliver.from_address,
-                    msgValue
+                    msgValue,
                 )
                 qdt = ArbitrumL1ToL2TransactionOnL1(
                     msg_hash=l2_tx_hash,
@@ -158,13 +172,13 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                     l1_transaction_hash=message_deliver.transaction_hash,
                     l1_from_address=message_deliver.from_address,
                     l1_to_address=message_deliver.to_address,
-                    l1_token_address=strip_leading_zeros(l1TokenId) if l1TokenId else None,
+                    l1_token_address=(strip_leading_zeros(l1TokenId) if l1TokenId else None),
                     l2_token_address=None,
                     from_address=message_deliver.bridge_from_address,
                     to_address=message_deliver.bridge_to_address,
                     amount=l1TokenAmount,
                     extra_info=message_deliver.extra_info,
-                    _type=1
+                    _type=1,
                 )
                 arb_deposit_lis.append(qdt)
             elif kind == 3:
@@ -173,43 +187,51 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
                     msg_num,
                     message_deliver.sender,
                     message_deliver.from_address,
-                    msgValue
+                    msgValue,
                 )
-                arb_deposit_lis.append(ArbitrumL1ToL2TransactionOnL1(
-                    msg_hash=l2_tx_hash,
-                    index=msg_num,
-                    l1_block_number=message_deliver.block_number,
-                    l1_block_timestamp=message_deliver.block_timestamp,
-                    l1_block_hash=message_deliver.block_hash,
-                    l1_transaction_hash=message_deliver.transaction_hash,
-                    l1_from_address=message_deliver.from_address,
-                    l1_to_address=message_deliver.to_address,
-                    l1_token_address=strip_leading_zeros(l1TokenId) if l1TokenId else None,
-                    l2_token_address=None,
-                    from_address=message_deliver.bridge_from_address,
-                    to_address=message_deliver.bridge_to_address,
-                    amount=l1TokenAmount,
-                    extra_info=message_deliver.extra_info,
-                    _type=1
-                ))
+                arb_deposit_lis.append(
+                    ArbitrumL1ToL2TransactionOnL1(
+                        msg_hash=l2_tx_hash,
+                        index=msg_num,
+                        l1_block_number=message_deliver.block_number,
+                        l1_block_timestamp=message_deliver.block_timestamp,
+                        l1_block_hash=message_deliver.block_hash,
+                        l1_transaction_hash=message_deliver.transaction_hash,
+                        l1_from_address=message_deliver.from_address,
+                        l1_to_address=message_deliver.to_address,
+                        l1_token_address=(strip_leading_zeros(l1TokenId) if l1TokenId else None),
+                        l2_token_address=None,
+                        from_address=message_deliver.bridge_from_address,
+                        to_address=message_deliver.bridge_to_address,
+                        amount=l1TokenAmount,
+                        extra_info=message_deliver.extra_info,
+                        _type=1,
+                    )
+                )
         result += arb_deposit_lis
         # l2 -> l1
         bridge_call_triggered_transaction = []
         for tnx in transactions:
             x = parse_bridge_call_triggered(tnx, self._contract_list)
             for z in x:
-                bridge_call_triggered_transaction.append(ArbitrumL2ToL1TransactionOnL1(
-                    msg_hash=z.msg_hash,
-                    l1_transaction_hash=z.l1_transaction_hash,
-                    l1_block_number=z.l1_block_number,
-                    l1_block_timestamp=z.l1_block_timestamp,
-                    l1_block_hash=z.l1_block_hash,
-                    l1_from_address=z.l1_from_address,
-                    l1_to_address=z.l1_to_address,
-                ))
+                bridge_call_triggered_transaction.append(
+                    ArbitrumL2ToL1TransactionOnL1(
+                        msg_hash=z.msg_hash,
+                        l1_transaction_hash=z.l1_transaction_hash,
+                        l1_block_number=z.l1_block_number,
+                        l1_block_timestamp=z.l1_block_timestamp,
+                        l1_block_hash=z.l1_block_hash,
+                        l1_from_address=z.l1_from_address,
+                        l1_to_address=z.l1_to_address,
+                    )
+                )
         result += bridge_call_triggered_transaction
 
-        tnx_batches = [item for x in transactions for item in parse_sequencer_batch_delivered(x, self._contract_list, self.transaction_batch_offset)]
+        tnx_batches = [
+            item
+            for x in transactions
+            for item in parse_sequencer_batch_delivered(x, self._contract_list, self.transaction_batch_offset)
+        ]
         state_create_batches = [item for x in transactions for item in parse_node_created(x, self._contract_list)]
         state_confirm_batches = [item for x in transactions for item in parse_node_confirmed(x, self._contract_list)]
 
@@ -218,4 +240,3 @@ class ArbitrumBridgeOnL1Job(FilterTransactionDataJob):
         result += state_confirm_batches
         for data in result:
             self._collect_item(data.type(), data)
-

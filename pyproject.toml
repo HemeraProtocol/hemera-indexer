@@ -1,0 +1,44 @@
+[project]
+name = "hemera-protocol"
+dynamic = ["version"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.25.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.2"
+black = "^21.5b0"
+isort = "^5.9.1"
+flake8 = "^3.9.2"
+ruff = "^0.0.235"
+
+[tool.black]
+line-length = 120
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+force_single_line = false
+include_trailing_comma = true
+line_length = 120
+
+[tool.pytest.ini_options]
+markers = [
+    # General
+    "serial: run this test in single thread",
+
+    # Indexer related
+    "indexer: Tests related to indexer",
+    "indexer_exporter: Tests related to the indexer exporter",
+    "indexer_utils: Tests related to the indexer utils",
+    "indexer_bridge: Tests related to the indexer bridge",
+    "indexer_bridge_optimism: Tests related to the indexer bridge optimism",
+    "indexer_bridge_arbitrum: Tests related to the indexer bridge arbitrum",
+
+    "indexer_jobs: Tests related to the indexer jobs",
+    "indexer_jobs_user_ops: Tests related to the indexer jobs user ops",
+
+    # API related
+]

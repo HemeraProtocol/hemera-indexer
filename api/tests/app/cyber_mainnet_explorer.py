@@ -542,7 +542,11 @@ def test_explorer_address_token_holdings_v1(test_client):
         assert "token_logo_url" in sample_token
         assert "type" in sample_token
 
-        assert sample_token["type"] in ["tokentxns", "tokentxns-nft", "tokentxns-nft1155"]
+        assert sample_token["type"] in [
+            "tokentxns",
+            "tokentxns-nft",
+            "tokentxns-nft1155",
+        ]
 
 
 @pytest.mark.explorer
@@ -572,7 +576,11 @@ def test_explorer_address_token_holdings_v2(test_client):
         assert "token_logo_url" in sample_token
         assert "type" in sample_token
 
-        assert sample_token["type"] in ["tokentxns", "tokentxns-nft", "tokentxns-nft1155"]
+        assert sample_token["type"] in [
+            "tokentxns",
+            "tokentxns-nft",
+            "tokentxns-nft1155",
+        ]
 
 
 @pytest.mark.explorer

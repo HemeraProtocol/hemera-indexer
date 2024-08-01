@@ -25,15 +25,15 @@ class OpBedrockDepositTx(Serializable):
     ]
 
     def __init__(
-            self,
-            source_hash,
-            from_address,
-            to_address=None,
-            mint=None,
-            value=None,
-            gas=0,
-            is_system_transaction=False,
-            data=b"",
+        self,
+        source_hash,
+        from_address,
+        to_address=None,
+        mint=None,
+        value=None,
+        gas=0,
+        is_system_transaction=False,
+        data=b"",
     ):
         super().__init__(
             source_hash=source_hash,
@@ -99,7 +99,9 @@ def get_version_and_index_from_nonce(nonce: int) -> (int, int):
     return (version, index)
 
 
-def unmarshal_deposit_version1(opaque_data: bytes) -> Tuple[Optional[int], int, int, int, int, bool, bytes]:
+def unmarshal_deposit_version1(
+    opaque_data: bytes,
+) -> Tuple[Optional[int], int, int, int, int, bool, bytes]:
     assert len(opaque_data) >= 32 + 32 + 32 + 32 + 8 + 1, f"Unexpected opaqueData length: {len(opaque_data)}"
     offset = 0
 
@@ -135,7 +137,9 @@ def unmarshal_deposit_version1(opaque_data: bytes) -> Tuple[Optional[int], int, 
     return mint_option, value, eth_value, eth_tx_value, gas, is_creation, tx_data
 
 
-def unmarshal_deposit_version0(opaque_data: bytes) -> Tuple[Optional[int], int, int, bool, bytes]:
+def unmarshal_deposit_version0(
+    opaque_data: bytes,
+) -> Tuple[Optional[int], int, int, bool, bytes]:
     assert len(opaque_data) >= 32 + 32 + 8 + 1, f"Unexpected opaqueData length: {len(opaque_data)}"
     offset = 0
 

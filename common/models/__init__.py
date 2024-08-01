@@ -1,18 +1,22 @@
+import ast
 import glob
 import os
-import ast
 from datetime import datetime, timezone
 from typing import Type
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func
-from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP, ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, TIMESTAMP
 
 from common.services.sqlalchemy_session import RouteSQLAlchemy
-from common.utils.module_loading import import_string
+from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 from indexer.domain import Domain
 
-model_path_patterns = ['common/models', 'indexer/modules/*/models', 'indexer/modules/custom/*/models']
+model_path_patterns = [
+    "common/models",
+    "indexer/modules/*/models",
+    "indexer/modules/custom/*/models",
+]
 
 # db = RouteSQLAlchemy(session_options={"autoflush": False})
 db = SQLAlchemy(session_options={"autoflush": False})
@@ -45,10 +49,10 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
                 converted_data[key] = getattr(data, key)
 
     if is_update:
-        converted_data['update_time'] = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
+        converted_data["update_time"] = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
 
-    if 'reorg' in table.__table__.columns:
-        converted_data['reorg'] = False
+    if "reorg" in table.__table__.columns:
+        converted_data["reorg"] = False
 
     return converted_data
 
@@ -73,7 +77,7 @@ def __getattr__(name):
 
 def scan_modules():
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
+    project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
     modules = {}
 
     for model_pattern in model_path_patterns:
@@ -81,10 +85,10 @@ def scan_modules():
         for models_dir in glob.glob(pattern_path):
             if os.path.isdir(models_dir):
                 for file in os.listdir(models_dir):
-                    if file.endswith('.py') and file != "__init__.py":
+                    if file.endswith(".py") and file != "__init__.py":
                         module_file_path = os.path.join(models_dir, file)
                         module_relative_path = os.path.relpath(module_file_path, start=project_root)
-                        module_import_path = module_relative_path.replace(os.path.sep, '.')
+                        module_import_path = module_relative_path.replace(os.path.sep, ".")
 
                         with open(module_file_path, "r", encoding="utf-8") as module:
                             file_content = module.read()
@@ -97,5 +101,4 @@ def scan_modules():
     return modules
 
 
-__lazy_imports = scan_modules()
-# __lazy_imports = scan_modules("common/models")
+__lazy_imports = scan_subclass_by_path_patterns(model_path_patterns, HemeraModel)

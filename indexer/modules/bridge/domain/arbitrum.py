@@ -22,6 +22,7 @@ class ArbitrumL1ToL2TransactionOnL1(FilterData):
     extra_info: dict
     _type: int
 
+
 @dataclass
 class ArbitrumL2ToL1TransactionOnL1(FilterData):
     msg_hash: str
@@ -125,6 +126,7 @@ class ArbitrumL2ToL1TransactionOnL2(FilterData):
     l1_token_address: Optional[str]
     l2_token_address: Optional[str]
     extra_info: dict
+
 
 @dataclass
 class ArbitrumL1ToL2TransactionOnL2(FilterData):

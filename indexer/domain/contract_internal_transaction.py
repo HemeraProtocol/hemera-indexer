@@ -33,7 +33,7 @@ class ContractInternalTransaction(Domain):
             to_address=trace_dict["to_address"],
             value=to_int(hexstr=trace_dict["value"]) if trace_dict["value"] else None,
             gas=to_int(hexstr=trace_dict["gas"]) if trace_dict["gas"] else None,
-            gas_used=to_int(hexstr=trace_dict["gas_used"]) if trace_dict["gas_used"] else None,
+            gas_used=(to_int(hexstr=trace_dict["gas_used"]) if trace_dict["gas_used"] else None),
             trace_type=trace_dict["trace_type"],
             call_type=trace_dict["call_type"],
             trace_address=trace_dict["trace_address"],

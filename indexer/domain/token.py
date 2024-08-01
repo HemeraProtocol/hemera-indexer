@@ -8,8 +8,8 @@ from indexer.domain import Domain
 class Token(Domain):
     address: str
     token_type: str
-    name: str
-    symbol: str
+    name: Optional[str]
+    symbol: Optional[str]
     decimals: Optional[int]
     block_number: int
     total_supply: Optional[int] = None

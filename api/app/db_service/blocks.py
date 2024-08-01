@@ -3,47 +3,32 @@ from common.models.blocks import Blocks
 from common.utils.db_utils import build_entities
 
 
-def get_last_block(columns='*'):
+def get_last_block(columns="*"):
     entities = build_entities(Blocks, columns)
 
-    latest_block = (
-        db.session.query(Blocks)
-        .with_entities(*entities)
-        .order_by(Blocks.number.desc())
-        .first()
-    )
+    latest_block = db.session.query(Blocks).with_entities(*entities).order_by(Blocks.number.desc()).first()
 
     return latest_block
 
 
-def get_block_by_number(block_number: int, columns='*'):
+def get_block_by_number(block_number: int, columns="*"):
     entities = build_entities(Blocks, columns)
 
-    block = (
-        db.session.query(Blocks)
-        .with_entities(*entities)
-        .filter(Blocks.number == block_number)
-        .first()
-    )
+    block = db.session.query(Blocks).with_entities(*entities).filter(Blocks.number == block_number).first()
 
     return block
 
 
-def get_block_by_hash(hash: str, columns='*'):
+def get_block_by_hash(hash: str, columns="*"):
     bytes_hash = bytes.fromhex(hash[2:])
     entities = build_entities(Blocks, columns)
 
-    results = (
-        db.session.query(Blocks)
-        .with_entities(*entities)
-        .filter(Blocks.hash == bytes_hash)
-        .first()
-    )
+    results = db.session.query(Blocks).with_entities(*entities).filter(Blocks.hash == bytes_hash).first()
 
     return results
 
 
-def get_blocks_by_condition(filter_condition=None, columns='*', limit=None, offset=None):
+def get_blocks_by_condition(filter_condition=None, columns="*", limit=None, offset=None):
     entities = build_entities(Blocks, columns)
 
     statement = db.session.query(Blocks).with_entities(*entities)

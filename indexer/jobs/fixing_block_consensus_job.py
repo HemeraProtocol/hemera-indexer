@@ -7,11 +7,11 @@ from common.models.blocks import Blocks
 from common.models.coin_balances import CoinBalances
 from common.models.contract_internal_transactions import ContractInternalTransactions
 from common.models.contracts import Contracts
-from common.models.erc1155_token_id_details import ERC1155TokenIdDetails
-from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_id_changes import ERC721TokenIdChanges
 from common.models.erc721_token_id_details import ERC721TokenIdDetails
+from common.models.erc1155_token_id_details import ERC1155TokenIdDetails
+from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.logs import Logs
 from common.models.token_balances import AddressTokenBalances
 from common.models.traces import Traces
@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class FixingBlockConsensusJob(BaseJob):
-   '''
+    """
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.service = kwargs['service']
@@ -346,4 +346,4 @@ class FixingBlockConsensusJob(BaseJob):
         formated_coin_balance = [format_coin_balance_data(coin_balance) for coin_balance in coin_balances]
 
         return formated_coin_balance
-    '''
+    """

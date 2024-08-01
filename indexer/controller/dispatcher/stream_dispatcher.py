@@ -7,17 +7,18 @@ from indexer.jobs.job_scheduler import JobScheduler
 
 class StreamDispatcher(BaseDispatcher):
 
-    def __init__(self,
-                 service,
-                 batch_web3_provider,
-                 batch_web3_debug_provider,
-                 item_exporters=[ConsoleItemExporter()],
-                 batch_size=100,
-                 debug_batch_size=1,
-                 max_workers=5,
-                 config=None,
-                 required_output_types=[]
-                 ):
+    def __init__(
+        self,
+        service,
+        batch_web3_provider,
+        batch_web3_debug_provider,
+        item_exporters=[ConsoleItemExporter()],
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config=None,
+        required_output_types=[],
+    ):
         super().__init__(service)
         self._job_scheduler = JobScheduler(
             batch_web3_provider=batch_web3_provider,
@@ -40,7 +41,7 @@ class StreamDispatcher(BaseDispatcher):
             )
 
             for key, value in self._job_scheduler.get_data_buff().items():
-                print(f'{key}: {len(value)}')
+                print(f"{key}: {len(value)}")
 
         except Exception as e:
             raise e

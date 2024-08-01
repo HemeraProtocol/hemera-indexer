@@ -14,8 +14,8 @@ from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.middleware import geth_poa_middleware
 from web3.types import ABIFunction
 
-from common.utils.config import get_config
 from api.app.cache import cache
+from common.utils.config import get_config
 
 ERC721_ABI = [
     {
@@ -117,7 +117,7 @@ def build_web3(provider):
 
 
 def verify_0_address(address):
-    return set(address[2:]) == {'0'}
+    return set(address[2:]) == {"0"}
 
 
 @cache.memoize(600)
@@ -135,8 +135,7 @@ def get_balance(address) -> Decimal:
 def get_debug_trace_transaction(traces):
     def prune_delegates(trace):
         while (
-                trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0][
-            "call_type"] == "delegatecall"
+            trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0]["call_type"] == "delegatecall"
         ):
             trace = trace["calls"][0]
         if trace.get("calls"):
@@ -310,7 +309,7 @@ def decode_log_data(types, data_str):
     encoded_abi = []
     decoded_abi_real = []
     for index in range(len(types)):
-        encoded_abi.append("0x" + abi.encode(types[index: index + 1], decoded_abi[index: index + 1]).hex())
+        encoded_abi.append("0x" + abi.encode(types[index : index + 1], decoded_abi[index : index + 1]).hex())
 
         if types[index].startswith("byte"):
             if type(decoded_abi[index]) is tuple:

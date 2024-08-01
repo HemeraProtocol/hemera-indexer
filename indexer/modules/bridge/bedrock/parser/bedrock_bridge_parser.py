@@ -6,21 +6,29 @@ from web3._utils.contracts import decode_transaction_data
 from web3.auto import w3
 from web3.types import ABIEvent, ABIFunction
 
-from indexer.modules.bridge.bedrock.parser.function_parser import BedrockBridgeParser, BedRockFunctionCallType, \
-    BridgeRemoteFunctionCallInfo
+from indexer.domain.transaction import Transaction
+from indexer.modules.bridge.bedrock.parser.function_parser import (
+    BedrockBridgeParser,
+    BedRockFunctionCallType,
+    BridgeRemoteFunctionCallInfo,
+)
 from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_erc20 import FINALIZE_BRIDGE_ERC20_DECODER
 from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_erc721 import FINALIZE_BRIDGE_ERC721_DECODER
 from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_eth import FINALIZE_BRIDGE_ETH_DECODER
 from indexer.modules.bridge.bridge_utils import (
+    deposit_event_to_op_bedrock_transaction,
     get_version_and_index_from_nonce,
     unmarshal_deposit_version0,
-    unmarshal_deposit_version1, deposit_event_to_op_bedrock_transaction,
+    unmarshal_deposit_version1,
 )
 from indexer.modules.bridge.signature import bytes_to_hex_str, decode_log, event_log_abi_to_topic
-from indexer.domain.transaction import Transaction
 
 bedrockBridgeParser = BedrockBridgeParser(
-    [FINALIZE_BRIDGE_ETH_DECODER, FINALIZE_BRIDGE_ERC20_DECODER, FINALIZE_BRIDGE_ERC721_DECODER]
+    [
+        FINALIZE_BRIDGE_ETH_DECODER,
+        FINALIZE_BRIDGE_ERC20_DECODER,
+        FINALIZE_BRIDGE_ERC721_DECODER,
+    ]
 )
 
 
@@ -232,9 +240,8 @@ def parse_transaction_deposited_event(transaction: Transaction, contract_address
     return results
 
 
-
 def parse_message_passed_event(transaction: Transaction, contract_address: str) -> List[WithdrawnTransaction]:
-    '''
+    """
     Parses the 'MessagePassed' events from transaction logs based on predefined contract addresses.
     This function handles different versions of withdrawal transactions and decodes their data accordingly.
 
@@ -244,13 +251,13 @@ def parse_message_passed_event(transaction: Transaction, contract_address: str) 
 
     Returns:
         List[WithdrawnTransaction]: A list of WithdrawnTransaction objects containing detailed information about each withdrawal.
-    '''
+    """
     results = []
     logs = transaction.receipt.logs
     for log in logs:
         if (
-                log.topic0 == BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["MESSAGE_PASSED_EVENT"]
-                and log.address == contract_address
+            log.topic0 == BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["MESSAGE_PASSED_EVENT"]
+            and log.address == contract_address
         ):
             message_passed = decode_log(BEDROCK_EVENT_ABI_MAPPING["MESSAGE_PASSED_EVENT"], log)
 
@@ -307,7 +314,6 @@ def parse_message_passed_event(transaction: Transaction, contract_address: str) 
             )
 
     return results
-
 
 
 def parse_relayed_message(

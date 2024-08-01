@@ -1,12 +1,13 @@
 from datetime import datetime
+
 from sqlalchemy import Column, Index, desc, func
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, TEXT, BOOLEAN, VARCHAR
+from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
 
 class ContractInternalTransactions(HemeraModel):
-    __tablename__ = 'contract_internal_transactions'
+    __tablename__ = "contract_internal_transactions"
 
     trace_id = Column(VARCHAR, primary_key=True)
     from_address = Column(BYTEA)
@@ -33,24 +34,36 @@ class ContractInternalTransactions(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                'domain': 'ContractInternalTransaction',
-                'conflict_do_update': False,
-                'update_strategy': None,
-                'converter': general_converter,
+                "domain": "ContractInternalTransaction",
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
             }
         ]
 
 
-Index('contract_internal_transactions_transaction_hash_idx', ContractInternalTransactions.transaction_hash)
-Index('internal_transactions_block_number_index', desc(ContractInternalTransactions.block_number))
-Index('internal_transactions_number_transaction_index',
-      desc(ContractInternalTransactions.block_number),
-      desc(ContractInternalTransactions.transaction_index))
-Index('internal_transactions_from_address_number_transaction_index',
-      ContractInternalTransactions.from_address,
-      desc(ContractInternalTransactions.block_number),
-      desc(ContractInternalTransactions.transaction_index))
-Index('internal_transactions_to_address_number_transaction_index',
-      ContractInternalTransactions.to_address,
-      desc(ContractInternalTransactions.block_number),
-      desc(ContractInternalTransactions.transaction_index))
+Index(
+    "contract_internal_transactions_transaction_hash_idx",
+    ContractInternalTransactions.transaction_hash,
+)
+Index(
+    "internal_transactions_block_number_index",
+    desc(ContractInternalTransactions.block_number),
+)
+Index(
+    "internal_transactions_number_transaction_index",
+    desc(ContractInternalTransactions.block_number),
+    desc(ContractInternalTransactions.transaction_index),
+)
+Index(
+    "internal_transactions_from_address_number_transaction_index",
+    ContractInternalTransactions.from_address,
+    desc(ContractInternalTransactions.block_number),
+    desc(ContractInternalTransactions.transaction_index),
+)
+Index(
+    "internal_transactions_to_address_number_transaction_index",
+    ContractInternalTransactions.to_address,
+    desc(ContractInternalTransactions.block_number),
+    desc(ContractInternalTransactions.transaction_index),
+)

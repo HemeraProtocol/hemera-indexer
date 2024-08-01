@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import List, Optional
 
 from eth_utils import to_int, to_normalized_address
 
@@ -33,27 +33,33 @@ class Transaction(Domain):
     @staticmethod
     def from_rpc(transaction_dict: dict, block_timestamp=None, block_hash=None, block_number=None):
         return Transaction(
-            hash=transaction_dict['hash'],
-            transaction_index=to_int(hexstr=transaction_dict['transactionIndex']),
-            from_address=to_normalized_address(transaction_dict['from']),
-            to_address=to_normalized_address(transaction_dict['to']) if transaction_dict.get('to') else None,
-            value=to_int(hexstr=transaction_dict['value']),
-            transaction_type=to_int(hexstr=transaction_dict.get('type', '0')),
-            input=transaction_dict['input'],
-            nonce=to_int(hexstr=transaction_dict['nonce']),
+            hash=transaction_dict["hash"],
+            transaction_index=to_int(hexstr=transaction_dict["transactionIndex"]),
+            from_address=to_normalized_address(transaction_dict["from"]),
+            to_address=(to_normalized_address(transaction_dict["to"]) if transaction_dict.get("to") else None),
+            value=to_int(hexstr=transaction_dict["value"]),
+            transaction_type=to_int(hexstr=transaction_dict.get("type", "0")),
+            input=transaction_dict["input"],
+            nonce=to_int(hexstr=transaction_dict["nonce"]),
             block_hash=block_hash,
             block_number=block_number,
             block_timestamp=block_timestamp,
-            gas=to_int(hexstr=transaction_dict['gas']),
-            gas_price=to_int(hexstr=transaction_dict['gasPrice']),
-            max_fee_per_gas=to_int(hexstr=transaction_dict.get('maxFeePerGas'))
-            if transaction_dict.get('maxFeePerGas', None) else None,
-            max_priority_fee_per_gas=to_int(hexstr=transaction_dict.get('maxPriorityFeePerGas'))
-            if transaction_dict.get('maxPriorityFeePerGas', None) else None,
-            blob_versioned_hashes=transaction_dict.get('blobVersionedHashes', []),
-            error=transaction_dict.get('error'),
-            exist_error=transaction_dict.get('error') is not None,
-            revert_reason=transaction_dict.get('revertReason')
+            gas=to_int(hexstr=transaction_dict["gas"]),
+            gas_price=to_int(hexstr=transaction_dict["gasPrice"]),
+            max_fee_per_gas=(
+                to_int(hexstr=transaction_dict.get("maxFeePerGas"))
+                if transaction_dict.get("maxFeePerGas", None)
+                else None
+            ),
+            max_priority_fee_per_gas=(
+                to_int(hexstr=transaction_dict.get("maxPriorityFeePerGas"))
+                if transaction_dict.get("maxPriorityFeePerGas", None)
+                else None
+            ),
+            blob_versioned_hashes=transaction_dict.get("blobVersionedHashes", []),
+            error=transaction_dict.get("error"),
+            exist_error=transaction_dict.get("error") is not None,
+            revert_reason=transaction_dict.get("revertReason"),
         )
 
     def fill_with_receipt(self, receipt: Receipt):

@@ -8,7 +8,8 @@ from indexer.domain.log import Log
 from indexer.modules.bridge.signature import decode_log
 
 
-@pytest.mark.util
+@pytest.mark.indexer
+@pytest.mark.indexer_utils
 def test_event_log_decode_sent_message():
     MANTA_PACIFIC_SENT_MESSAGE = cast(
         ABIEvent,

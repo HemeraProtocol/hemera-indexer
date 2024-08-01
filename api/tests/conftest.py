@@ -1,7 +1,7 @@
 import pytest
 
-from common.utils.config import set_config
 from api.app.config import *
+from common.utils.config import set_config
 
 
 @pytest.fixture(scope="module")
@@ -12,7 +12,7 @@ def test_client():
         ],
         env="ut",
         chain="test",
-        contract_service='http://localhost:5000',
+        contract_service="http://localhost:5000",
         db_read_sql_alchemy_database_config=DatabaseConfig(
             host="localhost",
             port=5432,

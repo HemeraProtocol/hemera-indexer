@@ -1,48 +1,25 @@
-import ast
-import glob
-import os
-
-from common.models import model_path_patterns
-from common.utils.module_loading import import_string
+from common.models import HemeraModel, model_path_patterns
+from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 
 
 def scan_convert_config():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
+    class_mapping = scan_subclass_by_path_patterns(model_path_patterns, HemeraModel)
 
-    mapping = {}
-    for model_pattern in model_path_patterns:
-        pattern_path = os.path.join(project_root, model_pattern)
-        for models_dir in glob.glob(pattern_path):
-            if os.path.isdir(models_dir):
-                for file in os.listdir(models_dir):
-                    if file.endswith('.py') and file != "__init__.py":
-                        module_file_path = os.path.join(models_dir, file)
-                        module_relative_path = os.path.relpath(module_file_path, start=project_root)
-                        module_import_path = module_relative_path.replace(os.path.sep, '.')
+    config_mapping = {}
+    for class_name, model_import_path in class_mapping.items():
+        full_class_path = f"{model_import_path}.{class_name}"
+        module = import_string(full_class_path)
 
-                        with open(module_file_path, "r", encoding="utf-8") as module:
-                            file_content = module.read()
-
-                        parsed_content = ast.parse(file_content)
-                        class_names = [node.name for node in ast.walk(parsed_content) if isinstance(node, ast.ClassDef)]
-
-                        for cls in class_names:
-                            full_class_path = os.path.join(module_import_path[:-3], cls)
-                            dot_path = full_class_path.replace(os.path.sep, ".")
-                            module = import_string(dot_path)
-
-                            module_configs = module.model_domain_mapping()
-                            if module_configs:
-                                for config in module_configs:
-                                    mapping[config['domain']] = {
-                                        'table': module,
-                                        'conflict_do_update': config['conflict_do_update'],
-                                        'update_strategy': config['update_strategy'],
-                                        'converter': config['converter']
-                                    }
-
-    return mapping
+        module_configs = module.model_domain_mapping()
+        if module_configs:
+            for config in module_configs:
+                config_mapping[config["domain"]] = {
+                    "table": module,
+                    "conflict_do_update": config["conflict_do_update"],
+                    "update_strategy": config["update_strategy"],
+                    "converter": config["converter"],
+                }
+    return config_mapping
 
 
 domain_model_mapping = scan_convert_config()

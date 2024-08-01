@@ -2,25 +2,26 @@ import logging
 from collections import defaultdict, deque
 from typing import List, Set, Type
 
+from common.utils.module_loading import import_submodules
+from indexer.domain.token import Token
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.utils.utils import import_submodules
 
-import_submodules('indexer.modules')
-# TODO: Import the ExportBlocksJob and ExportTransactionsAndLogsJob classes from the indexer.jobs.export_blocks_job and indexer.jobs.export_transactions_and_logs_job modules
+import_submodules("indexer.modules")
+
 
 class JobScheduler:
     def __init__(
-            self,
-            batch_web3_provider,
-            batch_web3_debug_provider,
-            batch_size=100,
-            debug_batch_size=1,
-            max_workers=5,
-            config=None,
-            item_exporters=[],
-            required_output_types=[]
+        self,
+        batch_web3_provider,
+        batch_web3_debug_provider,
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config=None,
+        item_exporters=[],
+        required_output_types=[],
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -38,7 +39,7 @@ class JobScheduler:
         self.discover_and_register_job_classes()
         self.required_job_classes = self.get_required_job_classes(required_output_types)
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
-
+        BaseJob.init_token_cache(defaultdict(Token))
 
     def get_data_buff(self):
         return BaseJob._data_buff
@@ -55,7 +56,8 @@ class JobScheduler:
             for dependency in cls.dependency_types:
                 self.dependency_map[dependency.type()].append(cls)
             logging.info(
-                f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}")
+                f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}"
+            )
 
     def instantiate_jobs(self):
         filters = []
@@ -86,7 +88,7 @@ class JobScheduler:
             debug_batch_size=self.debug_batch_size,
             max_workers=self.max_workers,
             config=self.config,
-            filters=filters
+            filters=filters,
         )
         self.jobs.insert(0, export_blocks_job)
 

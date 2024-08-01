@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import List, Optional
 
 from eth_utils import to_int, to_normalized_address
 
@@ -33,35 +33,38 @@ class Block(Domain):
 
     @staticmethod
     def from_rpc(block_dict: dict):
-        transactions = [Transaction.from_rpc(
-            transaction,
-            block_timestamp=to_int(hexstr=block_dict['timestamp']),
-            block_hash=block_dict['hash'],
-            block_number=to_int(hexstr=block_dict['number'])
-        ) for transaction in block_dict.get('transactions', [])]
+        transactions = [
+            Transaction.from_rpc(
+                transaction,
+                block_timestamp=to_int(hexstr=block_dict["timestamp"]),
+                block_hash=block_dict["hash"],
+                block_number=to_int(hexstr=block_dict["number"]),
+            )
+            for transaction in block_dict.get("transactions", [])
+        ]
 
         return Block(
-            number=to_int(hexstr=block_dict['number']),
-            timestamp=to_int(hexstr=block_dict['timestamp']),
-            hash=block_dict['hash'],
-            parent_hash=block_dict['parentHash'],
-            nonce=block_dict['nonce'],
-            gas_limit=to_int(hexstr=block_dict['gasLimit']),
-            gas_used=to_int(hexstr=block_dict['gasUsed']),
-            base_fee_per_gas=to_int(hexstr=block_dict.get('baseFeePerGas', "0")),
-            blob_gas_used=to_int(hexstr=block_dict.get('blobGasUsed', "0")),
-            excess_blob_gas=to_int(hexstr=block_dict.get('excessBlobGas', "0")),
-            difficulty=to_int(hexstr=block_dict['difficulty']),
-            total_difficulty=to_int(hexstr=block_dict.get('totalDifficulty', "0")),
-            size=to_int(hexstr=block_dict['size']),
-            miner=to_normalized_address(block_dict['miner']),
-            sha3_uncles=block_dict['sha3Uncles'],
-            transactions_root=block_dict['transactionsRoot'],
-            state_root=block_dict['stateRoot'],
-            receipts_root=block_dict['receiptsRoot'],
+            number=to_int(hexstr=block_dict["number"]),
+            timestamp=to_int(hexstr=block_dict["timestamp"]),
+            hash=block_dict["hash"],
+            parent_hash=block_dict["parentHash"],
+            nonce=block_dict["nonce"],
+            gas_limit=to_int(hexstr=block_dict["gasLimit"]),
+            gas_used=to_int(hexstr=block_dict["gasUsed"]),
+            base_fee_per_gas=to_int(hexstr=block_dict.get("baseFeePerGas", "0")),
+            blob_gas_used=to_int(hexstr=block_dict.get("blobGasUsed", "0")),
+            excess_blob_gas=to_int(hexstr=block_dict.get("excessBlobGas", "0")),
+            difficulty=to_int(hexstr=block_dict["difficulty"]),
+            total_difficulty=to_int(hexstr=block_dict.get("totalDifficulty", "0")),
+            size=to_int(hexstr=block_dict["size"]),
+            miner=to_normalized_address(block_dict["miner"]),
+            sha3_uncles=block_dict["sha3Uncles"],
+            transactions_root=block_dict["transactionsRoot"],
+            state_root=block_dict["stateRoot"],
+            receipts_root=block_dict["receiptsRoot"],
             transactions=transactions,
-            extra_data=block_dict.get('extraData'),
-            withdrawals_root=block_dict.get('withdrawalsRoot', None)
+            extra_data=block_dict.get("extraData"),
+            withdrawals_root=block_dict.get("withdrawalsRoot", None),
         )
 
 
@@ -70,5 +73,3 @@ class UpdateBlockInternalCount(Domain):
     hash: str
     traces_count: Optional[int] = 0
     internal_transactions_count: Optional[int] = 0
-
-

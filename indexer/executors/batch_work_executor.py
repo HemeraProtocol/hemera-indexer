@@ -2,26 +2,37 @@ import logging
 import time
 from concurrent import futures
 
-from requests.exceptions import Timeout as RequestsTimeout, HTTPError, TooManyRedirects
+from requests.exceptions import HTTPError
+from requests.exceptions import Timeout as RequestsTimeout
+from requests.exceptions import TooManyRedirects
 from web3._utils.threads import Timeout as Web3Timeout
 
 from indexer.executors.bounded_executor import BoundedExecutor
 from indexer.utils.progress_logger import ProgressLogger
 from indexer.utils.utils import dynamic_batch_iterator
 
-RETRY_EXCEPTIONS = (ConnectionError, HTTPError, RequestsTimeout, TooManyRedirects, Web3Timeout, OSError)
+RETRY_EXCEPTIONS = (
+    ConnectionError,
+    HTTPError,
+    RequestsTimeout,
+    TooManyRedirects,
+    Web3Timeout,
+    OSError,
+)
 
 BATCH_CHANGE_COOLDOWN_PERIOD_SECONDS = 2 * 60
 
 
 # Executes the given work in batches, reducing the batch size exponentially in case of errors.
 class BatchWorkExecutor:
-    def __init__(self,
-                 starting_batch_size,
-                 max_workers,
-                 job_name='BatchWorkExecutor',
-                 retry_exceptions=RETRY_EXCEPTIONS,
-                 max_retries=5):
+    def __init__(
+        self,
+        starting_batch_size,
+        max_workers,
+        job_name="BatchWorkExecutor",
+        retry_exceptions=RETRY_EXCEPTIONS,
+        max_retries=5,
+    ):
         self.batch_size = starting_batch_size
         self.max_batch_size = starting_batch_size
         self.latest_batch_size_change_time = None
@@ -47,12 +58,16 @@ class BatchWorkExecutor:
             work_handler(batch)
             self._try_increase_batch_size(len(batch))
         except self.retry_exceptions:
-            self.logger.exception('An exception occurred while executing work_handler.')
+            self.logger.exception("An exception occurred while executing work_handler.")
             self._try_decrease_batch_size(len(batch))
-            self.logger.info('The batch of size {} will be retried one item at a time.'.format(len(batch)))
+            self.logger.info("The batch of size {} will be retried one item at a time.".format(len(batch)))
             for item in batch:
-                execute_with_retries(work_handler, [item],
-                                     max_retries=self.max_retries, retry_exceptions=self.retry_exceptions)
+                execute_with_retries(
+                    work_handler,
+                    [item],
+                    max_retries=self.max_retries,
+                    retry_exceptions=self.retry_exceptions,
+                )
 
         self.progress_logger.track(len(batch))
 
@@ -61,7 +76,7 @@ class BatchWorkExecutor:
         batch_size = self.batch_size
         if batch_size == current_batch_size and batch_size > 1:
             new_batch_size = int(current_batch_size / 2)
-            self.logger.info('Reducing batch size to {}.'.format(new_batch_size))
+            self.logger.info("Reducing batch size to {}.".format(new_batch_size))
             self.batch_size = new_batch_size
             self.latest_batch_size_change_time = time.time()
 
@@ -69,11 +84,12 @@ class BatchWorkExecutor:
         if current_batch_size * 2 <= self.max_batch_size:
             current_time = time.time()
             latest_batch_size_change_time = self.latest_batch_size_change_time
-            seconds_since_last_change = current_time - latest_batch_size_change_time \
-                if latest_batch_size_change_time is not None else 0
+            seconds_since_last_change = (
+                current_time - latest_batch_size_change_time if latest_batch_size_change_time is not None else 0
+            )
             if seconds_since_last_change > BATCH_CHANGE_COOLDOWN_PERIOD_SECONDS:
                 new_batch_size = current_batch_size * 2
-                self.logger.info('Increasing batch size to {}.'.format(new_batch_size))
+                self.logger.info("Increasing batch size to {}.".format(new_batch_size))
                 self.batch_size = new_batch_size
                 self.latest_batch_size_change_time = current_time
 
@@ -105,9 +121,9 @@ def execute_with_retries(func, *args, max_retries=5, retry_exceptions=RETRY_EXCE
         try:
             return func(*args)
         except retry_exceptions:
-            logging.exception('An exception occurred while executing execute_with_retries. Retry #{}'.format(i))
+            logging.exception("An exception occurred while executing execute_with_retries. Retry #{}".format(i))
             if i < max_retries - 1:
-                logging.info('The request will be retried after {} seconds. Retry #{}'.format(sleep_seconds, i))
+                logging.info("The request will be retried after {} seconds. Retry #{}".format(sleep_seconds, i))
                 time.sleep(sleep_seconds)
                 continue
             else:

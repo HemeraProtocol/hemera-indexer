@@ -3,7 +3,7 @@ from common.models.contract_internal_transactions import ContractInternalTransac
 from common.utils.db_utils import build_entities
 
 
-def get_internal_transactions_by_transaction_hash(transaction_hash, columns='*'):
+def get_internal_transactions_by_transaction_hash(transaction_hash, columns="*"):
     transaction_hash = bytes.fromhex(transaction_hash.lower()[2:])
     entities = build_entities(ContractInternalTransactions, columns)
 
@@ -20,7 +20,7 @@ def get_internal_transactions_by_transaction_hash(transaction_hash, columns='*')
     return transactions
 
 
-def get_internal_transactions_by_condition(columns='*', filter_condition=None, limit=1, offset=0):
+def get_internal_transactions_by_condition(columns="*", filter_condition=None, limit=1, offset=0):
     entities = build_entities(ContractInternalTransactions, columns)
 
     transactions = (
@@ -38,13 +38,8 @@ def get_internal_transactions_by_condition(columns='*', filter_condition=None, l
     return transactions
 
 
-def get_internal_transactions_cnt_by_condition(columns='*', filter_condition=None):
+def get_internal_transactions_cnt_by_condition(columns="*", filter_condition=None):
     entities = build_entities(ContractInternalTransactions, columns)
-    count = (
-        db.session.query(ContractInternalTransactions)
-        .with_entities(*entities)
-        .filter(filter_condition)
-        .count()
-    )
+    count = db.session.query(ContractInternalTransactions).with_entities(*entities).filter(filter_condition).count()
 
     return count

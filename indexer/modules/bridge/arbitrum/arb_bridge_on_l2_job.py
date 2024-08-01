@@ -2,22 +2,20 @@ from enumeration.entity_type import EntityType
 from indexer.domain.transaction import Transaction
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.modules.bridge.arbitrum.arb_parser import *
-from indexer.modules.bridge.domain.arbitrum import ArbitrumL2ToL1TransactionOnL2, ArbitrumL1ToL2TransactionOnL2
-from indexer.specification.specification import TransactionFilterByLogs, TopicSpecification
+from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL2, ArbitrumL2ToL1TransactionOnL2
+from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 
 class ArbitrumBridgeOnL2Job(FilterTransactionDataJob):
     dependency_types = [Transaction]
-    output_types = [
-        ArbitrumL1ToL2TransactionOnL2, ArbitrumL2ToL1TransactionOnL2
-    ]
+    output_types = [ArbitrumL1ToL2TransactionOnL2, ArbitrumL2ToL1TransactionOnL2]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        config = kwargs['config']
+        config = kwargs["config"]
 
-        self._contract_list = [address.lower() for address in set(config.get('contract_list'))]
+        self._contract_list = [address.lower() for address in set(config.get("contract_list"))]
 
     def get_filter(self):
         topics = []
@@ -67,7 +65,7 @@ class ArbitrumBridgeOnL2Job(FilterTransactionDataJob):
                         from_address=x.caller,
                         to_address=x.destination,
                         l1_token_address=None,
-                        l2_token_address=strip_leading_zeros(x.l2_token_address) if x.l2_token_address else None,
+                        l2_token_address=(strip_leading_zeros(x.l2_token_address) if x.l2_token_address else None),
                         extra_info={},
                     )
                 )
@@ -80,4 +78,3 @@ class ArbitrumBridgeOnL2Job(FilterTransactionDataJob):
         result += bridge_tokens
         for data in result:
             self._collect_item(data.type(), data)
-

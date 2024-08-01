@@ -7,16 +7,18 @@ from datetime import datetime, timedelta
 
 from flask import current_app
 from sqlalchemy import text
+from sqlalchemy.sql import text
 from web3 import Web3
 
-from common.utils.config import get_config
-from common.models import db
-from common.utils.web3_utils import decode_log_data
-from common.utils.format_utils import format_coin_value, format_to_dict, row_to_dict
-from api.app.contract.contract_verify import get_names_from_method_or_topic_list, get_abis_for_logs
+from api.app.contract.contract_verify import get_abis_for_logs, get_names_from_method_or_topic_list
 from api.app.db_service.contracts import get_contracts_by_addresses
 from api.app.db_service.wallet_addresses import get_address_display_mapping
 from api.app.token.token_prices import get_token_price
+from common.models import db
+from common.models.transactions import Transactions
+from common.utils.config import get_config
+from common.utils.format_utils import format_coin_value, format_to_dict, row_to_dict
+from common.utils.web3_utils import decode_log_data
 
 app_config = get_config()
 
@@ -32,9 +34,11 @@ def get_count_by_address(table, chain, wallet_address=None):
 def get_total_row_count(table):
 
     estimate_transaction = db.session.execute(
-        text(f"""
+        text(
+            f"""
             SELECT reltuples::bigint AS estimate FROM pg_class where oid = '{app_config.db_read_sql_alchemy_database_config.schema}.{table}'::regclass;
-        """)
+        """
+        )
     ).fetchone()
     return estimate_transaction[0]
 
@@ -55,10 +59,27 @@ def fill_address_display_to_transactions(transaction_list: list[dict], all_addre
     if not all_address_list:
         all_address_list = []
         for transaction in transaction_list:
-            all_address_list.append(bytes.fromhex(transaction["from_address"][2:]))
-            all_address_list.append(bytes.fromhex(transaction["to_address"][2:]))
+            bytea_address_list.append(bytes.fromhex(transaction["from_address"][2:]))
+            bytea_address_list.append(bytes.fromhex(transaction["to_address"][2:]))
 
-    address_map = get_address_display_mapping(all_address_list)
+    contracts = get_contracts_by_addresses(address_list=bytea_address_list, columns=["address"])
+    contract_list = set(map(lambda x: x.address, contracts))
+
+    for transaction_json in transaction_list:
+        if transaction_json["to_address"] in contract_list:
+            transaction_json["to_address_is_contract"] = True
+        if transaction_json["from_address"] in contract_list:
+            transaction_json["from_address_is_contract"] = True
+
+
+def fill_address_display_to_transactions(transaction_list: list[dict], bytea_address_list: list[bytes] = None):
+    if not bytea_address_list:
+        bytea_address_list = []
+        for transaction in transaction_list:
+            bytea_address_list.append(bytes.fromhex(transaction["from_address"][2:]))
+            bytea_address_list.append(bytes.fromhex(transaction["to_address"][2:]))
+
+    address_map = get_address_display_mapping(bytea_address_list)
 
     for transaction_json in transaction_list:
         if transaction_json["from_address"] in address_map:
@@ -72,72 +93,85 @@ def fill_address_display_to_transactions(transaction_list: list[dict], all_addre
             transaction_json["to_address_display_name"] = transaction_json["to_address"]
 
 
-def display_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
+def format_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
     transaction_json = copy.copy(transaction)
-    transaction_json["method"] = transaction['input'][0:10]
-    transaction_json["method_id"] = transaction['input'][0:10]
+    transaction_json["method"] = transaction["input"][0:10]
+    transaction_json["method_id"] = transaction["input"][0:10]
     transaction_json["is_contract"] = False
     transaction_json["contract_name"] = None
 
     transaction_json["gas_fee_token_price"] = "{0:.2f}".format(GAS_FEE_TOKEN_PRICE)
 
-    transaction_json["value"] = format_coin_value(int(transaction['value']))
-    transaction_json["value_dollar"] = "{0:.2f}".format(transaction['value'] * GAS_FEE_TOKEN_PRICE / 10 ** 18)
+    transaction_json["value"] = format_coin_value(int(transaction["value"]))
+    transaction_json["value_dollar"] = "{0:.2f}".format(transaction["value"] * GAS_FEE_TOKEN_PRICE / 10**18)
 
-    transaction_json["gas_price_gwei"] = "{0:.6f}".format(transaction['gas_price'] / 10 ** 9).rstrip("0").rstrip(".")
-    transaction_json["gas_price"] = "{0:.15f}".format(transaction['gas_price'] / 10 ** 18).rstrip("0").rstrip(".")
+    transaction_json["gas_price_gwei"] = "{0:.6f}".format(transaction["gas_price"] / 10**9).rstrip("0").rstrip(".")
+    transaction_json["gas_price"] = "{0:.15f}".format(transaction["gas_price"] / 10**18).rstrip("0").rstrip(".")
 
-    transaction_fee = transaction['gas_price'] * transaction['receipt_gas_used']
-    total_transaction_fee = transaction['gas_price'] * transaction['receipt_gas_used']
+    transaction_fee = transaction["gas_price"] * transaction["receipt_gas_used"]
+    total_transaction_fee = transaction["gas_price"] * transaction["receipt_gas_used"]
 
     if "receipt_l1_fee" in transaction_json and transaction_json["receipt_l1_fee"]:
         transaction_json["receipt_l1_fee"] = (
-            "{0:.15f}".format(transaction['receipt_l1_fee'] / 10 ** 18).rstrip("0").rstrip(".")
+            "{0:.15f}".format(transaction["receipt_l1_fee"] / 10**18).rstrip("0").rstrip(".")
         )
         transaction_json["receipt_l1_gas_price"] = (
-            "{0:.15f}".format(transaction['receipt_l1_gas_price'] / 10 ** 18).rstrip("0").rstrip(".")
+            "{0:.15f}".format(transaction["receipt_l1_gas_price"] / 10**18).rstrip("0").rstrip(".")
         )
         transaction_json["receipt_l1_gas_price_gwei"] = (
-            "{0:.6f}".format(transaction['receipt_l1_gas_price'] / 10 ** 9).rstrip("0").rstrip(".")
+            "{0:.6f}".format(transaction["receipt_l1_gas_price"] / 10**9).rstrip("0").rstrip(".")
         )
 
-        total_transaction_fee = transaction_fee + transaction['receipt_l1_fee']
-    transaction_json["transaction_fee"] = "{0:.15f}".format(transaction_fee / 10 ** 18).rstrip("0").rstrip(".")
+        total_transaction_fee = transaction_fee + transaction["receipt_l1_fee"]
+    transaction_json["transaction_fee"] = "{0:.15f}".format(transaction_fee / 10**18).rstrip("0").rstrip(".")
     transaction_json["transaction_fee_dollar"] = "{0:.2f}".format(
-        transaction['gas_price'] * GAS_FEE_TOKEN_PRICE * transaction['receipt_gas_used'] / 10 ** 18
+        transaction["gas_price"] * GAS_FEE_TOKEN_PRICE * transaction["receipt_gas_used"] / 10**18
     )
 
     transaction_json["total_transaction_fee"] = (
-        "{0:.15f}".format(total_transaction_fee / 10 ** 18).rstrip("0").rstrip(".")
+        "{0:.15f}".format(total_transaction_fee / 10**18).rstrip("0").rstrip(".")
     )
     transaction_json["total_transaction_fee_dollar"] = "{0:.2f}".format(
-        total_transaction_fee * GAS_FEE_TOKEN_PRICE / 10 ** 18
+        total_transaction_fee * GAS_FEE_TOKEN_PRICE / 10**18
     )
-    if not transaction_json["to_address"]:
-        transaction_json["to_address"] = transaction_json["receipt_contract_address"]
     return transaction_json
 
 
-def parse_transactions(transactions):
+def parse_transactions(transactions: list[Transactions]):
     transaction_list = []
     if len(transactions) <= 0:
         return transaction_list
 
-    GAS_FEE_TOKEN_PRICE = get_token_price(app_config.token_configuration.gas_fee_token,
-                                          transactions[0]['block_timestamp'])
+    GAS_FEE_TOKEN_PRICE = get_token_price(
+        app_config.token_configuration.gas_fee_token, transactions[0]["block_timestamp"]
+    )
 
     to_address_list = []
-    all_address_list = []
+    bytea_address_list = []
     for transaction in transactions:
-        to_address = bytes.fromhex(transaction['to_address'][2:])
-        from_address = bytes.fromhex(transaction['from_address'][2:])
+        to_address = bytes.fromhex(transaction["to_address"][2:])
+        from_address = bytes.fromhex(transaction["from_address"][2:])
         to_address_list.append(to_address)
         all_address_list.append(from_address)
         all_address_list.append(to_address)
         transaction_list.append(display_transaction(float(GAS_FEE_TOKEN_PRICE), transaction))
 
+        transaction_json = format_to_dict(transaction)
+
+        transaction_json["method"] = transaction_json["method_id"]
+        transaction_json["is_contract"] = False
+        transaction_json["contract_name"] = None
+
+        if not transaction_json["to_address"]:
+            transaction_json["to_address"] = transaction_json["receipt_contract_address"]
+
+        transaction_list.append(format_transaction(float(GAS_FEE_TOKEN_PRICE), transaction_json))
+
+    # Doing this early so we don't need to query contracts twice
+    fill_address_display_to_transactions(transaction_list, bytea_address_list)
+
     # Find contract
-    contracts = get_contracts_by_addresses(address_list=to_address_list, columns=['address'])
+    contracts = get_contracts_by_addresses(address_list=to_address_list, columns=["address"])
     contract_list = set(map(lambda x: x.address, contracts))
 
     method_list = []
@@ -173,8 +207,6 @@ def parse_transactions(transactions):
                     ).split()
                 ).title()
 
-    all_address_list = list(set(all_address_list))
-    fill_address_display_to_transactions(transaction_list, all_address_list)
     return transaction_list
 
 
@@ -209,17 +241,18 @@ def parse_log_with_transaction_input_list(log_with_transaction_input_list):
     contract_topic_list = []
     transaction_method_list = []
     count_non_none = lambda x: 0 if x is None else 1
-    for log_with_transaction_input in log_with_transaction_input_list:
+    for log in log_with_transaction_input_list:
+
         # values as dict format
         log = row_to_dict(log_with_transaction_input)  # log_with_transaction_input[0]
-        indexed_true_count = sum(count_non_none(topic) for topic in [log['topic1'], log['topic2'], log['topic3']])
-        contract_topic_list.append((log['address'], log['topic0'], indexed_true_count))
-        log_input = log['input']
+        indexed_true_count = sum(count_non_none(topic) for topic in [log["topic1"], log["topic2"], log["topic3"]])
+        contract_topic_list.append((log["address"], log["topic0"], indexed_true_count))
+        log_input = log["input"]
         if log_input and len(log_input) >= 10:
             transaction_method = log_input[0:10]
             transaction_method_list.append(transaction_method)
-            log["transaction_method_id"] = transaction_method
-        log_list.append(log)
+            log_json["transaction_method_id"] = transaction_method
+        log_list.append(log_json)
 
     # Get method list by transaction_method_list
     method_list = get_names_from_method_or_topic_list(transaction_method_list)
@@ -336,12 +369,11 @@ def process_token_transfer(token_transfers, token_type):
 
         if token_type == "tokentxns":
             token_transfer_json["value"] = (
-                "{0:.18f}".format(token_transfer.value / 10 ** (token_transfer.decimals or 18))
-                .rstrip("0")
-                .rstrip(".")
+                "{0:.18f}".format(token_transfer.value / 10 ** (token_transfer.decimals or 18)).rstrip("0").rstrip(".")
             )
-            token_transfer_json[
-                "token_logo_url"] = token_transfer.icon_url or f"/images/empty-token-{app_config.chain}.png"
+            token_transfer_json["token_logo_url"] = (
+                token_transfer.icon_url or f"/images/empty-token-{app_config.chain}.png"
+            )
         else:
             token_transfer_json["token_id"] = "{:f}".format(token_transfer.token_id)
             token_transfer_json["token_logo_url"] = f"/images/empty-token-{app_config.chain}.png"

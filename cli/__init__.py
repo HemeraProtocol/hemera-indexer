@@ -8,7 +8,7 @@ logging_basic_config()
 
 
 @click.group()
-@click.version_option(version='2.4.2')
+@click.version_option(version="2.4.2")
 @click.pass_context
 def cli(ctx):
     pass
@@ -16,4 +16,3 @@ def cli(ctx):
 
 cli.add_command(stream, "stream")
 cli.add_command(fixing, "fixing")
-
