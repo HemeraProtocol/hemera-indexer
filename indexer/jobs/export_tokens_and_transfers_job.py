@@ -1,16 +1,17 @@
 import json
 import logging
-from typing import List
+from dataclasses import asdict
+from typing import List, Dict
 
 from eth_abi import abi
-from web3 import Web3
 
 from common.utils.format_utils import to_snake_case
-from indexer.domain import dict_to_dataclass
+from enumeration.token_type import TokenType
+from indexer.domain import dict_to_dataclass, dataclass_to_dict
 from indexer.domain.log import Log
 from indexer.domain.token import Token, UpdateToken
 from indexer.domain.token_transfer import extract_transfer_from_log, \
-    ERC20TokenTransfer, ERC1155TokenTransfer, ERC721TokenTransfer
+    ERC20TokenTransfer, ERC1155TokenTransfer, ERC721TokenTransfer, TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
@@ -19,44 +20,6 @@ from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
-erc_token_abi = [
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "name",
-        "outputs": [{"name": "", "type": "string"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "symbol",
-        "outputs": [{"name": "", "type": "string"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "decimals",
-        "outputs": [{"name": "", "type": "uint8"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [{"name": "", "type": "uint256"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
 
 NAME_ABI_FUNCTION = {
     "constant": True,
@@ -98,11 +61,33 @@ TOTAL_SUPPLY_ABI_FUNCTION = {
     "type": "function"
 }
 
+OWNER_OF_ABI_FUNCTION = {
+    "constant": True,
+    "inputs": [{"name": "tokenId", "type": "uint256"}],
+    "name": "ownerOf",
+    "outputs": [{"name": "owner", "type": "address"}],
+    "payable": False,
+    "stateMutability": "view",
+    "type": "function"
+}
+
+TOKEN_URI_ABI_FUNCTION = {
+    "constant": True,
+    "inputs": [{"name": "tokenId", "type": "uint256"}],
+    "name": "tokenURI",
+    "outputs": [{"name": "uri", "type": "address"}],
+    "payable": False,
+    "stateMutability": "view",
+    "type": "function"
+}
+
 abi_mapping = {
     "name": NAME_ABI_FUNCTION,
     "symbol": SYMBOL_ABI_FUNCTION,
     "decimals": DECIMALS_ABI_FUNCTION,
     "totalSupply": TOTAL_SUPPLY_ABI_FUNCTION,
+    "ownerOf": OWNER_OF_ABI_FUNCTION,
+    "tokenURI": TOKEN_URI_ABI_FUNCTION,
 }
 
 
@@ -122,11 +107,16 @@ class ExportTokensAndTransfersJob(BaseJob):
         )
 
         self._is_batch = kwargs['batch_size'] > 1
-        self._exist_token = {}
-        self._token_params = []
+        self._token_addresses = set()
+        self._token_transfers = []
 
     def _start(self):
         super()._start()
+
+    def _end(self):
+        super()._end()
+        self._token_addresses.clear()
+        self._token_transfers.clear()
 
     def _collect(self, **kwargs):
         self._batch_work_executor.execute(
@@ -134,39 +124,75 @@ class ExportTokensAndTransfersJob(BaseJob):
             self._extract_batch,
             total_items=len(self._data_buff[Log.type()])
         )
-
         self._batch_work_executor.wait()
 
-        tokens = distinct_tokens(self._exist_token, self._token_params)
+        token_transfers = self._data_buff[TokenTransfer.type()]
+
+        token_dict: Dict[str, Token] = {}
+        new_token_dict: Dict[str, Token] = {}
+        old_token_dict: Dict[str, Token] = {}
+        for transfer in token_transfers:
+            key = transfer.token_address
+            if key not in token_dict or transfer.block_number > token_dict[key].block_number:
+                token_dict[key] = Token(
+                    address=transfer.token_address,
+                    token_type=transfer.token_type,
+                    name=None,
+                    symbol=None,
+                    decimals=None,
+                    block_number=transfer.block_number
+                )
+
+        for (address, token) in token_dict.items():
+            if address not in self.tokens:
+                new_token_dict[address] = token
+            else:
+                old_token_dict[address] = token
 
         self._batch_work_executor.execute(
-            tokens,
-            self._collect_batch,
-            total_items=len(tokens)
+            [dataclass_to_dict(x) for x in new_token_dict.values()],
+            self._export_token_info_batch,
+            total_items=len(new_token_dict.values())
         )
+        self._batch_work_executor.wait()
 
+        for token in self.get_buff()[Token.type()]:
+            self.tokens[token.address] = token
+
+        filtered_old_tokens = [token for token in token_dict.values() if token.token_type != TokenType.ERC1155.value]
+        self._batch_work_executor.execute(
+            [dataclass_to_dict(x) for x in filtered_old_tokens],
+            self._export_token_total_supply_batch,
+            total_items=len(filtered_old_tokens)
+        )
+        self._batch_work_executor.wait()
+
+        self._batch_work_executor.execute(
+            token_transfers,
+            self._generate_token_transfers,
+            total_items=len(token_transfers)
+        )
         self._batch_work_executor.wait()
 
     def _extract_batch(self, logs):
-        tokens, token_transfers = extract_tokens_and_token_transfers(logs)
+        token_transfers = extract_tokens_and_token_transfers(logs)
+        for transfer in token_transfers:
+            self._collect_item(TokenTransfer.type(), transfer)
 
-        for token in tokens:
-            self._token_params.append(token)
+    def _generate_token_transfers(self, token_transfers):
+        for transfer in token_transfers:
+            transfer.token_type = self.tokens[transfer.token_address].token_type
+            self._collect_domain(transfer.to_specific_transfer())
 
-        for transfer_event in token_transfers:
-            self._collect_item(transfer_event.type(), transfer_event)
+    def _export_token_info_batch(self, tokens):
+        new_tokens = tokens_info_rpc_requests(self._batch_web3_provider.make_request, tokens, self._is_batch)
+        for token in new_tokens:
+            self._collect_item(Token.type(), dict_to_dataclass(token, Token))
 
-    def _collect_batch(self, tokens):
-
-        tokens_info = tokens_rpc_requests(self._web3,
-                                          self._batch_web3_provider.make_request,
-                                          tokens,
-                                          self._is_batch)
-
-        for token in tokens_info:
-            if token['is_new']:
-                self._collect_item(Token.type(), dict_to_dataclass(token, Token))
-            else:
+    def _export_token_total_supply_batch(self, tokens):
+        token_updates = tokens_total_supply_rpc_requests(self._batch_web3_provider.make_request, tokens, self._is_batch)
+        for token in token_updates:
+            if token.get("total_supply") is not None:
                 self._collect_item(UpdateToken.type(), dict_to_dataclass(token, UpdateToken))
 
     def _process(self):
@@ -177,92 +203,73 @@ class ExportTokensAndTransfersJob(BaseJob):
 
 
 def extract_tokens_and_token_transfers(logs: List[Log]):
-    tokens, token_transfer = [], []
-    for log in logs:
-        transfer_events = extract_transfer_from_log(log)
-
-        for transfer_event in transfer_events:
-            token_transfer.append(transfer_event)
-            tokens.append({
-                "address": transfer_event.token_address,
-                "token_type": transfer_event.token_type,
-                "block_number": transfer_event.block_number,
-            })
-
-    return tokens, token_transfer
+    token_transfers = [transfer for log in logs for transfer in extract_transfer_from_log(log)]
+    return token_transfers
 
 
-def distinct_tokens(exist_tokens, origin_tokens):
-    tokens = dict()
-    for token in origin_tokens:
-        if token['address'] not in tokens.keys():
-            tokens[token['address']] = {
-                'token_type': token['token_type'],
-                'block_number': token['block_number'],
-            }
-        elif tokens[token['address']]['block_number'] < token['block_number']:
-            tokens[token['address']]['block_number'] = token['block_number']
+def build_rpc_method_data(tokens, fn, arguments=None):
+    arguments = arguments or []
+    NAME_ABI_FUNCTION = abi_mapping.get(fn)
 
-    tokens_info = []
-
-    for token_address in tokens.keys():
-        is_new = True
-        if token_address[2:] in exist_tokens.keys():
-            is_new = False
-
-        tokens_info.append({
-            "address": token_address,
-            "token_type": tokens[token_address]['token_type'],
-            "block_number": tokens[token_address]['block_number'],
-            "request_id": len(tokens_info),
-            "is_new": is_new
+    for index, token in enumerate(tokens):
+        token.update({
+            'param_to': token['address'],
+            'param_data': '0x',
+            'param_number': hex(token['block_number']),
+            'data_type': '',
+            'request_id': index
         })
+        token['param_data'] = encode_abi(
+            NAME_ABI_FUNCTION,
+            arguments,
+            function_abi_to_4byte_selector_str(NAME_ABI_FUNCTION)
+        )
+        token['data_type'] = NAME_ABI_FUNCTION['outputs'][0]['type']
 
-    return tokens_info
+    return tokens
 
 
-def build_rpc_method_data(tokens, fn, require_new):
-    parameters = []
+def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
+    fn_name = "totalSupply"
+    token_name_rpc = list(
+        generate_eth_call_json_rpc(build_rpc_method_data(tokens, fn_name))
+    )
+    if is_batch:
+        response = make_requests(params=json.dumps(token_name_rpc))
+    else:
+        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
-    for token in tokens:
+    res = []
+    for data in list(zip_rpc_response(tokens, response)):
+        result = rpc_response_to_result(data[1])
 
-        if not token['is_new'] and require_new:
-            continue
-
-        token['param_to'] = token['address']
-        token['param_data'] = '0x'
-        token['param_number'] = hex(token['block_number'])
-        token['data_type'] = ''
-
+        token = data[0]
+        value = result[2:] if result is not None else None
         try:
-            NAME_ABI_FUNCTION = abi_mapping.get(fn)
-            token['param_data'] = encode_abi(
-                NAME_ABI_FUNCTION,
-                [],
-                function_abi_to_4byte_selector_str(NAME_ABI_FUNCTION)
-            )
-            token['data_type'] = NAME_ABI_FUNCTION['outputs'][0]['type']
+            token["total_supply"] = abi.decode("uint256", bytes.fromhex(value))[0]
         except Exception as e:
-            logger.warning(
-                f"Encoding token abi parameter failed. "
-                f"token: {token}. "
-                f"fn: {fn}. "
-                f"exception: {e}")
-
-        parameters.append(token)
-
-    return parameters
+            logger.warning(f"Decoding token {fn_name} failed. "
+                           f"token: {token}. "
+                           f"rpc response: {result}. "
+                           f"exception: {e}")
+            token["total_supply"] = None
+    return tokens
 
 
-def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
-    # if the value of fn is True, then only new token should call fn rpc
-    # if the value of fn is False, means every token should call fn rpc
-    fn_names = {'name': True, 'symbol': True, 'decimals': True, 'totalSupply': False}
+def tokens_info_rpc_requests(make_requests, tokens, is_batch):
+    function_call = {
+        'name': [],
+        'symbol': [],
+        'decimals': [],
+        'totalSupply': [],
+        'ownerOf': [1],
+        'tokenURI': [1],
+    }
 
-    for fn_name in fn_names.keys():
-
+    for fn_name in function_call.keys():
         token_name_rpc = list(
-            generate_eth_call_json_rpc(build_rpc_method_data(tokens, fn_name, fn_names[fn_name])))
+            generate_eth_call_json_rpc(build_rpc_method_data(tokens, fn_name, function_call[fn_name]))
+        )
 
         if len(token_name_rpc) == 0:
             continue
@@ -288,5 +295,12 @@ def tokens_rpc_requests(web3, make_requests, tokens, is_batch):
                                f"rpc response: {result}. "
                                f"exception: {e}")
                 token[key] = None
+
+    for token in tokens:
+        if token['token_type'] != TokenType.ERC1155.value:
+            if token.get('token_uri') is not None or token.get('owner_of') is not None or token.get('decimals') is None:
+                token['token_type'] = TokenType.ERC721.value
+            else:
+                token['token_type'] = TokenType.ERC20.value
 
     return tokens

@@ -8,7 +8,7 @@ from indexer.utils.logging_utils import configure_signals, configure_logging
 
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
-from indexer.utils.utils import pick_random_provider_uri, verify_db_connection_url
+from indexer.utils.utils import pick_random_provider_uri
 from common.utils.config import init_config_setting
 
 

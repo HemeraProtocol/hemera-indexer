@@ -9,19 +9,7 @@ from indexer.domain import Domain
 from common.utils.exception_control import decode_response_error, RetriableError
 
 ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
-TRANSFER_EVENT_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-TRANSFER_SINGLE_EVENT_TOPIC = '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
-TRANSFER_BATCH_EVENT_TOPIC = '0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb'
-DEPOSIT_EVENT_TOPIC = "0xe1fffcc4923d04b559f4d29a8bfc6cda04eb5b0d3c460751c2402c5c5cc9109c"
-WITHDRAW_EVENT_TOPIC = "0x7fcf532c15f0a6db0bd6d0e038bea71d30d808c7d98cb3bf7268a95bf5081b65"
 
-def import_submodules(package_name):
-    package = importlib.import_module(package_name)
-    for _, name, is_pkg in pkgutil.walk_packages(package.__path__):
-        full_name = package.__name__ + '.' + name
-        importlib.import_module(full_name)
-        if is_pkg:
-            import_submodules(full_name)
 
 def to_int_or_none(val):
     if isinstance(val, int):
@@ -144,10 +132,12 @@ def check_classic_provider_uri(chain, provider_uri):
     return provider_uri
 
 
-def verify_db_connection_url(db_url):
-    if not db_url.startswith("postgresql"):
-        raise ValueError("db_url must start with 'postgresql'")
-    return db_url
+def extract_pg_url_from_output(outputs: str) -> str:
+    for output in outputs.split(','):
+        if output.strip().startswith('postgresql'):
+            return output
+
+    return None
 
 
 def merge_sort(sorted_col_a, sorted_col_b):

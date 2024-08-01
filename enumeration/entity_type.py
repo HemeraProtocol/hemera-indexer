@@ -5,7 +5,9 @@ from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract import Contract
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool
+from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Pool, \
+    AllFeatureValueRecordUniswapV3Token
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
 from indexer.domain.log import Log
 from indexer.domain.token import *
 from indexer.domain.token_balance import TokenBalance
@@ -86,6 +88,9 @@ def generate_output_types(entity_types):
 
     if entity_types & EntityType.UNISWAP_V3_POOL:
         yield UniswapV3Pool
+        yield UniswapV3Token
+        yield AllFeatureValueRecordUniswapV3Pool
+        yield AllFeatureValueRecordUniswapV3Token
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult

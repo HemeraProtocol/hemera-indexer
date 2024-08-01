@@ -25,7 +25,13 @@ class AllFeatureValueRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                'domain': 'AllFeatureValueRecord',
+                'domain': 'AllFeatureValueRecordUniswapV3Pool',
+                'conflict_do_update': True,
+                'update_strategy': None,
+                'converter': general_converter,
+            },
+            {
+                'domain': 'AllFeatureValueRecordUniswapV3Token',
                 'conflict_do_update': True,
                 'update_strategy': None,
                 'converter': general_converter,

@@ -85,9 +85,7 @@ def decode_response_error(error):
         if message == 'execution reverted' or message == 'out of gas':
             return None
         else:
-            # for test
-            # raise RPCNotReachable(message)
-            return None
+            raise RPCNotReachable(message)
     elif code == -32700 or code == -32600 or code == -32602:
         raise FastShutdownError(message)
     elif (-32000 > code >= -32099) or code == -32603:

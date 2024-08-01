@@ -2,13 +2,14 @@ import logging
 from collections import defaultdict, deque
 from typing import List, Set, Type
 
+from indexer.domain.token import Token
+from common.utils.module_loading import import_submodules
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.utils.utils import import_submodules
 
 import_submodules('indexer.modules')
-# TODO: Import the ExportBlocksJob and ExportTransactionsAndLogsJob classes from the indexer.jobs.export_blocks_job and indexer.jobs.export_transactions_and_logs_job modules
+
 
 class JobScheduler:
     def __init__(
@@ -38,7 +39,7 @@ class JobScheduler:
         self.discover_and_register_job_classes()
         self.required_job_classes = self.get_required_job_classes(required_output_types)
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
-
+        BaseJob.init_token_cache(defaultdict(Token))
 
     def get_data_buff(self):
         return BaseJob._data_buff
