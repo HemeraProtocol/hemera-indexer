@@ -48,8 +48,8 @@ class StreamController(BaseController):
 
     def _do_stream(self, start_block, end_block, steps, retry_errors, period_seconds):
         last_synced_block = self.sync_recorder.get_last_synced_block()
-        if start_block is not None or last_synced_block == -1:
-            last_synced_block = (start_block or 0) - 1
+        if start_block is not None:
+            last_synced_block = start_block - 1
 
         tries, tries_reset = 0, True
         while True and (end_block is None or last_synced_block < end_block):
