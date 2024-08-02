@@ -22,6 +22,9 @@ wheels/
 .installed.cfg
 *.egg
 
+# JetBrains IDE
+.idea/
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
@@ -37,3 +40,11 @@ ENV/
 # Output Data Files
 *.json
 *.csv
+docker-compose/hemera-indexer.env
+docker-compose/data/
+docker-compose/output/
+docker-compose/postgres/
+
+# Local Config
+resource/hemera.ini
+sync_record*

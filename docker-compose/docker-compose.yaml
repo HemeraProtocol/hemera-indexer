@@ -1,43 +1,37 @@
+version: '3.8'
+
+x-common-settings: &common-settings
+  build: ../
+  env_file:
+    - hemera-indexer.env
+  command: ["stream"]
+  restart: unless-stopped
+  networks:
+    - hemera
+  volumes:
+    - ./output:/app/output
+  depends_on:
+    postgresql:
+      condition: service_healthy
+
 services:
   hemera-main-indexer:
-    build: ../
-    env_file:
-      - hemera-indexer.env
-    container_name: hemera-main
-    command:
-      [ "python", "hemera.py", "stream" ]
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - hemera
-    volumes:
-      - ./output:/app/output
+    <<: *common-settings
+    container_name: indexer
     environment:
-      # In the main indexer, we will export those entity types as they don't require traces, which consumes much more time.
-      - ENTITY_TYPES=block,transaction,log,token,token_transfer
+      - ENTITY_TYPES=EXPLORER_BASE,EXPLORER_TOKEN
 
   hemera-trace-indexer:
-    build: ../
-    env_file:
-      - hemera-indexer.env
-    container_name: hemera-trace
+    <<: *common-settings
+    container_name: indexer-trace
     environment:
-      # In the main indexer, we will export those entity types as they don't require traces, which consumes much more time.
-      - ENTITY_TYPES=block,transaction,log,token,token_transfer
-    command:
-      [ "python", "hemera.py", "stream" ]
-    depends_on:
-      postgresql:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - hemera
-    volumes:
-      - ./output:/app/output
+      - ENTITY_TYPES=EXPLORER_TRACE
+
+  hemera-api:
+    <<: *common-settings
+    command: ["api"]
+    ports:
+      - 8082:8082
 
   postgresql:
     env_file:
@@ -55,5 +49,14 @@ services:
       - hemera
     volumes:
       - ./postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6
+    container_name: redis
+    ports:
+      - 6379:6379
+    networks:
+      - hemera
+
 networks:
   hemera:

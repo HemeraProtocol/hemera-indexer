@@ -12,7 +12,7 @@ Hemera Protocol is a decentralized, account-centric programmable indexing networ
 ## About Hemera Indexer
 
 As the foundation of the Hemera Protocol, the blockchain indexer plays a crucial role. It is the primary component that enables efficient and organized access to blockchain data.
-Initially inspired by open-source projects like Ethereum ETL, we expanded its capabilities as the Ethereum ecosystem evolved, with the emergence of more Layer 2 chains and new ERC standards. Recognizing the need for a robust solution, we decided to develop our own indexer as the first step in building the Hemera Protocol Network.  
+Initially inspired by open-source projects like Ethereum ETL, we expanded its capabilities as the Ethereum ecosystem evolved, with the emergence of more Layer 2 chains and new ERC standards. Recognizing the need for a robust solution, we decided to develop our own indexer as the first step in building the Hemera Protocol Network.
 As of July 5, 2024, the initial open-source version of the Hemera Indexer offers comprehensive functionality, allowing for the indexing of any EVM-compatible chains and providing all necessary data for a basic blockchain explorer. In the coming weeks, we plan to incorporate additional features from our in-house version into the open-source version.
 
 ## Features Offered
@@ -389,9 +389,9 @@ You may spawn up multiple Hemera Indexer processes, each of them indexing differ
 #### `DB_VERSION` or `--db-version`
 
 [**Default**: `head`]
-The database version to initialize the database. Using the Alembic script's revision ID to specify a version.  
-e.g. `head`, indicates the latest version.  
-Or `base`, indicates the empty database without any table.  
+The database version to initialize the database. Using the Alembic script's revision ID to specify a version.
+e.g. `head`, indicates the latest version.
+Or `base`, indicates the empty database without any table.
 Default value: `head`
 
 #### `START_BLOCK` or `--start-block`
