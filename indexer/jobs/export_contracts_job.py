@@ -124,7 +124,7 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
                 block_number=data[0]["block_number"],
                 dataclass=Contract.type(),
                 message_type='DecodeNameFail',
-                message=e,
+                message=str(e),
                 exception_env=contract,
                 level=RecordLevel.WARN
             )

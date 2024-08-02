@@ -313,7 +313,7 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
                     block_number=token['block_number'],
                     dataclass=Token.type(),
                     message_type=f'decode_token_{fn_name}_fail',
-                    message=e,
+                    message=str(e),
                     exception_env=token,
                     level=RecordLevel.WARN
                 )

@@ -7,17 +7,20 @@ from common.utils.file_utils import delete_file, write_to_file
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.dispatcher.base_dispatcher import BaseDispatcher
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.sync_recorder import BaseRecorder
+
+exception_recorder = ExceptionRecorder()
 
 
 class StreamController(BaseController):
 
     def __init__(
-        self,
-        batch_web3_provider,
-        sync_recorder: BaseRecorder,
-        job_dispatcher=BaseDispatcher(),
-        max_retries=5,
+            self,
+            batch_web3_provider,
+            sync_recorder: BaseRecorder,
+            job_dispatcher=BaseDispatcher(),
+            max_retries=5,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
@@ -26,13 +29,13 @@ class StreamController(BaseController):
         self.max_retries = max_retries
 
     def action(
-        self,
-        start_block=None,
-        end_block=None,
-        block_batch_size=10,
-        period_seconds=10,
-        retry_errors=True,
-        pid_file=None,
+            self,
+            start_block=None,
+            end_block=None,
+            block_batch_size=10,
+            period_seconds=10,
+            retry_errors=True,
+            pid_file=None,
     ):
         try:
             if pid_file is not None:
@@ -103,7 +106,9 @@ class StreamController(BaseController):
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
                     logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                    exception_recorder.force_to_flush()
                     raise e
+
                 else:
                     logging.info(f"No: {tries} retry is about to start.")
             finally:

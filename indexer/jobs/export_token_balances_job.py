@@ -202,7 +202,7 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
                 block_number=data[0]['block_number'],
                 dataclass=TokenBalance.type(),
                 message_type='DecodeTokenBalanceFail',
-                message=e,
+                message=str(e),
                 level=RecordLevel.WARN
             )
 

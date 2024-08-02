@@ -31,7 +31,7 @@ class ExceptionRecorder(object):
     def init_pg_service(self, service):
         self._service = service
 
-    def log(self, block_number, dataclass, message_type, message, exception_env=None, level='Info'):
+    def log(self, block_number: int, dataclass: str, message_type: str, message: str, exception_env={}, level='Info'):
         if self._service is not None:
             self._log_buffer.put({
                 'block_number': block_number,
@@ -44,13 +44,14 @@ class ExceptionRecorder(object):
             self._check_and_flush()
 
     def force_to_flush(self):
-        with self._queue_lock:
-            with self._flush_lock:
-                # Double-check after acquiring flush lock
-                logs = []
-                while not self._log_buffer.empty():
-                    logs.append(self._log_buffer.get())
-                self._flush_logs_to_db(logs)
+        if self._service is not None:
+            with self._queue_lock:
+                with self._flush_lock:
+                    # Double-check after acquiring flush lock
+                    logs = []
+                    while not self._log_buffer.empty():
+                        logs.append(self._log_buffer.get())
+                    self._flush_logs_to_db(logs)
 
     def _check_and_flush(self):
         if self._log_buffer.qsize() >= LOG_BUFFER_SIZE:
