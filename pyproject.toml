@@ -1,6 +1,6 @@
 [project]
 name = "hemera"
-version = "0.1.0"
+dynamic = ["version"]
 authors = [
     {name = "xuzh", email = "zihao.xu@thehemera.com"},
     {name = "shanshuo0918", email = "shuo.shan@lifo.ai"}
