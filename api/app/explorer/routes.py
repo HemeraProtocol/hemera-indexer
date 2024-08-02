@@ -1223,7 +1223,7 @@ class ExplorerAddressProfile(Resource):
                 profile_json["token_type"] = token.type  # ERC20/ERC721/ERC1155
                 profile_json["token_name"] = token.name or "Unknown Token"
                 profile_json["token_symbol"] = token.symbol or "UNKNOWN"
-                profile_json["token_logo_url"] = token.icon_url or app_config.get_default_token_image_url()
+                profile_json["token_logo_url"] = token.icon_url or None
 
         # "block_validated": 1
         return profile_json
@@ -1291,7 +1291,7 @@ class ExplorerAddressTokenHoldingsV2(Resource):
                     "token_id": (int(token_holder.token_id) if token_holder.token_id else None),
                     "token_name": token_holder.name or "Unknown Token",
                     "token_symbol": token_holder.symbol or "UNKNOWN",
-                    "token_logo_url": token_holder.logo or app_config.get_default_token_image_url(),
+                    "token_logo_url": token_holder.logo or None,
                     "type": {
                         "ERC20": "tokentxns",
                         "ERC721": "tokentxns-nft",

@@ -53,21 +53,30 @@ class BatchWorkExecutor:
 
         for batch in submit_batches:
             self._check_completed_futures()
-            future = self.executor.submit(self._fail_safe_execute, work_handler, batch)
+            future = self.executor.submit(self._fail_safe_execute, work_handler, batch, split_method is not None)
             self._futures.append(future)
 
-    def _fail_safe_execute(self, work_handler, batch):
+    def _fail_safe_execute(self, work_handler, batch, custom_splitting):
         try:
             work_handler(batch)
-            self._try_increase_batch_size(len(batch))
+            if not custom_splitting:
+                self._try_increase_batch_size(len(batch))
         except self.retry_exceptions:
             self.logger.exception("An exception occurred while executing work_handler.")
-            self._try_decrease_batch_size(len(batch))
-            self.logger.info("The batch of size {} will be retried one item at a time.".format(len(batch)))
-            for item in batch:
+            if not custom_splitting:
+                self._try_decrease_batch_size(len(batch))
+                self.logger.info("The batch of size {} will be retried one item at a time.".format(len(batch)))
+                for item in batch:
+                    execute_with_retries(
+                        work_handler,
+                        [item],
+                        max_retries=self.max_retries,
+                        retry_exceptions=self.retry_exceptions,
+                    )
+            else:
                 execute_with_retries(
                     work_handler,
-                    [item],
+                    batch,
                     max_retries=self.max_retries,
                     retry_exceptions=self.retry_exceptions,
                 )

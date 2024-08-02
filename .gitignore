@@ -41,6 +41,8 @@ ENV/
 *.json
 *.csv
 docker-compose/data/
+docker-compose/output/
+docker-compose/postgres/
 
 # Local Config
 resource/hemera.ini
