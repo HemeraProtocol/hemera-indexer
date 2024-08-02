@@ -1,12 +1,13 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
-from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, VARCHAR, JSONB, BOOLEAN
+
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
 
 class ERC1155TokenIdDetails(HemeraModel):
-    __tablename__ = 'erc1155_token_id_details'
+    __tablename__ = "erc1155_token_id_details"
 
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
@@ -21,27 +22,28 @@ class ERC1155TokenIdDetails(HemeraModel):
     update_time = Column(TIMESTAMP, onupdate=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (
-        PrimaryKeyConstraint('token_address', 'token_id'),
-    )
+    __table_args__ = (PrimaryKeyConstraint("token_address", "token_id"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                'domain': 'ERC1155TokenIdDetail',
-                'conflict_do_update': False,
-                'update_strategy': None,
-                'converter': general_converter,
+                "domain": "ERC1155TokenIdDetail",
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
             },
             {
-                'domain': 'UpdateERC1155TokenIdDetail',
-                'conflict_do_update': True,
-                'update_strategy': "EXCLUDED.block_number >= erc1155_token_id_details.block_number",
-                'converter': general_converter,
-            }
+                "domain": "UpdateERC1155TokenIdDetail",
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number >= erc1155_token_id_details.block_number",
+                "converter": general_converter,
+            },
         ]
 
 
-Index('erc1155_detail_desc_address_id_index',
-      desc(ERC1155TokenIdDetails.token_address), ERC1155TokenIdDetails.token_id)
+Index(
+    "erc1155_detail_desc_address_id_index",
+    desc(ERC1155TokenIdDetails.token_address),
+    ERC1155TokenIdDetails.token_id,
+)

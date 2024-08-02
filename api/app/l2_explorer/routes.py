@@ -9,18 +9,11 @@ from sqlalchemy import and_, func
 
 from api.app import explorer
 from api.app.cache import cache
-from common.utils.config import get_config
-from common.models import db as postgres_db
-from common.models import (
-    Blocks,
-    # DailyBridgeTransactionsAggregates,
-    ScheduledWalletCountMetadata,
-    Tokens,
-    Transactions,
-)
-from api.app.utils.utils import is_l1_block_finalized
-from common.utils.web3_utils import is_eth_address
 from api.app.l2_explorer import l2_explorer_namespace
+from api.app.utils.utils import is_l1_block_finalized
+from common.models import Blocks  # DailyBridgeTransactionsAggregates,
+from common.models import ScheduledWalletCountMetadata, Tokens, Transactions
+from common.models import db as postgres_db
 from common.models.bridge import (
     ArbitrumStateBatches,
     ArbitrumTransactionBatches,
@@ -36,8 +29,10 @@ from common.models.bridge import (
     ZkEvmBatches,
 )
 from common.utils.bridge_utils import BridgeTransactionParser
+from common.utils.config import get_config
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict, format_to_dict, format_value_for_json, row_to_dict
+from common.utils.web3_utils import is_eth_address
 
 app_config = get_config()
 

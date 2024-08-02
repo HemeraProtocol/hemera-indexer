@@ -6,8 +6,13 @@ from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
-from indexer.specification.specification import TransactionFilterByLogs, \
-    AlwaysFalseSpecification, TransactionFilterByTransactionInfo, TransactionHashSpecification, AlwaysTrueSpecification
+from indexer.specification.specification import (
+    AlwaysFalseSpecification,
+    AlwaysTrueSpecification,
+    TransactionFilterByLogs,
+    TransactionFilterByTransactionInfo,
+    TransactionHashSpecification,
+)
 from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rpc
 from indexer.utils.utils import rpc_response_batch_to_results
 
@@ -23,10 +28,12 @@ class ExportBlocksJob(BaseJob):
         super().__init__(**kwargs)
 
         self._batch_work_executor = BatchWorkExecutor(
-            kwargs['batch_size'], kwargs['max_workers'],
-            job_name=self.__class__.__name__)
-        self._is_batch = kwargs['batch_size'] > 1
-        self._filters = kwargs.get('filters', [])
+            kwargs["batch_size"],
+            kwargs["max_workers"],
+            job_name=self.__class__.__name__,
+        )
+        self._is_batch = kwargs["batch_size"] > 1
+        self._filters = kwargs.get("filters", [])
         self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
@@ -38,8 +45,8 @@ class ExportBlocksJob(BaseJob):
 
     def _collect(self, **kwargs):
 
-        self._start_block = int(kwargs['start_block'])
-        self._end_block = int(kwargs['end_block'])
+        self._start_block = int(kwargs["start_block"])
+        self._end_block = int(kwargs["end_block"])
 
         blocks = range(self._start_block, self._end_block + 1)
         total_items = len(blocks)
@@ -50,10 +57,10 @@ class ExportBlocksJob(BaseJob):
         for filter in self._filters:
             if isinstance(filter, TransactionFilterByLogs):
                 for filter_param in filter.get_eth_log_filters_params():
-                    filter_param.update({'fromBlock': self._start_block, 'toBlock': self._end_block})
+                    filter_param.update({"fromBlock": self._start_block, "toBlock": self._end_block})
                     logs = self._web3.eth.get_logs(filter_param)
-                    filter_blocks.update(set([log['blockNumber'] for log in logs]))
-                    transaction_hashes = set([log['transactionHash'] for log in logs])
+                    filter_blocks.update(set([log["blockNumber"] for log in logs]))
+                    transaction_hashes = set([log["transactionHash"] for log in logs])
                     transaction_hashes = [h.hex() for h in transaction_hashes]
                     self._specification |= TransactionHashSpecification(transaction_hashes)
             elif isinstance(filter, TransactionFilterByTransactionInfo):
@@ -65,11 +72,7 @@ class ExportBlocksJob(BaseJob):
             blocks = list(filter_blocks)
             total_items = len(blocks)
 
-        self._batch_work_executor.execute(
-            blocks,
-            self._collect_batch,
-            total_items=total_items
-        )
+        self._batch_work_executor.execute(blocks, self._collect_batch, total_items=total_items)
         self._batch_work_executor.wait()
 
     def _collect_batch(self, block_number_batch):
@@ -94,7 +97,6 @@ class ExportBlocksJob(BaseJob):
                 ts_dict[timestamp] = block_number
 
         self._data_buff[BlockTsMapper.type()] = [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()]
-
 
 
 def blocks_rpc_requests(make_request, block_number_batch, is_batch):

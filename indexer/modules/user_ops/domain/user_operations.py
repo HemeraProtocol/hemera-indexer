@@ -1,7 +1,7 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from indexer.domain import Domain, FilterData
-from typing import Optional
 
 
 @dataclass
@@ -29,5 +29,3 @@ class UserOperationsResult(FilterData):
     bundler: Optional[str]
     start_log_index: Optional[int]
     end_log_index: Optional[int]
-
-

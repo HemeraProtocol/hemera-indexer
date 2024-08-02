@@ -2,26 +2,26 @@ import logging
 from collections import defaultdict, deque
 from typing import List, Set, Type
 
-from indexer.domain.token import Token
 from common.utils.module_loading import import_submodules
+from indexer.domain.token import Token
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 
-import_submodules('indexer.modules')
+import_submodules("indexer.modules")
 
 
 class JobScheduler:
     def __init__(
-            self,
-            batch_web3_provider,
-            batch_web3_debug_provider,
-            batch_size=100,
-            debug_batch_size=1,
-            max_workers=5,
-            config=None,
-            item_exporters=[],
-            required_output_types=[]
+        self,
+        batch_web3_provider,
+        batch_web3_debug_provider,
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config=None,
+        item_exporters=[],
+        required_output_types=[],
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -56,7 +56,8 @@ class JobScheduler:
             for dependency in cls.dependency_types:
                 self.dependency_map[dependency.type()].append(cls)
             logging.info(
-                f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}")
+                f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}"
+            )
 
     def instantiate_jobs(self):
         filters = []
@@ -87,7 +88,7 @@ class JobScheduler:
             debug_batch_size=self.debug_batch_size,
             max_workers=self.max_workers,
             config=self.config,
-            filters=filters
+            filters=filters,
         )
         self.jobs.insert(0, export_blocks_job)
 

@@ -23,8 +23,8 @@ def function_abi_to_4byte_selector_str(function_abi: ABIFunction) -> str:
 
 
 def decode_log(
-        fn_abi: ABIEvent,
-        log: Log,
+    fn_abi: ABIEvent,
+    log: Log,
 ) -> Optional[Dict[str, Any]]:
     indexed_types = get_indexed_event_inputs(fn_abi)
     for indexed_type in indexed_types:

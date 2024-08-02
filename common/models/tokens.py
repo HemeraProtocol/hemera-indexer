@@ -1,12 +1,13 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, Index, func, desc
-from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, TIMESTAMP, NUMERIC, BOOLEAN, JSONB, VARCHAR
+
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSONB, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
 
 class Tokens(HemeraModel):
-    __tablename__ = 'tokens'
+    __tablename__ = "tokens"
 
     address = Column(BYTEA, primary_key=True)
     token_type = Column(VARCHAR)
@@ -35,33 +36,35 @@ class Tokens(HemeraModel):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
-    __table_args__ = (
-        PrimaryKeyConstraint('address'),
-    )
+    __table_args__ = (PrimaryKeyConstraint("address"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                'domain': 'Token',
-                'conflict_do_update': False,
-                'update_strategy': None,
-                'converter': general_converter,
+                "domain": "Token",
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
             },
             {
-                'domain': 'UpdateToken',
-                'conflict_do_update': True,
-                'update_strategy': "EXCLUDED.block_number > tokens.block_number",
-                'converter': general_converter,
-            }
+                "domain": "UpdateToken",
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number > tokens.block_number",
+                "converter": general_converter,
+            },
         ]
 
 
-Index('tokens_name_index', Tokens.name)
-Index('tokens_symbol_index', Tokens.symbol)
-Index('tokens_type_index', Tokens.token_type)
-Index('tokens_type_holders_index', Tokens.token_type, desc(Tokens.holder_count))
-Index('tokens_type_on_chain_market_cap_index', Tokens.token_type, desc(Tokens.on_chain_market_cap))
+Index("tokens_name_index", Tokens.name)
+Index("tokens_symbol_index", Tokens.symbol)
+Index("tokens_type_index", Tokens.token_type)
+Index("tokens_type_holders_index", Tokens.token_type, desc(Tokens.holder_count))
+Index(
+    "tokens_type_on_chain_market_cap_index",
+    Tokens.token_type,
+    desc(Tokens.on_chain_market_cap),
+)
 
 # because of sqlalchemy doesn't recognize 'english' with datatype REGCONFIG
 # alembic could not track this index

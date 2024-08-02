@@ -5,9 +5,13 @@
 # @File  rlp_test.py
 # @Brief
 import pytest
-from indexer.modules.bridge.arbitrum.arb_rlp import calculate_submit_retryable_id, calculate_deposit_tx_id
 from web3 import Web3
-@pytest.mark.bridge
+
+from indexer.modules.bridge.arbitrum.arb_rlp import calculate_deposit_tx_id, calculate_submit_retryable_id
+
+
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_arbitrum_rlp(caplog):
     l2_chain_id = 42161
     from_address = "0xeA3123E9d9911199a6711321d1277285e6d4F3EC"
@@ -26,9 +30,19 @@ def test_arbitrum_rlp(caplog):
     mid = "0x69f901e882a4b1a0000000000000000000000000000000000000000000000000000000000000504c94ea3123e9d9911199a6711321d1277285e6d4f3ec8505e0fc4c58880854e8ab1802ca808411e1a3008301d566946c411ad3e74de3e7bd422b94a27770f5b86c623b880853a0d2313c000094a2e06c19ee14255889f0ec0ca37f6d0778d067548701270f6740d88094a2e06c19ee14255889f0ec0ca37f6d0778d06754b901442e567b36000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000a2e06c19ee14255889f0ec0ca37f6d0778d06754000000000000000000000000a2e06c19ee14255889f0ec0ca37f6d0778d067540000000000000000000000000000000000000000000000000853a0d2313c000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
 
     res = calculate_submit_retryable_id(
-        l2_chain_id, message_number, from_address, l1_base_fee, dest_address, l2_call_value, l1_value,
+        l2_chain_id,
+        message_number,
+        from_address,
+        l1_base_fee,
+        dest_address,
+        l2_call_value,
+        l1_value,
         max_submission_fee,
-        excess_fee_refund_address, call_value_refund_address, gas_limit, max_fee_per_gas, data
+        excess_fee_refund_address,
+        call_value_refund_address,
+        gas_limit,
+        max_fee_per_gas,
+        data,
     )
     assert Web3.keccak(hexstr=mid).hex() == "0x8ba13904639c7444d8578cc582a230b8501c9f0f7903f5069d276fdd3a7dea44"
 
@@ -36,7 +50,8 @@ def test_arbitrum_rlp(caplog):
     print("ok!")
 
 
-@pytest.mark.bridge
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_calculate_deposit_tx_id():
     l2_chain_id = 42161
     message_number = 1605605
@@ -45,5 +60,5 @@ def test_calculate_deposit_tx_id():
     value = 1000000000000000
     ctx = calculate_deposit_tx_id(l2_chain_id, message_number, from_address, to_address, value)
     print(ctx)
-    expect = '0x358bad7e9e28729b77f41ca3fdd188bcccc5004636d0cf81d7dc2abaed9c84fd'
+    expect = "0x358bad7e9e28729b77f41ca3fdd188bcccc5004636d0cf81d7dc2abaed9c84fd"
     assert ctx == expect

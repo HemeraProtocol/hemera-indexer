@@ -1,18 +1,32 @@
-from typing import Sequence, Any, Optional, Tuple, Dict
+from typing import Any, Dict, Optional, Sequence, Tuple
 from urllib.parse import to_bytes
 
 import eth_abi
 from eth_abi.codec import ABICodec
 from eth_abi.grammar import BasicType
-from eth_typing import HexStr, TypeStr, ChecksumAddress
-from eth_utils import to_hex, encode_hex, text_if_str, to_text, hexstr_if_str, is_binary_address, \
-    function_abi_to_4byte_selector, event_abi_to_log_topic
+from eth_typing import ChecksumAddress, HexStr, TypeStr
+from eth_utils import (
+    encode_hex,
+    event_abi_to_log_topic,
+    function_abi_to_4byte_selector,
+    hexstr_if_str,
+    is_binary_address,
+    text_if_str,
+    to_hex,
+    to_text,
+)
 from hexbytes import HexBytes
 from web3 import Web3
-from web3._utils.abi import get_abi_input_types, build_strict_registry, map_abi_data, named_tree, \
-    exclude_indexed_event_inputs, get_indexed_event_inputs
+from web3._utils.abi import (
+    build_strict_registry,
+    exclude_indexed_event_inputs,
+    get_abi_input_types,
+    get_indexed_event_inputs,
+    map_abi_data,
+    named_tree,
+)
 from web3._utils.normalizers import implicitly_identity, parse_basic_type_str
-from web3.types import ABIFunction, ABIEvent
+from web3.types import ABIEvent, ABIFunction
 
 from indexer.domain.log import Log
 
@@ -34,10 +48,10 @@ def function_abi_to_4byte_selector_str(function_abi: ABIFunction) -> str:
 
 
 def decode_log(
-        fn_abi: ABIEvent,
-        log: Log,
+    fn_abi: ABIEvent,
+    log: Log,
 ) -> Optional[Dict[str, Any]]:
-    try :
+    try:
         indexed_types = get_indexed_event_inputs(fn_abi)
         for indexed_type in indexed_types:
             if indexed_type["type"] == "string":
@@ -57,9 +71,10 @@ def decode_log(
 
     return {**indexed, **data}
 
+
 def decode_log_ignore_indexed(
-        fn_abi: ABIEvent,
-        log: Log,
+    fn_abi: ABIEvent,
+    log: Log,
 ) -> Optional[Dict[str, Any]]:
     data_types = get_indexed_event_inputs(fn_abi) + exclude_indexed_event_inputs(fn_abi)
     abi_codec = ABICodec(eth_abi.registry.registry)
@@ -77,18 +92,14 @@ def abi_string_to_text(type_str: TypeStr, data: Any) -> Optional[Tuple[TypeStr, 
 
 @implicitly_identity
 @parse_basic_type_str
-def abi_bytes_to_bytes(
-        abi_type: BasicType, type_str: TypeStr, data: Any
-) -> Optional[Tuple[TypeStr, HexStr]]:
+def abi_bytes_to_bytes(abi_type: BasicType, type_str: TypeStr, data: Any) -> Optional[Tuple[TypeStr, HexStr]]:
     if abi_type.base == "bytes" and not abi_type.is_array:
         return type_str, hexstr_if_str(to_bytes, data)
     return None
 
 
 @implicitly_identity
-def abi_address_to_hex(
-        type_str: TypeStr, data: Any
-) -> Optional[Tuple[TypeStr, ChecksumAddress]]:
+def abi_address_to_hex(type_str: TypeStr, data: Any) -> Optional[Tuple[TypeStr, ChecksumAddress]]:
     if type_str == "address":
         if is_binary_address(data):
             return type_str, Web3.to_checksum_address(data)
@@ -96,9 +107,9 @@ def abi_address_to_hex(
 
 
 def encode_abi(
-        abi: ABIFunction,
-        arguments: Sequence[Any],
-        data: str = None,
+    abi: ABIFunction,
+    arguments: Sequence[Any],
+    data: str = None,
 ) -> HexStr:
     argument_types = get_abi_input_types(abi)
 

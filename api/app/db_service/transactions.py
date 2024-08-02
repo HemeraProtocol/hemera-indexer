@@ -1,39 +1,36 @@
 from datetime import timedelta
 
-from sqlalchemy import or_, func, and_
+from sqlalchemy import and_, func, or_
 
+from api.app.cache import cache
+from api.app.db_service.wallet_addresses import get_txn_cnt_by_address
 from common.models import db
 from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
 from common.models.scheduled_metadata import ScheduledWalletCountMetadata
 from common.models.transactions import Transactions
 from common.utils.db_utils import build_entities
-from api.app.cache import cache
-from api.app.db_service.wallet_addresses import get_txn_cnt_by_address
 
 
 def get_last_transaction():
-    last_transaction = (db.session.query(Transactions)
-                        .with_entities(Transactions.block_timestamp)
-                        .order_by(Transactions.block_number.desc())
-                        .first())
+    last_transaction = (
+        db.session.query(Transactions)
+        .with_entities(Transactions.block_timestamp)
+        .order_by(Transactions.block_number.desc())
+        .first()
+    )
     return last_transaction
 
 
-def get_transaction_by_hash(hash, columns='*'):
+def get_transaction_by_hash(hash: str, columns="*"):
     bytes_hash = bytes.fromhex(hash[2:])
     entities = build_entities(Transactions, columns)
 
-    results = (
-        db.session.query(Transactions)
-        .with_entities(*entities)
-        .filter(Transactions.hash == bytes_hash)
-        .first()
-    )
+    results = db.session.query(Transactions).with_entities(*entities).filter(Transactions.hash == bytes_hash).first()
 
     return results
 
 
-def get_transactions_by_from_address(address, columns='*', limit=1):
+def get_transactions_by_from_address(address, columns="*"):
     bytes_address = bytes.fromhex(address[2:])
     entities = build_entities(Transactions, columns)
 
@@ -41,23 +38,18 @@ def get_transactions_by_from_address(address, columns='*', limit=1):
         db.session.query(Transactions)
         .with_entities(*entities)
         .filter(Transactions.from_address == bytes_address)
-        .limit(limit)
-        .all()
+        .first()
     )
 
     return results
 
 
-def get_transactions_by_to_address(address, columns='*', limit=1):
+def get_transactions_by_to_address(address, columns="*", limit=1):
     bytes_address = bytes.fromhex(address[2:])
     entities = build_entities(Transactions, columns)
 
     results = (
-        db.session.query(Transactions)
-        .with_entities(*entities)
-        .filter(Transactions.to_address == bytes_address)
-        .limit(limit)
-        .all()
+        db.session.query(Transactions).with_entities(*entities).filter(Transactions.to_address == bytes_address).first()
     )
 
     return results
@@ -69,7 +61,7 @@ def get_tps_latest_10min(timestamp):
     return float(cnt / 600)
 
 
-def get_address_transaction_cnt(address):
+def get_address_transaction_cnt(address: str):
     last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
     bytes_address = bytes.fromhex(address[2:])
     recently_txn_count = (
@@ -115,7 +107,7 @@ def get_total_txn_count():
     return cnt + cumulate_count
 
 
-def get_transactions_by_condition(filter_condition=None, columns='*', limit=1, offset=0):
+def get_transactions_by_condition(filter_condition=None, columns="*", limit=1, offset=0):
     entities = build_entities(Transactions, columns)
 
     transactions = (
@@ -134,14 +126,9 @@ def get_transactions_by_condition(filter_condition=None, columns='*', limit=1, o
     return transactions
 
 
-def get_transactions_cnt_by_condition(filter_condition=None, columns='*'):
+def get_transactions_cnt_by_condition(filter_condition=None, columns="*"):
     entities = build_entities(Transactions, columns)
 
-    count = (
-        db.session.query(Transactions)
-        .with_entities(*entities)
-        .filter(filter_condition)
-        .count()
-    )
+    count = db.session.query(Transactions).with_entities(*entities).filter(filter_condition).count()
 
     return count

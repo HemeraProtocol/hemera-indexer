@@ -7,10 +7,10 @@ import flask
 from flask import Flask, request
 from flask_cors import CORS
 
-from common.models import db
-from common.utils.config import get_config
 from api.app.cache import cache, redis_db
 from api.app.limiter import get_real_ip, limiter
+from common.models import db
+from common.utils.config import get_config
 from common.utils.exception_control import APIError
 
 # from app.serializing import ma
@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO)
 app = Flask(__name__)
 
 # Init database
-app.config['SQLALCHEMY_DATABASE_URI'] = config.db_read_sql_alchemy_database_config.get_sql_alchemy_uri()
+app.config["SQLALCHEMY_DATABASE_URI"] = config.db_read_sql_alchemy_database_config.get_sql_alchemy_uri()
 app.config["SQLALCHEMY_BINDS"] = {
     "common": config.db_common_sql_alchemy_database_config.get_sql_alchemy_uri(),
     "write": config.db_write_sql_alchemy_database_config.get_sql_alchemy_uri(),

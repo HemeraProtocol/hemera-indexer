@@ -1,20 +1,26 @@
 import pytest
 
-from modules.bridge.bedrock.parser.bedrock_bridge_parser import parse_transaction_deposited_event, \
-    parse_message_passed_event, BEDROCK_EVENT_ABI_SIGNATURE_MAPPING
-from modules.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
-from modules.tests.json_rpc_to_dataclass import get_transaction_from_rpc
+from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
+    BEDROCK_EVENT_ABI_SIGNATURE_MAPPING,
+    parse_message_passed_event,
+    parse_transaction_deposited_event,
+)
+from indexer.modules.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
+from indexer.tests.json_rpc_to_dataclass import get_transaction_from_rpc
 
 DEFAULT_ETHEREUM_RPC = "https://ethereum-rpc.publicnode.com"
 DEFAULT_OPTIMISM_RPC = "https://optimism-rpc.publicnode.com"
 
-@pytest.mark.bridge
+
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_manta_pacific_deposit_eth():
     # Ethereum Mainnet 20273058, 188, 0x849321b3fafc4c1a51239cd8cfbe5f832dfa8f7a364bd551f2dc99b66d095243
     # https://manta.socialscan.io/tx/0xe579c588d55fea0b4fcf50058fba654b5ef9f7770c79d946e8e673d18a550cd7#eventlog
     # https://etherscan.io/tx/0x849321b3fafc4c1a51239cd8cfbe5f832dfa8f7a364bd551f2dc99b66d095243
     transaction = get_transaction_from_rpc(
-        DEFAULT_ETHEREUM_RPC, "0x849321b3fafc4c1a51239cd8cfbe5f832dfa8f7a364bd551f2dc99b66d095243"
+        DEFAULT_ETHEREUM_RPC,
+        "0x849321b3fafc4c1a51239cd8cfbe5f832dfa8f7a364bd551f2dc99b66d095243",
     )
     deposit_transactions = parse_transaction_deposited_event(transaction, "0x9168765ee952de7c6f8fc6fad5ec209b960b7622")
 
@@ -35,7 +41,9 @@ def test_bridge_manta_pacific_deposit_eth():
     assert deposit_transaction.local_token_address is None
     assert deposit_transaction.remote_token_address is None
 
-    assert deposit_transaction.l2_transaction_hash == "0xe579c588d55fea0b4fcf50058fba654b5ef9f7770c79d946e8e673d18a550cd7"
+    assert (
+        deposit_transaction.l2_transaction_hash == "0xe579c588d55fea0b4fcf50058fba654b5ef9f7770c79d946e8e673d18a550cd7"
+    )
 
     assert deposit_transaction.bridge_from_address == "0xbe821f7f9c1c762a15a8073c2e4ea6cfe07a4752"
     assert deposit_transaction.bridge_to_address == "0xbe821f7f9c1c762a15a8073c2e4ea6cfe07a4752"
@@ -43,13 +51,15 @@ def test_bridge_manta_pacific_deposit_eth():
     assert deposit_transaction.bridge_transaction_type == BedRockFunctionCallType.BRIDGE_ETH.value
 
 
-@pytest.mark.bridge
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_manta_pacific_deposit_erc20():
     # Ethereum Mainnet 20262131, 184, 0xbcc8dc6933ea4fdfe745d95518af379619e9eac6b1533955f7b164fc80852ca2
     # https://manta.socialscan.io/tx/0x570412db65e763883b9c7e5e770c5477acca0b82873336dcb150ec982400d122
     # https://etherscan.io/tx/0xbcc8dc6933ea4fdfe745d95518af379619e9eac6b1533955f7b164fc80852ca2#eventlog
     transaction = get_transaction_from_rpc(
-        DEFAULT_ETHEREUM_RPC, "0xbcc8dc6933ea4fdfe745d95518af379619e9eac6b1533955f7b164fc80852ca2"
+        DEFAULT_ETHEREUM_RPC,
+        "0xbcc8dc6933ea4fdfe745d95518af379619e9eac6b1533955f7b164fc80852ca2",
     )
 
     deposit_transactions = parse_transaction_deposited_event(transaction, "0x9168765ee952de7c6f8fc6fad5ec209b960b7622")
@@ -72,7 +82,9 @@ def test_bridge_manta_pacific_deposit_erc20():
     assert deposit_transaction.local_token_address == "0xb73603c5d87fa094b7314c74ace2e64d165016fb"
     assert deposit_transaction.remote_token_address == "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
 
-    assert deposit_transaction.l2_transaction_hash == "0x570412db65e763883b9c7e5e770c5477acca0b82873336dcb150ec982400d122"
+    assert (
+        deposit_transaction.l2_transaction_hash == "0x570412db65e763883b9c7e5e770c5477acca0b82873336dcb150ec982400d122"
+    )
 
     assert deposit_transaction.bridge_from_address == "0xc451b0191351ce308fdfd779d73814c910fc5ecb"
     assert deposit_transaction.bridge_to_address == "0xc451b0191351ce308fdfd779d73814c910fc5ecb"
@@ -80,13 +92,15 @@ def test_bridge_manta_pacific_deposit_erc20():
     assert deposit_transaction.bridge_transaction_type == BedRockFunctionCallType.BRIDGE_ERC20.value
 
 
-@pytest.mark.bridge
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_optimism_remote_call():
     # Ethereum Mainnet 20274905, 555, 0x860d146dc16026deadd4225b894a2438ce3fa54afb55b0f534be13b7bd238224
     # https://etherscan.io/tx/0x860d146dc16026deadd4225b894a2438ce3fa54afb55b0f534be13b7bd238224#eventlog
     # https://optimistic.etherscan.io/tx/0xfb206642c2bfa141695447eac09f8e1c2000fa73a564f0f676157b928b7a7ded
     transaction = get_transaction_from_rpc(
-        DEFAULT_ETHEREUM_RPC, "0x860d146dc16026deadd4225b894a2438ce3fa54afb55b0f534be13b7bd238224"
+        DEFAULT_ETHEREUM_RPC,
+        "0x860d146dc16026deadd4225b894a2438ce3fa54afb55b0f534be13b7bd238224",
     )
 
     deposit_transactions = parse_transaction_deposited_event(transaction, "0xbeb5fc579115071764c7423a4f12edde41f106ed")
@@ -109,7 +123,9 @@ def test_bridge_optimism_remote_call():
     assert deposit_transaction.local_token_address is None
     assert deposit_transaction.remote_token_address is None
 
-    assert deposit_transaction.l2_transaction_hash == "0xfb206642c2bfa141695447eac09f8e1c2000fa73a564f0f676157b928b7a7ded"
+    assert (
+        deposit_transaction.l2_transaction_hash == "0xfb206642c2bfa141695447eac09f8e1c2000fa73a564f0f676157b928b7a7ded"
+    )
 
     assert deposit_transaction.bridge_from_address == "0x1eda738c90fb3f80067a2e420a1e2f81b75ecaf5"
     assert deposit_transaction.bridge_to_address == "0xa6d85f3b3be6ff6dc52c3aabe9a35d0ce252b79f"
@@ -119,14 +135,16 @@ def test_bridge_optimism_remote_call():
     assert deposit_transaction.bridge_transaction_type == BedRockFunctionCallType.NORMAL_CROSS_CHAIN_CALL.value
 
 
-@pytest.mark.bridge
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_optimism_deposit_eth():
     # Ethereum Mainnet 20273626, 138, 0x74ff0a208a0b86362df9c290b30a98752b2681ccb634690a17ddaf98d488fb2a
     # https://etherscan.io/tx/0x74ff0a208a0b86362df9c290b30a98752b2681ccb634690a17ddaf98d488fb2a
     # https://optimistic.etherscan.io/tx/0x10235d4c3a99666bf5dd90cb8daa8afde018cac8bcf88fd69acbe5f8d8295bb1
 
     transaction = get_transaction_from_rpc(
-        DEFAULT_ETHEREUM_RPC, "0x74ff0a208a0b86362df9c290b30a98752b2681ccb634690a17ddaf98d488fb2a"
+        DEFAULT_ETHEREUM_RPC,
+        "0x74ff0a208a0b86362df9c290b30a98752b2681ccb634690a17ddaf98d488fb2a",
     )
 
     deposit_transactions = parse_transaction_deposited_event(transaction, "0xbeb5fc579115071764c7423a4f12edde41f106ed")
@@ -148,7 +166,9 @@ def test_bridge_optimism_deposit_eth():
     assert deposit_transaction.local_token_address is None
     assert deposit_transaction.remote_token_address is None
 
-    assert deposit_transaction.l2_transaction_hash == "0x10235d4c3a99666bf5dd90cb8daa8afde018cac8bcf88fd69acbe5f8d8295bb1"
+    assert (
+        deposit_transaction.l2_transaction_hash == "0x10235d4c3a99666bf5dd90cb8daa8afde018cac8bcf88fd69acbe5f8d8295bb1"
+    )
 
     assert deposit_transaction.bridge_from_address == "0xa62693542764185c01ea0e34f96ece0fa32dcbf7"
     assert deposit_transaction.bridge_to_address == "0xa62693542764185c01ea0e34f96ece0fa32dcbf7"
@@ -158,13 +178,15 @@ def test_bridge_optimism_deposit_eth():
     assert deposit_transaction.bridge_transaction_type == BedRockFunctionCallType.BRIDGE_ETH.value
 
 
-@pytest.mark.bridge
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_optimism_deposit_erc20_by_unofficial_remote_call():
     # Ethereum Mainnet 20274498, 286, 0xcfb1285ddbd40f3930ef5fbb348ba44c6653fc0dee98a9685d608164bb0217d4
     # https://etherscan.io/tx/0xcfb1285ddbd40f3930ef5fbb348ba44c6653fc0dee98a9685d608164bb0217d4https://etherscan.io/tx/0xcfb1285ddbd40f3930ef5fbb348ba44c6653fc0dee98a9685d608164bb0217d4
     # https://optimistic.etherscan.io/tx/0xb2659fbfa927282a8cc92c4be9d6eb531b98edc788daad459636fafcf371720e
     transaction = get_transaction_from_rpc(
-        DEFAULT_ETHEREUM_RPC, "0xcfb1285ddbd40f3930ef5fbb348ba44c6653fc0dee98a9685d608164bb0217d4"
+        DEFAULT_ETHEREUM_RPC,
+        "0xcfb1285ddbd40f3930ef5fbb348ba44c6653fc0dee98a9685d608164bb0217d4",
     )
 
     deposit_transactions = parse_transaction_deposited_event(transaction, "0xbeb5fc579115071764c7423a4f12edde41f106ed")
@@ -185,7 +207,9 @@ def test_bridge_optimism_deposit_erc20_by_unofficial_remote_call():
     assert deposit_transaction.local_token_address is None
     assert deposit_transaction.remote_token_address is None
 
-    assert deposit_transaction.l2_transaction_hash == "0xb2659fbfa927282a8cc92c4be9d6eb531b98edc788daad459636fafcf371720e"
+    assert (
+        deposit_transaction.l2_transaction_hash == "0xb2659fbfa927282a8cc92c4be9d6eb531b98edc788daad459636fafcf371720e"
+    )
 
     assert deposit_transaction.bridge_from_address == "0x360537542135943e8fc1562199aea6d0017f104b"
     assert deposit_transaction.bridge_to_address == "0x39ea01a0298c315d149a490e34b59dbf2ec7e48f"
@@ -195,11 +219,13 @@ def test_bridge_optimism_deposit_erc20_by_unofficial_remote_call():
     assert deposit_transaction.bridge_transaction_type == BedRockFunctionCallType.NORMAL_CROSS_CHAIN_CALL.value
 
 
-@pytest.mark.bridge
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_optimism_deposit_erc20():
     # Ethereum Mainnet 20274853, 63, 0xa2b668b6c15ee6864b1942944c0bc238016c3e5c450298836b4a3c4674123346
     transaction = get_transaction_from_rpc(
-        DEFAULT_ETHEREUM_RPC, "0xa2b668b6c15ee6864b1942944c0bc238016c3e5c450298836b4a3c4674123346"
+        DEFAULT_ETHEREUM_RPC,
+        "0xa2b668b6c15ee6864b1942944c0bc238016c3e5c450298836b4a3c4674123346",
     )
 
     deposit_transactions = parse_transaction_deposited_event(transaction, "0xbeb5fc579115071764c7423a4f12edde41f106ed")
@@ -227,18 +253,22 @@ def test_bridge_optimism_deposit_erc20():
 
     assert deposit_transaction.amount == 50244875614794891263
 
-    assert deposit_transaction.l2_transaction_hash == "0x9e1febd944595313cf4162640ed929d0dc3634c94ff468f5761bfaa2e181b942"
+    assert (
+        deposit_transaction.l2_transaction_hash == "0x9e1febd944595313cf4162640ed929d0dc3634c94ff468f5761bfaa2e181b942"
+    )
 
     assert deposit_transaction.bridge_transaction_type == BedRockFunctionCallType.BRIDGE_ERC20.value
 
 
-@pytest.mark.bridge
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_cyber_native_deposit_eth():
     # Ethereum Mainnet 20274054, 381, 0x8c2db781f5dc5428e64818199450e3542ac1c5fb5540ffe9fbb3feccecb229fb
     # https://etherscan.io/tx/0x8c2db781f5dc5428e64818199450e3542ac1c5fb5540ffe9fbb3feccecb229fb
     # https://cyber.socialscan.io/tx/0xb073ce67822d9166435b830b6bad9da25bc7e7b01adb5273e4af6856be70caa7
     transaction = get_transaction_from_rpc(
-        DEFAULT_ETHEREUM_RPC, "0x8c2db781f5dc5428e64818199450e3542ac1c5fb5540ffe9fbb3feccecb229fb"
+        DEFAULT_ETHEREUM_RPC,
+        "0x8c2db781f5dc5428e64818199450e3542ac1c5fb5540ffe9fbb3feccecb229fb",
     )
 
     deposit_transactions = parse_transaction_deposited_event(transaction, "0x1d59bc9fce6b8e2b1bf86d4777289ffd83d24c99")
@@ -266,15 +296,20 @@ def test_bridge_cyber_native_deposit_eth():
 
     assert deposit_transaction.amount == 1000000000000000
 
-    assert deposit_transaction.l2_transaction_hash == "0xb073ce67822d9166435b830b6bad9da25bc7e7b01adb5273e4af6856be70caa7"
+    assert (
+        deposit_transaction.l2_transaction_hash == "0xb073ce67822d9166435b830b6bad9da25bc7e7b01adb5273e4af6856be70caa7"
+    )
 
     assert deposit_transaction.bridge_transaction_type == BedRockFunctionCallType.NATIVE_BRIDGE_ETH.value
 
-@pytest.mark.bridge
+
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_optimism_withdrawal_remote_call():
     # Optimism 122581675, 31, 0xc92762c6f9031d15fe3073dda117f9254372f677b31f14d7a477d0cb9133ac60
     transaction = get_transaction_from_rpc(
-        DEFAULT_OPTIMISM_RPC, "0xc92762c6f9031d15fe3073dda117f9254372f677b31f14d7a477d0cb9133ac60"
+        DEFAULT_OPTIMISM_RPC,
+        "0xc92762c6f9031d15fe3073dda117f9254372f677b31f14d7a477d0cb9133ac60",
     )
 
     withdrawal_transactions = parse_message_passed_event(transaction, "0x4200000000000000000000000000000000000016")
@@ -285,14 +320,18 @@ def test_bridge_optimism_withdrawal_remote_call():
 
     withdrawal_transaction = withdrawal_transactions[0]
 
-    assert withdrawal_transaction.withdrawal_hash == "0x3645fe754a8f8049b41a452b789be3f99c215a3a09657a8670391b429d71f8e6"
+    assert (
+        withdrawal_transaction.withdrawal_hash == "0x3645fe754a8f8049b41a452b789be3f99c215a3a09657a8670391b429d71f8e6"
+    )
     assert withdrawal_transaction.version == 1
     assert withdrawal_transaction.index == 18701
 
     assert withdrawal_transaction.block_number == 122581675
     assert withdrawal_transaction.block_timestamp == 1720762127
     assert withdrawal_transaction.block_hash == "0xf0fcec03a97ca7d25a0b139b203a4f9e2f7a6f9f581928530bb04954ea529b4c"
-    assert withdrawal_transaction.transaction_hash == "0xc92762c6f9031d15fe3073dda117f9254372f677b31f14d7a477d0cb9133ac60"
+    assert (
+        withdrawal_transaction.transaction_hash == "0xc92762c6f9031d15fe3073dda117f9254372f677b31f14d7a477d0cb9133ac60"
+    )
     assert withdrawal_transaction.from_address == "0x2cad75e380ddb12329231df6793a0343917be8b3"
     assert withdrawal_transaction.to_address == "0xf9d64d54d32ee2bdceaabfa60c4c438e224427d0"
 
@@ -312,12 +351,14 @@ def test_bridge_optimism_withdrawal_remote_call():
     assert withdrawal_transaction.bridge_transaction_type == BedRockFunctionCallType.NORMAL_CROSS_CHAIN_CALL.value
 
 
-@pytest.mark.bridge
+@pytest.mark.indexer
+@pytest.mark.indexer_bridge
 def test_bridge_optimism_withdrawal_erc20():
     # Optimism 122241892, 62, 0xcccd460201549a2269c13f15b92a84212f1b27b79cf8f9b54af282ac25356a0d
 
     transaction = get_transaction_from_rpc(
-        DEFAULT_OPTIMISM_RPC, "0xcccd460201549a2269c13f15b92a84212f1b27b79cf8f9b54af282ac25356a0d"
+        DEFAULT_OPTIMISM_RPC,
+        "0xcccd460201549a2269c13f15b92a84212f1b27b79cf8f9b54af282ac25356a0d",
     )
 
     withdrawal_transactions = parse_message_passed_event(transaction, "0x4200000000000000000000000000000000000016")
@@ -328,14 +369,18 @@ def test_bridge_optimism_withdrawal_erc20():
 
     withdrawal_transaction = withdrawal_transactions[0]
 
-    assert withdrawal_transaction.withdrawal_hash == "0xf88586fbf9f45c5bcd49c81a4120fb59619e83dc7249af42a0d75d12db53e5fe"
+    assert (
+        withdrawal_transaction.withdrawal_hash == "0xf88586fbf9f45c5bcd49c81a4120fb59619e83dc7249af42a0d75d12db53e5fe"
+    )
     assert withdrawal_transaction.version == 1
     assert withdrawal_transaction.index == 18491
 
     assert withdrawal_transaction.block_number == 122241892
     assert withdrawal_transaction.block_timestamp == 1720082561
     assert withdrawal_transaction.block_hash == "0x3fca2935b68347c83e0f46bf1a8dbf19111a453ceb97754b1fe69ce3c32834c4"
-    assert withdrawal_transaction.transaction_hash == "0xcccd460201549a2269c13f15b92a84212f1b27b79cf8f9b54af282ac25356a0d"
+    assert (
+        withdrawal_transaction.transaction_hash == "0xcccd460201549a2269c13f15b92a84212f1b27b79cf8f9b54af282ac25356a0d"
+    )
     assert withdrawal_transaction.from_address == "0x404f1f962aac5d40f9f8ed924cca74ec3c1bb48a"
     assert withdrawal_transaction.to_address == "0x4200000000000000000000000000000000000010"
 
@@ -353,8 +398,6 @@ def test_bridge_optimism_withdrawal_erc20():
     assert withdrawal_transaction.value == 0
 
     assert withdrawal_transaction.bridge_transaction_type == BedRockFunctionCallType.BRIDGE_ERC20.value
-
-
 
 
 # TODO ADD MORE TESTS

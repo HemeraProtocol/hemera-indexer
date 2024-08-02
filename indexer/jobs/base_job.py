@@ -9,10 +9,11 @@ from web3 import Web3
 class BaseJobMeta(type):
     _registry = {}
     logger = logging.getLogger("BaseJobMeta")
+
     def __new__(mcs, name, bases, attrs):
         new_cls = super().__new__(mcs, name, bases, attrs)
 
-        if name != 'BaseJob' and issubclass(new_cls, BaseJob):
+        if name != "BaseJob" and issubclass(new_cls, BaseJob):
             mcs._registry[name] = new_cls
 
         return new_cls
@@ -52,12 +53,11 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def __init__(self, **kwargs):
 
-        self._required_output_types = kwargs['required_output_types']
-        self._item_exporters = kwargs['item_exporters']
-        self._batch_web3_provider = kwargs['batch_web3_provider']
+        self._required_output_types = kwargs["required_output_types"]
+        self._item_exporters = kwargs["item_exporters"]
+        self._batch_web3_provider = kwargs["batch_web3_provider"]
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
-
 
     def run(self, **kwargs):
         try:

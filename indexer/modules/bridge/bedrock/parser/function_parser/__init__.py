@@ -6,6 +6,7 @@ from web3.types import ABIFunction
 
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 
+
 class BedRockFunctionCallType(Enum):
     NATIVE_BRIDGE_ETH = 0
 
@@ -14,6 +15,7 @@ class BedRockFunctionCallType(Enum):
     BRIDGE_ERC721 = 3
 
     NORMAL_CROSS_CHAIN_CALL = 7
+
 
 @dataclass
 class BridgeRemoteFunctionCallInfo:
@@ -27,7 +29,11 @@ class BridgeRemoteFunctionCallInfo:
 
 
 class RemoteFunctionCallDecoder:
-    def __init__(self, function_abi: ABIFunction, decode_function: Callable[[bytes], BridgeRemoteFunctionCallInfo]):
+    def __init__(
+        self,
+        function_abi: ABIFunction,
+        decode_function: Callable[[bytes], BridgeRemoteFunctionCallInfo],
+    ):
         self.function_abi = function_abi
         self.decode = decode_function
         self._4byte_selector = function_abi_to_4byte_selector_str(self.function_abi)

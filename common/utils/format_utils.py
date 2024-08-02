@@ -5,8 +5,8 @@ from decimal import Decimal
 
 def to_snake_case(name: str) -> str:
     """Convert a CamelCase name to snake_case."""
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
 def as_dict(self):
@@ -54,7 +54,14 @@ def format_value_for_json(value):
         return value
 
 
-def format_coin_value(value: int) -> str:
+def format_dollar_value(value: float) -> str:
+    """ """
+    if value > 1:
+        return "{0:.2f}".format(value)
+    return "{0:.6}".format(value)
+
+
+def format_coin_value(value: int, decimal: int = 18) -> str:
     """
     Formats a given integer value into a string that represents a token value.
     Parameters:
@@ -66,7 +73,7 @@ def format_coin_value(value: int) -> str:
     if value < 1000:
         return str(value)
     else:
-        return "{0:.15f}".format(value / 10 ** 18).rstrip("0").rstrip(".")
+        return "{0:.15f}".format(value / 10**18).rstrip("0").rstrip(".")
 
 
 def format_coin_value_with_unit(value: int, native_token: str) -> str:
@@ -86,8 +93,4 @@ def format_coin_value_with_unit(value: int, native_token: str) -> str:
     if value < 1000:
         return str(value) + " WEI"
     else:
-        return (
-                "{0:.15f}".format(value / 10 ** 18).rstrip("0").rstrip(".")
-                + " "
-                + native_token
-        )
+        return "{0:.15f}".format(value / 10**18).rstrip("0").rstrip(".") + " " + native_token

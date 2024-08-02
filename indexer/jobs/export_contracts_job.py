@@ -5,7 +5,7 @@ from typing import List
 from eth_abi import abi
 from web3 import Web3
 
-from indexer.domain.contract import extract_contract_from_trace, Contract
+from indexer.domain.contract import Contract, extract_contract_from_trace
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
@@ -18,15 +18,10 @@ contract_abi = [
         "constant": True,
         "inputs": [],
         "name": "name",
-        "outputs": [
-            {
-                "name": "",
-                "type": "string"
-            }
-        ],
+        "outputs": [{"name": "", "type": "string"}],
         "payable": False,
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     }
 ]
 
@@ -36,17 +31,15 @@ class ExportContractsJob(BaseJob):
     dependency_types = [Trace]
     output_types = [Contract]
 
-    def __init__(
-            self,
-            **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         self._batch_work_executor = BatchWorkExecutor(
-            kwargs['batch_size'], kwargs['max_workers'],
-            job_name=self.__class__.__name__
+            kwargs["batch_size"],
+            kwargs["max_workers"],
+            job_name=self.__class__.__name__,
         )
-        self._is_batch = kwargs['batch_size'] > 1
+        self._is_batch = kwargs["batch_size"] > 1
 
     def _start(self):
         super()._start()
@@ -64,33 +57,36 @@ class ExportContractsJob(BaseJob):
             self._collect_item(Contract.type(), Contract(contract))
 
     def _process(self):
-        self._data_buff[Contract.type()].sort(
-            key=lambda x: (x.block_number,
-                           x.transaction_index,
-                           x.address))
+        self._data_buff[Contract.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.address))
 
 
 def build_contracts(web3, traces: List[Trace]):
     contracts = []
     for trace in traces:
-        if trace.trace_type in ['create', 'create2'] and trace.to_address is not None \
-                and len(trace.to_address) > 0 and trace.status == 1:
+        if (
+            trace.trace_type in ["create", "create2"]
+            and trace.to_address is not None
+            and len(trace.to_address) > 0
+            and trace.status == 1
+        ):
             contract = extract_contract_from_trace(trace)
-            contract['param_to'] = contract['address']
+            contract["param_to"] = contract["address"]
 
             try:
-                contract['param_data'] = (web3.eth
-                                          .contract(address=Web3.to_checksum_address(contract['address']),
-                                                    abi=contract_abi)
-                                          .encodeABI(fn_name='name'))
+                contract["param_data"] = web3.eth.contract(
+                    address=Web3.to_checksum_address(contract["address"]),
+                    abi=contract_abi,
+                ).encodeABI(fn_name="name")
             except Exception as e:
-                logger.warning(f"Encoding contract api parameter failed. "
-                               f"contract address: {contract['address']}. "
-                               f"fn: name. "
-                               f"exception: {e}. ")
-                contract['param_data'] = '0x'
+                logger.warning(
+                    f"Encoding contract api parameter failed. "
+                    f"contract address: {contract['address']}. "
+                    f"fn: name. "
+                    f"exception: {e}. "
+                )
+                contract["param_data"] = "0x"
 
-            contract['param_number'] = hex(contract['block_number'])
+            contract["param_number"] = hex(contract["block_number"])
             contracts.append(contract)
 
     return contracts
@@ -98,7 +94,7 @@ def build_contracts(web3, traces: List[Trace]):
 
 def contract_info_rpc_requests(make_requests, contracts, is_batch):
     for idx, contract in enumerate(contracts):
-        contract['request_id'] = idx
+        contract["request_id"] = idx
 
     contract_name_rpc = list(generate_eth_call_json_rpc(contracts))
 
@@ -113,12 +109,14 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
         info = result[2:] if result is not None else None
 
         try:
-            contract['name'] = abi.decode(['string'], bytes.fromhex(info))[0].replace('\u0000', '')
+            contract["name"] = abi.decode(["string"], bytes.fromhex(info))[0].replace("\u0000", "")
         except Exception as e:
-            logger.warning(f"Decoding contract name failed. "
-                           f"contract address: {contract['address']}. "
-                           f"rpc response: {result}. "
-                           f"exception: {e}")
-            contract['name'] = None
+            logger.warning(
+                f"Decoding contract name failed. "
+                f"contract address: {contract['address']}. "
+                f"rpc response: {result}. "
+                f"exception: {e}"
+            )
+            contract["name"] = None
 
     return contracts

@@ -1,15 +1,15 @@
 from datetime import datetime
-from typing import Union, Type
+from typing import Type, Union
 
 from sqlalchemy import Column, Index, desc, func
-from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 from indexer.domain.block import Block, UpdateBlockInternalCount
 
 
 class Blocks(HemeraModel):
-    __tablename__ = 'blocks'
+    __tablename__ = "blocks"
     hash = Column(BYTEA, primary_key=True)
     number = Column(BIGINT)
     timestamp = Column(TIMESTAMP)
@@ -46,31 +46,43 @@ class Blocks(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                'domain': 'Block',
-                'conflict_do_update': True,
-                'update_strategy': None,
-                'converter': converter,
+                "domain": "Block",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": converter,
             },
             {
-                'domain': 'UpdateBlockInternalCount',
-                'conflict_do_update': True,
-                'update_strategy': None,
-                'converter': converter,
-            }
+                "domain": "UpdateBlockInternalCount",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": converter,
+            },
         ]
 
 
-Index('blocks_timestamp_index', desc(Blocks.timestamp))
-Index('blocks_number_index', desc(Blocks.number))
-Index('blocks_number_unique_when_not_reorg', Blocks.number, unique=True,
-      postgresql_where=(Blocks.reorg == False))
-Index('blocks_hash_unique_when_not_reorg', Blocks.hash, unique=True,
-      postgresql_where=(Blocks.reorg == False))
+Index("blocks_timestamp_index", desc(Blocks.timestamp))
+Index("blocks_number_index", desc(Blocks.number))
+Index(
+    "blocks_number_unique_when_not_reorg",
+    Blocks.number,
+    unique=True,
+    postgresql_where=(Blocks.reorg == False),
+)
+Index(
+    "blocks_hash_unique_when_not_reorg",
+    Blocks.hash,
+    unique=True,
+    postgresql_where=(Blocks.reorg == False),
+)
 
 
-def converter(table: Type[HemeraModel], data: Union[Block, UpdateBlockInternalCount], is_update=False):
+def converter(
+    table: Type[HemeraModel],
+    data: Union[Block, UpdateBlockInternalCount],
+    is_update=False,
+):
     converted_data = general_converter(table, data, is_update)
     if isinstance(data, Block):
-        converted_data['transactions_count'] = len(data.transactions) if data.transactions else 0
+        converted_data["transactions_count"] = len(data.transactions) if data.transactions else 0
 
     return converted_data

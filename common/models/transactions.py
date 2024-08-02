@@ -1,15 +1,15 @@
 from datetime import datetime
 from typing import Type
 
-from sqlalchemy import Column, Index, desc, func, asc, Computed
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, INTEGER, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN, TEXT, VARCHAR
+from sqlalchemy import Column, Computed, Index, asc, desc, func
+from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 from indexer.domain.transaction import Transaction
 
 
 class Transactions(HemeraModel):
-    __tablename__ = 'transactions'
+    __tablename__ = "transactions"
 
     hash = Column(BYTEA, primary_key=True)
     transaction_index = Column(INTEGER)
@@ -57,42 +57,54 @@ class Transactions(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                'domain': 'Transaction',
-                'conflict_do_update': False,
-                'update_strategy': None,
-                'converter': converter,
+                "domain": "Transaction",
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": converter,
             }
         ]
 
 
-Index('transactions_block_timestamp_index', Transactions.block_timestamp)
+Index("transactions_block_timestamp_index", Transactions.block_timestamp)
 
-Index('transactions_block_number_transaction_index',
-      desc(Transactions.block_number), desc(Transactions.transaction_index))
+Index(
+    "transactions_block_number_transaction_index",
+    desc(Transactions.block_number),
+    desc(Transactions.transaction_index),
+)
 
-Index('transactions_from_address_block_number_transaction_idx',
-      asc(Transactions.from_address), desc(Transactions.block_number), desc(Transactions.transaction_index))
+Index(
+    "transactions_from_address_block_number_transaction_idx",
+    asc(Transactions.from_address),
+    desc(Transactions.block_number),
+    desc(Transactions.transaction_index),
+)
 
-Index('transactions_to_address_block_number_transaction_idx',
-      asc(Transactions.to_address), desc(Transactions.block_number), desc(Transactions.transaction_index))
+Index(
+    "transactions_to_address_block_number_transaction_idx",
+    asc(Transactions.to_address),
+    desc(Transactions.block_number),
+    desc(Transactions.transaction_index),
+)
 
 
 def converter(table: Type[HemeraModel], data: Transaction, is_update=False):
     converted_data = general_converter(table, data, is_update)
     receipt = data.receipt
 
-    converted_data['receipt_root'] = bytes.fromhex(receipt.root[2:]) if receipt.root else None
-    converted_data['receipt_status'] = receipt.status
-    converted_data['receipt_gas_used'] = receipt.gas_used
-    converted_data['receipt_cumulative_gas_used'] = receipt.cumulative_gas_used
-    converted_data['receipt_effective_gas_price'] = receipt.effective_gas_price
-    converted_data['receipt_l1_fee'] = receipt.l1_fee
-    converted_data['receipt_l1_fee_scalar'] = receipt.l1_fee_scalar
-    converted_data['receipt_l1_gas_used'] = receipt.l1_gas_used
-    converted_data['receipt_l1_gas_price'] = receipt.l1_gas_price
-    converted_data['receipt_blob_gas_used'] = receipt.blob_gas_used
-    converted_data['receipt_blob_gas_price'] = receipt.blob_gas_price
-    converted_data['receipt_contract_address'] = bytes.fromhex(receipt.contract_address[2:]) \
-        if receipt.contract_address else None
+    converted_data["receipt_root"] = bytes.fromhex(receipt.root[2:]) if receipt.root else None
+    converted_data["receipt_status"] = receipt.status
+    converted_data["receipt_gas_used"] = receipt.gas_used
+    converted_data["receipt_cumulative_gas_used"] = receipt.cumulative_gas_used
+    converted_data["receipt_effective_gas_price"] = receipt.effective_gas_price
+    converted_data["receipt_l1_fee"] = receipt.l1_fee
+    converted_data["receipt_l1_fee_scalar"] = receipt.l1_fee_scalar
+    converted_data["receipt_l1_gas_used"] = receipt.l1_gas_used
+    converted_data["receipt_l1_gas_price"] = receipt.l1_gas_price
+    converted_data["receipt_blob_gas_used"] = receipt.blob_gas_used
+    converted_data["receipt_blob_gas_price"] = receipt.blob_gas_price
+    converted_data["receipt_contract_address"] = (
+        bytes.fromhex(receipt.contract_address[2:]) if receipt.contract_address else None
+    )
 
     return converted_data

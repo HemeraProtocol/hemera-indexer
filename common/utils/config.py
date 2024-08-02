@@ -49,7 +49,7 @@ def set_config_value(config_file, section, key, value):
     config.read(config_file)
     config[section][key] = value
 
-    with open(config_file, 'w') as configfile:
+    with open(config_file, "w") as configfile:
         config.write(configfile)
 
 
@@ -73,12 +73,12 @@ def init_config_setting(db_url, rpc_endpoint):
     port = parsed_url.port
     database = parsed_url.database
 
-    set_config_value(config_path, section='alembic', key='sqlalchemy.url', value=db_url)
-    set_config_value(config_path, section='DB_CREDS', key='HOST', value=hostname)
-    set_config_value(config_path, section='DB_CREDS', key='COMMON_HOST', value=hostname)
-    set_config_value(config_path, section='DB_CREDS', key='WRITE_HOST', value=hostname)
-    set_config_value(config_path, section='DB_CREDS', key='PORT', value=str(port))
-    set_config_value(config_path, section='DB_CREDS', key='USER', value=username)
-    set_config_value(config_path, section='DB_CREDS', key='PASSWD', value=password)
-    set_config_value(config_path, section='DB_CREDS', key='DB_NAME', value=database)
-    set_config_value(config_path, section='BLOCK_CHAIN', key='RPC_ENDPOINT', value=rpc_endpoint)
+    set_config_value(config_path, section="alembic", key="sqlalchemy.url", value=db_url)
+    set_config_value(config_path, section="DB_CREDS", key="HOST", value=hostname)
+    set_config_value(config_path, section="DB_CREDS", key="COMMON_HOST", value=hostname)
+    set_config_value(config_path, section="DB_CREDS", key="WRITE_HOST", value=hostname)
+    set_config_value(config_path, section="DB_CREDS", key="PORT", value=str(port))
+    set_config_value(config_path, section="DB_CREDS", key="USER", value=username)
+    set_config_value(config_path, section="DB_CREDS", key="PASSWD", value=password)
+    set_config_value(config_path, section="DB_CREDS", key="DB_NAME", value=database)
+    set_config_value(config_path, section="BLOCK_CHAIN", key="RPC_ENDPOINT", value=rpc_endpoint)

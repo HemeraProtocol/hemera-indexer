@@ -5,17 +5,19 @@ from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract import Contract
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Pool, \
-    AllFeatureValueRecordUniswapV3Token
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
+from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.log import Log
 from indexer.domain.token import *
 from indexer.domain.token_balance import TokenBalance
-from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
+from indexer.modules.custom.all_features_value_record import (
+    AllFeatureValueRecordUniswapV3Pool,
+    AllFeatureValueRecordUniswapV3Token,
+)
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -25,7 +27,7 @@ class EntityType(IntFlag):
     EXPLORER_TRACE = 1 << 2
 
     BRIDGE = 1 << 3
-    UNISWAP_V3_POOL = 1 << 4
+    UNISWAP_V3 = 1 << 4
 
     USER_OPS = 1 << 5
 
@@ -48,13 +50,14 @@ DEFAULT_COLLECTION = ["EXPLORER_BASE", "EXPLORER_TOKEN"]
 
 def calculate_entity_value(entity_types):
     entities = EntityType(0)
-    for entity_type in [entity.strip().upper() for entity in entity_types.split(',')]:
+    for entity_type in [entity.strip().upper() for entity in entity_types.split(",")]:
         if entity_type in EntityType.__members__:
             entities |= EntityType[entity_type]
         else:
-            available_types = ','.join(ALL_ENTITY_COLLECTIONS)
+            available_types = ",".join(ALL_ENTITY_COLLECTIONS)
             raise ValueError(
-                f'{entity_type} is not an available entity type. Supply a comma-separated list of types from {available_types}')
+                f"{entity_type} is not an available entity type. Supply a comma-separated list of types from {available_types}"
+            )
     return entities
 
 
@@ -86,7 +89,7 @@ def generate_output_types(entity_types):
         yield ContractInternalTransaction
         yield UpdateBlockInternalCount
 
-    if entity_types & EntityType.UNISWAP_V3_POOL:
+    if entity_types & EntityType.UNISWAP_V3:
         yield UniswapV3Pool
         yield UniswapV3Token
         yield AllFeatureValueRecordUniswapV3Pool

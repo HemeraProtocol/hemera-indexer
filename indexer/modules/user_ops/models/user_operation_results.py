@@ -1,7 +1,7 @@
 from typing import Type
 
 from sqlalchemy import Column, Index
-from sqlalchemy.dialects.postgresql import INTEGER, TIMESTAMP, NUMERIC, BOOLEAN, TEXT, VARCHAR, BYTEA
+from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -39,12 +39,12 @@ class UserOperationResult(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                'domain': 'UserOperationsResult',
-                'conflict_do_update': False,
-                'update_strategy': None,
-                'converter': general_converter,
+                "domain": "UserOperationsResult",
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
             }
         ]
 
 
-Index('transactions_hash_index', UserOperationResult.transactions_hash)
+Index("transactions_hash_index", UserOperationResult.transactions_hash)

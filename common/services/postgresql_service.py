@@ -1,3 +1,5 @@
+import os
+
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine
@@ -14,24 +16,55 @@ class PostgreSQLService(object):
 
     def __init__(self, jdbc_url, db_version="head"):
         self.db_version = db_version
-        self.engine = create_engine(jdbc_url,
-                                    pool_size=10,
-                                    max_overflow=10,
-                                    pool_timeout=30,
-                                    pool_recycle=60,
-                                    connect_args={
-                                        "application_name": "hemera_indexer"
-                                    })
-
+        self.engine = create_engine(
+            jdbc_url,
+            pool_size=10,
+            max_overflow=10,
+            pool_timeout=30,
+            pool_recycle=60,
+            connect_args={"application_name": "hemera_indexer"},
+        )
+        self.jdbc_url = jdbc_url
         self.Session = sessionmaker(bind=self.engine)
         self.init_schema()
 
     def init_schema(self):
-        alembic_config = Config("resource/hemera.ini")
 
-        if self.db_version == "base":
-            command.downgrade(alembic_config, "base")
-        command.upgrade(alembic_config, self.db_version)
+        alembic_cfg = Config()
+        # Set script location and version path separator
+        alembic_cfg.set_main_option("script_location", "migrations")
+        alembic_cfg.set_main_option("version_path_separator", os.pathsep)
+
+        # Set the database connection URL
+        alembic_cfg.set_main_option("sqlalchemy.url", self.jdbc_url)
+
+        # Configure log settings
+        alembic_cfg.set_main_option("loggers", "root,sqlalchemy,alembic")
+        alembic_cfg.set_main_option("handlers", "console")
+        alembic_cfg.set_main_option("formatters", "generic")
+
+        # Configure root logger
+        alembic_cfg.set_section_option("logger_root", "level", "WARN")
+        alembic_cfg.set_section_option("logger_root", "handlers", "console")
+        alembic_cfg.set_section_option("logger_root", "qualname", "")
+
+        # Configure SQLAlchemy logger
+        alembic_cfg.set_section_option("logger_sqlalchemy", "level", "WARN")
+        alembic_cfg.set_section_option("logger_sqlalchemy", "handlers", "")
+        alembic_cfg.set_section_option("logger_sqlalchemy", "qualname", "sqlalchemy.engine")
+
+        # Configure Alembic logger
+        alembic_cfg.set_section_option("logger_alembic", "level", "INFO")
+        alembic_cfg.set_section_option("logger_alembic", "handlers", "")
+        alembic_cfg.set_section_option("logger_alembic", "qualname", "alembic")
+
+        # Configure console handler
+        alembic_cfg.set_section_option("handler_console", "class", "StreamHandler")
+        alembic_cfg.set_section_option("handler_console", "args", "(sys.stderr,)")
+        alembic_cfg.set_section_option("handler_console", "level", "NOTSET")
+        alembic_cfg.set_section_option("handler_console", "formatter", "generic")
+
+        command.upgrade(alembic_cfg, self.db_version)
 
     def get_service_engine(self):
         return self.engine

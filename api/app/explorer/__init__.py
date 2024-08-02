@@ -3,5 +3,4 @@
 
 from flask_restx.namespace import Namespace
 
-explorer_namespace = Namespace(
-    "Blockchain Explorer", path="/", description="Blockchain Explorer API")
+explorer_namespace = Namespace("Blockchain Explorer", path="/", description="Blockchain Explorer API")
