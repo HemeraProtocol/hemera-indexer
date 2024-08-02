@@ -18,6 +18,7 @@ class StreamDispatcher(BaseDispatcher):
         max_workers=5,
         config=None,
         required_output_types=[],
+        cache=None,
     ):
         super().__init__(service)
         self._job_scheduler = JobScheduler(
@@ -29,6 +30,7 @@ class StreamDispatcher(BaseDispatcher):
             max_workers=max_workers,
             config=config,
             required_output_types=required_output_types,
+            cache=cache,
         )
         self.logger = logging.getLogger(__name__)
         self.logger.info("Export output types: %s", required_output_types)

@@ -1,3 +1,4 @@
+import logging
 import os
 from configparser import ConfigParser
 
@@ -7,8 +8,6 @@ from api.app.config import AppConfig
 
 _config_instance = None
 _is_initialized = False
-
-config_path = "resource/hemera.ini"
 
 
 def get_config():
@@ -32,13 +31,17 @@ def set_config(config: AppConfig):
 
 def read_config():
     config = ConfigParser()
-    app_config = None
     try:
-        if os.path.exists(config_path):
-            config.read(config_path)
+        if os.path.exists("api_config.conf"):
+            config.read("api_config.conf")
             app_config = AppConfig.load_from_config_file(config)
-    except FileNotFoundError:
-        print("Cannot find config file.")
+        elif os.path.exists("api_config.yaml"):
+            app_config = AppConfig.load_from_yaml_file("api_config.yaml")
+        else:
+            app_config = AppConfig()
+        app_config.update_from_env()
+    except Exception as e:
+        logging.error("Error initializing config")
         exit()
 
     return app_config
@@ -62,23 +65,3 @@ def read_config_value(config_file, section, key):
         value = None
 
     return value
-
-
-def init_config_setting(db_url, rpc_endpoint):
-    parsed_url = make_url(db_url)
-
-    username = parsed_url.username
-    password = parsed_url.password
-    hostname = parsed_url.host
-    port = parsed_url.port
-    database = parsed_url.database
-
-    set_config_value(config_path, section="alembic", key="sqlalchemy.url", value=db_url)
-    set_config_value(config_path, section="DB_CREDS", key="HOST", value=hostname)
-    set_config_value(config_path, section="DB_CREDS", key="COMMON_HOST", value=hostname)
-    set_config_value(config_path, section="DB_CREDS", key="WRITE_HOST", value=hostname)
-    set_config_value(config_path, section="DB_CREDS", key="PORT", value=str(port))
-    set_config_value(config_path, section="DB_CREDS", key="USER", value=username)
-    set_config_value(config_path, section="DB_CREDS", key="PASSWD", value=password)
-    set_config_value(config_path, section="DB_CREDS", key="DB_NAME", value=database)
-    set_config_value(config_path, section="BLOCK_CHAIN", key="RPC_ENDPOINT", value=rpc_endpoint)

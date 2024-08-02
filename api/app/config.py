@@ -3,6 +3,7 @@ import re
 from configparser import ConfigParser
 from dataclasses import dataclass, field
 from enum import Enum, auto
+from urllib.parse import urlparse
 
 from dataclass_wizard import YAMLWizard
 
@@ -45,6 +46,13 @@ class CacheConfig(YAMLWizard):
             }
 
 
+def get_env_or_set_default(env_var, default_var):
+    if not os.getenv(env_var):
+        if os.getenv(default_var):
+            os.environ[env_var] = os.getenv(default_var)
+    return os.getenv(env_var)
+
+
 @dataclass
 class OpRollupDAConfig(YAMLWizard):
     da_type: str = field(default=None)
@@ -77,6 +85,17 @@ class DatabaseConfig(YAMLWizard):
         database = self.database
 
         return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
+
+    @staticmethod
+    def load_database_config_from_url(url):
+        result = urlparse(url)
+        return DatabaseConfig(
+            host=result.hostname,
+            port=result.port,
+            username=result.username,
+            password=result.password,
+            database=result.path[1:],  # Remove leading '/'
+        )
 
 
 class APIModule(Enum):
@@ -132,8 +151,50 @@ class AppConfig(YAMLWizard):
     token_configuration: TokenConfiguration = field(default_factory=TokenConfiguration)
     api_urls: APIUrls = field(default_factory=APIUrls)
 
-    def get_default_token_image_url(self):
-        return f"/images/empty-token-{self.chain}.png"
+    def update_from_env(self):
+        self.env = os.getenv("", self.env)
+        self.chain = os.getenv("CHAIN", self.chain)
+        self.ens_service = os.getenv("ENS_SERVICE", self.ens_service)
+        self.contract_service = os.getenv("CONTRACT_SERVICE", self.contract_service)
+        self.token_service = os.getenv("TOKEN_SERVICE", self.token_service)
+        self.sql_alchemy_database_engine_options["pool_size"] = int(
+            os.getenv("SQL_POOL_SIZE", self.sql_alchemy_database_engine_options.get("pool_size", 100))
+        )
+        self.sql_alchemy_database_engine_options["max_overflow"] = int(
+            os.getenv("SQL_MAX_OVERFLOW", self.sql_alchemy_database_engine_options.get("max_overflow", 100))
+        )
+        self.rpc = os.getenv("PROVIDER_URI", self.rpc)
+        self.debug_rpc = os.getenv("DEBUG_PROVIDER_URI", self.debug_rpc)
+
+        read_url = get_env_or_set_default("READ_POSTGRES_URL", "POSTGRES_URL")
+        write_url = get_env_or_set_default("WRITE_POSTGRES_URL", "POSTGRES_URL")
+        common_url = get_env_or_set_default("COMMON_POSTGRES_URL", "POSTGRES_URL")
+
+        self.db_read_sql_alchemy_database_config = (
+            DatabaseConfig.load_database_config_from_url(
+                read_url or self.db_read_sql_alchemy_database_config.get_sql_alchemy_uri()
+            )
+            if read_url
+            else self.db_read_sql_alchemy_database_config
+        )
+        self.db_write_sql_alchemy_database_config = (
+            DatabaseConfig.load_database_config_from_url(
+                write_url or self.db_write_sql_alchemy_database_config.get_sql_alchemy_uri()
+            )
+            if write_url
+            else self.db_write_sql_alchemy_database_config
+        )
+        self.db_common_sql_alchemy_database_config = (
+            DatabaseConfig.load_database_config_from_url(
+                common_url or self.db_common_sql_alchemy_database_config.get_sql_alchemy_uri()
+            )
+            if common_url
+            else self.db_common_sql_alchemy_database_config
+        )
+
+        if os.getenv("CACHE_TYPE"):
+            self.cache_config.cache_type = os.getenv("CACHE_TYPE", self.cache_config.cache_type)
+            self.cache_config.cache_redis_host = os.getenv("REDIS_HOST", self.cache_config.cache_redis_host)
 
     def get_onchain_badge_config(self):
         if "on_chain_badge" in self.extra_config:

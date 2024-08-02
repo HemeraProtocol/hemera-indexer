@@ -197,7 +197,7 @@ def calculate_execution_time(func):
     'e.g pg_base. means sync record data will store in pg as "base" be key'
     'or file_base. means sync record data will store in file as "base" be file name',
 )
-@click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE", help="Cache")
+@click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE_SERVICE", help="Cache")
 @calculate_execution_time
 def stream(
     provider_uri,
@@ -261,6 +261,7 @@ def stream(
         max_workers=max_workers,
         required_output_types=output_types,
         config=config,
+        cache=cache,
     )
 
     controller = StreamController(

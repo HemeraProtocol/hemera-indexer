@@ -22,6 +22,7 @@ class JobScheduler:
         config=None,
         item_exporters=[],
         required_output_types=[],
+        cache=None,
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -39,7 +40,13 @@ class JobScheduler:
         self.discover_and_register_job_classes()
         self.required_job_classes = self.get_required_job_classes(required_output_types)
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
-        BaseJob.init_token_cache(defaultdict(Token))
+
+        if cache is None or cache == "":
+            BaseJob.init_token_cache(defaultdict(Token))
+        else:
+            # init redis cache
+            # load from db service
+            BaseJob.init_token_cache(cache)
 
     def get_data_buff(self):
         return BaseJob._data_buff
