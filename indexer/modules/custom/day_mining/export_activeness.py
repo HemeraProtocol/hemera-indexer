@@ -1,4 +1,5 @@
 from indexer.domain.transaction import Transaction
+from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordTraitsActiveness
 from collections import defaultdict, OrderedDict
@@ -19,6 +20,11 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
         super().__init__(**kwargs)
         self._service = kwargs['config'].get('db_service'),
         self._latest_address_stats = defaultdict(lambda: {'txn_count': 0, 'gas_consumed': 0})  # get from pg
+        self._batch_work_executor = BatchWorkExecutor(
+            kwargs["batch_size"],
+            kwargs["max_workers"],
+            job_name=self.__class__.__name__,
+        )
 
     def get_latest_address_stats_from_pg(self):
         pass
@@ -41,16 +47,14 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
                 'gas_consumed'] += transaction.gas * transaction.gas_price
 
         # 计算每个分组的 count 和 sum(tnx.gas)
-        for address, block_dict in current_batch_address_block_number_stats.items():
-            for block_number, stats_value in block_dict.items():
-                self._latest_address_stats[address]['txn_count'] += stats_value['txn_count']
-                self._latest_address_stats[address]['gas_consumed'] += stats_value['gas_consumed']
+        self._batch_work_executor.execute(current_batch_address_block_number_stats,
+                                          self._calculate_latest_address_stats,
+                                          total_items=len(current_batch_address_block_number_stats),
+                                          split_method=self._split_address_block_number_stats)
+        self._batch_work_executor.wait()
 
-                record = AllFeatureValueRecordTraitsActiveness(3, block_number, address,
-                                                               self._latest_address_stats[address])
-                self._collect_item(AllFeatureValueRecordTraitsActiveness.type(), record)
-
-    def _calculate_latest_address_stats(self, block_dict):
+    def _calculate_latest_address_stats(self, address_block_number_stats):
+        (address, block_dict), = address_block_number_stats.items()
         for block_number, stats_value in block_dict.items():
             self._latest_address_stats[address]['txn_count'] += stats_value['txn_count']
             self._latest_address_stats[address]['gas_consumed'] += stats_value['gas_consumed']
@@ -58,3 +62,8 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
             record = AllFeatureValueRecordTraitsActiveness(3, block_number, address,
                                                            self._latest_address_stats[address])
             self._collect_item(AllFeatureValueRecordTraitsActiveness.type(), record)
+
+    @staticmethod
+    def _split_address_block_number_stats(current_batch_address_block_number_stats):
+        for address, block_dict in current_batch_address_block_number_stats.items():
+            yield {address: block_dict}
