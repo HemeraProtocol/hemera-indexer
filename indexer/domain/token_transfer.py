@@ -101,19 +101,22 @@ class TokenTransfer(Domain):
             "log_index": self.log_index,
             "from_address": self.from_address,
             "to_address": self.to_address,
-            "token_type": self.token_type,
             "token_address": self.token_address,
             "block_number": self.block_number,
             "block_hash": self.block_hash,
             "block_timestamp": self.block_timestamp,
         }
 
-        if self.token_type == "ERC20":
-            return ERC20TokenTransfer(**common_fields, value=self.value)
-        elif self.token_type == "ERC721":
-            return ERC721TokenTransfer(**common_fields, token_id=self.value)
-        elif self.token_type == "ERC1155":
-            return ERC1155TokenTransfer(**common_fields, token_id=self.token_id, value=self.value)
+        if self.token_type == TokenType.ERC20.value:
+            return ERC20TokenTransfer(**common_fields, token_type=TokenType.ERC20.value, value=self.value)
+        elif self.token_type == TokenType.ERC721.value:
+            return ERC721TokenTransfer(**common_fields, token_type=TokenType.ERC721.value, token_id=self.value)
+        elif self.token_type == TokenType.ERC1155.value and self.token_id is not None:
+            return ERC1155TokenTransfer(
+                **common_fields, token_type=TokenType.ERC1155.value, token_id=self.token_id, value=self.value
+            )
+        elif self.token_type == TokenType.ERC1155.value and self.token_id is None:
+            return ERC20TokenTransfer(**common_fields, token_type=TokenType.ERC20.value, value=self.value)
         else:
             raise ValueError(f"Unsupported token type: {self.token_type}")
 
@@ -161,49 +164,55 @@ class ERC1155TokenTransfer(Domain):
     block_timestamp: int
 
 
-def handle_deposit_event(log: Log) -> TokenTransfer:
+def handle_deposit_event(log: Log) -> List[TokenTransfer]:
     decode_data = deposit_event.decode_log(log)
+    if decode_data is None:
+        return []
     wallet_address = decode_data.get("dst").lower()
     value = decode_data.get("wad")
     token_type = TokenType.ERC20.value
 
-    return TokenTransfer(
-        transaction_hash=log.transaction_hash,
-        log_index=log.log_index,
-        from_address=ZERO_ADDRESS,
-        to_address=wallet_address,
-        token_id=None,
-        value=value,
-        token_type=token_type,
-        token_address=log.address,
-        block_number=log.block_number,
-        block_hash=log.block_hash,
-        block_timestamp=log.block_timestamp,
-    )
+    return [
+        TokenTransfer(
+            transaction_hash=log.transaction_hash,
+            log_index=log.log_index,
+            from_address=ZERO_ADDRESS,
+            to_address=wallet_address,
+            token_id=None,
+            value=value,
+            token_type=token_type,
+            token_address=log.address,
+            block_number=log.block_number,
+            block_hash=log.block_hash,
+            block_timestamp=log.block_timestamp,
+        )
+    ]
 
 
-def handle_withdraw_event(log: Log) -> TokenTransfer:
+def handle_withdraw_event(log: Log) -> List[TokenTransfer]:
     decode_data = withdraw_event.decode_log(log)
     wallet_address = decode_data.get("src").lower()
     value = decode_data.get("wad")
     token_type = TokenType.ERC20.value
 
-    return TokenTransfer(
-        transaction_hash=log.transaction_hash,
-        log_index=log.log_index,
-        from_address=wallet_address,
-        to_address=ZERO_ADDRESS,
-        token_id=None,
-        value=value,
-        token_type=token_type,
-        token_address=log.address,
-        block_number=log.block_number,
-        block_hash=log.block_hash,
-        block_timestamp=log.block_timestamp,
-    )
+    return [
+        TokenTransfer(
+            transaction_hash=log.transaction_hash,
+            log_index=log.log_index,
+            from_address=wallet_address,
+            to_address=ZERO_ADDRESS,
+            token_id=None,
+            value=value,
+            token_type=token_type,
+            token_address=log.address,
+            block_number=log.block_number,
+            block_hash=log.block_hash,
+            block_timestamp=log.block_timestamp,
+        )
+    ]
 
 
-def handle_transfer_event(log: Log) -> TokenTransfer:
+def handle_transfer_event(log: Log) -> List[TokenTransfer]:
     decode_data = transfer_event.decode_log_ignore_indexed(log)
 
     from_address = decode_data.get("from").lower()
@@ -216,41 +225,45 @@ def handle_transfer_event(log: Log) -> TokenTransfer:
         else TokenType.ERC20.value
     )
 
-    return TokenTransfer(
-        transaction_hash=log.transaction_hash,
-        log_index=log.log_index,
-        from_address=from_address,
-        to_address=to_address,
-        token_id=None,
-        value=value,
-        token_type=token_type,
-        token_address=log.address,
-        block_number=log.block_number,
-        block_hash=log.block_hash,
-        block_timestamp=log.block_timestamp,
-    )
+    return [
+        TokenTransfer(
+            transaction_hash=log.transaction_hash,
+            log_index=log.log_index,
+            from_address=from_address,
+            to_address=to_address,
+            token_id=None,
+            value=value,
+            token_type=token_type,
+            token_address=log.address,
+            block_number=log.block_number,
+            block_hash=log.block_hash,
+            block_timestamp=log.block_timestamp,
+        )
+    ]
 
 
-def handle_transfer_single_event(log: Log) -> TokenTransfer:
+def handle_transfer_single_event(log: Log) -> List[TokenTransfer]:
     decode_data = single_transfer_event.decode_log(log)
     from_address = decode_data.get("from").lower()
     to_address = decode_data.get("to").lower()
     token_id = decode_data.get("id")
     value = decode_data.get("value")
 
-    return TokenTransfer(
-        transaction_hash=log.transaction_hash,
-        log_index=log.log_index,
-        from_address=from_address,
-        to_address=to_address,
-        token_id=token_id,
-        value=value,
-        token_type=TokenType.ERC1155.value,
-        token_address=log.address,
-        block_number=log.block_number,
-        block_hash=log.block_hash,
-        block_timestamp=log.block_timestamp,
-    )
+    return [
+        TokenTransfer(
+            transaction_hash=log.transaction_hash,
+            log_index=log.log_index,
+            from_address=from_address,
+            to_address=to_address,
+            token_id=token_id,
+            value=value,
+            token_type=TokenType.ERC1155.value,
+            token_address=log.address,
+            block_number=log.block_number,
+            block_hash=log.block_hash,
+            block_timestamp=log.block_timestamp,
+        )
+    ]
 
 
 def handle_transfer_batch_event(log: Log) -> List[TokenTransfer]:
@@ -293,13 +306,13 @@ def extract_transfer_from_log(log: Log) -> List[TokenTransfer]:
     topic = log.topic0
 
     if topic == transfer_event.get_signature():
-        token_transfers = [handle_transfer_event(log)]
+        token_transfers = handle_transfer_event(log)
     elif topic == deposit_event.get_signature():
-        token_transfers = [handle_deposit_event(log)]
+        token_transfers = handle_deposit_event(log)
     elif topic == withdraw_event.get_signature():
-        token_transfers = [handle_withdraw_event(log)]
+        token_transfers = handle_withdraw_event(log)
     elif topic == single_transfer_event.get_signature():
-        token_transfers = [handle_transfer_single_event(log)]
+        token_transfers = handle_transfer_single_event(log)
     elif topic == batch_transfer_event.get_signature():
         token_transfers = handle_transfer_batch_event(log)
 

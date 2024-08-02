@@ -191,7 +191,8 @@ class ExportTokensAndTransfersJob(BaseJob):
 
     def _generate_token_transfers(self, token_transfers):
         for transfer in token_transfers:
-            transfer.token_type = self.tokens[transfer.token_address].token_type
+            if transfer.token_id is None:
+                transfer.token_type = self.tokens[transfer.token_address].token_type
             self._collect_domain(transfer.to_specific_transfer())
 
     def _export_token_info_batch(self, tokens):

@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, Optional, Sequence, Tuple
 from urllib.parse import to_bytes
 
@@ -66,8 +67,8 @@ def decode_log(
         decoded_data = abi_codec.decode([t["type"] for t in data_types], log.get_bytes_data())
         data = named_tree(data_types, decoded_data)
     except Exception as e:
-        print(e)
-        raise e
+        logging.warning(f"Failed to decode log: {e}, log: {log}")
+        return None
 
     return {**indexed, **data}
 
