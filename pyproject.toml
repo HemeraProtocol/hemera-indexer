@@ -53,7 +53,7 @@ version = {file = "VERSION"}
 
 [project.optional-dependencies]
 streaming = ["grpcio==1.46.3"]
-dev = ["pytest~=4.3.0"]
+dev = ["pytest>=7.0.0"]
 
 [project.urls]
 "Homepage" = "https://github.com/HemeraProtocol/hemera-indexer"
@@ -78,7 +78,7 @@ python = "^3.9"
 requests = "^2.25.1"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.2"
+pytest = "^7.0.0"
 black = "^21.5b0"
 isort = "^5.9.1"
 flake8 = "^3.9.2"
