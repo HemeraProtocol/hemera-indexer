@@ -226,7 +226,7 @@ def stream(
     # set alembic.ini and build postgresql service
     postgres_url = extract_pg_url_from_output(output)
     if postgres_url:
-        init_config_setting(db_url=postgres_url, rpc_endpoint=provider_uri)
+        # init_config_setting(db_url=postgres_url, rpc_endpoint=provider_uri)
         service = PostgreSQLService(postgres_url, db_version=db_version)
         config["db_service"] = service
 

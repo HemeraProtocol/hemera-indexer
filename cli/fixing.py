@@ -117,7 +117,7 @@ def fixing(
 
     # build postgresql service
     service_url = verify_db_connection_url(postgres_url)
-    init_config_setting(db_url=service_url, rpc_endpoint=provider_uri)
+    # init_config_setting(db_url=service_url, rpc_endpoint=provider_uri)
     service = PostgreSQLService(service_url, db_version=db_version)
 
     controller = FixingController(
