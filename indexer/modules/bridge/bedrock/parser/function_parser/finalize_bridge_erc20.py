@@ -4,8 +4,11 @@ from typing import cast
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIFunction
 
-from indexer.modules.bridge.bedrock.parser.function_parser import RemoteFunctionCallDecoder, \
-    BridgeRemoteFunctionCallInfo, BedRockFunctionCallType
+from indexer.modules.bridge.bedrock.parser.function_parser import (
+    BedRockFunctionCallType,
+    BridgeRemoteFunctionCallInfo,
+    RemoteFunctionCallDecoder,
+)
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 
 FINALIZE_BRIDGE_ERC20 = cast(

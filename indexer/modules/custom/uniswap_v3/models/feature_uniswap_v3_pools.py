@@ -1,12 +1,13 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
-from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
+
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
 
 class UniswapV3Pools(HemeraModel):
-    __tablename__ = 'feature_uniswap_v3_pools'
+    __tablename__ = "feature_uniswap_v3_pools"
     nft_address = Column(BYTEA, primary_key=True)
     pool_address = Column(BYTEA, primary_key=True)
 
@@ -21,17 +22,15 @@ class UniswapV3Pools(HemeraModel):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
-    __table_args__ = (
-        PrimaryKeyConstraint('nft_address', 'pool_address'),
-    )
+    __table_args__ = (PrimaryKeyConstraint("nft_address", "pool_address"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                'domain': 'UniswapV3Pool',
-                'conflict_do_update': True,
-                'update_strategy': None,
-                'converter': general_converter,
+                "domain": "UniswapV3Pool",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
             }
         ]

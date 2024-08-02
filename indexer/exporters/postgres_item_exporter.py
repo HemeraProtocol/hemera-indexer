@@ -3,28 +3,40 @@ import collections
 import io
 import logging
 import re
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime
-from typing import List, Type, Optional, Any
+from typing import Any, List, Optional, Type
 
 import psycopg2
 import sqlalchemy
 from dateutil.tz import tzlocal
 from psycopg2 import Binary
-from sqlalchemy import text, MetaData, Table, inspect, func, Text, ARRAY, Numeric, Integer, Float, BigInteger, DateTime, \
-    String
+from sqlalchemy import (
+    ARRAY,
+    BigInteger,
+    DateTime,
+    Float,
+    Integer,
+    MetaData,
+    Numeric,
+    String,
+    Table,
+    Text,
+    func,
+    inspect,
+    text,
+)
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.dialects.postgresql.base import BYTEA
-from concurrent.futures import ThreadPoolExecutor
-
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.sql.ddl import CreateTable
 from sqlalchemy.sql.functions import Function
 
+from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
 from indexer.domain import Domain
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
-from common.converter.pg_converter import domain_model_mapping
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +61,13 @@ class PostgresItemExporter(BaseExporter):
                 if item_group:
                     pg_config = domain_model_mapping[item_type.__name__]
 
-                    table = pg_config['table']
-                    do_update = pg_config['conflict_do_update']
-                    update_strategy = pg_config['update_strategy']
-                    converter = pg_config['converter']
+                    table = pg_config["table"]
+                    do_update = pg_config["conflict_do_update"]
+                    update_strategy = pg_config["update_strategy"]
+                    converter = pg_config["converter"]
 
                     data = [converter(table, item, do_update) for item in item_group]
-                    split_data = [data[i: i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
+                    split_data = [data[i : i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
 
                     if do_update:
                         for batch in split_data:
@@ -81,8 +93,10 @@ class PostgresItemExporter(BaseExporter):
             session.close()
         end_time = datetime.now(tzlocal())
         logger.info(
-            "Exporting items to table {} end, Item count: {}, Took {}"
-            .format(", ".join(tables), len(items), (end_time - start_time)))
+            "Exporting items to table {} end, Item count: {}, Took {}".format(
+                ", ".join(tables), len(items), (end_time - start_time)
+            )
+        )
 
     @staticmethod
     def on_conflict_do_update(domain: Type[Domain], model: Type[HemeraModel], statement, where_clause=None):
@@ -94,7 +108,7 @@ class PostgresItemExporter(BaseExporter):
 
         update_set = {}
         for exc in statement.excluded:
-            if exc.name not in pk_list and exc.name in domain.__annotations__.keys():
+            if exc.name not in pk_list and exc.name in domain.get_all_annotation_keys():
                 update_set[exc.name] = exc
 
         if where_clause:
@@ -150,10 +164,10 @@ class PostgresItemExporterV2(BaseExporter):
     def process_item_group(self, item_type, item_group):
         with self.get_session() as session:
             pg_config = domain_model_mapping[item_type.__name__]
-            table = pg_config['table']
-            do_update = pg_config['conflict_do_update']
-            update_strategy = pg_config['update_strategy']
-            converter = pg_config['converter']
+            table = pg_config["table"]
+            do_update = pg_config["conflict_do_update"]
+            update_strategy = pg_config["update_strategy"]
+            converter = pg_config["converter"]
 
             data = [converter(table, item, do_update) for item in item_group]
 
@@ -175,7 +189,9 @@ class PostgresItemExporterV2(BaseExporter):
 
         prepared_data = []
         for row in data:
-            prepared_row = {key: PostgresItemExporterV2.format_value(value, columns_info.get(key)) for key, value in row.items()}
+            prepared_row = {
+                key: PostgresItemExporterV2.format_value(value, columns_info.get(key)) for key, value in row.items()
+            }
             prepared_data.append(prepared_row)
 
         with session.connection().connection.cursor() as cursor:
@@ -186,8 +202,8 @@ class PostgresItemExporterV2(BaseExporter):
             columns = prepared_data[0].keys()
             copy_command = f"COPY {table_name} ({', '.join(columns)}) FROM STDIN WITH (FORMAT CSV, NULL '\\N')"
 
-            from io import StringIO
             import csv
+            from io import StringIO
 
             csv_file = StringIO()
             writer = csv.DictWriter(csv_file, fieldnames=columns)
@@ -201,22 +217,23 @@ class PostgresItemExporterV2(BaseExporter):
                 raise
 
         session.commit()
+
     @staticmethod
     def format_value(value, column_type):
-        if value is None or (isinstance(value, str) and value.strip() == ''):
-            return r'\N'  # 使用 \N 表示 NULL
+        if value is None or (isinstance(value, str) and value.strip() == ""):
+            return r"\N"  # 使用 \N 表示 NULL
 
-        if getattr(column_type, '__visit_name__', None) == 'BYTEA':
-            hex_value = '\\x' + binascii.hexlify(value).decode('ascii')
+        if getattr(column_type, "__visit_name__", None) == "BYTEA":
+            hex_value = "\\x" + binascii.hexlify(value).decode("ascii")
             return hex_value
         if isinstance(column_type, (Numeric, Integer, Float)):
-            return str(value) if value != '' else r'\N'
+            return str(value) if value != "" else r"\N"
         if isinstance(column_type, ARRAY):
             return PostgresItemExporterV2.format_array(value)
         if isinstance(value, datetime):
             return value.isoformat()
         if isinstance(value, str):
-            return value.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+            return value.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
         if isinstance(value, Function):
             return PostgresItemExporterV2.evaluate_function(value)
         return str(value)
@@ -224,20 +241,22 @@ class PostgresItemExporterV2(BaseExporter):
     @staticmethod
     def format_array(value):
         if value is None or value == []:
-            return r'\N'
+            return r"\N"
         if isinstance(value, list):
-            return '{' + ','.join(PostgresItemExporterV2.format_value(v, None) for v in value) + '}'
+            return "{" + ",".join(PostgresItemExporterV2.format_value(v, None) for v in value) + "}"
         return str(value)
 
     def get_columns_info(self, session, table_name):
         # 获取表的列信息
         columns_info = {}
         with session.connection().connection.cursor() as cursor:
-            cursor.execute(f"""
+            cursor.execute(
+                f"""
                 SELECT column_name, data_type
                 FROM information_schema.columns
                 WHERE table_name = '{table_name}'
-            """)
+            """
+            )
             for column_name, data_type in cursor.fetchall():
                 columns_info[column_name] = self.map_pg_type_to_sa_type(data_type)
         return columns_info
@@ -246,36 +265,36 @@ class PostgresItemExporterV2(BaseExporter):
     def map_pg_type_to_sa_type(pg_type):
         # 映射 PostgreSQL 类型到 SQLAlchemy 类型
         type_map = {
-            'bytea': BYTEA,
-            'integer': Integer,
-            'bigint': BigInteger,
-            'numeric': Numeric,
-            'double precision': Float,
-            'timestamp without time zone': DateTime,
-            'ARRAY': ARRAY,
+            "bytea": BYTEA,
+            "integer": Integer,
+            "bigint": BigInteger,
+            "numeric": Numeric,
+            "double precision": Float,
+            "timestamp without time zone": DateTime,
+            "ARRAY": ARRAY,
             # 添加其他需要的类型映射
         }
         return type_map.get(pg_type.lower(), String)
 
     @staticmethod
     def evaluate_function(function_obj):
-        if function_obj.name == 'to_timestamp':
+        if function_obj.name == "to_timestamp":
             # 获取 to_timestamp 的第一个参数
             timestamp_value = function_obj.clauses.clauses[0].value
             if isinstance(timestamp_value, int):
                 # 如果是整数，假设为UNIX时间戳
-                return datetime.utcfromtimestamp(timestamp_value).strftime('%Y-%m-%d %H:%M:%S')
+                return datetime.utcfromtimestamp(timestamp_value).strftime("%Y-%m-%d %H:%M:%S")
             elif isinstance(timestamp_value, str):
                 # 如果是字符串，假设为日期时间字符串
-                return datetime.strptime(timestamp_value, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
+                return datetime.strptime(timestamp_value, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
         # 你可以在这里处理更多的 Function 对象
         return None
 
     @staticmethod
     def clean_csv_value(value: Optional[Any]) -> str:
         if value is None:
-            return r'NULL'
-        return str(value).replace('\n', '\\n').replace('|', '\|').replace('\x00', '')
+            return r"NULL"
+        return str(value).replace("\n", "\\n").replace("|", "\|").replace("\x00", "")
 
     @staticmethod
     def create_temp_table(session, table):
@@ -322,7 +341,7 @@ class PostgresItemExporterV2(BaseExporter):
 
     @staticmethod
     def create_merge_statement(target_table, source_table_name, pk_list, update_columns):
-        target_name = target_table.__tablename__ if hasattr(target_table, '__tablename__') else target_table.name
+        target_name = target_table.__tablename__ if hasattr(target_table, "__tablename__") else target_table.name
 
         merge_stmt = f"""
         MERGE INTO {target_name} AS target
@@ -335,4 +354,3 @@ class PostgresItemExporterV2(BaseExporter):
             VALUES ({', '.join(f'source.{col}' for col in target_table.columns.keys())})
         """
         return merge_stmt
-

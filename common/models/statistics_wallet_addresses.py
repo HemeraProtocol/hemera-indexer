@@ -1,5 +1,5 @@
 from sqlalchemy import Column
-from sqlalchemy.dialects.postgresql import VARCHAR, INTEGER, NUMERIC,BYTEA
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, VARCHAR
 
 from common.models import HemeraModel
 

@@ -1,16 +1,16 @@
-from dataclasses import asdict, is_dataclass, dataclass, fields
-from typing import Any, get_origin, Union, get_args
-from typing import Dict
+from dataclasses import asdict, dataclass, fields, is_dataclass
+from typing import Any, Dict, Union, get_args, get_origin
 
 from common.utils.format_utils import to_snake_case
 
 
 class DomainMeta(type):
     _registry = {}
+
     def __new__(mcs, name, bases, attrs):
         new_cls = super().__new__(mcs, name, bases, attrs)
 
-        if name != 'Domain' and issubclass(new_cls, Domain):
+        if name != "Domain" and issubclass(new_cls, Domain):
             mcs._registry[name] = new_cls
 
         return new_cls
@@ -25,7 +25,7 @@ class DomainMeta(type):
             return subclasses
 
         all_subclasses = get_subclasses(Domain)
-        return {subclass.type(): subclass for subclass in all_subclasses if hasattr(subclass, 'type')}
+        return {subclass.type(): subclass for subclass in all_subclasses if hasattr(subclass, "type")}
 
 
 @dataclass
@@ -33,6 +33,15 @@ class Domain(metaclass=DomainMeta):
 
     def __repr__(self):
         return dataclass_to_dict(self)
+
+    @classmethod
+    def get_all_annotation_keys(cls):
+        keys = set()
+        for clz in cls.__mro__:
+            if "__annotations__" in clz.__dict__:
+                keys.update(clz.__annotations__.keys())
+
+        return keys
 
     @classmethod
     def get_all_domain_dict(cls):
@@ -87,7 +96,7 @@ def dict_to_dataclass(data: Dict[str, Any], cls):
                 # Handle lists
                 item_type = args[0]
                 init_values[field] = [
-                    dict_to_dataclass(item, item_type) if isinstance(item, dict) else item for item in data[field]
+                    (dict_to_dataclass(item, item_type) if isinstance(item, dict) else item) for item in data[field]
                 ]
             elif hasattr(field_type, "__dataclass_fields__"):
                 # Handle nested dataclass

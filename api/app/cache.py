@@ -46,4 +46,4 @@ class RedisDb:
         return self.r.incr(key)
 
 
-redis_db = RedisDb('127.0.0.1', 'local')
+redis_db = RedisDb("127.0.0.1", "local")

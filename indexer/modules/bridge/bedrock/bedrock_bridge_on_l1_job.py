@@ -3,11 +3,18 @@ import logging
 from enumeration.entity_type import EntityType
 from indexer.domain.transaction import Transaction
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import parse_transaction_deposited_event, \
-    parse_relayed_message, parse_propose_l2_output, BEDROCK_EVENT_ABI_SIGNATURE_MAPPING
+from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
+    BEDROCK_EVENT_ABI_SIGNATURE_MAPPING,
+    parse_propose_l2_output,
+    parse_relayed_message,
+    parse_transaction_deposited_event,
+)
 from indexer.modules.bridge.domain.op_bedrock import *
-from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs, \
-    TransactionFilterByTransactionInfo
+from indexer.specification.specification import (
+    TopicSpecification,
+    TransactionFilterByLogs,
+    TransactionFilterByTransactionInfo,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,16 +25,16 @@ class BedrockBridgeOnL1Job(FilterTransactionDataJob):
         OpL1ToL2DepositedTransaction,
         OpL2ToL1WithdrawnTransactionProven,
         OpL2ToL1WithdrawnTransactionFinalized,
-        OpStateBatch
+        OpStateBatch,
     ]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        config = kwargs['config']
+        config = kwargs["config"]
 
-        self._optimism_portal_proxy = config.get('optimism_portal_proxy')
-        self._l2_output_oracle_proxy = config.get('l2_output_oracle_proxy')
+        self._optimism_portal_proxy = config.get("optimism_portal_proxy")
+        self._l2_output_oracle_proxy = config.get("l2_output_oracle_proxy")
 
         if self._optimism_portal_proxy:
             logger.info(f"OptimismPortalProxy: {self._optimism_portal_proxy}")
@@ -47,17 +54,21 @@ class BedrockBridgeOnL1Job(FilterTransactionDataJob):
         topic_filter_list = []
         if self._optimism_portal_proxy:
             topic_filter_list.append(
-                TopicSpecification(addresses=[self._optimism_portal_proxy], topics=[
-                    BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["TRANSACTION_DEPOSITED_EVENT"],
-                    BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["WITHDRAWAL_FINALIZED_EVENT"],
-                    BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["WITHDRAWAL_PROVEN_EVENT"],
-                ])
+                TopicSpecification(
+                    addresses=[self._optimism_portal_proxy],
+                    topics=[
+                        BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["TRANSACTION_DEPOSITED_EVENT"],
+                        BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["WITHDRAWAL_FINALIZED_EVENT"],
+                        BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["WITHDRAWAL_PROVEN_EVENT"],
+                    ],
+                )
             )
         if self._l2_output_oracle_proxy:
             topic_filter_list.append(
-                TopicSpecification(addresses=[self._l2_output_oracle_proxy], topics=[
-                    BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["OUTPUT_PROPOSED_EVENT"]
-                ])
+                TopicSpecification(
+                    addresses=[self._l2_output_oracle_proxy],
+                    topics=[BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["OUTPUT_PROPOSED_EVENT"]],
+                )
             )
         return TransactionFilterByLogs(topic_filter_list)
 
@@ -107,7 +118,7 @@ class BedrockBridgeOnL1Job(FilterTransactionDataJob):
                     "WITHDRAWAL_PROVEN_EVENT",
                     transaction,
                     self._optimism_portal_proxy,
-                    "withdrawalHash"
+                    "withdrawalHash",
                 )
             ]
 
@@ -126,11 +137,11 @@ class BedrockBridgeOnL1Job(FilterTransactionDataJob):
                     "WITHDRAWAL_FINALIZED_EVENT",
                     transaction,
                     self._optimism_portal_proxy,
-                    "withdrawalHash"
+                    "withdrawalHash",
                 )
             ]
 
-            result += (l1_to_l2_deposit_transactions + l2_to_l1_withdraw_transactions)
+            result += l1_to_l2_deposit_transactions + l2_to_l1_withdraw_transactions
 
         if self._l2_output_oracle_proxy:
             op_state_batches = [
@@ -144,14 +155,9 @@ class BedrockBridgeOnL1Job(FilterTransactionDataJob):
                     end_block_number=op_state_batch.end_block_number,
                 )
                 for transaction in transactions
-                for op_state_batch in parse_propose_l2_output(
-                    transaction,
-                    self._l2_output_oracle_proxy
-                )
+                for op_state_batch in parse_propose_l2_output(transaction, self._l2_output_oracle_proxy)
             ]
             result += op_state_batches
 
         for data in result:
             self._collect_item(data.type(), data)
-
-

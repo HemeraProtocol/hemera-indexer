@@ -1,14 +1,14 @@
 import binascii
 
-from common.models import db
-from common.models.contracts import Contracts
-from common.models.tokens import Tokens
-from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
-from common.utils.config import get_config
-from common.utils.db_utils import build_entities
 from api.app.cache import cache
 from api.app.contract.contract_verify import get_contract_names
 from api.app.ens.ens import ENSClient
+from common.models import db
+from common.models.contracts import Contracts
+from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
+from common.models.tokens import Tokens
+from common.utils.config import get_config
+from common.utils.db_utils import build_entities
 
 app_config = get_config()
 
@@ -21,6 +21,9 @@ token_address_transfers_type_column_dict = {
     "tokentxns": StatisticsWalletAddresses.erc20_transfer_cnt,
     "tokentxns-nft": StatisticsWalletAddresses.erc721_transfer_cnt,
     "tokentxns-nft1155": StatisticsWalletAddresses.erc1155_transfer_cnt,
+    "erc20": StatisticsWalletAddresses.erc20_transfer_cnt,
+    "erc721": StatisticsWalletAddresses.erc721_transfer_cnt,
+    "erc1155": StatisticsWalletAddresses.erc1155_transfer_cnt,
 }
 
 
@@ -28,8 +31,7 @@ def type_to_stats_column(type):
     return token_address_transfers_type_column_dict[type]
 
 
-def get_token_txn_cnt_by_address(token_type, address):
-    bytes_address = bytes.fromhex(address[2:])
+def get_token_txn_cnt_by_address(token_type, bytes_address: bytes):
     result = (
         db.session.query(StatisticsWalletAddresses)
         .with_entities(type_to_stats_column(token_type))
@@ -40,7 +42,7 @@ def get_token_txn_cnt_by_address(token_type, address):
     return result
 
 
-def get_txn_cnt_by_address(address):
+def get_txn_cnt_by_address(address: str):
     bytes_address = bytes.fromhex(address[2:])
     result = (
         db.session.query(StatisticsWalletAddresses)
@@ -52,50 +54,56 @@ def get_txn_cnt_by_address(address):
 
 
 @cache.memoize(3600)
-def get_address_display_mapping(wallet_address_list: list[bytes]):
-    # filter not valid address
-    wallet_address_list = [address for address in wallet_address_list if address]
-    str_address_list = ['0x' + address.hex() for address in wallet_address_list]
-    if not wallet_address_list or len(wallet_address_list) == 0:
+def get_address_display_mapping(bytea_address_list: list[bytes]):
+    if not bytea_address_list or len(bytea_address_list) == 0:
         return {}
 
+    # filter not valid address
+    bytea_address_list = [address for address in bytea_address_list if address]
+    str_address_list = ["0x" + address.hex() for address in bytea_address_list]
+
+    # str -> str
     address_map = {}
 
-    # 合约 + 代理合约
+    # Contract + Proxy Contract
     proxy_mapping_result = (
         db.session.query(Contracts.address, Contracts.verified_implementation_contract)
         .filter(
-            Contracts.address.in_(wallet_address_list),
+            Contracts.address.in_(bytea_address_list),
             Contracts.verified_implementation_contract != None,
         )
         .all()
     )
+    # bytea -> bytea
     proxy_mapping = {}
     for address in proxy_mapping_result:
         proxy_mapping[address.address] = address.verified_implementation_contract
 
-    # 获取所有地址的合约名称
-    all_addresses = list(wallet_address_list) + list(proxy_mapping.values())
-    addresses = get_contract_names(str_address_list)
+    # Get name for all the potential contracts, including proxy implementations
+    str_contract_list = str_address_list + ["0x" + address.hex() for address in proxy_mapping.values()]
+    contract_addresses = get_contract_names(str_contract_list)
 
-    # 更新地址映射，包含所有地址的合约名称
-    address_map.update({address.get("address"): address.get("contract_name") for address in addresses})
+    # update address to contract name mapping
+    address_map.update({address.get("address"): address.get("contract_name") for address in contract_addresses})
 
-    # 使用代理合约覆盖对应的实现合约名称
+    # If an implementation address has name, overwrite the proxy contract
     for proxy_address, implementation_address in proxy_mapping.items():
-        if implementation_address in address_map:
-            address_map[proxy_address] = address_map[implementation_address]
+        str_proxy_address = "0x" + proxy_address.hex()
+        str_implementation_address = "0x" + implementation_address.hex()
+        if str_implementation_address in address_map:
+            address_map[str_proxy_address] = address_map[str_implementation_address]
 
     # Token
     addresses = (
         db.session.query(Tokens.address, Tokens.name, Tokens.symbol)
         .filter(
-            Tokens.address.in_(wallet_address_list),
+            Tokens.address.in_(bytea_address_list),
         )
         .all()
     )
     for address in addresses:
-        address_map["0x" + address.address.hex()] = "{}: {} Token".format(address.name, address.symbol)
+        str_address = "0x" + address.address.hex()
+        address_map[str_address] = "{}: {} Token".format(address.name, address.symbol)
 
     # ENS
     if ens_client:
@@ -103,18 +111,19 @@ def get_address_display_mapping(wallet_address_list: list[bytes]):
         for key, value in addresses.items():
             address_map[key] = value
 
-    # 手动Tag
+    # Any additional manual tags
     addresses = (
         db.session.query(StatisticsWalletAddresses.address, StatisticsWalletAddresses.tag)
         .filter(
-            StatisticsWalletAddresses.address.in_(wallet_address_list),
+            StatisticsWalletAddresses.address.in_(bytea_address_list),
             StatisticsWalletAddresses.tag != None,
         )
         .all()
     )
 
     for address in addresses:
-        address_map[address.address] = address.tag
+        str_address = "0x" + address.address.hex()
+        address_map[str_address] = address.tag
 
     return address_map
 

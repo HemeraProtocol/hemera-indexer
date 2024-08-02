@@ -1,8 +1,14 @@
-FROM python:3.9
+FROM python:3.9-slim
 
 WORKDIR /app
+
 COPY . .
-RUN ["pip", "install", "-e", "."]
 
+RUN pip install --no-cache-dir build && \
+    python -m build && \
+    pip install dist/*.whl && \
+    rm dist/*.whl
 
-CMD ["python", "hemera.py", "stream"]
+ENV PYTHONPATH=/app:$PYTHONPATH
+
+ENTRYPOINT ["hemera"]

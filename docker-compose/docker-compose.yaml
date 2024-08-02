@@ -39,6 +39,24 @@ services:
     volumes:
       - ./output:/app/output
 
+  hemera-api:
+    build: ../
+    env_file:
+      - hemera-indexer.env
+    container_name: hemera-api
+    command:
+      [ "python", "hemera.py", "api" ]
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - hemera
+    volumes:
+      - ./output:/app/output
+
   postgresql:
     env_file:
       - hemera-indexer.env
@@ -55,5 +73,15 @@ services:
       - hemera
     volumes:
       - ./postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6
+    container_name: redis
+    ports:
+      - 6379:6379
+    networks:
+      - hemera
+
+
 networks:
   hemera:

@@ -1,5 +1,5 @@
-from dataclasses import dataclass, asdict, field
-from typing import Optional, Dict
+from dataclasses import asdict, dataclass, field
+from typing import Dict, Optional
 
 from indexer.domain import Domain, FilterData
 
@@ -18,17 +18,27 @@ class AllFeatureValueRecord(Domain):
 
 @dataclass
 class AllFeatureValueRecordUniswapV3Pool(AllFeatureValueRecord):
-    def __init__(self, feature_id: int, block_number: int, address: str,
-                 value: dict,
-                 update_time: Optional[int] = None):
+    def __init__(
+        self,
+        feature_id: int,
+        block_number: int,
+        address: str,
+        value: dict,
+        update_time: Optional[int] = None,
+    ):
         super().__init__(feature_id, block_number, address, value, update_time)
 
 
 @dataclass
 class AllFeatureValueRecordUniswapV3Token(AllFeatureValueRecord):
-    def __init__(self, feature_id: int, block_number: int, address: str,
-                 value: dict,
-                 update_time: Optional[int] = None):
+    def __init__(
+        self,
+        feature_id: int,
+        block_number: int,
+        address: str,
+        value: dict,
+        update_time: Optional[int] = None,
+    ):
         super().__init__(feature_id, block_number, address, value, update_time)
 
 

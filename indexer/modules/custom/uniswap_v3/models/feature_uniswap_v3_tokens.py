@@ -1,12 +1,13 @@
 from datetime import datetime
-from sqlalchemy import Column, PrimaryKeyConstraint, Index, desc, func
-from sqlalchemy.dialects.postgresql import BYTEA, BIGINT, TIMESTAMP, NUMERIC, BOOLEAN
+
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
 
 class UniswapV3Tokens(HemeraModel):
-    __tablename__ = 'feature_uniswap_v3_tokens'
+    __tablename__ = "feature_uniswap_v3_tokens"
 
     nft_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
@@ -21,21 +22,18 @@ class UniswapV3Tokens(HemeraModel):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
-    __table_args__ = (
-        PrimaryKeyConstraint('nft_address', 'token_id'),
-    )
+    __table_args__ = (PrimaryKeyConstraint("nft_address", "token_id"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                'domain': 'UniswapV3Token',
-                'conflict_do_update': True,
-                'update_strategy': None,
-                'converter': general_converter,
+                "domain": "UniswapV3Token",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
             }
         ]
 
 
-Index('feature_uniswap_v3_tokens_nft_index',
-      UniswapV3Tokens.nft_address)
+Index("feature_uniswap_v3_tokens_nft_index", UniswapV3Tokens.nft_address)

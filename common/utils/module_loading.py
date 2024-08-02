@@ -27,7 +27,7 @@ def import_string(dotted_path: str):
 
 def scan_subclass_by_path_patterns(path_patterns: List[str], base_class: Type[object]) -> Dict[str, str]:
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
+    project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
 
     mapping = {}
     for model_pattern in path_patterns:
@@ -35,10 +35,10 @@ def scan_subclass_by_path_patterns(path_patterns: List[str], base_class: Type[ob
         for models_dir in glob.glob(pattern_path):
             if os.path.isdir(models_dir):
                 for file in os.listdir(models_dir):
-                    if file.endswith('.py') and file != "__init__.py":
+                    if file.endswith(".py") and file != "__init__.py":
                         module_file_path = os.path.join(models_dir, file)
                         module_relative_path = os.path.relpath(module_file_path, start=project_root)
-                        module_import_path = module_relative_path.replace(os.path.sep, '.')
+                        module_import_path = module_relative_path.replace(os.path.sep, ".")
 
                         with open(module_file_path, "r", encoding="utf-8") as module:
                             file_content = module.read()
@@ -74,7 +74,7 @@ def get_all_subclasses(base_class):
 def import_submodules(package_name):
     package = import_module(package_name)
     for _, name, is_pkg in pkgutil.walk_packages(package.__path__):
-        full_name = package.__name__ + '.' + name
+        full_name = package.__name__ + "." + name
         import_module(full_name)
         if is_pkg:
             import_submodules(full_name)

@@ -1,12 +1,13 @@
 from datetime import datetime
+
 from sqlalchemy import Column, func
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, BIGINT, TIMESTAMP, BOOLEAN, JSONB, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSONB, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
 
 class Contracts(HemeraModel):
-    __tablename__ = 'contracts'
+    __tablename__ = "contracts"
 
     address = Column(BYTEA, primary_key=True)
     name = Column(VARCHAR)
@@ -38,9 +39,9 @@ class Contracts(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                'domain': 'Contract',
-                'conflict_do_update': False,
-                'update_strategy': None,
-                'converter': general_converter,
+                "domain": "Contract",
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
             }
         ]

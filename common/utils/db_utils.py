@@ -1,5 +1,5 @@
 def build_entities(model, columns):
-    if columns == '*':
+    if columns == "*":
         entities = [attr for attr in model.__table__.columns]
     else:
         entities = []

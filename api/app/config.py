@@ -149,7 +149,7 @@ class AppConfig(YAMLWizard):
         block_chain = config["BLOCK_CHAIN"]
         settings = config["SETTINGS"]
         api_urls = config["API_URLS"]
-        remote = config['REMOTE_SERVICE']
+        remote = config["REMOTE_SERVICE"]
         extra_config = {}
 
         config_data = {

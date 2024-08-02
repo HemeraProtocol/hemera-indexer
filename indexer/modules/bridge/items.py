@@ -1,9 +1,12 @@
-from sqlalchemy import Column, BIGINT, TIMESTAMP, NUMERIC, INT, JSON, TEXT, func, BigInteger, DateTime, String, Integer
+from sqlalchemy import BIGINT, INT, JSON, NUMERIC, TEXT, TIMESTAMP, BigInteger, Column, DateTime, Integer, String, func
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import declarative_base
 
-from indexer.modules.bridge.arbitrum.arb_parser import ArbitrumTransactionBatch, ArbitrumStateBatchConfirmed, \
-    ArbitrumStateBatchCreated
+from indexer.modules.bridge.arbitrum.arb_parser import (
+    ArbitrumStateBatchConfirmed,
+    ArbitrumStateBatchCreated,
+    ArbitrumTransactionBatch,
+)
 
 Base = declarative_base()
 
@@ -155,23 +158,26 @@ bridge_items = {
 
 
 def format_bridge_data(dict):
-    return {**dict, **{
-        'model': bridge_items[dict['type']],
-        'update_columns': [dict.keys()],
-    }}
+    return {
+        **dict,
+        **{
+            "model": bridge_items[dict["type"]],
+            "update_columns": [dict.keys()],
+        },
+    }
 
 
 def convert_bridge_column(dict):
     pg_dict = {}
     for key, value in dict.items():
-        if key in ['model', 'update_columns', 'item']:
+        if key in ["model", "update_columns", "item"]:
             pass
         elif value is None:
             pg_dict[key] = None
-        elif isinstance(value, str) and value.startswith('0x'):
+        elif isinstance(value, str) and value.startswith("0x"):
             pg_dict[key] = bytes.fromhex(value[2:])
-        elif key.endswith('_timestamp'):
-            pg_dict[key] = func.to_timestamp(value),
+        elif key.endswith("_timestamp"):
+            pg_dict[key] = (func.to_timestamp(value),)
         else:
             pg_dict[key] = value
     return pg_dict
