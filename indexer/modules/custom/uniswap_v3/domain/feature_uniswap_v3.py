@@ -12,7 +12,7 @@ class UniswapV3Pool(FilterData):
     token1_address: str
     fee: int
     tick_spacing: int
-    mint_block_number: int
+    called_block_number: int
 
 
 @dataclass
@@ -23,4 +23,4 @@ class UniswapV3Token(FilterData):
     tick_lower: int
     tick_upper: int
     fee: int
-    mint_block_number: int
+    called_block_number: int

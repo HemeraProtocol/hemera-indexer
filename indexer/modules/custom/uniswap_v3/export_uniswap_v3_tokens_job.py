@@ -127,7 +127,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             self._collect_item(AllFeatureValueRecordUniswapV3Token.type(), data)
 
     def _process(self):
-        self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.mint_block_number)
+        self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[AllFeatureValueRecordUniswapV3Token.type()].sort(key=lambda x: x.block_number)
 
 
@@ -230,11 +230,17 @@ def get_new_nfts(
         pool_dict[key] = data["pool_address"]
     # get new nft_id info
     update_exist_tokens = {}
+    seen = set()
+
     for data in need_collect_pool_tokens:
+        token_id = data["token_id"]
+        if (nft_address, token_id) in seen:
+            continue
+        seen.add((nft_address, token_id))
         key = data["token0"] + data["token1"] + str(data["fee"])
         pool_address = pool_dict[key]
-        token_id = data["token_id"]
         update_exist_tokens[token_id] = pool_address
+
         result.append(
             UniswapV3Token(
                 nft_address=nft_address,
@@ -243,7 +249,7 @@ def get_new_nfts(
                 tick_lower=data["tickLower"],
                 tick_upper=data["tickUpper"],
                 fee=data["fee"],
-                mint_block_number=data["block_number"],
+                called_block_number=data["block_number"],
             )
         )
     return update_exist_tokens, result
@@ -288,7 +294,9 @@ def extract_changed_tokens(token_transfers, nft_address):
         to_address = transfer.to_address
         from_address = transfer.from_address
 
-        all_tokens_dict.setdefault(token_id, {})[block_number] = to_address
+        if token_id not in all_tokens_dict:
+            all_tokens_dict[token_id] = {}
+        all_tokens_dict[token_id][block_number] = to_address
 
         if to_address == constants.ZERO_ADDRESS:
             burn_tokens_dict[token_id] = block_number
