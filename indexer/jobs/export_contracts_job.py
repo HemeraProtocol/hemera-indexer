@@ -5,14 +5,17 @@ from typing import List
 from eth_abi import abi
 from web3 import Web3
 
+from enumeration.record_level import RecordLevel
 from indexer.domain.contract import Contract, extract_contract_from_trace
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
+exception_recorder = ExceptionRecorder()
 contract_abi = [
     {
         "constant": True,
@@ -64,10 +67,10 @@ def build_contracts(web3, traces: List[Trace]):
     contracts = []
     for trace in traces:
         if (
-            trace.trace_type in ["create", "create2"]
-            and trace.to_address is not None
-            and len(trace.to_address) > 0
-            and trace.status == 1
+                trace.trace_type in ["create", "create2"]
+                and trace.to_address is not None
+                and len(trace.to_address) > 0
+                and trace.status == 1
         ):
             contract = extract_contract_from_trace(trace)
             contract["param_to"] = contract["address"]
@@ -116,6 +119,14 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
                 f"contract address: {contract['address']}. "
                 f"rpc response: {result}. "
                 f"exception: {e}"
+            )
+            exception_recorder.log(
+                block_number=data[0]["block_number"],
+                dataclass=Contract.type(),
+                message_type='DecodeNameFail',
+                message=e,
+                exception_env=contract,
+                level=RecordLevel.WARN
             )
             contract["name"] = None
 

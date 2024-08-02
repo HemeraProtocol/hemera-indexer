@@ -5,6 +5,7 @@ from typing import List, Optional, Union
 
 from eth_abi import abi
 
+from enumeration.record_level import RecordLevel
 from indexer.domain import dict_to_dataclass
 from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_balance import TokenBalance
@@ -13,10 +14,12 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group, rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
+exception_recorder = ExceptionRecorder()
 
 BALANCE_OF_ABI_FUNCTION = {
     "constant": True,
@@ -133,7 +136,7 @@ def encode_balance_abi_parameter(address, token_type, token_id):
 
 
 def extract_token_parameters(
-    token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
+        token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
 ):
     origin_parameters = set()
     token_parameters = []
@@ -194,6 +197,13 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
                 f"rpc response: {result}. "
                 f"block number: {data[0]['block_number']}. "
                 f"exception: {e}. "
+            )
+            exception_recorder.log(
+                block_number=data[0]['block_number'],
+                dataclass=TokenBalance.type(),
+                message_type='DecodeTokenBalanceFail',
+                message=e,
+                level=RecordLevel.WARN
             )
 
         token_balances.append(

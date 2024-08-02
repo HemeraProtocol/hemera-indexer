@@ -43,7 +43,7 @@ class PostgresItemExporter(BaseExporter):
                     converter = pg_config["converter"]
 
                     data = [converter(table, item, do_update) for item in item_group]
-                    split_data = [data[i : i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
+                    split_data = [data[i: i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
 
                     if do_update:
                         for batch in split_data:
@@ -92,4 +92,3 @@ class PostgresItemExporter(BaseExporter):
 
         statement = statement.on_conflict_do_update(index_elements=pk_list, set_=update_set, where=where_clause)
         return statement
-

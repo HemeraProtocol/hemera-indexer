@@ -6,16 +6,19 @@ from typing import List
 from eth_utils import to_int
 
 from common.utils.exception_control import RPCNotReachable
+from enumeration.record_level import RecordLevel
 from indexer.domain.block import Block
 from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_get_balance_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
+exception_recorder = ExceptionRecorder()
 
 
 @dataclass(frozen=True)
@@ -130,6 +133,14 @@ def coin_balances_rpc_requests(make_requests, addresses, is_batch):
         try:
             result = rpc_response_to_result(data[1])
         except RPCNotReachable as e:
+            exception_recorder.log(
+                block_number=data[0]["block_number"],
+                dataclass=CoinBalance.type(),
+                message_type=RPCNotReachable.__name__,
+                message=e.message,
+                exception_env=data[0],
+                level=RecordLevel.ERROR
+            )
             result = None
             # logger.warning("eth call failed: %s", e)
         coin_balances.append(
