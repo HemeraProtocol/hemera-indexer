@@ -40,6 +40,7 @@ ENV/
 # Output Data Files
 *.json
 *.csv
+docker-compose/hemera-indexer.env
 docker-compose/data/
 docker-compose/output/
 docker-compose/postgres/
