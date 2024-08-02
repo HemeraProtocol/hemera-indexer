@@ -229,7 +229,6 @@ class PostgresItemExporterV2(BaseExporter):
     @staticmethod
     def evaluate_function(function_obj):
         if function_obj.name == 'to_timestamp':
-            # 获取 to_timestamp 的第一个参数
             timestamp_value = function_obj.clauses.clauses[0].value
             if isinstance(timestamp_value, int):
                 return datetime.utcfromtimestamp(timestamp_value).strftime('%Y-%m-%d %H:%M:%S')
@@ -268,7 +267,6 @@ class PostgresItemExporterV2(BaseExporter):
             logger.error(f"Error during upsert operation: {e}")
             raise e
         finally:
-            # 总是尝试删除临时表，即使发生错误
             try:
                 session.execute(text(f"DROP TABLE IF EXISTS {temp_table_name}"))
                 session.commit()
