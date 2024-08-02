@@ -4,7 +4,6 @@ import time
 import click
 
 from common.services.postgresql_service import PostgreSQLService
-from common.utils.config import init_config_setting
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
 from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
 from indexer.controller.stream_controller import StreamController
@@ -14,7 +13,7 @@ from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
-from indexer.utils.utils import extract_pg_url_from_output, pick_random_provider_uri
+from indexer.utils.utils import pick_random_provider_uri
 
 
 def calculate_execution_time(func):
@@ -40,6 +39,14 @@ def calculate_execution_time(func):
     help="The URI of the web3 provider e.g. " "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
 )
 @click.option(
+    "-pg",
+    "--postgres-url",
+    type=str,
+    required=False,
+    envvar="POSTGRES_URL",
+    help="The required postgres connection url." "e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum",
+)
+@click.option(
     "-d",
     "--debug-provider-uri",
     default="https://mainnet.infura.io",
@@ -56,7 +63,7 @@ def calculate_execution_time(func):
     envvar="OUTPUT",
     help="The output selection."
     "Print to console e.g. console; "
-    "or postgresql e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/hemera_indexer;"
+    "or postgresql e.g. postgres"
     "or local json file e.g. jsonfile://your-file-path; "
     "or local csv file e.g. csvfile://your-file-path; "
     "or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path",
@@ -195,6 +202,7 @@ def calculate_execution_time(func):
 def stream(
     provider_uri,
     debug_provider_uri,
+    postgres_url,
     output,
     db_version,
     start_block,
@@ -223,10 +231,7 @@ def stream(
         "partition_size": partition_size,
     }
 
-    # set alembic.ini and build postgresql service
-    postgres_url = extract_pg_url_from_output(output)
     if postgres_url:
-        # init_config_setting(db_url=postgres_url, rpc_endpoint=provider_uri)
         service = PostgreSQLService(postgres_url, db_version=db_version)
         config["db_service"] = service
 

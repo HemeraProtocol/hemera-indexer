@@ -38,7 +38,7 @@ def get_bucket_and_path_from_gcs_output(output):
 
 
 def determine_item_exporter_type(output):
-    if output is not None and output.startswith("postgresql"):
+    if output is not None and output == "postgres":
         return ItemExporterType.POSTGRES
     elif output is not None and output.startswith("jsonfile://"):
         return ItemExporterType.JSONFILE
