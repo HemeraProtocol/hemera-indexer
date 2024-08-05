@@ -16,6 +16,7 @@ from indexer.modules.custom.all_features_value_record import AllFeatureValueReco
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool
+from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
@@ -173,8 +174,8 @@ def get_exist_pools(db_service, nft_address):
     session = db_service.get_service_session()
     try:
         result = (
-            session.query(models.UniswapV3Pools)
-            .filter(models.UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:]))
+            session.query(UniswapV3Pools)
+            .filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:]))
             .all()
         )
         history_pools = {}
