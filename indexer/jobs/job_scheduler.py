@@ -1,14 +1,40 @@
 import logging
 from collections import defaultdict, deque
+from dataclasses import asdict
 from typing import List, Set, Type
 
+from pottery import RedisDict
+from redis.client import Redis
+from sqlalchemy import text
+
+from common import models
+from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
 from indexer.domain.token import Token
 from indexer.jobs.base_job import BaseJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
+from indexer.utils.abi import bytes_to_hex_str
 
 import_submodules("indexer.modules")
+
+
+def get_tokens_from_db(session):
+    with session_scope(session) as s:
+        dict = {}
+        result = s.query(models.Tokens).all()
+        if result is not None:
+            for token in result:
+                dict[bytes_to_hex_str(token.address)] = {
+                    "address": bytes_to_hex_str(token.address),
+                    "token_type": token.token_type,
+                    "name": token.name,
+                    "symbol": token.symbol,
+                    "decimals": int(token.decimals) if token.decimals is not None else None,
+                    "block_number": token.update_block_number,
+                    "total_supply": int(token.total_supply) if token.total_supply is not None else None,
+                }
+        return dict
 
 
 class JobScheduler:
@@ -22,7 +48,7 @@ class JobScheduler:
         config=None,
         item_exporters=[],
         required_output_types=[],
-        cache=None,
+        cache="memory",
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -36,17 +62,25 @@ class JobScheduler:
         self.job_classes = []
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
+        self.pg_service = config.get("db_service")
 
         self.discover_and_register_job_classes()
         self.required_job_classes = self.get_required_job_classes(required_output_types)
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
-
-        if cache is None or cache == "":
-            BaseJob.init_token_cache(defaultdict(Token))
+        token_dict_from_db = defaultdict()
+        if self.pg_service is not None:
+            token_dict_from_db = get_tokens_from_db(self.pg_service.get_service_session())
+        if cache is None or cache == "memory":
+            BaseJob.init_token_cache(token_dict_from_db)
         else:
-            # init redis cache
-            # load from db service
-            BaseJob.init_token_cache(cache)
+            if cache[:5] == "redis":
+                try:
+                    redis = Redis.from_url(cache)
+                    tokens = RedisDict(token_dict_from_db, redis=redis, key="token")
+                    BaseJob.init_token_cache(tokens)
+                except Exception as e:
+                    logging.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
+                    BaseJob.init_token_cache(token_dict_from_db)
 
     def get_data_buff(self):
         return BaseJob._data_buff
