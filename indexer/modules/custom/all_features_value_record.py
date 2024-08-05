@@ -19,12 +19,12 @@ class AllFeatureValueRecord(FilterData):
 @dataclass
 class AllFeatureValueRecordUniswapV3Pool(AllFeatureValueRecord):
     def __init__(
-            self,
-            feature_id: int,
-            block_number: int,
-            address: str,
-            value: dict,
-            update_time: Optional[int] = None,
+        self,
+        feature_id: int,
+        block_number: int,
+        address: str,
+        value: dict,
+        update_time: Optional[int] = None,
     ):
         super().__init__(feature_id, block_number, address, value, update_time)
 
@@ -32,12 +32,12 @@ class AllFeatureValueRecordUniswapV3Pool(AllFeatureValueRecord):
 @dataclass
 class AllFeatureValueRecordUniswapV3Token(AllFeatureValueRecord):
     def __init__(
-            self,
-            feature_id: int,
-            block_number: int,
-            address: str,
-            value: dict,
-            update_time: Optional[int] = None,
+        self,
+        feature_id: int,
+        block_number: int,
+        address: str,
+        value: dict,
+        update_time: Optional[int] = None,
     ):
         super().__init__(feature_id, block_number, address, value, update_time)
 

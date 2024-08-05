@@ -10,4 +10,3 @@ class CurrentTraitsActiveness(Domain):
     address: str
     value: dict
     update_time: Optional[int] = None
-
