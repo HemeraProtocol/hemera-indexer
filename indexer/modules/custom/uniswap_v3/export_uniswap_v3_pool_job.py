@@ -88,6 +88,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         need_add_in_exists_pools = update_exist_pools(
             self._nft_address,
             self._factory_address,
+            self._exist_pools,
             self._create_pool_topic0,
             self._pool_swap_topic0,
             max_log_index_records,
@@ -174,9 +175,7 @@ def get_exist_pools(db_service, nft_address):
     session = db_service.get_service_session()
     try:
         result = (
-            session.query(UniswapV3Pools)
-            .filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:]))
-            .all()
+            session.query(UniswapV3Pools).filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:])).all()
         )
         history_pools = {}
         if result is not None:
@@ -201,12 +200,14 @@ def get_exist_pools(db_service, nft_address):
 
 
 def update_exist_pools(
-    nft_address, factory_address, create_topic0, swap_topic0, logs, abi_list, web3, make_requests, is_batch
+    nft_address, factory_address, exist_pools, create_topic0, swap_topic0, logs, abi_list, web3, make_requests, is_batch
 ):
     need_add = {}
     swap_pools = []
     for log in logs:
         address = log.address
+        if address in exist_pools:
+            continue
         current_topic0 = log.topic0
         if factory_address == address and create_topic0 == current_topic0:
             decoded_data = decode_logs("PoolCreated", abi_list, log)
