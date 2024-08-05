@@ -15,9 +15,13 @@ class Contract(Domain):
     block_timestamp: int
     transaction_index: int
     transaction_hash: str
+    transaction_from_address: str
 
     def __init__(self, contract: dict):
         self.dict_to_entity(contract)
+
+    def fill_transaction_from_address(self, address: str):
+        self.transaction_from_address = address
 
 
 def extract_contract_from_trace(trace):

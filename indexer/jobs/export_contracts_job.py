@@ -3,35 +3,34 @@ import logging
 from typing import List
 
 from eth_abi import abi
-from web3 import Web3
 
 from enumeration.record_level import RecordLevel
+from indexer.domain.block import Block
 from indexer.domain.contract import Contract, extract_contract_from_trace
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
+from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
-contract_abi = [
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "name",
-        "outputs": [{"name": "", "type": "string"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function",
-    }
-]
+CONTRACT_NAME_ABI = {
+    "constant": True,
+    "inputs": [],
+    "name": "name",
+    "outputs": [{"name": "", "type": "string"}],
+    "payable": False,
+    "stateMutability": "view",
+    "type": "function",
+}
 
 
 # Exports contracts
 class ExportContractsJob(BaseJob):
-    dependency_types = [Trace]
+    dependency_types = [Block, Trace]
     output_types = [Contract]
 
     def __init__(self, **kwargs):
@@ -48,7 +47,7 @@ class ExportContractsJob(BaseJob):
         super()._start()
 
     def _collect(self, **kwargs):
-        contracts = build_contracts(self._web3, self._data_buff[Trace.type()])
+        contracts = build_contracts(self._data_buff[Trace.type()])
 
         self._batch_work_executor.execute(contracts, self._collect_batch, total_items=len(contracts))
         self._batch_work_executor.wait()
@@ -60,10 +59,20 @@ class ExportContractsJob(BaseJob):
             self._collect_item(Contract.type(), Contract(contract))
 
     def _process(self):
+        transaction_mapping = {
+            transaction.hash: transaction.from_address
+            for transaction in [
+                transaction for block in self._data_buff[Block.type()] for transaction in block.transactions
+            ]
+        }
+
+        for contract in self._data_buff[Contract.type()]:
+            contract.fill_transaction_from_address(transaction_mapping[contract.transaction_hash])
+
         self._data_buff[Contract.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.address))
 
 
-def build_contracts(web3, traces: List[Trace]):
+def build_contracts(traces: List[Trace]):
     contracts = []
     for trace in traces:
         if (
@@ -76,10 +85,9 @@ def build_contracts(web3, traces: List[Trace]):
             contract["param_to"] = contract["address"]
 
             try:
-                contract["param_data"] = web3.eth.contract(
-                    address=Web3.to_checksum_address(contract["address"]),
-                    abi=contract_abi,
-                ).encodeABI(fn_name="name")
+                contract["param_data"] = encode_abi(
+                    CONTRACT_NAME_ABI, [], function_abi_to_4byte_selector_str(CONTRACT_NAME_ABI)
+                )
             except Exception as e:
                 logger.warning(
                     f"Encoding contract api parameter failed. "

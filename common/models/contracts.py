@@ -20,6 +20,7 @@ class Contracts(HemeraModel):
     block_timestamp = Column(TIMESTAMP)
     transaction_index = Column(INTEGER)
     transaction_hash = Column(BYTEA)
+    transaction_from_address = Column(BYTEA)
 
     official_website = Column(VARCHAR)
     description = Column(VARCHAR)
