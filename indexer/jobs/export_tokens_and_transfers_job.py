@@ -1,11 +1,11 @@
 import json
 import logging
-from dataclasses import asdict
 from typing import Dict, List
 
 from eth_abi import abi
 
 from common.utils.format_utils import to_snake_case
+from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
 from indexer.domain import dataclass_to_dict, dict_to_dataclass
 from indexer.domain.log import Log
@@ -21,10 +21,12 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
+exception_recorder = ExceptionRecorder()
 
 NAME_ABI_FUNCTION = {
     "constant": True,
@@ -191,7 +193,8 @@ class ExportTokensAndTransfersJob(BaseJob):
 
     def _generate_token_transfers(self, token_transfers):
         for transfer in token_transfers:
-            transfer.token_type = self.tokens[transfer.token_address].token_type
+            if transfer.token_id is None:
+                transfer.token_type = self.tokens[transfer.token_address].token_type
             self._collect_domain(transfer.to_specific_transfer())
 
     def _export_token_info_batch(self, tokens):
@@ -306,6 +309,15 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
                     f"rpc response: {result}. "
                     f"exception: {e}"
                 )
+                exception_recorder.log(
+                    block_number=token["block_number"],
+                    dataclass=Token.type(),
+                    message_type=f"decode_token_{fn_name}_fail",
+                    message=str(e),
+                    exception_env=token,
+                    level=RecordLevel.WARN,
+                )
+
                 token[key] = None
 
     for token in tokens:

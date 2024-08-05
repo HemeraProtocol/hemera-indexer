@@ -90,11 +90,12 @@ def decode_response_error(error):
     message = error["message"] if "message" in error else ""
 
     if code == -32000:
-        if message == "execution reverted" or message == "out of gas":
+        if message == "execution reverted" or message == "out of gas" or "invalid opcode: INVALID":
             return None
         elif message.find("required historical state unavailable") != -1:
             raise HistoryUnavailableError(message)
         else:
+            print(error)
             raise RPCNotReachable(message)
     elif code == -32700 or code == -32600 or code == -32602:
         raise FastShutdownError(message)

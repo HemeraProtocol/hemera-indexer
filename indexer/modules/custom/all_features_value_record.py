@@ -5,15 +5,12 @@ from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class AllFeatureValueRecord(Domain):
+class AllFeatureValueRecord(FilterData):
     feature_id: int
     block_number: int
     address: str
     value: dict
     update_time: Optional[int] = None
-
-    def to_dict(self) -> Dict:
-        return asdict(self)
 
 
 @dataclass
@@ -28,6 +25,9 @@ class AllFeatureValueRecordUniswapV3Pool(AllFeatureValueRecord):
     ):
         super().__init__(feature_id, block_number, address, value, update_time)
 
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
 
 @dataclass
 class AllFeatureValueRecordUniswapV3Token(AllFeatureValueRecord):
@@ -41,10 +41,5 @@ class AllFeatureValueRecordUniswapV3Token(AllFeatureValueRecord):
     ):
         super().__init__(feature_id, block_number, address, value, update_time)
 
-
-@dataclass
-class AllFeatureValueRecordTraitsActiveness(AllFeatureValueRecord):
-    def __init__(self, feature_id: int, block_number: int, address: str,
-                 value: dict,
-                 update_time: Optional[int] = None):
-        super().__init__(feature_id, block_number, address, value, update_time)
+    def to_dict(self) -> Dict:
+        return asdict(self)

@@ -17,7 +17,7 @@ class UniswapV3Tokens(HemeraModel):
     tick_upper = Column(NUMERIC(100))
     fee = Column(NUMERIC(100))
 
-    mint_block_number = Column(BIGINT)
+    called_block_number = Column(BIGINT)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())

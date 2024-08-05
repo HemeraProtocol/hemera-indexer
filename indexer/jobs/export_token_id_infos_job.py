@@ -6,7 +6,10 @@ from typing import List
 
 from eth_abi import abi
 
+from common.utils.format_utils import to_snake_case
+from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
+from indexer.domain import dataclass_to_dict
 from indexer.domain.token_id_infos import (
     ERC721TokenIdChange,
     ERC721TokenIdDetail,
@@ -19,10 +22,12 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import ZERO_ADDRESS, rpc_response_to_result
 
 logger = logging.getLogger(__name__)
+exception_recorder = ExceptionRecorder()
 
 ERC721_TOKEN_URI_ABI_FUNCTION = {
     "constant": True,
@@ -291,5 +296,13 @@ def token_ids_info_rpc_requests(make_requests, token_info_items, is_batch):
                 f"rpc response: {result}. "
                 f"block number: {token_info.block_number}. "
                 f"exception: {e}. "
+            )
+            exception_recorder.log(
+                block_number=token_info.block_number,
+                dataclass=to_snake_case(TokenIdInfo.__name__),
+                message_type="decode_token_id_info_fail",
+                message=str(e),
+                exception_env=dataclass_to_dict(token_info),
+                level=RecordLevel.WARN,
             )
     return return_data

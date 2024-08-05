@@ -1,8 +1,12 @@
 import logging
 
+from enumeration.record_level import RecordLevel
 from indexer.controller.dispatcher.base_dispatcher import BaseDispatcher
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs.job_scheduler import JobScheduler
+from indexer.utils.exception_recorder import ExceptionRecorder
+
+exception_recorder = ExceptionRecorder()
 
 
 class StreamDispatcher(BaseDispatcher):
@@ -43,7 +47,13 @@ class StreamDispatcher(BaseDispatcher):
             )
 
             for key, value in self._job_scheduler.get_data_buff().items():
-                print(f"{key}: {len(value)}")
+                message = f"{key}: {len(value)}"
+                print(message)
+                exception_recorder.log(
+                    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
+                )
+
+            exception_recorder.force_to_flush()
 
         except Exception as e:
             raise e

@@ -6,16 +6,19 @@ from typing import List
 from eth_utils import to_int
 
 from common.utils.exception_control import HistoryUnavailableError
+from enumeration.record_level import RecordLevel
 from indexer.domain import dataclass_to_dict
 from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseJob
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
+exception_recorder = ExceptionRecorder()
 
 
 # Exports traces
@@ -176,6 +179,13 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
         try:
             result = rpc_response_to_result(response)
         except HistoryUnavailableError as e:
+            exception_recorder.log(
+                block_number=block_number,
+                dataclass=Trace.type(),
+                message_type=HistoryUnavailableError.__name__,
+                message=e.message,
+                level=RecordLevel.ERROR,
+            )
             trace = {
                 "trace_id": f"{to_int(hexstr=block_number)}_?_?",
                 "block_number": to_int(hexstr=block_number),

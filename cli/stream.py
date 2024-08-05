@@ -9,11 +9,14 @@ from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
 from indexer.controller.stream_controller import StreamController
 from indexer.domain import Domain
 from indexer.exporters.item_exporter import create_item_exporters
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 from indexer.utils.utils import pick_random_provider_uri
+
+exception_recorder = ExceptionRecorder()
 
 
 def calculate_execution_time(func):
@@ -234,6 +237,9 @@ def stream(
     if postgres_url:
         service = PostgreSQLService(postgres_url, db_version=db_version)
         config["db_service"] = service
+        exception_recorder.init_pg_service(service)
+    else:
+        logging.warning("No postgres url provided. Exception recorder will not be useful.")
 
     if output_types is None:
         entity_types = calculate_entity_value(entity_types)
