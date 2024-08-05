@@ -62,7 +62,7 @@ class JobScheduler:
         self.job_classes = []
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
-        self.pg_service = config.get("db_service")
+        self.pg_service = config.get("db_service") if config is not None else None
 
         self.discover_and_register_job_classes()
         self.required_job_classes = self.get_required_job_classes(required_output_types)
