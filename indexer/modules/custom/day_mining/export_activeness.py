@@ -36,7 +36,7 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
         current_batch_address_block_number_stats = defaultdict(
             lambda: defaultdict(lambda: {'txn_count': 0, 'gas_consumed': 0}))
 
-        # py3.6及以上dict 是有序的
+        # py3.6 and above dict is ordered
         for transaction in transactions:
             if transaction.from_address != transaction.to_address:
                 current_batch_address_block_number_stats[transaction.to_address][transaction.block_number][
@@ -46,7 +46,6 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
             current_batch_address_block_number_stats[transaction.from_address][transaction.block_number][
                 'gas_consumed'] += transaction.gas * transaction.gas_price
 
-        # 计算每个分组的 count 和 sum(tnx.gas)
         self._batch_work_executor.execute(current_batch_address_block_number_stats,
                                           self._calculate_latest_address_stats,
                                           total_items=len(current_batch_address_block_number_stats),
@@ -59,8 +58,11 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
             self._latest_address_stats[address]['txn_count'] += stats_value['txn_count']
             self._latest_address_stats[address]['gas_consumed'] += stats_value['gas_consumed']
 
+            last_address_stats_dict = self._latest_address_stats[address]
+            copy = last_address_stats_dict.copy()
+
             record = AllFeatureValueRecordTraitsActiveness(3, block_number, address,
-                                                           self._latest_address_stats[address])
+                                                           copy)
             self._collect_item(AllFeatureValueRecordTraitsActiveness.type(), record)
 
     @staticmethod
