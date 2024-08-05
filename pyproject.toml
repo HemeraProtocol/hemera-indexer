@@ -45,7 +45,7 @@ dependencies = [
     "redis==5.0.7",
     "urllib3==2.2.2",
     "dataclass-wizard==0.22.3",
-    "redis-dict",
+    "pottery==3.0.0",
 ]
 
 [tool.setuptools.dynamic]
