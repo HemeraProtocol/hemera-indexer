@@ -51,6 +51,7 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
                                           total_items=len(current_batch_address_block_number_stats),
                                           split_method=self._split_address_block_number_stats)
         self._batch_work_executor.wait()
+        self._data_buff[AllFeatureValueRecordTraitsActiveness.type()].sort(key=lambda x: x.block_number)
 
     def _calculate_latest_address_stats(self, address_block_number_stats):
         (address, block_dict), = address_block_number_stats.items()
