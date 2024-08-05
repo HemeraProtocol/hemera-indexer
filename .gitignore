@@ -38,7 +38,7 @@ venv/
 ENV/
 
 # Output Data Files
-*.json
+#*.json
 *.csv
 docker-compose/hemera-indexer.env
 docker-compose/data/
