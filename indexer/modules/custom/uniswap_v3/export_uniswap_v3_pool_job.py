@@ -14,8 +14,9 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Pool
 from indexer.modules.custom.feature_type import FeatureType
+from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool
-from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data, load_abi
+from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -41,7 +42,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._pool_prices = {}
         self._pool_prices_lock = threading.Lock()
         self._load_config("config.ini")
-        self._abi_list = load_abi("abi.json")
+        self._abi_list = UNISWAP_V3_ABI
         self._exist_pools = get_exist_pools(self._service[0], self._nft_address)
 
     def get_filter(self):
@@ -208,7 +209,7 @@ def update_exist_pools(
         current_topic0 = log.topic0
         if factory_address == address and create_topic0 == current_topic0:
             decoded_data = decode_logs("PoolCreated", abi_list, log)
-            pool_address = decoded_data[4]
+            pool_address = decoded_data["pool"]
 
             new_pool = {
                 "nft_address": nft_address,
