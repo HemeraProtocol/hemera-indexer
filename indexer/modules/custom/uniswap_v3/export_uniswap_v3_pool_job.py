@@ -266,7 +266,7 @@ def collect_swap_new_pools(nft_address, factory_address, swap_pools, abi_list, w
             )
     if len(uniswap_pools) == 0:
         return need_add
-    token0_infos = simple_get_rpc_requests(web3, make_requests, swap_pools, is_batch, abi_list, "token0", "address")
+    token0_infos = simple_get_rpc_requests(web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address")
     token1_infos = simple_get_rpc_requests(web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address")
     tick_infos = simple_get_rpc_requests(
         web3, make_requests, token1_infos, is_batch, abi_list, "tickSpacing", "address"
