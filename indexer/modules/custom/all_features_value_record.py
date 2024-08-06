@@ -12,7 +12,6 @@ class AllFeatureValueRecord(FilterData):
     value: dict
     update_time: Optional[int] = None
 
-
     def to_dict(self) -> Dict:
         return asdict(self)
 
