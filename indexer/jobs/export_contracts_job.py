@@ -59,11 +59,12 @@ class ExportContractsJob(BaseJob):
             self._collect_item(Contract.type(), Contract(contract))
 
     def _process(self):
-        transaction_mapping = {transaction.hash: transaction.from_address
-                               for transaction in [transaction
-                                                   for block in self._data_buff[Block.type()]
-                                                   for transaction in block.transactions]
-                               }
+        transaction_mapping = {
+            transaction.hash: transaction.from_address
+            for transaction in [
+                transaction for block in self._data_buff[Block.type()] for transaction in block.transactions
+            ]
+        }
         for contract in self._data_buff[Contract.type()]:
             contract.fill_transaction_from_address(transaction_mapping[contract.transaction_hash])
 
@@ -74,19 +75,17 @@ def build_contracts(traces: List[Trace]):
     contracts = []
     for trace in traces:
         if (
-                trace.trace_type in ["create", "create2"]
-                and trace.to_address is not None
-                and len(trace.to_address) > 0
-                and trace.status == 1
+            trace.trace_type in ["create", "create2"]
+            and trace.to_address is not None
+            and len(trace.to_address) > 0
+            and trace.status == 1
         ):
             contract = extract_contract_from_trace(trace)
             contract["param_to"] = contract["address"]
 
             try:
-                contract['param_data'] = encode_abi(
-                    CONTRACT_NAME_ABI,
-                    [],
-                    function_abi_to_4byte_selector_str(CONTRACT_NAME_ABI)
+                contract["param_data"] = encode_abi(
+                    CONTRACT_NAME_ABI, [], function_abi_to_4byte_selector_str(CONTRACT_NAME_ABI)
                 )
             except Exception as e:
                 logger.warning(
