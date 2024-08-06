@@ -200,7 +200,16 @@ def calculate_execution_time(func):
     'e.g pg_base. means sync record data will store in pg as "base" be key'
     'or file_base. means sync record data will store in file as "base" be file name',
 )
-@click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE_SERVICE", help="Cache")
+@click.option(
+    "--cache",
+    default="memory",
+    show_default=True,
+    type=str,
+    envvar="CACHE_SERVICE",
+    help="How to store the cache data."
+    "e.g redis. means cache data will store in redis, redis://localhost:6379"
+    "or memory. means cache data will store in memory, memory",
+)
 @calculate_execution_time
 def stream(
     provider_uri,
@@ -221,7 +230,7 @@ def stream(
     log_file=None,
     pid_file=None,
     sync_recorder="file_sync_record",
-    cache=None,
+    cache="memory",
 ):
     configure_logging(log_file)
     configure_signals()

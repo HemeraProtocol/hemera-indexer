@@ -64,7 +64,6 @@ class ExportContractsJob(BaseJob):
                                                    for block in self._data_buff[Block.type()]
                                                    for transaction in block.transactions]
                                }
-
         for contract in self._data_buff[Contract.type()]:
             contract.fill_transaction_from_address(transaction_mapping[contract.transaction_hash])
 
