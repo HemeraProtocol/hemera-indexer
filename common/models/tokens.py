@@ -50,7 +50,7 @@ class Tokens(HemeraModel):
             {
                 "domain": "UpdateToken",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.update_block_number > tokens.update_block_number",
+                "update_strategy": "EXCLUDED.block_number > tokens.block_number",
                 "converter": general_converter,
             },
         ]

@@ -1,4 +1,4 @@
-"""tokens table add column 'update_block_number'
+"""tokens table add column 'block_number'
 
 Revision ID: 8a915490914a
 Revises: 5e4608933f64

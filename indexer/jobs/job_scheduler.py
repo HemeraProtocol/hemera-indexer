@@ -31,7 +31,7 @@ def get_tokens_from_db(session):
                     "name": token.name,
                     "symbol": token.symbol,
                     "decimals": int(token.decimals) if token.decimals is not None else None,
-                    "block_number": token.update_block_number,
+                    "block_number": token.block_number,
                     "total_supply": int(token.total_supply) if token.total_supply is not None else None,
                 }
         return dict
