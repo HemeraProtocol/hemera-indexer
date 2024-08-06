@@ -35,6 +35,12 @@ class AllFeatureValueRecords(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
+            {
+                "domain": "AllFeatureValueRecordUniswapV2TotalSupply",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
 
 
