@@ -27,11 +27,11 @@ As of July 5, 2024, the initial open-source version of the Hemera Indexer offers
 - ERC20 / ERC721 / ERC1155 Token balance & holders
 - Contracts
 - Traces / Internal transactions
-- L1 -> L2 Transactions 
-- L2 -> L1 Transactions 
-- Rollup Batches 
-- DA Transactions 
-- User Operations 
+- L1 -> L2 Transactions
+- L2 -> L1 Transactions
+- Rollup Batches
+- DA Transactions
+- User Operations
 
 ##### Into the following formats
 
