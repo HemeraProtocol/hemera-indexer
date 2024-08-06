@@ -87,7 +87,7 @@ Based on the 2024 Ethereum, every 25k blocks, which is approximately 4.5 million
 #### Use VM From Cloud Services
 
 If you don't have a VM in place, you can create VMs from cloud providers.
-[Create an AWS EC2 Instance](docs/AWS.md)
+[Create an AWS EC2 Instance](AWS.md)
 
 #### RPC Usage
 

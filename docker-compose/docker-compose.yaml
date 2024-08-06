@@ -1,0 +1,64 @@
+version: '3.8'
+
+x-common-settings: &common-settings
+  build: ../
+  env_file:
+    - hemera-indexer.env
+  command: [ "stream" ]
+  restart: unless-stopped
+  networks:
+    - hemera
+  volumes:
+    - ./output:/app/output
+  depends_on:
+    postgresql:
+      condition: service_healthy
+
+services:
+  hemera-main-indexer:
+    <<: *common-settings
+    container_name: indexer
+    environment:
+      - ENTITY_TYPES=EXPLORER_BASE,EXPLORER_TOKEN
+      - SYNC_RECORDER=pg_main_recorder
+
+  hemera-trace-indexer:
+    <<: *common-settings
+    container_name: indexer-trace
+    environment:
+      - ENTITY_TYPES=EXPLORER_TRACE
+      - SYNC_RECORDER=pg_trace_recorder
+
+  hemera-api:
+    <<: *common-settings
+    command: [ "api" ]
+    ports:
+      - 8082:8082
+
+  postgresql:
+    env_file:
+      - hemera-indexer.env
+    image: postgres:15
+    container_name: postgresql
+    healthcheck:
+      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 1s
+      timeout: 3s
+      retries: 3
+    ports:
+      - 5432:5432
+    networks:
+      - hemera
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6
+    container_name: redis
+    ports:
+      - 6379:6379
+    networks:
+      - hemera
+
+networks:
+  hemera:
