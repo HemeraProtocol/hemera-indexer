@@ -1,58 +1,99 @@
 from enum import IntFlag
+from functools import reduce
 
-from click import BadOptionUsage
+from indexer.domain.block import Block, UpdateBlockInternalCount
+from indexer.domain.coin_balance import CoinBalance
+from indexer.domain.contract import Contract
+from indexer.domain.contract_internal_transaction import ContractInternalTransaction
+from indexer.domain.current_token_balance import CurrentTokenBalance
+from indexer.domain.log import Log
+from indexer.domain.token import *
+from indexer.domain.token_balance import TokenBalance
+from indexer.domain.token_id_infos import *
+from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
+from indexer.domain.trace import Trace
+from indexer.domain.transaction import Transaction
+from indexer.modules.custom.all_features_value_record import (
+    AllFeatureValueRecordUniswapV3Pool,
+    AllFeatureValueRecordUniswapV3Token,
+)
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
+from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
 class EntityType(IntFlag):
-    BLOCK = 1
-    TRANSACTION = 2
-    LOG = 4
-    TOKEN = 8
-    TOKEN_TRANSFER = 16
-    TRACE = 32
-    CONTRACT = 64
-    COIN_BALANCE = 128
-    TOKEN_BALANCE = 256
-    TOKEN_IDS = 512
+    EXPLORER_BASE = 1 << 0
+    EXPLORER_TOKEN = 1 << 1
+    EXPLORER_TRACE = 1 << 2
+
+    BRIDGE = 1 << 3
+    UNISWAP_V3 = 1 << 4
+
+    USER_OPS = 1 << 5
+
+    EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
+
+    @staticmethod
+    def combine_all_entity_types():
+        return reduce(lambda x, y: x | y, EntityType)
+
+    @staticmethod
+    def entity_filter_mode(entity_types):
+        if entity_types ^ EntityType.BRIDGE == 0:
+            return True
+        return False
 
 
 ALL_ENTITY_COLLECTIONS = EntityType.__members__.keys()
-DEFAULT_COLLECTION = ["BLOCK", "TRANSACTION", "LOG", "TOKEN", "TOKEN_TRANSFER"]
+DEFAULT_COLLECTION = ["EXPLORER_BASE", "EXPLORER_TOKEN"]
 
 
 def calculate_entity_value(entity_types):
-    entities = 0
-    for entity_type in [entity.strip().upper() for entity in entity_types.split(',')]:
-        if entity_type not in ALL_ENTITY_COLLECTIONS:
-            raise BadOptionUsage(
-                '--entity-type', '{} is not an available entity type. Supply a comma separated list of types from {}'
-                .format(entity_type, ','.join(ALL_ENTITY_COLLECTIONS)))
+    entities = EntityType(0)
+    for entity_type in [entity.strip().upper() for entity in entity_types.split(",")]:
+        if entity_type in EntityType.__members__:
+            entities |= EntityType[entity_type]
         else:
-            if entity_type == EntityType.BLOCK.name:
-                entities = entities | EntityType.BLOCK
-            elif entity_type == EntityType.TRANSACTION.name:
-                entities = entities | EntityType.TRANSACTION
-            elif entity_type == EntityType.LOG.name:
-                entities = entities | EntityType.LOG
-            elif entity_type == EntityType.TOKEN.name:
-                entities = entities | EntityType.TOKEN
-            elif entity_type == EntityType.TOKEN_TRANSFER.name:
-                entities = entities | EntityType.TOKEN_TRANSFER
-            elif entity_type == EntityType.TRACE.name:
-                entities = entities | EntityType.TRACE
-            elif entity_type == EntityType.CONTRACT.name:
-                entities = entities | EntityType.CONTRACT
-            elif entity_type == EntityType.COIN_BALANCE.name:
-                entities = entities | EntityType.COIN_BALANCE
-            elif entity_type == EntityType.TOKEN_BALANCE.name:
-                entities = entities | EntityType.TOKEN_BALANCE
-            elif entity_type == EntityType.TOKEN_IDS.name:
-                entities = entities | EntityType.TOKEN_IDS
-            else:
-                pass
+            available_types = ",".join(ALL_ENTITY_COLLECTIONS)
+            raise ValueError(
+                f"{entity_type} is not an available entity type. Supply a comma-separated list of types from {available_types}"
+            )
     return entities
 
 
-def all_entities_value():
-    entities = ','.join(ALL_ENTITY_COLLECTIONS)
-    return calculate_entity_value(entities)
+def generate_output_types(entity_types):
+    if entity_types & EntityType.EXPLORER_BASE:
+        yield Block
+        yield Transaction
+        yield Log
+
+    if entity_types & EntityType.EXPLORER_TOKEN:
+        yield Token
+        yield UpdateToken
+        yield ERC20TokenTransfer
+        yield ERC721TokenTransfer
+        yield ERC1155TokenTransfer
+        yield TokenBalance
+        yield CurrentTokenBalance
+
+        yield UpdateERC1155TokenIdDetail
+        yield ERC1155TokenIdDetail
+        yield UpdateERC721TokenIdDetail
+        yield ERC721TokenIdDetail
+        yield ERC721TokenIdChange
+
+    if entity_types & EntityType.EXPLORER_TRACE:
+        yield Trace
+        yield Contract
+        yield CoinBalance
+        yield ContractInternalTransaction
+        yield UpdateBlockInternalCount
+
+    if entity_types & EntityType.UNISWAP_V3:
+        yield UniswapV3Pool
+        yield UniswapV3Token
+        yield AllFeatureValueRecordUniswapV3Pool
+        yield AllFeatureValueRecordUniswapV3Token
+
+    if entity_types & EntityType.USER_OPS:
+        yield UserOperationsResult
