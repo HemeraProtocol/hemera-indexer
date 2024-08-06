@@ -171,9 +171,8 @@ def test_transactions_with_address(test_client):
     assert "page" in response_json
     assert "size" in response_json
 
-    # 检查 data 字段
     assert isinstance(response_json["data"], list)
-    assert len(response_json["data"]) <= 10  # 最多返回10条记录
+    assert len(response_json["data"]) <= 10
     for transaction in response_json["data"]:
         assert isinstance(transaction, dict)
         assert "hash" in transaction
@@ -197,9 +196,8 @@ def test_transactions_with_date(test_client):
     assert "page" in response_json
     assert "size" in response_json
 
-    # 检查 data 字段
     assert isinstance(response_json["data"], list)
-    assert len(response_json["data"]) <= 10  # 最多返回10条记录
+    assert len(response_json["data"]) <= 10
     for transaction in response_json["data"]:
         assert isinstance(transaction, dict)
         assert "hash" in transaction
@@ -487,14 +485,12 @@ def test_explorer_address_profile(test_client):
 
     assert response.status_code == 200
 
-    # 检查基本字段
     assert "balance" in response_json
     assert "native_token_price" in response_json
     assert "balance_dollar" in response_json
     assert "is_contract" in response_json
     assert "is_token" in response_json
 
-    # 检查合同相关字段
     if response_json["is_contract"]:
         assert "contract_creator" in response_json
         assert "transaction_hash" in response_json
@@ -503,7 +499,6 @@ def test_explorer_address_profile(test_client):
         assert "implementation_contract" in response_json
         assert "verified_implementation_contract" in response_json
 
-    # 检查令牌相关字段
     if response_json["is_token"]:
         assert "token_type" in response_json
         assert "token_name" in response_json
