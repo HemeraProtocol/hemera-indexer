@@ -302,7 +302,7 @@ def token_ids_info_rpc_requests(make_requests, token_info_items, is_batch):
                 dataclass=to_snake_case(TokenIdInfo.__name__),
                 message_type="decode_token_id_info_fail",
                 message=str(e),
-                exception_env=dataclass_to_dict(token_info),
+                exception_env=asdict(token_info),
                 level=RecordLevel.WARN,
             )
     return return_data
