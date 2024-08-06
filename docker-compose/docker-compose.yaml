@@ -4,7 +4,7 @@ x-common-settings: &common-settings
   build: ../
   env_file:
     - hemera-indexer.env
-  command: ["stream"]
+  command: [ "stream" ]
   restart: unless-stopped
   networks:
     - hemera
@@ -20,17 +20,19 @@ services:
     container_name: indexer
     environment:
       - ENTITY_TYPES=EXPLORER_BASE,EXPLORER_TOKEN
+      - SYNC_RECORDER=pg_main_recorder
 
   hemera-trace-indexer:
     <<: *common-settings
     container_name: indexer-trace
     environment:
       - ENTITY_TYPES=EXPLORER_TRACE
+      - SYNC_RECORDER=pg_trace_recorder
 
   hemera-api:
     <<: *common-settings
     container_name: hemera-api
-    command: ["api"]
+    command: [ "api" ]
     ports:
       - 8082:8082
 

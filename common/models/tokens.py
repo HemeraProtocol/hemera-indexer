@@ -15,7 +15,7 @@ class Tokens(HemeraModel):
     symbol = Column(VARCHAR)
     decimals = Column(NUMERIC(100))
     total_supply = Column(NUMERIC(100))
-    update_block_number = Column(BIGINT)
+    block_number = Column(BIGINT)
 
     holder_count = Column(INTEGER, default=0)
     transfer_count = Column(INTEGER, default=0)
@@ -50,7 +50,7 @@ class Tokens(HemeraModel):
             {
                 "domain": "UpdateToken",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > tokens.block_number",
+                "update_strategy": "EXCLUDED.update_block_number > tokens.update_block_number",
                 "converter": general_converter,
             },
         ]
