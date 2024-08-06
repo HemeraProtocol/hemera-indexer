@@ -93,7 +93,7 @@ def decode_response_error(error):
         return None
 
     if code == -32000:
-        if message == "execution reverted" or message == "out of gas":
+        if message == "execution reverted" or message == "out of gas" or message == "invalid jump destination":
             return None
         elif message.find("required historical state unavailable") != -1:
             raise HistoryUnavailableError(message)
