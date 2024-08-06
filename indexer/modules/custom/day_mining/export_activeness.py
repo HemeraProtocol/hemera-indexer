@@ -32,8 +32,13 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
         self._service = (kwargs["config"].get("db_service"),)
         #
         self._latest_address_stats = defaultdict(
-            lambda: {"is_contract": -1, "txn_count": 0, "gas_consumed": 0, "deployed_count_count": 0,
-                     'interacted_addresses': set()}
+            lambda: {
+                "is_contract": -1,
+                "txn_count": 0,
+                "gas_consumed": 0,
+                "deployed_count_count": 0,
+                "interacted_addresses": set(),
+            }
         )
 
         # get from pg
@@ -59,13 +64,19 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
     def _process(self):
         current_batch_address_block_number_stats = defaultdict(
             lambda: defaultdict(
-                lambda: {"is_contract": -1, "txn_count": 0, "gas_consumed": 0, "deployed_count_count": 0,
-                         'interacted_addresses': set()})
+                lambda: {
+                    "is_contract": -1,
+                    "txn_count": 0,
+                    "gas_consumed": 0,
+                    "deployed_count_count": 0,
+                    "interacted_addresses": set(),
+                }
+            )
         )
 
         contracts = self._data_buff[Contract.type()]
         for contract in contracts:
-            current_batch_address_block_number_stats[contract.transaction_from_address]['deployed_count_count'] += 1
+            current_batch_address_block_number_stats[contract.transaction_from_address]["deployed_count_count"] += 1
 
         transactions = self._data_buff[Transaction.type()]
         transactions.sort(key=lambda x: (x.block_number, x.transaction_index))
@@ -83,15 +94,14 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
                 "gas_consumed"
             ] += (transaction.gas * transaction.gas_price)
 
-            if self._latest_address_stats[transaction.to_address]['is_contract'] == -1:
+            if self._latest_address_stats[transaction.to_address]["is_contract"] == -1:
                 is_address_bool = self._web3.is_address(transaction.to_address)
                 if is_address_bool:
                     self._latest_address_stats[transaction.to_address]["is_contract"] = 1
                 else:
                     self._latest_address_stats[transaction.to_address]["is_contract"] = 0
-            if self._latest_address_stats[transaction.to_address]['is_contract']:
-                self._latest_address_stats[transaction.from_address]['interacted_addresses'].add(
-                    transaction.to_address)
+            if self._latest_address_stats[transaction.to_address]["is_contract"]:
+                self._latest_address_stats[transaction.from_address]["interacted_addresses"].add(transaction.to_address)
 
         self._batch_work_executor.execute(
             current_batch_address_block_number_stats,
@@ -112,7 +122,7 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
 
             last_address_stats_dict = self._latest_address_stats[address]
             copy = last_address_stats_dict.copy()
-            copy['interacted_addresses'] = list(copy['interacted_addresses'])
+            copy["interacted_addresses"] = list(copy["interacted_addresses"])
 
             record = AllFeatureValueRecordTraitsActiveness(3, block_number, address, copy)
             self._collect_item(AllFeatureValueRecordTraitsActiveness.type(), record)
