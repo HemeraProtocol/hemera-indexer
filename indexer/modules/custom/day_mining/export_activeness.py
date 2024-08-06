@@ -29,7 +29,6 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
             job_name=self.__class__.__name__,
         )
 
-        self._service = (kwargs["config"].get("db_service"),)
         #
         self._latest_address_stats = defaultdict(
             lambda: {
@@ -41,9 +40,11 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
             }
         )
 
-        # get from pg
-        address_stats_from_pg = self.get_latest_address_stats_from_pg()
-        self._latest_address_stats.update(address_stats_from_pg)
+        if kwargs["config"]:
+            self._service = (kwargs["config"].get("db_service"),)
+            # get from pg
+            address_stats_from_pg = self.get_latest_address_stats_from_pg()
+            self._latest_address_stats.update(address_stats_from_pg)
 
         # self.contracts = []  # initialize system contracts
         # addresses_from_pg = self.get_contract_addresses_from_pg()
@@ -52,7 +53,10 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
     def get_latest_address_stats_from_pg(self):
         session = self._service[0].get_service_session()
         current_activeness_list = session.query(CurrentTraitsActivenessModel).all()
-        result = {"0x" + row.address.hex(): row.value for row in current_activeness_list}
+        result = {}
+        for row in current_activeness_list:
+            row.value["interacted_addresses"] = set(row.value["interacted_addresses"])
+            result["0x" + row.address.hex()] = row.value
         return result
 
     def get_contract_addresses_from_pg(self):
