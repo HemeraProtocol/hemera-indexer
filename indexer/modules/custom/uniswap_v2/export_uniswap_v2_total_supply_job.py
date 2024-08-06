@@ -60,7 +60,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         return TransactionFilterByLogs(
             [
                 TopicSpecification(addresses=[self._factory_address], topics=[self._create_pool_topic0]),
-                TopicSpecification(topics=[self._pool_mint_topic0, self._pool_burn_topic0]),
+                TopicSpecification(topics=[self._transfer_topic0]),
             ]
         )
 
@@ -75,6 +75,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             self._create_pool_topic0 = config.get("info", "create_pool_topic0").lower()
             self._pool_mint_topic0 = config.get("info", "pool_mint_topic0").lower()
             self._pool_burn_topic0 = config.get("info", "pool_burn_topic0").lower()
+            self._transfer_topic0 = config.get("info", "transfer_topic0").lower()
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
