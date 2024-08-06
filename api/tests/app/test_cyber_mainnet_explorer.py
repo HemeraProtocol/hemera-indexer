@@ -72,7 +72,6 @@ def test_internal_transactions_page1_size10(test_client):
     assert "page" in response_json
     assert "size" in response_json
 
-    # 检查 data 字段
     assert isinstance(response_json["data"], list)
     assert len(response_json["data"]) <= 10
     for transaction in response_json["data"]:
@@ -118,9 +117,8 @@ def test_transactions_with_block_num(test_client):
     assert "page" in response_json
     assert "size" in response_json
 
-    # 检查 data 字段
     assert isinstance(response_json["data"], list)
-    assert len(response_json["data"]) <= 10  # 最多返回10条记录
+    assert len(response_json["data"]) <= 10
     for transaction in response_json["data"]:
         assert isinstance(transaction, dict)
         assert "hash" in transaction
@@ -146,9 +144,8 @@ def test_transactions_with_block_hash(test_client):
     assert "page" in response_json
     assert "size" in response_json
 
-    # 检查 data 字段
     assert isinstance(response_json["data"], list)
-    assert len(response_json["data"]) <= 10  # 最多返回10条记录
+    assert len(response_json["data"]) <= 10
     for transaction in response_json["data"]:
         assert isinstance(transaction, dict)
         assert "hash" in transaction
