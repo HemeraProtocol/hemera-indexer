@@ -146,14 +146,14 @@ class ExportTokensAndTransfersJob(BaseJob):
         old_token_dict: Dict[str, Token] = {}
         for transfer in token_transfers:
             key = transfer.token_address
-            if key not in token_dict or transfer.block_number > token_dict[key].update_block_number:
+            if key not in token_dict or transfer.block_number > token_dict[key].block_number:
                 token_dict[key] = Token(
                     address=transfer.token_address,
                     token_type=transfer.token_type,
                     name=None,
                     symbol=None,
                     decimals=None,
-                    update_block_number=transfer.block_number,
+                    block_number=transfer.block_number,
                 )
 
         for address, token in token_dict.items():
@@ -231,7 +231,7 @@ def build_rpc_method_data(tokens, fn, arguments=None):
             {
                 "param_to": token["address"],
                 "param_data": "0x",
-                "param_number": hex(token["update_block_number"]),
+                "param_number": hex(token["block_number"]),
                 "data_type": "",
                 "request_id": index,
             }
@@ -311,7 +311,7 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
                     f"exception: {e}"
                 )
                 exception_recorder.log(
-                    block_number=token["update_block_number"],
+                    block_number=token["block_number"],
                     dataclass=Token.type(),
                     message_type=f"decode_token_{fn_name}_fail",
                     message=str(e),

@@ -33,43 +33,43 @@ class HemeraBaseException(Exception):
 
 class RetriableError(HemeraBaseException):
     def __init__(self, message=""):
+        super().__init__(message)
         self.crashable = False
         self.retriable = True
         self.message = message
-        super().__init__(message)
 
 
 class HistoryUnavailableError(HemeraBaseException):
     def __init__(self, message=""):
+        super().__init__(message)
         self.crashable = False
         self.retriable = False
         self.message = message
-        super().__init__(message)
 
 
 class NoBatchModeError(HemeraBaseException):
     def __init__(self, message=""):
+        super().__init__(message)
         self.crashable = False
         self.retriable = True
         self.message = message
-        super().__init__(message)
 
 
 class RPCNotReachable(HemeraBaseException):
 
     def __init__(self, message=""):
+        super().__init__(message)
         self.crashable = True
         self.retriable = False
         self.message = message
-        super().__init__(message)
 
 
 class FastShutdownError(HemeraBaseException):
     def __init__(self, message=""):
+        super().__init__(message)
         self.crashable = True
         self.retriable = False
         self.message = message
-        super().__init__(message)
 
 
 class ErrorRollupError(Exception):
@@ -89,8 +89,11 @@ def decode_response_error(error):
     code = error["code"] if "code" in error else 0
     message = error["message"] if "message" in error else ""
 
+    if message.lower().find('invalid') != -1 and message.lower().find('opcode') != -1:
+        return None
+
     if code == -32000:
-        if message == "execution reverted" or message == "out of gas" or "invalid opcode: INVALID":
+        if message == "execution reverted" or message == "out of gas":
             return None
         elif message.find("required historical state unavailable") != -1:
             raise HistoryUnavailableError(message)

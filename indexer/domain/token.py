@@ -11,12 +11,12 @@ class Token(Domain):
     name: Optional[str]
     symbol: Optional[str]
     decimals: Optional[int]
-    update_block_number: int
+    block_number: int
     total_supply: Optional[int] = None
 
 
 @dataclass
 class UpdateToken(Domain):
     address: str
-    update_block_number: int
+    block_number: int
     total_supply: Optional[int] = None
