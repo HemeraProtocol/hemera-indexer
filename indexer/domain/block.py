@@ -70,6 +70,7 @@ class Block(Domain):
 
 @dataclass
 class UpdateBlockInternalCount(Domain):
+    number: int
     hash: str
     traces_count: Optional[int] = 0
     internal_transactions_count: Optional[int] = 0

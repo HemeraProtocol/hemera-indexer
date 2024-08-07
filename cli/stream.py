@@ -8,7 +8,7 @@ from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, 
 from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
 from indexer.controller.stream_controller import StreamController
 from indexer.domain import Domain
-from indexer.exporters.item_exporter import create_item_exporters
+from indexer.exporters.item_exporter import create_item_exporters, check_exporter_in_chosen, ItemExporterType
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.provider import get_provider_from_uri
@@ -57,7 +57,7 @@ def calculate_execution_time(func):
     type=str,
     envvar="DEBUG_PROVIDER_URI",
     help="The URI of the web3 debug provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
+         "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
 )
 @click.option(
     "-o",
@@ -65,11 +65,11 @@ def calculate_execution_time(func):
     type=str,
     envvar="OUTPUT",
     help="The output selection."
-    "Print to console e.g. console; "
-    "or postgresql e.g. postgres"
-    "or local json file e.g. jsonfile://your-file-path; "
-    "or local csv file e.g. csvfile://your-file-path; "
-    "or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path",
+         "Print to console e.g. console; "
+         "or postgresql e.g. postgres"
+         "or local json file e.g. jsonfile://your-file-path; "
+         "or local csv file e.g. csvfile://your-file-path; "
+         "or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path",
 )
 @click.option(
     "-E",
@@ -88,10 +88,10 @@ def calculate_execution_time(func):
     type=str,
     envvar="OUTPUT_TYPES",
     help="The list of output types to export, corresponding to more detailed data models. "
-    "Specifying this option will prioritize these settings over the entity types specified in -E. "
-    "Examples include: block, transaction, log, "
-    "token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, "
-    "trace, contract, coin_balance.",
+         "Specifying this option will prioritize these settings over the entity types specified in -E. "
+         "Examples include: block, transaction, log, "
+         "token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, "
+         "trace, contract, coin_balance.",
 )
 @click.option(
     "-v",
@@ -101,9 +101,9 @@ def calculate_execution_time(func):
     type=str,
     envvar="DB_VERSION",
     help="The database version to initialize the database. using the alembic script's revision ID to "
-    "specify a version. "
-    "e.g. head, indicates the latest version."
-    "or base, indicates the empty database without any table.",
+         "specify a version. "
+         "e.g. head, indicates the latest version."
+         "or base, indicates the empty database without any table.",
 )
 @click.option(
     "-s",
@@ -124,12 +124,12 @@ def calculate_execution_time(func):
     envvar="END_BLOCK",
 )
 @click.option(
-    "--partition-size",
-    default=50000,
+    "--blocks-per-file",
+    default=1000,
     show_default=True,
     type=int,
-    envvar="PARTITION_SIZE",
-    help="How many records was written to each file",
+    envvar="BLOCKS_PER_FILE",
+    help="How many blocks data was written to each file",
 )
 @click.option(
     "--period-seconds",
@@ -197,8 +197,8 @@ def calculate_execution_time(func):
     type=str,
     envvar="SYNC_RECORDER",
     help="How to store the sync record data."
-    'e.g pg_base. means sync record data will store in pg as "base" be key'
-    'or file_base. means sync record data will store in file as "base" be file name',
+         'e.g pg_base. means sync record data will store in pg as "base" be key'
+         'or file_base. means sync record data will store in file as "base" be file name',
 )
 @click.option(
     "--cache",
@@ -207,30 +207,30 @@ def calculate_execution_time(func):
     type=str,
     envvar="CACHE_SERVICE",
     help="How to store the cache data."
-    "e.g redis. means cache data will store in redis, redis://localhost:6379"
-    "or memory. means cache data will store in memory, memory",
+         "e.g redis. means cache data will store in redis, redis://localhost:6379"
+         "or memory. means cache data will store in memory, memory",
 )
 @calculate_execution_time
 def stream(
-    provider_uri,
-    debug_provider_uri,
-    postgres_url,
-    output,
-    db_version,
-    start_block,
-    end_block,
-    entity_types,
-    output_types,
-    partition_size,
-    period_seconds=10,
-    batch_size=10,
-    debug_batch_size=1,
-    block_batch_size=1,
-    max_workers=5,
-    log_file=None,
-    pid_file=None,
-    sync_recorder="file_sync_record",
-    cache="memory",
+        provider_uri,
+        debug_provider_uri,
+        postgres_url,
+        output,
+        db_version,
+        start_block,
+        end_block,
+        entity_types,
+        output_types,
+        blocks_per_file,
+        period_seconds=10,
+        batch_size=10,
+        debug_batch_size=1,
+        block_batch_size=1,
+        max_workers=5,
+        log_file=None,
+        pid_file=None,
+        sync_recorder="file_sync_record",
+        cache="memory",
 ):
     configure_logging(log_file)
     configure_signals()
@@ -238,9 +238,13 @@ def stream(
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.info("Using provider " + provider_uri)
     logging.info("Using debug provider " + debug_provider_uri)
+
+    # parameter logic checking
+    check_file_exporter_parameter(output, block_batch_size, blocks_per_file)
+
     # build config
     config = {
-        "partition_size": partition_size,
+        "blocks_per_file": blocks_per_file,
     }
 
     if postgres_url:
@@ -292,3 +296,12 @@ def stream(
         period_seconds=period_seconds,
         pid_file=pid_file,
     )
+
+
+def check_file_exporter_parameter(outputs, block_batch_size, blocks_per_file):
+    if outputs is not None and \
+            (check_exporter_in_chosen(outputs, ItemExporterType.CSVFILE) or
+             check_exporter_in_chosen(outputs, ItemExporterType.JSONFILE)):
+        if block_batch_size > blocks_per_file or block_batch_size % blocks_per_file != 0:
+            raise click.ClickException("-B must be an integer multiple of --blocks-per-file."
+                                       f"for now: -B is {block_batch_size}, --blocks-per-file is {blocks_per_file}")
