@@ -57,6 +57,7 @@ class JobScheduler:
         item_exporters=[ConsoleItemExporter()],
         required_output_types=[],
         cache="memory",
+        multicall=None,
         auto_reorg=True,
     ):
         self.logger = logging.getLogger(__name__)
@@ -65,6 +66,7 @@ class JobScheduler:
         self.batch_web3_debug_provider = batch_web3_debug_provider
         self.item_exporters = item_exporters
         self.batch_size = batch_size
+        self._is_multicall = multicall
         self.debug_batch_size = debug_batch_size
         self.max_workers = max_workers
         self.config = config
@@ -131,6 +133,7 @@ class JobScheduler:
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
+                multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
@@ -147,6 +150,7 @@ class JobScheduler:
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
+                multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
