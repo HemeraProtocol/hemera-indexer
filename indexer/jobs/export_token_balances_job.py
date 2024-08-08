@@ -1,11 +1,7 @@
-import json
 import logging
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
-from eth_abi import abi
-
-from enumeration.record_level import RecordLevel
 from indexer.domain import dict_to_dataclass
 from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_balance import TokenBalance
@@ -15,9 +11,8 @@ from indexer.jobs.base_job import BaseJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.multi_call_util import MultiCallUtil
-from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group, rpc_response_to_result, zip_rpc_response
+from indexer.utils.multi_call_util import MultiCallProxy
+from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
@@ -73,7 +68,7 @@ class ExportTokenBalancesJob(BaseJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self.multi_call_util = MultiCallUtil(self._web3, kwargs)
+        self.multi_call_util = MultiCallProxy(self._web3, kwargs)
 
     def _start(self):
         super()._start()

@@ -8,11 +8,11 @@ from enum import Enum
 
 
 class Network(Enum):
-    Mainnet = (1, 0)
+    Mainnet = (1, 14353601)
     Ropsten = (3, 0)
     Rinkeby = (4, 0)
     Gorli = (5, 0)
-    Optimism = (10, 0)
+    Optimism = (10, 4286263)
     CostonTestnet = (16, 0)
     ThundercoreTestnet = (18, 0)
     SongbirdCanaryNetwork = (19, 0)
@@ -30,7 +30,7 @@ class Network(Enum):
     Coston2Testnet = (114, 0)
     Fuse = (122, 0)
     Heco = (128, 0)
-    Polygon = (137, 0)
+    Polygon = (137, 25770160)
     Fantom = (250, 0)
     Boba = (288, 0)
     KCC = (321, 0)
@@ -49,8 +49,8 @@ class Network(Enum):
     Base = (8453, 5022)
     EvmosTestnet = (9000, 0)
     Evmos = (9001, 0)
-    Holesky = (17000, 0)
-    Arbitrum = (42161, 0)
+    Holesky = (17000, 77)
+    Arbitrum = (42161, 7654707)
     Celo = (42220, 0)
     Oasis = (42262, 0)
     AvalancheFuji = (43113, 0)
@@ -65,7 +65,7 @@ class Network(Enum):
     Harmony = (1666600000, 0)
     PulseChain = (369, 0)
     PulseChainTestnet = (943, 0)
-    MANTLE = (5000, 0)
+    MANTLE = (5000, 304717)
 
     def __init__(self, value, deploy_block_number=0):
         self._value = value
