@@ -7,6 +7,7 @@
 import collections
 import json
 import logging
+from typing import List
 
 from eth_abi import abi
 from multicall import Call, Multicall
@@ -23,18 +24,20 @@ exception_recorder = ExceptionRecorder()
 
 class MultiCallUtil:
 
-    def __init__(self, provider, logger=None):
-        self.provider = provider
+    def __init__(self, web3, kwargs=None, logger=None):
+        self.web3 = web3
         if not logger:
             self.logger = logging.getLogger(__name__)
         else:
             self.logger = logger
-        self.multi = Multicall([], _w3=self.provider)
-        self.net = Network.from_value(self.multi.chainid)
+        self.multi_call = Multicall([], _w3=self.web3)
+        self.net = Network.from_value(self.multi_call.chainid)
         self.deploy_block_number = self.net.deploy_block_number
         self.chunk_size = 1000
+        self._is_batch = kwargs["batch_size"] > 1
 
-    def process(self, make_requests, raw_parameters, is_batch):
+    def fetch_token_balance(self, raw_parameters):
+        self.logger.info(f'MultiCallUtil  fetch_token_balance size={len(raw_parameters)}')
         token_balances = []
         result = {}
         grouped_data = collections.defaultdict(list)
@@ -53,8 +56,8 @@ class MultiCallUtil:
         for block_id, items in grouped_data.items():
             if block_id < self.deploy_block_number:
                 # eth call
-                self.logger.info(f'{block_id} < {self.deploy_block_number}, multicall not deployed, do eth_call')
-                tmp = self.token_balances_rpc_requests(make_requests, items, is_batch)
+                self.logger.info(f'on chain {self.net} {block_id} < {self.deploy_block_number}, multicall not deployed, do eth_call')
+                tmp = self.raw_token_balances_rpc_requests(items)
                 result.update(tmp)
             else:
                 # try multicall
@@ -62,12 +65,11 @@ class MultiCallUtil:
                 for chunk in chunks:
                     try:
                         tm = self.process_chunk(chunk, block_id)
-
                         result.update(tm)
                     except Exception as e:
                         # eth call
                         self.logger.warning(f"Exception while processing block {block_id}: {e}, downgrade to eth_call")
-                        tmp = self.token_balances_rpc_requests(make_requests, items, is_batch)
+                        tmp = self.raw_token_balances_rpc_requests(items)
                         result.update(tmp)
         for itt in token_balances:
             bk = self.build_key(itt)
@@ -92,29 +94,34 @@ class MultiCallUtil:
         for row in chunk:
             token, wal = row['token_address'], row['address']
             token_id = row['token_id']
-            if token_id:
+            token_type = row['token_type']
+            if token_type == 'ERC1155':
+                assert token_id is not None
                 calls.append(Call(token, ['balanceOf(address,uint256)(uint256)', wal, token_id], [(self.build_key(row), None)]))
             else:
                 calls.append(Call(token, ['balanceOf(address)(uint256)', wal], [(self.build_key(row), None)]))
-        self.multi.calls = calls
-        self.multi.block_id = block_id
-
-        result = self.multi()
+        self.multi_call.calls = calls
+        self.multi_call.block_id = block_id
+        try:
+            result = self.multi_call()
+        except Exception as e:
+            # throw it out
+            raise e
         if result:
             tm.update(result)
         return result
 
-    def token_balances_rpc_requests(self, make_requests, tokens, is_batch):
+    def raw_token_balances_rpc_requests(self, tokens):
         result_dic = {}
         for idx, token in enumerate(tokens):
             token["request_id"] = idx
 
         token_balance_rpc = list(generate_eth_call_json_rpc(tokens))
 
-        if is_batch:
-            response = make_requests(params=json.dumps(token_balance_rpc))
+        if self._is_batch:
+            response = self.web3.make_requests(params=json.dumps(token_balance_rpc))
         else:
-            response = [make_requests(params=json.dumps(token_balance_rpc[0]))]
+            response = [self.web3.make_requests(params=json.dumps(token_balance_rpc[0]))]
 
         for data in list(zip_rpc_response(tokens, response)):
             result = rpc_response_to_result(data[1])
@@ -140,5 +147,6 @@ class MultiCallUtil:
                     message=str(e),
                     level=RecordLevel.WARN,
                 )
+                result_dic[self.build_key(data[0])] = balance
 
         return result_dic
