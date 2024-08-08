@@ -8,10 +8,10 @@ from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, 
 from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
 from indexer.controller.stream_controller import StreamController
 from indexer.domain import Domain
-from indexer.exporters.item_exporter import create_item_exporters
+from indexer.exporters.item_exporter import create_item_exporters, check_exporter_in_chosen, ItemExporterType
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
-from indexer.utils.parameter_checking import check_file_exporter_parameter
+from indexer.utils.parameter_checking import check_file_exporter_parameter, check_file_load_parameter
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
@@ -110,6 +110,7 @@ def calculate_execution_time(func):
     "-s",
     "--start-block",
     default=None,
+    required=True,
     show_default=True,
     type=int,
     help="Start block",
@@ -119,6 +120,7 @@ def calculate_execution_time(func):
     "-e",
     "--end-block",
     default=None,
+    required=True,
     show_default=True,
     type=int,
     help="End block",
@@ -176,6 +178,17 @@ def calculate_execution_time(func):
     envvar="MAX_WORKERS",
 )
 @click.option(
+    "--source-path",
+    default=None,
+    show_default=True,
+    required=True,
+    type=str,
+    envvar="SOURCE_PATH",
+    help="The path to load the data."
+         "Load from local csv file e.g. csvfile://your-file-direction; "
+         "or local json file e.g. jsonfile://your-file-direction; ",
+)
+@click.option(
     "--log-file",
     default=None,
     show_default=True,
@@ -212,7 +225,7 @@ def calculate_execution_time(func):
          "or memory. means cache data will store in memory, memory",
 )
 @calculate_execution_time
-def stream(
+def load(
         provider_uri,
         debug_provider_uri,
         postgres_url,
@@ -230,6 +243,7 @@ def stream(
         max_workers=5,
         log_file=None,
         pid_file=None,
+        source_path=None,
         sync_recorder="file_sync_record",
         cache="memory",
 ):
@@ -241,11 +255,13 @@ def stream(
     logging.info("Using debug provider " + debug_provider_uri)
 
     # parameter logic checking
+    check_file_load_parameter(source_path)
     check_file_exporter_parameter(output, block_batch_size, blocks_per_file)
 
     # build config
     config = {
         "blocks_per_file": blocks_per_file,
+        "source_path": source_path
     }
 
     if postgres_url:

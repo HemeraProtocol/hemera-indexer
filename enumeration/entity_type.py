@@ -2,6 +2,7 @@ from enum import IntFlag
 from functools import reduce
 
 from indexer.domain.block import Block, UpdateBlockInternalCount
+from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract import Contract
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
@@ -64,6 +65,7 @@ def calculate_entity_value(entity_types):
 def generate_output_types(entity_types):
     if entity_types & EntityType.EXPLORER_BASE:
         yield Block
+        yield BlockTsMapper
         yield Transaction
         yield Log
 

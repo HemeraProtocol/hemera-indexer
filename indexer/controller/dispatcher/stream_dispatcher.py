@@ -20,8 +20,8 @@ class StreamDispatcher(BaseDispatcher):
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
-        config=None,
         required_output_types=[],
+        config=None,
         cache=None,
     ):
         super().__init__(service)
