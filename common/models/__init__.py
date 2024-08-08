@@ -75,30 +75,7 @@ def __getattr__(name):
     return val
 
 
-def scan_modules():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
-    modules = {}
-
-    for model_pattern in model_path_patterns:
-        pattern_path = os.path.join(project_root, model_pattern)
-        for models_dir in glob.glob(pattern_path):
-            if os.path.isdir(models_dir):
-                for file in os.listdir(models_dir):
-                    if file.endswith(".py") and file != "__init__.py":
-                        module_file_path = os.path.join(models_dir, file)
-                        module_relative_path = os.path.relpath(module_file_path, start=project_root)
-                        module_import_path = module_relative_path.replace(os.path.sep, ".")
-
-                        with open(module_file_path, "r", encoding="utf-8") as module:
-                            file_content = module.read()
-
-                        parsed_content = ast.parse(file_content)
-                        class_names = [node.name for node in ast.walk(parsed_content) if isinstance(node, ast.ClassDef)]
-                        for cls in class_names:
-                            modules[cls] = module_import_path[:-3]
-
-    return modules
-
-
-__lazy_imports = scan_subclass_by_path_patterns(model_path_patterns, HemeraModel)
+__lazy_imports = {
+    k: v['module_import_path']
+    for k, v in scan_subclass_by_path_patterns(model_path_patterns, HemeraModel).items()
+}

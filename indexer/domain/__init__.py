@@ -2,6 +2,13 @@ from dataclasses import asdict, dataclass, fields, is_dataclass
 from typing import Any, Dict, Union, get_args, get_origin
 
 from common.utils.format_utils import to_snake_case
+from common.utils.module_loading import scan_subclass_by_path_patterns, import_string
+
+model_path_patterns = [
+    "indexer/domain",
+    "indexer/modules/*/domain",
+    "indexer/modules/custom/*/domain",
+]
 
 
 class DomainMeta(type):
@@ -125,3 +132,18 @@ def dataclass_to_dict(instance: Domain) -> Dict[str, Any]:
             result[key] = dataclass_to_dict(value)
 
     return result
+
+
+def generate_domains_mapping():
+    mapping = {}
+    for domain in __domain_imports.keys():
+        mapping[to_snake_case(domain)] = import_string(__domain_imports[domain])
+
+    return mapping
+
+
+__domain_imports = {
+    k: v['cls_import_path']
+    for k, v in scan_subclass_by_path_patterns(model_path_patterns, Domain).items()
+}
+domains_mapping = generate_domains_mapping()
