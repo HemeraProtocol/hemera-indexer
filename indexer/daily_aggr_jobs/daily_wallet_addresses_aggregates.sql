@@ -1,3 +1,4 @@
+insert into daily_wallet_addresses_aggregates
 with base_table as (select date(block_timestamp) as block_date,
                            hash,
                            from_address,
