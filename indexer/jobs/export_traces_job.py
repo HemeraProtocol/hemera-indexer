@@ -12,7 +12,7 @@ from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
@@ -22,7 +22,7 @@ exception_recorder = ExceptionRecorder()
 
 
 # Exports traces
-class ExportTracesJob(BaseJob):
+class ExportTracesJob(BaseExportJob):
     dependency_types = [Block]
     output_types = [Trace, ContractInternalTransaction, UpdateBlockInternalCount]
 

@@ -19,7 +19,7 @@ from indexer.domain.token_transfer import (
     extract_transfer_from_log,
 )
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
@@ -99,7 +99,7 @@ abi_mapping = {
 }
 
 
-class ExportTokensAndTransfersJob(BaseJob):
+class ExportTokensAndTransfersJob(BaseExportJob):
     output_transfer_types = [
         ERC20TokenTransfer,
         ERC721TokenTransfer,
