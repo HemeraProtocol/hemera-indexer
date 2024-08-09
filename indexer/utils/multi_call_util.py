@@ -227,7 +227,15 @@ class MultiCallProxy:
                         tmp = self.multi_call()
                         result.update(tmp)
                     except Exception as e:
-                        self.logger.warning(f"multi_call.fetch_token_balance failed. e {e} block_id={block_id}")
+                        self.logger.warning(f"multi_call.fetch_token_balance failed. e {e} block_id={block_id} downgrade to eth_call")
+                        #
+                        # for call in calls:
+                            # try:
+                            #     call.w3 = self.web3
+                            #     tt = call()
+                            # except Exception as call_e:
+                            #     # locate the problem calls, where call_e raised, record it
+                            #     self.logger.error(f"balance single call failed: e {call_e}, call {call}, args {call.args}, target {call.target}")
                         to_execute_batch_calls.extend(chunk)
         if to_execute_batch_calls:
             for chunk in self.chunk_list(to_execute_batch_calls, self.batch_size):
