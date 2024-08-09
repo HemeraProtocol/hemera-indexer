@@ -9,7 +9,7 @@ from common import models
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
 from indexer.jobs import CSVSourceJob
-from indexer.jobs.base_job import BaseJob, BaseExportJob, ExtensionJob
+from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.utils.abi import bytes_to_hex_str
@@ -42,16 +42,16 @@ def get_source_job_type(source_path: str):
 
 class JobScheduler:
     def __init__(
-            self,
-            batch_web3_provider,
-            batch_web3_debug_provider,
-            batch_size=100,
-            debug_batch_size=1,
-            max_workers=5,
-            config=None,
-            item_exporters=[],
-            required_output_types=[],
-            cache="memory",
+        self,
+        batch_web3_provider,
+        batch_web3_debug_provider,
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config=None,
+        item_exporters=[],
+        required_output_types=[],
+        cache="memory",
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -61,7 +61,7 @@ class JobScheduler:
         self.max_workers = max_workers
         self.config = config
         self.required_output_types = required_output_types
-        self.load_from_source = config.get('source_path') is not None
+        self.load_from_source = config.get("source_path") is not None
         self.jobs = []
         self.job_classes = []
         self.job_map = defaultdict(list)

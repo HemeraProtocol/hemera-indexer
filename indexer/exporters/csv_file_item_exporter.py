@@ -51,14 +51,14 @@ class CSVFileItemExporter(BaseExporter):
             block_range = (first.number, last.number)
 
             # append extra data which definitely out of range to trigger items writing
-            dict_items.append({'number': last.number + self.blocks_per_file})
-            dict_items.sort(key=lambda x: x['number'])
+            dict_items.append({"number": last.number + self.blocks_per_file})
+            dict_items.sort(key=lambda x: x["number"])
         elif hasattr(first, "block_number"):
             block_range = (first.block_number, last.block_number)
 
             # append extra data which definitely out of range to trigger items writing
-            dict_items.append({'block_number': last.block_number + self.blocks_per_file})
-            dict_items.sort(key=lambda x: x['block_number'])
+            dict_items.append({"block_number": last.block_number + self.blocks_per_file})
+            dict_items.sort(key=lambda x: x["block_number"])
         else:
             block_range = None
 
@@ -68,19 +68,24 @@ class CSVFileItemExporter(BaseExporter):
             range_index = 0
             file_items = []
             for item in dict_items:
-                if 'number' in item \
-                        and data_sink_ranges[range_index][0] <= item['number'] <= data_sink_ranges[range_index][1]:
+                if (
+                    "number" in item
+                    and data_sink_ranges[range_index][0] <= item["number"] <= data_sink_ranges[range_index][1]
+                ):
                     file_items.append(item)
-                elif 'block_number' in item \
-                        and data_sink_ranges[range_index][0] <= item['block_number'] \
-                        <= data_sink_ranges[range_index][1]:
+                elif (
+                    "block_number" in item
+                    and data_sink_ranges[range_index][0] <= item["block_number"] <= data_sink_ranges[range_index][1]
+                ):
                     file_items.append(item)
                 else:
                     check_and_write(
-                        os.path.join(self.dir,
-                                     item_type,
-                                     f"{item_type}-{data_sink_ranges[range_index][0]}-{data_sink_ranges[range_index][1]}.csv"),
-                        file_items
+                        os.path.join(
+                            self.dir,
+                            item_type,
+                            f"{item_type}-{data_sink_ranges[range_index][0]}-{data_sink_ranges[range_index][1]}.csv",
+                        ),
+                        file_items,
                     )
                     range_index += 1
                     file_items = [item]

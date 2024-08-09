@@ -7,7 +7,7 @@ def scan_convert_config():
 
     config_mapping = {}
     for class_name, path in class_mapping.items():
-        full_class_path = path['cls_import_path']
+        full_class_path = path["cls_import_path"]
         module = import_string(full_class_path)
 
         module_configs = module.model_domain_mapping()

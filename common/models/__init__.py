@@ -76,6 +76,5 @@ def __getattr__(name):
 
 
 __lazy_imports = {
-    k: v['module_import_path']
-    for k, v in scan_subclass_by_path_patterns(model_path_patterns, HemeraModel).items()
+    k: v["module_import_path"] for k, v in scan_subclass_by_path_patterns(model_path_patterns, HemeraModel).items()
 }

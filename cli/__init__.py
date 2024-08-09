@@ -2,11 +2,11 @@ from pathlib import Path
 
 import click
 
+from cli.api import api
+from cli.load import load
+
 # from cli.fixing import fixing
 from cli.stream import stream
-from cli.load import load
-from cli.api import api
-
 from indexer.utils.logging_utils import logging_basic_config
 
 logging_basic_config()
