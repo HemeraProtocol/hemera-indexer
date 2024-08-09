@@ -61,7 +61,7 @@ class PostgresItemExporter(BaseExporter):
             # print(item_type, insert_stmt, [i[-1] for i in data])
             raise Exception("Error exporting items")
         finally:
-            conn.close()
+            self.service.release_conn(conn)
         end_time = datetime.now(tzlocal())
         logger.info(
             "Exporting items to table {} end, Item count: {}, Took {}".format(
