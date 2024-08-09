@@ -24,6 +24,7 @@ from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
+from indexer.utils.multi_call_util import MultiCallProxy
 from indexer.utils.utils import ZERO_ADDRESS, rpc_response_to_result
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ class ExportTokenIdInfosJob(BaseJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
+        self.multi_call_util = MultiCallProxy(self._web3, kwargs)
 
     def _start(self):
         super()._start()
@@ -115,11 +117,13 @@ class ExportTokenIdInfosJob(BaseJob):
             self._data_buff[ERC721TokenTransfer.type()],
             self._data_buff[ERC1155TokenTransfer.type()],
         )
-        self._batch_work_executor.execute(token_id_info, self._collect_batch, total_items=len(token_id_info))
-        self._batch_work_executor.wait()
+        # self._batch_work_executor.execute(token_id_info, self._collect_batch, total_items=len(token_id_info))
+        # self._batch_work_executor.wait()
+        self._collect_batch(token_id_info)
 
     def _collect_batch(self, token_list):
-        items = token_ids_info_rpc_requests(self._batch_web3_provider.make_request, token_list, self._is_batch)
+        # items = token_ids_info_rpc_requests(self._batch_web3_provider.make_request, token_list, self._is_batch)
+        items = self.multi_call_util.fetch_token_ids_info([asdict(t) for t in token_list])
         for item in items:
             self._collect_item(item.type(), item)
 
