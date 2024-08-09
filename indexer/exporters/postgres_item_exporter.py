@@ -4,6 +4,7 @@ from typing import Type
 
 import sqlalchemy
 from dateutil.tz import tzlocal
+from psycopg2.extras import execute_values
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
@@ -14,7 +15,7 @@ from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 10000
+COMMIT_BATCH_SIZE = 500
 
 
 class PostgresItemExporter(BaseExporter):
@@ -25,7 +26,7 @@ class PostgresItemExporter(BaseExporter):
     def export_items(self, items):
         start_time = datetime.now(tzlocal())
 
-        session = self.service.get_service_session()
+        conn = self.service.get_conn()
         try:
             items_grouped_by_type = group_by_item_type(items)
             tables = []
@@ -40,22 +41,18 @@ class PostgresItemExporter(BaseExporter):
                     update_strategy = pg_config["update_strategy"]
                     converter = pg_config["converter"]
 
+                    cur = conn.cursor()
                     data = [converter(table, item, do_update) for item in item_group]
-                    split_data = [data[i : i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
 
-                    if do_update:
-                        for batch in split_data:
-                            statement = insert(table).values(batch)
-                            statement = self.on_conflict_do_update(item_type, table, statement, update_strategy)
-                            session.execute(statement)
-                            session.commit()
+                    columns = list(data[0].keys())
+                    values = [tuple(d.values()) for d in data]
 
-                    else:
-                        for batch in split_data:
-                            statement = insert(table).values(batch).on_conflict_do_nothing()
-                            session.execute(statement)
-                            session.commit()
+                    insert_stmt = self.sql_insert_statement(
+                        item_type, table, do_update, columns, where_clause=update_strategy
+                    )
 
+                    execute_values(cur, insert_stmt, values, page_size=COMMIT_BATCH_SIZE)
+                    conn.commit()
                     tables.append(table.__tablename__)
 
         except Exception as e:
@@ -64,7 +61,7 @@ class PostgresItemExporter(BaseExporter):
             # print(item_type, insert_stmt, [i[-1] for i in data])
             raise Exception("Error exporting items")
         finally:
-            session.close()
+            conn.close()
         end_time = datetime.now(tzlocal())
         logger.info(
             "Exporting items to table {} end, Item count: {}, Took {}".format(
@@ -73,20 +70,31 @@ class PostgresItemExporter(BaseExporter):
         )
 
     @staticmethod
-    def on_conflict_do_update(domain: Type[Domain], model: Type[HemeraModel], statement, where_clause=None):
+    def sql_insert_statement(
+        domain: Type[Domain], model: Type[HemeraModel], do_update: bool, columns, where_clause=None
+    ):
         pk_list = []
         for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
             if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
                 for column in constraint.columns:
                     pk_list.append(column.name)
 
-        update_set = {}
-        for exc in statement.excluded:
-            if exc.name not in pk_list and exc.name in domain.get_all_annotation_keys():
-                update_set[exc.name] = exc
+        update_list = list(set(columns) - set(pk_list))
 
-        if where_clause:
-            where_clause = text(where_clause)
-
-        statement = statement.on_conflict_do_update(index_elements=pk_list, set_=update_set, where=where_clause)
-        return statement
+        if do_update:
+            insert_stmt = "INSERT INTO {}.{} ({}) VALUES %s ON CONFLICT ({}) DO UPDATE SET {}".format(
+                model.schema(),
+                model.__tablename__,
+                ", ".join(columns),
+                ", ".join(pk_list),
+                ", ".join(["{} = EXCLUDED.{}".format(column, column) for column in update_list]),
+            )
+            if where_clause:
+                insert_stmt += " WHERE {}".format(where_clause)
+        else:
+            insert_stmt = "INSERT INTO {}.{} ({}) VALUES %s ON CONFLICT DO NOTHING ".format(
+                model.schema(),
+                model.__tablename__,
+                ", ".join(columns),
+            )
+        return insert_stmt
