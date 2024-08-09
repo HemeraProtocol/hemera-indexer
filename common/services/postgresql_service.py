@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 from alembic import command
 from alembic.config import Config
+from psycopg2 import pool
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -38,8 +39,16 @@ class PostgreSQLService(object):
             connect_args={"application_name": "hemera_indexer"},
         )
         self.jdbc_url = jdbc_url
+        self.connection_pool = pool.SimpleConnectionPool(1, 10, jdbc_url)
+
         self.Session = sessionmaker(bind=self.engine)
         self.init_schema()
+
+    def get_conn(self):
+        return self.connection_pool.getconn()
+
+    def release_conn(self, conn):
+        self.connection_pool.putconn(conn)
 
     def init_schema(self):
 
@@ -84,3 +93,6 @@ class PostgreSQLService(object):
 
     def get_service_session(self):
         return self.Session()
+
+    def get_service_connection(self):
+        return self.engine.connect()
