@@ -10,7 +10,7 @@ from itertools import groupby
 from operator import itemgetter
 
 from eth_abi import abi
-from multicall import Call, Multicall
+from multicall import Call
 
 from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
@@ -19,7 +19,9 @@ from indexer.domain.token_id_infos import ERC721TokenIdChange, ERC1155TokenIdDet
     ERC721TokenIdDetail, UpdateERC721TokenIdDetail
 from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.exception_recorder import ExceptionRecorder
+from indexer.utils.extend_multicall import ExtendMulticall
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
+
 from indexer.utils.network_util import Network
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.utils import zip_rpc_response, rpc_response_to_result
@@ -37,7 +39,7 @@ class MultiCallProxy:
             self.logger = logging.getLogger(__name__)
         else:
             self.logger = logger
-        self.multi_call = Multicall([], _w3=self.web3)
+        self.multi_call = ExtendMulticall([], _w3=self.web3)
         self.net = Network.from_value(self.multi_call.chainid)
         self.deploy_block_number = self.net.deploy_block_number
         self.chunk_size = 1000
@@ -69,12 +71,12 @@ class MultiCallProxy:
 
                             address = row['address']
                             if row['token_type'] == TokenType.ERC721.value:
-                                if row['is_get_token_uri'] is not None:
+                                if row['is_get_token_uri'] is True:
                                     calls.append(Call(address, ['tokenURI(uint256)(string)', row['token_id']], [(self.build_key(row, self.token_ids_infos_k_fields), None)]))
                                 else:
                                     calls.append(Call(address, ['ownerOf(uint256)(address)', row['token_id']], [(self.build_key(row, self.token_ids_infos_k_fields), None)]))
                             elif row['token_type'] == TokenType.ERC1155.value:
-                                if row['is_get_token_uri'] is not None:
+                                if row['is_get_token_uri'] is True:
                                     calls.append(Call(address, ['uri(uint256)(string)', row['token_id']], [(self.build_key(row, self.token_ids_infos_k_fields), None)]))
                                 else:
                                     calls.append(Call(address, ['totalSupply(uint256)(uint256)', row['token_id']], [(self.build_key(row, self.token_ids_infos_k_fields), None)]))
@@ -87,37 +89,41 @@ class MultiCallProxy:
                     except Exception as e:
                         # eth call
                         self.logger.warning(f"Exception while processing block {block_id}: {e}, downgrade to eth_call")
-                        for call in calls:
-                            try:
-                                call.w3 = self.web3
-                                tt = call()
-                            except Exception as e:
-                                print(f"Exception while processing call {call}: {e}")
-                                print("stop here")
+                        # for call in calls:
+                        #     try:
+                        #         call.w3 = self.web3
+                        #         tt = call()
+                        #     except Exception as call_e:
+                        #         # locate the problem calls, where call_e raised, record it
+                        #         self.logger.error(f"single call failed: e {call_e}, call {call}, args {call.args}, target {call.target}")
                         to_execute_batch_calls.extend(chunk)
         # batch call
+        # need decode
+        raw_result = {}
         if to_execute_batch_calls:
             for chunk in self.chunk_list(to_execute_batch_calls, self.batch_size):
                 tmp = self._token_ids_info_rpc_requests(chunk)
-                result.update(tmp)
-        for itt in token_info_items:
-            bk = self.build_key(itt, self.token_ids_infos_k_fields)
-            if bk in result:
-                itt['name'] = result[bk]
+                raw_result.update(tmp)
         return_data = []
         for token_info in token_info_items:
             bk = self.build_key(token_info, self.token_ids_infos_k_fields)
+            decode_flag = True
             if bk in result:
                 value = result[bk]
+                decode_flag = False
+            elif bk in raw_result:
+                value = raw_result[bk]
             else:
                 value = None
+            if not value:
+                decode_flag = False
             if token_info['token_type'] == "ERC721":
                 if token_info['is_get_token_uri']:
                     return_data.append(
                         ERC721TokenIdDetail(
                             token_address=token_info['address'],
                             token_id=token_info['token_id'],
-                            token_uri=value,
+                            token_uri=abi.decode(["string"], bytes.fromhex(value))[0].replace("\u0000", "") if decode_flag else value,
                             block_number=token_info['block_number'],
                             block_timestamp=token_info['block_timestamp'],
                         )
@@ -127,7 +133,7 @@ class MultiCallProxy:
                         UpdateERC721TokenIdDetail(
                             token_address=token_info['address'],
                             token_id=token_info['token_id'],
-                            token_owner=value,
+                            token_owner=abi.decode(["address"], bytes.fromhex(value))[0] if decode_flag else value,
                             block_number=token_info['block_number'],
                             block_timestamp=token_info['block_timestamp'],
                         )
@@ -136,7 +142,7 @@ class MultiCallProxy:
                         ERC721TokenIdChange(
                             token_address=token_info['address'],
                             token_id=token_info['token_id'],
-                            token_owner=value,
+                            token_owner=abi.decode(["address"], bytes.fromhex(value))[0] if decode_flag else value,
                             block_number=token_info['block_number'],
                             block_timestamp=token_info['block_timestamp'],
                         )
@@ -147,7 +153,7 @@ class MultiCallProxy:
                         ERC1155TokenIdDetail(
                             token_address=token_info['address'],
                             token_id=token_info['token_id'],
-                            token_uri=value,
+                            token_uri=abi.decode(["string"], bytes.fromhex(value))[0].replace("\u0000", "") if decode_flag else value,
                             block_number=token_info['block_number'],
                             block_timestamp=token_info['block_timestamp'],
                         )
@@ -157,7 +163,7 @@ class MultiCallProxy:
                         UpdateERC1155TokenIdDetail(
                             token_address=token_info['address'],
                             token_id=token_info['token_id'],
-                            token_supply=value,
+                            token_supply=abi.decode(["uint256"], bytes.fromhex(value))[0] if decode_flag else value,
                             block_number=token_info['block_number'],
                             block_timestamp=token_info['block_timestamp'],
                         )
@@ -188,8 +194,6 @@ class MultiCallProxy:
         for token_info, data in zip(token_info_items, response):
             result = rpc_response_to_result(data)
             value = result[2:] if result is not None else None
-            if value is None:
-                continue
             return_dic[self.build_key(token_info, self.token_ids_infos_k_fields)] = value
         return return_dic
 
