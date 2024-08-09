@@ -1,3 +1,6 @@
+delete
+from period_wallet_addresses_aggregates
+where period_date = '{end_date}';
 insert into period_wallet_addresses_aggregates
 with interacted_address_table as (select d1.from_address            as address,
                                          count(distinct d2.address) as unique_address_interacted_count
@@ -5,19 +8,19 @@ with interacted_address_table as (select d1.from_address            as address,
                                            left join contracts d2
                                                      on d1.to_address = d2.address
                                                          and
-                                                        d2.block_timestamp < '{today}'
+                                                        d2.block_timestamp < '{end_date}'
                                   group by 1),
 
      today_table as (select *
                      from daily_wallet_addresses_aggregates
-                     where block_date = '{yesterday}'),
+                     where block_date = '{start_date}'),
 
      yesterday_table as (select *
                          from period_wallet_addresses_aggregates
-                         where period_date = '{yesterday}'),
+                         where period_date = '{start_date}'),
 
      s3 as (select coalesce(s1.address, s2.address)                      as address,
-                   date('{today}')                                       as period_date,
+                   date('{end_date}')                                    as period_date,
                    COALESCE(s1.txn_count, 0) + COALESCE(s2.txn_count, 0) as txn_count,
                    COALESCE(s1.gas_used, 0) + COALESCE(s2.gas_used, 0)   as gas_used,
                    COALESCE(s1.contract_deployed_count, 0) +

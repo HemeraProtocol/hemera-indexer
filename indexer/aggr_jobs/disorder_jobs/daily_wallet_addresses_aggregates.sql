@@ -1,3 +1,7 @@
+delete
+from daily_wallet_addresses_aggregates
+where block_date >= '{start_date}'
+  and block_date < '{end_date}';
 insert into daily_wallet_addresses_aggregates
 with base_table as (select date(block_timestamp) as block_date,
                            hash,
@@ -5,8 +9,8 @@ with base_table as (select date(block_timestamp) as block_date,
                            to_address,
                            gas * gas_price       as gas_used
                     from transactions
-                    where block_timestamp >= '{yesterday}'
-                      and block_timestamp < '{today}'),
+                    where block_timestamp >= '{start_date}'
+                      and block_timestamp < '{end_date}'),
 
      txn_table as (select block_date, address, count(1) as txn_count
                    from (select block_date, hash, from_address as address
@@ -28,20 +32,20 @@ with base_table as (select date(block_timestamp) as block_date,
                                   from base_table d1
                                            left join contracts d2
                                                      on d1.to_address = d2.address
-                                                         and d2.block_timestamp >= '{yesterday}' and
-                                                        d2.block_timestamp < '{today}'
+                                                         and d2.block_timestamp >= '{start_date}' and
+                                                        d2.block_timestamp < '{end_date}'
                                   group by 1, 2),
 
      contract_deployed_table as (select date(block_timestamp)    as block_date,
                                         transaction_from_address as address,
                                         count(1)                 as contract_deployed_count
                                  from contracts
-                                 where block_timestamp >= '{yesterday}'
-                                   and block_timestamp < '{today}'
+                                 where block_timestamp >= '{start_date}'
+                                   and block_timestamp < '{end_date}'
                                  group by 1, 2)
 
-select s1.block_date,
-       s1.address,
+select s1.address,
+       s1.block_date,
        s1.txn_count,
        s2.gas_used,
        s3.unique_address_interacted_count,
