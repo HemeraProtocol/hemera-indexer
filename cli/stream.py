@@ -11,7 +11,7 @@ from indexer.domain import Domain
 from indexer.exporters.item_exporter import create_item_exporters
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
-from indexer.utils.parameter_checking import check_file_exporter_parameter
+from indexer.utils.parameter_utils import check_file_exporter_parameter
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
