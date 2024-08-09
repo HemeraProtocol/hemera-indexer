@@ -91,6 +91,8 @@ def decode_response_error(error):
 
     if message.lower().find("invalid") != -1 and message.lower().find("opcode") != -1:
         return None
+    if "out of gas" in message:
+        return None
 
     if code == -32000:
         if (
