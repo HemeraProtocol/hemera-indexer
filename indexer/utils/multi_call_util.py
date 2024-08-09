@@ -15,16 +15,20 @@ from multicall import Call
 from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
 from indexer.domain.token_balance import TokenBalance
-from indexer.domain.token_id_infos import ERC721TokenIdChange, ERC1155TokenIdDetail, UpdateERC1155TokenIdDetail, \
-    ERC721TokenIdDetail, UpdateERC721TokenIdDetail
+from indexer.domain.token_id_infos import (
+    ERC721TokenIdChange,
+    ERC721TokenIdDetail,
+    ERC1155TokenIdDetail,
+    UpdateERC721TokenIdDetail,
+    UpdateERC1155TokenIdDetail,
+)
 from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.extend_multicall import ExtendMulticall
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-
 from indexer.utils.network_util import Network
 from indexer.utils.provider import get_provider_from_uri
-from indexer.utils.utils import zip_rpc_response, rpc_response_to_result
+from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 exception_recorder = ExceptionRecorder()
 
@@ -46,16 +50,16 @@ class MultiCallProxy:
         self.batch_size = kwargs["batch_size"]
         self._is_batch = kwargs["batch_size"] > 1
 
-        self.token_k_fields = ['address', 'token_address', 'block_number', 'token_type', 'token_id']
-        self.contract_k_fields = ['address']
-        self.token_ids_infos_k_fields = ['address', 'token_id', 'token_type', 'is_get_token_uri']
+        self.token_k_fields = ["address", "token_address", "block_number", "token_type", "token_id"]
+        self.contract_k_fields = ["address"]
+        self.token_ids_infos_k_fields = ["address", "token_id", "token_type", "is_get_token_uri"]
 
     def fetch_token_ids_info(self, token_info_items):
         # export token_ids_info
-        self.logger.info(f'MultiCallUtil  fetch_token_ids_info size={len(token_info_items)}')
-        sorted_items = sorted(token_info_items, key=itemgetter('block_number'))
+        self.logger.info(f"MultiCallUtil  fetch_token_ids_info size={len(token_info_items)}")
+        sorted_items = sorted(token_info_items, key=itemgetter("block_number"))
 
-        grouped_data = {k: list(v) for k, v in groupby(sorted_items, key=itemgetter('block_number'))}
+        grouped_data = {k: list(v) for k, v in groupby(sorted_items, key=itemgetter("block_number"))}
 
         result = {}
         to_execute_batch_calls = []
@@ -69,17 +73,41 @@ class MultiCallProxy:
                         calls = []
                         for row in chunk:
 
-                            address = row['address']
-                            if row['token_type'] == TokenType.ERC721.value:
-                                if row['is_get_token_uri'] is True:
-                                    calls.append(Call(address, ['tokenURI(uint256)(string)', row['token_id']], [(self.build_key(row, self.token_ids_infos_k_fields), None)]))
+                            address = row["address"]
+                            if row["token_type"] == TokenType.ERC721.value:
+                                if row["is_get_token_uri"] is True:
+                                    calls.append(
+                                        Call(
+                                            address,
+                                            ["tokenURI(uint256)(string)", row["token_id"]],
+                                            [(self.build_key(row, self.token_ids_infos_k_fields), None)],
+                                        )
+                                    )
                                 else:
-                                    calls.append(Call(address, ['ownerOf(uint256)(address)', row['token_id']], [(self.build_key(row, self.token_ids_infos_k_fields), None)]))
-                            elif row['token_type'] == TokenType.ERC1155.value:
-                                if row['is_get_token_uri'] is True:
-                                    calls.append(Call(address, ['uri(uint256)(string)', row['token_id']], [(self.build_key(row, self.token_ids_infos_k_fields), None)]))
+                                    calls.append(
+                                        Call(
+                                            address,
+                                            ["ownerOf(uint256)(address)", row["token_id"]],
+                                            [(self.build_key(row, self.token_ids_infos_k_fields), None)],
+                                        )
+                                    )
+                            elif row["token_type"] == TokenType.ERC1155.value:
+                                if row["is_get_token_uri"] is True:
+                                    calls.append(
+                                        Call(
+                                            address,
+                                            ["uri(uint256)(string)", row["token_id"]],
+                                            [(self.build_key(row, self.token_ids_infos_k_fields), None)],
+                                        )
+                                    )
                                 else:
-                                    calls.append(Call(address, ['totalSupply(uint256)(uint256)', row['token_id']], [(self.build_key(row, self.token_ids_infos_k_fields), None)]))
+                                    calls.append(
+                                        Call(
+                                            address,
+                                            ["totalSupply(uint256)(uint256)", row["token_id"]],
+                                            [(self.build_key(row, self.token_ids_infos_k_fields), None)],
+                                        )
+                                    )
 
                         self.multi_call.calls = calls
                         self.multi_call.block_id = block_id
@@ -117,55 +145,63 @@ class MultiCallProxy:
                 value = None
             if not value:
                 decode_flag = False
-            if token_info['token_type'] == "ERC721":
-                if token_info['is_get_token_uri']:
+            if token_info["token_type"] == "ERC721":
+                if token_info["is_get_token_uri"]:
                     return_data.append(
                         ERC721TokenIdDetail(
-                            token_address=token_info['address'],
-                            token_id=token_info['token_id'],
-                            token_uri=abi.decode(["string"], bytes.fromhex(value))[0].replace("\u0000", "") if decode_flag else value,
-                            block_number=token_info['block_number'],
-                            block_timestamp=token_info['block_timestamp'],
+                            token_address=token_info["address"],
+                            token_id=token_info["token_id"],
+                            token_uri=(
+                                abi.decode(["string"], bytes.fromhex(value))[0].replace("\u0000", "")
+                                if decode_flag
+                                else value
+                            ),
+                            block_number=token_info["block_number"],
+                            block_timestamp=token_info["block_timestamp"],
                         )
                     )
                 else:
                     return_data.append(
                         UpdateERC721TokenIdDetail(
-                            token_address=token_info['address'],
-                            token_id=token_info['token_id'],
+                            token_address=token_info["address"],
+                            token_id=token_info["token_id"],
                             token_owner=abi.decode(["address"], bytes.fromhex(value))[0] if decode_flag else value,
-                            block_number=token_info['block_number'],
-                            block_timestamp=token_info['block_timestamp'],
+                            block_number=token_info["block_number"],
+                            block_timestamp=token_info["block_timestamp"],
                         )
                     )
                     return_data.append(
                         ERC721TokenIdChange(
-                            token_address=token_info['address'],
-                            token_id=token_info['token_id'],
+                            token_address=token_info["address"],
+                            token_id=token_info["token_id"],
                             token_owner=abi.decode(["address"], bytes.fromhex(value))[0] if decode_flag else value,
-                            block_number=token_info['block_number'],
-                            block_timestamp=token_info['block_timestamp'],
+                            block_number=token_info["block_number"],
+                            block_timestamp=token_info["block_timestamp"],
                         )
                     )
             else:
-                if token_info['is_get_token_uri']:
+                if token_info["is_get_token_uri"]:
                     return_data.append(
                         ERC1155TokenIdDetail(
-                            token_address=token_info['address'],
-                            token_id=token_info['token_id'],
-                            token_uri=abi.decode(["string"], bytes.fromhex(value))[0].replace("\u0000", "") if decode_flag else value,
-                            block_number=token_info['block_number'],
-                            block_timestamp=token_info['block_timestamp'],
+                            token_address=token_info["address"],
+                            token_id=token_info["token_id"],
+                            token_uri=(
+                                abi.decode(["string"], bytes.fromhex(value))[0].replace("\u0000", "")
+                                if decode_flag
+                                else value
+                            ),
+                            block_number=token_info["block_number"],
+                            block_timestamp=token_info["block_timestamp"],
                         )
                     )
                 else:
                     return_data.append(
                         UpdateERC1155TokenIdDetail(
-                            token_address=token_info['address'],
-                            token_id=token_info['token_id'],
+                            token_address=token_info["address"],
+                            token_id=token_info["token_id"],
                             token_supply=abi.decode(["uint256"], bytes.fromhex(value))[0] if decode_flag else value,
-                            block_number=token_info['block_number'],
-                            block_timestamp=token_info['block_timestamp'],
+                            block_number=token_info["block_number"],
+                            block_timestamp=token_info["block_timestamp"],
                         )
                     )
         return return_data
@@ -198,10 +234,10 @@ class MultiCallProxy:
         return return_dic
 
     def fetch_token_balance(self, tokens):
-        self.logger.info(f'MultiCallUtil  fetch_token_balance size={len(tokens)}')
-        sorted_items = sorted(tokens, key=itemgetter('block_number'))
+        self.logger.info(f"MultiCallUtil  fetch_token_balance size={len(tokens)}")
+        sorted_items = sorted(tokens, key=itemgetter("block_number"))
 
-        grouped_data = {k: list(v) for k, v in groupby(sorted_items, key=itemgetter('block_number'))}
+        grouped_data = {k: list(v) for k, v in groupby(sorted_items, key=itemgetter("block_number"))}
 
         result = {}
         to_execute_batch_calls = []
@@ -213,29 +249,41 @@ class MultiCallProxy:
                     try:
                         calls = []
                         for row in chunk:
-                            token, wal = row['token_address'], row['address']
-                            token_id = row['token_id']
-                            token_type = row['token_type']
-                            if token_type == 'ERC1155' and token_id is not None:
-                                calls.append(Call(token, ['balanceOf(address,uint256)(uint256)', wal, token_id],
-                                                  [(self.build_key(row, self.token_k_fields), None)]))
+                            token, wal = row["token_address"], row["address"]
+                            token_id = row["token_id"]
+                            token_type = row["token_type"]
+                            if token_type == "ERC1155" and token_id is not None:
+                                calls.append(
+                                    Call(
+                                        token,
+                                        ["balanceOf(address,uint256)(uint256)", wal, token_id],
+                                        [(self.build_key(row, self.token_k_fields), None)],
+                                    )
+                                )
                             else:
-                                calls.append(Call(token, ['balanceOf(address)(uint256)', wal],
-                                                  [(self.build_key(row, self.token_k_fields), None)]))
+                                calls.append(
+                                    Call(
+                                        token,
+                                        ["balanceOf(address)(uint256)", wal],
+                                        [(self.build_key(row, self.token_k_fields), None)],
+                                    )
+                                )
                         self.multi_call.calls = calls
                         self.multi_call.block_id = block_id
                         tmp = self.multi_call()
                         result.update(tmp)
                     except Exception as e:
-                        self.logger.warning(f"multi_call.fetch_token_balance failed. e {e} block_id={block_id} downgrade to eth_call")
+                        self.logger.warning(
+                            f"multi_call.fetch_token_balance failed. e {e} block_id={block_id} downgrade to eth_call"
+                        )
                         #
                         # for call in calls:
-                            # try:
-                            #     call.w3 = self.web3
-                            #     tt = call()
-                            # except Exception as call_e:
-                            #     # locate the problem calls, where call_e raised, record it
-                            #     self.logger.error(f"balance single call failed: e {call_e}, call {call}, args {call.args}, target {call.target}")
+                        # try:
+                        #     call.w3 = self.web3
+                        #     tt = call()
+                        # except Exception as call_e:
+                        #     # locate the problem calls, where call_e raised, record it
+                        #     self.logger.error(f"balance single call failed: e {call_e}, call {call}, args {call.args}, target {call.target}")
                         to_execute_batch_calls.extend(chunk)
         if to_execute_batch_calls:
             for chunk in self.chunk_list(to_execute_batch_calls, self.batch_size):
@@ -247,7 +295,8 @@ class MultiCallProxy:
             balance = None
             if bk in result:
                 balance = result[bk]
-            return_data.append({
+            return_data.append(
+                {
                     "address": item["address"].lower(),
                     "token_id": item["token_id"],
                     "token_type": item["token_type"],
@@ -301,42 +350,43 @@ class MultiCallProxy:
 
     @staticmethod
     def build_key(dic: dict, fields: list):
-        return '|'.join(map(str, (dic[field] for field in fields)))
+        return "|".join(map(str, (dic[field] for field in fields)))
 
     @staticmethod
     def chunk_list(lst, chunk_size):
         """将列表分割成指定大小的块"""
         for i in range(0, len(lst), chunk_size):
-            yield lst[i:i + chunk_size]
+            yield lst[i : i + chunk_size]
 
 
 def abi_selector_encode_and_decode_type(token_id_info):
-    if token_id_info['token_type'] == TokenType.ERC721.value:
-        if token_id_info['is_get_token_uri']:
+    if token_id_info["token_type"] == TokenType.ERC721.value:
+        if token_id_info["is_get_token_uri"]:
             return encode_abi(
                 ERC721_TOKEN_URI_ABI_FUNCTION,
-                [token_id_info['token_id']],
+                [token_id_info["token_id"]],
                 erc721_uri_sig_prefix,
             )
         else:
             return encode_abi(
                 ERC721_OWNER_OF_ABI_FUNCTION,
-                [token_id_info['token_id']],
+                [token_id_info["token_id"]],
                 erc721_owner_of_sig_prefix,
             )
-    elif token_id_info['token_type'] == TokenType.ERC1155.value:
-        if token_id_info['is_get_token_uri']:
+    elif token_id_info["token_type"] == TokenType.ERC1155.value:
+        if token_id_info["is_get_token_uri"]:
             return encode_abi(
                 ERC1155_TOKEN_URI_ABI_FUNCTION,
-                [token_id_info['token_id']],
+                [token_id_info["token_id"]],
                 erc1155_token_uri_sig_prefix,
             )
         else:
             return encode_abi(
                 ERC1155_TOTAL_SUPPLY_ABI_FUNCTION,
-                [token_id_info['token_id']],
+                [token_id_info["token_id"]],
                 erc1155_token_supply_sig_prefix,
             )
+
 
 ERC721_TOKEN_URI_ABI_FUNCTION = {
     "constant": True,

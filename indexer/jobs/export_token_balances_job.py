@@ -166,4 +166,3 @@ def extract_token_parameters(
         )
 
     return token_parameters
-
