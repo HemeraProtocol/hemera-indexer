@@ -21,7 +21,7 @@ FEATURE_ID = FeatureType.BLUE_CHIP_HOLDING.value
 
 
 class ExportBlueChipHoldersJob(FilterTransactionDataJob):
-    dependency_types = [TokenBalance]
+    dependency_types = [TokenBalance, BlockTsMapper]
     output_types = [AllFeatureValueRecordBlueChipHolders, BlueChipHolder]
 
     def __init__(self, **kwargs):
@@ -45,7 +45,8 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
 
     def _collect(self, **kwargs):
         token_balance = self._data_buff[TokenBalance.type()]
-
+        if token_balance is None or len(token_balance) == 0:
+            return
         self._batch_work_executor.execute(
             token_balance,
             self._collect_batch,
@@ -60,7 +61,6 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
         for address, token_balance_list in token_balances.items():
             for token_balance in token_balance_list:
 
-                print(f"token_balance value =  {token_balance}")
                 token_address = token_balance.token_address
                 if token_address not in self._blue_chip_projects:
                     continue
@@ -144,6 +144,8 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
 
     def _collect_current_holding(self):
         blocks = self._data_buff[BlockTsMapper.type()]
+        if blocks is None or len(blocks) == 0:
+            return
         last_block = blocks[-1]
 
         for wallet_address, data in self._updates_this_batch.items():
