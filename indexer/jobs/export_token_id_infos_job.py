@@ -117,8 +117,9 @@ class ExportTokenIdInfosJob(BaseJob):
             self._data_buff[ERC721TokenTransfer.type()],
             self._data_buff[ERC1155TokenTransfer.type()],
         )
-        self._batch_work_executor.execute(token_id_info, self._collect_batch, total_items=len(token_id_info))
-        self._batch_work_executor.wait()
+        # self._batch_work_executor.execute(token_id_info, self._collect_batch, total_items=len(token_id_info))
+        # self._batch_work_executor.wait()
+        self._collect_batch(token_id_info)
 
     def _collect_batch(self, token_list):
         # items = token_ids_info_rpc_requests(self._batch_web3_provider.make_request, token_list, self._is_batch)
