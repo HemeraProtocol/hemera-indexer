@@ -91,8 +91,10 @@ class CSVFileItemExporter(BaseExporter):
 
     def calculate_file_range(self, block_range: tuple):
         range_begin, range_end = block_range
-        file_begin = range_begin
+        if range_end - range_begin < self.blocks_per_file:
+            return [block_range]
 
+        file_begin = range_begin
         file_ranges = []
         while file_begin <= range_end:
             file_end = file_begin + self.blocks_per_file - 1
