@@ -227,7 +227,7 @@ class MultiCallProxy:
                         tmp = self.multi_call()
                         result.update(tmp)
                     except Exception as e:
-                        self.logger.warning(f"multi_call.fetch_token_balance failed. e {e}")
+                        self.logger.warning(f"multi_call.fetch_token_balance failed. e {e} block_id={block_id}")
                         to_execute_batch_calls.extend(chunk)
         if to_execute_batch_calls:
             for chunk in self.chunk_list(to_execute_batch_calls, self.batch_size):
