@@ -13,6 +13,7 @@ from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
+from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordUniswapV3Pool,
     AllFeatureValueRecordUniswapV3Token,
@@ -32,6 +33,8 @@ class EntityType(IntFlag):
     USER_OPS = 1 << 5
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
+
+    ADDRESS_INDEX = 1 << 6
 
     @staticmethod
     def combine_all_entity_types():
@@ -97,3 +100,16 @@ def generate_output_types(entity_types):
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult
+
+    if entity_types & EntityType.ADDRESS_INDEX:
+        yield Block
+        yield Transaction
+        yield Log
+        yield Token
+        yield ERC20TokenTransfer
+        yield ERC721TokenTransfer
+        yield AddressNftTransfer
+        yield AddressTokenHolder
+        yield AddressTokenTransfer
+        yield TokenAddressNftInventory
+        yield AddressTransaction
