@@ -1,5 +1,4 @@
 from indexer.aggr_jobs.aggr_job_scheduler import AggrJobScheduler
-from indexer.aggr_jobs.aggr_base_job import AggrBaseJob
 from indexer.controller.dispatcher.base_dispatcher import BaseDispatcher
 
 
