@@ -28,7 +28,7 @@ class PostgreSQLService(object):
             cls.instance = super().__new__(cls)
         return cls.instance
 
-    def __init__(self, jdbc_url, db_version="head"):
+    def __init__(self, jdbc_url, db_version="head", script_location="migrations"):
         self.db_version = db_version
         self.engine = create_engine(
             jdbc_url,
@@ -42,7 +42,7 @@ class PostgreSQLService(object):
         self.connection_pool = pool.SimpleConnectionPool(1, 10, jdbc_url)
 
         self.Session = sessionmaker(bind=self.engine)
-        self.init_schema()
+        self.init_schema(script_location)
 
     def get_conn(self):
         return self.connection_pool.getconn()
@@ -50,11 +50,11 @@ class PostgreSQLService(object):
     def release_conn(self, conn):
         self.connection_pool.putconn(conn)
 
-    def init_schema(self):
+    def init_schema(self, script_location):
 
         alembic_cfg = Config()
         # Set script location and version path separator
-        alembic_cfg.set_main_option("script_location", "migrations")
+        alembic_cfg.set_main_option("script_location", script_location)
         alembic_cfg.set_main_option("version_path_separator", os.pathsep)
 
         # Set the database connection URL

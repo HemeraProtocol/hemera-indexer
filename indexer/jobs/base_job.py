@@ -60,6 +60,7 @@ class BaseJob(metaclass=BaseJobMeta):
         self._batch_web3_provider = kwargs["batch_web3_provider"]
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
+        self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
 
     def run(self, **kwargs):
         try:
@@ -99,6 +100,13 @@ class BaseJob(metaclass=BaseJobMeta):
     def _collect_domain(self, domain):
         with self.locks[domain.type()]:
             self._data_buff[domain.type()].append(domain)
+
+    def _collect_domains(self, domains):
+        for domain in domains:
+            self._collect_domain(domain)
+
+    def _get_domain(self, domain):
+        return self._data_buff[domain.type()]
 
     def _process(self):
         pass

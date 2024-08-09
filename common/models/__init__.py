@@ -44,7 +44,12 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
         if key in table.__table__.c:
             column_type = get_column_type(table, key)
             if isinstance(column_type, BYTEA) and not isinstance(getattr(data, key), bytes):
-                converted_data[key] = bytes.fromhex(getattr(data, key)[2:]) if getattr(data, key) else None
+                if isinstance(getattr(data, key), str):
+                    converted_data[key] = bytes.fromhex(getattr(data, key)[2:]) if getattr(data, key) else None
+                elif isinstance(getattr(data, key), int):
+                    converted_data[key] = getattr(data, key).to_bytes(32, byteorder="big")
+                else:
+                    converted_data[key] = None
             elif isinstance(column_type, TIMESTAMP):
                 converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
             elif isinstance(column_type, ARRAY) and isinstance(column_type.item_type, BYTEA):
