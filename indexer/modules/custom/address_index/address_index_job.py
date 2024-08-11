@@ -68,7 +68,7 @@ def create_address_transaction(transaction, address, txn_type, the_other_address
         value=transaction.value,
         transaction_fee=transaction_fee,
         receipt_status=transaction.receipt.status,
-        method=transaction.input[:10],
+        method=transaction.input[2:10],
     )
 
 

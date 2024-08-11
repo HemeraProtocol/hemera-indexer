@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import INT, NUMERIC, SMALLINT, Column, PrimaryKeyConstraint, func
+from sqlalchemy import INT, NUMERIC, SMALLINT, TEXT, Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
@@ -20,7 +20,7 @@ class AddressTransactions(HemeraModel):
     value = Column(NUMERIC(100))
     transaction_fee = Column(NUMERIC(100))
     receipt_status = Column(INT)
-    method = Column(BYTEA)
+    method = Column(TEXT)
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
