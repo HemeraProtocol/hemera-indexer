@@ -125,6 +125,15 @@ def calculate_execution_time(func):
     envvar="END_BLOCK",
 )
 @click.option(
+    "--retry-from-record",
+    default=False,
+    show_default=True,
+    type=bool,
+    envvar="RETRY_FROM_RECORD",
+    help="With the default parameter, the program will always run from the -s parameter, "
+    "and when set to True, it will run from the record point between -s and -e",
+)
+@click.option(
     "--blocks-per-file",
     default=1000,
     show_default=True,
@@ -231,6 +240,7 @@ def stream(
     log_file=None,
     pid_file=None,
     sync_recorder="file_sync_record",
+    retry_from_record=False,
     cache="memory",
 ):
     configure_logging(log_file)
@@ -288,6 +298,7 @@ def stream(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_dispatcher=stream_dispatcher,
         sync_recorder=create_recorder(sync_recorder, config),
+        retry_from_record=retry_from_record,
     )
 
     controller.action(
