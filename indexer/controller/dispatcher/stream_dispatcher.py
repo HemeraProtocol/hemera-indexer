@@ -21,7 +21,7 @@ class StreamDispatcher(BaseDispatcher):
         debug_batch_size=1,
         max_workers=5,
         required_output_types=[],
-        config=None,
+        config={},
         cache=None,
     ):
         super().__init__(service)
