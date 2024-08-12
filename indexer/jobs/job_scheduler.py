@@ -1,17 +1,15 @@
 import logging
 from collections import defaultdict, deque
-from dataclasses import asdict
 from typing import List, Set, Type
 
 from pottery import RedisDict
 from redis.client import Redis
-from sqlalchemy import text
 
 from common import models
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
-from indexer.domain.token import Token
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs import CSVSourceJob
+from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.utils.abi import bytes_to_hex_str
@@ -37,6 +35,11 @@ def get_tokens_from_db(session):
         return dict
 
 
+def get_source_job_type(source_path: str):
+    if source_path.startswith("csvfile://"):
+        return CSVSourceJob
+
+
 class JobScheduler:
     def __init__(
         self,
@@ -45,7 +48,7 @@ class JobScheduler:
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
-        config=None,
+        config={},
         item_exporters=[],
         required_output_types=[],
         cache="memory",
@@ -58,11 +61,12 @@ class JobScheduler:
         self.max_workers = max_workers
         self.config = config
         self.required_output_types = required_output_types
+        self.load_from_source = config.get("source_path") is not None
         self.jobs = []
         self.job_classes = []
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
-        self.pg_service = config.get("db_service") if config is not None else None
+        self.pg_service = config.get("db_service") if "db_service" in config else None
 
         self.discover_and_register_job_classes()
         self.required_job_classes = self.get_required_job_classes(required_output_types)
@@ -81,6 +85,7 @@ class JobScheduler:
                 except Exception as e:
                     logging.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
                     BaseJob.init_token_cache(token_dict_from_db)
+        self.instantiate_jobs()
 
     def get_data_buff(self):
         return BaseJob._data_buff
@@ -89,7 +94,13 @@ class JobScheduler:
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
-        all_subclasses = BaseJob.discover_jobs()
+        if self.load_from_source:
+            source_job = get_source_job_type(source_path=self.config.get("source_path"))
+            all_subclasses = [source_job]
+        else:
+            all_subclasses = BaseExportJob.discover_jobs()
+
+        all_subclasses.extend(ExtensionJob.discover_jobs())
         for cls in all_subclasses:
             self.job_classes.append(cls)
             for output in cls.output_types:
@@ -120,22 +131,21 @@ class JobScheduler:
 
             self.jobs.append(job)
 
-        export_blocks_job = ExportBlocksJob(
-            required_output_types=self.required_output_types,
-            batch_web3_provider=self.batch_web3_provider,
-            batch_web3_debug_provider=self.batch_web3_debug_provider,
-            item_exporters=self.item_exporters,
-            batch_size=self.batch_size,
-            debug_batch_size=self.debug_batch_size,
-            max_workers=self.max_workers,
-            config=self.config,
-            filters=filters,
-        )
-        self.jobs.insert(0, export_blocks_job)
+        if ExportBlocksJob in self.resolved_job_classes:
+            export_blocks_job = ExportBlocksJob(
+                required_output_types=self.required_output_types,
+                batch_web3_provider=self.batch_web3_provider,
+                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                item_exporters=self.item_exporters,
+                batch_size=self.batch_size,
+                debug_batch_size=self.debug_batch_size,
+                max_workers=self.max_workers,
+                config=self.config,
+                filters=filters,
+            )
+            self.jobs.insert(0, export_blocks_job)
 
     def run_jobs(self, start_block, end_block):
-        if not self.jobs:
-            self.instantiate_jobs()
         for job in self.jobs:
             job.run(start_block=start_block, end_block=end_block)
         # TODO: clean data buffer after all jobs are run

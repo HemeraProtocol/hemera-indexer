@@ -5,7 +5,7 @@ from indexer.domain.block import Block
 from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 # Exports blocks and block number <-> timestamp mapping
-class ExportBlocksJob(BaseJob):
+class ExportBlocksJob(BaseExportJob):
     dependency_types = []
-    output_types = [Block]
+    output_types = [Block, BlockTsMapper]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

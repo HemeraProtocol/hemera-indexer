@@ -21,7 +21,7 @@ def test_export_coin_balance_job():
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
-        config=None,
+        config={},
         required_output_types=[CoinBalance],
     )
 

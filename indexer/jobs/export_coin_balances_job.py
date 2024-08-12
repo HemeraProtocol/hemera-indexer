@@ -12,7 +12,7 @@ from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_get_balance_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
@@ -29,7 +29,7 @@ class AddressRecord:
 
 
 # Exports coin balances
-class ExportCoinBalancesJob(BaseJob):
+class ExportCoinBalancesJob(BaseExportJob):
     dependency_types = [Block, ContractInternalTransaction]
     output_types = [CoinBalance]
 
