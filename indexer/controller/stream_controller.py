@@ -16,12 +16,12 @@ exception_recorder = ExceptionRecorder()
 class StreamController(BaseController):
 
     def __init__(
-            self,
-            batch_web3_provider,
-            sync_recorder: BaseRecorder,
-            job_dispatcher=BaseDispatcher(),
-            max_retries=5,
-            retry_from_record=False
+        self,
+        batch_web3_provider,
+        sync_recorder: BaseRecorder,
+        job_dispatcher=BaseDispatcher(),
+        max_retries=5,
+        retry_from_record=False,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
@@ -31,13 +31,13 @@ class StreamController(BaseController):
         self.retry_from_record = retry_from_record
 
     def action(
-            self,
-            start_block=None,
-            end_block=None,
-            block_batch_size=10,
-            period_seconds=10,
-            retry_errors=True,
-            pid_file=None,
+        self,
+        start_block=None,
+        end_block=None,
+        block_batch_size=10,
+        period_seconds=10,
+        retry_errors=True,
+        pid_file=None,
     ):
         try:
             if pid_file is not None:
