@@ -24,6 +24,7 @@ class AggrDisorderJob(AggrBaseJob):
             execute_sql_list.append(sql_content)
 
         self._batch_work_executor.execute(execute_sql_list, self.execute_sql, total_items=len(execute_sql_list))
+        self._batch_work_executor.wait()
 
     def execute_sql(self, sql_contents):
         session = self.db_service.Session()
