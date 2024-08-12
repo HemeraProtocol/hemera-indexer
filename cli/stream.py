@@ -58,7 +58,7 @@ def calculate_execution_time(func):
     type=str,
     envvar="DEBUG_PROVIDER_URI",
     help="The URI of the web3 debug provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
+         "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
 )
 @click.option(
     "-o",
@@ -66,11 +66,11 @@ def calculate_execution_time(func):
     type=str,
     envvar="OUTPUT",
     help="The output selection."
-    "Print to console e.g. console; "
-    "or postgresql e.g. postgres"
-    "or local json file e.g. jsonfile://your-file-path; "
-    "or local csv file e.g. csvfile://your-file-path; "
-    "or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path",
+         "Print to console e.g. console; "
+         "or postgresql e.g. postgres"
+         "or local json file e.g. jsonfile://your-file-path; "
+         "or local csv file e.g. csvfile://your-file-path; "
+         "or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path",
 )
 @click.option(
     "-E",
@@ -89,10 +89,10 @@ def calculate_execution_time(func):
     type=str,
     envvar="OUTPUT_TYPES",
     help="The list of output types to export, corresponding to more detailed data models. "
-    "Specifying this option will prioritize these settings over the entity types specified in -E. "
-    "Examples include: block, transaction, log, "
-    "token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, "
-    "trace, contract, coin_balance.",
+         "Specifying this option will prioritize these settings over the entity types specified in -E. "
+         "Examples include: block, transaction, log, "
+         "token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, "
+         "trace, contract, coin_balance.",
 )
 @click.option(
     "-v",
@@ -102,9 +102,9 @@ def calculate_execution_time(func):
     type=str,
     envvar="DB_VERSION",
     help="The database version to initialize the database. using the alembic script's revision ID to "
-    "specify a version. "
-    "e.g. head, indicates the latest version."
-    "or base, indicates the empty database without any table.",
+         "specify a version. "
+         "e.g. head, indicates the latest version."
+         "or base, indicates the empty database without any table.",
 )
 @click.option(
     "-s",
@@ -123,6 +123,15 @@ def calculate_execution_time(func):
     type=int,
     help="End block",
     envvar="END_BLOCK",
+)
+@click.option(
+    "--retry-from-record",
+    default=False,
+    show_default=True,
+    type=bool,
+    envvar="RETRY_FROM_RECORD",
+    help="With the default parameter, the program will always run from the -s parameter, "
+         "and when set to True, it will run from the record point between -s and -e",
 )
 @click.option(
     "--blocks-per-file",
@@ -198,8 +207,8 @@ def calculate_execution_time(func):
     type=str,
     envvar="SYNC_RECORDER",
     help="How to store the sync record data."
-    'e.g pg_base. means sync record data will store in pg as "base" be key'
-    'or file_base. means sync record data will store in file as "base" be file name',
+         'e.g pg_base. means sync record data will store in pg as "base" be key'
+         'or file_base. means sync record data will store in file as "base" be file name',
 )
 @click.option(
     "--cache",
@@ -208,30 +217,31 @@ def calculate_execution_time(func):
     type=str,
     envvar="CACHE_SERVICE",
     help="How to store the cache data."
-    "e.g redis. means cache data will store in redis, redis://localhost:6379"
-    "or memory. means cache data will store in memory, memory",
+         "e.g redis. means cache data will store in redis, redis://localhost:6379"
+         "or memory. means cache data will store in memory, memory",
 )
 @calculate_execution_time
 def stream(
-    provider_uri,
-    debug_provider_uri,
-    postgres_url,
-    output,
-    db_version,
-    start_block,
-    end_block,
-    entity_types,
-    output_types,
-    blocks_per_file,
-    period_seconds=10,
-    batch_size=10,
-    debug_batch_size=1,
-    block_batch_size=1,
-    max_workers=5,
-    log_file=None,
-    pid_file=None,
-    sync_recorder="file_sync_record",
-    cache="memory",
+        provider_uri,
+        debug_provider_uri,
+        postgres_url,
+        output,
+        db_version,
+        start_block,
+        end_block,
+        entity_types,
+        output_types,
+        blocks_per_file,
+        period_seconds=10,
+        batch_size=10,
+        debug_batch_size=1,
+        block_batch_size=1,
+        max_workers=5,
+        log_file=None,
+        pid_file=None,
+        sync_recorder="file_sync_record",
+        retry_from_record=False,
+        cache="memory",
 ):
     configure_logging(log_file)
     configure_signals()
@@ -288,6 +298,7 @@ def stream(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_dispatcher=stream_dispatcher,
         sync_recorder=create_recorder(sync_recorder, config),
+        retry_from_record=retry_from_record
     )
 
     controller.action(
