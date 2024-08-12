@@ -48,7 +48,7 @@ class JobScheduler:
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
-        config=None,
+        config={},
         item_exporters=[],
         required_output_types=[],
         cache="memory",
