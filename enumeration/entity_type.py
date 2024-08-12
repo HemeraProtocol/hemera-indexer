@@ -102,5 +102,12 @@ def generate_output_types(entity_types):
         yield UserOperationsResult
 
     if entity_types & EntityType.BLUE_CHIP:
+        yield Block
+        yield Transaction
+        yield ERC721TokenTransfer
+        yield Token
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
         yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
