@@ -12,13 +12,7 @@ from datetime import datetime
 from typing import List
 
 import psycopg2
-from sqlalchemy import (
-    ARRAY,
-    Float,
-    Integer,
-    Numeric,
-    text,
-)
+from sqlalchemy import ARRAY, Float, Integer, Numeric, text
 from sqlalchemy.sql.functions import Function
 
 from common.converter.pg_converter import domain_model_mapping
@@ -27,6 +21,8 @@ from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 logger = logging.getLogger(__name__)
 
 COMMIT_BATCH_SIZE = 10000
+
+
 class PostgresItemExporterV2(BaseExporter):
     def __init__(self, service):
         self.service = service
@@ -57,13 +53,13 @@ class PostgresItemExporterV2(BaseExporter):
     def process_item_group(self, session, item_type, item_group):
 
         pg_config = domain_model_mapping[item_type.__name__]
-        table = pg_config['table']
-        do_update = pg_config['conflict_do_update']
-        update_strategy = pg_config['update_strategy']
-        converter = pg_config['converter']
+        table = pg_config["table"]
+        do_update = pg_config["conflict_do_update"]
+        update_strategy = pg_config["update_strategy"]
+        converter = pg_config["converter"]
 
         data = [converter(table, item, do_update) for item in item_group]
-        split_data = [data[i: i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
+        split_data = [data[i : i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
         for batch in split_data:
             self.upsert_data(session, item_type, table, batch, update_strategy)
 
@@ -107,19 +103,19 @@ class PostgresItemExporterV2(BaseExporter):
 
     @staticmethod
     def format_value(value, column_type):
-        if value is None or (isinstance(value, str) and value.strip() == ''):
-            return r'\N'
-        if getattr(column_type, '__visit_name__', None) == 'BYTEA':
-            hex_value = '\\x' + binascii.hexlify(value).decode('ascii')
+        if value is None or (isinstance(value, str) and value.strip() == ""):
+            return r"\N"
+        if getattr(column_type, "__visit_name__", None) == "BYTEA":
+            hex_value = "\\x" + binascii.hexlify(value).decode("ascii")
             return hex_value
         if isinstance(column_type, (Numeric, Integer, Float)):
-            return str(value) if value != '' else r'\N'
+            return str(value) if value != "" else r"\N"
         if isinstance(column_type, ARRAY) or isinstance(column_type, List):
             return PostgresItemExporterV2.format_array(value)
         if isinstance(value, datetime):
             return value.isoformat()
         if isinstance(value, str):
-            return value.replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+            return value.replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t")
         if isinstance(value, Function):
             return PostgresItemExporterV2.evaluate_function(value)
         return str(value)
@@ -127,19 +123,19 @@ class PostgresItemExporterV2(BaseExporter):
     @staticmethod
     def format_array(value):
         if value is None or value == []:
-            return r'\N'
+            return r"\N"
         if isinstance(value, list):
-            return '{' + ','.join(PostgresItemExporterV2.format_value(v, None) for v in value) + '}'
+            return "{" + ",".join(PostgresItemExporterV2.format_value(v, None) for v in value) + "}"
         return str(value)
 
     @staticmethod
     def evaluate_function(function_obj):
-        if function_obj.name == 'to_timestamp':
+        if function_obj.name == "to_timestamp":
             timestamp_value = function_obj.clauses.clauses[0].value
             if isinstance(timestamp_value, int):
-                return datetime.utcfromtimestamp(timestamp_value).strftime('%Y-%m-%d %H:%M:%S')
+                return datetime.utcfromtimestamp(timestamp_value).strftime("%Y-%m-%d %H:%M:%S")
             elif isinstance(timestamp_value, str):
-                return datetime.strptime(timestamp_value, '%Y-%m-%d %H:%M:%S').strftime('%Y-%m-%d %H:%M:%S')
+                return datetime.strptime(timestamp_value, "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M:%S")
         return None
 
     @staticmethod
@@ -198,7 +194,7 @@ class PostgresItemExporterV2(BaseExporter):
 
     @staticmethod
     def create_merge_statement(target_table, source_table_name, pk_list, update_columns):
-        target_name = target_table.__tablename__ if hasattr(target_table, '__tablename__') else target_table.name
+        target_name = target_table.__tablename__ if hasattr(target_table, "__tablename__") else target_table.name
 
         merge_stmt = f"""
         MERGE INTO {target_name} AS target

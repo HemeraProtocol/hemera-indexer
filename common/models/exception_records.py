@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column
-from sqlalchemy.dialects.postgresql import BIGINT, VARCHAR, JSONB, TIMESTAMP
+from sqlalchemy.dialects.postgresql import BIGINT, JSONB, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
 

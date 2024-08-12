@@ -31,16 +31,18 @@ class ExceptionRecorder(object):
     def init_pg_service(self, service):
         self._service = service
 
-    def log(self, block_number: int, dataclass: str, message_type: str, message: str, exception_env={}, level='Info'):
+    def log(self, block_number: int, dataclass: str, message_type: str, message: str, exception_env={}, level="Info"):
         if self._service is not None:
-            self._log_buffer.put({
-                'block_number': block_number,
-                'dataclass': dataclass,
-                'message_type': message_type,
-                'message': message,
-                'exception_env': exception_env,
-                'level': level,
-            })
+            self._log_buffer.put(
+                {
+                    "block_number": block_number,
+                    "dataclass": dataclass,
+                    "message_type": message_type,
+                    "message": message,
+                    "exception_env": exception_env,
+                    "level": level,
+                }
+            )
             self._check_and_flush()
 
     def force_to_flush(self):

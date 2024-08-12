@@ -1,9 +1,22 @@
 import os
+from contextlib import contextmanager
 
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+
+
+@contextmanager
+def session_scope(session):
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 class PostgreSQLService(object):

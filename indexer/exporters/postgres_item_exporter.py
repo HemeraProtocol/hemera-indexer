@@ -4,9 +4,7 @@ from typing import Type
 
 import sqlalchemy
 from dateutil.tz import tzlocal
-from sqlalchemy import (
-    text,
-)
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import insert
 
 from common.converter.pg_converter import domain_model_mapping
@@ -43,7 +41,7 @@ class PostgresItemExporter(BaseExporter):
                     converter = pg_config["converter"]
 
                     data = [converter(table, item, do_update) for item in item_group]
-                    split_data = [data[i: i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
+                    split_data = [data[i : i + COMMIT_BATCH_SIZE] for i in range(0, len(data), COMMIT_BATCH_SIZE)]
 
                     if do_update:
                         for batch in split_data:

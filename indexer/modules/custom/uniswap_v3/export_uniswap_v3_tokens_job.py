@@ -14,9 +14,9 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Token
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3 import constants
+from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Token
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
-from indexer.modules.custom.uniswap_v3.util import load_abi
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.provider import get_provider_from_uri
@@ -41,7 +41,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._service = (kwargs["config"].get("db_service"),)
         self._load_config("config.ini")
-        self._abi_list = load_abi("abi.json")
+        self._abi_list = UNISWAP_V3_ABI
         self._liquidity_token_id_blocks = queue.Queue()
         self._exist_token_ids = get_exist_token_ids(self._service[0], self._nft_address)
 

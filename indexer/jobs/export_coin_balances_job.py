@@ -139,7 +139,7 @@ def coin_balances_rpc_requests(make_requests, addresses, is_batch):
                 message_type=RPCNotReachable.__name__,
                 message=e.message,
                 exception_env=data[0],
-                level=RecordLevel.ERROR
+                level=RecordLevel.ERROR,
             )
             result = None
             # logger.warning("eth call failed: %s", e)

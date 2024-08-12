@@ -12,17 +12,17 @@ exception_recorder = ExceptionRecorder()
 class StreamDispatcher(BaseDispatcher):
 
     def __init__(
-            self,
-            service,
-            batch_web3_provider,
-            batch_web3_debug_provider,
-            item_exporters=[ConsoleItemExporter()],
-            batch_size=100,
-            debug_batch_size=1,
-            max_workers=5,
-            config=None,
-            required_output_types=[],
-            cache=None,
+        self,
+        service,
+        batch_web3_provider,
+        batch_web3_debug_provider,
+        item_exporters=[ConsoleItemExporter()],
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config=None,
+        required_output_types=[],
+        cache=None,
     ):
         super().__init__(service)
         self._job_scheduler = JobScheduler(
@@ -50,11 +50,7 @@ class StreamDispatcher(BaseDispatcher):
                 message = f"{key}: {len(value)}"
                 print(message)
                 exception_recorder.log(
-                    block_number=-1,
-                    dataclass=key,
-                    message_type='item_counter',
-                    message=message,
-                    level=RecordLevel.INFO
+                    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
                 )
 
             exception_recorder.force_to_flush()

@@ -136,7 +136,7 @@ def encode_balance_abi_parameter(address, token_type, token_id):
 
 
 def extract_token_parameters(
-        token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
+    token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
 ):
     origin_parameters = set()
     token_parameters = []
@@ -199,11 +199,11 @@ def token_balances_rpc_requests(make_requests, tokens, is_batch):
                 f"exception: {e}. "
             )
             exception_recorder.log(
-                block_number=data[0]['block_number'],
+                block_number=data[0]["block_number"],
                 dataclass=TokenBalance.type(),
-                message_type='DecodeTokenBalanceFail',
+                message_type="DecodeTokenBalanceFail",
                 message=str(e),
-                level=RecordLevel.WARN
+                level=RecordLevel.WARN,
             )
 
         token_balances.append(

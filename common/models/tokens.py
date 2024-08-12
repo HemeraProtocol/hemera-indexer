@@ -15,7 +15,7 @@ class Tokens(HemeraModel):
     symbol = Column(VARCHAR)
     decimals = Column(NUMERIC(100))
     total_supply = Column(NUMERIC(100))
-    update_block_number = Column(BIGINT)
+    block_number = Column(BIGINT)
 
     holder_count = Column(INTEGER, default=0)
     transfer_count = Column(INTEGER, default=0)

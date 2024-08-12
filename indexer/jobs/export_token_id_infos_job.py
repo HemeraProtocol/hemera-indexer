@@ -149,8 +149,8 @@ class ExportTokenIdInfosJob(BaseJob):
 
 
 def generate_token_id_info(
-        erc721_token_transfers: List[ERC721TokenTransfer],
-        erc1155_token_transfers: List[ERC1155TokenTransfer],
+    erc721_token_transfers: List[ERC721TokenTransfer],
+    erc1155_token_transfers: List[ERC1155TokenTransfer],
 ):
     info = set()
     for token_transfer in erc721_token_transfers + erc1155_token_transfers:
@@ -300,9 +300,9 @@ def token_ids_info_rpc_requests(make_requests, token_info_items, is_batch):
             exception_recorder.log(
                 block_number=token_info.block_number,
                 dataclass=to_snake_case(TokenIdInfo.__name__),
-                message_type='decode_token_id_info_fail',
+                message_type="decode_token_id_info_fail",
                 message=str(e),
-                exception_env=dataclass_to_dict(token_info),
-                level=RecordLevel.WARN
+                exception_env=asdict(token_info),
+                level=RecordLevel.WARN,
             )
     return return_data

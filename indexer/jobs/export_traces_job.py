@@ -184,7 +184,7 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
                 dataclass=Trace.type(),
                 message_type=HistoryUnavailableError.__name__,
                 message=e.message,
-                level=RecordLevel.ERROR
+                level=RecordLevel.ERROR,
             )
             trace = {
                 "trace_id": f"{to_int(hexstr=block_number)}_?_?",

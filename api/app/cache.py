@@ -26,16 +26,16 @@ class RedisDb:
                 host=host,
                 port=6379,
                 ssl=True,
-                decode_responses=True,  # get() 得到字符串类型的数据
+                decode_responses=True,
             )
         else:
             self.enable_cache = False
             self.r = None
 
     def handle_redis_token(self, key, value=None):
-        if value:  # 如果value非空，那么就设置key和value，EXPIRE_TIME为过期时间
+        if value:
             self.r.set(key, value, ex=3600)
-        else:  # 如果value为空，那么直接通过key从redis中取值
+        else:
             redis_token = self.r.get(key)
             return redis_token
 
