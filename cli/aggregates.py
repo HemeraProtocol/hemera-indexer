@@ -22,8 +22,9 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
     show_default=True,
     type=str,
     envvar="PROVIDER_URI",
-    help="The URI of the web3 provider e.g. " "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io"
-         "It helps determine whether the latest synchronized data meets the required execution date range.",
+    help="The URI of the web3 provider e.g. "
+    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io"
+    "It helps determine whether the latest synchronized data meets the required execution date range.",
 )
 @click.option(
     "-sd",
