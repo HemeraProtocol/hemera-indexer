@@ -67,3 +67,16 @@ class AllFeatureValueRecordTraitsActiveness(AllFeatureValueRecord):
     @classmethod
     def is_filter_data(cls):
         return False
+
+
+@dataclass
+class AllFeatureValueRecordBlueChipHolders(AllFeatureValueRecord):
+    def __init__(
+        self,
+        feature_id: int,
+        block_number: int,
+        address: str,
+        value: dict,
+        update_time: Optional[int] = None,
+    ):
+        super().__init__(feature_id, block_number, address, value, update_time)
