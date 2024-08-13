@@ -4,10 +4,11 @@ from common.models.contracts import Contracts
 from indexer.domain.contract import Contract
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import ExtensionJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordTraitsActiveness
 from indexer.modules.custom.day_mining.domain.current_traits_activeness import CurrentTraitsActiveness
 from indexer.modules.custom.day_mining.models.current_traits_activeness import CurrentTraitsActivenessModel
+from indexer.modules.custom.feature_type import FeatureType
 
 """
 record:
@@ -15,9 +16,10 @@ record:
 latest:
 {"address": {'txn_count': 0, 'gas_consumed': 0}}
 """
+FEATURE_ID = FeatureType.DAY_MINING.value
 
 
-class ExportAllFeatureDayMiningActivenessJob(BaseJob):
+class ExportAllFeatureDayMiningActivenessJob(ExtensionJob):
     dependency_types = [Transaction, Contract]
     output_types = [AllFeatureValueRecordTraitsActiveness, CurrentTraitsActiveness]
 
@@ -128,7 +130,7 @@ class ExportAllFeatureDayMiningActivenessJob(BaseJob):
             copy = last_address_stats_dict.copy()
             copy["interacted_addresses"] = list(copy["interacted_addresses"])
 
-            record = AllFeatureValueRecordTraitsActiveness(3, block_number, address, copy)
+            record = AllFeatureValueRecordTraitsActiveness(FEATURE_ID, block_number, address, copy)
             self._collect_item(AllFeatureValueRecordTraitsActiveness.type(), record)
             last_one_record = CurrentTraitsActiveness(block_number, address, copy)
         if last_one_record:

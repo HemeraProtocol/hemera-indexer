@@ -11,7 +11,7 @@ from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_balance import TokenBalance
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
@@ -59,7 +59,7 @@ class TokenBalanceParam:
 
 
 # Exports token balance
-class ExportTokenBalancesJob(BaseJob):
+class ExportTokenBalancesJob(BaseExportJob):
     dependency_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [TokenBalance, CurrentTokenBalance]
 

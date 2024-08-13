@@ -21,7 +21,7 @@ def test_export_job():
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
-        config=None,
+        config={},
         required_output_types=[ContractInternalTransaction],
     )
 

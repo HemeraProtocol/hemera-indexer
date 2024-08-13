@@ -36,7 +36,19 @@ class AllFeatureValueRecords(HemeraModel):
                 "converter": general_converter,
             },
             {
+                "domain": "AllFeatureValueRecordUniswapV2Info",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
                 "domain": "AllFeatureValueRecordTraitsActiveness",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AllFeatureValueRecordBlueChipHolders",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

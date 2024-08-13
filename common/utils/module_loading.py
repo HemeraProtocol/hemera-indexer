@@ -25,7 +25,7 @@ def import_string(dotted_path: str):
         raise ImportError(f'Module "{module_path}" does not define a "{class_name}" attribute/class')
 
 
-def scan_subclass_by_path_patterns(path_patterns: List[str], base_class: Type[object]) -> Dict[str, str]:
+def scan_subclass_by_path_patterns(path_patterns: List[str], base_class: Type[object]) -> Dict[str, dict]:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
 
@@ -53,7 +53,10 @@ def scan_subclass_by_path_patterns(path_patterns: List[str], base_class: Type[ob
 
                             if not issubclass(module, base_class):
                                 continue
-                            mapping[cls] = module_import_path[:-3]
+                            mapping[cls] = {
+                                "module_import_path": module_import_path[:-3],
+                                "cls_import_path": f"{module_import_path[:-3]}.{cls}",
+                            }
 
     return mapping
 
