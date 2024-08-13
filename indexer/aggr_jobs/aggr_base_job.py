@@ -1,8 +1,5 @@
 import os
 from datetime import datetime, timedelta
-from sqlalchemy import text
-
-from indexer.executors.batch_work_executor import BatchWorkExecutor
 
 
 class AggrBaseJob:
