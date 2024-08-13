@@ -10,7 +10,6 @@ from web3._utils.threads import Timeout as Web3Timeout
 from common.utils.exception_control import RetriableError
 from indexer.executors.bounded_executor import BoundedExecutor
 from indexer.utils.progress_logger import ProgressLogger
-from indexer.utils.utils import dynamic_batch_iterator
 
 RETRY_EXCEPTIONS = (
     ConnectionError,
@@ -140,3 +139,16 @@ def execute_with_retries(func, *args, max_retries=5, retry_exceptions=RETRY_EXCE
                 continue
             else:
                 raise
+
+
+def dynamic_batch_iterator(iterable, batch_size_getter):
+    batch = []
+    batch_size = batch_size_getter()
+    for item in iterable:
+        batch.append(item)
+        if len(batch) >= batch_size:
+            yield batch
+            batch = []
+            batch_size = batch_size_getter()
+    if len(batch) > 0:
+        yield batch

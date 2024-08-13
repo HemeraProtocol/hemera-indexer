@@ -105,19 +105,6 @@ def split_to_batches(start_incl, end_incl, batch_size):
         yield batch_start, batch_end
 
 
-def dynamic_batch_iterator(iterable, batch_size_getter):
-    batch = []
-    batch_size = batch_size_getter()
-    for item in iterable:
-        batch.append(item)
-        if len(batch) >= batch_size:
-            yield batch
-            batch = []
-            batch_size = batch_size_getter()
-    if len(batch) > 0:
-        yield batch
-
-
 def pairwise(iterable):
     """s -> (s0,s1), (s1,s2), (s2, s3), ..."""
     a, b = itertools.tee(iterable)
