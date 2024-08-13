@@ -251,7 +251,7 @@ INTO daily_wallet_addresses_aggregates
     (address, block_date, to_address_unique_interacted_cnt)
 SELECT to_address as address,
        block_date,
-       count(1) as from_address_unique_interacted_cnt
+       count(1) as to_address_unique_interacted_cnt
 FROM daily_contract_interacted_aggregates
 group by 1,2
 ON CONFLICT (address, block_date)
