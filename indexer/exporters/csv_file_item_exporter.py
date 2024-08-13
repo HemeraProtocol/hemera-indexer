@@ -45,6 +45,11 @@ class CSVFileItemExporter(BaseExporter):
         )
 
     def split_items_to_file(self, item_type: str, items: List[Domain]):
+        if hasattr(items[0], "number"):
+            items.sort(key=lambda x: x.number)
+        elif hasattr(items[0], "block_number"):
+            items.sort(key=lambda x: x.block_number)
+
         first, last = items[0], items[-1]
         dict_items = [dataclass_to_dict(item) for item in items]
         if hasattr(first, "number"):
@@ -110,6 +115,8 @@ class CSVFileItemExporter(BaseExporter):
 
 
 def check_and_write(file_path: str, items: List[dict]):
+    if len(items) == 0:
+        return
     with smart_open(file_path, mode="w") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=items[0].keys())
         writer.writeheader()

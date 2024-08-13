@@ -20,7 +20,7 @@ def check_file_exporter_parameter(outputs, block_batch_size, blocks_per_file):
         check_exporter_in_chosen(outputs, ItemExporterType.CSVFILE)
         or check_exporter_in_chosen(outputs, ItemExporterType.JSONFILE)
     ):
-        if block_batch_size < blocks_per_file or block_batch_size % blocks_per_file != 0:
+        if block_batch_size > blocks_per_file or block_batch_size % blocks_per_file != 0:
             raise click.ClickException(
                 "-B must be an integer multiple of --blocks-per-file."
                 f"for now: -B is {block_batch_size}, --blocks-per-file is {blocks_per_file}"
