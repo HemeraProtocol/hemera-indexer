@@ -57,7 +57,11 @@ class StreamController(BaseController):
     def _do_stream(self, start_block, end_block, steps, retry_errors, period_seconds):
         last_synced_block = self.sync_recorder.get_last_synced_block()
         if start_block is not None:
-            if not self.retry_from_record or last_synced_block < start_block or last_synced_block > end_block:
+            if (
+                not self.retry_from_record
+                or last_synced_block < start_block
+                or (end_block is not None and last_synced_block > end_block)
+            ):
                 last_synced_block = start_block - 1
 
         tries, tries_reset = 0, True
