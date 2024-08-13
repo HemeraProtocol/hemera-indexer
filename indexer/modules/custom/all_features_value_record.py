@@ -42,10 +42,6 @@ class AllFeatureValueRecordUniswapV3Token(AllFeatureValueRecord):
         super().__init__(feature_id, block_number, address, value, update_time)
 
 
-    def to_dict(self) -> Dict:
-        return asdict(self)
-
-
 @dataclass
 class AllFeatureValueRecordUniswapV2Info(AllFeatureValueRecord):
     def __init__(
@@ -57,9 +53,6 @@ class AllFeatureValueRecordUniswapV2Info(AllFeatureValueRecord):
         update_time: Optional[int] = None,
     ):
         super().__init__(feature_id, block_number, address, value, update_time)
-
-    def to_dict(self) -> Dict:
-        return asdict(self)
 
 
 @dataclass
