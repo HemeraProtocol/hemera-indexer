@@ -4,7 +4,7 @@ from common.models.contracts import Contracts
 from indexer.domain.contract import Contract
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import ExtensionJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordTraitsActiveness
 from indexer.modules.custom.day_mining.domain.current_traits_activeness import CurrentTraitsActiveness
 from indexer.modules.custom.day_mining.models.current_traits_activeness import CurrentTraitsActivenessModel
@@ -19,7 +19,7 @@ latest:
 FEATURE_ID = FeatureType.DAY_MINING.value
 
 
-class ExportAllFeatureDayMiningActivenessJob(BaseJob):
+class ExportAllFeatureDayMiningActivenessJob(ExtensionJob):
     dependency_types = [Transaction, Contract]
     output_types = [AllFeatureValueRecordTraitsActiveness, CurrentTraitsActiveness]
 
