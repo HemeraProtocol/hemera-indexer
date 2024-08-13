@@ -240,6 +240,7 @@ SELECT from_address as address,
        block_date,
        count(1) as from_address_unique_interacted_cnt
 FROM daily_contract_interacted_aggregates
+WHERE block_date >= '{start_date}' and block_date < '{end_date}'
 group by 1,2
 ON CONFLICT (address, block_date)
     DO UPDATE SET from_address_unique_interacted_cnt = EXCLUDED.from_address_unique_interacted_cnt;
@@ -253,6 +254,7 @@ SELECT to_address as address,
        block_date,
        count(1) as to_address_unique_interacted_cnt
 FROM daily_contract_interacted_aggregates
+WHERE block_date >= '{start_date}' and block_date < '{end_date}'
 group by 1,2
 ON CONFLICT (address, block_date)
     DO UPDATE SET to_address_unique_interacted_cnt = EXCLUDED.to_address_unique_interacted_cnt;
