@@ -27,11 +27,11 @@ As of July 5, 2024, the initial open-source version of the Hemera Indexer offers
 - ERC20 / ERC721 / ERC1155 Token balance & holders
 - Contracts
 - Traces / Internal transactions
-- L1 -> L2 Transactions (Coming Soon)
-- L2 -> L1 Transactions (Coming Soon)
-- Rollup Batches (Coming Soon)
-- DA Transactions (Coming Soon)
-- User Operations (Coming Soon)
+- L1 -> L2 Transactions
+- L2 -> L1 Transactions
+- Rollup Batches
+- DA Transactions
+- User Operations
 
 ##### Into the following formats
 
@@ -48,7 +48,6 @@ As of July 5, 2024, the initial open-source version of the Hemera Indexer offers
 ## Contents
 
 <!-- TOC -->
-
 - [Install and Run Hemera Indexer](#install-and-run-hemera-indexer)
   - [Prerequisites](#prerequisites)
   - [Hardware Requirements](#hardware-requirements)
@@ -56,6 +55,7 @@ As of July 5, 2024, the initial open-source version of the Hemera Indexer offers
     - [Run In Docker](#run-in-docker)
     - [Run From Source Code](#run-from-source-code)
 - [Configure Hemera Indexer](#configure-hemera-indexer)
+  - [Basic Concepts](#basic-concepts)
   - [Parameters](#parameters)
   - [Export Result](#export-result)
   <!-- TOC -->
@@ -77,7 +77,7 @@ We recommend you have this configuration to run Hemera Indexer:
 
 #### Disk Usage
 
-Based on the 2024 Ethereum, every 25k blocks, which is approximately 4.5 million transactions, consumes disk size as below
+Based on the 2024 Ethereum, every 10k blocks, which is approximately 1.5 million transactions, consumes disk size as below
 
 - 9GB PostgreSQL database
 - 9.3GB CSV file, if you opt for the CSVV export.
@@ -158,31 +158,13 @@ sudo docker compose up
 You should be able to see similar logs from your console that indicate Hemera Indexer is running properly.
 
 ```
-[+] Running 2/0
- ✔ Container postgresql  Created                                                                                                                0.0s
- ✔ Container hemera      Created                                                                                                                0.0s
-Attaching to hemera, postgresql
-postgresql  |
-postgresql  | PostgreSQL Database directory appears to contain a database; Skipping initialization
-postgresql  |
-postgresql  | 2024-06-24 08:18:48.547 UTC [1] LOG:  starting PostgreSQL 15.7 (Debian 15.7-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
-postgresql  | 2024-06-24 08:18:48.548 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-postgresql  | 2024-06-24 08:18:48.549 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-postgresql  | 2024-06-24 08:18:48.554 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-postgresql  | 2024-06-24 08:18:48.564 UTC [27] LOG:  database system was shut down at 2024-06-24 06:44:23 UTC
-postgresql  | 2024-06-24 08:18:48.575 UTC [1] LOG:  database system is ready to accept connections
-hemera      | 2024-06-24 08:18:54,953 - root [INFO] - Using provider https://eth.llamarpc.com
-hemera      | 2024-06-24 08:18:54,953 - root [INFO] - Using debug provider https://eth.llamarpc.com
-hemera      | 2024-06-24 08:18:55,229 - alembic.runtime.migration [INFO] - Context impl PostgresqlImpl.
-hemera      | 2024-06-24 08:18:55,230 - alembic.runtime.migration [INFO] - Will assume transactional DDL.
-hemera      | 2024-06-24 08:18:55,278 - alembic.runtime.migration [INFO] - Context impl PostgresqlImpl.
-hemera      | 2024-06-24 08:18:55,278 - alembic.runtime.migration [INFO] - Will assume transactional DDL.
-hemera      | 2024-06-24 08:18:56,169 - root [INFO] - Current block 20160303, target block 20137200, last synced block 20137199, blocks to sync 1
-hemera      | 2024-06-24 08:18:56,170 - ProgressLogger [INFO] - Started work. Items to process: 1.
-hemera      | 2024-06-24 08:18:57,505 - ProgressLogger [INFO] - 1 items processed. Progress is 100%.
-hemera      | 2024-06-24 08:18:57,506 - ProgressLogger [INFO] - Finished work. Total items processed: 1. Took 0:00:01.336310.
-hemera      | 2024-06-24 08:18:57,529 - exporters.postgres_item_exporter [INFO] - Exporting items to table block_ts_mapper, blocks end, Item count: 2, Took 0:00:00.022562
-hemera      | 2024-06-24 08:18:57,530 - ProgressLogger [INFO] - Started work.
+[+] Running 5/0
+ ✔ Container redis                         Created     0.0s
+ ✔ Container postgresql                    Created     0.0s
+ ✔ Container indexer                       Created     0.0s
+ ✔ Container indexer-trace                 Created     0.0s
+ ✔ Container hemera-api                    Created     0.0s
+Attaching to hemera-api, indexer, indexer-trace, postgresql, redis
 ```
 
 ### Run From Source Code
@@ -319,6 +301,19 @@ export OUTPUT = postgresql+psycopg2://user:password@localhost:5432/hemera_indexe
 
 You will be able to find those results in the `output` folder of your current location.
 
+## Basic Concepts
+
+Here are some important concepts to understand from Hemera Indexer:
+
+### Dataclass
+Dataclasses are extensively utilized during the indexing process. All outputs from Hemera Indexer are defined as dataclasses. Each indexing job depends on certain dataclasses to run and generates one or more dataclasses as the output.
+
+### Job
+A job is an indexing task that has input (dependency) dataclasses and output dataclasses. You can define one or more jobs to run during the indexing process. The Hemera Indexer will automatically determine the job dependencies and decide the order in which the jobs will run.
+
+### Entity
+An Entity Type is a higher-level aggregation of desired output. For example, EXPLORER_BASE refers to basic explorer data, including blocks, transactions, and logs. By specifying an entity type, you can easily set up for your use case.
+
 ## Configure Hemera Indexer
 
 Hemera indexer can read configuration from cmd line arguments or environment variables.
@@ -335,22 +330,22 @@ Run with `python hemera.py stream --help` to get the latest instructions for arg
 
 Avoid specifying the same parameter from both the environment variable and the command line argument.
 
-#### `PROVIDER_URI` or `--provider-uri`
+#### `PROVIDER_URI` or `--provider-uri` or `-p`
 
 [**Default**: `https://mainnet.infura.io`]
 The URI of the web3 rpc provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`.
 
-#### `DEBUG_PROVIDER_URI` or `--debug-provider-uri`
+#### `DEBUG_PROVIDER_URI` or `--debug-provider-uri` or `-d`
 
 [**Default**: `https://mainnet.infura.io`]
 The URI of the web3 debug rpc provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`.
 
-#### `POSTGRES_URL` or `--postgres-url`
+#### `POSTGRES_URL` or `--postgres-url` or `-pg`
 
 [**Required**]
 The PostgreSQL connection URL that the Hemera Indexer used to maintain its state. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
 
-#### `OUTPUT` or `--output`
+#### `OUTPUT` or `--output` or `-o`
 
 [**Required**]
 You may specify the output parameter so Hemera Indexer will export the data to CSV or JSON files. If not specified the data will be printed to the console.
@@ -365,28 +360,18 @@ e.g.
 - `csvfile://output/csv`: Csv files will be exported to folder `output/csv`
 - `console,jsonfile://output/json,csvfile://output/csv`: Multiple destinations are supported.
 
-#### `ENTITY_TYPES` or `--entity-types`
+#### `ENTITY_TYPES` or `--entity-types` or `-E`
 
-[**Default**: `BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER`]
-Hemera Indexer will export those entity types to your database and files(if `OUTPUT` is specified).
-Full list of available entity types:
+[**Default**: `EXPLORER_BASE,EXPLORER_TOKEN`]
+The list of entity types to export. e.g. `EXPLORER_BASE`, `EXPLORER_TOKEN`, `EXPLORER_TRACE`.
 
-- `block`
-- `transaction`
-- `log`
-- `token`
-- `token_transfer`
-- `trace`
-- `contract`
-- `coin_balance`
-- `token_balance`
-- `token_ids`
+#### `OUTPUT_TYPES` or `--output-types` or `-O`
 
-If you didn't specify this parameter, the default entity types will be BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER.
+The list of output types to export, corresponding to more detailed data models. Specifying this option will prioritize these settings over the entity types specified in -E. Available options include: block, transaction, log, token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, trace, contract, coin_balance.
 
-You may spawn up multiple Hemera Indexer processes, each of them indexing different entity types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
+You may spawn up multiple Hemera Indexer processes, each of them specifying different output types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
 
-#### `DB_VERSION` or `--db-version`
+#### `DB_VERSION` or `--db-version` or `-v`
 
 [**Default**: `head`]
 The database version to initialize the database. Using the Alembic script's revision ID to specify a version.
@@ -394,12 +379,12 @@ e.g. `head`, indicates the latest version.
 Or `base`, indicates the empty database without any table.
 Default value: `head`
 
-#### `START_BLOCK` or `--start-block`
+#### `START_BLOCK` or `--start-block` or `-s`
 
 The block number to start from, e.g. `0`, `1000`, etc.
 If you don't specify this, Hemera Indexer will read the last synced block from the PostgreSQL database and resume from it.
 
-#### `END_BLOCK` or `--end-block`
+#### `END_BLOCK` or `--end-block` or `-e`
 
 The block number that ends at, e.g. `10000`, `20000`, etc.
 
@@ -413,7 +398,7 @@ The number of block records to write to each file.
 [**Default**: `10`]
 Seconds to sleep between each sync with the latest blockchain state.
 
-#### `BATCH_SIZE` or `--batch-size`
+#### `BATCH_SIZE` or `--batch-size` or `-b`
 
 [**Default**: `10`]
 The number of non-debug rpc requests to batch in a single request.
@@ -423,12 +408,12 @@ The number of non-debug rpc requests to batch in a single request.
 [**Default**: `1`]
 The number of debug rpc to batch in a single request.
 
-#### `BLOCK_BATCH_SIZE` or `--block-batch-size`
+#### `BLOCK_BATCH_SIZE` or `--block-batch-size` or `-B`
 
 [**Default**: `1`]
 The number of blocks to batch in a single sync round.
 
-#### `MAX_WORKERS` or `--max-workers`
+#### `MAX_WORKERS` or `--max-workers` or `-w`
 
 [**Default**: `5`]
 The number of workers, e.g. `4`, `5`, etc.
@@ -436,3 +421,13 @@ The number of workers, e.g. `4`, `5`, etc.
 #### `LOG_FILE` or `--log-file`
 
 The log file to use. e.g. `path/to/logfile.log`.
+
+#### `SYNC_RECORDER` or `--sync-recorder`
+
+[**Default**: `file_sync_record`]
+How to store the sync record data. e.g. `pg_base`. This means sync record data will store in pg as `base` be key. or you can use `file_base` which means sync record data will store in file as `base` be file name',
+
+#### `CACHE_SERVICE` or `-cache`
+
+[**Default**: `memory`]
+Use an alternative cache solution to store middleware data generated by the Indexer. e.g `redis`, cache data will store in redis, redis://localhost:6379, or memory which means cache data will store in memory.

@@ -31,6 +31,7 @@ services:
 
   hemera-api:
     <<: *common-settings
+    container_name: hemera-api
     command: [ "api" ]
     ports:
       - 8082:8082

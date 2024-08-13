@@ -1,3 +1,4 @@
+import datetime
 from dataclasses import dataclass
 from typing import Optional
 
@@ -5,10 +6,9 @@ from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class UniswapV2Pool(FilterData):
-    factory_address: str
-    pool_address: str
-    token0_address: str
-    token1_address: str
-    length: int
+class BlueChipHolder(FilterData):
+    wallet_address: str
+    hold_detail: dict
+    current_count: int
     called_block_number: int
+    called_block_timestamp: int
