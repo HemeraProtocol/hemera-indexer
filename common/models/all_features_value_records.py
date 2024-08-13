@@ -41,6 +41,12 @@ class AllFeatureValueRecords(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
+            {
+                "domain": "AllFeatureValueRecordTraitsActiveness",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
 
 

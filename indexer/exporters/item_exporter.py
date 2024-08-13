@@ -56,3 +56,11 @@ class ItemExporterType:
     CSVFILE = "csvfile"
     CONSOLE = "console"
     UNKNOWN = "unknown"
+
+
+def check_exporter_in_chosen(outputs, exporter_type: str):
+    for output in outputs.split(","):
+        if determine_item_exporter_type(output) == exporter_type:
+            return True
+
+    return False

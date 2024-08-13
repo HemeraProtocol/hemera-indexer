@@ -9,7 +9,6 @@ from eth_abi import abi
 from common.utils.format_utils import to_snake_case
 from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
-from indexer.domain import dataclass_to_dict
 from indexer.domain.token_id_infos import (
     ERC721TokenIdChange,
     ERC721TokenIdDetail,
@@ -19,7 +18,7 @@ from indexer.domain.token_id_infos import (
 )
 from indexer.domain.token_transfer import ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
@@ -87,7 +86,7 @@ class TokenIdInfo:
     request_id: int
 
 
-class ExportTokenIdInfosJob(BaseJob):
+class ExportTokenIdInfosJob(BaseExportJob):
     dependency_types = [ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [
         ERC721TokenIdChange,
@@ -302,7 +301,7 @@ def token_ids_info_rpc_requests(make_requests, token_info_items, is_batch):
                 dataclass=to_snake_case(TokenIdInfo.__name__),
                 message_type="decode_token_id_info_fail",
                 message=str(e),
-                exception_env=dataclass_to_dict(token_info),
+                exception_env=asdict(token_info),
                 level=RecordLevel.WARN,
             )
     return return_data

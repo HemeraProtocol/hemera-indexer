@@ -6,8 +6,8 @@ def scan_convert_config():
     class_mapping = scan_subclass_by_path_patterns(model_path_patterns, HemeraModel)
 
     config_mapping = {}
-    for class_name, model_import_path in class_mapping.items():
-        full_class_path = f"{model_import_path}.{class_name}"
+    for class_name, path in class_mapping.items():
+        full_class_path = path["cls_import_path"]
         module = import_string(full_class_path)
 
         module_configs = module.model_domain_mapping()

@@ -12,6 +12,9 @@ class AllFeatureValueRecord(FilterData):
     value: dict
     update_time: Optional[int] = None
 
+    def to_dict(self) -> Dict:
+        return asdict(self)
+
 
 @dataclass
 class AllFeatureValueRecordUniswapV3Pool(AllFeatureValueRecord):
@@ -25,9 +28,6 @@ class AllFeatureValueRecordUniswapV3Pool(AllFeatureValueRecord):
     ):
         super().__init__(feature_id, block_number, address, value, update_time)
 
-    def to_dict(self) -> Dict:
-        return asdict(self)
-
 
 @dataclass
 class AllFeatureValueRecordUniswapV3Token(AllFeatureValueRecord):
@@ -40,6 +40,7 @@ class AllFeatureValueRecordUniswapV3Token(AllFeatureValueRecord):
         update_time: Optional[int] = None,
     ):
         super().__init__(feature_id, block_number, address, value, update_time)
+
 
     def to_dict(self) -> Dict:
         return asdict(self)
@@ -59,3 +60,10 @@ class AllFeatureValueRecordUniswapV2Info(AllFeatureValueRecord):
 
     def to_dict(self) -> Dict:
         return asdict(self)
+
+
+@dataclass
+class AllFeatureValueRecordTraitsActiveness(AllFeatureValueRecord):
+    @classmethod
+    def is_filter_data(cls):
+        return False

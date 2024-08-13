@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import asdict
 from typing import Dict, List
 
 from eth_abi import abi
@@ -18,7 +19,7 @@ from indexer.domain.token_transfer import (
     extract_transfer_from_log,
 )
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
@@ -98,7 +99,7 @@ abi_mapping = {
 }
 
 
-class ExportTokensAndTransfersJob(BaseJob):
+class ExportTokensAndTransfersJob(BaseExportJob):
     output_transfer_types = [
         ERC20TokenTransfer,
         ERC721TokenTransfer,
@@ -169,7 +170,7 @@ class ExportTokensAndTransfersJob(BaseJob):
         self._batch_work_executor.wait()
 
         for token in self.get_buff()[Token.type()]:
-            self.tokens[token.address] = token
+            self.tokens[token.address] = asdict(token)
 
         filtered_old_tokens = [token for token in token_dict.values() if token.token_type != TokenType.ERC1155.value]
         self._batch_work_executor.execute(
@@ -194,7 +195,7 @@ class ExportTokensAndTransfersJob(BaseJob):
     def _generate_token_transfers(self, token_transfers):
         for transfer in token_transfers:
             if transfer.token_id is None:
-                transfer.token_type = self.tokens[transfer.token_address].token_type
+                transfer.token_type = self.tokens[transfer.token_address]["token_type"]
             self._collect_domain(transfer.to_specific_transfer())
 
     def _export_token_info_batch(self, tokens):
@@ -260,7 +261,7 @@ def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            token["total_supply"] = abi.decode("uint256", bytes.fromhex(value))[0]
+            token["total_supply"] = abi.decode(["uint256"], bytes.fromhex(value))[0]
         except Exception as e:
             logger.warning(
                 f"Decoding token {fn_name} failed. " f"token: {token}. " f"rpc response: {result}. " f"exception: {e}"
