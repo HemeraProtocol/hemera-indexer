@@ -8,18 +8,20 @@ from web3 import Web3
 
 class BaseJobMeta(type):
     _registry = {}
+    _registry_subclass = defaultdict(list)
     logger = logging.getLogger("BaseJobMeta")
 
     def __new__(mcs, name, bases, attrs):
         new_cls = super().__new__(mcs, name, bases, attrs)
 
-        if name != "BaseJob" and issubclass(new_cls, BaseJob):
+        if name not in ["BaseJob", "BaseSourceJob", "BaseExportJob", "ExtensionJob"] and issubclass(new_cls, BaseJob):
             mcs._registry[name] = new_cls
+            mcs._registry_subclass[bases].append(new_cls)
 
         return new_cls
 
     @classmethod
-    def get_all_subclasses(mcs):
+    def get_all_subclasses(mcs, bases):
         def get_subclasses(cls):
             subclasses = set()
             for subclass in cls.__subclasses__():
@@ -27,7 +29,7 @@ class BaseJobMeta(type):
                 subclasses.update(get_subclasses(subclass))
             return subclasses
 
-        return get_subclasses(BaseJob)
+        return get_subclasses(bases)
 
 
 class BaseJob(metaclass=BaseJobMeta):
@@ -41,7 +43,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     @classmethod
     def discover_jobs(cls):
-        return list(BaseJobMeta.get_all_subclasses())
+        return list(BaseJobMeta.get_all_subclasses(cls))
 
     @property
     def job_name(self):
@@ -123,3 +125,15 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def get_buff(self):
         return self._data_buff
+
+
+class BaseSourceJob(BaseJob):
+    pass
+
+
+class BaseExportJob(BaseJob):
+    pass
+
+
+class ExtensionJob(BaseJob):
+    pass

@@ -9,7 +9,7 @@ from indexer.domain.block import Block
 from indexer.domain.contract import Contract, extract_contract_from_trace
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -29,7 +29,7 @@ CONTRACT_NAME_ABI = {
 
 
 # Exports contracts
-class ExportContractsJob(BaseJob):
+class ExportContractsJob(BaseExportJob):
     dependency_types = [Block, Trace]
     output_types = [Contract]
 

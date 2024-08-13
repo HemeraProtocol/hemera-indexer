@@ -403,10 +403,10 @@ If you don't specify this, Hemera Indexer will read the last synced block from t
 
 The block number that ends at, e.g. `10000`, `20000`, etc.
 
-#### `PARTITION_SIZE` or `--partition-size`
+#### `BLOCKS_PER_FILE` or `--blocks-per-file`
 
-[**Default**: `50000`]
-The number of records to write to each file.
+[**Default**: `1000`]
+The number of block records to write to each file.
 
 #### `PERIOD_SECONDS` or `--period-seconds`
 
