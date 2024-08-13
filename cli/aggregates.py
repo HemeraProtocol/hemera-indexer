@@ -16,6 +16,17 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
     help="The required postgres connection url." "e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum",
 )
 @click.option(
+    "-p",
+    "--provider-uri",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="PROVIDER_URI",
+    help="The URI of the web3 provider e.g. "
+    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io"
+    "It helps determine whether the latest synchronized data meets the required execution date range.",
+)
+@click.option(
     "-sd",
     "--start-date",
     default=None,
@@ -42,18 +53,15 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
     envvar="DATE_BATCH_SIZE",
     help="How many DATEs to batch in single sync round",
 )
-def aggregates(postgres_url, start_date, end_date, date_batch_size):
+def aggregates(postgres_url, provider_uri, start_date, end_date, date_batch_size):
     if not start_date and not end_date:
         start_date, end_date = get_yesterday_date()
     elif not end_date:
         _, end_date = get_yesterday_date()
 
-    data_completeness = check_data_completeness(start_date, end_date)
-
-    if not data_completeness:
-        raise click.ClickException("Data must be completeness")
-
     db_service = PostgreSQLService(postgres_url)
+
+    check_data_completeness(db_service, provider_uri, end_date)
 
     config = {"db_service": db_service}
     dispatcher = AggregatesDispatcher(config)
