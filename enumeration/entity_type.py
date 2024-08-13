@@ -15,9 +15,11 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.all_features_value_record import (
+    AllFeatureValueRecordBlueChipHolders,
     AllFeatureValueRecordUniswapV3Pool,
     AllFeatureValueRecordUniswapV3Token,
 )
+from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
@@ -31,6 +33,8 @@ class EntityType(IntFlag):
     UNISWAP_V3 = 1 << 4
 
     USER_OPS = 1 << 5
+
+    BLUE_CHIP = 1 << 6
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -99,3 +103,14 @@ def generate_output_types(entity_types):
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult
+
+    if entity_types & EntityType.BLUE_CHIP:
+        yield Block
+        yield Transaction
+        yield ERC721TokenTransfer
+        yield Token
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
+        yield AllFeatureValueRecordBlueChipHolders
+        yield BlueChipHolder

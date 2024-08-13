@@ -2,6 +2,7 @@ from pathlib import Path
 
 import click
 
+from cli.aggregates import aggregates
 from cli.api import api
 from cli.load import load
 
@@ -27,4 +28,5 @@ def cli(ctx):
 cli.add_command(stream, "stream")
 cli.add_command(load, "load")
 cli.add_command(api, "api")
+cli.add_command(aggregates, "aggregates")
 # cli.add_command(fixing, "fixing")
