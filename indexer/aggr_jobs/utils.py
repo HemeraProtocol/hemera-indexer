@@ -8,8 +8,8 @@ def get_yesterday_date():
 
     yesterday_datetime = now - timedelta(days=1)
 
-    today_str = now.strftime('%Y-%m-%d')
-    yesterday_str = yesterday_datetime.strftime('%Y-%m-%d')
+    today_str = now.strftime("%Y-%m-%d")
+    yesterday_str = yesterday_datetime.strftime("%Y-%m-%d")
 
     return today_str, yesterday_str
 

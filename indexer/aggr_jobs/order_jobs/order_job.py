@@ -7,8 +7,8 @@ class AggrOrderJob(AggrBaseJob):
     sql_folder = "order_jobs"
 
     def __init__(self, **kwargs):
-        config = kwargs['config']
-        self.db_service = config['db_service']
+        config = kwargs["config"]
+        self.db_service = config["db_service"]
 
     def run(self, **kwargs):
         start_date = kwargs["start_date"]
@@ -19,6 +19,6 @@ class AggrOrderJob(AggrBaseJob):
         date_pairs = self.generate_date_pairs(start_date, end_date)
         for date_pair in date_pairs:
             start_date, end_date = date_pair
-            sql_content = self.get_sql_content('period_wallet_addresses_aggregates', start_date, end_date)
+            sql_content = self.get_sql_content("period_wallet_addresses_aggregates", start_date, end_date)
             session.execute(text(sql_content))
             session.commit()

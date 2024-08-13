@@ -1,7 +1,7 @@
 import click
 
 from common.services.postgresql_service import PostgreSQLService
-from indexer.aggr_jobs.utils import get_yesterday_date, DateType, check_data_completeness
+from indexer.aggr_jobs.utils import DateType, check_data_completeness, get_yesterday_date
 from indexer.controller.aggregates_controller import AggregatesController
 from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispatcher
 

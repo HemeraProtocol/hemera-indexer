@@ -8,6 +8,4 @@ class AggregatesDispatcher(BaseDispatcher):
         self._job_scheduler = AggrJobScheduler(config=config)
 
     def run(self, start_date, end_date):
-        self._job_scheduler.run_jobs(
-            start_date=start_date, end_date=end_date
-        )
+        self._job_scheduler.run_jobs(start_date=start_date, end_date=end_date)
