@@ -35,7 +35,7 @@ def to_float_or_none(val):
 
 
 def chunk_string(string, length):
-    return (string[0 + i : length + i] for i in range(0, len(string), length))
+    return (string[0 + i: length + i] for i in range(0, len(string), length))
 
 
 # TODO: Implement fallback mechanism for provider uris instead of picking randomly
@@ -103,19 +103,6 @@ def split_to_batches(start_incl, end_incl, batch_size):
     for batch_start in range(start_incl, end_incl + 1, batch_size):
         batch_end = min(batch_start + batch_size - 1, end_incl)
         yield batch_start, batch_end
-
-
-def dynamic_batch_iterator(iterable, batch_size_getter):
-    batch = []
-    batch_size = batch_size_getter()
-    for item in iterable:
-        batch.append(item)
-        if len(batch) >= batch_size:
-            yield batch
-            batch = []
-            batch_size = batch_size_getter()
-    if len(batch) > 0:
-        yield batch
 
 
 def pairwise(iterable):

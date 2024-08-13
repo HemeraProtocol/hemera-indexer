@@ -28,5 +28,5 @@ def cli(ctx):
 cli.add_command(stream, "stream")
 cli.add_command(load, "load")
 cli.add_command(api, "api")
-cli.add_command(aggregates, "api")
+cli.add_command(aggregates, "aggregates")
 # cli.add_command(fixing, "fixing")
