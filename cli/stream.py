@@ -202,13 +202,13 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--sync-recorder",
-    default="file_sync_record",
+    default="file:sync_record",
     show_default=True,
     type=str,
     envvar="SYNC_RECORDER",
     help="How to store the sync record data."
-    'e.g pg_base. means sync record data will store in pg as "base" be key'
-    'or file_base. means sync record data will store in file as "base" be file name',
+    'e.g pg:base. means sync record data will store in pg as "base" be key'
+    'or file:base. means sync record data will store in file as "base" be file name',
 )
 @click.option(
     "--cache",
@@ -239,7 +239,7 @@ def stream(
     max_workers=5,
     log_file=None,
     pid_file=None,
-    sync_recorder="file_sync_record",
+    sync_recorder="file:sync_record",
     retry_from_record=False,
     cache="memory",
 ):
