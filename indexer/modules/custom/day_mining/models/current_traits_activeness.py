@@ -16,7 +16,7 @@ class CurrentTraitsActivenessModel(HemeraModel):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("address"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():
