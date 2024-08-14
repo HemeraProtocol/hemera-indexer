@@ -82,21 +82,21 @@ class PGSyncRecorder(BaseRecorder):
 
 
 def create_recorder(sync_recorder: str, config: dict) -> BaseRecorder:
-    cut_begin = sync_recorder.find("_")
-    if cut_begin == -1:
+    recorder_sign = sync_recorder.find(":")
+    if recorder_sign == -1:
         raise ValueError(f"Invalid sync recorder: {sync_recorder}" "")
 
-    recorder = sync_recorder[cut_begin + 1 :]
+    recorder = sync_recorder.split(":")
 
-    if sync_recorder.startswith("pg"):
+    if recorder[0] == "pg":
         try:
             service = config["db_service"]
         except KeyError:
             raise ValueError(f"postgresql sync record must provide pg config.")
-        return PGSyncRecorder(recorder, service)
+        return PGSyncRecorder(recorder[1], service)
 
-    elif sync_recorder.startswith("file"):
-        return FileSyncRecorder(recorder)
+    elif recorder[0] == "file":
+        return FileSyncRecorder(recorder[1])
 
     else:
         raise ValueError("Unable to determine sync recorder type: " + sync_recorder)
