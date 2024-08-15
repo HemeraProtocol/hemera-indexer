@@ -8,4 +8,4 @@ class FeatureType(Enum):
     UNISWAP_V2_INFO = 4
     BLUE_CHIP_HOLDING = 5
     ERC20_TOTAL_SUPPLY = 6
-    BEDROCK = 7
+    ERC20_TOKEN_HOLDING = 7

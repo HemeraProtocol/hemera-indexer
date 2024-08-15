@@ -5,8 +5,9 @@ from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class Erc20TotalSupply(FilterData):
+class Erc20TokenHolding(FilterData):
     token_address: str
-    total_supply: int
+    wallet_address: str
+    balance: int
     called_block_number: int
     called_block_timestamp: int

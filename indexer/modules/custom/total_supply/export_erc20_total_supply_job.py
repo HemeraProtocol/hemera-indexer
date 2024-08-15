@@ -111,7 +111,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
 
             self._collect_item(
                 Erc20TotalSupply.type(),
-                parse_to_total_supply(self._chain_id, block_number, block_timestamp, token_address, total_supply),
+                parse_to_total_supply(block_number, block_timestamp, token_address, total_supply),
             )
 
     def _process(self):
@@ -134,9 +134,8 @@ def parse_to_record(feature_id, block_number, block_timestamp, address, total_su
     )
 
 
-def parse_to_total_supply(chain_id, block_number, block_timestamp, address, total_supply):
+def parse_to_total_supply(block_number, block_timestamp, address, total_supply):
     return Erc20TotalSupply(
-        chain_id=chain_id,
         token_address=address,
         total_supply=total_supply,
         called_block_number=block_number,
