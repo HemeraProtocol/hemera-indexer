@@ -17,7 +17,7 @@ class FeatureErc20TotalSupply(HemeraModel):
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("token_address", "called_block_number", "called_block_timestamp"),)
+    __table_args__ = (PrimaryKeyConstraint("token_address", "called_block_timestamp", "called_block_number"),)
 
     @staticmethod
     def model_domain_mapping():
