@@ -12,10 +12,11 @@ from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
+from indexer.modules.custom import common_utils
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Pool
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3PoolPrice
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -29,7 +30,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
 
 class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
-    output_types = [AllFeatureValueRecordUniswapV3Pool, UniswapV3Pool]
+    output_types = [AllFeatureValueRecordUniswapV3Pool, UniswapV3Pool, UniswapV3PoolPrice]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -74,7 +75,6 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         grouped_logs = defaultdict(list)
-
         for log in logs:
             key = (log.address, log.topic0, log.block_number)
             grouped_logs[key].append(log)
@@ -106,14 +106,21 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._batch_work_executor.wait()
 
     def _collect_batch(self, logs):
+        block_info = {}
+        for log in logs:
+            block_info[log.block_number] = log.block_timestamp
 
         pool_prices = collect_pool_prices([self._pool_swap_topic0], self._exist_pools, logs, self._abi_list)
         self.update_pool_prices(pool_prices)
-        for record in format_value_records(self._exist_pools, pool_prices, FEATURE_ID):
+        records, prices = format_value_records(self._exist_pools, pool_prices, FEATURE_ID, block_info)
+        for record in records:
             self._collect_item(AllFeatureValueRecordUniswapV3Pool.type(), record)
+        for data in prices:
+            self._collect_item(UniswapV3PoolPrice.type(), data)
 
     def _process(self):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[AllFeatureValueRecordUniswapV3Pool.type()].sort(key=lambda x: x.block_number)
 
     def update_pool_prices(self, new_pool_prices):
@@ -139,9 +146,9 @@ def format_pool_item(new_pools):
     return result
 
 
-def format_value_records(exist_pools, pool_prices, feature_id):
+def format_value_records(exist_pools, pool_prices, feature_id, block_info):
     result = []
-
+    prices = []
     for address, pool_data in pool_prices.items():
         if address not in exist_pools.keys():
             continue
@@ -165,7 +172,16 @@ def format_value_records(exist_pools, pool_prices, feature_id):
                 value=value,
             )
         )
-    return result
+        prices.append(
+            UniswapV3PoolPrice(
+                nft_address=info["nft_address"],
+                pool_address=address,
+                sqrt_price_x96=pool_data["sqrtPriceX96"],
+                called_block_number=block_number,
+                called_block_timestamp=block_info[block_number],
+            )
+        )
+    return result, prices
 
 
 def get_exist_pools(db_service, nft_address):
@@ -183,6 +199,7 @@ def get_exist_pools(db_service, nft_address):
                 pool_key = "0x" + item.pool_address.hex()
                 history_pools[pool_key] = {
                     "pool_address": pool_key,
+                    "nft_address": "0x" + item.nft_address.hex(),
                     "token0_address": "0x" + item.token0_address.hex(),
                     "token1_address": "0x" + item.token1_address.hex(),
                     "fee": item.fee,
@@ -253,7 +270,9 @@ def collect_pool_prices(target_topic0_list, exist_pools, logs, abi_list):
 
 
 def collect_swap_new_pools(nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch):
-    factory_infos = simple_get_rpc_requests(web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address")
+    factory_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address"
+    )
     uniswap_pools = []
     need_add = {}
     for data in factory_infos:
@@ -266,9 +285,13 @@ def collect_swap_new_pools(nft_address, factory_address, swap_pools, abi_list, w
             )
     if len(uniswap_pools) == 0:
         return need_add
-    token0_infos = simple_get_rpc_requests(web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address")
-    token1_infos = simple_get_rpc_requests(web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address")
-    tick_infos = simple_get_rpc_requests(
+    token0_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address"
+    )
+    token1_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address"
+    )
+    tick_infos = common_utils.simple_get_rpc_requests(
         web3, make_requests, token1_infos, is_batch, abi_list, "tickSpacing", "address"
     )
     # uniswap v3 pool have no fee function
@@ -286,42 +309,6 @@ def collect_swap_new_pools(nft_address, factory_address, swap_pools, abi_list, w
         }
         need_add[pool_address] = new_pool
     return need_add
-
-
-def simple_get_rpc_requests(web3, make_requests, requests, is_batch, abi_list, fn_name, contract_address_key):
-    if len(requests) == 0:
-        return []
-    function_abi = next((abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"), None)
-    outputs = function_abi["outputs"]
-    output_types = [output["type"] for output in outputs]
-
-    parameters = build_no_input_method_data(web3, requests, fn_name, abi_list, contract_address_key)
-
-    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-    if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
-
-    token_infos = []
-    for data in list(zip_rpc_response(parameters, response)):
-        result = rpc_response_to_result(data[1])
-        token = data[0]
-        value = result[2:] if result is not None else None
-        try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-            token[fn_name] = decoded_data[0]
-
-        except Exception as e:
-            logger.error(
-                f"Decoding {fn_name} failed. "
-                f"token: {token}. "
-                f"fn: {fn_name}. "
-                f"rpc response: {result}. "
-                f"exception: {e}"
-            )
-        token_infos.append(token)
-    return token_infos
 
 
 def decode_logs(fn_name, contract_abi, log):
