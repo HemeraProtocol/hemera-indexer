@@ -519,30 +519,3 @@ def get_pool_rpc_requests(web3, make_requests, requests, factory_address, is_bat
             )
         token_infos.append(token)
     return token_infos
-
-
-def build_no_input_method_data(web3, requests, fn, block_number, abi_list):
-    parameters = []
-
-    for idx, token in enumerate(requests):
-        token["request_id"] = (idx,)
-        token_data = {
-            "request_id": idx,
-            "param_to": token["pool_address"],
-            "param_number": hex(block_number),
-        }
-        token.update(token_data)
-        try:
-            # Encode the ABI for the specific token_id
-            token["param_data"] = web3.eth.contract(
-                address=Web3.to_checksum_address(token["pool_address"]), abi=abi_list
-            ).encodeABI(fn_name=fn)
-        except Exception as e:
-            logger.error(
-                f"Encoding token0 {token['token0']} token1 {token['token1']}  fee {token['fee']}  for function {fn} failed. "
-                f"contract address: {token['pool_address']}. "
-                f"Exception: {e}."
-            )
-
-        parameters.append(token)
-    return parameters

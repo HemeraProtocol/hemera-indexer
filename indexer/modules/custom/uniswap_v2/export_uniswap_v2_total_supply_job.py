@@ -15,12 +15,12 @@ from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
+from indexer.modules.custom import common_utils
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV2Info
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v2.constants import UNISWAP_V2_ABI, ThreadSafeList
 from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import UniswapV2Pool
 from indexer.modules.custom.uniswap_v2.models.feature_uniswap_v2_pools import UniswapV2Pools
-from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -244,7 +244,7 @@ def collect_pool_total_supply(target_topic0_list, exist_pools, logs, abi_list, w
 
     need_collect_list = list(need_collect.values())
     # call totalSupply
-    total_supply_infos = simple_get_rpc_requests(
+    total_supply_infos = common_utils.simple_get_rpc_requests(
         web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address"
     )
     result = []
@@ -264,7 +264,9 @@ def collect_pool_total_supply(target_topic0_list, exist_pools, logs, abi_list, w
 
 
 def collect_active_new_pools(factory_address, active_pools, abi_list, web3, make_requests, is_batch):
-    factory_infos = simple_get_rpc_requests(web3, make_requests, active_pools, is_batch, abi_list, "factory", "address")
+    factory_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, active_pools, is_batch, abi_list, "factory", "address"
+    )
     uniswap_pools = []
     need_add = {}
     for data in factory_infos:
@@ -277,8 +279,12 @@ def collect_active_new_pools(factory_address, active_pools, abi_list, web3, make
             )
     if len(uniswap_pools) == 0:
         return need_add
-    token0_infos = simple_get_rpc_requests(web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address")
-    token1_infos = simple_get_rpc_requests(web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address")
+    token0_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address"
+    )
+    token1_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address"
+    )
     for data in token1_infos:
         pool_address = data["address"]
         new_pool = {
@@ -290,42 +296,6 @@ def collect_active_new_pools(factory_address, active_pools, abi_list, web3, make
         }
         need_add[pool_address] = new_pool
     return need_add
-
-
-def simple_get_rpc_requests(web3, make_requests, requests, is_batch, abi_list, fn_name, contract_address_key):
-    if len(requests) == 0:
-        return []
-    function_abi = next((abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"), None)
-    outputs = function_abi["outputs"]
-    output_types = [output["type"] for output in outputs]
-
-    parameters = build_no_input_method_data(web3, requests, fn_name, abi_list, contract_address_key)
-
-    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-    if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
-
-    token_infos = []
-    for data in list(zip_rpc_response(parameters, response)):
-        result = rpc_response_to_result(data[1])
-        token = data[0]
-        value = result[2:] if result is not None else None
-        try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-            token[fn_name] = decoded_data[0]
-
-        except Exception as e:
-            logger.error(
-                f"Decoding {fn_name} failed. "
-                f"token: {token}. "
-                f"fn: {fn_name}. "
-                f"rpc response: {result}. "
-                f"exception: {e}"
-            )
-        token_infos.append(token)
-    return token_infos
 
 
 def decode_logs(fn_name, contract_abi, log):
