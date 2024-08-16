@@ -15,7 +15,6 @@ class FeatureErc20TokenHolding(HemeraModel):
 
     balance = Column(NUMERIC(100))
 
-
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 

@@ -16,7 +16,6 @@ from indexer.domain.token_transfer import ERC20TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
-from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordErc20TotalSupply
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.total_supply import constants
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
@@ -31,7 +30,7 @@ FEATURE_ID = FeatureType.ERC20_TOTAL_SUPPLY.value
 
 class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
     dependency_types = [ERC20TokenTransfer]
-    output_types = [AllFeatureValueRecordErc20TotalSupply, Erc20TotalSupply]
+    output_types = [Erc20TotalSupply]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -106,10 +105,6 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             block_number = data["block_number"]
             block_timestamp = grouped_block[block_number]
             total_supply = data["totalSupply"]
-            self._collect_item(
-                AllFeatureValueRecordErc20TotalSupply.type(),
-                parse_to_record(FEATURE_ID, block_number, block_timestamp, token_address, total_supply),
-            )
 
             self._collect_item(
                 Erc20TotalSupply.type(),
@@ -119,21 +114,6 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
     def _process(self):
 
         self._data_buff[Erc20TotalSupply.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[AllFeatureValueRecordErc20TotalSupply.type()].sort(key=lambda x: x.block_number)
-
-
-def parse_to_record(feature_id, block_number, block_timestamp, address, total_supply):
-    value = {
-        "total_supply": total_supply,
-        "block_number": block_number,
-        "block_timestamp": block_timestamp,
-    }
-    return AllFeatureValueRecordErc20TotalSupply(
-        feature_id=feature_id,
-        block_number=block_number,
-        address=address,
-        value=value,
-    )
 
 
 def parse_to_total_supply(block_number, block_timestamp, address, total_supply):

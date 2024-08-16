@@ -13,7 +13,6 @@ from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
-from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Pool
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3PoolPrice
@@ -30,7 +29,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
 
 class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
-    output_types = [AllFeatureValueRecordUniswapV3Pool, UniswapV3Pool, UniswapV3PoolPrice]
+    output_types = [UniswapV3Pool, UniswapV3PoolPrice]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -112,16 +111,14 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
 
         pool_prices = collect_pool_prices([self._pool_swap_topic0], self._exist_pools, logs, self._abi_list)
         self.update_pool_prices(pool_prices)
-        records, prices = format_value_records(self._exist_pools, pool_prices, FEATURE_ID, block_info)
-        for record in records:
-            self._collect_item(AllFeatureValueRecordUniswapV3Pool.type(), record)
+        prices = format_value_records(self._exist_pools, pool_prices, block_info)
+
         for data in prices:
             self._collect_item(UniswapV3PoolPrice.type(), data)
 
     def _process(self):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[AllFeatureValueRecordUniswapV3Pool.type()].sort(key=lambda x: x.block_number)
 
     def update_pool_prices(self, new_pool_prices):
         if not new_pool_prices or len(new_pool_prices) == 0:
@@ -146,7 +143,7 @@ def format_pool_item(new_pools):
     return result
 
 
-def format_value_records(exist_pools, pool_prices, feature_id, block_info):
+def format_value_records(exist_pools, pool_prices, block_info):
     result = []
     prices = []
     for address, pool_data in pool_prices.items():
@@ -154,24 +151,6 @@ def format_value_records(exist_pools, pool_prices, feature_id, block_info):
             continue
         info = exist_pools.get(address)
         block_number = pool_data["block_number"]
-        value = {
-            "token0_address": info["token0_address"],
-            "token1_address": info["token1_address"],
-            # "fee": int(info["fee"]),
-            "tick_spacing": int(info["tick_spacing"]),
-            "called_block_number": info["called_block_number"],
-            "sqrtPriceX96": pool_data["sqrtPriceX96"],
-            "tick": pool_data["tick"],
-            "block_number": block_number,
-        }
-        result.append(
-            AllFeatureValueRecordUniswapV3Pool(
-                feature_id=feature_id,
-                block_number=block_number,
-                address=address,
-                value=value,
-            )
-        )
         prices.append(
             UniswapV3PoolPrice(
                 nft_address=info["nft_address"],

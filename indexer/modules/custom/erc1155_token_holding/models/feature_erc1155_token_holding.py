@@ -21,8 +21,9 @@ class FeatureErc1155TokenHolding(HemeraModel):
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
     __table_args__ = (
-        PrimaryKeyConstraint("token_address", "token_id", "wallet_address", "called_block_timestamp",
-                             "called_block_number"),
+        PrimaryKeyConstraint(
+            "token_address", "token_id", "wallet_address", "called_block_timestamp", "called_block_number"
+        ),
     )
 
     @staticmethod

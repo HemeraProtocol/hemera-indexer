@@ -12,7 +12,6 @@ from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Token
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3 import constants
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
@@ -30,7 +29,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_TOKENS.value
 
 class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
     dependency_types = [Log, ERC721TokenTransfer, BlockTsMapper]
-    output_types = [AllFeatureValueRecordUniswapV3Token, UniswapV3Token, UniswapV3TokenDetail]
+    output_types = [UniswapV3Token, UniswapV3TokenDetail]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -126,23 +125,20 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         block_info = {}
         for block in block_list:
             block_info[block.block_number] = block.timestamp
-        new_records, token_details = parse_token_records(
-            self._nft_address, self._exist_token_ids, owner_dict, token_infos, FEATURE_ID, block_info
+        token_details = parse_token_records(
+            self._nft_address, self._exist_token_ids, owner_dict, token_infos, block_info
         )
-        for data in new_records:
-            self._collect_item(AllFeatureValueRecordUniswapV3Token.type(), data)
+
         for data in token_details:
             self._collect_item(UniswapV3TokenDetail.type(), data)
 
     def _process(self):
         self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[UniswapV3TokenDetail.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[AllFeatureValueRecordUniswapV3Token.type()].sort(key=lambda x: x.block_number)
 
 
-def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, feature_id, block_info):
+def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, block_info):
     # one address may have many records in one block
-    address_infos = {}
     token_result = []
     for data in token_infos:
         block_number = data["block_number"]
@@ -163,36 +159,7 @@ def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, f
             )
         )
 
-        value = {
-            "token_id": token_id,
-            "tick_lower": data["tickLower"],
-            "tick_upper": data["tickUpper"],
-            "fee": data["fee"],
-            "liquidity": liquidity,
-            "token0": data["token0"],
-            "token1": data["token1"],
-            "block_number": block_number,
-            "pool_address": pool_address,
-        }
-
-        if address not in address_infos.keys():
-            address_infos[address] = {}
-        if block_number not in address_infos[address]:
-            address_infos[address][block_number] = []
-        address_infos[address][block_number].append(value)
-    result = []
-
-    for address, block in address_infos.items():
-        for block_number, data in block.items():
-            result.append(
-                AllFeatureValueRecordUniswapV3Token(
-                    feature_id=feature_id,
-                    block_number=block_number,
-                    address=address,
-                    value=data,
-                )
-            )
-    return result, token_result
+    return token_result
 
 
 def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_token_ids):
