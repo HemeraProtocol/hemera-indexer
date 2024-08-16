@@ -9,3 +9,4 @@ class FeatureType(Enum):
     BLUE_CHIP_HOLDING = 5
     ERC20_TOTAL_SUPPLY = 6
     ERC20_TOKEN_HOLDING = 7
+    ERC1155_TOKEN_HOLDING = 8

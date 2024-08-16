@@ -67,6 +67,8 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         super()._start()
 
     def _collect(self, **kwargs):
+        if self._need_collected_list is None or len(self._need_collected_list) == 0:
+            return
         token_transfers = self._data_buff[ERC20TokenTransfer.type()]
         # filter and group
         if token_transfers is None or len(token_transfers) == 0:

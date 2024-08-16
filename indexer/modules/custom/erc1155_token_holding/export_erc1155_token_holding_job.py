@@ -16,7 +16,7 @@ from indexer.domain.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
-from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
+from indexer.modules.custom.erc1155_token_holding.domain.erc1155_token_holding import Erc1155TokenHolding
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.total_supply import constants
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -25,12 +25,12 @@ from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
-FEATURE_ID = FeatureType.ERC20_TOKEN_HOLDING.value
+FEATURE_ID = FeatureType.ERC1155_TOKEN_HOLDING.value
 
 
 class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
     dependency_types = [TokenBalance]
-    output_types = [Erc20TokenHolding]
+    output_types = [Erc1155TokenHolding]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -86,17 +86,18 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             token_address = token_balance.token_address
             if token_address not in self._need_collected_list:
                 continue
-            self._collect_item(Erc20TokenHolding.type(), parse_balance_to_holding(token_balance))
+            self._collect_item(Erc1155TokenHolding.type(), parse_balance_to_holding(token_balance))
 
     def _process(self):
 
-        self._data_buff[Erc20TokenHolding.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[Erc1155TokenHolding.type()].sort(key=lambda x: x.called_block_number)
 
 
 def parse_balance_to_holding(token_balance: TokenBalance):
-    return Erc20TokenHolding(
+    return Erc1155TokenHolding(
         token_address=token_balance.token_address,
         wallet_address=token_balance.address,
+        token_id=token_balance.token_id,
         balance=token_balance.balance,
         called_block_number=token_balance.block_number,
         called_block_timestamp=token_balance.block_timestamp,
