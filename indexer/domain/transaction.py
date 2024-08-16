@@ -45,7 +45,7 @@ class Transaction(Domain):
             block_number=block_number,
             block_timestamp=block_timestamp,
             gas=to_int(hexstr=transaction_dict["gas"]),
-            gas_price=to_int(hexstr=transaction_dict["gasPrice"]),
+            gas_price=to_int(hexstr=transaction_dict["gasPrice"]) if "gasPrice" in transaction_dict else None,
             max_fee_per_gas=(
                 to_int(hexstr=transaction_dict.get("maxFeePerGas"))
                 if transaction_dict.get("maxFeePerGas", None)
