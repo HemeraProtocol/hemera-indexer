@@ -51,8 +51,8 @@ class AddressNftTransferType(Enum):
     SENDER = 1
     RECEIVER = 2
 
-    MINTER = 3
-    BURNER = 4
+    BURNER = 3
+    MINTER = 4
 
 
 def create_address_transaction(transaction, address, txn_type, the_other_address, transaction_fee):
@@ -184,11 +184,11 @@ def erc721_transfers_to_address_nft_transfers(transfers: List[ERC721TokenTransfe
         if transfer.from_address != transfer.to_address:
             if transfer.from_address == ZERO_ADDRESS:
                 yield create_address_nft_transfer(
-                    transfer, transfer.to_address, AddressNftTransferType.BURNER.value, transfer.from_address
+                    transfer, transfer.to_address, AddressNftTransferType.MINTER.value, transfer.from_address
                 )
             elif transfer.to_address == ZERO_ADDRESS:
                 yield create_address_nft_transfer(
-                    transfer, transfer.from_address, AddressNftTransferType.MINTER.value, transfer.to_address
+                    transfer, transfer.from_address, AddressNftTransferType.BURNER.value, transfer.to_address
                 )
             else:
                 yield create_address_nft_transfer(
