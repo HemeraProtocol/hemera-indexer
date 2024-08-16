@@ -62,7 +62,7 @@ class BaseJob(metaclass=BaseJobMeta):
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
         self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
-        self.reorg = kwargs["reorg"]
+        self._reorg = kwargs["reorg"]
 
     def run(self, **kwargs):
         try:

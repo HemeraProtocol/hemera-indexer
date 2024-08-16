@@ -2,9 +2,13 @@ import logging
 import threading
 from multiprocessing import Process
 
-from indexer.controller.reorg_controller import FixingController
+from enumeration.entity_type import calculate_entity_value, generate_output_types, ALL_ENTITY_COLLECTIONS
+from enumeration.schedule_mode import ScheduleMode
+from indexer.controller.reorg_controller import ReorgController
 from indexer.domain.block import Block
+from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from indexer.jobs.base_job import BaseJob
+from indexer.jobs.job_scheduler import JobScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +19,26 @@ class CheckBlockConsensusJob(BaseJob):
         self.last_batch_end_block = None
         config = kwargs['config']
         self.check_switch = config.get('db_service', None) is not None
+
         if self.check_switch:
-            self.fix_controller = FixingController(service=config.get('db_service'),
-                                                   batch_web3_provider=kwargs['batch_web3_provider'],
-                                                   batch_web3_debug_provider=kwargs['batch_web3_debug_provider'],
-                                                   ranges=1000,
-                                                   batch_size=kwargs['batch_size'],
-                                                   debug_batch_size=kwargs['debug_batch_size'])
+            entity_types = calculate_entity_value(','.join(ALL_ENTITY_COLLECTIONS))
+            output_types = list(generate_output_types(entity_types))
+            reorg_job_scheduler = JobScheduler(
+                batch_web3_provider=self._batch_web3_provider,
+                batch_web3_debug_provider=kwargs['batch_web3_debug_provider'],
+                item_exporters=PostgresItemExporter(config["db_service"]),
+                batch_size=kwargs['batch_size'],
+                debug_batch_size=kwargs['debug_batch_size'],
+                required_output_types=output_types,
+                schedule_mode=ScheduleMode.REORG,
+                config=config,
+            )
+
+            self.reorg_controller = ReorgController(
+                batch_web3_provider=kwargs['batch_web3_provider'],
+                job_scheduler=reorg_job_scheduler,
+                ranges=1000,
+                config=config)
 
     def _process(self):
         if not self.check_switch:
@@ -38,7 +55,7 @@ class CheckBlockConsensusJob(BaseJob):
             block_hash = block['hash']
             if block_hash != parent_hash:
                 # non-consensus detected
-                fixing_thread = Process(target=self.fix_controller.action,
+                fixing_thread = Process(target=self.reorg_controller.action,
                                         kwargs={'block_number': block['number']})
                 fixing_thread.start()
                 break
