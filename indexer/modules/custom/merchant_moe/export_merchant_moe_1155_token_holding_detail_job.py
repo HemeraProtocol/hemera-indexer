@@ -113,20 +113,15 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         )
         for data in total_bin_dtos:
             common_data = {
-                'token_address': token_address,
-                'token_id': data["token_id"],
-                'called_block_number': data["block_number"],
-                'called_block_timestamp': data["block_timestamp"]
+                "token_address": token_address,
+                "token_id": data["token_id"],
+                "called_block_number": data["block_number"],
+                "called_block_timestamp": data["block_timestamp"],
             }
-            erc1155_supply = Erc1155TokenSupply(
-                **common_data,
-                total_supply=data["totalSupply"]
-            )
+            erc1155_supply = Erc1155TokenSupply(**common_data, total_supply=data["totalSupply"])
             self._collect_item(Erc1155TokenSupply, erc1155_supply)
             merchant_moe_bin = MerChantMoeTokenBin(
-                **common_data,
-                reserve0_bin=data["reserve0_bin"],
-                reserve1_bin=data["reserve1_bin"]
+                **common_data, reserve0_bin=data["reserve0_bin"], reserve1_bin=data["reserve1_bin"]
             )
             self._collect_item(MerChantMoeTokenBin, merchant_moe_bin)
 
