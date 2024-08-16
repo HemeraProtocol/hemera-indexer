@@ -10,11 +10,11 @@ class FeatureErc20TokenHolding(HemeraModel):
     __tablename__ = "feature_erc20_token_holding"
     token_address = Column(BYTEA, primary_key=True)
     wallet_address = Column(BYTEA, primary_key=True)
+    called_block_number = Column(BIGINT, primary_key=True)
+    called_block_timestamp = Column(BIGINT, primary_key=True)
 
     balance = Column(NUMERIC(100))
 
-    called_block_number = Column(BIGINT)
-    called_block_timestamp = Column(BIGINT)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
