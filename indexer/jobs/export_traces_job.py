@@ -182,7 +182,7 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
             result = rpc_response_to_result(response)
         except HistoryUnavailableError as e:
             exception_recorder.log(
-                block_number=block_number,
+                block_number=to_int(hexstr=block_number),
                 dataclass=Trace.type(),
                 message_type=HistoryUnavailableError.__name__,
                 message=e.message,
@@ -200,7 +200,7 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
             total_traces.append(trace)
             continue
 
-        if "txHash" not in result[0]:
+        if len(result) > 0 and "txHash" not in result[0]:
             if len(result) != len(transactions):
                 raise ValueError("The number of traces is wrong " + str(result))
 
