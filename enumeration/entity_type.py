@@ -20,6 +20,8 @@ from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordUniswapV3Token,
 )
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
+from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
+from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
@@ -35,6 +37,8 @@ class EntityType(IntFlag):
     USER_OPS = 1 << 5
 
     BLUE_CHIP = 1 << 6
+
+    MANTLE_20 = 1 << 7
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -114,3 +118,14 @@ def generate_output_types(entity_types):
         yield CurrentTokenBalance
         yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
+
+    if entity_types & EntityType.MANTLE_20:
+        yield Block
+        yield Transaction
+        yield ERC20TokenTransfer
+        yield Token
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
+        yield Erc20TotalSupply
+        yield Erc20TokenHolding

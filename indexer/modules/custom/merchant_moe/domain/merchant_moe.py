@@ -1,14 +1,13 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class Erc1155TokenHolding(FilterData):
+class MerChantMoeTokenBin(FilterData):
     token_address: str
-    wallet_address: str
     token_id: int
-    balance: int
+    reserve0_bin: int
+    reserve1_bin: int
     called_block_number: int
     called_block_timestamp: int
