@@ -11,3 +11,12 @@ class Erc20TokenHolding(FilterData):
     balance: int
     called_block_number: int
     called_block_timestamp: int
+
+
+@dataclass
+class Erc20CurrentTokenHolding(Domain):
+    token_address: str
+    wallet_address: str
+    balance: int
+    block_number: int
+    block_timestamp: int

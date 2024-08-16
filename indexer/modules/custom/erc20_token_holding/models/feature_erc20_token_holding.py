@@ -6,8 +6,8 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class FeatureErc20TokenHolding(HemeraModel):
-    __tablename__ = "feature_erc20_token_holding"
+class FeatureErc20TokenHoldings(HemeraModel):
+    __tablename__ = "feature_erc20_token_holdings"
     token_address = Column(BYTEA, primary_key=True)
     wallet_address = Column(BYTEA, primary_key=True)
     called_block_number = Column(BIGINT, primary_key=True)
@@ -35,14 +35,14 @@ class FeatureErc20TokenHolding(HemeraModel):
 
 
 Index(
-    "feature_erc20_token_holding_token_wallet_block_desc_index",
-    desc(FeatureErc20TokenHolding.token_address),
-    desc(FeatureErc20TokenHolding.wallet_address),
-    desc(FeatureErc20TokenHolding.called_block_number),
+    "feature_erc20_token_holdings_token_wallet_block_desc_index",
+    desc(FeatureErc20TokenHoldings.token_address),
+    desc(FeatureErc20TokenHoldings.wallet_address),
+    desc(FeatureErc20TokenHoldings.called_block_number),
 )
 
 Index(
-    "feature_erc20_token_holding_token_block_desc_index",
-    desc(FeatureErc20TokenHolding.token_address),
-    desc(FeatureErc20TokenHolding.called_block_timestamp),
+    "feature_erc20_token_holdings_token_block_desc_index",
+    desc(FeatureErc20TokenHoldings.token_address),
+    desc(FeatureErc20TokenHoldings.called_block_timestamp),
 )

@@ -6,8 +6,8 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class FeatureErc20TotalSupply(HemeraModel):
-    __tablename__ = "feature_erc20_total_supply"
+class FeatureErc20TotalSupplyRecords(HemeraModel):
+    __tablename__ = "feature_erc20_total_supply_records"
     token_address = Column(BYTEA, primary_key=True)
 
     called_block_number = Column(BIGINT, primary_key=True)
