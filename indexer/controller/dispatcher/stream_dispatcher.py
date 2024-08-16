@@ -48,7 +48,7 @@ class StreamDispatcher(BaseDispatcher):
 
             for key, value in self._job_scheduler.get_data_buff().items():
                 message = f"{key}: {len(value)}"
-                print(message)
+                self.logger.info("Export dataclass detail: %s", message)
                 exception_recorder.log(
                     block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
                 )
