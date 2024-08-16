@@ -62,27 +62,29 @@ class BaseJob(metaclass=BaseJobMeta):
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
         self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
+        self.reorg = kwargs["reorg"]
 
     def run(self, **kwargs):
         try:
-            self._start()
+            self._start(**kwargs)
 
             start_time = datetime.now()
             self._collect(**kwargs)
             self.logger.info(f"Stage collect finished. Took {datetime.now() - start_time}")
 
             start_time = datetime.now()
-            self._process()
+            self._process(**kwargs)
             self.logger.info(f"Stage process finished. Took {datetime.now() - start_time}")
 
-            start_time = datetime.now()
-            self._export()
-            self.logger.info(f"Stage export finished. Took {datetime.now() - start_time}")
+            if self.reorg:
+                start_time = datetime.now()
+                self._export()
+                self.logger.info(f"Stage export finished. Took {datetime.now() - start_time}")
 
         finally:
             self._end()
 
-    def _start(self):
+    def _start(self, **kwargs):
         pass
 
     def _end(self):
@@ -109,7 +111,7 @@ class BaseJob(metaclass=BaseJobMeta):
     def _get_domain(self, domain):
         return self._data_buff[domain.type()]
 
-    def _process(self):
+    def _process(self, **kwargs):
         pass
 
     def _extract_from_buff(self, keys=None):
@@ -120,7 +122,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
         return items
 
-    def _export(self):
+    def _export(self, **kwargs):
         items = []
 
         for output_type in self.output_types:

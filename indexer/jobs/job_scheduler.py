@@ -98,15 +98,16 @@ class JobScheduler:
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
-        if self.load_from_source:
-            source_job = get_source_job_type(source_path=self.config.get("source_path"))
+        if self.schedule_mode == ScheduleMode.LOAD:
+            source_job = get_source_job_type(source_path=self.load_from_source)
             all_subclasses = [source_job]
         else:
             all_subclasses = BaseExportJob.discover_jobs()
 
         all_subclasses.extend(ExtensionJob.discover_jobs())
         for cls in all_subclasses:
-            self.job_classes.append(cls)
+            if self.schedule_mode != ScheduleMode.REORG or cls.able_to_reorg:
+                self.job_classes.append(cls)
             for output in cls.output_types:
                 self.job_map[output.type()].append(cls)
             for dependency in cls.dependency_types:
@@ -129,6 +130,7 @@ class JobScheduler:
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
+                reorg=self.schedule_mode == ScheduleMode.REORG,
             )
             if isinstance(job, FilterTransactionDataJob):
                 filters.append(job.get_filter())
@@ -146,6 +148,7 @@ class JobScheduler:
                 max_workers=self.max_workers,
                 config=self.config,
                 filters=filters,
+                reorg=self.schedule_mode == ScheduleMode.REORG,
             )
             self.jobs.insert(0, export_blocks_job)
 

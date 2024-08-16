@@ -1,7 +1,8 @@
 import logging
 import threading
+from multiprocessing import Process
 
-from indexer.controller.fixing_controller import FixingController
+from indexer.controller.reorg_controller import FixingController
 from indexer.domain.block import Block
 from indexer.jobs.base_job import BaseJob
 
@@ -12,14 +13,19 @@ class CheckBlockConsensusJob(BaseJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.last_batch_end_block = None
-        self.fix_controller = FixingController(service=service,
-                                               batch_web3_provider=batch_web3_provider,
-                                               batch_web3_debug_provider=batch_web3_debug_provider,
-                                               ranges=ranges,
-                                               batch_size=batch_size,
-                                               debug_batch_size=debug_batch_size)
+        config = kwargs['config']
+        self.check_switch = config.get('db_service', None) is not None
+        if self.check_switch:
+            self.fix_controller = FixingController(service=config.get('db_service'),
+                                                   batch_web3_provider=kwargs['batch_web3_provider'],
+                                                   batch_web3_debug_provider=kwargs['batch_web3_debug_provider'],
+                                                   ranges=1000,
+                                                   batch_size=kwargs['batch_size'],
+                                                   debug_batch_size=kwargs['debug_batch_size'])
 
     def _process(self):
+        if not self.check_switch:
+            return
 
         batch_blocks = self._data_buff[Block.type()]
 
@@ -32,8 +38,8 @@ class CheckBlockConsensusJob(BaseJob):
             block_hash = block['hash']
             if block_hash != parent_hash:
                 # non-consensus detected
-                fixing_thread = threading.Thread(target=self.fix_controller.action,
-                                                 kwargs={'block_number': block['number']})
+                fixing_thread = Process(target=self.fix_controller.action,
+                                        kwargs={'block_number': block['number']})
                 fixing_thread.start()
                 break
 
