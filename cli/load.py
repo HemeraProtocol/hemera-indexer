@@ -5,6 +5,7 @@ import click
 
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
+from enumeration.schedule_mode import ScheduleMode
 from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
 from indexer.controller.stream_controller import StreamController
 from indexer.domain import Domain
@@ -58,7 +59,7 @@ def calculate_execution_time(func):
     type=str,
     envvar="DEBUG_PROVIDER_URI",
     help="The URI of the web3 debug provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
+         "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
 )
 @click.option(
     "-o",
@@ -66,11 +67,11 @@ def calculate_execution_time(func):
     type=str,
     envvar="OUTPUT",
     help="The output selection."
-    "Print to console e.g. console; "
-    "or postgresql e.g. postgres"
-    "or local json file e.g. jsonfile://your-file-path; "
-    "or local csv file e.g. csvfile://your-file-path; "
-    "or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path",
+         "Print to console e.g. console; "
+         "or postgresql e.g. postgres"
+         "or local json file e.g. jsonfile://your-file-path; "
+         "or local csv file e.g. csvfile://your-file-path; "
+         "or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path",
 )
 @click.option(
     "-E",
@@ -89,10 +90,10 @@ def calculate_execution_time(func):
     type=str,
     envvar="OUTPUT_TYPES",
     help="The list of output types to export, corresponding to more detailed data models. "
-    "Specifying this option will prioritize these settings over the entity types specified in -E. "
-    "Examples include: block, transaction, log, "
-    "token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, "
-    "trace, contract, coin_balance.",
+         "Specifying this option will prioritize these settings over the entity types specified in -E. "
+         "Examples include: block, transaction, log, "
+         "token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, "
+         "trace, contract, coin_balance.",
 )
 @click.option(
     "-v",
@@ -102,9 +103,9 @@ def calculate_execution_time(func):
     type=str,
     envvar="DB_VERSION",
     help="The database version to initialize the database. using the alembic script's revision ID to "
-    "specify a version. "
-    "e.g. head, indicates the latest version."
-    "or base, indicates the empty database without any table.",
+         "specify a version. "
+         "e.g. head, indicates the latest version."
+         "or base, indicates the empty database without any table.",
 )
 @click.option(
     "-s",
@@ -185,8 +186,8 @@ def calculate_execution_time(func):
     type=str,
     envvar="SOURCE_PATH",
     help="The path to load the data."
-    "Load from local csv file e.g. csvfile://your-file-direction; "
-    "or local json file e.g. jsonfile://your-file-direction; ",
+         "Load from local csv file e.g. csvfile://your-file-direction; "
+         "or local json file e.g. jsonfile://your-file-direction; ",
 )
 @click.option(
     "--log-file",
@@ -211,8 +212,8 @@ def calculate_execution_time(func):
     type=str,
     envvar="SYNC_RECORDER",
     help="How to store the sync record data."
-    'e.g pg_base. means sync record data will store in pg as "base" be key'
-    'or file_base. means sync record data will store in file as "base" be file name',
+         'e.g pg_base. means sync record data will store in pg as "base" be key'
+         'or file_base. means sync record data will store in file as "base" be file name',
 )
 @click.option(
     "--cache",
@@ -221,31 +222,31 @@ def calculate_execution_time(func):
     type=str,
     envvar="CACHE_SERVICE",
     help="How to store the cache data."
-    "e.g redis. means cache data will store in redis, redis://localhost:6379"
-    "or memory. means cache data will store in memory, memory",
+         "e.g redis. means cache data will store in redis, redis://localhost:6379"
+         "or memory. means cache data will store in memory, memory",
 )
 @calculate_execution_time
 def load(
-    provider_uri,
-    debug_provider_uri,
-    postgres_url,
-    output,
-    db_version,
-    start_block,
-    end_block,
-    entity_types,
-    output_types,
-    blocks_per_file,
-    period_seconds=10,
-    batch_size=10,
-    debug_batch_size=1,
-    block_batch_size=1,
-    max_workers=5,
-    log_file=None,
-    pid_file=None,
-    source_path=None,
-    sync_recorder="file_sync_record",
-    cache="memory",
+        provider_uri,
+        debug_provider_uri,
+        postgres_url,
+        output,
+        db_version,
+        start_block,
+        end_block,
+        entity_types,
+        output_types,
+        blocks_per_file,
+        period_seconds=10,
+        batch_size=10,
+        debug_batch_size=1,
+        block_batch_size=1,
+        max_workers=5,
+        log_file=None,
+        pid_file=None,
+        source_path=None,
+        sync_recorder="file_sync_record",
+        cache="memory",
 ):
     configure_logging(log_file)
     configure_signals()
@@ -294,6 +295,7 @@ def load(
         max_workers=max_workers,
         required_output_types=output_types,
         config=config,
+        job_scheduler_mode=ScheduleMode.LOAD,
         cache=cache,
     )
 

@@ -40,6 +40,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     dependency_types = []
     output_types = []
+    able_to_reorg = False
 
     @classmethod
     def discover_jobs(cls):

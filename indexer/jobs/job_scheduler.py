@@ -8,6 +8,7 @@ from redis.client import Redis
 from common import models
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
+from enumeration.schedule_mode import ScheduleMode
 from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
@@ -42,16 +43,17 @@ def get_source_job_type(source_path: str):
 
 class JobScheduler:
     def __init__(
-        self,
-        batch_web3_provider,
-        batch_web3_debug_provider,
-        batch_size=100,
-        debug_batch_size=1,
-        max_workers=5,
-        config={},
-        item_exporters=[],
-        required_output_types=[],
-        cache="memory",
+            self,
+            batch_web3_provider,
+            batch_web3_debug_provider,
+            batch_size=100,
+            debug_batch_size=1,
+            max_workers=5,
+            config={},
+            item_exporters=[],
+            required_output_types=[],
+            schedule_mode=ScheduleMode.STREAM,
+            cache="memory",
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -61,7 +63,9 @@ class JobScheduler:
         self.max_workers = max_workers
         self.config = config
         self.required_output_types = required_output_types
-        self.load_from_source = config.get("source_path") if "source_path" in config else None
+        self.schedule_mode = schedule_mode
+        self.load_from_source = config.get("source_path") \
+            if "source_path" in config and self.schedule_mode == ScheduleMode.LOAD else None
         self.jobs = []
         self.job_classes = []
         self.job_map = defaultdict(list)
