@@ -35,7 +35,7 @@ class FeatureMerChantMoeTokenBinRecords(HemeraModel):
 
 
 Index(
-    "feature_erc1155_token_supply_token_block_desc_index",
+    "feature_merchant_moe_token_bin_records_token_block_desc_index",
     desc(FeatureMerChantMoeTokenBinRecords.token_address),
     desc(FeatureMerChantMoeTokenBinRecords.called_block_timestamp),
 )
