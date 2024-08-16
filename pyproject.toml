@@ -46,6 +46,7 @@ dependencies = [
     "urllib3==2.2.2",
     "dataclass-wizard==0.22.3",
     "pottery==3.0.0",
+    "eth_typing>=2.2.0,<5",
 ]
 
 [tool.setuptools.dynamic]
