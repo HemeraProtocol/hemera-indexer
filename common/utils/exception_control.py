@@ -1,3 +1,5 @@
+import logging
+
 from werkzeug.exceptions import HTTPException
 
 
@@ -101,6 +103,7 @@ def decode_response_error(error):
         if (
             message == "execution reverted"
             or message == "out of gas"
+            or message == "gas uint64 overflow"
             or message == "invalid jump destination"
             or message.lower().find("stack underflow") != -1
         ):
@@ -108,7 +111,8 @@ def decode_response_error(error):
         elif message.find("required historical state unavailable") != -1:
             raise HistoryUnavailableError(message)
         else:
-            print(error)
+            # print(error)
+            logging.error(error)
             raise RPCNotReachable(message)
     elif code == -32700 or code == -32600 or code == -32602:
         raise FastShutdownError(message)
