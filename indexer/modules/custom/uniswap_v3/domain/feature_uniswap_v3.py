@@ -44,3 +44,23 @@ class UniswapV3TokenDetail(FilterData):
     liquidity: int
     called_block_number: int
     called_block_timestamp: int
+
+
+@dataclass
+class UniswapV3PoolCurrentPrice(FilterData):
+    nft_address: str
+    pool_address: str
+    sqrt_price_x96: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class UniswapV3TokenCurrentStatus(FilterData):
+    nft_address: str
+    token_id: int
+    pool_address: str
+    wallet_address: str
+    liquidity: int
+    block_number: int
+    block_timestamp: int

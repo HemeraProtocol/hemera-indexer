@@ -15,7 +15,11 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3PoolPrice
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Pool,
+    UniswapV3PoolCurrentPrice,
+    UniswapV3PoolPrice,
+)
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -29,7 +33,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
 
 class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
-    output_types = [UniswapV3Pool, UniswapV3PoolPrice]
+    output_types = [UniswapV3Pool, UniswapV3PoolPrice, UniswapV3PoolCurrentPrice]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -101,13 +105,23 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         for pools in format_pool_item(need_add_in_exists_pools):
             self._collect_item(UniswapV3Pool.type(), pools)
 
-        self._batch_work_executor.execute(max_log_index_records, self._collect_batch, len(max_log_index_records))
+        self._batch_work_executor.execute(
+            max_log_index_records, self._collect_batch, len(max_log_index_records), split_logs
+        )
         self._batch_work_executor.wait()
 
-    def _collect_batch(self, logs):
+    def _collect_batch(self, logs_dict):
+        if logs_dict is None or len(logs_dict) == 0:
+            return
+        token_address = next(iter(logs_dict))
         block_info = {}
+        logs = logs_dict[token_address]
+        max_block_number = 0
         for log in logs:
-            block_info[log.block_number] = log.block_timestamp
+            block_number = log.block_number
+            block_info[block_number] = log.block_timestamp
+            if block_number > max_block_number:
+                max_block_number = block_number
 
         pool_prices = collect_pool_prices([self._pool_swap_topic0], self._exist_pools, logs, self._abi_list)
         self.update_pool_prices(pool_prices)
@@ -115,10 +129,22 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
 
         for data in prices:
             self._collect_item(UniswapV3PoolPrice.type(), data)
+            if data.called_block_number == max_block_number:
+                self._collect_item(
+                    UniswapV3PoolCurrentPrice,
+                    UniswapV3PoolCurrentPrice(
+                        nft_address=data.nft_address,
+                        pool_address=data.pool_address,
+                        sqrt_price_x96=data.sqrt_price_x96,
+                        block_number=data.called_block_number,
+                        block_timestamp=data.called_block_timestamp,
+                    ),
+                )
 
     def _process(self):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[UniswapV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
 
     def update_pool_prices(self, new_pool_prices):
         if not new_pool_prices or len(new_pool_prices) == 0:
@@ -144,7 +170,6 @@ def format_pool_item(new_pools):
 
 
 def format_value_records(exist_pools, pool_prices, block_info):
-    result = []
     prices = []
     for address, pool_data in pool_prices.items():
         if address not in exist_pools.keys():
@@ -160,7 +185,7 @@ def format_value_records(exist_pools, pool_prices, block_info):
                 called_block_timestamp=block_info[block_number],
             )
         )
-    return result, prices
+    return prices
 
 
 def get_exist_pools(db_service, nft_address):
@@ -299,3 +324,12 @@ def decode_logs(fn_name, contract_abi, log):
         raise ValueError("Function ABI not found")
 
     return decode_log(function_abi, log)
+
+
+def split_logs(logs):
+    log_dict = defaultdict(list)
+    for data in logs:
+        log_dict[data.address].append(data)
+
+    for token_address, data in log_dict.items():
+        yield {token_address: data}

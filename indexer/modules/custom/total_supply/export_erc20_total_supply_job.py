@@ -18,7 +18,7 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.total_supply import constants
-from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
+from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20CurrentTotalSupply, Erc20TotalSupply
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -30,7 +30,7 @@ FEATURE_ID = FeatureType.ERC20_TOTAL_SUPPLY.value
 
 class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
     dependency_types = [ERC20TokenTransfer]
-    output_types = [Erc20TotalSupply]
+    output_types = [Erc20TotalSupply, Erc20CurrentTotalSupply]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -88,9 +88,12 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         if token_address not in self._need_collected_list:
             return
         grouped_block = {}
-
+        max_block_number = 0
         for entity in token_transfers[token_address]:
-            grouped_block[entity.block_number] = entity.block_timestamp
+            block_number = entity.block_number
+            grouped_block[block_number] = entity.block_timestamp
+            if block_number > max_block_number:
+                max_block_number = block_number
 
         # collect total supply
         total_supply_infos = collect_pool_total_supply(
@@ -111,9 +114,21 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
                 parse_to_total_supply(block_number, block_timestamp, token_address, total_supply),
             )
 
+            if block_number == max_block_number:
+                self._collect_item(
+                    Erc20CurrentTotalSupply.type(),
+                    Erc20CurrentTotalSupply(
+                        token_address=token_address,
+                        total_supply=total_supply,
+                        block_number=block_number,
+                        block_timestamp=block_timestamp,
+                    ),
+                )
+
     def _process(self):
 
         self._data_buff[Erc20TotalSupply.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[Erc20CurrentTotalSupply.type()].sort(key=lambda x: x.block_number)
 
 
 def parse_to_total_supply(block_number, block_timestamp, address, total_supply):

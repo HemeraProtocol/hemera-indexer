@@ -15,7 +15,11 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3 import constants
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Token, UniswapV3TokenDetail
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Token,
+    UniswapV3TokenCurrentStatus,
+    UniswapV3TokenDetail,
+)
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -125,26 +129,33 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         block_info = {}
         for block in block_list:
             block_info[block.block_number] = block.timestamp
-        token_details = parse_token_records(
+        token_result, current_statuses = parse_token_records(
             self._nft_address, self._exist_token_ids, owner_dict, token_infos, block_info
         )
 
-        for data in token_details:
+        for data in token_result:
             self._collect_item(UniswapV3TokenDetail.type(), data)
+        for data in current_statuses:
+            self._collect_item(UniswapV3TokenCurrentStatus.type(), data)
 
     def _process(self):
         self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[UniswapV3TokenDetail.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[UniswapV3TokenCurrentStatus.type()].sort(key=lambda x: x.block_number)
 
 
 def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, block_info):
-    # one address may have many records in one block
     token_result = []
+    token_block_dict = {}
+
     for data in token_infos:
         block_number = data["block_number"]
         token_id = data["token_id"]
-        address = owner_dict[token_id][block_number]
         liquidity = data["liquidity"]
+
+        token_block_dict[token_id] = max(token_block_dict.get(token_id, block_number), block_number)
+
+        address = owner_dict[token_id][block_number]
         pool_address = token_pool_dict[token_id]
 
         token_result.append(
@@ -159,7 +170,27 @@ def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, b
             )
         )
 
-    return token_result
+    current_statuses = []
+    for token_id, max_block_number in token_block_dict.items():
+        max_block_data = next(
+            data for data in token_infos if data["token_id"] == token_id and data["block_number"] == max_block_number
+        )
+        address = owner_dict[token_id][max_block_number]
+        pool_address = token_pool_dict[token_id]
+
+        current_statuses.append(
+            UniswapV3TokenCurrentStatus(
+                nft_address=nft_address,
+                token_id=token_id,
+                pool_address=pool_address,
+                wallet_address=address,
+                liquidity=max_block_data["liquidity"],
+                block_number=max_block_number,
+                block_timestamp=block_info[max_block_number],
+            )
+        )
+
+    return token_result, current_statuses
 
 
 def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_token_ids):
