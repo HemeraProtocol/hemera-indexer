@@ -29,6 +29,10 @@ class HemeraModel(db.Model):
     def model_domain_mapping():
         pass
 
+    @classmethod
+    def schema(self):
+        return "public"
+
 
 def get_column_type(table: Type[HemeraModel], column_name):
     return table.__table__.c[column_name].type
@@ -40,16 +44,21 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
         if key in table.__table__.c:
             column_type = get_column_type(table, key)
             if isinstance(column_type, BYTEA) and not isinstance(getattr(data, key), bytes):
-                converted_data[key] = bytes.fromhex(getattr(data, key)[2:]) if getattr(data, key) else None
+                if isinstance(getattr(data, key), str):
+                    converted_data[key] = bytes.fromhex(getattr(data, key)[2:]) if getattr(data, key) else None
+                elif isinstance(getattr(data, key), int):
+                    converted_data[key] = getattr(data, key).to_bytes(32, byteorder="big")
+                else:
+                    converted_data[key] = None
             elif isinstance(column_type, TIMESTAMP):
-                converted_data[key] = func.to_timestamp(getattr(data, key))
+                converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
             elif isinstance(column_type, ARRAY) and isinstance(column_type.item_type, BYTEA):
                 converted_data[key] = [bytes.fromhex(address[2:]) for address in getattr(data, key)]
             else:
                 converted_data[key] = getattr(data, key)
 
     if is_update:
-        converted_data["update_time"] = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
+        converted_data["update_time"] = datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())
 
     if "reorg" in table.__table__.columns:
         converted_data["reorg"] = False

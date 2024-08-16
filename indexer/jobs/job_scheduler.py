@@ -61,7 +61,7 @@ class JobScheduler:
         self.max_workers = max_workers
         self.config = config
         self.required_output_types = required_output_types
-        self.load_from_source = config.get("source_path") is not None
+        self.load_from_source = config.get("source_path") if "source_path" in config else None
         self.jobs = []
         self.job_classes = []
         self.job_map = defaultdict(list)
