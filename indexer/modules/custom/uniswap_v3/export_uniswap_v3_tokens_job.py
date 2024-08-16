@@ -5,9 +5,9 @@ import os
 import queue
 
 import eth_abi
+from indexer.domain.block import Block
 from web3 import Web3
 
-from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -32,7 +32,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_TOKENS.value
 
 
 class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
-    dependency_types = [Log, ERC721TokenTransfer, BlockTsMapper]
+    dependency_types = [Log, ERC721TokenTransfer, Block]
     output_types = [UniswapV3Token, UniswapV3TokenDetail]
 
     def __init__(self, **kwargs):
@@ -125,10 +125,10 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         self._exist_token_ids.update(update_exist_tokens)
         for data in new_nft_info:
             self._collect_item(UniswapV3Token.type(), data)
-        block_list = self._data_buff[BlockTsMapper.type()]
+        block_list = self._data_buff[Block.type()]
         block_info = {}
         for block in block_list:
-            block_info[block.block_number] = block.timestamp
+            block_info[block.number] = block.timestamp
         token_result, current_statuses = parse_token_records(
             self._nft_address, self._exist_token_ids, owner_dict, token_infos, block_info
         )

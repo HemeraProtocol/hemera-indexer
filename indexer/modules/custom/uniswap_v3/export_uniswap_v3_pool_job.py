@@ -131,7 +131,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             self._collect_item(UniswapV3PoolPrice.type(), data)
             if data.called_block_number == max_block_number:
                 self._collect_item(
-                    UniswapV3PoolCurrentPrice,
+                    UniswapV3PoolCurrentPrice.type(),
                     UniswapV3PoolCurrentPrice(
                         nft_address=data.nft_address,
                         pool_address=data.pool_address,
