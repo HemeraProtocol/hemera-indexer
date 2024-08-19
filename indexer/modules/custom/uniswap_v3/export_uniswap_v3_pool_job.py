@@ -48,7 +48,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._pool_prices_lock = threading.Lock()
         self._load_config("config.ini")
         self._abi_list = UNISWAP_V3_ABI
-        self._exist_pools = get_exist_pools(self._service[0], self._nft_address)
+        self._exist_pools = get_exist_pools(self._service, self._nft_address)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
 
@@ -194,9 +194,9 @@ def format_value_records(exist_pools, pool_prices, block_info):
 
 def get_exist_pools(db_service, nft_address):
     if not db_service:
-        raise ValueError("uniswap v3 pool job must have db connection")
+        return {}
 
-    session = db_service.get_service_session()
+    session = db_service[0].get_service_session()
     try:
         result = (
             session.query(UniswapV3Pools).filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:])).all()

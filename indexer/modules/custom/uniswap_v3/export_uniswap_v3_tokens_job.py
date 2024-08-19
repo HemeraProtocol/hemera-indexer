@@ -47,7 +47,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         self._load_config("config.ini")
         self._abi_list = UNISWAP_V3_ABI
         self._liquidity_token_id_blocks = queue.Queue()
-        self._exist_token_ids = get_exist_token_ids(self._service[0], self._nft_address)
+        self._exist_token_ids = get_exist_token_ids(self._service, self._nft_address)
 
     def _load_config(self, filename):
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -278,7 +278,10 @@ def get_new_nfts(
 
 
 def get_exist_token_ids(db_service, nft_address):
-    session = db_service.get_service_session()
+    if not db_service:
+        return {}
+
+    session = db_service[0].get_service_session()
     try:
         result = (
             session.query(UniswapV3Tokens.token_id, UniswapV3Tokens.pool_address)

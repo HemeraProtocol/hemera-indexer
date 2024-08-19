@@ -12,7 +12,7 @@ class FeatureErc20CurrentTotalSupplyRecords(HemeraModel):
 
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
-    total_supply = Column(BIGINT)
+    total_supply = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())

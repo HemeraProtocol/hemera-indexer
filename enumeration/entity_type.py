@@ -17,6 +17,15 @@ from indexer.domain.transaction import Transaction
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
+from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
+    UniswapV2CurrentLiquidityHolding,
+    UniswapV2LiquidityHolding,
+    UniswapV2Pool,
+    UniswapV2PoolCurrentReserves,
+    UniswapV2PoolCurrentTotalSupply,
+    UniswapV2PoolReserves,
+    UniswapV2PoolTotalSupply,
+)
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     UniswapV3Pool,
     UniswapV3PoolCurrentPrice,
@@ -41,6 +50,7 @@ class EntityType(IntFlag):
     BLUE_CHIP = 1 << 6
 
     MANTLE_20 = 1 << 7
+    UNISWAP_V2 = 1 << 7
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -132,3 +142,12 @@ def generate_output_types(entity_types):
         yield CurrentTokenBalance
         yield Erc20TotalSupply
         yield Erc20TokenHolding
+    if entity_types & EntityType.UNISWAP_V2:
+        yield UniswapV2Pool
+        yield UniswapV2PoolTotalSupply
+        yield UniswapV2PoolCurrentTotalSupply
+        yield UniswapV2PoolReserves
+        yield UniswapV2PoolCurrentReserves
+        yield UniswapV2LiquidityHolding
+        yield UniswapV2CurrentLiquidityHolding
+        yield Token

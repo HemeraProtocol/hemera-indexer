@@ -163,7 +163,7 @@ def batch_get_bin(web3, make_requests, requests, nft_address, is_batch, abi_list
     outputs = function_abi["outputs"]
     output_types = [output["type"] for output in outputs]
 
-    parameters = common_utils.build_token_id_method_data(web3, requests, nft_address, fn_name, abi_list)
+    parameters = common_utils.build_one_input_one_output_method_data(web3, requests, nft_address, fn_name, abi_list)
 
     token_name_rpc = list(generate_eth_call_json_rpc(parameters))
     if is_batch:
@@ -204,7 +204,7 @@ def batch_get_total_supply(web3, make_requests, requests, nft_address, is_batch,
     outputs = function_abi["outputs"]
     output_types = [output["type"] for output in outputs]
 
-    parameters = common_utils.build_token_id_method_data(web3, requests, nft_address, fn_name, abi_list)
+    parameters = common_utils.build_one_input_one_output_method_data(web3, requests, nft_address, fn_name, abi_list)
 
     token_name_rpc = list(generate_eth_call_json_rpc(parameters))
     if is_batch:

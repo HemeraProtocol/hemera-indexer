@@ -6,24 +6,26 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class FeatureErc20TotalSupplyRecords(HemeraModel):
-    __tablename__ = "feature_erc20_total_supply_records"
-    token_address = Column(BYTEA, primary_key=True)
-
+class FeatureUniswapV2PoolReservesRecords(HemeraModel):
+    __tablename__ = "feature_uniswap_v2_pool_reserves_records"
+    pool_address = Column(BYTEA, primary_key=True)
     called_block_number = Column(BIGINT, primary_key=True)
     called_block_timestamp = Column(BIGINT, primary_key=True)
-    total_supply = Column(NUMERIC(100))
+
+    reserve0 = Column(NUMERIC(100))
+    reserve1 = Column(NUMERIC(100))
+    block_timestamp_last = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("token_address", "called_block_timestamp", "called_block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("pool_address", "called_block_timestamp", "called_block_number"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                "domain": "Erc20TotalSupply",
+                "domain": "UniswapV2PoolReserves",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

@@ -1,5 +1,7 @@
 import threading
 
+from indexer.utils.abi import function_abi_to_4byte_selector_str
+
 UNISWAP_V2_ABI = [
     {
         "constant": True,
@@ -71,21 +73,18 @@ UNISWAP_V2_ABI = [
         "type": "function",
     },
 ]
+RESERVES_ABI = {
+    "constant": True,
+    "inputs": [],
+    "name": "getReserves",
+    "outputs": [
+        {"internalType": "uint112", "name": "_reserve0", "type": "uint112"},
+        {"internalType": "uint112", "name": "_reserve1", "type": "uint112"},
+        {"internalType": "uint32", "name": "_blockTimestampLast", "type": "uint32"},
+    ],
+    "payable": False,
+    "stateMutability": "view",
+    "type": "function",
+}
 
-
-class ThreadSafeList:
-    def __init__(self):
-        self.list = []
-        self.lock = threading.Lock()
-
-    def add_items(self, items):
-        with self.lock:
-            self.list.extend(items)
-
-    def clear_list(self):
-        with self.lock:
-            self.list.clear()
-
-    def __iter__(self):
-        with self.lock:
-            return iter(self.list.copy())
+RESERVES_PREFIX = function_abi_to_4byte_selector_str(RESERVES_ABI)

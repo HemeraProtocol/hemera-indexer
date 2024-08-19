@@ -99,26 +99,25 @@ def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_ke
     return parameters
 
 
-def build_token_id_method_data(web3, token_ids, nft_address, fn, abi_list):
+def build_one_input_one_output_method_data(web3, need_call_list, contract_address, fn, abi_list, data_key="token_id"):
     parameters = []
-    contract = web3.eth.contract(address=Web3.to_checksum_address(nft_address), abi=abi_list)
+    contract = web3.eth.contract(address=Web3.to_checksum_address(contract_address), abi=abi_list)
 
-    for idx, token in enumerate(token_ids):
+    for idx, token in enumerate(need_call_list):
         token_data = {
             "request_id": idx,
-            "param_to": nft_address,
+            "param_to": contract_address,
             "param_number": hex(token["block_number"]),
         }
         token.update(token_data)
 
         try:
-            # Encode the ABI for the specific token_id
-            data = contract.encodeABI(fn_name=fn, args=[token["token_id"]])
+            data = contract.encodeABI(fn_name=fn, args=[token[data_key]])
             token["param_data"] = data
         except Exception as e:
             logger.error(
-                f"Encoding token id {token['token_id']} for function {fn} failed. "
-                f"NFT address: {nft_address}. "
+                f"Encoding token id {token[data_key]} for function {fn} failed. "
+                f"contract address: {contract_address}. "
                 f"Exception: {e}."
             )
 
