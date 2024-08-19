@@ -49,6 +49,8 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._load_config("config.ini")
         self._abi_list = UNISWAP_V3_ABI
         self._exist_pools = get_exist_pools(self._service[0], self._nft_address)
+        self._batch_size = kwargs["batch_size"]
+        self._max_worker = kwargs["max_workers"]
 
     def get_filter(self):
         return TransactionFilterByLogs(
@@ -99,6 +101,8 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             self._web3,
             self._batch_web3_provider.make_request,
             self._is_batch,
+            self._batch_size,
+            self._max_worker,
         )
         self._exist_pools.update(need_add_in_exists_pools)
 
@@ -221,7 +225,18 @@ def get_exist_pools(db_service, nft_address):
 
 
 def update_exist_pools(
-    nft_address, factory_address, exist_pools, create_topic0, swap_topic0, logs, abi_list, web3, make_requests, is_batch
+    nft_address,
+    factory_address,
+    exist_pools,
+    create_topic0,
+    swap_topic0,
+    logs,
+    abi_list,
+    web3,
+    make_requests,
+    is_batch,
+    batch_size,
+    max_worker,
 ):
     need_add = {}
     swap_pools = []
@@ -248,7 +263,7 @@ def update_exist_pools(
             # if the address created by factory_address ,collect it
             swap_pools.append({"address": address, "block_number": log.block_number})
     swap_new_pools = collect_swap_new_pools(
-        nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch
+        nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
     )
     need_add.update(swap_new_pools)
     return need_add
@@ -273,9 +288,11 @@ def collect_pool_prices(target_topic0_list, exist_pools, logs, abi_list):
     return pool_prices_map
 
 
-def collect_swap_new_pools(nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch):
+def collect_swap_new_pools(
+    nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+):
     factory_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address"
+        web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
     )
     uniswap_pools = []
     need_add = {}
@@ -290,13 +307,13 @@ def collect_swap_new_pools(nft_address, factory_address, swap_pools, abi_list, w
     if len(uniswap_pools) == 0:
         return need_add
     token0_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address"
+        web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address", batch_size, max_worker
     )
     token1_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address"
+        web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address", batch_size, max_worker
     )
     tick_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, token1_infos, is_batch, abi_list, "tickSpacing", "address"
+        web3, make_requests, token1_infos, is_batch, abi_list, "tickSpacing", "address", batch_size, max_worker
     )
     # uniswap v3 pool have no fee function
     # fee_infos = simple_get_rpc_requests(web3, make_requests, tick_infos, is_batch, abi_list, "fee", "address")

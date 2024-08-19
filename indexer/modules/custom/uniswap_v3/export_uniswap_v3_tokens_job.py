@@ -5,9 +5,9 @@ import os
 import queue
 
 import eth_abi
-from indexer.domain.block import Block
 from web3 import Web3
 
+from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -33,7 +33,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_TOKENS.value
 
 class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
     dependency_types = [Log, ERC721TokenTransfer, Block]
-    output_types = [UniswapV3Token, UniswapV3TokenDetail]
+    output_types = [UniswapV3Token, UniswapV3TokenDetail, UniswapV3TokenCurrentStatus]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

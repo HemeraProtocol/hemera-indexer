@@ -42,6 +42,8 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("config.ini", self._chain_id)
+        self._batch_size = kwargs["batch_size"]
+        self._max_worker = kwargs["max_workers"]
 
     def get_filter(self):
         return TransactionFilterByLogs(
@@ -103,6 +105,8 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             self._web3,
             self._batch_web3_provider.make_request,
             self._is_batch,
+            self._batch_size,
+            self._max_worker,
         )
         for data in total_supply_infos:
             block_number = data["block_number"]
@@ -140,14 +144,16 @@ def parse_to_total_supply(block_number, block_timestamp, address, total_supply):
     )
 
 
-def collect_pool_total_supply(block_number_set, contract_address, abi_list, web3, make_requests, is_batch):
+def collect_pool_total_supply(
+    block_number_set, contract_address, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+):
     need_collect_list = []
     for block_number in block_number_set:
         need_collect_list.append({"address": contract_address, "block_number": block_number})
 
     # call totalSupply
     total_supply_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address"
+        web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address", batch_size, max_worker
     )
 
     return total_supply_infos

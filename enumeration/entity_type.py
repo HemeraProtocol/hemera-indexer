@@ -14,15 +14,17 @@ from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
-from indexer.modules.custom.all_features_value_record import (
-    AllFeatureValueRecordBlueChipHolders,
-    AllFeatureValueRecordUniswapV3Pool,
-    AllFeatureValueRecordUniswapV3Token,
-)
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Pool,
+    UniswapV3PoolCurrentPrice,
+    UniswapV3PoolPrice,
+    UniswapV3Token,
+    UniswapV3TokenCurrentStatus,
+    UniswapV3TokenDetail,
+)
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -102,8 +104,10 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.UNISWAP_V3:
         yield UniswapV3Pool
         yield UniswapV3Token
-        yield AllFeatureValueRecordUniswapV3Pool
-        yield AllFeatureValueRecordUniswapV3Token
+        yield UniswapV3PoolPrice
+        yield UniswapV3TokenDetail
+        yield UniswapV3PoolCurrentPrice
+        yield UniswapV3TokenCurrentStatus
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult
@@ -116,7 +120,6 @@ def generate_output_types(entity_types):
         yield UpdateToken
         yield TokenBalance
         yield CurrentTokenBalance
-        yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
 
     if entity_types & EntityType.MANTLE_20:

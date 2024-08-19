@@ -49,6 +49,8 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         self._abi_list = UNISWAP_V2_ABI
         self._exist_pools = get_exist_pools(self._service[0], self._factory_address)
         self._collected_total_supply = ThreadSafeList()
+        self._batch_size = kwargs["batch_size"]
+        self._max_worker = kwargs["max_workers"]
 
     def get_filter(self):
         return TransactionFilterByLogs(
@@ -96,6 +98,8 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             self._web3,
             self._batch_web3_provider.make_request,
             self._is_batch,
+            self._batch_size,
+            self._max_worker,
         )
         self._exist_pools.update(need_add_in_exists_pools)
 
@@ -115,6 +119,8 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             self._web3,
             self._batch_web3_provider.make_request,
             self._is_batch,
+            self._batch_size,
+            self._max_worker,
         )
         self._collected_total_supply.add_items(pool_total_supply)
 
@@ -203,7 +209,18 @@ def get_exist_pools(db_service, factory_address):
 
 
 def update_exist_pools(
-    factory_address, exist_pools, create_topic0, mint_topic0, burn_topic0, logs, abi_list, web3, make_requests, is_batch
+    factory_address,
+    exist_pools,
+    create_topic0,
+    mint_topic0,
+    burn_topic0,
+    logs,
+    abi_list,
+    web3,
+    make_requests,
+    is_batch,
+    batch_size,
+    max_worker,
 ):
     need_add = {}
     active_pools = []
@@ -228,12 +245,16 @@ def update_exist_pools(
         elif mint_topic0 == current_topic0 or burn_topic0 == current_topic0:
             # if the address created by factory_address ,collect it
             active_pools.append({"address": address, "block_number": log.block_number})
-    swap_new_pools = collect_active_new_pools(factory_address, active_pools, abi_list, web3, make_requests, is_batch)
+    swap_new_pools = collect_active_new_pools(
+        factory_address, active_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+    )
     need_add.update(swap_new_pools)
     return need_add
 
 
-def collect_pool_total_supply(target_topic0_list, exist_pools, logs, abi_list, web3, make_requests, is_batch):
+def collect_pool_total_supply(
+    target_topic0_list, exist_pools, logs, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+):
     need_collect = {}
 
     for log in logs:
@@ -245,7 +266,7 @@ def collect_pool_total_supply(target_topic0_list, exist_pools, logs, abi_list, w
     need_collect_list = list(need_collect.values())
     # call totalSupply
     total_supply_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address"
+        web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address", batch_size, max_worker
     )
     result = []
     for data in total_supply_infos:
@@ -263,9 +284,11 @@ def collect_pool_total_supply(target_topic0_list, exist_pools, logs, abi_list, w
     return result
 
 
-def collect_active_new_pools(factory_address, active_pools, abi_list, web3, make_requests, is_batch):
+def collect_active_new_pools(
+    factory_address, active_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+):
     factory_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, active_pools, is_batch, abi_list, "factory", "address"
+        web3, make_requests, active_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
     )
     uniswap_pools = []
     need_add = {}
@@ -280,10 +303,10 @@ def collect_active_new_pools(factory_address, active_pools, abi_list, web3, make
     if len(uniswap_pools) == 0:
         return need_add
     token0_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address"
+        web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address", batch_size, max_worker
     )
     token1_infos = common_utils.simple_get_rpc_requests(
-        web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address"
+        web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address", batch_size, max_worker
     )
     for data in token1_infos:
         pool_address = data["address"]
