@@ -8,9 +8,8 @@ from dataclasses import asdict
 
 import pytest
 
-from enumeration.entity_type import EntityType
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.modules.bridge.arbitrum.arb_parser import (
     ArbitrumStateBatchConfirmed,
     ArbitrumStateBatchCreated,

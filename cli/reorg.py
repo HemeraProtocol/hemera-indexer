@@ -6,8 +6,8 @@ from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import calculate_entity_value, generate_output_types, ALL_ENTITY_COLLECTIONS
 from enumeration.schedule_mode import ScheduleMode
 from indexer.controller.reorg_controller import ReorgController
+from indexer.controller.scheduler.reorg_scheduler import ReorgScheduler
 from indexer.exporters.postgres_item_exporter import PostgresItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.provider import get_provider_from_uri
@@ -76,6 +76,13 @@ exception_recorder = ExceptionRecorder()
     help="How many parameters to batch in single debug rpc request",
 )
 @click.option(
+    "--block-number",
+    show_default=True,
+    type=int,
+    envvar="BLOCK_NUMBER",
+    help="Specify the block number to reorging.",
+)
+@click.option(
     "-r",
     "--ranges",
     default=1000,
@@ -127,20 +134,19 @@ def reorg(
     entity_types = calculate_entity_value(','.join(ALL_ENTITY_COLLECTIONS))
     output_types = list(generate_output_types(entity_types))
 
-    job_scheduler = JobScheduler(
+    job_scheduler = ReorgScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
         item_exporters=PostgresItemExporter(config["db_service"]),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         required_output_types=output_types,
-        schedule_mode=ScheduleMode.REORG,
         config=config,
         cache=cache,
     )
 
     controller = ReorgController(
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_scheduler=job_scheduler,
         ranges=ranges,
         config=config,

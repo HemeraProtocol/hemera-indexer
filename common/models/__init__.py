@@ -67,13 +67,13 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
 
 
 def import_all_models():
-    for name in __lazy_imports:
+    for name in __models_imports:
         __getattr__(name)
 
 
 def __getattr__(name):
     if name != "ImportError":
-        path = __lazy_imports.get(name)
+        path = __models_imports.get(name)
         if not path:
             raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
@@ -84,6 +84,6 @@ def __getattr__(name):
     return val
 
 
-__lazy_imports = {
+__models_imports = {
     k: v["module_import_path"] for k, v in scan_subclass_by_path_patterns(model_path_patterns, HemeraModel).items()
 }

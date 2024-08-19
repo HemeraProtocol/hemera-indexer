@@ -1,8 +1,7 @@
 import pytest
 
-from indexer.domain.transaction import Transaction
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.modules.bridge.domain.op_bedrock import OpL1ToL2DepositedTransaction
 from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri

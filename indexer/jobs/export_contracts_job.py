@@ -32,6 +32,7 @@ CONTRACT_NAME_ABI = {
 class ExportContractsJob(BaseExportJob):
     dependency_types = [Block, Trace]
     output_types = [Contract]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -42,9 +43,6 @@ class ExportContractsJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
         contracts = build_contracts(self._data_buff[Trace.type()])
@@ -75,10 +73,10 @@ def build_contracts(traces: List[Trace]):
     contracts = []
     for trace in traces:
         if (
-            trace.trace_type in ["create", "create2"]
-            and trace.to_address is not None
-            and len(trace.to_address) > 0
-            and trace.status == 1
+                trace.trace_type in ["create", "create2"]
+                and trace.to_address is not None
+                and len(trace.to_address) > 0
+                and trace.status == 1
         ):
             contract = extract_contract_from_trace(trace)
             contract["param_to"] = contract["address"]

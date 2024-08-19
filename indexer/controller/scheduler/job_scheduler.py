@@ -8,7 +8,6 @@ from redis.client import Redis
 from common import models
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
-from enumeration.schedule_mode import ScheduleMode
 from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
@@ -52,7 +51,6 @@ class JobScheduler:
             config={},
             item_exporters=[],
             required_output_types=[],
-            schedule_mode=ScheduleMode.STREAM,
             cache="memory",
     ):
         self.batch_web3_provider = batch_web3_provider
@@ -63,9 +61,7 @@ class JobScheduler:
         self.max_workers = max_workers
         self.config = config
         self.required_output_types = required_output_types
-        self.schedule_mode = schedule_mode
-        self.load_from_source = config.get("source_path") \
-            if "source_path" in config and self.schedule_mode == ScheduleMode.LOAD else None
+        self.load_from_source = config.get("source_path") if "source_path" in config else None
         self.jobs = []
         self.job_classes = []
         self.job_map = defaultdict(list)
@@ -98,7 +94,7 @@ class JobScheduler:
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
-        if self.schedule_mode == ScheduleMode.LOAD:
+        if self.load_from_source:
             source_job = get_source_job_type(source_path=self.load_from_source)
             all_subclasses = [source_job]
         else:
@@ -106,8 +102,7 @@ class JobScheduler:
 
         all_subclasses.extend(ExtensionJob.discover_jobs())
         for cls in all_subclasses:
-            if self.schedule_mode != ScheduleMode.REORG or cls.able_to_reorg:
-                self.job_classes.append(cls)
+            self.job_classes.append(cls)
             for output in cls.output_types:
                 self.job_map[output.type()].append(cls)
             for dependency in cls.dependency_types:
@@ -130,7 +125,6 @@ class JobScheduler:
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
-                reorg=self.schedule_mode == ScheduleMode.REORG,
             )
             if isinstance(job, FilterTransactionDataJob):
                 filters.append(job.get_filter())
@@ -148,7 +142,6 @@ class JobScheduler:
                 max_workers=self.max_workers,
                 config=self.config,
                 filters=filters,
-                reorg=self.schedule_mode == ScheduleMode.REORG,
             )
             self.jobs.insert(0, export_blocks_job)
 

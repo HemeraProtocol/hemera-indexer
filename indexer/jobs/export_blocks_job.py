@@ -1,6 +1,7 @@
 import json
 import logging
 
+
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
 from indexer.domain.block_ts_mapper import BlockTsMapper
@@ -15,6 +16,7 @@ from indexer.specification.specification import (
     TransactionHashSpecification,
 )
 from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rpc
+from indexer.utils.reorg import set_reorg_sign
 from indexer.utils.utils import rpc_response_batch_to_results
 
 logger = logging.getLogger(__name__)
@@ -38,16 +40,15 @@ class ExportBlocksJob(BaseExportJob):
         self._filters = kwargs.get("filters", [])
         self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
-        self._service = kwargs['config'].get('db_service', None)
 
     def _start(self, **kwargs):
-        super()._start()
-        if self._reorg:
+        if self.able_to_reorg and self._reorg:
             if self._service is None:
                 raise FastShutdownError("PG Service is not set")
 
             reorg_block = int(kwargs["start_block"])
-            set_reorg_sign(reorg_block)
+            set_reorg_sign(reorg_block, self._service)
+            self._should_reorg = True
 
     def _end(self):
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
@@ -93,7 +94,7 @@ class ExportBlocksJob(BaseExportJob):
                 if self._specification.is_satisfied_by(transaction_entity):
                     self._collect_item(Transaction.type(), transaction_entity)
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[Block.type()].sort(key=lambda x: x.number)
         self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
 
@@ -106,10 +107,6 @@ class ExportBlocksJob(BaseExportJob):
                 ts_dict[timestamp] = block_number
 
         self._data_buff[BlockTsMapper.type()] = [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()]
-
-
-def set_reorg_sign(block_number):
-    pass
 
 
 def blocks_rpc_requests(make_request, block_number_batch, is_batch):

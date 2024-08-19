@@ -22,7 +22,7 @@ class ReorgController(BaseController):
     ):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
-        self.db_service = config.get['db_service']
+        self.db_service = config.get('db_service')
         self.job_scheduler = job_scheduler
 
     def action(self, job_id=None, block_number=None, remains=None, retry_errors=True):
@@ -191,6 +191,7 @@ class ReorgController(BaseController):
                     and_(
                         Blocks.number == block_number,
                         Blocks.hash == bytes.fromhex(block_hash[2:]),
+                        Blocks.reorg == False,
                     )
                 )
                 .first()

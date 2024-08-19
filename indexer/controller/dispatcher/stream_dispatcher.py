@@ -4,7 +4,7 @@ from enumeration.record_level import RecordLevel
 from enumeration.schedule_mode import ScheduleMode
 from indexer.controller.dispatcher.base_dispatcher import BaseDispatcher
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.utils.exception_recorder import ExceptionRecorder
 
 exception_recorder = ExceptionRecorder()
@@ -36,7 +36,6 @@ class StreamDispatcher(BaseDispatcher):
             max_workers=max_workers,
             config=config,
             required_output_types=required_output_types,
-            schedule_mode=job_scheduler_mode,
             cache=cache,
         )
         self.logger = logging.getLogger(__name__)

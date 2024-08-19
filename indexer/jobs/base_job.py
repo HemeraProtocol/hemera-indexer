@@ -5,6 +5,10 @@ from datetime import datetime
 
 from web3 import Web3
 
+from common.converter.pg_converter import domain_model_mapping
+from common.utils.exception_control import FastShutdownError
+from indexer.utils.reorg import should_reorg
+
 
 class BaseJobMeta(type):
     _registry = {}
@@ -62,21 +66,24 @@ class BaseJob(metaclass=BaseJobMeta):
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
         self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
-        self._reorg = kwargs["reorg"]
+        self._reorg = kwargs["reorg"] if kwargs.get("reorg") else False
+        self._should_reorg = False
+        self._service = kwargs['config'].get('db_service', None)
 
     def run(self, **kwargs):
         try:
             self._start(**kwargs)
 
-            start_time = datetime.now()
-            self._collect(**kwargs)
-            self.logger.info(f"Stage collect finished. Took {datetime.now() - start_time}")
+            if not self._reorg or self._should_reorg:
+                start_time = datetime.now()
+                self._collect(**kwargs)
+                self.logger.info(f"Stage collect finished. Took {datetime.now() - start_time}")
 
-            start_time = datetime.now()
-            self._process(**kwargs)
-            self.logger.info(f"Stage process finished. Took {datetime.now() - start_time}")
+                start_time = datetime.now()
+                self._process(**kwargs)
+                self.logger.info(f"Stage process finished. Took {datetime.now() - start_time}")
 
-            if self.reorg:
+            if not self._reorg:
                 start_time = datetime.now()
                 self._export()
                 self.logger.info(f"Stage export finished. Took {datetime.now() - start_time}")
@@ -85,7 +92,18 @@ class BaseJob(metaclass=BaseJobMeta):
             self._end()
 
     def _start(self, **kwargs):
-        pass
+        if self.able_to_reorg and self._reorg:
+            if self._service is None:
+                raise FastShutdownError("PG Service is not set")
+
+            reorg_block = int(kwargs["start_block"])
+
+            output_table = set()
+            for domain in self.output_types:
+                output_table.add(domain_model_mapping[domain.__name__]["table"])
+
+            for table in output_table:
+                self._should_reorg = self._should_reorg and should_reorg(reorg_block, table, self._service)
 
     def _end(self):
         pass
@@ -122,7 +140,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
         return items
 
-    def _export(self, **kwargs):
+    def _export(self):
         items = []
 
         for output_type in self.output_types:

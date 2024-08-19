@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
 
 # Exports transactions and logs
 class ExportTransactionsAndLogsJob(BaseExportJob):
-
     dependency_types = [Block]
     output_types = [Transaction, Log]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -29,9 +29,6 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
 

@@ -1,5 +1,4 @@
 import logging
-import threading
 from multiprocessing import Process
 
 from enumeration.entity_type import calculate_entity_value, generate_output_types, ALL_ENTITY_COLLECTIONS
@@ -8,7 +7,7 @@ from indexer.controller.reorg_controller import ReorgController
 from indexer.domain.block import Block
 from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from indexer.jobs.base_job import BaseJob
-from indexer.jobs.job_scheduler import JobScheduler
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 
 logger = logging.getLogger(__name__)
 

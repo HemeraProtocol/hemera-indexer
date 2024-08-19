@@ -62,6 +62,7 @@ class TokenBalanceParam:
 class ExportTokenBalancesJob(BaseExportJob):
     dependency_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [TokenBalance, CurrentTokenBalance]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -72,9 +73,6 @@ class ExportTokenBalancesJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
 
@@ -136,7 +134,7 @@ def encode_balance_abi_parameter(address, token_type, token_id):
 
 
 def extract_token_parameters(
-    token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
+        token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
 ):
     origin_parameters = set()
     token_parameters = []
