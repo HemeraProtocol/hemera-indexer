@@ -1,6 +1,7 @@
 import json
 import logging
 
+from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
 from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.transaction import Transaction
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 class ExportBlocksJob(BaseExportJob):
     dependency_types = []
     output_types = [Block, BlockTsMapper]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -36,9 +38,16 @@ class ExportBlocksJob(BaseExportJob):
         self._filters = kwargs.get("filters", [])
         self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
+        self._service = kwargs['config'].get('db_service', None)
 
-    def _start(self):
+    def _start(self, **kwargs):
         super()._start()
+        if self._reorg:
+            if self._service is None:
+                raise FastShutdownError("PG Service is not set")
+
+            reorg_block = int(kwargs["start_block"])
+            set_reorg_sign(reorg_block)
 
     def _end(self):
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
@@ -97,6 +106,10 @@ class ExportBlocksJob(BaseExportJob):
                 ts_dict[timestamp] = block_number
 
         self._data_buff[BlockTsMapper.type()] = [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()]
+
+
+def set_reorg_sign(block_number):
+    pass
 
 
 def blocks_rpc_requests(make_request, block_number_batch, is_batch):
