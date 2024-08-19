@@ -67,7 +67,6 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             [
                 TopicSpecification(
                     addresses=[self._factory_address],
-                    topics=list(self._liquidity_topic0_dict.keys()),
                 ),
                 TopicSpecification(addresses=[self._nft_address]),
             ]

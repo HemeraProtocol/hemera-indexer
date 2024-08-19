@@ -112,12 +112,15 @@ def generate_output_types(entity_types):
         yield UpdateBlockInternalCount
 
     if entity_types & EntityType.UNISWAP_V3:
+        yield ERC721TokenTransfer
+        yield Token
         yield UniswapV3Pool
         yield UniswapV3Token
         yield UniswapV3PoolPrice
         yield UniswapV3TokenDetail
         yield UniswapV3PoolCurrentPrice
         yield UniswapV3TokenCurrentStatus
+        yield Log
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult
