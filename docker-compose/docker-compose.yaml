@@ -20,14 +20,14 @@ services:
     container_name: indexer
     environment:
       - ENTITY_TYPES=EXPLORER_BASE,EXPLORER_TOKEN
-      - SYNC_RECORDER=pg_main_recorder
+      - SYNC_RECORDER=pg:main_recorder
 
   hemera-trace-indexer:
     <<: *common-settings
     container_name: indexer-trace
     environment:
       - ENTITY_TYPES=EXPLORER_TRACE
-      - SYNC_RECORDER=pg_trace_recorder
+      - SYNC_RECORDER=pg:trace_recorder
 
   hemera-api:
     <<: *common-settings
