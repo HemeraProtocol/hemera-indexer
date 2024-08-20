@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from dataclasses import asdict, dataclass
 from itertools import groupby
 from typing import List
@@ -86,6 +87,19 @@ class TokenIdInfo:
     request_id: int
 
 
+def calculate_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"function {func.__name__} time: {execution_time:.6f} s")
+        logger.info(f"function {func.__name__} time: {execution_time:.6f} s")
+        return result
+
+    return wrapper
+
+
 class ExportTokenIdInfosJob(BaseExportJob):
     dependency_types = [ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [
@@ -109,6 +123,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
     def _start(self):
         super()._start()
 
+    @calculate_execution_time
     def _collect(self, **kwargs):
         token_id_info = generate_token_id_info(
             self._data_buff[ERC721TokenTransfer.type()],
@@ -117,6 +132,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
         self._batch_work_executor.execute(token_id_info, self._collect_batch, total_items=len(token_id_info))
         self._batch_work_executor.wait()
 
+    @calculate_execution_time
     def _collect_batch(self, token_list):
         items = token_ids_info_rpc_requests(self._batch_web3_provider.make_request, token_list, self._is_batch)
         for item in items:

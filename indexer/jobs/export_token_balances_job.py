@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
@@ -58,6 +59,19 @@ class TokenBalanceParam:
     block_timestamp: int
 
 
+def calculate_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        print(f"function {func.__name__} time: {execution_time:.6f} s")
+        logger.info(f"function {func.__name__} time: {execution_time:.6f} s")
+        return result
+
+    return wrapper
+
+
 # Exports token balance
 class ExportTokenBalancesJob(BaseExportJob):
     dependency_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
@@ -76,6 +90,7 @@ class ExportTokenBalancesJob(BaseExportJob):
     def _start(self):
         super()._start()
 
+    @calculate_execution_time
     def _collect(self, **kwargs):
 
         token_transfers = self._collect_all_token_transfers()
@@ -84,6 +99,7 @@ class ExportTokenBalancesJob(BaseExportJob):
         self._batch_work_executor.execute(parameters, self._collect_batch, total_items=len(parameters))
         self._batch_work_executor.wait()
 
+    @calculate_execution_time
     def _collect_batch(self, parameters):
         token_balances = token_balances_rpc_requests(self._batch_web3_provider.make_request, parameters, self._is_batch)
         for token_balance in token_balances:
