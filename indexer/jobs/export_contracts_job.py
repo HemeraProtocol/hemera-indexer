@@ -4,6 +4,7 @@ from typing import List
 
 from eth_abi import abi
 
+from common.utils.exception_control import HemeraBaseException
 from enumeration.record_level import RecordLevel
 from indexer.domain.block import Block
 from indexer.domain.contract import Contract, extract_contract_from_trace
@@ -75,10 +76,10 @@ def build_contracts(traces: List[Trace]):
     contracts = []
     for trace in traces:
         if (
-            trace.trace_type in ["create", "create2"]
-            and trace.to_address is not None
-            and len(trace.to_address) > 0
-            and trace.status == 1
+                trace.trace_type in ["create", "create2"]
+                and trace.to_address is not None
+                and len(trace.to_address) > 0
+                and trace.status == 1
         ):
             contract = extract_contract_from_trace(trace)
             contract["param_to"] = contract["address"]
@@ -114,8 +115,26 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
         response = [make_requests(params=json.dumps(contract_name_rpc[0]))]
 
     for data in list(zip_rpc_response(contracts, response)):
-        result = rpc_response_to_result(data[1])
         contract = data[0]
+        try:
+            result = rpc_response_to_result(data[1])
+        except HemeraBaseException as e:
+            result = None
+            logger.warning(
+                f"eth call contract name failed. "
+                f"contract address: {contract['address']}. "
+                f"rpc response: {result}. "
+                f"exception: {e}"
+            )
+            exception_recorder.log(
+                block_number=data[0]["block_number"],
+                dataclass=Contract.type(),
+                message_type=e.__class__.__name__,
+                message=str(e),
+                exception_env=data[1],
+                level=RecordLevel.WARN,
+            )
+
         info = result[2:] if result is not None else None
 
         try:
