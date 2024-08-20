@@ -16,6 +16,7 @@ from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
+from indexer.modules.custom.locked_ftbc.domain.feature_locked_fbtc_detail import LockedFBTCDetail
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
 from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
     UniswapV2CurrentLiquidityHolding,
@@ -50,7 +51,8 @@ class EntityType(IntFlag):
     BLUE_CHIP = 1 << 6
 
     MANTLE_20 = 1 << 7
-    UNISWAP_V2 = 1 << 7
+    UNISWAP_V2 = 1 << 8
+    LOCKED_FBTC = 1 << 9
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -154,3 +156,11 @@ def generate_output_types(entity_types):
         yield UniswapV2LiquidityHolding
         yield UniswapV2CurrentLiquidityHolding
         yield Token
+    if entity_types & EntityType.LOCKED_FBTC:
+        yield Block
+        yield Transaction
+        yield Log
+        yield ERC20TokenTransfer
+        yield Token
+        yield UpdateToken
+        yield LockedFBTCDetail
