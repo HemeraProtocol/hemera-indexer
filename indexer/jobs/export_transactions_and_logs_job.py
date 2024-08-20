@@ -57,7 +57,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
             for log in transaction.receipt.logs:
                 self._collect_item(Log.type(), log)
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
 

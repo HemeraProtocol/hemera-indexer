@@ -112,7 +112,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         for record in format_value_records(self._exist_pools, pool_prices, FEATURE_ID):
             self._collect_item(AllFeatureValueRecordUniswapV3Pool.type(), record)
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[AllFeatureValueRecordUniswapV3Pool.type()].sort(key=lambda x: x.block_number)
 

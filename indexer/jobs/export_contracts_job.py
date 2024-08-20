@@ -56,7 +56,7 @@ class ExportContractsJob(BaseExportJob):
         for contract in contracts:
             self._collect_item(Contract.type(), Contract(contract))
 
-    def _process(self):
+    def _process(self, **kwargs):
         transaction_mapping = {
             transaction.hash: transaction.from_address
             for transaction in [

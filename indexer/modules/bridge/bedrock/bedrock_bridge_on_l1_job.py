@@ -72,7 +72,7 @@ class BedrockBridgeOnL1Job(FilterTransactionDataJob):
             )
         return TransactionFilterByLogs(topic_filter_list)
 
-    def _process(self):
+    def _process(self, **kwargs):
         # filter out transactions that are not bridge related
         transactions = list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
         result = []

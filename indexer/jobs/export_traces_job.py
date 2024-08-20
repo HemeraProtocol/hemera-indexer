@@ -63,7 +63,7 @@ class ExportTracesJob(BaseExportJob):
                     ContractInternalTransaction.from_rpc(trace),
                 )
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[Trace.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
 
         self._data_buff[ContractInternalTransaction.type()].sort(

@@ -118,7 +118,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         )
         self._collected_total_supply.add_items(pool_total_supply)
 
-    def _process(self):
+    def _process(self, **kwargs):
 
         for record in format_value_records(self._exist_pools, self._collected_total_supply, FEATURE_ID):
             self._collect_item(AllFeatureValueRecordUniswapV2Info.type(), record)

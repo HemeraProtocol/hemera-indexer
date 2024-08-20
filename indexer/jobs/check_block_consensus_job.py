@@ -39,7 +39,7 @@ class CheckBlockConsensusJob(BaseJob):
                 ranges=1000,
                 config=config)
 
-    def _process(self):
+    def _process(self, **kwargs):
         if not self.check_switch:
             return
 

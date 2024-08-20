@@ -61,7 +61,7 @@ class ExportCoinBalancesJob(BaseExportJob):
         for coin_balance in coin_balances:
             self._collect_item(CoinBalance.type(), CoinBalance(coin_balance))
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[CoinBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
 

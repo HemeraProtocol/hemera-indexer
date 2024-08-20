@@ -207,7 +207,7 @@ class ExportTokensAndTransfersJob(BaseExportJob):
             if token.get("total_supply") is not None:
                 self._collect_item(UpdateToken.type(), dict_to_dataclass(token, UpdateToken))
 
-    def _process(self):
+    def _process(self, **kwargs):
         for token_transfer_type in self.output_transfer_types:
             if token_transfer_type in self._data_buff:
                 self._data_buff[token_transfer_type.type()].sort(

@@ -120,7 +120,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
         for item in items:
             self._collect_item(item.type(), item)
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[UpdateERC721TokenIdDetail.type()].sort(
             key=lambda x: (x.token_address, x.token_id, x.block_number)
         )

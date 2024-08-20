@@ -315,7 +315,7 @@ class AddressIndexerJob(BaseJob):
         for token_balance in token_balances:
             self._collect_domain(dict_to_dataclass(token_balance, AddressTokenHolder))
 
-    def _process(self):
+    def _process(self, **kwargs):
         transactions = self._get_domain(Transaction)
         self._collect_domains(list(transactions_to_address_transactions(transactions)))
 
