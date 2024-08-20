@@ -279,8 +279,7 @@ def build_reserves_request_data(web3, need_call_list, data_key="address"):
             token["param_data"] = encode_get_reserves_parameter()
         except Exception as e:
             logger.error(
-                f"Encoding contract address {token[data_key]} for function getReserves failed. "
-                f"Exception: {e}."
+                f"Encoding contract address {token[data_key]} for function getReserves failed. " f"Exception: {e}."
             )
 
         parameters.append(token)
@@ -363,18 +362,18 @@ def get_exist_pools(db_service, factory_address):
 
 
 def update_exist_pools(
-        factory_address,
-        exist_pools,
-        create_topic0,
-        mint_topic0,
-        burn_topic0,
-        logs,
-        abi_list,
-        web3,
-        make_requests,
-        is_batch,
-        batch_size,
-        max_worker,
+    factory_address,
+    exist_pools,
+    create_topic0,
+    mint_topic0,
+    burn_topic0,
+    logs,
+    abi_list,
+    web3,
+    make_requests,
+    is_batch,
+    batch_size,
+    max_worker,
 ):
     need_add = {}
     all_active_pools = {}
@@ -427,7 +426,7 @@ def update_exist_pools(
 
 
 def collect_pool_total_supply(
-        need_collect_list, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+    need_collect_list, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ) -> Tuple[List[UniswapV2PoolTotalSupply], UniswapV2PoolCurrentTotalSupply]:
     # Call totalSupply
     total_supply_infos = common_utils.simple_get_rpc_requests(
@@ -466,7 +465,7 @@ def collect_pool_total_supply(
 
 
 def collect_active_new_pools(
-        factory_address, active_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+    factory_address, active_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ):
     factory_infos = common_utils.simple_get_rpc_requests(
         web3, make_requests, active_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
