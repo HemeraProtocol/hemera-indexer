@@ -12,6 +12,7 @@ from enumeration.record_level import RecordLevel
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
+from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.utils.abi import bytes_to_hex_str
@@ -150,6 +151,20 @@ class JobScheduler:
                 filters=filters,
             )
             self.jobs.insert(0, export_blocks_job)
+
+        check_job = CheckBlockConsensusJob(
+            required_output_types=self.required_output_types,
+            batch_web3_provider=self.batch_web3_provider,
+            batch_web3_debug_provider=self.batch_web3_debug_provider,
+            item_exporters=self.item_exporters,
+            batch_size=self.batch_size,
+            debug_batch_size=self.debug_batch_size,
+            max_workers=self.max_workers,
+            config=self.config,
+            filters=filters,
+        )
+
+        self.jobs.append(check_job)
 
     def run_jobs(self, start_block, end_block):
         self.clear_data_buff()
