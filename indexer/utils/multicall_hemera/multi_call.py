@@ -1,6 +1,7 @@
-import json
 import logging
 from typing import Any, List, Optional, Tuple, Union
+
+import orjson
 
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.call import prep_args
@@ -69,5 +70,5 @@ class Multicall:
             "jsonrpc": "2.0",
             "method": "eth_call",
             "params": args,
-            "id": hash(json.dumps(args)),
+            "id": hash(orjson.dumps(args)),
         }

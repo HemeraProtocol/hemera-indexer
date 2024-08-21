@@ -4,10 +4,9 @@ from dataclasses import dataclass
 from functools import partial
 from typing import List, Optional, Union
 
-from mpire import WorkerPool
-from eth_abi import abi
 from eth_utils import to_hex
 from hexbytes import HexBytes
+from mpire import WorkerPool
 
 from indexer.domain import dict_to_dataclass
 from indexer.domain.current_token_balance import CurrentTokenBalance
@@ -16,10 +15,10 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
-from indexer.utils.abi import encode_abi
+from indexer.utils.abi import pad_address, uint256_to_bytes
 from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.multi_call_util import MultiCallProxy
 from indexer.utils.multicall_hemera.util import calculate_execution_time
+from indexer.utils.token_fetcher import TokenFetcher
 from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group
 
 logger = logging.getLogger(__name__)
@@ -77,7 +76,8 @@ class ExportTokenBalancesJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self.multi_call_util = MultiCallProxy(self._web3, kwargs)
+        self._is_multi_call = kwargs["multicall"]
+        self.multi_call_util = TokenFetcher(self._web3, kwargs)
 
     def _start(self):
         super()._start()
@@ -86,12 +86,19 @@ class ExportTokenBalancesJob(BaseExportJob):
     def _collect(self, **kwargs):
         token_transfers = self._collect_all_token_transfers()
         parameters = extract_token_parameters(token_transfers)
-        self._collect_batch(parameters)
+        if self._is_multi_call:
+            self._collect_batch(parameters)
+        else:
+            self._batch_work_executor.execute(parameters, self._collect_batch, total_items=len(parameters))
+            self._batch_work_executor.wait()
 
     @calculate_execution_time
     def _collect_batch(self, parameters):
         token_balances = self.multi_call_util.fetch_token_balance(parameters)
-        results = self._collect_batch_convert(token_balances)
+        if self._is_multi_call:
+            results = self._collect_batch_convert(token_balances)
+        else:
+            results = [dict_to_dataclass(t, TokenBalance) for t in token_balances]
         self._collect_items(TokenBalance.type(), results)
 
     @calculate_execution_time
@@ -137,29 +144,12 @@ class ExportTokenBalancesJob(BaseExportJob):
         return token_transfers
 
 
-def uint256_to_bytes(value: int) -> bytes:
-    if value < 0 or value >= 2**256:
-        raise ValueError("Value out of uint256 range")
-
-    return value.to_bytes(32, byteorder="big")
-
-
-def pad_address(address: str) -> bytes:
-    address = address.lower().replace("0x", "")
-
-    if len(address) != 40:
-        raise ValueError("Invalid address length")
-
-    padded = "0" * 24 + address
-    return bytes.fromhex(padded)
-
-
 def encode_balance_abi_parameter(address, token_type, token_id):
     if token_type == "ERC1155":
         encoded_arguments = HexBytes(pad_address(address) + uint256_to_bytes(token_id))
         return to_hex(HexBytes(balance_of_token_id_sig_prefix) + encoded_arguments)
     else:
-        encoded_arguments = HexBytes((address))
+        encoded_arguments = HexBytes((pad_address(address)))
         return to_hex(HexBytes(balance_of_sig_prefix) + encoded_arguments)
 
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # @Time  2024/8/7 13:44
 # @Author  will
-# @File  multi_call_util.py
+# @File  token_fetcher.py
 # @Brief use the `multicall` contract to fetch data
 import json
 import logging
@@ -10,8 +10,6 @@ import os
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
-from functools import lru_cache
-from operator import itemgetter
 
 from eth_abi import abi
 
@@ -44,7 +42,7 @@ BALANCE_OF_ERC1155 = "balanceOf(address,uint256)(uint256)"
 exception_recorder = ExceptionRecorder()
 
 
-class MultiCallProxy:
+class TokenFetcher:
 
     def __init__(self, web3, kwargs=None, logger=None):
         self.web3 = web3
@@ -58,7 +56,6 @@ class MultiCallProxy:
         self.multi_call = Multicall([], require_success=False, chain_id=self.chain_id)
         self.net = Network.from_value(self.chain_id)
         self.deploy_block_number = self.net.deploy_block_number
-        self.chunk_size = 1000
         self.batch_size = kwargs["batch_size"]
         self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
@@ -68,15 +65,17 @@ class MultiCallProxy:
         self.token_k_fields = ("address", "token_address", "block_number", "token_type", "token_id")
         self.contract_k_fields = ("address",)
         self.token_ids_infos_k_fields = ("address", "token_id", "token_type", "is_get_token_uri")
-        self.wrong_call_k_fileds = ("block_number", "target", "function")
+        self.wrong_call_k_fields = ("block_number", "target", "function")
+
+        self.fixed_k = "__k"
 
     @calculate_execution_time
     def _prepare_token_ids_info_parameters(self, token_info_items):
         to_execute_batch_calls = []
         wrapped_calls = []
-        sorted_items = sorted(token_info_items, key=itemgetter("block_number"))
         grouped_data = defaultdict(list)
-        for row in sorted_items:
+        for row in token_info_items:
+            row[self.fixed_k] = self.build_key(row, self.token_ids_infos_k_fields)
             grouped_data[row["block_number"]].append(row)
         for block_id, items in grouped_data.items():
             if block_id < self.deploy_block_number or not self._is_multi_call:
@@ -91,7 +90,7 @@ class MultiCallProxy:
                             construct_call = Call(
                                 address,
                                 ["tokenURI(uint256)(string)", row["token_id"]],
-                                [(self.build_key(row, self.token_ids_infos_k_fields), None)],
+                                [(row[self.fixed_k], None)],
                                 block_id=block_id,
                             )
 
@@ -99,7 +98,7 @@ class MultiCallProxy:
                             construct_call = Call(
                                 address,
                                 ["ownerOf(uint256)(address)", row["token_id"]],
-                                [(self.build_key(row, self.token_ids_infos_k_fields), None)],
+                                [(row[self.fixed_k], None)],
                                 block_id=block_id,
                             )
                     elif row["token_type"] == TokenType.ERC1155.value:
@@ -107,7 +106,7 @@ class MultiCallProxy:
                             construct_call = Call(
                                 address,
                                 ["uri(uint256)(string)", row["token_id"]],
-                                [(self.build_key(row, self.token_ids_infos_k_fields), None)],
+                                [(row[self.fixed_k], None)],
                                 block_id=block_id,
                             )
 
@@ -115,7 +114,7 @@ class MultiCallProxy:
                             construct_call = Call(
                                 address,
                                 ["totalSupply(uint256)(uint256)", row["token_id"]],
-                                [(self.build_key(row, self.token_ids_infos_k_fields), None)],
+                                [(row[self.fixed_k], None)],
                                 block_id=block_id,
                             )
 
@@ -162,10 +161,10 @@ class MultiCallProxy:
     @calculate_execution_time
     def fetch_token_ids_info(self, token_info_items):
         # export token_ids_info
-        self.logger.info(f"MultiCallProxy fetch_token_ids_info size={len(token_info_items)}")
+        self.logger.info(f"TokenFetcher fetch_token_ids_info size={len(token_info_items)}")
         wrapped_calls, to_execute_batch_calls = self._prepare_token_ids_info_parameters(token_info_items)
 
-        return_data_map = {self.build_key(it, self.token_ids_infos_k_fields): it for it in token_info_items}
+        return_data_map = {it[self.fixed_k]: it for it in token_info_items}
 
         multicall_result = {}
         multicall_rpc = []
@@ -178,9 +177,6 @@ class MultiCallProxy:
                 rpc_para = self.multi_call.to_rpc_param()
                 multicall_rpc.append(rpc_para)
 
-            for idx, body in enumerate(multicall_rpc):
-                body["request_id"] = idx
-
             chunks = list(rebatch_by_size(multicall_rpc, wrapped_calls))
             self.logger.info(f"after chunk got {len(chunks)}")
 
@@ -189,16 +185,13 @@ class MultiCallProxy:
             multicall_result.update(tmp)
 
         for k, v in multicall_result.items():
-            if v is not None:
-                tmp = self.create_token_detail(return_data_map[k], v, decode_flag=False)
-                return_data.extend(tmp)
-            else:
+            if v is None:
                 to_execute_batch_calls.append(return_data_map[k])
 
         raw_result = self.fetch_to_execute_batch_calls(self._token_ids_info_rpc_requests, to_execute_batch_calls)
 
         for token_info in token_info_items:
-            bk = self.build_key(token_info, self.token_ids_infos_k_fields)
+            bk = token_info[self.fixed_k]
             decode_flag = True
             if bk in multicall_result and multicall_result[bk] is not None:
                 value = multicall_result[bk]
@@ -236,7 +229,7 @@ class MultiCallProxy:
             response = [self.make_request(params=json.dumps(eth_calls[0]))]
 
         for token_info, data in zip(token_info_items, response):
-            k = self.build_key(token_info, self.token_ids_infos_k_fields)
+            k = token_info[self.fixed_k]
             result = rpc_response_to_result(data)
             value = result[2:] if result is not None else None
             return_dic[k] = value
@@ -244,9 +237,9 @@ class MultiCallProxy:
 
     @calculate_execution_time
     def _prepare_token_balance_parameters(self, tokens):
-        sorted_items = sorted(tokens, key=itemgetter("block_number"))
         grouped_data = defaultdict(list)
-        for row in sorted_items:
+        for row in tokens:
+            row[self.fixed_k] = self.build_key(row, self.token_k_fields)
             grouped_data[row["block_number"]].append(row)
 
         to_execute_batch_calls = []
@@ -265,14 +258,14 @@ class MultiCallProxy:
                         construct_call = Call(
                             token,
                             [BALANCE_OF_ERC1155, wal, token_id],
-                            [(self.build_key(row, self.token_k_fields), None)],
+                            [(row[self.fixed_k], None)],
                             block_id=block_id,
                         )
                     else:
                         construct_call = Call(
                             token,
                             [BALANCE_OF_ERC20, wal],
-                            [(self.build_key(row, self.token_k_fields), None)],
+                            [(row[self.fixed_k], None)],
                             block_id=block_id,
                         )
                     if construct_call:
@@ -302,7 +295,7 @@ class MultiCallProxy:
             return {}
         rr = {}
         chunks = list(self.chunk_list(to_execute_batch_calls, self.batch_size))
-        with ThreadPoolExecutor(os.cpu_count() * 2) as executor:
+        with ThreadPoolExecutor() as executor:
             results = list(executor.map(func, chunks))
         for tmp in results:
             rr.update(tmp)
@@ -310,40 +303,44 @@ class MultiCallProxy:
 
     @calculate_execution_time
     def fetch_token_balance(self, tokens):
-        self.logger.info(f"MultiCallProxy fetch_token_balance size={len(tokens)}")
+        self.logger.info(f"TokenFetcher fetch_token_balance size={len(tokens)}")
         wrapped_calls, to_execute_batch_calls = self._prepare_token_balance_parameters(tokens)
 
-        return_data_map = {self.build_key(it, self.token_k_fields): it for it in tokens}
+        return_data_map = {it[self.fixed_k]: it for it in tokens}
 
         multicall_result = {}
-        multicall_rpc = []
-        if wrapped_calls:
-            for calls in wrapped_calls:
-                self.multi_call.calls = calls
-                self.multi_call.block_id = calls[0].block_id
-                rpc_para = self.multi_call.to_rpc_param()
-                multicall_rpc.append(rpc_para)
+        multicall_rpc = self.construct_multicall_rpc(wrapped_calls)
 
-            for idx, body in enumerate(multicall_rpc):
-                body["request_id"] = idx
-
-            chunks = list(rebatch_by_size(multicall_rpc, wrapped_calls))
-            self.logger.info(f"after chunk, got={len(chunks)}")
-            res = self.fetch_result(chunks)
-            tmp = self.decode_result(wrapped_calls, res, chunks)
-            multicall_result.update(tmp)
+        chunks = list(rebatch_by_size(multicall_rpc, wrapped_calls))
+        self.logger.info(f"after chunk, got={len(chunks)}")
+        res = self.fetch_result(chunks)
+        tmp = self.decode_result(wrapped_calls, res, chunks)
+        multicall_result.update(tmp)
         for k, v in multicall_result.items():
-            if v is not None:
-                return_data_map[k]["balance"] = v
-            else:
+            if v is None:
                 to_execute_batch_calls.append(return_data_map[k])
 
         tmp = self.fetch_to_execute_batch_calls(self._token_balances, to_execute_batch_calls)
         multicall_result.update(tmp)
+        return self._extract_token_result(tokens, multicall_result)
 
+    @calculate_execution_time
+    def construct_multicall_rpc(self, wrapped_calls):
+        multicall_rpc = []
+        if wrapped_calls:
+            for calls in wrapped_calls:
+                multicall_rpc.append(
+                    Multicall(
+                        calls, require_success=False, chain_id=self.chain_id, block_id=calls[0].block_id
+                    ).to_rpc_param()
+                )
+        return multicall_rpc
+
+    @calculate_execution_time
+    def _extract_token_result(self, tokens, multicall_result):
         return_data = []
         for item in tokens:
-            bk = self.build_key(item, self.token_k_fields)
+            bk = item[self.fixed_k]
             balance = None
             if bk in multicall_result:
                 balance = multicall_result[bk]
@@ -379,7 +376,7 @@ class MultiCallProxy:
             try:
                 if result:
                     balance = abi.decode(["uint256"], bytes.fromhex(result[2:]))[0]
-                    result_dic[self.build_key(data[0], self.token_k_fields)] = balance
+                    result_dic[data[0][self.fixed_k]] = balance
 
             except Exception as e:
                 self.logger.warning(
@@ -389,12 +386,12 @@ class MultiCallProxy:
                     f"block number: {data[0]['block_number']}. "
                     f"exception: {e}. "
                 )
-                result_dic[self.build_key(data[0], self.token_k_fields)] = balance
+                result_dic[data[0][self.fixed_k]] = balance
 
         return result_dic
 
     @staticmethod
-    @lru_cache(maxsize=20_0000)
+    # @lru_cache(maxsize=20_0000)
     def build_key_in(record, fields):
         values = []
         for field in fields:
@@ -407,8 +404,8 @@ class MultiCallProxy:
     @staticmethod
     def build_key(record, fields: tuple):
         if isinstance(record, dict):
-            return MultiCallProxy.build_key_in(dict_to_tuple(record), fields)
-        return MultiCallProxy.build_key_in(record, fields)
+            return TokenFetcher.build_key_in(dict_to_tuple(record), fields)
+        return TokenFetcher.build_key_in(record, fields)
 
     @staticmethod
     def chunk_list(lst, chunk_size):

@@ -224,7 +224,7 @@ def calculate_execution_time(func):
 @click.option(
     "-m",
     "--multicall",
-    default=True,
+    default=False,
     show_default=True,
     type=bool,
     help="if `multicall` is set to True, it will decrease the consume of rpc calls",

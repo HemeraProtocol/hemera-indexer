@@ -1,7 +1,7 @@
-import json
 import logging
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
 
+import orjson
 from eth_typing import Address, ChecksumAddress, HexAddress
 from eth_typing.abi import Decodable
 from eth_utils import to_checksum_address
@@ -81,7 +81,7 @@ class Call:
             "jsonrpc": "2.0",
             "method": "eth_call",
             "params": args,
-            "id": hash(json.dumps(args)),
+            "id": hash(orjson.dumps(args)),
         }
 
 

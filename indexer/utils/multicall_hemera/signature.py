@@ -4,6 +4,9 @@ from typing import Any, List, Optional, Tuple
 from eth_abi import decode, encode
 from eth_typing.abi import Decodable, TypeStr
 from eth_utils import function_signature_to_4byte_selector
+from hexbytes import HexBytes
+
+from indexer.utils.abi import pad_address, uint256_to_bytes
 
 
 def parse_signature(signature: str) -> Tuple[str, List[TypeStr], List[TypeStr]]:
@@ -66,8 +69,28 @@ class Signature:
     def fourbyte(self) -> bytes:
         return function_signature_to_4byte_selector(self.function)
 
-    def encode_data(self, args: Optional[Any] = None) -> bytes:
-        return self.fourbyte + encode(self.input_types, args) if args else self.fourbyte
+    def encode_data(self, args: Optional[List[Any]] = None) -> bytes:
+        if args is None:
+            args = []
+
+        if len(args) != len(self.input_types):
+            raise ValueError(f"Expected {len(self.input_types)} arguments, got {len(args)}")
+
+        if len(args) > 2:
+            return self.fourbyte + encode(self.input_types, args)
+
+        encoded = self.fourbyte
+
+        for arg, arg_type in zip(args, self.input_types):
+            if arg_type == "address":
+                encoded += pad_address(arg)
+            elif arg_type == "uint256":
+                encoded += uint256_to_bytes(arg)
+            else:
+                # cannot handle, call encode directly
+                return self.fourbyte + encode(self.input_types, args)
+
+        return encoded
 
     def decode_data(self, output: Decodable) -> Any:
         return decode(self.output_types, output)

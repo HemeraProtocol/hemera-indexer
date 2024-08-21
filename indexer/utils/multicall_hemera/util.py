@@ -11,6 +11,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
+import orjson
 from mpire import WorkerPool
 
 from indexer.utils.multicall_hemera import Call
@@ -32,7 +33,7 @@ def multiprocess_map(func, data_list, processes=None):
 
 def estimate_size(item):
     """return size in bytes"""
-    return len(json.dumps(item).encode("utf-8"))
+    return len(orjson.dumps(item))
 
 
 def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
@@ -69,7 +70,6 @@ def calculate_execution_time(func):
     return wrapper
 
 
-@calculate_execution_time
 def make_request_concurrent(make_request, chunks, max_workers=None):
     def single_request(chunk):
         logger.debug(f"single request {len(chunk)}")

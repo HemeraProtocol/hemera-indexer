@@ -1,9 +1,7 @@
 import logging
-from dataclasses import asdict, dataclass
 from itertools import groupby
 from typing import List
 
-from enumeration.token_type import TokenType
 from indexer.domain.token_id_infos import (
     ERC721TokenIdChange,
     ERC721TokenIdDetail,
@@ -14,61 +12,11 @@ from indexer.domain.token_id_infos import (
 from indexer.domain.token_transfer import ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
-from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
-from indexer.utils.abi import encode_abi
-from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.multi_call_util import MultiCallProxy
 from indexer.utils.multicall_hemera.util import calculate_execution_time
+from indexer.utils.token_fetcher import TokenFetcher
 from indexer.utils.utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
-exception_recorder = ExceptionRecorder()
-
-ERC721_TOKEN_URI_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "id", "type": "uint256"}],
-    "name": "tokenURI",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-ERC721_OWNER_OF_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "id", "type": "uint256"}],
-    "name": "ownerOf",
-    "outputs": [{"name": "", "type": "address"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-ERC1155_TOKEN_URI_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "id", "type": "uint256"}],
-    "name": "uri",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-ERC1155_TOTAL_SUPPLY_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "id", "type": "uint256"}],
-    "name": "totalSupply",
-    "outputs": [{"name": "", "type": "uint256"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-erc721_uri_sig_prefix = function_abi_to_4byte_selector_str(ERC721_TOKEN_URI_ABI_FUNCTION)
-erc721_owner_of_sig_prefix = function_abi_to_4byte_selector_str(ERC721_OWNER_OF_ABI_FUNCTION)
-
-erc1155_token_uri_sig_prefix = function_abi_to_4byte_selector_str(ERC1155_TOKEN_URI_ABI_FUNCTION)
-erc1155_token_supply_sig_prefix = function_abi_to_4byte_selector_str(ERC1155_TOTAL_SUPPLY_ABI_FUNCTION)
 
 
 class ExportTokenIdInfosJob(BaseExportJob):
@@ -90,7 +38,9 @@ class ExportTokenIdInfosJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self.multi_call_util = MultiCallProxy(self._web3, kwargs)
+        self._is_multi_call = kwargs["multicall"]
+
+        self.multi_call_util = TokenFetcher(self._web3, kwargs)
 
     def _start(self):
         super()._start()
@@ -101,8 +51,11 @@ class ExportTokenIdInfosJob(BaseExportJob):
             self._data_buff[ERC721TokenTransfer.type()],
             self._data_buff[ERC1155TokenTransfer.type()],
         )
-
-        self._collect_batch(token_id_info)
+        if self._is_multi_call:
+            self._collect_batch(token_id_info)
+        else:
+            self._batch_work_executor.execute(token_id_info, self._collect_batch, total_items=len(token_id_info))
+            self._batch_work_executor.wait()
 
     @calculate_execution_time
     def _collect_batch(self, token_list):
@@ -110,6 +63,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
         for item in items:
             self._collect_item(item.type(), item)
 
+    @calculate_execution_time
     def _process(self):
         self._data_buff[UpdateERC721TokenIdDetail.type()].sort(
             key=lambda x: (x.token_address, x.token_id, x.block_number)
@@ -174,32 +128,3 @@ def generate_token_id_info(
             )
 
     return info
-
-
-def abi_selector_encode_and_decode_type(token_id_info):
-    if token_id_info["token_type"] == TokenType.ERC721.value:
-        if token_id_info["is_get_token_uri"]:
-            return encode_abi(
-                ERC721_TOKEN_URI_ABI_FUNCTION,
-                [token_id_info["token_id"]],
-                erc721_uri_sig_prefix,
-            )
-        else:
-            return encode_abi(
-                ERC721_OWNER_OF_ABI_FUNCTION,
-                [token_id_info["token_id"]],
-                erc721_owner_of_sig_prefix,
-            )
-    elif token_id_info["token_type"] == TokenType.ERC1155.value:
-        if token_id_info["is_get_token_uri"]:
-            return encode_abi(
-                ERC1155_TOKEN_URI_ABI_FUNCTION,
-                [token_id_info["token_id"]],
-                erc1155_token_uri_sig_prefix,
-            )
-        else:
-            return encode_abi(
-                ERC1155_TOTAL_SUPPLY_ABI_FUNCTION,
-                [token_id_info["token_id"]],
-                erc1155_token_supply_sig_prefix,
-            )
