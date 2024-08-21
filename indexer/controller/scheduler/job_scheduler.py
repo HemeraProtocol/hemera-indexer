@@ -46,16 +46,16 @@ def get_source_job_type(source_path: str):
 
 class JobScheduler:
     def __init__(
-            self,
-            batch_web3_provider,
-            batch_web3_debug_provider,
-            batch_size=100,
-            debug_batch_size=1,
-            max_workers=5,
-            config={},
-            item_exporters=[ConsoleItemExporter()],
-            required_output_types=[],
-            cache="memory",
+        self,
+        batch_web3_provider,
+        batch_web3_debug_provider,
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config={},
+        item_exporters=[ConsoleItemExporter()],
+        required_output_types=[],
+        cache="memory",
     ):
         self.logger = logging.getLogger(__name__)
         self.batch_web3_provider = batch_web3_provider

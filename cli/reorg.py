@@ -3,7 +3,7 @@ import logging
 import click
 
 from common.services.postgresql_service import PostgreSQLService
-from enumeration.entity_type import calculate_entity_value, generate_output_types, ALL_ENTITY_COLLECTIONS
+from enumeration.entity_type import ALL_ENTITY_COLLECTIONS, calculate_entity_value, generate_output_types
 from indexer.controller.reorg_controller import ReorgController
 from indexer.controller.scheduler.reorg_scheduler import ReorgScheduler
 from indexer.exporters.postgres_item_exporter import PostgresItemExporter
@@ -34,7 +34,7 @@ exception_recorder = ExceptionRecorder()
     type=str,
     envvar="DEBUG_PROVIDER_URI",
     help="The URI of the web3 debug provider e.g. "
-         "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
+    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
 )
 @click.option(
     "-pg",
@@ -52,9 +52,9 @@ exception_recorder = ExceptionRecorder()
     type=str,
     envvar="DB_VERSION",
     help="The database version to initialize the database. using the alembic script's revision ID to "
-         "specify a version."
-         " e.g. head, indicates the latest version."
-         "or base, indicates the empty database without any table.",
+    "specify a version."
+    " e.g. head, indicates the latest version."
+    "or base, indicates the empty database without any table.",
 )
 @click.option(
     "-b",
@@ -100,16 +100,16 @@ exception_recorder = ExceptionRecorder()
 )
 @click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE", help="Cache")
 def reorg(
-        provider_uri,
-        debug_provider_uri,
-        postgres_url,
-        db_version,
-        block_number,
-        ranges,
-        batch_size,
-        debug_batch_size,
-        log_file=None,
-        cache=None,
+    provider_uri,
+    debug_provider_uri,
+    postgres_url,
+    db_version,
+    block_number,
+    ranges,
+    batch_size,
+    debug_batch_size,
+    log_file=None,
+    cache=None,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -122,15 +122,13 @@ def reorg(
     # build postgresql service
     if postgres_url:
         service = PostgreSQLService(postgres_url, db_version=db_version)
-        config = {
-            "db_service": service
-        }
+        config = {"db_service": service}
         exception_recorder.init_pg_service(service)
     else:
         logging.error("No postgres url provided. Exception recorder will not be useful.")
         exit(1)
 
-    entity_types = calculate_entity_value(','.join(ALL_ENTITY_COLLECTIONS))
+    entity_types = calculate_entity_value(",".join(ALL_ENTITY_COLLECTIONS))
     output_types = list(generate_output_types(entity_types))
 
     job_scheduler = ReorgScheduler(

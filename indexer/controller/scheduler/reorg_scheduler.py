@@ -39,16 +39,16 @@ def get_tokens_from_db(session):
 
 class ReorgScheduler:
     def __init__(
-            self,
-            batch_web3_provider,
-            batch_web3_debug_provider,
-            batch_size=100,
-            debug_batch_size=1,
-            max_workers=5,
-            config={},
-            item_exporters=[],
-            required_output_types=[],
-            cache="memory",
+        self,
+        batch_web3_provider,
+        batch_web3_debug_provider,
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config={},
+        item_exporters=[],
+        required_output_types=[],
+        cache="memory",
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider

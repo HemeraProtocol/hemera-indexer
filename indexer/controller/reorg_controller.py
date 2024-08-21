@@ -14,15 +14,15 @@ from indexer.controller.base_controller import BaseController
 class ReorgController(BaseController):
 
     def __init__(
-            self,
-            batch_web3_provider,
-            job_scheduler,
-            ranges,
-            config,
+        self,
+        batch_web3_provider,
+        job_scheduler,
+        ranges,
+        config,
     ):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
-        self.db_service = config.get('db_service')
+        self.db_service = config.get("db_service")
         self.job_scheduler = job_scheduler
 
     def action(self, job_id=None, block_number=None, remains=None, retry_errors=True):

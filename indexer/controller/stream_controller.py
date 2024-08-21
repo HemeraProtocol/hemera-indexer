@@ -16,12 +16,12 @@ exception_recorder = ExceptionRecorder()
 class StreamController(BaseController):
 
     def __init__(
-            self,
-            batch_web3_provider,
-            sync_recorder: BaseRecorder,
-            job_scheduler: JobScheduler,
-            max_retries=5,
-            retry_from_record=False,
+        self,
+        batch_web3_provider,
+        sync_recorder: BaseRecorder,
+        job_scheduler: JobScheduler,
+        max_retries=5,
+        retry_from_record=False,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
@@ -31,13 +31,13 @@ class StreamController(BaseController):
         self.retry_from_record = retry_from_record
 
     def action(
-            self,
-            start_block=None,
-            end_block=None,
-            block_batch_size=10,
-            period_seconds=10,
-            retry_errors=True,
-            pid_file=None,
+        self,
+        start_block=None,
+        end_block=None,
+        block_batch_size=10,
+        period_seconds=10,
+        retry_errors=True,
+        pid_file=None,
     ):
         try:
             if pid_file is not None:
@@ -58,9 +58,9 @@ class StreamController(BaseController):
         last_synced_block = self.sync_recorder.get_last_synced_block()
         if start_block is not None:
             if (
-                    not self.retry_from_record
-                    or last_synced_block < start_block
-                    or (end_block is not None and last_synced_block > end_block)
+                not self.retry_from_record
+                or last_synced_block < start_block
+                or (end_block is not None and last_synced_block > end_block)
             ):
                 last_synced_block = start_block - 1
 

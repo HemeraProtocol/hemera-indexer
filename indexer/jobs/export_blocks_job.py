@@ -1,7 +1,6 @@
 import json
 import logging
 
-
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
 from indexer.domain.block_ts_mapper import BlockTsMapper

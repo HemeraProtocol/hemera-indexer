@@ -33,7 +33,7 @@ class ExportReorgJob(BaseJob):
                 update_strategy = pg_config["update_strategy"]
                 converter = pg_config["converter"]
 
-                if not hasattr(table, 'reorg'):
+                if not hasattr(table, "reorg"):
                     continue
 
                 reorg_data = [converter(table, item, do_update) for item in items]
@@ -41,13 +41,11 @@ class ExportReorgJob(BaseJob):
                 columns = list(reorg_data[0].keys())
                 values = [tuple(d.values()) for d in reorg_data]
 
-                insert_stmt = sql_insert_statement(
-                    domain, table, do_update, columns, where_clause=update_strategy
-                )
+                insert_stmt = sql_insert_statement(domain, table, do_update, columns, where_clause=update_strategy)
 
-                if table.__tablename__ != 'blocks':
+                if table.__tablename__ != "blocks":
                     cur.execute(self._build_clean_sql(table.__tablename__))
-                    
+
                 execute_values(cur, insert_stmt, values, page_size=500)
 
         conn.commit()

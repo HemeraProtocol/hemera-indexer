@@ -68,7 +68,7 @@ class BaseJob(metaclass=BaseJobMeta):
         self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
         self._reorg = kwargs["reorg"] if kwargs.get("reorg") else False
         self._should_reorg = False
-        self._service = kwargs['config'].get('db_service', None)
+        self._service = kwargs["config"].get("db_service", None)
 
     def run(self, **kwargs):
         try:

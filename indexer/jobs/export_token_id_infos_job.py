@@ -146,8 +146,8 @@ class ExportTokenIdInfosJob(BaseExportJob):
 
 
 def generate_token_id_info(
-        erc721_token_transfers: List[ERC721TokenTransfer],
-        erc1155_token_transfers: List[ERC1155TokenTransfer],
+    erc721_token_transfers: List[ERC721TokenTransfer],
+    erc1155_token_transfers: List[ERC1155TokenTransfer],
 ):
     info = set()
     for token_transfer in erc721_token_transfers + erc1155_token_transfers:

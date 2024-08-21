@@ -70,9 +70,7 @@ class PostgresItemExporter(BaseExporter):
         )
 
 
-def sql_insert_statement(
-        domain: Type[Domain], model: Type[HemeraModel], do_update: bool, columns, where_clause=None
-):
+def sql_insert_statement(domain: Type[Domain], model: Type[HemeraModel], do_update: bool, columns, where_clause=None):
     pk_list = []
     for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
         if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):

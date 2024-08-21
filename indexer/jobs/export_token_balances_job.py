@@ -134,7 +134,7 @@ def encode_balance_abi_parameter(address, token_type, token_id):
 
 
 def extract_token_parameters(
-        token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
+    token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
 ):
     origin_parameters = set()
     token_parameters = []
