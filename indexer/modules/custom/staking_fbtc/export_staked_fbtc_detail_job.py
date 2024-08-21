@@ -4,7 +4,6 @@ import logging
 import os
 
 from indexer.domain.log import Log
-
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
