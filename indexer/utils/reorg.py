@@ -34,17 +34,23 @@ def set_reorg_sign(block_number, service):
 
 
 def should_reorg(block_number: int, table: HemeraModel, service: PostgreSQLService):
+    if not hasattr(table, "reorg"):
+        return False
+    condition = None
+    if hasattr(table, "number"):
+        condition = and_(table.reorg == True, table.number == block_number)
+    elif hasattr(table, "block_number"):
+        condition = and_(table.reorg == True, table.block_number == block_number)
+    else:
+        return False
+
     session = service.get_service_session()
     try:
         result = (
             session.query(table)
-            .filter(
-                and_(
-                    table.block_number == block_number,
-                    table.reorg == True
-                ))
+            .filter(condition)
             .first()
         )
     finally:
         session.close()
-    return result is None
+    return result is not None

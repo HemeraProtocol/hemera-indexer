@@ -27,7 +27,7 @@ class ReorgController(BaseController):
 
     def action(self, job_id=None, block_number=None, remains=None, retry_errors=True):
         if block_number is None:
-            raise ValueError("Fixing mission must provide a block_number.")
+            raise ValueError("Reorging mission must provide a block_number.")
         if remains is None:
             remains = self.ranges
 
@@ -55,7 +55,7 @@ class ReorgController(BaseController):
                 )
 
                 if fix_need:
-                    logging.info(f"Fixing block No.{block_number - offset}")
+                    logging.info(f"Reorging block No.{block_number - offset}")
                     self._do_fixing(block_number - offset, retry_errors)
                 else:
                     logging.info(
@@ -85,12 +85,12 @@ class ReorgController(BaseController):
                     "job_status": "interrupt",
                 },
             )
-            logging.error(f"Fixing mission catch exception: {e}")
+            logging.error(f"Reorging mission catch exception: {e}")
             raise e
 
         self.update_job_info(job_id, job_info={"job_status": "completed"})
 
-        logging.info(f"Fixing mission start from block No.{block_number} and ranges {remains} has been completed.")
+        logging.info(f"Reorging mission start from block No.{block_number} and ranges {remains} has been completed.")
 
         self.wake_up_next_job()
 
@@ -105,7 +105,7 @@ class ReorgController(BaseController):
 
             except Exception as e:
                 print(e)
-                logging.exception("An exception occurred while fixing block data.")
+                logging.exception("An exception occurred while reorging block data.")
                 if not retry_errors:
                     raise e
                 else:

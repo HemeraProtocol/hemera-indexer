@@ -4,7 +4,6 @@ import click
 
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import calculate_entity_value, generate_output_types, ALL_ENTITY_COLLECTIONS
-from enumeration.schedule_mode import ScheduleMode
 from indexer.controller.reorg_controller import ReorgController
 from indexer.controller.scheduler.reorg_scheduler import ReorgScheduler
 from indexer.exporters.postgres_item_exporter import PostgresItemExporter

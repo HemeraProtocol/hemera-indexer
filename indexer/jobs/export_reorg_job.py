@@ -45,7 +45,9 @@ class ExportReorgJob(BaseJob):
                     domain, table, do_update, columns, where_clause=update_strategy
                 )
 
-                cur.execute(self._build_clean_sql(table.__tablename__))
+                if table.__tablename__ != 'blocks':
+                    cur.execute(self._build_clean_sql(table.__tablename__))
+                    
                 execute_values(cur, insert_stmt, values, page_size=500)
 
         conn.commit()

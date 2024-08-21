@@ -103,7 +103,7 @@ class BaseJob(metaclass=BaseJobMeta):
                 output_table.add(domain_model_mapping[domain.__name__]["table"])
 
             for table in output_table:
-                self._should_reorg = self._should_reorg and should_reorg(reorg_block, table, self._service)
+                self._should_reorg = self._should_reorg or should_reorg(reorg_block, table, self._service)
 
     def _end(self):
         pass
