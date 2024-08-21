@@ -73,3 +73,16 @@ class AllFeatureValueRecordBlueChipHolders(AllFeatureValueRecord):
         update_time: Optional[int] = None,
     ):
         super().__init__(feature_id, block_number, address, value, update_time)
+
+
+@dataclass
+class AllFeatureValueRecordErc20TotalSupply(AllFeatureValueRecord):
+    def __init__(
+        self,
+        feature_id: int,
+        block_number: int,
+        address: str,
+        value: dict,
+        update_time: Optional[int] = None,
+    ):
+        super().__init__(feature_id, block_number, address, value, update_time)

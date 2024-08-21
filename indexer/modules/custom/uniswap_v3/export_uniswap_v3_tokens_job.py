@@ -7,18 +7,24 @@ import queue
 import eth_abi
 from web3 import Web3
 
+from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV3Token
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3 import constants
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Token
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Token,
+    UniswapV3TokenCurrentStatus,
+    UniswapV3TokenDetail,
+)
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
+from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.thread_local_proxy import ThreadLocalProxy
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
@@ -26,8 +32,8 @@ FEATURE_ID = FeatureType.UNISWAP_V3_TOKENS.value
 
 
 class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
-    dependency_types = [Log, ERC721TokenTransfer]
-    output_types = [AllFeatureValueRecordUniswapV3Token, UniswapV3Token]
+    dependency_types = [Log, ERC721TokenTransfer, Block]
+    output_types = [UniswapV3Token, UniswapV3TokenDetail, UniswapV3TokenCurrentStatus]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -41,7 +47,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         self._load_config("config.ini")
         self._abi_list = UNISWAP_V3_ABI
         self._liquidity_token_id_blocks = queue.Queue()
-        self._exist_token_ids = get_exist_token_ids(self._service[0], self._nft_address)
+        self._exist_token_ids = get_exist_token_ids(self._service, self._nft_address)
 
     def _load_config(self, filename):
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -61,7 +67,6 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             [
                 TopicSpecification(
                     addresses=[self._factory_address],
-                    topics=list(self._liquidity_topic0_dict.keys()),
                 ),
                 TopicSpecification(addresses=[self._nft_address]),
             ]
@@ -116,54 +121,72 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         self._exist_token_ids.update(update_exist_tokens)
         for data in new_nft_info:
             self._collect_item(UniswapV3Token.type(), data)
+        block_list = self._data_buff[Block.type()]
+        block_info = {}
+        for block in block_list:
+            block_info[block.number] = block.timestamp
+        token_result, current_statuses = parse_token_records(
+            self._nft_address, self._exist_token_ids, owner_dict, token_infos, block_info
+        )
 
-        new_records = parse_token_records(self._exist_token_ids, owner_dict, token_infos, FEATURE_ID)
-        for data in new_records:
-            self._collect_item(AllFeatureValueRecordUniswapV3Token.type(), data)
+        for data in token_result:
+            self._collect_item(UniswapV3TokenDetail.type(), data)
+        for data in current_statuses:
+            self._collect_item(UniswapV3TokenCurrentStatus.type(), data)
 
     def _process(self, **kwargs):
         self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[AllFeatureValueRecordUniswapV3Token.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV3TokenDetail.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[UniswapV3TokenCurrentStatus.type()].sort(key=lambda x: x.block_number)
 
 
-def parse_token_records(token_pool_dict, owner_dict, token_infos, feature_id):
-    # one address may have many records in one block
-    address_infos = {}
+def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, block_info):
+    token_result = []
+    token_block_dict = {}
 
     for data in token_infos:
         block_number = data["block_number"]
         token_id = data["token_id"]
+        liquidity = data["liquidity"]
+
+        token_block_dict[token_id] = max(token_block_dict.get(token_id, block_number), block_number)
+
         address = owner_dict[token_id][block_number]
+        pool_address = token_pool_dict[token_id]
 
-        value = {
-            "token_id": token_id,
-            "tick_lower": data["tickLower"],
-            "tick_upper": data["tickUpper"],
-            "fee": data["fee"],
-            "liquidity": data["liquidity"],
-            "token0": data["token0"],
-            "token1": data["token1"],
-            "block_number": block_number,
-            "pool_address": token_pool_dict[token_id],
-        }
-
-        if address not in address_infos.keys():
-            address_infos[address] = {}
-        if block_number not in address_infos[address]:
-            address_infos[address][block_number] = []
-        address_infos[address][block_number].append(value)
-    result = []
-    for address, block in address_infos.items():
-        for block_number, data in block.items():
-            result.append(
-                AllFeatureValueRecordUniswapV3Token(
-                    feature_id=feature_id,
-                    block_number=block_number,
-                    address=address,
-                    value=data,
-                )
+        token_result.append(
+            UniswapV3TokenDetail(
+                nft_address=nft_address,
+                pool_address=pool_address,
+                token_id=token_id,
+                wallet_address=address,
+                liquidity=liquidity,
+                called_block_number=block_number,
+                called_block_timestamp=block_info[block_number],
             )
-    return result
+        )
+
+    current_statuses = []
+    for token_id, max_block_number in token_block_dict.items():
+        max_block_data = next(
+            data for data in token_infos if data["token_id"] == token_id and data["block_number"] == max_block_number
+        )
+        address = owner_dict[token_id][max_block_number]
+        pool_address = token_pool_dict[token_id]
+
+        current_statuses.append(
+            UniswapV3TokenCurrentStatus(
+                nft_address=nft_address,
+                token_id=token_id,
+                pool_address=pool_address,
+                wallet_address=address,
+                liquidity=max_block_data["liquidity"],
+                block_number=max_block_number,
+                block_timestamp=block_info[max_block_number],
+            )
+        )
+
+    return token_result, current_statuses
 
 
 def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_token_ids):
@@ -251,7 +274,10 @@ def get_new_nfts(
 
 
 def get_exist_token_ids(db_service, nft_address):
-    session = db_service.get_service_session()
+    if not db_service:
+        return {}
+
+    session = db_service[0].get_service_session()
     try:
         result = (
             session.query(UniswapV3Tokens.token_id, UniswapV3Tokens.pool_address)
@@ -514,30 +540,3 @@ def get_pool_rpc_requests(web3, make_requests, requests, factory_address, is_bat
             )
         token_infos.append(token)
     return token_infos
-
-
-def build_no_input_method_data(web3, requests, fn, block_number, abi_list):
-    parameters = []
-
-    for idx, token in enumerate(requests):
-        token["request_id"] = (idx,)
-        token_data = {
-            "request_id": idx,
-            "param_to": token["pool_address"],
-            "param_number": hex(block_number),
-        }
-        token.update(token_data)
-        try:
-            # Encode the ABI for the specific token_id
-            token["param_data"] = web3.eth.contract(
-                address=Web3.to_checksum_address(token["pool_address"]), abi=abi_list
-            ).encodeABI(fn_name=fn)
-        except Exception as e:
-            logger.error(
-                f"Encoding token0 {token['token0']} token1 {token['token1']}  fee {token['fee']}  for function {fn} failed. "
-                f"contract address: {token['pool_address']}. "
-                f"Exception: {e}."
-            )
-
-        parameters.append(token)
-    return parameters
