@@ -67,9 +67,6 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             ]
         )
 
-    def _start(self):
-        super()._start()
-
     def _collect(self, **kwargs):
         # collect the nft_ids which were minted or burned
         mint_token_ids, burn_token_ids, all_token_dict = extract_changed_tokens(

@@ -68,9 +68,6 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
-    def _start(self):
-        super()._start()
-
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         grouped_logs = defaultdict(list)

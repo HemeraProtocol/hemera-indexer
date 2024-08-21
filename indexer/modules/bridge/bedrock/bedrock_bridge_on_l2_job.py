@@ -33,9 +33,6 @@ class BedrockBridgeOnL2Job(FilterTransactionDataJob):
             self._l2_to_l1_message_passer and self._l2_cross_domain_messenger
         ), "Both l2_to_l1_message_passer and l2_cross_domain_messenger must be provided."
 
-    def _start(self):
-        super()._start()
-
     def get_filter(self):
         topics = [
             BEDROCK_EVENT_ABI_SIGNATURE_MAPPING["RELAYED_MESSAGE_EVENT"],

@@ -288,9 +288,6 @@ class AddressIndexerJob(BaseJob):
             job_name=self.__class__.__name__,
         )
 
-    def _start(self):
-        super()._start()
-
     def _collect(self, **kwargs):
         erc20_transfers = self._get_domain(ERC20TokenTransfer)
         erc721_transfers = self._get_domain(ERC721TokenTransfer)

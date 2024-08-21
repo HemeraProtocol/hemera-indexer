@@ -152,6 +152,7 @@ class JobScheduler:
             self.jobs.insert(0, export_blocks_job)
 
     def run_jobs(self, start_block, end_block):
+        self.clear_data_buff()
         try:
             for job in self.jobs:
                 job.run(start_block=start_block, end_block=end_block)
@@ -162,12 +163,10 @@ class JobScheduler:
                 exception_recorder.log(
                     block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
                 )
-
-            exception_recorder.force_to_flush()
         except Exception as e:
             raise e
         finally:
-            self.clear_data_buff()
+            exception_recorder.force_to_flush()
 
     def get_required_job_classes(self, output_types):
         required_job_classes = set()

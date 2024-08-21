@@ -47,9 +47,6 @@ class BedrockBridgeOnL1Job(FilterTransactionDataJob):
         else:
             logger.warning("L2OutputOracleProxy is None")
 
-    def _start(self):
-        super()._start()
-
     def get_filter(self):
         topic_filter_list = []
         if self._optimism_portal_proxy:

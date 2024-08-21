@@ -40,9 +40,6 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
     def get_filter(self):
         return TransactionFilterByLogs([TopicSpecification(addresses=self._blue_chip_projects)])
 
-    def _start(self):
-        super()._start()
-
     def _collect(self, **kwargs):
         token_balance = self._data_buff[TokenBalance.type()]
         if token_balance is None or len(token_balance) == 0:
