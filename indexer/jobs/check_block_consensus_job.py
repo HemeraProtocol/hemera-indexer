@@ -48,15 +48,15 @@ class CheckBlockConsensusJob(BaseJob):
             batch_blocks = [self.last_batch_end_block] + batch_blocks
 
         batch_blocks.reverse()
-        parent_hash = batch_blocks[0]["parent_hash"]
+        parent_hash = batch_blocks[0].parent_hash
         for block in batch_blocks[1:]:
-            block_hash = block["hash"]
+            block_hash = block.hash
             if block_hash != parent_hash:
                 # non-consensus detected
-                reorging_thread = Process(target=self.reorg_controller.action, kwargs={"block_number": block["number"]})
+                reorging_thread = Process(target=self.reorg_controller.action, kwargs={"block_number": block.number})
                 reorging_thread.start()
                 break
 
-            parent_hash = block["parent_hash"]
+            parent_hash = block.parent_hash
 
-        self.last_batch_end_block = batch_blocks[-1]
+        self.last_batch_end_block = batch_blocks[0]
