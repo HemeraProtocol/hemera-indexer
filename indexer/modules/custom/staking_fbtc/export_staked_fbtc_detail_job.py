@@ -92,5 +92,5 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
             self._collect_item(StakedFBTCDetail.type(), staked_entity)
 
 
-def _process(self):
+def _process(self, **kwargs):
     self._data_buff[StakedFBTCDetail.type()].sort(key=lambda x: (x.block_number, x.log_index))
