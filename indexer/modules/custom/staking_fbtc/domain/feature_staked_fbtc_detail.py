@@ -5,12 +5,11 @@ from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class LockedFBTCDetail(FilterData):
+class StakedFBTCDetail(FilterData):
     contract_address: str
+    protocol_id: str
     wallet_address: str
-    minter: str
-    received_amount: int
-    fee: int
+    amount: int
     log_index: int
     block_number: int
     block_timestamp: int
