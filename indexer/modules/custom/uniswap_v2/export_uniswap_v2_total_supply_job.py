@@ -72,9 +72,6 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
-    def _start(self):
-        super()._start()
-
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         grouped_logs = defaultdict(dict)
@@ -118,7 +115,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         )
         self._collected_total_supply.add_items(pool_total_supply)
 
-    def _process(self):
+    def _process(self, **kwargs):
 
         for record in format_value_records(self._exist_pools, self._collected_total_supply, FEATURE_ID):
             self._collect_item(AllFeatureValueRecordUniswapV2Info.type(), record)

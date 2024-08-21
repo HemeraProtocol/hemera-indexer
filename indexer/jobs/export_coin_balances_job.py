@@ -32,6 +32,7 @@ class AddressRecord:
 class ExportCoinBalancesJob(BaseExportJob):
     dependency_types = [Block, ContractInternalTransaction]
     output_types = [CoinBalance]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -42,9 +43,6 @@ class ExportCoinBalancesJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
         coin_addresses = distinct_addresses(
@@ -63,7 +61,7 @@ class ExportCoinBalancesJob(BaseExportJob):
         for coin_balance in coin_balances:
             self._collect_item(CoinBalance.type(), CoinBalance(coin_balance))
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[CoinBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
 

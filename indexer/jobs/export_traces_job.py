@@ -25,6 +25,7 @@ exception_recorder = ExceptionRecorder()
 class ExportTracesJob(BaseExportJob):
     dependency_types = [Block]
     output_types = [Trace, ContractInternalTransaction, UpdateBlockInternalCount]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -36,9 +37,6 @@ class ExportTracesJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["debug_batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
         self._batch_work_executor.execute(
@@ -65,7 +63,7 @@ class ExportTracesJob(BaseExportJob):
                     ContractInternalTransaction.from_rpc(trace),
                 )
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[Trace.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
 
         self._data_buff[ContractInternalTransaction.type()].sort(

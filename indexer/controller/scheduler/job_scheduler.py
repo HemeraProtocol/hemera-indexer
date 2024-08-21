@@ -8,13 +8,17 @@ from redis.client import Redis
 from common import models
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
+from enumeration.record_level import RecordLevel
+from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.utils.abi import bytes_to_hex_str
+from indexer.utils.exception_recorder import ExceptionRecorder
 
 import_submodules("indexer.modules")
+exception_recorder = ExceptionRecorder()
 
 
 def get_tokens_from_db(session):
@@ -49,10 +53,11 @@ class JobScheduler:
         debug_batch_size=1,
         max_workers=5,
         config={},
-        item_exporters=[],
+        item_exporters=[ConsoleItemExporter()],
         required_output_types=[],
         cache="memory",
     ):
+        self.logger = logging.getLogger(__name__)
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
         self.item_exporters = item_exporters
@@ -83,9 +88,10 @@ class JobScheduler:
                     tokens = RedisDict(token_dict_from_db, redis=redis, key="token")
                     BaseJob.init_token_cache(tokens)
                 except Exception as e:
-                    logging.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
+                    self.logger.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
                     BaseJob.init_token_cache(token_dict_from_db)
         self.instantiate_jobs()
+        self.logger.info("Export output types: %s", required_output_types)
 
     def get_data_buff(self):
         return BaseJob._data_buff
@@ -95,7 +101,7 @@ class JobScheduler:
 
     def discover_and_register_job_classes(self):
         if self.load_from_source:
-            source_job = get_source_job_type(source_path=self.config.get("source_path"))
+            source_job = get_source_job_type(source_path=self.load_from_source)
             all_subclasses = [source_job]
         else:
             all_subclasses = BaseExportJob.discover_jobs()
@@ -107,7 +113,7 @@ class JobScheduler:
                 self.job_map[output.type()].append(cls)
             for dependency in cls.dependency_types:
                 self.dependency_map[dependency.type()].append(cls)
-            logging.info(
+            self.logger.info(
                 f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}"
             )
 
@@ -146,9 +152,21 @@ class JobScheduler:
             self.jobs.insert(0, export_blocks_job)
 
     def run_jobs(self, start_block, end_block):
-        for job in self.jobs:
-            job.run(start_block=start_block, end_block=end_block)
-        # TODO: clean data buffer after all jobs are run
+        self.clear_data_buff()
+        try:
+            for job in self.jobs:
+                job.run(start_block=start_block, end_block=end_block)
+
+            for key, value in self.get_data_buff().items():
+                message = f"{key}: {len(value)}"
+                self.logger.info(message)
+                exception_recorder.log(
+                    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
+                )
+        except Exception as e:
+            raise e
+        finally:
+            exception_recorder.force_to_flush()
 
     def get_required_job_classes(self, output_types):
         required_job_classes = set()

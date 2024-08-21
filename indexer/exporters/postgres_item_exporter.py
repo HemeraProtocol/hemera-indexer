@@ -47,7 +47,7 @@ class PostgresItemExporter(BaseExporter):
                     columns = list(data[0].keys())
                     values = [tuple(d.values()) for d in data]
 
-                    insert_stmt = self.sql_insert_statement(
+                    insert_stmt = sql_insert_statement(
                         item_type, table, do_update, columns, where_clause=update_strategy
                     )
 
@@ -69,32 +69,30 @@ class PostgresItemExporter(BaseExporter):
             )
         )
 
-    @staticmethod
-    def sql_insert_statement(
-        domain: Type[Domain], model: Type[HemeraModel], do_update: bool, columns, where_clause=None
-    ):
-        pk_list = []
-        for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
-            if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
-                for column in constraint.columns:
-                    pk_list.append(column.name)
 
-        update_list = list(set(columns) - set(pk_list))
+def sql_insert_statement(domain: Type[Domain], model: Type[HemeraModel], do_update: bool, columns, where_clause=None):
+    pk_list = []
+    for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
+        if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
+            for column in constraint.columns:
+                pk_list.append(column.name)
 
-        if do_update:
-            insert_stmt = "INSERT INTO {}.{} ({}) VALUES %s ON CONFLICT ({}) DO UPDATE SET {}".format(
-                model.schema(),
-                model.__tablename__,
-                ", ".join(columns),
-                ", ".join(pk_list),
-                ", ".join(["{} = EXCLUDED.{}".format(column, column) for column in update_list]),
-            )
-            if where_clause:
-                insert_stmt += " WHERE {}".format(where_clause)
-        else:
-            insert_stmt = "INSERT INTO {}.{} ({}) VALUES %s ON CONFLICT DO NOTHING ".format(
-                model.schema(),
-                model.__tablename__,
-                ", ".join(columns),
-            )
-        return insert_stmt
+    update_list = list(set(columns) - set(pk_list))
+
+    if do_update:
+        insert_stmt = "INSERT INTO {}.{} ({}) VALUES %s ON CONFLICT ({}) DO UPDATE SET {}".format(
+            model.schema(),
+            model.__tablename__,
+            ", ".join(columns),
+            ", ".join(pk_list),
+            ", ".join(["{} = EXCLUDED.{}".format(column, column) for column in update_list]),
+        )
+        if where_clause:
+            insert_stmt += " WHERE {}".format(where_clause)
+    else:
+        insert_stmt = "INSERT INTO {}.{} ({}) VALUES %s ON CONFLICT DO NOTHING ".format(
+            model.schema(),
+            model.__tablename__,
+            ", ".join(columns),
+        )
+    return insert_stmt

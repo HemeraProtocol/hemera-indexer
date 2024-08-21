@@ -109,6 +109,7 @@ class ExportTokensAndTransfersJob(BaseExportJob):
 
     dependency_types = [Log]
     output_types = output_transfer_types + output_token_types
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -122,9 +123,6 @@ class ExportTokensAndTransfersJob(BaseExportJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._token_addresses = set()
         self._token_transfers = []
-
-    def _start(self):
-        super()._start()
 
     def _end(self):
         super()._end()
@@ -209,7 +207,7 @@ class ExportTokensAndTransfersJob(BaseExportJob):
             if token.get("total_supply") is not None:
                 self._collect_item(UpdateToken.type(), dict_to_dataclass(token, UpdateToken))
 
-    def _process(self):
+    def _process(self, **kwargs):
         for token_transfer_type in self.output_transfer_types:
             if token_transfer_type in self._data_buff:
                 self._data_buff[token_transfer_type.type()].sort(

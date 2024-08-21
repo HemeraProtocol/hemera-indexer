@@ -1,8 +1,8 @@
 import pytest
 
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.domain.token_transfer import ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
 from indexer.tests import LINEA_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy

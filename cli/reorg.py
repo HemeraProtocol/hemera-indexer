@@ -3,12 +3,17 @@ import logging
 import click
 
 from common.services.postgresql_service import PostgreSQLService
-from common.utils.config import init_config_setting
-from indexer.controller.fixing_controller import FixingController
+from enumeration.entity_type import ALL_ENTITY_COLLECTIONS, calculate_entity_value, generate_output_types
+from indexer.controller.reorg_controller import ReorgController
+from indexer.controller.scheduler.reorg_scheduler import ReorgScheduler
+from indexer.exporters.postgres_item_exporter import PostgresItemExporter
+from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 from indexer.utils.utils import pick_random_provider_uri
+
+exception_recorder = ExceptionRecorder()
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -70,6 +75,13 @@ from indexer.utils.utils import pick_random_provider_uri
     help="How many parameters to batch in single debug rpc request",
 )
 @click.option(
+    "--block-number",
+    show_default=True,
+    type=int,
+    envvar="BLOCK_NUMBER",
+    help="Specify the block number to reorging.",
+)
+@click.option(
     "-r",
     "--ranges",
     default=1000,
@@ -77,14 +89,6 @@ from indexer.utils.utils import pick_random_provider_uri
     type=int,
     envvar="RANGES",
     help="Specify the range limit for data fixing.",
-)
-@click.option(
-    "--batch-size",
-    default=10,
-    show_default=True,
-    type=int,
-    envvar="BATCH_SIZE",
-    help="How many parameters to batch in single request",
 )
 @click.option(
     "--log-file",
@@ -95,7 +99,7 @@ from indexer.utils.utils import pick_random_provider_uri
     help="Log file",
 )
 @click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE", help="Cache")
-def fixing(
+def reorg(
     provider_uri,
     debug_provider_uri,
     postgres_url,
@@ -116,19 +120,33 @@ def fixing(
     logging.info("Using debug provider " + debug_provider_uri)
 
     # build postgresql service
-    service_url = verify_db_connection_url(postgres_url)
-    # init_config_setting(db_url=service_url, rpc_endpoint=provider_uri)
-    service = PostgreSQLService(service_url, db_version=db_version)
+    if postgres_url:
+        service = PostgreSQLService(postgres_url, db_version=db_version)
+        config = {"db_service": service}
+        exception_recorder.init_pg_service(service)
+    else:
+        logging.error("No postgres url provided. Exception recorder will not be useful.")
+        exit(1)
 
-    controller = FixingController(
-        service=service,
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=batch_size > 1)),
-        batch_web3_debug_provider=ThreadLocalProxy(
-            lambda: get_provider_from_uri(debug_provider_uri, batch=debug_batch_size > 1)
-        ),
-        ranges=ranges,
+    entity_types = calculate_entity_value(",".join(ALL_ENTITY_COLLECTIONS))
+    output_types = list(generate_output_types(entity_types))
+
+    job_scheduler = ReorgScheduler(
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
+        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
+        item_exporters=PostgresItemExporter(config["db_service"]),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
+        required_output_types=output_types,
+        config=config,
+        cache=cache,
+    )
+
+    controller = ReorgController(
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
+        job_scheduler=job_scheduler,
+        ranges=ranges,
+        config=config,
     )
 
     controller.action(block_number=block_number)

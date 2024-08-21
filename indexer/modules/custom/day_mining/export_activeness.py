@@ -67,7 +67,7 @@ class ExportAllFeatureDayMiningActivenessJob(ExtensionJob):
         result = ["0x" + row.address.hex() for row in contracts]
         return result
 
-    def _process(self):
+    def _process(self, **kwargs):
         current_batch_address_block_number_stats = defaultdict(
             lambda: defaultdict(
                 lambda: {

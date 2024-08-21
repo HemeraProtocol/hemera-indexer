@@ -95,6 +95,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
         ERC1155TokenIdDetail,
         UpdateERC1155TokenIdDetail,
     ]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -105,9 +106,6 @@ class ExportTokenIdInfosJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
         token_id_info = generate_token_id_info(
@@ -122,7 +120,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
         for item in items:
             self._collect_item(item.type(), item)
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[UpdateERC721TokenIdDetail.type()].sort(
             key=lambda x: (x.token_address, x.token_id, x.block_number)
         )

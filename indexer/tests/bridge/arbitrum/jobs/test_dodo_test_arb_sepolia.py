@@ -4,30 +4,6 @@
 # @Author  will
 # @File  test_arb_eth.py
 # @Brief
-from dataclasses import asdict
-
-import pytest
-
-from enumeration.entity_type import EntityType
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
-from indexer.modules.bridge.domain.arbitrum import (
-    ArbitrumL1ToL2TransactionOnL1,
-    ArbitrumL1ToL2TransactionOnL2,
-    ArbitrumL2ToL1TransactionOnL1,
-    ArbitrumL2ToL1TransactionOnL2,
-    ArbitrumStateBatchConfirmed,
-    ArbitrumStateBatchCreated,
-    ArbitrumTransactionBatch,
-)
-from indexer.tests import (
-    ARBITRUM_PUBLIC_NODE_RPC_URL,
-    ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL,
-    DODO_TESTNET_PUBLIC_NODE_RPC_URL,
-    ETHEREUM_PUBLIC_NODE_RPC_URL,
-)
-from indexer.utils.provider import get_provider_from_uri
-from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
 """
 DODO

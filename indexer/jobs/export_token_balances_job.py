@@ -62,6 +62,7 @@ class TokenBalanceParam:
 class ExportTokenBalancesJob(BaseExportJob):
     dependency_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [TokenBalance, CurrentTokenBalance]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -72,9 +73,6 @@ class ExportTokenBalancesJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
 
@@ -89,7 +87,7 @@ class ExportTokenBalancesJob(BaseExportJob):
         for token_balance in token_balances:
             self._collect_item(TokenBalance.type(), dict_to_dataclass(token_balance, TokenBalance))
 
-    def _process(self):
+    def _process(self, **kwargs):
         if TokenBalance.type() in self._data_buff:
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 

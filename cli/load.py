@@ -5,7 +5,7 @@ import click
 
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
-from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.controller.stream_controller import StreamController
 from indexer.domain import Domain
 from indexer.exporters.item_exporter import create_item_exporters
@@ -284,22 +284,21 @@ def load(
             raise click.ClickException("No output types provided")
         output_types = list(parse_output_types)
 
-    stream_dispatcher = StreamDispatcher(
-        service=config.get("db_service", None),
+    job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
         item_exporters=create_item_exporters(output, config),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
-        required_output_types=output_types,
         config=config,
+        required_output_types=output_types,
         cache=cache,
     )
 
     controller = StreamController(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
-        job_dispatcher=stream_dispatcher,
+        job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
     )
 
