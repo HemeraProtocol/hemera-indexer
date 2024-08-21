@@ -21,7 +21,33 @@ from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordUniswapV3Token,
 )
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
+from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
+from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
+    MerchantMoeErc1155TokenCurrentHolding,
+    MerchantMoeErc1155TokenCurrentSupply,
+    MerchantMoeErc1155TokenHolding,
+    MerchantMoeErc1155TokenSupply,
+)
+from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin
+from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import StakedFBTCDetail
+from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
+from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
+    UniswapV2CurrentLiquidityHolding,
+    UniswapV2LiquidityHolding,
+    UniswapV2Pool,
+    UniswapV2PoolCurrentReserves,
+    UniswapV2PoolCurrentTotalSupply,
+    UniswapV2PoolReserves,
+    UniswapV2PoolTotalSupply,
+)
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Pool,
+    UniswapV3PoolCurrentPrice,
+    UniswapV3PoolPrice,
+    UniswapV3Token,
+    UniswapV3TokenCurrentStatus,
+    UniswapV3TokenDetail,
+)
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -39,7 +65,11 @@ class EntityType(IntFlag):
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
-    ADDRESS_INDEX = 1 << 7
+    MANTLE_20 = 1 << 7
+    UNISWAP_V2 = 1 << 8
+    STAKED_FBTC = 1 << 9
+    MERCHANT = 1 << 10
+    ADDRESS_INDEX = 1 << 11
 
     @staticmethod
     def combine_all_entity_types():
@@ -99,10 +129,15 @@ def generate_output_types(entity_types):
         yield UpdateBlockInternalCount
 
     if entity_types & EntityType.UNISWAP_V3:
+        yield ERC721TokenTransfer
+        yield Token
         yield UniswapV3Pool
         yield UniswapV3Token
-        yield AllFeatureValueRecordUniswapV3Pool
-        yield AllFeatureValueRecordUniswapV3Token
+        yield UniswapV3PoolPrice
+        yield UniswapV3TokenDetail
+        yield UniswapV3PoolCurrentPrice
+        yield UniswapV3TokenCurrentStatus
+        yield Log
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult
@@ -128,5 +163,46 @@ def generate_output_types(entity_types):
         yield UpdateToken
         yield TokenBalance
         yield CurrentTokenBalance
-        yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
+
+    if entity_types & EntityType.MANTLE_20:
+        yield Block
+        yield Transaction
+        yield ERC20TokenTransfer
+        yield Token
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
+        yield Erc20TotalSupply
+        yield Erc20TokenHolding
+    if entity_types & EntityType.UNISWAP_V2:
+        yield UniswapV2Pool
+        yield UniswapV2PoolTotalSupply
+        yield UniswapV2PoolCurrentTotalSupply
+        yield UniswapV2PoolReserves
+        yield UniswapV2PoolCurrentReserves
+        yield UniswapV2LiquidityHolding
+        yield UniswapV2CurrentLiquidityHolding
+        yield Token
+    if entity_types & EntityType.STAKED_FBTC:
+        yield Block
+        yield Transaction
+        yield Log
+        yield ERC20TokenTransfer
+        yield Token
+        yield UpdateToken
+        yield StakedFBTCDetail
+
+    if entity_types & EntityType.MERCHANT:
+        yield Block
+        yield Transaction
+        yield Log
+        yield ERC1155TokenTransfer
+        yield Token
+        yield UpdateToken
+        yield MerchantMoeErc1155TokenHolding
+        yield MerchantMoeErc1155TokenCurrentHolding
+        yield MerchantMoeErc1155TokenSupply
+        yield MerchantMoeErc1155TokenCurrentSupply
+        yield MerChantMoeTokenBin
+        yield MerChantMoeTokenCurrentBin

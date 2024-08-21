@@ -5,7 +5,7 @@ import os
 import threading
 from collections import defaultdict
 
-from indexer.domain.block_ts_mapper import BlockTsMapper
+from indexer.domain.block import Block
 from indexer.domain.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
@@ -21,7 +21,7 @@ FEATURE_ID = FeatureType.BLUE_CHIP_HOLDING.value
 
 
 class ExportBlueChipHoldersJob(FilterTransactionDataJob):
-    dependency_types = [TokenBalance, BlockTsMapper]
+    dependency_types = [TokenBalance, Block]
     output_types = [AllFeatureValueRecordBlueChipHolders, BlueChipHolder]
 
     def __init__(self, **kwargs):
@@ -140,7 +140,7 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
         return result
 
     def _collect_current_holding(self):
-        blocks = self._data_buff[BlockTsMapper.type()]
+        blocks = self._data_buff[Block.type()]
         if blocks is None or len(blocks) == 0:
             return
         last_block = blocks[-1]
