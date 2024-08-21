@@ -6,36 +6,27 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class FeatureErc1155TokenSupplyRecords(HemeraModel):
-    __tablename__ = "feature_erc1155_token_supply_records"
+class FeatureErc1155TokenCurrentSupplyStatus(HemeraModel):
+    __tablename__ = "feature_erc1155_token_current_supply_status"
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
-    called_block_timestamp = Column(BIGINT, primary_key=True)
-    called_block_number = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(BIGINT)
+    block_number = Column(BIGINT)
 
     total_supply = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
 
-    __table_args__ = (
-        PrimaryKeyConstraint("token_address", "token_id", "called_block_timestamp", "called_block_number"),
-    )
+    __table_args__ = (PrimaryKeyConstraint("token_address", "token_id"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                "domain": "MerchantMoeErc1155TokenSupply",
+                "domain": "MerchantMoeErc1155TokenCurrentSupply",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > feature_erc1155_token_current_supply_status.block_number",
                 "converter": general_converter,
             }
         ]
-
-
-Index(
-    "feature_erc1155_token_supply_token_block_desc_index",
-    desc(FeatureErc1155TokenSupplyRecords.token_address),
-    desc(FeatureErc1155TokenSupplyRecords.called_block_timestamp),
-)

@@ -4,7 +4,7 @@ from indexer.domain import Domain, FilterData
 
 
 @dataclass
-class Erc1155TokenHolding(FilterData):
+class MerchantMoeErc1155TokenHolding(FilterData):
     token_address: str
     wallet_address: str
     token_id: int
@@ -14,9 +14,28 @@ class Erc1155TokenHolding(FilterData):
 
 
 @dataclass
-class Erc1155TokenSupply(FilterData):
+class MerchantMoeErc1155TokenCurrentHolding(FilterData):
+    token_address: str
+    wallet_address: str
+    token_id: int
+    balance: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class MerchantMoeErc1155TokenSupply(FilterData):
     token_address: str
     token_id: int
     total_supply: int
     called_block_number: int
     called_block_timestamp: int
+
+
+@dataclass
+class MerchantMoeErc1155TokenCurrentSupply(FilterData):
+    token_address: str
+    token_id: int
+    total_supply: int
+    block_number: int
+    block_timestamp: int

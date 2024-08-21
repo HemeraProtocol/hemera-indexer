@@ -17,3 +17,10 @@ ABI_LIST = [
         "type": "function",
     },
 ]
+
+TOKEN_ASSET_DICT = {
+    "0x3880233e78966eb13a9c2881d5f162d646633178": {
+        "getTokenX": "0xc96de26018a54d51c097160568752c4e3bd6c364",
+        "getTokenY": "0xcda86a272531e8640cd7f1a92c01839911b90bb0",
+    }
+}

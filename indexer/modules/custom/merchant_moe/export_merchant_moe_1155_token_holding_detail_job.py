@@ -18,8 +18,13 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.merchant_moe import constants
-from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import Erc1155TokenHolding, Erc1155TokenSupply
-from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin
+from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
+    MerchantMoeErc1155TokenCurrentHolding,
+    MerchantMoeErc1155TokenCurrentSupply,
+    MerchantMoeErc1155TokenHolding,
+    MerchantMoeErc1155TokenSupply,
+)
+from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -31,7 +36,14 @@ FEATURE_ID = FeatureType.MERCHANT_MOE_1155_LIQUIDITY.value
 
 class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
     dependency_types = [TokenBalance]
-    output_types = [Erc1155TokenHolding, Erc1155TokenSupply, MerChantMoeTokenBin]
+    output_types = [
+        MerchantMoeErc1155TokenHolding,
+        MerchantMoeErc1155TokenCurrentHolding,
+        MerchantMoeErc1155TokenSupply,
+        MerchantMoeErc1155TokenCurrentSupply,
+        MerChantMoeTokenBin,
+        MerChantMoeTokenCurrentBin,
+    ]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -85,16 +97,34 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         if token_address not in self._need_collected_list:
             return
         need_call_list = []
+        current_token_holding = {}
         for token_balance in token_balances[token_address]:
             token_address = token_balance.token_address
+            block_number = token_balance.block_number
+            block_timestamp = token_balance.block_timestamp
+            token_id = token_balance.token_id
             need_call_list.append(
                 {
-                    "block_number": token_balance["block_number"],
-                    "block_timestamp": token_balance["block_timestamp"],
-                    "token_id": token_balance["token_id"],
+                    "block_number": block_number,
+                    "block_timestamp": block_timestamp,
+                    "token_id": token_id,
                 }
             )
-            self._collect_item(Erc1155TokenHolding.type(), parse_balance_to_holding(token_balance))
+            self._collect_item(MerchantMoeErc1155TokenHolding.type(), parse_balance_to_holding(token_balance))
+
+            key = token_id
+            if key not in current_token_holding or block_number > current_token_holding[key].block_number:
+                current_token_holding[key] = MerchantMoeErc1155TokenCurrentHolding(
+                    token_address=token_balance.token_address,
+                    wallet_address=token_balance.address,
+                    token_id=token_id,
+                    balance=token_balance.balance,
+                    block_number=block_number,
+                    block_timestamp=block_timestamp,
+                )
+        for data in current_token_holding.values():
+            self._collect_item(MerchantMoeErc1155TokenCurrentHolding.type(), data)
+
         total_supply_dtos = batch_get_total_supply(
             self._web3,
             self._batch_web3_provider.make_request,
@@ -111,29 +141,76 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             self._is_batch,
             constants.ABI_LIST,
         )
+        current_total_supply_dict = {}
+        current_token_bin_dict = {}
         for data in total_bin_dtos:
-            common_data = {
+            token_id = data["token_id"]
+            block_number = data["block_number"]
+            block_timestamp = data["block_timestamp"]
+            total_supply = data["totalSupply"]
+            reserve0_bin = data["reserve0_bin"]
+            reserve1_bin = data["reserve1_bin"]
+            common_token_data = {
                 "token_address": token_address,
-                "token_id": data["token_id"],
-                "called_block_number": data["block_number"],
-                "called_block_timestamp": data["block_timestamp"],
+                "token_id": token_id,
             }
-            erc1155_supply = Erc1155TokenSupply(**common_data, total_supply=data["totalSupply"])
-            self._collect_item(Erc1155TokenSupply, erc1155_supply)
-            merchant_moe_bin = MerChantMoeTokenBin(
-                **common_data, reserve0_bin=data["reserve0_bin"], reserve1_bin=data["reserve1_bin"]
+            common_current_block_data = {
+                "block_number": block_number,
+                "block_timestamp": block_timestamp,
+            }
+            common_record_block_data = {
+                "called_block_number": block_number,
+                "called_block_timestamp": block_timestamp,
+            }
+
+            key = token_id
+            if key not in current_total_supply_dict or block_number > current_total_supply_dict[key].block_number:
+                current_total_supply_dict[key] = MerchantMoeErc1155TokenCurrentSupply(
+                    **common_token_data,
+                    **common_current_block_data,
+                    total_supply=total_supply,
+                )
+            if key not in current_token_bin_dict or block_number > current_token_bin_dict[key].block_number:
+                current_token_bin_dict[key] = MerChantMoeTokenCurrentBin(
+                    **common_token_data,
+                    **common_current_block_data,
+                    reserve0_bin=reserve0_bin,
+                    reserve1_bin=reserve1_bin,
+                )
+            self._collect_item(
+                MerchantMoeErc1155TokenSupply.type(),
+                MerchantMoeErc1155TokenSupply(
+                    **common_token_data,
+                    **common_record_block_data,
+                    total_supply=total_supply,
+                ),
             )
-            self._collect_item(MerChantMoeTokenBin, merchant_moe_bin)
+            self._collect_item(
+                MerChantMoeTokenBin.type(),
+                MerChantMoeTokenBin(
+                    **common_token_data,
+                    **common_record_block_data,
+                    reserve0_bin=reserve0_bin,
+                    reserve1_bin=reserve1_bin,
+                ),
+            )
+        for data in current_total_supply_dict.values():
+            self._collect_item(MerchantMoeErc1155TokenCurrentSupply.type(), data)
+        for data in current_token_bin_dict.values():
+            self._collect_item(MerChantMoeTokenCurrentBin.type(), data)
 
     def _process(self):
 
-        self._data_buff[Erc1155TokenHolding.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[Erc1155TokenSupply.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[MerchantMoeErc1155TokenHolding.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[MerchantMoeErc1155TokenSupply.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[MerChantMoeTokenBin.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[MerchantMoeErc1155TokenCurrentSupply.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoeTokenCurrentBin.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerchantMoeErc1155TokenCurrentHolding.type()].sort(key=lambda x: x.block_number)
 
 
 def parse_balance_to_holding(token_balance: TokenBalance):
-    return Erc1155TokenHolding(
+    return MerchantMoeErc1155TokenHolding(
         token_address=token_balance.token_address,
         wallet_address=token_balance.address,
         token_id=token_balance.token_id,

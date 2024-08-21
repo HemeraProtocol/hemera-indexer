@@ -30,7 +30,7 @@ class FeatureErc1155TokenHoldings(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "Erc1155TokenHolding",
+                "domain": "MerchantMoeErc1155TokenHolding",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

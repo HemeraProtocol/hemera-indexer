@@ -46,7 +46,7 @@ class StakedFBTC(Resource):
             contract_address = "0x" + holding.contract_address.hex()
             total_amount = holding.total_amount
             protocol_id = holding.protocol_id
-            token_amount = total_amount / (10 ** erc20_data.decimals)
+            token_amount = total_amount / (10**erc20_data.decimals)
             result.append(
                 {
                     "protocol_id": protocol_id,

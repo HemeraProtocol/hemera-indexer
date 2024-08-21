@@ -16,6 +16,13 @@ from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
+from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
+    MerchantMoeErc1155TokenCurrentHolding,
+    MerchantMoeErc1155TokenCurrentSupply,
+    MerchantMoeErc1155TokenHolding,
+    MerchantMoeErc1155TokenSupply,
+)
+from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import StakedFBTCDetail
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
 from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
@@ -53,6 +60,7 @@ class EntityType(IntFlag):
     MANTLE_20 = 1 << 7
     UNISWAP_V2 = 1 << 8
     STAKED_FBTC = 1 << 9
+    MERCHANT = 1 << 10
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -164,3 +172,17 @@ def generate_output_types(entity_types):
         yield Token
         yield UpdateToken
         yield StakedFBTCDetail
+
+    if entity_types & EntityType.MERCHANT:
+        yield Block
+        yield Transaction
+        yield Log
+        yield ERC1155TokenTransfer
+        yield Token
+        yield UpdateToken
+        yield MerchantMoeErc1155TokenHolding
+        yield MerchantMoeErc1155TokenCurrentHolding
+        yield MerchantMoeErc1155TokenSupply
+        yield MerchantMoeErc1155TokenCurrentSupply
+        yield MerChantMoeTokenBin
+        yield MerChantMoeTokenCurrentBin

@@ -11,3 +11,13 @@ class MerChantMoeTokenBin(FilterData):
     reserve1_bin: int
     called_block_number: int
     called_block_timestamp: int
+
+
+@dataclass
+class MerChantMoeTokenCurrentBin(FilterData):
+    token_address: str
+    token_id: int
+    reserve0_bin: int
+    reserve1_bin: int
+    block_number: int
+    block_timestamp: int
