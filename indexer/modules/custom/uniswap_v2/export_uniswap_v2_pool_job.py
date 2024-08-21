@@ -211,7 +211,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
                 continue
             self._collect_item(UniswapV2CurrentLiquidityHolding.type(), parse_current_to_holding(current_token_balance))
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[UniswapV2Pool.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[UniswapV2PoolTotalSupply.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[UniswapV2PoolReserves.type()].sort(key=lambda x: x.called_block_number)

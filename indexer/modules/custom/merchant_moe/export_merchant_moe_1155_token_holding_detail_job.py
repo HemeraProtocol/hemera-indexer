@@ -196,7 +196,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         for data in current_token_bin_dict.values():
             self._collect_item(MerChantMoeTokenCurrentBin.type(), data)
 
-    def _process(self):
+    def _process(self, **kwargs):
 
         self._data_buff[MerchantMoeErc1155TokenHolding.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[MerchantMoeErc1155TokenSupply.type()].sort(key=lambda x: x.called_block_number)

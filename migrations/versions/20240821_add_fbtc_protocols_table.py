@@ -1,8 +1,8 @@
 """add fbtc protocols table
 
-Revision ID: d880d2f1a3c3
+Revision ID: d4a2cf643a3d
 Revises: bf51d23c852f
-Create Date: 2024-08-21 18:23:39.966117
+Create Date: 2024-08-21 19:03:13.156104
 
 """
 
@@ -13,7 +13,7 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = "d880d2f1a3c3"
+revision: str = "d4a2cf643a3d"
 down_revision: Union[str, None] = "bf51d23c852f"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -103,6 +103,17 @@ def upgrade() -> None:
         "feature_erc1155_token_current_holdings",
         [sa.text("wallet_address DESC"), sa.text("block_timestamp DESC")],
         unique=False,
+    )
+    op.create_table(
+        "feature_erc1155_token_current_supply_status",
+        sa.Column("token_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("token_id", sa.NUMERIC(precision=100), nullable=False),
+        sa.Column("block_timestamp", sa.BIGINT(), nullable=True),
+        sa.Column("block_number", sa.BIGINT(), nullable=True),
+        sa.Column("total_supply", sa.NUMERIC(precision=100), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.PrimaryKeyConstraint("token_address", "token_id"),
     )
     op.create_table(
         "feature_erc1155_token_holdings",
@@ -500,6 +511,7 @@ def downgrade() -> None:
     )
     op.drop_index("feature_erc1155_token_holding_token_block_desc_index", table_name="feature_erc1155_token_holdings")
     op.drop_table("feature_erc1155_token_holdings")
+    op.drop_table("feature_erc1155_token_current_supply_status")
     op.drop_index(
         "feature_erc1155_token_current_holdings_wallet_block_desc_index",
         table_name="feature_erc1155_token_current_holdings",

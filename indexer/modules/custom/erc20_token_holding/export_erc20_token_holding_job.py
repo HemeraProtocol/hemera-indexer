@@ -107,7 +107,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
                 continue
             self._collect_item(Erc20CurrentTokenHolding.type(), parse_current_to_holding(current_token_balance))
 
-    def _process(self):
+    def _process(self, **kwargs):
 
         self._data_buff[Erc20TokenHolding.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[Erc20CurrentTokenHolding.type()].sort(key=lambda x: x.block_number)

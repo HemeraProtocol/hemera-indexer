@@ -126,7 +126,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
                     ),
                 )
 
-    def _process(self):
+    def _process(self, **kwargs):
 
         self._data_buff[Erc20TotalSupply.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[Erc20CurrentTotalSupply.type()].sort(key=lambda x: x.block_number)
