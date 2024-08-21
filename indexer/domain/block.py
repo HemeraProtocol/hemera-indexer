@@ -41,6 +41,7 @@ class Block(Domain):
                 block_number=to_int(hexstr=block_dict["number"]),
             )
             for transaction in block_dict.get("transactions", [])
+            if transaction
         ]
 
         return Block(

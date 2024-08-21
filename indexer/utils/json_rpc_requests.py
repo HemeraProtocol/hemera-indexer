@@ -62,6 +62,7 @@ def generate_eth_call_json_rpc_without_block_number(params):
             method="eth_call",
             params=[
                 {"to": param["param_to"], "data": param["param_data"]},
+                "latest",
             ],
             request_id=param["request_id"],
         )
