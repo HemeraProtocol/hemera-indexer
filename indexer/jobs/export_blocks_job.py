@@ -6,6 +6,7 @@ from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
+from indexer.jobs.export_token_balances_job import calculate_execution_time
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
@@ -43,6 +44,7 @@ class ExportBlocksJob(BaseExportJob):
     def _end(self):
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
+    @calculate_execution_time
     def _collect(self, **kwargs):
 
         self._start_block = int(kwargs["start_block"])
@@ -75,6 +77,7 @@ class ExportBlocksJob(BaseExportJob):
         self._batch_work_executor.execute(blocks, self._collect_batch, total_items=total_items)
         self._batch_work_executor.wait()
 
+    @calculate_execution_time
     def _collect_batch(self, block_number_batch):
         results = blocks_rpc_requests(self._batch_web3_provider.make_request, block_number_batch, self._is_batch)
         for block_rpc_dict in results:

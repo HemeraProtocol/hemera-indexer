@@ -20,6 +20,7 @@ from indexer.domain.token_transfer import (
 )
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
+from indexer.jobs.export_token_id_infos_job import calculate_execution_time
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
@@ -131,6 +132,7 @@ class ExportTokensAndTransfersJob(BaseExportJob):
         self._token_addresses.clear()
         self._token_transfers.clear()
 
+    @calculate_execution_time
     def _collect(self, **kwargs):
         self._batch_work_executor.execute(
             self._data_buff[Log.type()],
@@ -187,6 +189,7 @@ class ExportTokensAndTransfersJob(BaseExportJob):
         )
         self._batch_work_executor.wait()
 
+    @calculate_execution_time
     def _extract_batch(self, logs):
         token_transfers = extract_tokens_and_token_transfers(logs)
         for transfer in token_transfers:

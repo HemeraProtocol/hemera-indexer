@@ -8,6 +8,7 @@ from indexer.domain.receipt import Receipt
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
+from indexer.jobs.export_token_id_infos_job import calculate_execution_time
 from indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc
 from indexer.utils.utils import rpc_response_batch_to_results
 
@@ -33,12 +34,14 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
     def _start(self):
         super()._start()
 
+    @calculate_execution_time
     def _collect(self, **kwargs):
 
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
         self._batch_work_executor.execute(transactions, self._collect_batch, total_items=len(transactions))
         self._batch_work_executor.wait()
 
+    @calculate_execution_time
     def _collect_batch(self, transactions: List[Transaction]):
         transaction_hash_mapper = {transaction.hash: transaction for transaction in transactions}
         results = receipt_rpc_requests(
