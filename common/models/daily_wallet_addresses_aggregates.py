@@ -1,4 +1,4 @@
-from sqlalchemy import DATE, Column, Computed
+from sqlalchemy import DATE, Column, Computed, Index
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC
 
 from common.models import HemeraModel
@@ -49,3 +49,6 @@ class DailyWalletAddressesAggregates(HemeraModel):
     contract_deployed_cnt = Column(INTEGER, default=0)
     from_address_unique_interacted_cnt = Column(INTEGER, default=0)
     to_address_unique_interacted_cnt = Column(INTEGER, default=0)
+
+# could be replaced by partition in case of huge amount data
+Index("block_date_index", DailyWalletAddressesAggregates.block_date)
