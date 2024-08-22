@@ -15,7 +15,7 @@ class AddressNftTransfers(HemeraModel):
     transaction_hash = Column(BYTEA)
     block_timestamp = Column(TIMESTAMP, primary_key=True)
     block_hash = Column(BYTEA, primary_key=True)
-    token_address = Column(TEXT)
+    token_address = Column(BYTEA)
     related_address = Column(BYTEA)
     transfer_type = Column(SMALLINT)
     token_id = Column(NUMERIC(100), primary_key=True)
