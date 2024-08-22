@@ -52,4 +52,4 @@ class PeriodWalletAddressesAggregates(HemeraModel):
 
 
 # could be replaced by partition in case of huge amount data
-Index("period_date_index", PeriodWalletAddressesAggregates.period_date)
+Index("period_wallet_addresses_aggregates_period_date_index", PeriodWalletAddressesAggregates.period_date)
