@@ -28,7 +28,7 @@ WITH today_table AS (SELECT *
                                                 group by 1)
 
 SELECT COALESCE(s1.address, s2.address)                                    AS address,
-       date('{end_date}')                                                  AS block_date,
+       date('{end_date}')                                                  AS period_date,
        COALESCE(s1.txn_in_cnt, 0) + COALESCE(s2.txn_in_cnt, 0)             AS txn_in_cnt,
        COALESCE(s1.txn_out_cnt, 0) + COALESCE(s2.txn_out_cnt, 0)           AS txn_out_cnt,
        COALESCE(s1.txn_in_value, 0) + COALESCE(s2.txn_in_value, 0)         AS txn_in_value,

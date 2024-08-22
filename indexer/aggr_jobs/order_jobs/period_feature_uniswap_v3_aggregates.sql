@@ -1,13 +1,57 @@
+begin;
+delete
+from period_feature_uniswap_v3_token_details
+where period_date >= '{start_date}'
+  and period_date < '{end_date}';
 
+with today_table as (select *
+                     from daily_feature_uniswap_v3_token_details
+                     where block_date = '{end_date}'),
+     yesterday_table as (select *
+                         from period_feature_uniswap_v3_token_details
+                         where period_date = '{start_date}')
 
+insert
+into period_feature_uniswap_v3_token_details
+select COALESCE(s1.nft_address, s2.nft_address)              AS nft_address,
+       date('{end_date}')                                    AS period_date,
+       COALESCE(s1.token_id, s2.token_id)                    AS token_id,
+       COALESCE(s1.wallet_address, s2.wallet_address)        AS wallet_address,
+       COALESCE(s1.pool_address, s2.pool_address)            AS pool_address,
+       COALESCE(s1.liquidity, 0) + COALESCE(s2.liquidity, 0) AS liquidity
+from today_table s1
+         full join
+     yesterday_table s2
+     on s1.nft_address = s2.nft_address and s1.token_id = s2.token_id;
 
+delete
+from period_feature_uniswap_v3_pool_prices
+where period_date >= '{start_date}'
+  and period_date < '{end_date}';
 
+with today_table as (select *
+                     from daily_feature_uniswap_v3_pool_prices
+                     where block_date = '{end_date}'),
+     yesterday_table as (select *
+                         from period_feature_uniswap_v3_pool_prices
+                         where period_date = '{start_date}')
 
+insert
+into period_feature_uniswap_v3_pool_prices
+select COALESCE(s1.pool_address, s2.pool_address)                      AS pool_address,
+       date('{end_date}')                                              AS period_date,
+       COALESCE(s1.sqrt_price_x96, 0) + COALESCE(s2.sqrt_price_x96, 0) AS liquidity
+from today_table s1
+         full join
+     yesterday_table s2
+     on s1.pool_address = s2.pool_address;
 
-
-
-
-with detail_table as (SELECT d1.wallet_address,
+delete
+from period_feature_uniswap_v3_wallet_address_amount
+where period_date >= '{start_date}'
+  and period_date < '{end_date}';
+with detail_table as (SELECT d1.period_date,
+                             d1.wallet_address,
                              d1.nft_address,
                              d1.liquidity,
                              d1.pool_address,
@@ -17,12 +61,19 @@ with detail_table as (SELECT d1.wallet_address,
                              d3.tick_upper,
                              d4.token0_address,
                              d4.token1_address,
-                             d5.decimals as toekn0_decimals,
-                             d5.symbol   as token0_symbol,
-                             d6.decimals as toekn1_decimals,
-                             d6.symbol   as token1_symbol
-                      FROM daily_feature_uniswap_v3_token_details d1
-                               inner join daily_feature_uniswap_v3_pool_prices d2 on
+                             d5.decimals                                                 as toekn0_decimals,
+                             d5.symbol                                                   as token0_symbol,
+                             d5.price                                                    as token0_price,
+                             d6.decimals                                                 as toekn1_decimals,
+                             d6.symbol                                                   as token1_symbol,
+                             d6.price                                                    as token1_price,
+                             sqrt(EXP(tick_lower * LN(1.0001)))                          as sqrt_ratio_a,
+                             sqrt(EXP(tick_upper * LN(1.0001)))                          as sqrt_ratio_b,
+                             FLOOR(LOG((sqrt_price_x96 / pow(2, 96)) ^ 2) / LOG(1.0001)) AS current_tick,
+                             sqrt_price_x96 / pow(2, 96)                                 as sqrt_price
+
+                      FROM period_feature_uniswap_v3_token_details d1
+                               inner join period_feature_uniswap_v3_pool_prices d2 on
                           d1.pool_address = d2.pool_address
                                inner join feature_uniswap_v3_tokens d3
                                           on d1.nft_address = d3.nft_address
@@ -32,38 +83,53 @@ with detail_table as (SELECT d1.wallet_address,
                                inner join tokens d5
                                           on d4.token0_address = d5.address
                                inner join tokens d6
-                                          on d4.token1_address = d6.address),
-
-     tick_table as (select wallet_address,
+                                          on d4.token1_address = d6.address
+                      where d1.period_date = '{end_date}'
+                        and d2.period_date = '{end_date}'),
+     tick_table as (select period_date,
+                           wallet_address,
                            nft_address,
                            token_id,
+                           token0_address,
                            token0_symbol,
                            token1_symbol,
+                           token1_address,
                            toekn0_decimals,
                            toekn1_decimals,
+                           token0_price,
+                           token1_price,
                            liquidity,
                            tick_lower,
                            tick_upper,
-                           sqrt(EXP(tick_lower * LN(1.0001)))                          as sqrt_ratio_a,
-                           sqrt(EXP(tick_upper * LN(1.0001)))                          as sqrt_ratio_b,
-                           FLOOR(LOG((sqrt_price_x96 / pow(2, 96)) ^ 2) / LOG(1.0001)) AS current_tick,
-                           sqrt_price_x96 / pow(2, 96)                                 as sqrt_price
+                           case
+                               when current_tick <= tick_lower then
+                                   FLOOR(liquidity * ((sqrt_ratio_b - sqrt_ratio_a) / (sqrt_ratio_a * sqrt_ratio_b)))
+                               when current_tick > tick_lower and current_tick < tick_upper then
+                                   FLOOR(liquidity * ((sqrt_ratio_b - sqrt_price) / (sqrt_price * sqrt_ratio_b)))
+                               else 0
+                               end / pow(10, toekn0_decimals)        AS token0_balance,
+                           case
+                               when current_tick >= tick_upper then floor(liquidity * (sqrt_ratio_b - sqrt_ratio_a))
+                               when current_tick > tick_lower and current_tick < tick_upper then
+                                   floor(liquidity * (sqrt_price - sqrt_ratio_a))
+                               else 0 end / pow(10, toekn1_decimals) AS token1_balance
                     from detail_table)
-
-select nft_address,
+insert
+into period_feature_uniswap_v3_wallet_address_amount
+select 'unisawp_v3'                  as protoco_id,
+       period_date,
+       nft_address, --contract address
+       wallet_address,
+       token0_address,
+       token1_address,
        token_id,
        token0_symbol,
        token1_symbol,
-       case
-           when current_tick <= tick_lower then
-               FLOOR(liquidity * ((sqrt_ratio_b - sqrt_ratio_a) / (sqrt_ratio_a * sqrt_ratio_b)))
-           when current_tick > tick_lower and current_tick < tick_upper then
-               FLOOR(liquidity * ((sqrt_ratio_b - sqrt_price) / (sqrt_price * sqrt_ratio_b)))
-           else 0
-           end / pow(10, toekn0_decimals)        AS amount0,
-       case
-           when current_tick >= tick_upper then floor(liquidity * (sqrt_ratio_b - sqrt_ratio_a))
-           when current_tick > tick_lower and current_tick < tick_upper then
-               floor(liquidity * (sqrt_price - sqrt_ratio_a))
-           else 0 end / pow(10, toekn1_decimals) AS amount1
-from tick_table
+       token0_price,
+       token1_price,
+       token1_symbol,
+       token0_balance * token0_price as token0_price_value,
+       token1_balance * token1_price as token1_price_value
+from tick_table;
+-- add json table
+commit

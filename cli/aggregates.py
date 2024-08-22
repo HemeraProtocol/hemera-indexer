@@ -61,7 +61,7 @@ def aggregates(postgres_url, provider_uri, start_date, end_date, date_batch_size
 
     db_service = PostgreSQLService(postgres_url)
 
-    # check_data_completeness(db_service, provider_uri, end_date)
+    check_data_completeness(db_service, provider_uri, end_date)
 
     config = {"db_service": db_service}
     dispatcher = AggregatesDispatcher(config)
