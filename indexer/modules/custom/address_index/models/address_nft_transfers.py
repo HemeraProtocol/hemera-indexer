@@ -13,14 +13,14 @@ class AddressNftTransfers(HemeraModel):
     block_number = Column(INT, primary_key=True)
     log_index = Column(INT, primary_key=True)
     transaction_hash = Column(BYTEA)
-    block_timestamp = Column(TIMESTAMP)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
     block_hash = Column(BYTEA)
     token_address = Column(TEXT)
     the_other_address = Column(BYTEA)
     transfer_type = Column(SMALLINT)
     token_id = Column(NUMERIC(100))
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
     __table_args__ = (PrimaryKeyConstraint("address", "block_timestamp", "block_number", "log_index"),)
 

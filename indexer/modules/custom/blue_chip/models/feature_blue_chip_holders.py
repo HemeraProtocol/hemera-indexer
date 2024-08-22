@@ -17,8 +17,8 @@ class FeatureBlueChipHolders(HemeraModel):
     called_block_number = Column(BIGINT)
     called_block_timestamp = Column(TIMESTAMP)
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
     @staticmethod
     def model_domain_mapping():

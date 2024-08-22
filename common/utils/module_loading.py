@@ -25,15 +25,18 @@ def import_string(dotted_path: str):
         raise ImportError(f'Module "{module_path}" does not define a "{class_name}" attribute/class')
 
 
-def scan_subclass_by_path_patterns(path_patterns: List[str], base_class: Type[object]) -> Dict[str, dict]:
+def scan_subclass_by_path_patterns(
+    path_patterns: List[str], base_class: Type[object], exclude_path=[]
+) -> Dict[str, dict]:
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+    exclude_path = [os.path.join(project_root, path) for path in exclude_path]
 
     mapping = {}
     for model_pattern in path_patterns:
         pattern_path = os.path.join(project_root, model_pattern)
         for models_dir in glob.glob(pattern_path):
-            if os.path.isdir(models_dir):
+            if os.path.isdir(models_dir) and models_dir not in exclude_path:
                 for file in os.listdir(models_dir):
                     if file.endswith(".py") and file != "__init__.py":
                         module_file_path = os.path.join(models_dir, file)

@@ -26,8 +26,8 @@ def upgrade() -> None:
         sa.Column("block_number", sa.BIGINT(), nullable=False),
         sa.Column("address", postgresql.BYTEA(), nullable=False),
         sa.Column("value", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address"),
     )
     # ### end Alembic commands ###

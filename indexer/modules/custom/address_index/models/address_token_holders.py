@@ -12,8 +12,8 @@ class AddressTokenHolders(HemeraModel):
     address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
     balance_of = Column(NUMERIC(100))
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
     __table_args__ = (PrimaryKeyConstraint("address", "token_address"),)
 

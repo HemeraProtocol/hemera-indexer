@@ -27,8 +27,8 @@ def upgrade() -> None:
         sa.Column("block_number", sa.BIGINT(), nullable=False),
         sa.Column("address", postgresql.BYTEA(), nullable=False),
         sa.Column("value", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("block_number", "feature_id", "address"),
     )
     op.create_index(
@@ -46,8 +46,8 @@ def upgrade() -> None:
         sa.Column("fee", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("tick_spacing", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("mint_block_number", sa.BIGINT(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("nft_address", "pool_address"),
     )
     op.create_table(
@@ -59,8 +59,8 @@ def upgrade() -> None:
         sa.Column("tick_upper", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("fee", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("mint_block_number", sa.BIGINT(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("nft_address", "token_id"),
     )
     op.create_index(

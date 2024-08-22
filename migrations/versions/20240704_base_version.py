@@ -27,8 +27,8 @@ def upgrade() -> None:
         sa.Column("balance", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("address", "block_number"),
     )
@@ -41,8 +41,8 @@ def upgrade() -> None:
         sa.Column("balance", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("address", "token_address", "block_number"),
     )
@@ -80,8 +80,8 @@ def upgrade() -> None:
         sa.Column("receipts_root", postgresql.BYTEA(), nullable=True),
         sa.Column("extra_data", postgresql.BYTEA(), nullable=True),
         sa.Column("withdrawals_root", postgresql.BYTEA(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("hash"),
     )
@@ -105,8 +105,8 @@ def upgrade() -> None:
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("transaction_index", sa.INTEGER(), nullable=True),
         sa.Column("transaction_hash", postgresql.BYTEA(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("trace_id"),
     )
@@ -154,8 +154,8 @@ def upgrade() -> None:
         sa.Column("implementation_contract", postgresql.BYTEA(), nullable=True),
         sa.Column("verified_implementation_contract", postgresql.BYTEA(), nullable=True),
         sa.Column("proxy_standard", sa.VARCHAR(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("address"),
     )
@@ -168,8 +168,8 @@ def upgrade() -> None:
         sa.Column("latest_call_contract_time", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("token_address", "wallet_address", "token_id"),
     )
@@ -188,8 +188,8 @@ def upgrade() -> None:
         sa.Column("token_uri_info", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("address", "token_id"),
     )
@@ -211,8 +211,8 @@ def upgrade() -> None:
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("transaction_hash", "log_index"),
     )
@@ -241,8 +241,8 @@ def upgrade() -> None:
         sa.Column("balance_of", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("token_address", "wallet_address"),
     )
@@ -263,8 +263,8 @@ def upgrade() -> None:
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("transaction_hash", "log_index"),
     )
@@ -293,8 +293,8 @@ def upgrade() -> None:
         sa.Column("balance_of", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("token_address", "wallet_address"),
     )
@@ -311,8 +311,8 @@ def upgrade() -> None:
         sa.Column("token_owner", postgresql.BYTEA(), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("address", "token_id", "block_number"),
     )
@@ -331,8 +331,8 @@ def upgrade() -> None:
         sa.Column("token_uri_info", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("address", "token_id"),
     )
@@ -354,8 +354,8 @@ def upgrade() -> None:
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("transaction_hash", "log_index"),
     )
@@ -384,8 +384,8 @@ def upgrade() -> None:
         sa.Column("last_fixed_block_number", sa.BIGINT(), nullable=True),
         sa.Column("remain_process", sa.INTEGER(), nullable=True),
         sa.Column("job_status", sa.VARCHAR(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("job_id"),
     )
     op.create_table(
@@ -402,8 +402,8 @@ def upgrade() -> None:
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("log_index", "transaction_hash"),
     )
@@ -424,7 +424,7 @@ def upgrade() -> None:
         sa.Column("mission_type", sa.VARCHAR(), nullable=False),
         sa.Column("entity_types", sa.INTEGER(), nullable=False),
         sa.Column("last_block_number", sa.BIGINT(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("mission_type", "entity_types"),
     )
     op.create_table(
@@ -449,8 +449,8 @@ def upgrade() -> None:
         sa.Column("cmc_slug", sa.VARCHAR(), nullable=True),
         sa.Column("gecko_id", sa.VARCHAR(), nullable=True),
         sa.Column("description", sa.VARCHAR(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address"),
     )
     op.create_index("tokens_symbol_index", "tokens", ["symbol"], unique=False)
@@ -476,8 +476,8 @@ def upgrade() -> None:
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("transaction_index", sa.INTEGER(), nullable=True),
         sa.Column("transaction_hash", postgresql.BYTEA(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("trace_id"),
     )
@@ -521,8 +521,8 @@ def upgrade() -> None:
         sa.Column("exist_error", sa.BOOLEAN(), nullable=True),
         sa.Column("error", sa.TEXT(), nullable=True),
         sa.Column("revert_reason", sa.TEXT(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
         sa.PrimaryKeyConstraint("hash"),
     )
