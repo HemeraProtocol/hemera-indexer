@@ -34,6 +34,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
 class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
     output_types = [UniswapV3Pool, UniswapV3PoolPrice, UniswapV3PoolCurrentPrice]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -130,21 +131,21 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
 
         for data in prices:
             self._collect_item(UniswapV3PoolPrice.type(), data)
-            if data.called_block_number == max_block_number:
+            if data.block_number == max_block_number:
                 self._collect_item(
                     UniswapV3PoolCurrentPrice.type(),
                     UniswapV3PoolCurrentPrice(
                         nft_address=data.nft_address,
                         pool_address=data.pool_address,
                         sqrt_price_x96=data.sqrt_price_x96,
-                        block_number=data.called_block_number,
-                        block_timestamp=data.called_block_timestamp,
+                        block_number=data.block_number,
+                        block_timestamp=data.block_timestamp,
                     ),
                 )
 
     def _process(self, **kwargs):
-        self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
 
     def update_pool_prices(self, new_pool_prices):
@@ -182,8 +183,8 @@ def format_value_records(exist_pools, pool_prices, block_info):
                 nft_address=info["nft_address"],
                 pool_address=address,
                 sqrt_price_x96=pool_data["sqrtPriceX96"],
-                called_block_number=block_number,
-                called_block_timestamp=block_info[block_number],
+                block_number=block_number,
+                block_timestamp=block_info[block_number],
             )
         )
     return prices
@@ -209,7 +210,7 @@ def get_exist_pools(db_service, nft_address):
                     "token1_address": "0x" + item.token1_address.hex(),
                     "fee": item.fee,
                     "tick_spacing": item.tick_spacing,
-                    "called_block_number": item.called_block_number,
+                    "block_number": item.block_number,
                 }
 
     except Exception as e:
@@ -253,7 +254,7 @@ def update_exist_pools(
                 "fee": decoded_data["fee"],
                 "tick_spacing": decoded_data["tickSpacing"],
                 "pool_address": pool_address,
-                "called_block_number": log.block_number,
+                "block_number": log.block_number,
             }
             need_add[pool_address] = new_pool
         elif swap_topic0 == current_topic0:
@@ -323,7 +324,7 @@ def collect_swap_new_pools(
             # "fee": data["fee"],
             "tick_spacing": data["tickSpacing"],
             "pool_address": pool_address,
-            "called_block_number": data["block_number"],
+            "block_number": data["block_number"],
         }
         need_add[pool_address] = new_pool
     return need_add

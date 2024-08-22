@@ -15,11 +15,6 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.address_index.domain import *
-from indexer.modules.custom.all_features_value_record import (
-    AllFeatureValueRecordBlueChipHolders,
-    AllFeatureValueRecordUniswapV3Pool,
-    AllFeatureValueRecordUniswapV3Token,
-)
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
 from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (

@@ -19,6 +19,7 @@ FEATURE_ID = FeatureType.STAKED_FBTC_LOGS.value
 class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
     dependency_types = [Log]
     output_types = [StakedFBTCDetail]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

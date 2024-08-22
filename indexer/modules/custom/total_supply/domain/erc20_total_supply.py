@@ -8,8 +8,8 @@ from indexer.domain import Domain, FilterData
 class Erc20TotalSupply(FilterData):
     token_address: str
     total_supply: int
-    called_block_number: int
-    called_block_timestamp: int
+    block_number: int
+    block_timestamp: int
 
 
 @dataclass

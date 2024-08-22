@@ -9,8 +9,8 @@ class Erc20TokenHolding(FilterData):
     token_address: str
     wallet_address: str
     balance: int
-    called_block_number: int
-    called_block_timestamp: int
+    block_number: int
+    block_timestamp: int
 
 
 @dataclass

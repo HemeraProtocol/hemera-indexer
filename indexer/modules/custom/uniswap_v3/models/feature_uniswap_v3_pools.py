@@ -17,7 +17,7 @@ class UniswapV3Pools(HemeraModel):
 
     tick_spacing = Column(NUMERIC(100))
 
-    called_block_number = Column(BIGINT)
+    block_number = Column(BIGINT)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())

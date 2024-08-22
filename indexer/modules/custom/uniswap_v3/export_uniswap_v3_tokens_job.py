@@ -34,6 +34,7 @@ FEATURE_ID = FeatureType.UNISWAP_V3_TOKENS.value
 class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
     dependency_types = [Log, ERC721TokenTransfer, Block]
     output_types = [UniswapV3Token, UniswapV3TokenDetail, UniswapV3TokenCurrentStatus]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -135,8 +136,8 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             self._collect_item(UniswapV3TokenCurrentStatus.type(), data)
 
     def _process(self, **kwargs):
-        self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[UniswapV3TokenDetail.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV3TokenDetail.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3TokenCurrentStatus.type()].sort(key=lambda x: x.block_number)
 
 
@@ -161,8 +162,8 @@ def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, b
                 token_id=token_id,
                 wallet_address=address,
                 liquidity=liquidity,
-                called_block_number=block_number,
-                called_block_timestamp=block_info[block_number],
+                block_number=block_number,
+                block_timestamp=block_info[block_number],
             )
         )
 
@@ -267,7 +268,7 @@ def get_new_nfts(
                 tick_lower=data["tickLower"],
                 tick_upper=data["tickUpper"],
                 fee=data["fee"],
-                called_block_number=data["block_number"],
+                block_number=data["block_number"],
             )
         )
     return update_exist_tokens, result

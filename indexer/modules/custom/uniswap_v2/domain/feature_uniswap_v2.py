@@ -11,15 +11,15 @@ class UniswapV2Pool(FilterData):
     token0_address: str
     token1_address: str
     length: int
-    called_block_number: int
+    block_number: int
 
 
 @dataclass
 class UniswapV2PoolTotalSupply(FilterData):
     pool_address: str
     total_supply: int
-    called_block_number: int
-    called_block_timestamp: int
+    block_number: int
+    block_timestamp: int
 
 
 @dataclass
@@ -36,8 +36,8 @@ class UniswapV2PoolReserves(FilterData):
     reserve0: int
     reserve1: int
     block_timestamp_last: int
-    called_block_number: int
-    called_block_timestamp: int
+    block_number: int
+    block_timestamp: int
 
 
 @dataclass
@@ -55,8 +55,8 @@ class UniswapV2LiquidityHolding(FilterData):
     pool_address: str
     wallet_address: str
     balance: int
-    called_block_number: int
-    called_block_timestamp: int
+    block_number: int
+    block_timestamp: int
 
 
 @dataclass
