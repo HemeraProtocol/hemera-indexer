@@ -12,6 +12,6 @@ class AddressTokenTransfer(Domain):
     block_timestamp: int
     block_hash: str
     token_address: str
-    the_other_address: str
+    related_address: str
     transfer_type: int
     value: int

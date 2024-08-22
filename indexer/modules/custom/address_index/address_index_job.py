@@ -7,10 +7,10 @@ from typing import List, Union
 from eth_abi import abi
 
 from indexer.domain import dict_to_dataclass
-from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer
+from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseJob, ExtensionJob
 from indexer.jobs.export_token_balances_job import BALANCE_OF_ABI_FUNCTION
 from indexer.jobs.export_tokens_and_transfers_job import OWNER_OF_ABI_FUNCTION
 from indexer.modules.custom.address_index.domain.address_nft_transfer import AddressNftTransfer
@@ -55,7 +55,7 @@ class AddressNftTransferType(Enum):
     MINTER = 4
 
 
-def create_address_transaction(transaction, address, txn_type, the_other_address, transaction_fee):
+def create_address_transaction(transaction, address, txn_type, related_address, transaction_fee):
     return AddressTransaction(
         address=address,
         block_number=transaction.block_number,
@@ -64,7 +64,7 @@ def create_address_transaction(transaction, address, txn_type, the_other_address
         block_timestamp=transaction.block_timestamp,
         block_hash=transaction.block_hash,
         txn_type=txn_type,
-        the_other_address=the_other_address,
+        related_address=related_address,
         value=transaction.value,
         transaction_fee=transaction_fee,
         receipt_status=transaction.receipt.status,
@@ -119,7 +119,7 @@ def transactions_to_address_transactions(transactions: List[Transaction]):
             )
 
 
-def create_address_token_transfer(token_transfer: ERC20TokenTransfer, address, transfer_type, the_other_address):
+def create_address_token_transfer(token_transfer: ERC20TokenTransfer, address, transfer_type, related_address):
     return AddressTokenTransfer(
         address=address,
         block_number=token_transfer.block_number,
@@ -128,7 +128,7 @@ def create_address_token_transfer(token_transfer: ERC20TokenTransfer, address, t
         block_timestamp=token_transfer.block_timestamp,
         block_hash=token_transfer.block_hash,
         token_address=token_transfer.token_address,
-        the_other_address=the_other_address,
+        related_address=related_address,
         transfer_type=transfer_type,
         value=token_transfer.value,
     )
@@ -161,7 +161,9 @@ def erc20_transfers_to_address_token_transfers(transfers: List[ERC20TokenTransfe
             )
 
 
-def create_address_nft_transfer(nft_transfer: ERC721TokenTransfer, address, transfer_type, the_other_address):
+def create_address_nft_transfer(
+    nft_transfer: Union[ERC721TokenTransfer, ERC1155TokenTransfer], address, transfer_type, related_address
+):
     return AddressNftTransfer(
         address=address,
         block_number=nft_transfer.block_number,
@@ -170,13 +172,14 @@ def create_address_nft_transfer(nft_transfer: ERC721TokenTransfer, address, tran
         block_timestamp=nft_transfer.block_timestamp,
         block_hash=nft_transfer.block_hash,
         token_address=nft_transfer.token_address,
-        the_other_address=the_other_address,
+        related_address=related_address,
         transfer_type=transfer_type,
         token_id=nft_transfer.token_id,
+        value=nft_transfer.value if isinstance(nft_transfer, ERC1155TokenTransfer) else 1,
     )
 
 
-def erc721_transfers_to_address_nft_transfers(transfers: List[ERC721TokenTransfer]):
+def nft_transfers_to_address_nft_transfers(transfers: Union[List[ERC721TokenTransfer], List[ERC1155TokenTransfer]]):
     for transfer in transfers:
         assert transfer.from_address is not None
         assert transfer.to_address is not None
@@ -270,8 +273,8 @@ def extract_nft_owner_parameters(nft_transfers: List[ERC721TokenTransfer]):
     return token_parameters
 
 
-class AddressIndexerJob(BaseJob):
-    dependency_types = [Transaction, ERC20TokenTransfer, ERC721TokenTransfer]
+class AddressIndexerJob(ExtensionJob):
+    dependency_types = [Transaction, ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [
         TokenAddressNftInventory,
         AddressTransaction,
@@ -320,7 +323,10 @@ class AddressIndexerJob(BaseJob):
         self._collect_domains(list(erc20_transfers_to_address_token_transfers(token_transfers)))
 
         nft_transfers = self._get_domain(ERC721TokenTransfer)
-        self._collect_domains(list(erc721_transfers_to_address_nft_transfers(nft_transfers)))
+        self._collect_domains(list(nft_transfers_to_address_nft_transfers(nft_transfers)))
+
+        erc1155_transfers = self._get_domain(ERC1155TokenTransfer)
+        self._collect_domains(list(nft_transfers_to_address_nft_transfers(erc1155_transfers)))
 
 
 def token_owner_rpc_requests(make_requests, tokens, is_batch):

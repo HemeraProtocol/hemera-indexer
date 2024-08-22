@@ -2,6 +2,7 @@ import logging
 import time
 
 import click
+from web3 import Web3
 
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
@@ -256,6 +257,7 @@ def stream(
     # build config
     config = {
         "blocks_per_file": blocks_per_file,
+        "chain_id": Web3(Web3.HTTPProvider(provider_uri)).eth.chain_id,
     }
 
     if postgres_url:

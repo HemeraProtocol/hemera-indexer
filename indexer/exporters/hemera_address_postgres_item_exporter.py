@@ -8,27 +8,39 @@ from psycopg2.extras import execute_values
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
+from common.services.hemera_postgresql_service import HemeraPostgreSQLService
+from common.services.postgresql_service import PostgreSQLService
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
+from indexer.modules.custom.address_index.domain import *
 
 logger = logging.getLogger(__name__)
 
 COMMIT_BATCH_SIZE = 500
 
 
-class PostgresItemExporter(BaseExporter):
-    def __init__(self, service):
+class HemeraAddressPostgresItemExporter(BaseExporter):
+    hemera_output_types = [
+        AddressTransaction,
+        AddressNftTransfer,
+        AddressTokenTransfer,
+    ]
 
+    def __init__(self, output, chain_id):
+        url = output.replace("hemera_postgresql://", "postgresql://")
+        service = HemeraPostgreSQLService(url)
         self.service = service
+        self.chain_id = chain_id
 
     def export_items(self, items):
         start_time = datetime.now(tzlocal())
 
         conn = self.service.get_conn()
         try:
-            insert_stmt = ""
             items_grouped_by_type = group_by_item_type(items)
             tables = []
             for item_type in items_grouped_by_type.keys():
+                if item_type not in self.hemera_output_types:
+                    continue
                 item_group = items_grouped_by_type.get(item_type)
 
                 if item_group:
@@ -43,7 +55,7 @@ class PostgresItemExporter(BaseExporter):
                     data = [converter(table, item, do_update) for item in item_group]
 
                     columns = list(data[0].keys())
-                    values = [tuple(d.values()) for d in data]
+                    values = [tuple(d.values()) + (self.chain_id,) for d in data]
 
                     insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
 
@@ -69,13 +81,15 @@ class PostgresItemExporter(BaseExporter):
 
 def sql_insert_statement(model: Type[HemeraModel], do_update: bool, columns, where_clause=None):
     pk_list = []
+    columns = columns + ["chain_id"]
     for pk in model.__table__.primary_key.columns:
         pk_list.append(pk.name)
+    pk_list.append("chain_id")
 
     update_list = list(set(columns) - set(pk_list))
 
     if do_update:
-        insert_stmt = "INSERT INTO {}.{} ({}) VALUES %s ON CONFLICT ({}) DO UPDATE SET {}".format(
+        insert_stmt = "INSERT INTO {}.hemera_{} ({}) VALUES %s ON CONFLICT ({}) DO UPDATE SET {}".format(
             model.schema(),
             model.__tablename__,
             ", ".join(columns),
@@ -85,7 +99,7 @@ def sql_insert_statement(model: Type[HemeraModel], do_update: bool, columns, whe
         if where_clause:
             insert_stmt += " WHERE {}".format(where_clause)
     else:
-        insert_stmt = "INSERT INTO {}.{} ({}) VALUES %s ON CONFLICT DO NOTHING ".format(
+        insert_stmt = "INSERT INTO {}.hemera_{} ({}) VALUES %s ON CONFLICT DO NOTHING ".format(
             model.schema(),
             model.__tablename__,
             ", ".join(columns),
