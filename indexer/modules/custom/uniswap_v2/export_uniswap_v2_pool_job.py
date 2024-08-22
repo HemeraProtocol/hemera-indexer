@@ -50,6 +50,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         UniswapV2LiquidityHolding,
         UniswapV2CurrentLiquidityHolding,
     ]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -155,8 +156,8 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             block_timestamp_last = data["block_timestamp_last"]
             info = UniswapV2PoolReserves(
                 pool_address=data["address"],
-                called_block_number=data["block_number"],
-                called_block_timestamp=data["block_timestamp"],
+                block_number=data["block_number"],
+                block_timestamp=data["block_timestamp"],
                 reserve0=data["reserve0"],
                 reserve1=data["reserve1"],
                 block_timestamp_last=block_timestamp_last,
@@ -212,10 +213,10 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             self._collect_item(UniswapV2CurrentLiquidityHolding.type(), parse_current_to_holding(current_token_balance))
 
     def _process(self, **kwargs):
-        self._data_buff[UniswapV2Pool.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[UniswapV2PoolTotalSupply.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[UniswapV2PoolReserves.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[UniswapV2LiquidityHolding.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[UniswapV2Pool.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV2PoolTotalSupply.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV2PoolReserves.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV2LiquidityHolding.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV2PoolCurrentTotalSupply.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV2PoolCurrentReserves.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV2CurrentLiquidityHolding.type()].sort(key=lambda x: x.block_number)
@@ -236,8 +237,8 @@ def parse_balance_to_holding(token_balance: TokenBalance):
         pool_address=token_balance.token_address,
         wallet_address=token_balance.address,
         balance=token_balance.balance,
-        called_block_number=token_balance.block_number,
-        called_block_timestamp=token_balance.block_timestamp,
+        block_number=token_balance.block_number,
+        block_timestamp=token_balance.block_timestamp,
     )
 
 
@@ -346,7 +347,7 @@ def get_exist_pools(db_service, factory_address):
                     "token0_address": "0x" + item.token0_address.hex(),
                     "token1_address": "0x" + item.token1_address.hex(),
                     "length": item.length,
-                    "called_block_number": item.called_block_number,
+                    "block_number": item.block_number,
                 }
 
     except Exception as e:
@@ -387,7 +388,7 @@ def update_exist_pools(
                 "token1_address": decoded_data["token1"],
                 "pool_address": pool_address,
                 "length": decoded_data["length"],
-                "called_block_number": log.block_number,
+                "block_number": log.block_number,
             }
             need_add[pool_address] = new_pool
         elif mint_topic0 == current_topic0 or burn_topic0 == current_topic0:
@@ -444,8 +445,8 @@ def collect_pool_total_supply(
         pool_supply = UniswapV2PoolTotalSupply(
             pool_address=address,
             total_supply=total_supply,
-            called_block_number=block_number,
-            called_block_timestamp=block_timestamp,
+            block_number=block_number,
+            block_timestamp=block_timestamp,
         )
         result_list.append(pool_supply)
 
@@ -492,7 +493,7 @@ def collect_active_new_pools(
             "token0_address": data["token0"],
             "token1_address": data["token1"],
             "pool_address": pool_address,
-            "called_block_number": data["block_number"],
+            "block_number": data["block_number"],
         }
         need_add[pool_address] = new_pool
     return need_add

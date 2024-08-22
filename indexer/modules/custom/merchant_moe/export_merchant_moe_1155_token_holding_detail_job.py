@@ -44,6 +44,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         MerChantMoeTokenBin,
         MerChantMoeTokenCurrentBin,
     ]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -151,26 +152,22 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 "token_address": token_address,
                 "token_id": token_id,
             }
-            common_current_block_data = {
+            common_block_data = {
                 "block_number": block_number,
                 "block_timestamp": block_timestamp,
-            }
-            common_record_block_data = {
-                "called_block_number": block_number,
-                "called_block_timestamp": block_timestamp,
             }
 
             key = token_id
             if key not in current_total_supply_dict or block_number > current_total_supply_dict[key].block_number:
                 current_total_supply_dict[key] = MerchantMoeErc1155TokenCurrentSupply(
                     **common_token_data,
-                    **common_current_block_data,
+                    **common_block_data,
                     total_supply=total_supply,
                 )
             if key not in current_token_bin_dict or block_number > current_token_bin_dict[key].block_number:
                 current_token_bin_dict[key] = MerChantMoeTokenCurrentBin(
                     **common_token_data,
-                    **common_current_block_data,
+                    **common_block_data,
                     reserve0_bin=reserve0_bin,
                     reserve1_bin=reserve1_bin,
                 )
@@ -178,7 +175,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 MerchantMoeErc1155TokenSupply.type(),
                 MerchantMoeErc1155TokenSupply(
                     **common_token_data,
-                    **common_record_block_data,
+                    **common_block_data,
                     total_supply=total_supply,
                 ),
             )
@@ -186,7 +183,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 MerChantMoeTokenBin.type(),
                 MerChantMoeTokenBin(
                     **common_token_data,
-                    **common_record_block_data,
+                    **common_block_data,
                     reserve0_bin=reserve0_bin,
                     reserve1_bin=reserve1_bin,
                 ),
@@ -198,9 +195,9 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
 
     def _process(self, **kwargs):
 
-        self._data_buff[MerchantMoeErc1155TokenHolding.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[MerchantMoeErc1155TokenSupply.type()].sort(key=lambda x: x.called_block_number)
-        self._data_buff[MerChantMoeTokenBin.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[MerchantMoeErc1155TokenHolding.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerchantMoeErc1155TokenSupply.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoeTokenBin.type()].sort(key=lambda x: x.block_number)
         self._data_buff[MerchantMoeErc1155TokenCurrentSupply.type()].sort(key=lambda x: x.block_number)
         self._data_buff[MerChantMoeTokenCurrentBin.type()].sort(key=lambda x: x.block_number)
         self._data_buff[MerchantMoeErc1155TokenCurrentHolding.type()].sort(key=lambda x: x.block_number)
@@ -212,8 +209,8 @@ def parse_balance_to_holding(token_balance: TokenBalance):
         wallet_address=token_balance.address,
         token_id=token_balance.token_id,
         balance=token_balance.balance,
-        called_block_number=token_balance.block_number,
-        called_block_timestamp=token_balance.block_timestamp,
+        block_number=token_balance.block_number,
+        block_timestamp=token_balance.block_timestamp,
     )
 
 

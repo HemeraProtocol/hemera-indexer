@@ -99,7 +99,7 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
     def _process(self, **kwargs):
         # collect _updates_this_batch
         self._collect_current_holding()
-        self._data_buff[BlueChipHolder.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[BlueChipHolder.type()].sort(key=lambda x: x.block_number)
         self._data_buff[AllFeatureValueRecordBlueChipHolders.type()].sort(key=lambda x: x.block_number)
         self._updates_this_batch = {}
 
@@ -153,8 +153,8 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
                     wallet_address=wallet_address,
                     hold_detail=data,
                     current_count=holding_count,
-                    called_block_number=last_block.block_number,
-                    called_block_timestamp=last_block.timestamp,
+                    block_number=last_block.block_number,
+                    block_timestamp=last_block.timestamp,
                 ),
             )
 

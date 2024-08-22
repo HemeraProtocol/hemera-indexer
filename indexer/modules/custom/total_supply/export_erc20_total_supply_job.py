@@ -31,6 +31,7 @@ FEATURE_ID = FeatureType.ERC20_TOTAL_SUPPLY.value
 class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
     dependency_types = [ERC20TokenTransfer]
     output_types = [Erc20TotalSupply, Erc20CurrentTotalSupply]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -128,7 +129,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
 
     def _process(self, **kwargs):
 
-        self._data_buff[Erc20TotalSupply.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[Erc20TotalSupply.type()].sort(key=lambda x: x.block_number)
         self._data_buff[Erc20CurrentTotalSupply.type()].sort(key=lambda x: x.block_number)
 
 
@@ -136,8 +137,8 @@ def parse_to_total_supply(block_number, block_timestamp, address, total_supply):
     return Erc20TotalSupply(
         token_address=address,
         total_supply=total_supply,
-        called_block_number=block_number,
-        called_block_timestamp=block_timestamp,
+        block_number=block_number,
+        block_timestamp=block_timestamp,
     )
 
 

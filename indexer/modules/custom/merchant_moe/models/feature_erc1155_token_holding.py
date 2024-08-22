@@ -14,16 +14,15 @@ class FeatureErc1155TokenHoldings(HemeraModel):
 
     balance = Column(NUMERIC(100))
 
-    called_block_number = Column(BIGINT, primary_key=True)
-    called_block_timestamp = Column(BIGINT, primary_key=True)
+    block_number = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(BIGINT, primary_key=True)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
-        PrimaryKeyConstraint(
-            "token_address", "token_id", "wallet_address", "called_block_timestamp", "called_block_number"
-        ),
+        PrimaryKeyConstraint("token_address", "token_id", "wallet_address", "block_timestamp", "block_number"),
     )
 
     @staticmethod
@@ -42,11 +41,11 @@ Index(
     "feature_erc1155_token_holding_token_wallet_block_desc_index",
     desc(FeatureErc1155TokenHoldings.token_address),
     desc(FeatureErc1155TokenHoldings.wallet_address),
-    desc(FeatureErc1155TokenHoldings.called_block_number),
+    desc(FeatureErc1155TokenHoldings.block_number),
 )
 
 Index(
     "feature_erc1155_token_holding_token_block_desc_index",
     desc(FeatureErc1155TokenHoldings.token_address),
-    desc(FeatureErc1155TokenHoldings.called_block_timestamp),
+    desc(FeatureErc1155TokenHoldings.block_timestamp),
 )

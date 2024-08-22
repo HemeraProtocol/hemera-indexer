@@ -11,16 +11,17 @@ class UniswapV3TokenDetails(HemeraModel):
 
     nft_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
-    called_block_number = Column(BIGINT, primary_key=True)
-    called_block_timestamp = Column(BIGINT, primary_key=True)
+    block_number = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(BIGINT, primary_key=True)
     wallet_address = Column(BYTEA)
     pool_address = Column(BYTEA)
     liquidity = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (PrimaryKeyConstraint("nft_address", "token_id", "called_block_timestamp", "called_block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():
@@ -37,12 +38,12 @@ class UniswapV3TokenDetails(HemeraModel):
 Index(
     "feature_uniswap_v3_token_details_token_block_desc_index",
     desc(UniswapV3TokenDetails.nft_address),
-    desc(UniswapV3TokenDetails.called_block_timestamp),
+    desc(UniswapV3TokenDetails.block_timestamp),
 )
 
 Index(
     "feature_uniswap_v3_token_details_wallet_token_block_desc_index",
     desc(UniswapV3TokenDetails.wallet_address),
     desc(UniswapV3TokenDetails.nft_address),
-    desc(UniswapV3TokenDetails.called_block_timestamp),
+    desc(UniswapV3TokenDetails.block_timestamp),
 )

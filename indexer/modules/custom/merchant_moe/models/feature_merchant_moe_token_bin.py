@@ -10,17 +10,16 @@ class FeatureMerChantMoeTokenBinRecords(HemeraModel):
     __tablename__ = "feature_merchant_moe_token_bin_records"
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
-    called_block_timestamp = Column(BIGINT, primary_key=True)
-    called_block_number = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(BIGINT, primary_key=True)
+    block_number = Column(BIGINT, primary_key=True)
     reserve0_bin = Column(NUMERIC(100))
     reserve1_bin = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (
-        PrimaryKeyConstraint("token_address", "token_id", "called_block_timestamp", "called_block_number"),
-    )
+    __table_args__ = (PrimaryKeyConstraint("token_address", "token_id", "block_timestamp", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():
@@ -37,5 +36,5 @@ class FeatureMerChantMoeTokenBinRecords(HemeraModel):
 Index(
     "feature_merchant_moe_token_bin_records_token_block_desc_index",
     desc(FeatureMerChantMoeTokenBinRecords.token_address),
-    desc(FeatureMerChantMoeTokenBinRecords.called_block_timestamp),
+    desc(FeatureMerChantMoeTokenBinRecords.block_timestamp),
 )
