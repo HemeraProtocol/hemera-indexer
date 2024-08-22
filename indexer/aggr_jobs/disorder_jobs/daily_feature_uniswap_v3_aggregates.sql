@@ -1,30 +1,33 @@
--- delete from xxx;
+begin;
+delete
+from daily_feature_uniswap_v3_token_details
+where block_date >= '{start_date}'
+  and block_date < '{start_date}';
+insert into daily_feature_uniswap_v3_token_details
 select nft_address,
-       token_id,
        TO_TIMESTAMP(called_block_timestamp)::DATE as block_date,
+       token_id,
        wallet_address,
        pool_address,
-       liquidity,
-       create_time,
-       update_time
+       liquidity
 from (select *, row_number() over (partition by nft_address, token_id) rn
       from feature_uniswap_v3_token_details
-      where TO_TIMESTAMP(called_block_timestamp) >= '2024-08-01'
-        and TO_TIMESTAMP(called_block_timestamp) < '2024-08-22') t
+      where TO_TIMESTAMP(called_block_timestamp) >= '{start_date}'
+        and TO_TIMESTAMP(called_block_timestamp) < '{start_date}') t
 where rn = 1;
 
 
--- delete from xxx;
+delete
+from daily_feature_uniswap_v3_pool_prices
+where block_date >= '{start_date}'
+  and block_date < '{start_date}';
+insert into daily_feature_uniswap_v3_pool_prices
 select pool_address,
-       called_block_number,
        TO_TIMESTAMP(called_block_timestamp)::DATE as block_date,
-       sqrt_price_x96,
-       create_time,
-       update_time
+       sqrt_price_x96
 from (select *, row_number() over (partition by pool_address) rn
       from feature_uniswap_v3_pool_prices
-      where TO_TIMESTAMP(called_block_timestamp) >= '2024-08-01'
-        and TO_TIMESTAMP(called_block_timestamp) < '2024-08-22') t
-where rn = 1
-
-
+      where TO_TIMESTAMP(called_block_timestamp) >= '{start_date}'
+        and TO_TIMESTAMP(called_block_timestamp) < '{start_date}') t
+where rn = 1;
+commit
