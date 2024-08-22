@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from typing import List, Optional, Union
 
 from eth_abi import abi
+from eth_utils import to_hex
+from hexbytes import HexBytes
 
 from enumeration.record_level import RecordLevel
 from indexer.domain import dict_to_dataclass
@@ -122,15 +124,30 @@ class ExportTokenBalancesJob(BaseExportJob):
         return token_transfers
 
 
+def uint256_to_bytes(value: int) -> bytes:
+    if value < 0 or value >= 2**256:
+        raise ValueError("Value out of uint256 range")
+
+    return value.to_bytes(32, byteorder="big")
+
+
+def pad_address(address: str) -> bytes:
+    address = address.lower().replace("0x", "")
+
+    if len(address) != 40:
+        raise ValueError("Invalid address length")
+
+    padded = "0" * 24 + address
+    return bytes.fromhex(padded)
+
+
 def encode_balance_abi_parameter(address, token_type, token_id):
     if token_type == "ERC1155":
-        return encode_abi(
-            BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION,
-            [address, token_id],
-            balance_of_token_id_sig_prefix,
-        )
+        encoded_arguments = HexBytes(pad_address(address) + uint256_to_bytes(token_id))
+        return to_hex(HexBytes(balance_of_token_id_sig_prefix) + encoded_arguments)
     else:
-        return encode_abi(BALANCE_OF_ABI_FUNCTION, [address], balance_of_sig_prefix)
+        encoded_arguments = HexBytes((address))
+        return to_hex(HexBytes(balance_of_sig_prefix) + encoded_arguments)
 
 
 def extract_token_parameters(
@@ -165,7 +182,6 @@ def extract_token_parameters(
                 "block_timestamp": parameter.block_timestamp,
             }
         )
-
     return token_parameters
 
 
