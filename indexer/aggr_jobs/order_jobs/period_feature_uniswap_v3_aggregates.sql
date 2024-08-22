@@ -1,6 +1,12 @@
 
 
 
+
+
+
+
+
+
 with detail_table as (SELECT d1.wallet_address,
                              d1.nft_address,
                              d1.liquidity,
