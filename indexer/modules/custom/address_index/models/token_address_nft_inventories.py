@@ -12,8 +12,8 @@ class TokenAddressNftInventories(HemeraModel):
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     wallet_address = Column(BYTEA)
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
     __table_args__ = (PrimaryKeyConstraint("token_address", "token_id"),)
 
