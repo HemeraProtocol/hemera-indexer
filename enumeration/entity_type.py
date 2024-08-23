@@ -27,7 +27,12 @@ from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenSupply,
 )
 from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin
-from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import StakedFBTCDetail, TransferedFBTCDetail
+from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
+    StakedFBTCCurrentStatus,
+    StakedFBTCDetail,
+    TransferredFBTCCurrentStatus,
+    TransferredFBTCDetail,
+)
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20CurrentTotalSupply, Erc20TotalSupply
 from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
     UniswapV2CurrentLiquidityHolding,
@@ -230,5 +235,7 @@ def generate_output_types(entity_types):
         yield Erc20CurrentTokenHolding
         yield Erc20TotalSupply
         yield Erc20CurrentTotalSupply
-        yield TransferedFBTCDetail
+        yield TransferredFBTCDetail
         yield StakedFBTCDetail
+        yield StakedFBTCCurrentStatus
+        yield TransferredFBTCCurrentStatus
