@@ -26,7 +26,7 @@ from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
 )
 from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import StakedFBTCDetail
-from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
+from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply, Erc20CurrentTotalSupply
 from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
     UniswapV2CurrentLiquidityHolding,
     UniswapV2LiquidityHolding,
@@ -134,6 +134,9 @@ def generate_output_types(entity_types):
         yield UniswapV3TokenDetail
         yield UniswapV3PoolCurrentPrice
         yield UniswapV3TokenCurrentStatus
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
         yield Log
 
     if entity_types & EntityType.USER_OPS:
@@ -207,6 +210,9 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.FTBC_ETH:
         yield ERC721TokenTransfer
         yield Token
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
         yield UniswapV3Pool
         yield UniswapV3Token
         yield UniswapV3PoolPrice
@@ -217,5 +223,5 @@ def generate_output_types(entity_types):
         yield StakedFBTCDetail
         yield Erc20TokenHolding
         yield Erc20CurrentTokenHolding
-
-
+        yield Erc20TotalSupply
+        yield Erc20CurrentTotalSupply
