@@ -1,6 +1,7 @@
-import orjson
 import logging
 from typing import List
+
+import orjson
 
 from indexer.domain.block import Block
 from indexer.domain.log import Log

@@ -48,6 +48,7 @@ dependencies = [
     "pottery==3.0.0",
     "eth_typing>=2.2.0,<5",
     "orjson==3.10.7",
+    "mpire==2.10.2",
 ]
 
 [tool.setuptools.dynamic]

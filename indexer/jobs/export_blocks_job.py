@@ -1,5 +1,6 @@
-import orjson
 import logging
+
+import orjson
 
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block

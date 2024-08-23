@@ -92,7 +92,6 @@ class ExportTokenBalancesJob(BaseExportJob):
         results = [dict_to_dataclass(t, TokenBalance) for t in token_balances]
         self._collect_items(TokenBalance.type(), results)
 
-
     def _process(self, **kwargs):
         if TokenBalance.type() in self._data_buff:
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))

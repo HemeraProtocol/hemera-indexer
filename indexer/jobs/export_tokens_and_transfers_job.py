@@ -1,8 +1,8 @@
-import orjson
 import logging
 from dataclasses import asdict
 from typing import Dict, List
 
+import orjson
 from eth_abi import abi
 
 from common.utils.format_utils import to_snake_case

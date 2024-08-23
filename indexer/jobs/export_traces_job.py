@@ -1,8 +1,8 @@
-import orjson
 import logging
 from itertools import groupby
 from typing import List
 
+import orjson
 from eth_utils import to_int
 
 from common.utils.exception_control import HistoryUnavailableError

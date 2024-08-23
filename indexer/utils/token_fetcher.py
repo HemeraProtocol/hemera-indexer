@@ -10,7 +10,7 @@ import os
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
-from typing import Union, Dict, Tuple, List
+from typing import Dict, List, Tuple, Union
 
 import orjson
 from eth_abi import abi
@@ -395,10 +395,10 @@ class TokenFetcher:
     @staticmethod
     def build_key(record: Union[Dict, Tuple, List], fields: Tuple[str, ...]) -> str:
         if isinstance(record, dict):
-            return '|'.join(str(record.get(field, '')) for field in fields)
+            return "|".join(str(record.get(field, "")) for field in fields)
         elif isinstance(record, (tuple, list)):
             field_dict = dict(record)
-            return '|'.join(str(field_dict.get(field, '')) for field in fields)
+            return "|".join(str(field_dict.get(field, "")) for field in fields)
         else:
             raise TypeError("record must be a dict, tuple, or list")
 
