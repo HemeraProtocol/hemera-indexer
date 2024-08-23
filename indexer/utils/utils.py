@@ -79,7 +79,7 @@ def zip_rpc_response(requests, responses, index="request_id"):
         response_dict[response["id"]] = response
 
     for request in requests:
-        request_id = request[index]
+        request_id = request.get(index) if isinstance(request, dict) else getattr(request, index)
         if request_id in response_dict:
             yield request, response_dict[request_id]
 

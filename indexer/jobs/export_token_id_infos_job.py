@@ -23,7 +23,7 @@ from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import ZERO_ADDRESS, rpc_response_to_result
+from indexer.utils.utils import ZERO_ADDRESS, rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
@@ -229,7 +229,7 @@ def token_ids_info_rpc_requests(make_requests, token_info_items, is_batch):
     else:
         response = [make_requests(params=json.dumps(eth_calls[0]))]
 
-    for token_info, data in zip(token_info_items, response):
+    for token_info, data in zip_rpc_response(token_info_items, response):
         result = rpc_response_to_result(data)
         value = result[2:] if result is not None else None
         if value is None:
