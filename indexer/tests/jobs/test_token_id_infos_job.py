@@ -106,7 +106,7 @@ def test_export_token_id_info_job_on_cyber_mul():
             ERC1155TokenIdDetail,
             UpdateERC1155TokenIdDetail,
         ],
-        multicall=True
+        multicall=True,
     )
 
     job_scheduler.run_jobs(
@@ -271,7 +271,7 @@ def test_export_token_id_info_job_on_linea_mul():
             ERC1155TokenIdDetail,
             UpdateERC1155TokenIdDetail,
         ],
-        multicall=True
+        multicall=True,
     )
 
     job_scheduler.run_jobs(

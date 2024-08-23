@@ -510,7 +510,7 @@ def test_export_token_balance_job_mul():
         max_workers=5,
         config={},
         required_output_types=[TokenBalance],
-        multicall=True
+        multicall=True,
     )
 
     job_scheduler.run_jobs(
