@@ -1,7 +1,7 @@
 begin;
 delete
 from period_wallet_addresses_aggregates
-where period_date = '{end_date}';
+where period_date = '{start_date}';
 insert into period_wallet_addresses_aggregates(address, period_date, txn_in_cnt, txn_out_cnt, txn_in_value,
                                                txn_out_value, internal_txn_in_cnt, internal_txn_out_cnt,
                                                internal_txn_in_value, internal_txn_out_value, erc20_transfer_in_cnt,
@@ -17,7 +17,7 @@ WITH today_table AS (SELECT *
                      WHERE block_date = '{start_date}'),
      yesterday_table AS (SELECT *
                          FROM period_wallet_addresses_aggregates
-                         WHERE period_date = '{end_date}'),
+                         WHERE period_date = '{start_date_previous}'),
      from_address_unique_interacted_cnt_table as (SELECT from_address               as address,
                                                          count(distinct to_address) as from_address_unique_interacted_cnt
                                                   FROM daily_contract_interacted_aggregates
@@ -28,7 +28,7 @@ WITH today_table AS (SELECT *
                                                 group by 1)
 
 SELECT COALESCE(s1.address, s2.address)                                    AS address,
-       date('{end_date}')                                                  AS period_date,
+       date('{start_date}')                                                  AS period_date,
        COALESCE(s1.txn_in_cnt, 0) + COALESCE(s2.txn_in_cnt, 0)             AS txn_in_cnt,
        COALESCE(s1.txn_out_cnt, 0) + COALESCE(s2.txn_out_cnt, 0)           AS txn_out_cnt,
        COALESCE(s1.txn_in_value, 0) + COALESCE(s2.txn_in_value, 0)         AS txn_in_value,
