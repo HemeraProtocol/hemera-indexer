@@ -150,8 +150,8 @@ def generate_token_id_info(
     erc1155_token_transfers: List[ERC1155TokenTransfer],
 ):
     info = set()
+    i = 0
     for token_transfer in erc721_token_transfers + erc1155_token_transfers:
-        key = f"{token_transfer.token_address}_{token_transfer.token_id}_{token_transfer.block_number}"
         if token_transfer.from_address == ZERO_ADDRESS:
             info.add(
                 TokenIdInfo(
@@ -161,9 +161,10 @@ def generate_token_id_info(
                     block_number=token_transfer.block_number,
                     block_timestamp=token_transfer.block_timestamp,
                     is_get_token_uri=True,
-                    request_id=hash(key + "_get_token_uri"),
+                    request_id=i,
                 )
             )
+            i += 1
         info.add(
             TokenIdInfo(
                 address=token_transfer.token_address,
@@ -172,9 +173,10 @@ def generate_token_id_info(
                 block_number=token_transfer.block_number,
                 block_timestamp=token_transfer.block_timestamp,
                 is_get_token_uri=False,
-                request_id=hash(key),
+                request_id=i,
             )
         )
+        i += 1
 
     return info
 
