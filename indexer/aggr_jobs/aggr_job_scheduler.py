@@ -2,6 +2,7 @@
 This scheduler can handle complex relationship dependencies, etc. The current example shows
 AggrDisorderJob -> AggrOrderJob
 """
+
 from indexer.aggr_jobs.disorder_jobs.disorder_job import AggrDisorderJob
 from indexer.aggr_jobs.order_jobs.order_job import AggrOrderJob
 

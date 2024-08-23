@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import DATE, Column, Computed, Index, String, TIMESTAMP, func
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, JSONB
+from sqlalchemy import DATE, TIMESTAMP, Column, Computed, Index, String, func
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, JSONB, NUMERIC
 
 from common.models import HemeraModel
 
@@ -29,5 +29,4 @@ class PeriodFeatureDefiWalletFbtcDetail(HemeraModel):
 
 
 # could be replaced by partition in case of huge amount data
-Index("period_feature_uniswap_v3_wallet_fbtc_detail_period_date",
-      PeriodFeatureDefiWalletFbtcDetail.period_date)
+Index("period_feature_uniswap_v3_wallet_fbtc_detail_period_date", PeriodFeatureDefiWalletFbtcDetail.period_date)
