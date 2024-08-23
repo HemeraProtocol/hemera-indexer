@@ -130,7 +130,6 @@ def collect_detail(
     staked_abi_dict: Dict[str, Any],
     staked_protocol_dict: Dict[str, str],
 ) -> Tuple[List[StakedFBTCDetail], List[StakedFBTCCurrentStatus], Dict[str, Dict[str, StakedFBTCCurrentStatus]]]:
-    # Initialize current_status with existing holdings
     current_status = defaultdict(
         lambda: defaultdict(
             lambda: StakedFBTCCurrentStatus(
@@ -142,7 +141,6 @@ def collect_detail(
         for wallet_address, status in wallet_dict.items():
             current_status[contract_address][wallet_address] = status
 
-    # Group logs by contract address and then by block number
     logs_by_address = defaultdict(lambda: defaultdict(list))
     for log in logs:
         if log.topic0 in staked_abi_dict and log.address in staked_protocol_dict:
@@ -150,24 +148,20 @@ def collect_detail(
 
     staked_details = []
 
-    # Process logs for each contract address
     for address, blocks in logs_by_address.items():
         protocol_id = staked_protocol_dict[address]
 
-        # Process logs block by block
         for block_number in sorted(blocks.keys()):
             block_logs = blocks[block_number]
             block_changes = defaultdict(int)
             block_timestamp = block_logs[0].block_timestamp
 
-            # Accumulate changes within the block
             for log in block_logs:
                 decode_staked = decode_log(staked_abi_dict[log.topic0], log)
                 wallet_address = decode_staked["user"]
                 amount = decode_staked["amount"]
                 block_changes[wallet_address] += amount
 
-            # Apply accumulated changes and create StakedFBTCDetail
             for wallet_address, change in block_changes.items():
                 current_amount = current_status[address][wallet_address].amount
                 new_amount = current_amount + change
@@ -192,10 +186,8 @@ def collect_detail(
                     )
                 )
 
-    # Convert current_status to list
     current_status_list = [status for address_dict in current_status.values() for status in address_dict.values()]
 
-    # Update current_holdings with the latest status
     updated_current_holdings = {}
     for contract_address, wallet_dict in current_status.items():
         updated_current_holdings[contract_address] = {}

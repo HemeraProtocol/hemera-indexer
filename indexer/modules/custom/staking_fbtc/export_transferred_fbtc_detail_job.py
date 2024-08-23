@@ -139,41 +139,41 @@ def process_token_transfers(
         for wallet_address, status in wallet_dict.items():
             current_status[contract_address][wallet_address] = status
 
-    # Group transfers by block number
-    transfers_by_block = defaultdict(list)
+    # Group transfers by contract address and then by block number
+    transfers_by_address = defaultdict(lambda: defaultdict(list))
     for transfer in token_transfers:
         if transfer.token_address == fbtc_address:
-            transfers_by_block[transfer.block_number].append(transfer)
+            if transfer.from_address in transferred_protocol_dict:
+                transfers_by_address[transfer.from_address][transfer.block_number].append(transfer)
+            if transfer.to_address in transferred_protocol_dict:
+                transfers_by_address[transfer.to_address][transfer.block_number].append(transfer)
 
     transferred_details = []
 
-    # Process transfers block by block
-    for block_number in sorted(transfers_by_block.keys()):
-        block_transfers = transfers_by_block[block_number]
-        block_changes = defaultdict(lambda: defaultdict(int))
-        block_timestamp = block_transfers[0].block_timestamp
+    # Process transfers for each contract address
+    for address, blocks in transfers_by_address.items():
+        protocol_id = transferred_protocol_dict[address]
 
-        # Accumulate changes within the block
-        for entity in block_transfers:
-            if entity.from_address in transferred_protocol_dict:
-                from_contract_address = entity.from_address
-                to_wallet_address = entity.to_address
-                block_changes[from_contract_address][to_wallet_address] -= entity.value
+        # Process transfers block by block
+        for block_number in sorted(blocks.keys()):
+            block_transfers = blocks[block_number]
+            block_changes = defaultdict(int)
+            block_timestamp = block_transfers[0].block_timestamp
 
-            if entity.to_address in transferred_protocol_dict:
-                to_contract_address = entity.to_address
-                from_wallet_address = entity.from_address
-                block_changes[to_contract_address][from_wallet_address] += entity.value
+            # Accumulate changes within the block
+            for entity in block_transfers:
+                if entity.from_address == address:
+                    block_changes[entity.to_address] -= entity.value
+                if entity.to_address == address:
+                    block_changes[entity.from_address] += entity.value
 
-        # Apply accumulated changes and create TransferredFBTCDetail
-        for contract_address, wallet_changes in block_changes.items():
-            protocol_id = transferred_protocol_dict[contract_address]
-            for wallet_address, change in wallet_changes.items():
-                current_amount = current_status[contract_address][wallet_address].amount
+            # Apply accumulated changes and create TransferredFBTCDetail
+            for wallet_address, change in block_changes.items():
+                current_amount = current_status[address][wallet_address].amount
                 new_amount = current_amount + change
 
-                current_status[contract_address][wallet_address] = TransferredFBTCCurrentStatus(
-                    contract_address=contract_address,
+                current_status[address][wallet_address] = TransferredFBTCCurrentStatus(
+                    contract_address=address,
                     protocol_id=protocol_id,
                     wallet_address=wallet_address,
                     amount=new_amount,
@@ -183,7 +183,7 @@ def process_token_transfers(
 
                 transferred_details.append(
                     TransferredFBTCDetail(
-                        contract_address=contract_address,
+                        contract_address=address,
                         protocol_id=protocol_id,
                         wallet_address=wallet_address,
                         amount=new_amount,
