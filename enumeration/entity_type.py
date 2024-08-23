@@ -74,6 +74,7 @@ class EntityType(IntFlag):
     MERCHANT = 1 << 10
     ADDRESS_INDEX = 1 << 11
     FBTC_ETH = 1 << 12
+    FBTC_MANTLE = 1 << 13
 
     @staticmethod
     def combine_all_entity_types():
