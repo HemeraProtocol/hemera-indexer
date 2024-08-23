@@ -70,5 +70,5 @@ class Multicall:
             "jsonrpc": "2.0",
             "method": "eth_call",
             "params": args,
-            "id": hash(orjson.dumps(args)),
+            "id": abs(hash(orjson.dumps(args))),
         }
