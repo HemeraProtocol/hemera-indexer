@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass
 from functools import partial
 from typing import List, Optional, Union
+from numba import jit
 
 from eth_utils import to_hex
 from hexbytes import HexBytes
@@ -100,10 +101,11 @@ class ExportTokenBalancesJob(BaseExportJob):
         self._collect_items(TokenBalance.type(), results)
 
     @calculate_execution_time
+    @jit(nopython=True)
     def _collect_batch_convert(self, token_balances):
-        convert = partial(dict_to_dataclass, cls=TokenBalance)
-        return global_pool_manager.parallel_process(convert, [(t,) for t in token_balances])
-
+        # convert = partial(dict_to_dataclass, cls=TokenBalance)
+        # return global_pool_manager.parallel_process(convert, [(t,) for t in token_balances])
+        return [dict_to_dataclass(t, TokenBalance) for t in token_balances]
 
     def _process(self, **kwargs):
         if TokenBalance.type() in self._data_buff:

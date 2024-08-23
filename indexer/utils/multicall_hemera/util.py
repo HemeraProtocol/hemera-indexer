@@ -93,6 +93,9 @@ def make_request_concurrent(make_request, chunks, max_workers=None):
         logger.debug(f"single request {len(chunk)}")
         return make_request(params=orjson.dumps(chunk))
 
+    if max_workers is None:
+        max_workers = os.cpu_count() + 4
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_chunk = {executor.submit(single_request, chunk[0]) for chunk in chunks}
         for future in as_completed(future_to_chunk):
