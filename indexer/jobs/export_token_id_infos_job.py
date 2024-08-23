@@ -40,7 +40,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
 
-        self.multi_call_util = TokenFetcher(self._web3, kwargs)
+        self.token_fetcher = TokenFetcher(self._web3, kwargs)
 
     def _start(self):
         super()._start()
@@ -59,7 +59,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
 
     @calculate_execution_time
     def _collect_batch(self, token_list):
-        items = self.multi_call_util.fetch_token_ids_info(token_list)
+        items = self.token_fetcher.fetch_token_ids_info(token_list)
         for item in items:
             self._collect_item(item.type(), item)
 

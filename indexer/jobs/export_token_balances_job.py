@@ -1,12 +1,10 @@
 import logging
-import os
 from dataclasses import dataclass
 from functools import partial
 from typing import List, Optional, Union
 
 from eth_utils import to_hex
 from hexbytes import HexBytes
-from mpire import WorkerPool
 
 from indexer.domain import dict_to_dataclass
 from indexer.domain.current_token_balance import CurrentTokenBalance
@@ -17,7 +15,7 @@ from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import pad_address, uint256_to_bytes
 from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.multicall_hemera.util import calculate_execution_time
+from indexer.utils.multicall_hemera.util import calculate_execution_time, global_pool_manager
 from indexer.utils.token_fetcher import TokenFetcher
 from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group
 
@@ -77,7 +75,7 @@ class ExportTokenBalancesJob(BaseExportJob):
         )
         self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
-        self.multi_call_util = TokenFetcher(self._web3, kwargs)
+        self.token_fetcher = TokenFetcher(self._web3, kwargs)
 
     def _start(self):
         super()._start()
@@ -94,7 +92,7 @@ class ExportTokenBalancesJob(BaseExportJob):
 
     @calculate_execution_time
     def _collect_batch(self, parameters):
-        token_balances = self.multi_call_util.fetch_token_balance(parameters)
+        token_balances = self.token_fetcher.fetch_token_balance(parameters)
         if self._is_multi_call:
             results = self._collect_batch_convert(token_balances)
         else:
@@ -104,9 +102,8 @@ class ExportTokenBalancesJob(BaseExportJob):
     @calculate_execution_time
     def _collect_batch_convert(self, token_balances):
         convert = partial(dict_to_dataclass, cls=TokenBalance)
-        with WorkerPool(os.cpu_count()) as pool:
-            results = pool.map(convert, [(t,) for t in token_balances])
-        return results
+        return global_pool_manager.parallel_process(convert, [(t,) for t in token_balances])
+
 
     def _process(self, **kwargs):
         if TokenBalance.type() in self._data_buff:

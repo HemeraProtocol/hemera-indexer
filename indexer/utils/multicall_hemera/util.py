@@ -4,13 +4,11 @@
 # @Author  will
 # @File  util.py.py
 # @Brief
-import json
-import logging
 import os
+import logging
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import numpy as np
 import orjson
 from mpire import WorkerPool
 
@@ -18,17 +16,37 @@ from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.signature import _get_signature
 
 logger = logging.getLogger(__name__)
+from contextlib import contextmanager
 
 
-def multiprocess_map(func, data_list, processes=None):
-    if processes is None:
-        processes = os.cpu_count()
+class GlobalPoolManager:
+    def __init__(self, processes=None):
+        self.processes = processes or os.cpu_count()
+        self.pool = None
 
-    chunks = np.array_split(data_list, processes)
+    def get_pool(self):
+        if self.pool is None:
+            self.pool = WorkerPool(n_jobs=self.processes)
+        return self.pool
 
-    with WorkerPool(n_jobs=processes) as pool:
-        results = pool.map(func, chunks)
-    return results
+    def parallel_process(self, func, data, chunk_size=10000):
+        return self.get_pool().map(func, data, chunk_size=chunk_size)
+
+    def close(self):
+        if self.pool:
+            self.pool.terminate()
+            self.pool.join()
+            self.pool = None
+
+    @contextmanager
+    def pool_context(self):
+        try:
+            yield self
+        finally:
+            self.close()
+
+
+global_pool_manager = GlobalPoolManager()
 
 
 def estimate_size(item):
@@ -73,7 +91,7 @@ def calculate_execution_time(func):
 def make_request_concurrent(make_request, chunks, max_workers=None):
     def single_request(chunk):
         logger.debug(f"single request {len(chunk)}")
-        return make_request(params=json.dumps(chunk))
+        return make_request(params=orjson.dumps(chunk))
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         future_to_chunk = {executor.submit(single_request, chunk[0]) for chunk in chunks}
