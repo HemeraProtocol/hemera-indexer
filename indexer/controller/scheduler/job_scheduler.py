@@ -163,8 +163,8 @@ class JobScheduler:
             config=self.config,
             filters=filters,
         )
-
-        self.jobs.append(check_job)
+        # todo
+        # self.jobs.append(check_job)
 
     def run_jobs(self, start_block, end_block):
         self.clear_data_buff()
