@@ -23,6 +23,8 @@ def configure_signals():
 
 
 def configure_logging(filename):
+    if filename is None:
+        return
     log_dir = os.path.dirname(filename)
 
     if not os.path.exists(log_dir):

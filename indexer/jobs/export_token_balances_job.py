@@ -76,9 +76,6 @@ class ExportTokenBalancesJob(BaseExportJob):
         self._is_multi_call = kwargs["multicall"]
         self.token_fetcher = TokenFetcher(self._web3, kwargs)
 
-    def _start(self):
-        super()._start()
-
     @calculate_execution_time
     def _collect(self, **kwargs):
         token_transfers = self._collect_all_token_transfers()

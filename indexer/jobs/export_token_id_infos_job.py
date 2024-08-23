@@ -42,9 +42,6 @@ class ExportTokenIdInfosJob(BaseExportJob):
 
         self.token_fetcher = TokenFetcher(self._web3, kwargs)
 
-    def _start(self):
-        super()._start()
-
     @calculate_execution_time
     def _collect(self, **kwargs):
         token_id_info = generate_token_id_info(
@@ -64,7 +61,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
             self._collect_item(item.type(), item)
 
     @calculate_execution_time
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[UpdateERC721TokenIdDetail.type()].sort(
             key=lambda x: (x.token_address, x.token_id, x.block_number)
         )
