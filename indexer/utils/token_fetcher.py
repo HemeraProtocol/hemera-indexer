@@ -55,14 +55,23 @@ class TokenFetcher:
         else:
             self.logger = logger
         self.chain_id = self.web3.eth.chain_id
-        self.multi_call = Multicall([], require_success=False, chain_id=self.chain_id)
-        self.net = Network.from_value(self.chain_id)
-        self.deploy_block_number = self.net.deploy_block_number
+
         self.batch_size = kwargs["batch_size"]
         self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
         if not self._is_multi_call:
             self.logger.info("multicall is disabled")
+        else:
+            try:
+                self.net = Network.from_value(self.chain_id)
+            except Exception:
+                self.logger.warning(f"multicall is not enabled on chain {self.chain_id}")
+                self.net = None
+                self.multi_call = None
+                self.deploy_block_number = 2**56
+            else:
+                self.multi_call = Multicall([], require_success=False, chain_id=self.chain_id)
+                self.deploy_block_number = self.net.deploy_block_number
 
         self.token_k_fields = ("address", "token_address", "block_number", "token_type", "token_id")
         self.contract_k_fields = ("address",)
