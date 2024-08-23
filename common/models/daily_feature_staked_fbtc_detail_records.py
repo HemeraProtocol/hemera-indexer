@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Index, DATE
+from sqlalchemy import DATE, Column, Index
 from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, VARCHAR
 
 from common.models import HemeraModel
@@ -13,7 +13,4 @@ class DailyFeatureStakedFBTCDetailRecords(HemeraModel):
     protocol_id = Column(VARCHAR)
 
 
-Index(
-    "daily_feature_staked_fbtc_detail_records_wallet_block_date",
-    DailyFeatureStakedFBTCDetailRecords.block_date
-)
+Index("daily_feature_staked_fbtc_detail_records_wallet_block_date", DailyFeatureStakedFBTCDetailRecords.block_date)
