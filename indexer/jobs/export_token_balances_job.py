@@ -92,17 +92,9 @@ class ExportTokenBalancesJob(BaseExportJob):
     @calculate_execution_time
     def _collect_batch(self, parameters):
         token_balances = self.token_fetcher.fetch_token_balance(parameters)
-        if self._is_multi_call:
-            results = self._collect_batch_convert(token_balances)
-        else:
-            results = [dict_to_dataclass(t, TokenBalance) for t in token_balances]
+        results = [dict_to_dataclass(t, TokenBalance) for t in token_balances]
         self._collect_items(TokenBalance.type(), results)
 
-    @calculate_execution_time
-    def _collect_batch_convert(self, token_balances):
-        # convert = partial(dict_to_dataclass, cls=TokenBalance)
-        # return global_pool_manager.parallel_process(convert, [(t,) for t in token_balances])
-        return [dict_to_dataclass(t, TokenBalance) for t in token_balances]
 
     def _process(self, **kwargs):
         if TokenBalance.type() in self._data_buff:

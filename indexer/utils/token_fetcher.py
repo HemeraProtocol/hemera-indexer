@@ -278,7 +278,7 @@ class TokenFetcher:
 
     @calculate_execution_time
     def fetch_result(self, chunks):
-        res = list(make_request_concurrent(self.make_request, chunks, os.cpu_count() * 2))
+        res = list(make_request_concurrent(self.make_request, chunks))
         return res
 
     @calculate_execution_time
