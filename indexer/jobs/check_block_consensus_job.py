@@ -1,6 +1,12 @@
 import logging
 import subprocess
+from typing import Union
 
+from sqlalchemy import and_
+
+from common.models.blocks import Blocks
+from common.utils.format_utils import as_dict
+from indexer.domain import dict_to_dataclass
 from indexer.domain.block import Block
 from indexer.jobs.base_job import BaseJob
 
@@ -14,7 +20,8 @@ class CheckBlockConsensusJob(BaseJob):
         self._batch_web3_debug_provider = kwargs["batch_web3_debug_provider"]
         self._batch_size = kwargs["batch_size"]
         self._debug_batch_size = kwargs["debug_batch_size"]
-        self._postgre_uri = self._config.get("db_service").get_service_uri() if "db_service" in self._config else None
+        self.db_service = self._config.get("db_service") if "db_service" in self._config else None
+        self._postgre_uri = self.db_service.get_service_uri() if self.db_service else None
 
         self.last_batch_end_block = None
         self.check_switch = self._config.get("db_service", None) is not None
@@ -25,14 +32,18 @@ class CheckBlockConsensusJob(BaseJob):
 
         batch_blocks = self._data_buff[Block.type()]
 
-        if self.last_batch_end_block is not None:
+        if self.last_batch_end_block:
             batch_blocks = [self.last_batch_end_block] + batch_blocks
+        else:
+            last_block = self._query_last_block(batch_blocks[0])
+            if last_block:
+                batch_blocks = [last_block] + batch_blocks
 
         batch_blocks.reverse()
         parent_hash = batch_blocks[0].parent_hash
         for block in batch_blocks[1:]:
             block_hash = block.hash
-            if block_hash != parent_hash or block_hash[-1] == "0":
+            if block_hash != parent_hash:
                 # non-consensus detected
                 ranges = max(len(batch_blocks), 5)
                 command = [
@@ -63,3 +74,18 @@ class CheckBlockConsensusJob(BaseJob):
             parent_hash = block.parent_hash
 
         self.last_batch_end_block = batch_blocks[0]
+
+    def _query_last_block(self, block: Block) -> Union[Block, None]:
+        if block is None:
+            return None
+
+        check_block_number = block.number - 1
+
+        session = self.db_service.get_service_session()
+        try:
+            result = session.query(Blocks).filter(and_(Blocks.number == check_block_number)).first()
+        finally:
+            session.close()
+
+        block = dict_to_dataclass(as_dict(result), Block) if result else None
+        return block

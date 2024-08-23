@@ -57,8 +57,10 @@ class JobScheduler:
         item_exporters=[ConsoleItemExporter()],
         required_output_types=[],
         cache="memory",
+        auto_reorg=True,
     ):
         self.logger = logging.getLogger(__name__)
+        self.auto_reorg = auto_reorg
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
         self.item_exporters = item_exporters
@@ -152,19 +154,19 @@ class JobScheduler:
             )
             self.jobs.insert(0, export_blocks_job)
 
-        check_job = CheckBlockConsensusJob(
-            required_output_types=self.required_output_types,
-            batch_web3_provider=self.batch_web3_provider,
-            batch_web3_debug_provider=self.batch_web3_debug_provider,
-            item_exporters=self.item_exporters,
-            batch_size=self.batch_size,
-            debug_batch_size=self.debug_batch_size,
-            max_workers=self.max_workers,
-            config=self.config,
-            filters=filters,
-        )
-
-        self.jobs.append(check_job)
+        if self.auto_reorg:
+            check_job = CheckBlockConsensusJob(
+                required_output_types=self.required_output_types,
+                batch_web3_provider=self.batch_web3_provider,
+                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                item_exporters=self.item_exporters,
+                batch_size=self.batch_size,
+                debug_batch_size=self.debug_batch_size,
+                max_workers=self.max_workers,
+                config=self.config,
+                filters=filters,
+            )
+            self.jobs.append(check_job)
 
     def run_jobs(self, start_block, end_block):
         self.clear_data_buff()

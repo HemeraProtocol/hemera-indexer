@@ -54,4 +54,4 @@ class ExportReorgJob(BaseJob):
 
     @staticmethod
     def _build_clean_sql(table, block_number):
-        return f"DELETE FROM {table} WHERE block_number={block_number} AND REORG=TRUE"
+        return f"DELETE FROM {table} WHERE block_number={block_number} AND reorg=TRUE"

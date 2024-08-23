@@ -220,6 +220,14 @@ def calculate_execution_time(func):
     "e.g redis. means cache data will store in redis, redis://localhost:6379"
     "or memory. means cache data will store in memory, memory",
 )
+@click.option(
+    "--auto-reorg",
+    default=True,
+    show_default=True,
+    type=bool,
+    envvar="AUTO_REORG",
+    help="Whether to detect reorg in data streams and automatically repair data.",
+)
 @calculate_execution_time
 def stream(
     provider_uri,
@@ -242,6 +250,7 @@ def stream(
     sync_recorder="file:sync_record",
     retry_from_record=False,
     cache="memory",
+    auto_reorg=True,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -291,6 +300,7 @@ def stream(
         config=config,
         required_output_types=output_types,
         cache=cache,
+        auto_reorg=auto_reorg,
     )
 
     controller = StreamController(
