@@ -1,5 +1,6 @@
-import json
 import logging
+
+import orjson
 
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
@@ -114,9 +115,9 @@ def blocks_rpc_requests(make_request, block_number_batch, is_batch):
     block_number_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, True))
 
     if is_batch:
-        response = make_request(params=json.dumps(block_number_rpc))
+        response = make_request(params=orjson.dumps(block_number_rpc))
     else:
-        response = [make_request(params=json.dumps(block_number_rpc[0]))]
+        response = [make_request(params=orjson.dumps(block_number_rpc[0]))]
 
     results = rpc_response_batch_to_results(response)
     return results

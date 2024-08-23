@@ -230,6 +230,15 @@ def calculate_execution_time(func):
     "or memory. means cache data will store in memory, memory",
 )
 @click.option(
+    "-m",
+    "--multicall",
+    default=False,
+    show_default=True,
+    type=bool,
+    help="if `multicall` is set to True, it will decrease the consume of rpc calls",
+    envvar="Multicall",
+)
+@click.option(
     "--auto-reorg",
     default=True,
     show_default=True,
@@ -261,6 +270,7 @@ def stream(
     retry_from_record=False,
     cache="memory",
     auto_reorg=True,
+    multicall=True,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -312,6 +322,7 @@ def stream(
         required_output_types=output_types,
         cache=cache,
         auto_reorg=auto_reorg,
+        multicall=multicall,
     )
 
     controller = StreamController(

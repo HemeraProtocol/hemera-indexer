@@ -1,14 +1,9 @@
-import os
 import threading
-from datetime import datetime, timezone
 from queue import Queue
 
-from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 
 from common.models.exception_records import ExceptionRecords
-from common.models.sync_record import SyncRecord
-from common.utils.file_utils import smart_open, write_to_file
 
 LOG_BUFFER_SIZE = 5000
 
@@ -27,6 +22,7 @@ class ExceptionRecorder(object):
     def __init__(self):
         self._service = None
         self._log_buffer = Queue()
+        self._multicall_log_buffer = Queue()
 
     def init_pg_service(self, service):
         self._service = service
