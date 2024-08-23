@@ -37,11 +37,23 @@ def test_export_token_balance_job():
 
     assert (
         TokenBalance(
+            address="0x0bb407287c5e2bde71371e8daf2a2c0acdfdefb1",
+            token_id=None,
+            token_type="ERC721",
+            token_address="0x780de722234532f7d61ca3d147574f44a85c4244",
+            balance=1,
+            block_number=2786950,
+            block_timestamp=1710005722,
+        )
+        in token_balances
+    )
+    assert (
+        TokenBalance(
             address="0x1c0246a02637c4dbbf8e05f3d4fb9423efed8ea4",
             token_id=None,
             token_type="ERC20",
             token_address="0x4af15ec2a0bd43db75dd04e62faa3b8ef36b00d5",
-            balance=None,
+            balance=3412651394117526832,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -53,7 +65,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC20",
             token_address="0x4af15ec2a0bd43db75dd04e62faa3b8ef36b00d5",
-            balance=None,
+            balance=11300410000000000000,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -77,7 +89,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC20",
             token_address="0x176211869ca2b568f2a7d4ee941e073a821ee1ff",
-            balance=None,
+            balance=143200,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -89,7 +101,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x510581cefd1a4c651aa6727957f283c665647485",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -97,19 +109,7 @@ def test_export_token_balance_job():
     )
     assert (
         TokenBalance(
-            address="0x5520989bf88eb2c1f07e4045a7e005b14fac59f9",
-            token_id=None,
-            token_type="ERC20",
-            token_address="0x7a61fd2092a3933831e826c08f0d12913fefb96c",
-            balance=None,
-            block_number=2786950,
-            block_timestamp=1710005722,
-        )
-        in token_balances
-    )
-    assert (
-        TokenBalance(
-            address="0x564e52bbdf3adf10272f3f33b00d65b2ee48afff",
+            address="0x032b241de86a8660f1ae0691a4760b426ea246d7",
             token_id=None,
             token_type="ERC20",
             token_address="0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f",
@@ -121,11 +121,35 @@ def test_export_token_balance_job():
     )
     assert (
         TokenBalance(
+            address="0x5520989bf88eb2c1f07e4045a7e005b14fac59f9",
+            token_id=None,
+            token_type="ERC20",
+            token_address="0x7a61fd2092a3933831e826c08f0d12913fefb96c",
+            balance=10000000000,
+            block_number=2786950,
+            block_timestamp=1710005722,
+        )
+        in token_balances
+    )
+    assert (
+        TokenBalance(
+            address="0x564e52bbdf3adf10272f3f33b00d65b2ee48afff",
+            token_id=None,
+            token_type="ERC20",
+            token_address="0xe5d7c2a44ffddf6b295a15c148167daaaf5cf34f",
+            balance=25526472243269302972,
+            block_number=2786950,
+            block_timestamp=1710005722,
+        )
+        in token_balances
+    )
+    assert (
+        TokenBalance(
             address="0x564e52bbdf3adf10272f3f33b00d65b2ee48afff",
             token_id=None,
             token_type="ERC20",
             token_address="0x176211869ca2b568f2a7d4ee941e073a821ee1ff",
-            balance=None,
+            balance=764672545771,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -137,7 +161,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0xc043bce9af87004398181a8de46b26e63b29bf99",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -149,7 +173,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0xc043bce9af87004398181a8de46b26e63b29bf99",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -161,7 +185,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0xc0b4ab5cb0fdd6f5dfddb2f7c10c4c6013f97bf2",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -173,7 +197,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC20",
             token_address="0x224d8fd7ab6ad4c6eb4611ce56ef35dec2277f03",
-            balance=None,
+            balance=0,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -185,7 +209,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x780de722234532f7d61ca3d147574f44a85c4244",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -197,7 +221,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x510581cefd1a4c651aa6727957f283c665647485",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -209,7 +233,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x780de722234532f7d61ca3d147574f44a85c4244",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -221,7 +245,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC20",
             token_address="0x224d8fd7ab6ad4c6eb4611ce56ef35dec2277f03",
-            balance=None,
+            balance=773453172028894508994,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -245,7 +269,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC20",
             token_address="0xc5cb997016c9a3ac91cbe306e59b048a812c056f",
-            balance=None,
+            balance=1320,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -257,7 +281,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x780de722234532f7d61ca3d147574f44a85c4244",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -269,7 +293,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x780de722234532f7d61ca3d147574f44a85c4244",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -281,7 +305,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x66ccc220543b6832f93c2082edd7be19c21df6c0",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -293,7 +317,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x510581cefd1a4c651aa6727957f283c665647485",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -305,7 +329,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x510581cefd1a4c651aa6727957f283c665647485",
-            balance=None,
+            balance=1,
             block_number=2786950,
             block_timestamp=1710005722,
         )
@@ -317,7 +341,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0xb18b7847072117ae863f71f9473d555d601eb537",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -329,7 +353,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x66ccc220543b6832f93c2082edd7be19c21df6c0",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -341,7 +365,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x66ccc220543b6832f93c2082edd7be19c21df6c0",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -353,7 +377,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x26ee4ba1f0017f411c400a729115c4389e85c42c",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -365,7 +389,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0xc043bce9af87004398181a8de46b26e63b29bf99",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -377,7 +401,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC20",
             token_address="0x176211869ca2b568f2a7d4ee941e073a821ee1ff",
-            balance=None,
+            balance=2690357899599,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -389,7 +413,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x510581cefd1a4c651aa6727957f283c665647485",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -401,7 +425,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0xc043bce9af87004398181a8de46b26e63b29bf99",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -413,7 +437,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0xc043bce9af87004398181a8de46b26e63b29bf99",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -425,7 +449,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0xc043bce9af87004398181a8de46b26e63b29bf99",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -437,7 +461,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x510581cefd1a4c651aa6727957f283c665647485",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -449,7 +473,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC20",
             token_address="0x176211869ca2b568f2a7d4ee941e073a821ee1ff",
-            balance=None,
+            balance=0,
             block_number=2786951,
             block_timestamp=1710005726,
         )
@@ -461,7 +485,7 @@ def test_export_token_balance_job():
             token_id=None,
             token_type="ERC721",
             token_address="0x780de722234532f7d61ca3d147574f44a85c4244",
-            balance=None,
+            balance=1,
             block_number=2786951,
             block_timestamp=1710005726,
         )
