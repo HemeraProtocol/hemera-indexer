@@ -51,7 +51,6 @@ class PostgreSQLService(object):
         self.connection_pool.putconn(conn)
 
     def init_schema(self, script_location):
-
         alembic_cfg = Config()
         # Set script location and version path separator
         alembic_cfg.set_main_option("script_location", script_location)
@@ -87,6 +86,9 @@ class PostgreSQLService(object):
         alembic_cfg.set_section_option("handler_console", "formatter", "generic")
 
         command.upgrade(alembic_cfg, self.db_version)
+
+    def get_service_uri(self):
+        return self.jdbc_url
 
     def get_service_engine(self):
         return self.engine

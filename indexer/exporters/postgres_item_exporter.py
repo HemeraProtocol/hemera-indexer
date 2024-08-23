@@ -5,8 +5,6 @@ from typing import Type
 import sqlalchemy
 from dateutil.tz import tzlocal
 from psycopg2.extras import execute_values
-from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import insert
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel

@@ -1,11 +1,7 @@
 import logging
-from multiprocessing import Process
+import subprocess
 
-from enumeration.entity_type import ALL_ENTITY_COLLECTIONS, calculate_entity_value, generate_output_types
-from indexer.controller.reorg_controller import ReorgController
-from indexer.controller.scheduler.reorg_scheduler import ReorgScheduler
 from indexer.domain.block import Block
-from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from indexer.jobs.base_job import BaseJob
 
 logger = logging.getLogger(__name__)
@@ -14,29 +10,14 @@ logger = logging.getLogger(__name__)
 class CheckBlockConsensusJob(BaseJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._config = kwargs["config"]
+        self._batch_web3_debug_provider = kwargs["batch_web3_debug_provider"]
+        self._batch_size = kwargs["batch_size"]
+        self._debug_batch_size = kwargs["debug_batch_size"]
+        self._postgre_uri = self._config.get("db_service").get_service_uri() if "db_service" in self._config else None
+
         self.last_batch_end_block = None
-        config = kwargs["config"]
-        self.check_switch = config.get("db_service", None) is not None
-
-        if self.check_switch:
-            entity_types = calculate_entity_value(",".join(ALL_ENTITY_COLLECTIONS))
-            output_types = list(generate_output_types(entity_types))
-            reorg_job_scheduler = ReorgScheduler(
-                batch_web3_provider=self._batch_web3_provider,
-                batch_web3_debug_provider=kwargs["batch_web3_debug_provider"],
-                item_exporters=PostgresItemExporter(config["db_service"]),
-                batch_size=kwargs["batch_size"],
-                debug_batch_size=kwargs["debug_batch_size"],
-                required_output_types=output_types,
-                config=config,
-            )
-
-            self.reorg_controller = ReorgController(
-                batch_web3_provider=kwargs["batch_web3_provider"],
-                job_scheduler=reorg_job_scheduler,
-                ranges=1000,
-                config=config,
-            )
+        self.check_switch = self._config.get("db_service", None) is not None
 
     def _process(self, **kwargs):
         if not self.check_switch:
@@ -51,10 +32,32 @@ class CheckBlockConsensusJob(BaseJob):
         parent_hash = batch_blocks[0].parent_hash
         for block in batch_blocks[1:]:
             block_hash = block.hash
-            if block_hash != parent_hash:
+            if block_hash != parent_hash or block_hash[-1] == "0":
                 # non-consensus detected
-                reorging_thread = Process(target=self.reorg_controller.action, kwargs={"block_number": block.number})
-                reorging_thread.start()
+                ranges = max(len(batch_blocks), 5)
+                command = [
+                    "python",
+                    "hemera.py",
+                    "reorg",
+                    "-p",
+                    self._batch_web3_provider.endpoint_uri,
+                    "-d",
+                    self._batch_web3_debug_provider.endpoint_uri,
+                    "-b",
+                    f"{self._batch_size}",
+                    "--debug-batch-size",
+                    f"{self._debug_batch_size}",
+                    "-pg",
+                    self._postgre_uri,
+                    "--block-number",
+                    f"{block.number}",
+                    "--ranges",
+                    f"{ranges}",
+                    "--log-file",
+                    f"./logs/auto_reorg_{block.number}_{ranges}.log",
+                ]
+                subprocess.Popen(command, start_new_session=True)
+                self.logger.info(f"Reorg process started with command: {command}")
                 break
 
             parent_hash = block.parent_hash
