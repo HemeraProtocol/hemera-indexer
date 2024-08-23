@@ -63,6 +63,7 @@ class Network(Enum):
     PulseChain = (369, 0)
     PulseChainTestnet = (943, 0)
     MANTLE = (5000, 304717)
+    Linea = (59144, 42)
 
     def __init__(self, value, deploy_block_number=0):
         self._value = value
@@ -142,4 +143,5 @@ MULTICALL3_ADDRESSES = {
     Network.Base: "0xcA11bde05977b3631167028862bE2a173976CA11",
     Network.Holesky: "0xcA11bde05977b3631167028862bE2a173976CA11",
     Network.MANTLE: "0xcA11bde05977b3631167028862bE2a173976CA11",
+    Network.Linea: "0xcA11bde05977b3631167028862bE2a173976CA11",
 }
