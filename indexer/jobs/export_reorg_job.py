@@ -42,7 +42,7 @@ class ExportReorgJob(BaseJob):
                 columns = list(reorg_data[0].keys())
                 values = [tuple(d.values()) for d in reorg_data]
 
-                insert_stmt = sql_insert_statement(domain, table, do_update, columns, where_clause=update_strategy)
+                insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
 
                 if table.__tablename__ != "blocks":
                     cur.execute(self._build_clean_sql(table.__tablename__, block_number))
