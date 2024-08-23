@@ -1,4 +1,4 @@
-import json
+import orjson
 import logging
 from dataclasses import asdict
 from typing import Dict, List
@@ -248,9 +248,9 @@ def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
     fn_name = "totalSupply"
     token_name_rpc = list(generate_eth_call_json_rpc_without_block_number(build_rpc_method_data(tokens, fn_name)))
     if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
+        response = make_requests(params=orjson.dumps(token_name_rpc))
     else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+        response = [make_requests(params=orjson.dumps(token_name_rpc[0]))]
 
     res = []
     for data in list(zip_rpc_response(tokens, response)):
@@ -289,9 +289,9 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
             continue
 
         if is_batch:
-            response = make_requests(params=json.dumps(token_name_rpc))
+            response = make_requests(params=orjson.dumps(token_name_rpc))
         else:
-            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+            response = [make_requests(params=orjson.dumps(token_name_rpc[0]))]
 
         for data in list(zip_rpc_response(tokens, response)):
             result = rpc_response_to_result(data[1])

@@ -1,4 +1,4 @@
-import json
+import orjson
 import logging
 from typing import List
 
@@ -65,9 +65,9 @@ def receipt_rpc_requests(make_request, transaction_hashes, is_batch):
     receipts_rpc = list(generate_get_receipt_json_rpc(transaction_hashes))
 
     if is_batch:
-        response = make_request(params=json.dumps(receipts_rpc))
+        response = make_request(params=orjson.dumps(receipts_rpc))
     else:
-        response = [make_request(params=json.dumps(receipts_rpc[0]))]
+        response = [make_request(params=orjson.dumps(receipts_rpc[0]))]
 
     results = rpc_response_batch_to_results(response)
     return results

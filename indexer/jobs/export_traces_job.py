@@ -1,4 +1,4 @@
-import json
+import orjson
 import logging
 from itertools import groupby
 from typing import List
@@ -169,9 +169,9 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
     trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_numbers))
 
     if is_batch:
-        responses = make_requests(params=json.dumps(trace_block_rpc))
+        responses = make_requests(params=orjson.dumps(trace_block_rpc))
     else:
-        responses = [make_requests(params=json.dumps(trace_block_rpc[0]))]
+        responses = [make_requests(params=orjson.dumps(trace_block_rpc[0]))]
 
     total_traces = []
     for block, response in zip_rpc_response(blocks, responses, index="number"):

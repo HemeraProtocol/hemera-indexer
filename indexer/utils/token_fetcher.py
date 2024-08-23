@@ -4,7 +4,7 @@
 # @Author  will
 # @File  token_fetcher.py
 # @Brief use the `multicall` contract to fetch data
-import json
+import orjson
 import logging
 import os
 from collections import defaultdict
@@ -224,9 +224,9 @@ class TokenFetcher:
 
         return_dic = {}
         if self._is_batch:
-            response = self.make_request(params=json.dumps(eth_calls))
+            response = self.make_request(params=orjson.dumps(eth_calls))
         else:
-            response = [self.make_request(params=json.dumps(eth_calls[0]))]
+            response = [self.make_request(params=orjson.dumps(eth_calls[0]))]
 
         for token_info, data in zip(token_info_items, response):
             k = token_info[self.fixed_k]
@@ -365,9 +365,9 @@ class TokenFetcher:
         token_balance_rpc = list(generate_eth_call_json_rpc(tokens))
 
         if self._is_batch:
-            response = self.make_request(params=json.dumps(token_balance_rpc))
+            response = self.make_request(params=orjson.dumps(token_balance_rpc))
         else:
-            response = [self.make_request(params=json.dumps(token_balance_rpc[0]))]
+            response = [self.make_request(params=orjson.dumps(token_balance_rpc[0]))]
 
         for data in list(zip_rpc_response(tokens, response)):
             result = rpc_response_to_result(data[1])
