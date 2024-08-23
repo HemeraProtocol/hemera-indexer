@@ -41,15 +41,12 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
         config.read(full_path)
 
         try:
-            # 获取并解析 STAKED_PROTOCOL_DICT
             staked_protocol_dict_str = config.get(str(chain_id), "STAKED_PROTOCOL_DICT")
             self.staked_protocol_dict = ast.literal_eval(staked_protocol_dict_str)
 
-            # 获取并解析 STAKED_TOPIC0_DICT
             staked_topic0_dict_str = config.get(str(chain_id), "STAKED_TOPIC0_DICT")
             self.staked_topic0_dict = ast.literal_eval(staked_topic0_dict_str)
 
-            # 获取并解析 STAKED_ABI_DICT
             staked_abi_dict_str = config.get(str(chain_id), "STAKED_ABI_DICT")
             self.staked_abi_dict = ast.literal_eval(staked_abi_dict_str)
 

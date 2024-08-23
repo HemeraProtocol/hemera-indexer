@@ -13,3 +13,14 @@ class StakedFBTCDetail(FilterData):
     log_index: int
     block_number: int
     block_timestamp: int
+
+
+@dataclass
+class TransferedFBTCDetail(FilterData):
+    contract_address: str
+    protocol_id: str
+    wallet_address: str
+    amount: int
+    log_index: int
+    block_number: int
+    block_timestamp: int
