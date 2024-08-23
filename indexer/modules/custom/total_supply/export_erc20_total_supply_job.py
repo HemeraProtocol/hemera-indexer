@@ -1,4 +1,3 @@
-import asyncio
 import configparser
 import json
 import logging
@@ -151,10 +150,8 @@ def collect_pool_total_supply(
         need_collect_list.append({"address": contract_address, "block_number": block_number})
 
     # call totalSupply
-    total_supply_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address", batch_size, max_worker
-        )
+    total_supply_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address", batch_size, max_worker
     )
 
     return total_supply_infos

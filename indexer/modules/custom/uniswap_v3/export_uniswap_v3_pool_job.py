@@ -1,4 +1,3 @@
-import asyncio
 import configparser
 import json
 import logging
@@ -290,10 +289,8 @@ def collect_pool_prices(target_topic0_list, exist_pools, logs, abi_list):
 def collect_swap_new_pools(
     nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ):
-    factory_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
-        )
+    factory_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
     )
     uniswap_pools = []
     need_add = {}
@@ -307,20 +304,14 @@ def collect_swap_new_pools(
             )
     if len(uniswap_pools) == 0:
         return need_add
-    token0_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address", batch_size, max_worker
-        )
+    token0_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address", batch_size, max_worker
     )
-    token1_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address", batch_size, max_worker
-        )
+    token1_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address", batch_size, max_worker
     )
-    tick_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, token1_infos, is_batch, abi_list, "tickSpacing", "address", batch_size, max_worker
-        )
+    tick_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, token1_infos, is_batch, abi_list, "tickSpacing", "address", batch_size, max_worker
     )
     # uniswap v3 pool have no fee function
     # fee_infos = simple_get_rpc_requests(web3, make_requests, tick_infos, is_batch, abi_list, "fee", "address")
