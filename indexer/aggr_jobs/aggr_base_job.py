@@ -16,8 +16,9 @@ class AggrBaseJob:
 
         with open(file_path, "r") as f:
             sql_template = f.read()
-        sql = sql_template.format(start_date=start_date, end_date=end_date,
-                                  start_date_previous=self.get_previous(start_date))
+        sql = sql_template.format(
+            start_date=start_date, end_date=end_date, start_date_previous=self.get_previous(start_date)
+        )
         return sql
 
     @staticmethod
