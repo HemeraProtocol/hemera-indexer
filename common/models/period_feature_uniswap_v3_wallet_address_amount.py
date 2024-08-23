@@ -26,5 +26,6 @@ class PeriodFeatureUniswapV3WalletAddressAmount(HemeraModel):
 
 
 # could be replaced by partition in case of huge amount data
-Index("period_feature_uniswap_v3_wallet_address_amount_period_date",
-      PeriodFeatureUniswapV3WalletAddressAmount.period_date)
+Index(
+    "period_feature_uniswap_v3_wallet_address_amount_period_date", PeriodFeatureUniswapV3WalletAddressAmount.period_date
+)

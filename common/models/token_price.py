@@ -1,4 +1,4 @@
-from sqlalchemy import DATE, Column, Index, String, TIMESTAMP
+from sqlalchemy import DATE, TIMESTAMP, Column, Index, String
 from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC
 
 from common.models import HemeraModel
