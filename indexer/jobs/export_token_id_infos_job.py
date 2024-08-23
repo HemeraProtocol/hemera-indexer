@@ -108,7 +108,7 @@ def generate_token_id_info(
                         "block_number": token_transfer.block_number,
                         "block_timestamp": token_transfer.block_timestamp,
                         "is_get_token_uri": True,
-                        "request_id": hash(key + "_get_token_uri"),
+                        "request_id": abs(hash(key + "_get_token_uri")),
                     }
                 )
 
@@ -120,7 +120,7 @@ def generate_token_id_info(
                     "block_number": token_transfer.block_number,
                     "block_timestamp": token_transfer.block_timestamp,
                     "is_get_token_uri": False,
-                    "request_id": hash(key),
+                    "request_id": abs(hash(key)),
                 }
             )
 
