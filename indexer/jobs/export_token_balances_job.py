@@ -1,8 +1,6 @@
 import logging
 from dataclasses import dataclass
-from functools import partial
 from typing import List, Optional, Union
-from numba import jit
 
 from eth_utils import to_hex
 from hexbytes import HexBytes
@@ -16,7 +14,7 @@ from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import pad_address, uint256_to_bytes
 from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.multicall_hemera.util import calculate_execution_time, global_pool_manager
+from indexer.utils.multicall_hemera.util import calculate_execution_time
 from indexer.utils.token_fetcher import TokenFetcher
 from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group
 
@@ -101,7 +99,6 @@ class ExportTokenBalancesJob(BaseExportJob):
         self._collect_items(TokenBalance.type(), results)
 
     @calculate_execution_time
-    @jit(nopython=True)
     def _collect_batch_convert(self, token_balances):
         # convert = partial(dict_to_dataclass, cls=TokenBalance)
         # return global_pool_manager.parallel_process(convert, [(t,) for t in token_balances])
