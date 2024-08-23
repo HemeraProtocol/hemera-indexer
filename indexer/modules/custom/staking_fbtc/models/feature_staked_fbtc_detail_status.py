@@ -32,7 +32,7 @@ class FeatureStakedFBTCDetailStatus(HemeraModel):
             {
                 "domain": "TransferredFBTCCurrentStatus",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > feature_staked_fbtc_status.block_number",
                 "converter": general_converter,
             },
         ]
