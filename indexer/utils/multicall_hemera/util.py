@@ -4,7 +4,6 @@
 # @Author  will
 # @File  util.py.py
 # @Brief
-import json
 import logging
 import os
 import time
@@ -92,8 +91,7 @@ def calculate_execution_time(func):
 def make_request_concurrent(make_request, chunks, max_workers=None):
     def single_request(chunk, index):
         logger.debug(f"single request {len(chunk)}")
-        print(index, json.dumps(chunk))
-        return index, make_request(params=json.dumps(chunk))
+        return index, make_request(params=orjson.dumps(chunk))
 
     if max_workers is None:
         max_workers = os.cpu_count() + 4
