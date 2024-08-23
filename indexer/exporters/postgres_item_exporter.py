@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 from typing import Type
 
@@ -12,7 +13,7 @@ from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 500
+COMMIT_BATCH_SIZE = int(os.getenv("COMMIT_BATCH_SIZE", 500))
 
 
 class PostgresItemExporter(BaseExporter):

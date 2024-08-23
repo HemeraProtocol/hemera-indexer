@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 from typing import Type
 
@@ -15,7 +16,7 @@ from indexer.modules.custom.address_index.domain import *
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 500
+COMMIT_BATCH_SIZE = int(os.getenv("COMMIT_BATCH_SIZE", 500))
 
 
 class HemeraAddressPostgresItemExporter(BaseExporter):
