@@ -133,7 +133,7 @@ def encode_balance_abi_parameter(address, token_type, token_id):
         encoded_arguments = HexBytes(pad_address(address) + uint256_to_bytes(token_id))
         return to_hex(HexBytes(balance_of_token_id_sig_prefix) + encoded_arguments)
     else:
-        encoded_arguments = HexBytes((pad_address(address)))
+        encoded_arguments = HexBytes(pad_address(address))
         return to_hex(HexBytes(balance_of_sig_prefix) + encoded_arguments)
 
 
