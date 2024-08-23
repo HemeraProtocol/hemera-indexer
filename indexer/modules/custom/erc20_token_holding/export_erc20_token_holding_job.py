@@ -35,6 +35,7 @@ FEATURE_ID = FeatureType.ERC20_TOKEN_HOLDING.value
 class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
     dependency_types = [TokenBalance, CurrentTokenBalance]
     output_types = [Erc20TokenHolding, Erc20CurrentTokenHolding]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -109,7 +110,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
 
     def _process(self, **kwargs):
 
-        self._data_buff[Erc20TokenHolding.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[Erc20TokenHolding.type()].sort(key=lambda x: x.block_number)
         self._data_buff[Erc20CurrentTokenHolding.type()].sort(key=lambda x: x.block_number)
 
 
@@ -118,8 +119,8 @@ def parse_balance_to_holding(token_balance: TokenBalance):
         token_address=token_balance.token_address,
         wallet_address=token_balance.address,
         balance=token_balance.balance,
-        called_block_number=token_balance.block_number,
-        called_block_timestamp=token_balance.block_timestamp,
+        block_number=token_balance.block_number,
+        block_timestamp=token_balance.block_timestamp,
     )
 
 

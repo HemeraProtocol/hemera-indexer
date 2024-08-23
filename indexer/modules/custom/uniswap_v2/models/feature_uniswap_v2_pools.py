@@ -16,7 +16,7 @@ class UniswapV2Pools(HemeraModel):
 
     length = Column(NUMERIC(100))
 
-    called_block_number = Column(BIGINT)
+    block_number = Column(BIGINT)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())

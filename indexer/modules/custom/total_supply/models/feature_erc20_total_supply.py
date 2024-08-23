@@ -10,14 +10,15 @@ class FeatureErc20TotalSupplyRecords(HemeraModel):
     __tablename__ = "feature_erc20_total_supply_records"
     token_address = Column(BYTEA, primary_key=True)
 
-    called_block_number = Column(BIGINT, primary_key=True)
-    called_block_timestamp = Column(BIGINT, primary_key=True)
+    block_number = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(BIGINT, primary_key=True)
     total_supply = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (PrimaryKeyConstraint("token_address", "called_block_timestamp", "called_block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("token_address", "block_timestamp", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():

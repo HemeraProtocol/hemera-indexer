@@ -18,6 +18,7 @@ class FeatureStakedFBTCDetailRecords(HemeraModel):
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
+    reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
         PrimaryKeyConstraint("contract_address", "wallet_address", "block_timestamp", "block_number", "log_index"),

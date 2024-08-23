@@ -14,8 +14,8 @@ class FeatureBlueChipHolders(HemeraModel):
 
     current_count = Column(BIGINT)
 
-    called_block_number = Column(BIGINT)
-    called_block_timestamp = Column(TIMESTAMP)
+    block_number = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
