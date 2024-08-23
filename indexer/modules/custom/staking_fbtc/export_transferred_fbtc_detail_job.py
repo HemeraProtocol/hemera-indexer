@@ -3,28 +3,28 @@ import configparser
 import logging
 import os
 from collections import defaultdict
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
-from indexer.domain.log import Log
+from indexer.domain.token_transfer import ERC20TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
-    StakedFBTCCurrentStatus,
-    StakedFBTCDetail,
+    TransferredFBTCCurrentStatus,
+    TransferredFBTCDetail,
 )
 from indexer.modules.custom.staking_fbtc.models.feature_staked_fbtc_detail_status import FeatureStakedFBTCDetailStatus
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 
 logger = logging.getLogger(__name__)
-FEATURE_ID = FeatureType.STAKED_FBTC_LOGS.value
+FEATURE_ID = FeatureType.TRANSFERRED_FBTC.value
 
 
 class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
-    dependency_types = [Log]
-    output_types = [StakedFBTCDetail, StakedFBTCCurrentStatus]
+    dependency_types = [ERC20TokenTransfer]
+    output_types = [TransferredFBTCDetail, TransferredFBTCCurrentStatus]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -40,7 +40,7 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("config.ini", self._chain_id)
         self._service = (kwargs["config"].get("db_service"),)
-        self._current_holdings = get_current_status(self._service, list(self.staked_abi_dict.keys()))
+        self._current_holdings = get_current_status(self._service, list(self._transferred_protocol_dict.keys()))
 
     def _load_config(self, filename, chain_id):
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -49,48 +49,43 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
         config.read(full_path)
 
         try:
-            staked_protocol_dict_str = config.get(str(chain_id), "STAKED_PROTOCOL_DICT")
-            self.staked_protocol_dict = ast.literal_eval(staked_protocol_dict_str)
-
-            staked_topic0_dict_str = config.get(str(chain_id), "STAKED_TOPIC0_DICT")
-            self.staked_topic0_dict = ast.literal_eval(staked_topic0_dict_str)
-
-            staked_abi_dict_str = config.get(str(chain_id), "STAKED_ABI_DICT")
-            self.staked_abi_dict = ast.literal_eval(staked_abi_dict_str)
+            self._fbtc_address = config.get(str(chain_id), "FBTC_ADDRESS").lower()
+            transferred_protocol_dict_str = config.get(str(chain_id), "TRANSFERRED_CONTRACTS_DICT")
+            self._transferred_protocol_dict = ast.literal_eval(transferred_protocol_dict_str)
 
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
-        except (SyntaxError, ValueError) as e:
-            raise ValueError(f"Error parsing configuration in {filename}: {str(e)}")
 
     def get_filter(self):
         return TransactionFilterByLogs(
             [
-                TopicSpecification(topics=list(self.staked_abi_dict.keys())),
+                TopicSpecification(addresses=[self._fbtc_address]),
             ]
         )
 
     def _collect(self, **kwargs):
-        logs = self._data_buff[Log.type()]
-        staked_details, current_status_list, current_holdings = collect_detail(
-            logs, self._current_holdings, self.staked_abi_dict, self.staked_protocol_dict
+        token_transfers = self._data_buff[ERC20TokenTransfer.type()]
+
+        transferred_details, current_status_list, updated_current_holdings = process_token_transfers(
+            token_transfers, self._current_holdings, self._transferred_protocol_dict, self._fbtc_address
         )
-        for data in staked_details:
-            self._collect_item(StakedFBTCDetail.type(), data)
+
+        for data in transferred_details:
+            self._collect_item(TransferredFBTCDetail.type(), data)
         for data in current_status_list:
-            self._collect_item(StakedFBTCCurrentStatus.type(), data)
-        self._current_holdings = current_holdings
+            self._collect_item(TransferredFBTCCurrentStatus.type(), data)
+        self._current_holdings = updated_current_holdings
 
     def _process(self, **kwargs):
-        self._data_buff[StakedFBTCDetail.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[StakedFBTCCurrentStatus.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[TransferredFBTCDetail.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[TransferredFBTCCurrentStatus.type()].sort(key=lambda x: x.block_number)
 
 
-def get_current_status(db_service, staked_contract_list):
+def get_current_status(db_service, transferred_contract_list):
     if not db_service:
         return {}
     bytea_address_list = []
-    for address in staked_contract_list:
+    for address in transferred_contract_list:
         bytes_address = bytes.fromhex(address[2:])
         bytea_address_list.append(bytes_address)
 
@@ -101,12 +96,12 @@ def get_current_status(db_service, staked_contract_list):
             .filter(FeatureStakedFBTCDetailStatus.contract_address.in_(bytea_address_list))
             .all()
         )
-        staked_fbtc_map = {}
+        transferred_fbtc_map = {}
         if result is not None:
             for item in result:
                 item.contract_address = "0x" + item.contract_address.hex()
                 item.wallet_address = "0x" + item.wallet_address.hex()
-                staked_fbtc_map[item.contract_address][item.wallet_address] = StakedFBTCCurrentStatus(
+                transferred_fbtc_map[item.contract_address][item.wallet_address] = TransferredFBTCCurrentStatus(
                     contract_address=item.contract_address,
                     protocol_id=item.protocol_id,
                     wallet_address=item.wallet_address,
@@ -121,19 +116,21 @@ def get_current_status(db_service, staked_contract_list):
     finally:
         session.close()
 
-    return staked_fbtc_map
+    return transferred_fbtc_map
 
 
-def collect_detail(
-    logs: List[Log],
-    current_holdings: Dict[str, Dict[str, StakedFBTCCurrentStatus]],
-    staked_abi_dict: Dict[str, Any],
-    staked_protocol_dict: Dict[str, str],
-) -> Tuple[List[StakedFBTCDetail], List[StakedFBTCCurrentStatus], Dict[str, Dict[str, StakedFBTCCurrentStatus]]]:
+def process_token_transfers(
+    token_transfers: List[ERC20TokenTransfer],
+    current_holdings: Dict[str, Dict[str, TransferredFBTCCurrentStatus]],
+    transferred_protocol_dict: Dict[str, str],
+    fbtc_address: str,
+) -> Tuple[
+    List[TransferredFBTCDetail], List[TransferredFBTCCurrentStatus], Dict[str, Dict[str, TransferredFBTCCurrentStatus]]
+]:
     # Initialize current_status with existing holdings
     current_status = defaultdict(
         lambda: defaultdict(
-            lambda: StakedFBTCCurrentStatus(
+            lambda: TransferredFBTCCurrentStatus(
                 contract_address="", protocol_id="", wallet_address="", amount=0, block_number=0, block_timestamp=0
             )
         )
@@ -142,38 +139,41 @@ def collect_detail(
         for wallet_address, status in wallet_dict.items():
             current_status[contract_address][wallet_address] = status
 
-    # Group logs by contract address and then by block number
-    logs_by_address = defaultdict(lambda: defaultdict(list))
-    for log in logs:
-        if log.topic0 in staked_abi_dict and log.address in staked_protocol_dict:
-            logs_by_address[log.address][log.block_number].append(log)
+    # Group transfers by block number
+    transfers_by_block = defaultdict(list)
+    for transfer in token_transfers:
+        if transfer.token_address == fbtc_address:
+            transfers_by_block[transfer.block_number].append(transfer)
 
-    staked_details = []
+    transferred_details = []
 
-    # Process logs for each contract address
-    for address, blocks in logs_by_address.items():
-        protocol_id = staked_protocol_dict[address]
+    # Process transfers block by block
+    for block_number in sorted(transfers_by_block.keys()):
+        block_transfers = transfers_by_block[block_number]
+        block_changes = defaultdict(lambda: defaultdict(int))
+        block_timestamp = block_transfers[0].block_timestamp
 
-        # Process logs block by block
-        for block_number in sorted(blocks.keys()):
-            block_logs = blocks[block_number]
-            block_changes = defaultdict(int)
-            block_timestamp = block_logs[0].block_timestamp
+        # Accumulate changes within the block
+        for entity in block_transfers:
+            if entity.from_address in transferred_protocol_dict:
+                from_contract_address = entity.from_address
+                to_wallet_address = entity.to_address
+                block_changes[from_contract_address][to_wallet_address] -= entity.value
 
-            # Accumulate changes within the block
-            for log in block_logs:
-                decode_staked = decode_log(staked_abi_dict[log.topic0], log)
-                wallet_address = decode_staked["user"]
-                amount = decode_staked["amount"]
-                block_changes[wallet_address] += amount
+            if entity.to_address in transferred_protocol_dict:
+                to_contract_address = entity.to_address
+                from_wallet_address = entity.from_address
+                block_changes[to_contract_address][from_wallet_address] += entity.value
 
-            # Apply accumulated changes and create StakedFBTCDetail
-            for wallet_address, change in block_changes.items():
-                current_amount = current_status[address][wallet_address].amount
+        # Apply accumulated changes and create TransferredFBTCDetail
+        for contract_address, wallet_changes in block_changes.items():
+            protocol_id = transferred_protocol_dict[contract_address]
+            for wallet_address, change in wallet_changes.items():
+                current_amount = current_status[contract_address][wallet_address].amount
                 new_amount = current_amount + change
 
-                current_status[address][wallet_address] = StakedFBTCCurrentStatus(
-                    contract_address=address,
+                current_status[contract_address][wallet_address] = TransferredFBTCCurrentStatus(
+                    contract_address=contract_address,
                     protocol_id=protocol_id,
                     wallet_address=wallet_address,
                     amount=new_amount,
@@ -181,9 +181,9 @@ def collect_detail(
                     block_timestamp=block_timestamp,
                 )
 
-                staked_details.append(
-                    StakedFBTCDetail(
-                        contract_address=address,
+                transferred_details.append(
+                    TransferredFBTCDetail(
+                        contract_address=contract_address,
                         protocol_id=protocol_id,
                         wallet_address=wallet_address,
                         amount=new_amount,
@@ -202,4 +202,4 @@ def collect_detail(
         for wallet_address, status in wallet_dict.items():
             updated_current_holdings[contract_address][wallet_address] = status
 
-    return staked_details, current_status_list, updated_current_holdings
+    return transferred_details, current_status_list, updated_current_holdings

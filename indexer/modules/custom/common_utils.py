@@ -1,8 +1,5 @@
-import asyncio
 import json
 import logging
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 
 import eth_abi
 from web3 import Web3
@@ -18,27 +15,29 @@ def get_chain_id(web3):
     return web3.eth.chain_id
 
 
-async def optimized_get_rpc_requests(
-    web3, make_requests, requests, is_batch, abi_list, fn_name, contract_address_key, batch_size, max_workers
+def simple_get_rpc_requests(
+    web3, make_requests, requests, is_batch, abi_list, fn_name, contract_address_key, batch_size, max_worker
 ):
-    if not requests:
+    if len(requests) == 0:
         return []
 
     function_abi = next((abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"), None)
-    output_types = [output["type"] for output in function_abi["outputs"]]
+    outputs = function_abi["outputs"]
+    output_types = [output["type"] for output in outputs]
 
-    async def process_batch(batch):
+    def process_batch(batch):
         parameters = build_no_input_method_data(web3, batch, fn_name, abi_list, contract_address_key)
         token_name_rpc = list(generate_eth_call_json_rpc(parameters))
 
         if is_batch:
-            response = await make_requests(params=json.dumps(token_name_rpc))
+            response = make_requests(params=json.dumps(token_name_rpc))
         else:
-            response = [await make_requests(params=json.dumps(token_name_rpc[0]))]
+            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
         token_infos = []
-        for token, rpc_response in zip(parameters, response):
-            result = rpc_response_to_result(rpc_response)
+        for data in list(zip_rpc_response(parameters, response)):
+            result = rpc_response_to_result(data[1])
+            token = data[0]
             value = result[2:] if result is not None else None
             try:
                 decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
@@ -54,19 +53,23 @@ async def optimized_get_rpc_requests(
             token_infos.append(token)
         return token_infos
 
-    async def process_all_batches():
-        tasks = []
-        for i in range(0, len(requests), batch_size):
-            batch = requests[i : i + batch_size]
-            tasks.append(asyncio.create_task(process_batch(batch)))
-        return await asyncio.gather(*tasks)
+    executor = BatchWorkExecutor(
+        starting_batch_size=batch_size,
+        max_workers=max_worker,
+        job_name=f"simple_get_rpc_requests_{fn_name}",
+    )
 
-    loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        partial_process = partial(loop.run_until_complete, process_all_batches())
-        all_token_infos = await loop.run_in_executor(executor, partial_process)
+    all_token_infos = []
 
-    return [item for sublist in all_token_infos for item in sublist]
+    def work_handler(batch):
+        nonlocal all_token_infos
+        batch_results = process_batch(batch)
+        all_token_infos.extend(batch_results)
+
+    executor.execute(requests, work_handler, total_items=len(requests))
+    executor.wait()
+
+    return all_token_infos
 
 
 def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_key="pool_address"):

@@ -10,6 +10,35 @@ class StakedFBTCDetail(FilterData):
     protocol_id: str
     wallet_address: str
     amount: int
-    log_index: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class StakedFBTCCurrentStatus(FilterData):
+    contract_address: str
+    protocol_id: str
+    wallet_address: str
+    amount: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class TransferredFBTCDetail(FilterData):
+    contract_address: str
+    protocol_id: str
+    wallet_address: str
+    amount: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class TransferredFBTCCurrentStatus(FilterData):
+    contract_address: str
+    protocol_id: str
+    wallet_address: str
+    amount: int
     block_number: int
     block_timestamp: int

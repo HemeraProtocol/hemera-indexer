@@ -1,4 +1,3 @@
-import asyncio
 import configparser
 import json
 import logging
@@ -428,10 +427,8 @@ def collect_pool_total_supply(
     need_collect_list, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ) -> Tuple[List[UniswapV2PoolTotalSupply], UniswapV2PoolCurrentTotalSupply]:
     # Call totalSupply
-    total_supply_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address", batch_size, max_worker
-        )
+    total_supply_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, need_collect_list, is_batch, abi_list, "totalSupply", "address", batch_size, max_worker
     )
 
     # Initialize variables
@@ -468,10 +465,8 @@ def collect_pool_total_supply(
 def collect_active_new_pools(
     factory_address, active_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ):
-    factory_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, active_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
-        )
+    factory_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, active_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
     )
     uniswap_pools = []
     need_add = {}
@@ -485,15 +480,11 @@ def collect_active_new_pools(
             )
     if len(uniswap_pools) == 0:
         return need_add
-    token0_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address", batch_size, max_worker
-        )
+    token0_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, uniswap_pools, is_batch, abi_list, "token0", "address", batch_size, max_worker
     )
-    token1_infos = asyncio.run(
-        common_utils.optimized_get_rpc_requests(
-            web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address", batch_size, max_worker
-        )
+    token1_infos = common_utils.simple_get_rpc_requests(
+        web3, make_requests, token0_infos, is_batch, abi_list, "token1", "address", batch_size, max_worker
     )
     for data in token1_infos:
         pool_address = data["address"]

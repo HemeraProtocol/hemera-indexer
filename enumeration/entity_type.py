@@ -16,7 +16,10 @@ from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
+from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import (
+    Erc20CurrentTokenHolding,
+    Erc20TokenHolding,
+)
 from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenCurrentHolding,
     MerchantMoeErc1155TokenCurrentSupply,
@@ -24,8 +27,13 @@ from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenSupply,
 )
 from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin
-from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import StakedFBTCDetail
-from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
+from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
+    StakedFBTCCurrentStatus,
+    StakedFBTCDetail,
+    TransferredFBTCCurrentStatus,
+    TransferredFBTCDetail,
+)
+from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20CurrentTotalSupply, Erc20TotalSupply
 from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
     UniswapV2CurrentLiquidityHolding,
     UniswapV2LiquidityHolding,
@@ -65,6 +73,7 @@ class EntityType(IntFlag):
     STAKED_FBTC = 1 << 9
     MERCHANT = 1 << 10
     ADDRESS_INDEX = 1 << 11
+    FBTC_ETH = 1 << 12
 
     @staticmethod
     def combine_all_entity_types():
@@ -132,6 +141,9 @@ def generate_output_types(entity_types):
         yield UniswapV3TokenDetail
         yield UniswapV3PoolCurrentPrice
         yield UniswapV3TokenCurrentStatus
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
         yield Log
 
     if entity_types & EntityType.USER_OPS:
@@ -201,3 +213,29 @@ def generate_output_types(entity_types):
         yield MerchantMoeErc1155TokenCurrentSupply
         yield MerChantMoeTokenBin
         yield MerChantMoeTokenCurrentBin
+
+    if entity_types & EntityType.FBTC_ETH:
+        # yield ERC721TokenTransfer
+        # yield ERC721TokenIdChange
+        # yield UpdateERC721TokenIdDetail
+        # yield ERC721TokenIdDetail
+        yield Token
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
+        # yield UniswapV3Pool
+        # yield UniswapV3Token
+        # yield UniswapV3PoolPrice
+        # yield UniswapV3TokenDetail
+        # yield UniswapV3PoolCurrentPrice
+        # yield UniswapV3TokenCurrentStatus
+        yield Log
+        yield Erc20TokenHolding
+        yield ERC20TokenTransfer
+        yield Erc20CurrentTokenHolding
+        yield Erc20TotalSupply
+        yield Erc20CurrentTotalSupply
+        yield TransferredFBTCDetail
+        yield StakedFBTCDetail
+        yield StakedFBTCCurrentStatus
+        yield TransferredFBTCCurrentStatus
