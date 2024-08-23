@@ -68,6 +68,7 @@ class BaseJob(metaclass=BaseJobMeta):
         self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
         self._reorg = kwargs["reorg"] if kwargs.get("reorg") else False
         self._should_reorg = False
+        self._should_reorg_type = set()
         self._service = kwargs["config"].get("db_service", None)
 
     def run(self, **kwargs):
@@ -98,15 +99,21 @@ class BaseJob(metaclass=BaseJobMeta):
 
             reorg_block = int(kwargs["start_block"])
 
-            output_table = set()
+            output_table = {}
             for domain in self.output_types:
-                output_table.add(domain_model_mapping[domain.__name__]["table"])
+                output_table[domain_model_mapping[domain.__name__]["table"]] = domain.type()
+                # output_table.add(domain_model_mapping[domain.__name__]["table"])
 
-            for table in output_table:
-                self._should_reorg = self._should_reorg or should_reorg(reorg_block, table, self._service)
+            for table in output_table.keys():
+                if should_reorg(reorg_block, table, self._service):
+                    self._should_reorg_type.add(output_table[table])
+                    self._should_reorg = True
 
     def _end(self):
-        pass
+        if self._reorg:
+            for output in self.output_types:
+                if output.type() not in self._should_reorg_type and output.type() in self._data_buff.keys():
+                    self._data_buff.pop(output.type())
 
     def _collect(self, **kwargs):
         pass
@@ -117,6 +124,10 @@ class BaseJob(metaclass=BaseJobMeta):
     def _collect_item(self, key, data):
         with self.locks[key]:
             self._data_buff[key].append(data)
+
+    def _collect_items(self, key, data_list):
+        with self.locks[key]:
+            self._data_buff[key].extend(data_list)
 
     def _collect_domain(self, domain):
         with self.locks[domain.type()]:

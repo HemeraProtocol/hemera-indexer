@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from eth_utils import to_int, to_normalized_address
 
@@ -26,7 +26,7 @@ class Block(Domain):
     transactions_root: str
     state_root: str
     receipts_root: str
-    transactions: List[Transaction] = field(default_factory=list)
+    transactions: Union[List[Transaction], None] = field(default_factory=list)
     total_difficulty: Optional[int] = None
     extra_data: Optional[str] = None
     withdrawals_root: Optional[str] = None

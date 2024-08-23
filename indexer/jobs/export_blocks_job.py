@@ -47,9 +47,11 @@ class ExportBlocksJob(BaseExportJob):
 
             reorg_block = int(kwargs["start_block"])
             set_reorg_sign(reorg_block, self._service)
+            self._should_reorg_type.add(Block.type())
             self._should_reorg = True
 
     def _end(self):
+        super()._end()
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
     def _collect(self, **kwargs):
@@ -105,7 +107,7 @@ class ExportBlocksJob(BaseExportJob):
             if timestamp not in ts_dict or block_number < ts_dict[timestamp]:
                 ts_dict[timestamp] = block_number
 
-        self._data_buff[BlockTsMapper.type()] = [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()]
+        self._collect_items(BlockTsMapper.type(), [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()])
 
 
 def blocks_rpc_requests(make_request, block_number_batch, is_batch):

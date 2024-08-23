@@ -74,13 +74,14 @@ class ExportTracesJob(BaseExportJob):
             block_number, block_hash = group_key
             traces_count = len(list(traces))
             internal_transactions_count = sum(1 for trace in traces if trace.is_contract_creation())
-            self._data_buff[UpdateBlockInternalCount.type()].append(
+            self._collect_item(
+                UpdateBlockInternalCount.type(),
                 UpdateBlockInternalCount(
                     number=block_number,
                     hash=block_hash,
                     traces_count=traces_count,
                     internal_transactions_count=internal_transactions_count,
-                )
+                ),
             )
 
 
