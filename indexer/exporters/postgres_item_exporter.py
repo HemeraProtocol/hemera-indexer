@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from datetime import datetime
@@ -21,6 +22,8 @@ class PostgresItemExporter(BaseExporter):
 
         self.service = service
 
+    logger = logging.getLogger(__name__)
+
     def export_items(self, items):
         start_time = datetime.now(tzlocal())
 
@@ -28,38 +31,53 @@ class PostgresItemExporter(BaseExporter):
         try:
             insert_stmt = ""
             items_grouped_by_type = group_by_item_type(items)
-            tables = []
-            for item_type in items_grouped_by_type.keys():
-                item_group = items_grouped_by_type.get(item_type)
 
-                if item_group:
-                    pg_config = domain_model_mapping[item_type.__name__]
+            async def process_item_group(item_type, item_group):
+                table_start_time = datetime.now(tzlocal())
+                if not item_group:
+                    return None
 
-                    table = pg_config["table"]
-                    do_update = pg_config["conflict_do_update"]
-                    update_strategy = pg_config["update_strategy"]
-                    converter = pg_config["converter"]
+                pg_config = domain_model_mapping[item_type.__name__]
+                table = pg_config["table"]
+                do_update = pg_config["conflict_do_update"]
+                update_strategy = pg_config["update_strategy"]
+                converter = pg_config["converter"]
 
-                    cur = conn.cursor()
-                    data = [converter(table, item, do_update) for item in item_group]
+                cur = conn.cursor()
+                data = [converter(table, item, do_update) for item in item_group]
 
-                    columns = list(data[0].keys())
-                    values = [tuple(d.values()) for d in data]
+                columns = list(data[0].keys())
+                values = [tuple(d.values()) for d in data]
 
-                    insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
+                insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
 
-                    execute_values(cur, insert_stmt, values, page_size=COMMIT_BATCH_SIZE)
-                    conn.commit()
-                    tables.append(table.__tablename__)
+                execute_values(cur, insert_stmt, values, page_size=COMMIT_BATCH_SIZE)
+                conn.commit()
+                table_end_time = datetime.now(tzlocal())
+                logger.info(
+                    "Exporting items to table {} end, Item count: {}, Took {}".format(
+                        table.__tablename__, len(item_group), (table_end_time - table_start_time)
+                    )
+                )
+                return table.__tablename__
+
+            async def run_tasks():
+                tasks = [
+                    process_item_group(item_type, items_grouped_by_type.get(item_type))
+                    for item_type in items_grouped_by_type.keys()
+                ]
+                return await asyncio.gather(*tasks)
+
+            tables = asyncio.run(run_tasks())
+            tables = [table for table in tables if table is not None]
 
         except Exception as e:
-            # print(e)
             logger.error(f"Error exporting items:{e}")
             logger.error(f"{insert_stmt}")
-            # print(item_type, insert_stmt, [i[-1] for i in data])
             raise Exception("Error exporting items")
         finally:
             self.service.release_conn(conn)
+
         end_time = datetime.now(tzlocal())
         logger.info(
             "Exporting items to table {} end, Item count: {}, Took {}".format(
