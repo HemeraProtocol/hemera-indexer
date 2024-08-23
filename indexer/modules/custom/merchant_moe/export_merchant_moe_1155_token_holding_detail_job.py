@@ -72,7 +72,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
 
         try:
             address_list_str = config.get(str(chain_id), "address_list")
-            self._need_collected_list = address_list_str.split(",")
+            self._need_collected_list = [address.strip() for address in address_list_str.split(",")]
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
