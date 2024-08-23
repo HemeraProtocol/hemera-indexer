@@ -7,6 +7,7 @@ from common.models import HemeraModel
 class PeriodFeatureUniswapV3WalletAddressAmount(HemeraModel):
     __tablename__ = "period_feature_uniswap_v3_wallet_address_amount"
 
+    protocol_id = Column(String, primary_key=True, nullable=False)
     contract_address = Column(BYTEA, primary_key=True, nullable=False)
     period_date = Column(DATE, primary_key=True, nullable=False)
     token_id = Column(INTEGER, primary_key=True, nullable=False)

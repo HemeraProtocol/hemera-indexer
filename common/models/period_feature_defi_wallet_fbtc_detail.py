@@ -6,11 +6,12 @@ from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, JSONB
 from common.models import HemeraModel
 
 
-class PeriodFeatureUniswapV3WalletFbtcDetail(HemeraModel):
-    __tablename__ = "period_feature_uniswap_v3_wallet_fbtc_detail"
+class PeriodFeatureDefiWalletFbtcDetail(HemeraModel):
+    __tablename__ = "period_feature_defi_wallet_fbtc_detail"
 
+    protocol_id = Column(String, primary_key=True, nullable=False)
     wallet_address = Column(String, primary_key=True)
-    period_date = Column(INTEGER, primary_key=True)
+    period_date = Column(DATE, primary_key=True)
     chain_name = Column(String, primary_key=True)
     contracts = Column(JSONB)
 
@@ -29,4 +30,4 @@ class PeriodFeatureUniswapV3WalletFbtcDetail(HemeraModel):
 
 # could be replaced by partition in case of huge amount data
 Index("period_feature_uniswap_v3_wallet_fbtc_detail_period_date",
-      PeriodFeatureUniswapV3WalletFbtcDetail.period_date)
+      PeriodFeatureDefiWalletFbtcDetail.period_date)
