@@ -28,7 +28,7 @@ class PostgreSQLService(object):
             cls.instance = super().__new__(cls)
         return cls.instance
 
-    def __init__(self, jdbc_url, db_version="head", script_location="migrations"):
+    def __init__(self, jdbc_url, db_version="head", script_location="migrations", init_schema=True):
         self.db_version = db_version
         self.engine = create_engine(
             jdbc_url,
@@ -42,7 +42,8 @@ class PostgreSQLService(object):
         self.connection_pool = pool.SimpleConnectionPool(1, 10, jdbc_url)
 
         self.Session = sessionmaker(bind=self.engine)
-        self.init_schema(script_location)
+        if init_schema:
+            self.init_schema(script_location)
 
     def get_conn(self):
         return self.connection_pool.getconn()

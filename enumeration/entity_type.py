@@ -39,7 +39,7 @@ class EntityType(IntFlag):
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
-    ADDRESS_INDEX = 1 << 6
+    ADDRESS_INDEX = 1 << 7
 
     @staticmethod
     def combine_all_entity_types():

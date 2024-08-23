@@ -15,8 +15,6 @@ class AddressTokenHolders(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("address", "token_address"),)
-
     @staticmethod
     def model_domain_mapping():
         return [
