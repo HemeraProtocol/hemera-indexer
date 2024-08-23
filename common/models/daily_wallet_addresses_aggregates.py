@@ -50,8 +50,6 @@ class DailyWalletAddressesAggregates(HemeraModel):
     from_address_unique_interacted_cnt = Column(INTEGER, default=0)
     to_address_unique_interacted_cnt = Column(INTEGER, default=0)
 
-    token_balance = Column(NUMERIC(78), default=0)
-
 
 # could be replaced by partition in case of huge amount data
 Index("daily_wallet_addresses_aggregates_block_date_index", DailyWalletAddressesAggregates.block_date)
