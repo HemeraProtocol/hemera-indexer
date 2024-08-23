@@ -61,6 +61,9 @@ class TokenFetcher:
         self._is_multi_call = kwargs["multicall"]
         if not self._is_multi_call:
             self.logger.info("multicall is disabled")
+            self.net = None
+            self.multi_call = None
+            self.deploy_block_number = 2**56
         else:
             try:
                 self.net = Network.from_value(self.chain_id)
