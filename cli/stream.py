@@ -186,6 +186,14 @@ def calculate_execution_time(func):
     envvar="MAX_WORKERS",
 )
 @click.option(
+    "--delay",
+    default=0,
+    show_default=True,
+    type=int,
+    envvar="DELAY",
+    help="The limit number of blocks which delays from the network current block number.",
+)
+@click.option(
     "--log-file",
     default=None,
     show_default=True,
@@ -241,6 +249,7 @@ def stream(
     entity_types,
     output_types,
     blocks_per_file,
+    delay=0,
     period_seconds=10,
     batch_size=10,
     debug_batch_size=1,
@@ -310,6 +319,7 @@ def stream(
         job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
         retry_from_record=retry_from_record,
+        delay=delay,
     )
 
     controller.action(
