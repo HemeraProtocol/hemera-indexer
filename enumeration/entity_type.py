@@ -16,7 +16,8 @@ from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding
+from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import Erc20TokenHolding, \
+    Erc20CurrentTokenHolding
 from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenCurrentHolding,
     MerchantMoeErc1155TokenCurrentSupply,
@@ -65,6 +66,7 @@ class EntityType(IntFlag):
     STAKED_FBTC = 1 << 9
     MERCHANT = 1 << 10
     ADDRESS_INDEX = 1 << 11
+    FTBC_ETH = 1 << 12
 
     @staticmethod
     def combine_all_entity_types():
@@ -201,3 +203,19 @@ def generate_output_types(entity_types):
         yield MerchantMoeErc1155TokenCurrentSupply
         yield MerChantMoeTokenBin
         yield MerChantMoeTokenCurrentBin
+
+    if entity_types & EntityType.FTBC_ETH:
+        yield ERC721TokenTransfer
+        yield Token
+        yield UniswapV3Pool
+        yield UniswapV3Token
+        yield UniswapV3PoolPrice
+        yield UniswapV3TokenDetail
+        yield UniswapV3PoolCurrentPrice
+        yield UniswapV3TokenCurrentStatus
+        yield Log
+        yield StakedFBTCDetail
+        yield Erc20TokenHolding
+        yield Erc20CurrentTokenHolding
+
+
