@@ -4,13 +4,15 @@
 # @Author  will
 # @File  token_fetcher.py
 # @Brief use the `multicall` contract to fetch data
-import orjson
+
 import logging
 import os
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
+from typing import Union, Dict, Tuple, List
 
+import orjson
 from eth_abi import abi
 
 from common.utils.format_utils import to_snake_case
@@ -391,21 +393,14 @@ class TokenFetcher:
         return result_dic
 
     @staticmethod
-    # @lru_cache(maxsize=20_0000)
-    def build_key_in(record, fields):
-        values = []
-        for field in fields:
-            try:
-                values.append(str(next(value for name, value in record if name == field)))
-            except StopIteration:
-                pass
-        return "|".join(values)
-
-    @staticmethod
-    def build_key(record, fields: tuple):
+    def build_key(record: Union[Dict, Tuple, List], fields: Tuple[str, ...]) -> str:
         if isinstance(record, dict):
-            return TokenFetcher.build_key_in(dict_to_tuple(record), fields)
-        return TokenFetcher.build_key_in(record, fields)
+            return '|'.join(str(record.get(field, '')) for field in fields)
+        elif isinstance(record, (tuple, list)):
+            field_dict = dict(record)
+            return '|'.join(str(field_dict.get(field, '')) for field in fields)
+        else:
+            raise TypeError("record must be a dict, tuple, or list")
 
     @staticmethod
     def chunk_list(lst, chunk_size):
