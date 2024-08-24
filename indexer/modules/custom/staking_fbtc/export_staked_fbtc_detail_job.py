@@ -106,6 +106,8 @@ def get_current_status(db_service, staked_contract_list):
             for item in result:
                 item.contract_address = "0x" + item.contract_address.hex()
                 item.wallet_address = "0x" + item.wallet_address.hex()
+                if item.contract_address not in staked_fbtc_map:
+                    staked_fbtc_map[item.contract_address] = {}
                 staked_fbtc_map[item.contract_address][item.wallet_address] = StakedFBTCCurrentStatus(
                     contract_address=item.contract_address,
                     protocol_id=item.protocol_id,

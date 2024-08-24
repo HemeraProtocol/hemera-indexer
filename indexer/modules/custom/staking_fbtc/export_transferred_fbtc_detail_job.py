@@ -101,6 +101,8 @@ def get_current_status(db_service, transferred_contract_list):
             for item in result:
                 item.contract_address = "0x" + item.contract_address.hex()
                 item.wallet_address = "0x" + item.wallet_address.hex()
+                if item.contract_address not in transferred_fbtc_map:
+                    transferred_fbtc_map[item.contract_address] = {}
                 transferred_fbtc_map[item.contract_address][item.wallet_address] = TransferredFBTCCurrentStatus(
                     contract_address=item.contract_address,
                     protocol_id=item.protocol_id,
