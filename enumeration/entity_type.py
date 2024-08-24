@@ -242,20 +242,20 @@ def generate_output_types(entity_types):
         yield TransferredFBTCCurrentStatus
 
     if entity_types & EntityType.FBTC_MANTLE:
-        # yield ERC721TokenTransfer
-        # yield ERC721TokenIdChange
-        # yield UpdateERC721TokenIdDetail
-        # yield ERC721TokenIdDetail
+        yield ERC721TokenTransfer
+        yield ERC721TokenIdChange
+        yield UpdateERC721TokenIdDetail
+        yield ERC721TokenIdDetail
         yield Token
         yield UpdateToken
         yield TokenBalance
         yield CurrentTokenBalance
-        # yield UniswapV3Pool
-        # yield UniswapV3Token
-        # yield UniswapV3PoolPrice
-        # yield UniswapV3TokenDetail
-        # yield UniswapV3PoolCurrentPrice
-        # yield UniswapV3TokenCurrentStatus
+        yield UniswapV3Pool
+        yield UniswapV3Token
+        yield UniswapV3PoolPrice
+        yield UniswapV3TokenDetail
+        yield UniswapV3PoolCurrentPrice
+        yield UniswapV3TokenCurrentStatus
         yield Log
         yield Erc20TokenHolding
         yield ERC20TokenTransfer

@@ -53,16 +53,16 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
 
-    def _load_config(self, filename):
+    def _load_config(self, filename, chain_id):
         base_path = os.path.dirname(os.path.abspath(__file__))
         full_path = os.path.join(base_path, filename)
         config = configparser.ConfigParser()
         config.read(full_path)
 
         try:
-            self._nft_address = config.get("info", "nft_address").lower()
-            self._factory_address = config.get("info", "factory_address").lower()
-            self._liquidity_topic0_dict = json.loads(config.get("info", "liquidity_topic0_dict"))
+            self._nft_address = config.get(str(chain_id), "nft_address").lower()
+            self._factory_address = config.get(str(chain_id), "factory_address").lower()
+            self._liquidity_topic0_dict = json.loads(config.get(str(chain_id), "liquidity_topic0_dict"))
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
