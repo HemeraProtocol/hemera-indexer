@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import queue
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import eth_abi
 from web3 import Web3
@@ -12,6 +13,7 @@ from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
+from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3 import constants
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
@@ -23,8 +25,6 @@ from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.provider import get_provider_from_uri
-from indexer.utils.thread_local_proxy import ThreadLocalProxy
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
@@ -44,11 +44,14 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
+        self._chain_id = common_utils.get_chain_id(self._web3)
         self._service = (kwargs["config"].get("db_service"),)
-        self._load_config("config.ini")
+        self._load_config("config.ini", self._chain_id)
         self._abi_list = UNISWAP_V3_ABI
         self._liquidity_token_id_blocks = queue.Queue()
         self._exist_token_ids = get_exist_token_ids(self._service, self._nft_address)
+        self._batch_size = kwargs["batch_size"]
+        self._max_worker = kwargs["max_workers"]
 
     def _load_config(self, filename):
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -96,6 +99,8 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             self._nft_address,
             self._is_batch,
             self._abi_list,
+            self._batch_size,
+            self._max_worker,
         )
 
         # call positions
@@ -106,6 +111,8 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             self._nft_address,
             self._is_batch,
             self._abi_list,
+            self._batch_size,
+            self._max_worker,
         )
         # filter the info which call pool needed
         update_exist_tokens, new_nft_info = get_new_nfts(
@@ -215,8 +222,8 @@ def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_t
     return need_collect_value_tokens, want_pool_tokens
 
 
-def get_owner_dict(web3, make_requests, requests, nft_address, is_batch, abi_list):
-    owners = owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list)
+def get_owner_dict(web3, make_requests, requests, nft_address, is_batch, abi_list, batch_size, max_workers):
+    owners = owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list, batch_size, max_workers)
     owner_dict = {}
     for data in owners:
         owner_dict.setdefault(data["token_id"], {})[data["block_number"]] = data["owner"]
@@ -378,9 +385,10 @@ def build_token_id_method_data(web3, token_ids, nft_address, fn, abi_list):
     return parameters
 
 
-def positions_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list):
+def positions_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list, batch_size, max_workers):
     if len(requests) == 0:
         return []
+
     fn_name = "positions"
     function_abi = next(
         (abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"),
@@ -390,48 +398,67 @@ def positions_rpc_requests(web3, make_requests, requests, nft_address, is_batch,
     output_types = [output["type"] for output in outputs]
 
     parameters = build_token_id_method_data(web3, requests, nft_address, fn_name, abi_list)
-
     token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-    if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
-    token_infos = []
-    for data in list(zip_rpc_response(parameters, response)):
-        result = rpc_response_to_result(data[1])
-        token = data[0]
-        value = result[2:] if result is not None else None
-        try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-            token["nonce"] = decoded_data[0]
-            token["operator"] = decoded_data[1]
-            token["token0"] = decoded_data[2]
-            token["token1"] = decoded_data[3]
-            token["fee"] = decoded_data[4]
-            token["tickLower"] = decoded_data[5]
-            token["tickUpper"] = decoded_data[6]
-            token["liquidity"] = decoded_data[7]
-            token["feeGrowthInside0LastX128"] = decoded_data[8]
-            token["feeGrowthInside1LastX128"] = decoded_data[9]
-            token["tokensOwed0"] = decoded_data[10]
-            token["tokensOwed1"] = decoded_data[11]
+    def process_batch(batch):
+        if is_batch:
+            response = make_requests(params=json.dumps(batch))
+        else:
+            response = [make_requests(params=json.dumps(batch[0]))]
 
-        except Exception as e:
-            logger.error(
-                f"Decoding positions failed. "
-                f"token: {token}. "
-                f"fn: {fn_name}. "
-                f"rpc response: {result}. "
-                f"exception: {e}"
-            )
-        token_infos.append(token)
-    return token_infos
+        token_infos = []
+        for data in list(zip_rpc_response(parameters, response)):
+            result = rpc_response_to_result(data[1])
+            token = data[0]
+            value = result[2:] if result is not None else None
+            try:
+                decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+                token["nonce"] = decoded_data[0]
+                token["operator"] = decoded_data[1]
+                token["token0"] = decoded_data[2]
+                token["token1"] = decoded_data[3]
+                token["fee"] = decoded_data[4]
+                token["tickLower"] = decoded_data[5]
+                token["tickUpper"] = decoded_data[6]
+                token["liquidity"] = decoded_data[7]
+                token["feeGrowthInside0LastX128"] = decoded_data[8]
+                token["feeGrowthInside1LastX128"] = decoded_data[9]
+                token["tokensOwed0"] = decoded_data[10]
+                token["tokensOwed1"] = decoded_data[11]
+
+            except Exception as e:
+                logger.error(
+                    f"Decoding positions failed. "
+                    f"token: {token}. "
+                    f"fn: {fn_name}. "
+                    f"rpc response: {result}. "
+                    f"exception: {e}"
+                )
+            token_infos.append(token)
+        return token_infos
+
+    # 分批处理请求
+    all_token_infos = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = []
+        for i in range(0, len(token_name_rpc), batch_size):
+            batch = token_name_rpc[i : i + batch_size]
+            futures.append(executor.submit(process_batch, batch))
+
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                all_token_infos.extend(result)
+            except Exception as e:
+                logger.error(f"Batch processing failed with exception: {e}")
+
+    return all_token_infos
 
 
-def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list):
+def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list, batch_size, max_workers):
     if len(requests) == 0:
         return []
+
     fn_name = "ownerOf"
     function_abi = next(
         (abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"),
@@ -441,32 +468,50 @@ def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi
     output_types = [output["type"] for output in outputs]
 
     parameters = build_token_id_method_data(web3, requests, nft_address, fn_name, abi_list)
-
     token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-    if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
-    token_infos = []
-    for data in list(zip_rpc_response(parameters, response)):
-        result = rpc_response_to_result(data[1])
-        token = data[0]
-        value = result[2:] if result is not None else None
-        try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-            token["owner"] = decoded_data[0]
+    def process_batch(batch):
+        if is_batch:
+            response = make_requests(params=json.dumps(batch))
+        else:
+            response = [make_requests(params=json.dumps(batch[0]))]
 
-        except Exception as e:
-            logger.error(
-                f"Decoding ownerOf failed. "
-                f"token: {token}. "
-                f"fn: {fn_name}. "
-                f"rpc response: {result}. "
-                f"exception: {e}"
-            )
-        token_infos.append(token)
-    return token_infos
+        token_infos = []
+        for data in list(zip_rpc_response(parameters, response)):
+            result = rpc_response_to_result(data[1])
+            token = data[0]
+            value = result[2:] if result is not None else None
+            try:
+                decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+                token["owner"] = decoded_data[0]
+
+            except Exception as e:
+                logger.error(
+                    f"Decoding ownerOf failed. "
+                    f"token: {token}. "
+                    f"fn: {fn_name}. "
+                    f"rpc response: {result}. "
+                    f"exception: {e}"
+                )
+            token_infos.append(token)
+        return token_infos
+
+    # 分批处理请求
+    all_token_infos = []
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = []
+        for i in range(0, len(token_name_rpc), batch_size):
+            batch = token_name_rpc[i : i + batch_size]
+            futures.append(executor.submit(process_batch, batch))
+
+        for future in as_completed(futures):
+            try:
+                result = future.result()
+                all_token_infos.extend(result)
+            except Exception as e:
+                logger.error(f"Batch processing failed with exception: {e}")
+
+    return all_token_infos
 
 
 def build_get_pool_method_data(web3, requests, factory_address, fn, abi_list):
