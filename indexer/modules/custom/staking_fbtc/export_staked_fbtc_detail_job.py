@@ -111,8 +111,8 @@ def get_current_status(db_service, staked_contract_list):
                     protocol_id=item.protocol_id,
                     wallet_address=item.wallet_address,
                     amount=item.amount,
-                    block_number=item.item.block_number,
-                    block_timestamp=item.item.block_timestamp,
+                    block_number=item.block_number,
+                    block_timestamp=item.block_timestamp,
                 )
 
     except Exception as e:
