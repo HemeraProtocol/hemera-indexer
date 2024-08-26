@@ -7,9 +7,12 @@ from sqlalchemy.dialects.postgresql import insert
 
 from common.models.blocks import Blocks
 from common.models.fix_record import FixRecord
+from common.utils.exception_control import HemeraBaseException
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
+from indexer.utils.exception_recorder import ExceptionRecorder
 
+exception_recorder = ExceptionRecorder()
 
 class ReorgController(BaseController):
 
@@ -19,11 +22,13 @@ class ReorgController(BaseController):
         job_scheduler,
         ranges,
         config,
+        max_retries=5
     ):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
         self.db_service = config.get("db_service")
         self.job_scheduler = job_scheduler
+        self.max_retries = max_retries
 
     def action(self, job_id=None, block_number=None, remains=None, retry_errors=True):
         if block_number is None:
@@ -75,7 +80,7 @@ class ReorgController(BaseController):
                     },
                 )
                 offset += 1
-        except (Exception, KeyboardInterrupt) as e:
+        except (Exception, KeyboardInterrupt, HemeraBaseException) as e:
             self.update_job_info(
                 job_id,
                 job_info={
@@ -95,22 +100,50 @@ class ReorgController(BaseController):
         self.wake_up_next_job()
 
     def _do_fixing(self, fix_block, retry_errors=True):
+        tries, tries_reset = 0, True
         while True:
             try:
                 # Main reorging logic
+                tries_reset = True
                 self.job_scheduler.run_jobs(fix_block, fix_block)
 
                 logging.info(f"Block No.{fix_block} and relative entities completely fixed .")
                 break
 
+            except HemeraBaseException as e:
+                logging.exception(f"An rpc response exception occurred while syncing block data. error: {e}")
+                if e.crashable:
+                    logging.exception("Mission will crash immediately.")
+                    raise e
+
+                if e.retriable:
+                    tries += 1
+                    tries_reset = False
+                    if tries >= self.max_retries:
+                        logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                        raise e
+                    else:
+                        logging.info(f"No: {tries} retry is about to start.")
+                else:
+                    logging.exception("Mission will not retry, and exit immediately.")
+                    raise e
+
             except Exception as e:
                 print(e)
                 logging.exception("An exception occurred while reorging block data.")
-                if not retry_errors:
+                tries += 1
+                tries_reset = False
+                if not retry_errors or tries >= self.max_retries:
+                    logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                    exception_recorder.force_to_flush()
                     raise e
                 else:
                     logging.info("After 5 seconds will retry the job.")
                     time.sleep(5)
+
+            finally:
+                if tries_reset:
+                    tries = 0
 
     def submit_new_fixing_job(self, start_block_number, remain_process):
         session = self.db_service.get_service_session()

@@ -5,36 +5,42 @@ from sqlalchemy import and_
 
 from common.models import HemeraModel, __models_imports
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.exception_control import RetriableError
 from common.utils.module_loading import import_string
 
 
 def set_reorg_sign(block_number, service):
     conn = service.get_conn()
     cur = conn.cursor()
-    for model, path in __models_imports.items():
-        table = import_string(f"{path}.{model}")
-        if hasattr(table, "reorg"):
-            update_stmt = (
-                f"UPDATE {table.__tablename__} "
-                + f"SET reorg=TRUE, update_time='{datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())}'"
-            )
-
-            if hasattr(table, "number"):
-                update_stmt += f"WHERE number={block_number}"
-            elif hasattr(table, "block_number"):
-                update_stmt += f"WHERE block_number={block_number}"
-            else:
-                update_stmt = None
-                logging.warning(
-                    f"Reorging table: {table} has no block number info, "
-                    f"could not complete reorg action, "
-                    f"reorging will be skipped this table."
+    try:
+        for model, path in __models_imports.items():
+            table = import_string(f"{path}.{model}")
+            if hasattr(table, "reorg"):
+                update_stmt = (
+                    f"UPDATE {table.__tablename__} "
+                    + f"SET reorg=TRUE, update_time='{datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())}'"
                 )
 
-            if update_stmt:
-                cur.execute(update_stmt)
+                if hasattr(table, "number"):
+                    update_stmt += f"WHERE number={block_number}"
+                elif hasattr(table, "block_number"):
+                    update_stmt += f"WHERE block_number={block_number}"
+                else:
+                    update_stmt = None
+                    logging.warning(
+                        f"Reorging table: {table} has no block number info, "
+                        f"could not complete reorg action, "
+                        f"reorging will be skipped this table."
+                    )
 
-    conn.commit()
+                if update_stmt:
+                    cur.execute(update_stmt)
+        conn.commit()
+    except Exception as e:
+        logging.error(e)
+        raise RetriableError(e)
+    finally:
+        service.release_conn(conn)
 
 
 def should_reorg(block_number: int, table: HemeraModel, service: PostgreSQLService):
