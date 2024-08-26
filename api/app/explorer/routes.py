@@ -1179,7 +1179,9 @@ class ExplorerBlockDetail(Resource):
             # Added by indexer now
             # internal_transaction_count = get_internal_transactions_cnt_by_condition(
             #     filter_condition=ContractInternalTransactions.block_number == block.number)
-            block_json["internal_transaction_count"] = block.internal_transactions_count
+            block_json["internal_transaction_count"] = (
+                0 if block.internal_transactions_count is None else block.internal_transactions_count
+            )
 
             block_json["gas_fee_token_price"] = "{0:.2f}".format(
                 get_token_price(app_config.token_configuration.gas_fee_token, block.timestamp)
@@ -1189,6 +1191,7 @@ class ExplorerBlockDetail(Resource):
             earlier_block = get_block_by_number(block_number=earlier_block_number, columns=["number", "timestamp"])
 
             block_json["seconds_since_last_block"] = block.timestamp.timestamp() - earlier_block.timestamp.timestamp()
+            block_json["transaction_count"] = block.transactions_count
 
             latest_block = get_last_block(columns=["number"])
 
