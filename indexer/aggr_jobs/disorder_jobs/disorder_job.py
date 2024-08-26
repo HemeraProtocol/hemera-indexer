@@ -21,7 +21,7 @@ class AggrDisorderJob(AggrBaseJob):
         for date_pair in date_pairs:
             start_date, end_date = date_pair
             # Could be replaced to auto and selected
-            for sql_name in ["daily_wallet_addresses_aggregates", "daily_feature_uniswap_v3_aggregates"]:
+            for sql_name in ["daily_feature_staked_fbtc_detail_records"]:
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
                 execute_sql_list.append(sql_content)
 
