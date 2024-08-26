@@ -1232,6 +1232,10 @@ class ExplorerAddressProfile(Resource):
                 if contract.verified_implementation_contract
                 else None
             )
+            profile_json["bytecode"] = "0x" + contract.deployed_code.hex() if contract.deployed_code else None
+            profile_json["creation_code"] = "0x" + contract.creation_code.hex() if contract.creation_code else None
+            profile_json["deployed_code"] = "0x" + contract.deployed_code.hex() if contract.deployed_code else None
+
             deployed_code = contract.deployed_code or get_sha256_hash(get_code(address))
             addresses = get_similar_addresses(deployed_code)
             profile_json["similar_verified_addresses"] = [add for add in addresses if add != address]
