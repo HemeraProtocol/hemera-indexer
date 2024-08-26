@@ -1073,17 +1073,33 @@ class ExplorerTokenTransfers(Resource):
         }, 200
 
 
+class CustomRequestParser(reqparse.RequestParser):
+    def add_argument(self, *args, **kwargs):
+        if "location" not in kwargs:
+            kwargs["location"] = "args"
+        return super(CustomRequestParser, self).add_argument(*args, **kwargs)
+
+
+blocks_parser = CustomRequestParser()
+
+blocks_parser.add_argument("page", type=int, default=1, help="Page number")
+blocks_parser.add_argument("size", type=int, default=25, help="Page size")
+blocks_parser.add_argument("state_batch", type=int, default=None, help="State batch filter")
+blocks_parser.add_argument("batch", type=int, default=None, help="Batch filter")
+
+
 @explorer_namespace.route("/v1/explorer/blocks")
 class ExplorerBlocks(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self):
-        page_index = int(flask.request.args.get("page", 1))
-        page_size = int(flask.request.args.get("size", 25))
+        args = blocks_parser.parse_args()
+        page_index = args.get("page")
+        page_size = args.get("size")
         if page_index <= 0 or page_size <= 0:
             raise APIError("Invalid page or size", code=400)
 
-        state_batch = flask.request.args.get("state_batch", None)
-        batch = flask.request.args.get("batch", None)
+        state_batch = args.get("state_batch")
+        batch = args.get("batch")
 
         block_list_columns = [
             "hash",
@@ -1099,6 +1115,7 @@ class ExplorerBlocks(Resource):
         ]
 
         if state_batch is None and batch is None:
+
             latest_block = get_last_block(columns=["number"])
 
             total_blocks = latest_block.number if latest_block else 0
@@ -1110,32 +1127,32 @@ class ExplorerBlocks(Resource):
             blocks = get_blocks_by_condition(
                 columns=block_list_columns, filter_condition=Blocks.number.between(start_block, end_block)
             )
-
-            block_list = [format_to_dict(block) for block in blocks]
-
-            return {
-                "data": block_list,
-                "total": total_blocks,
-                "page": page_index,
-                "size": page_size,
-            }, 200
-
-        filter_condition = True
-        total_blocks = 0
-        blocks = get_blocks_by_condition(
-            columns=block_list_columns,
-            filter_condition=filter_condition,
-            limit=page_size,
-            offset=(page_index - 1) * page_size,
-        )
-
-        block_list = []
-        for block in blocks:
-            block_list.append(as_dict(block))
-
-        if total_blocks == 0 and len(block_list) > 0:
-            latest_block = get_last_block(columns=["number", "timestamp"])
-            total_blocks = latest_block.number
+        else:
+            # TODO: Fix blocks filter by state_batch and batch
+            filter_condition = True
+            total_blocks = 0
+            blocks = get_blocks_by_condition(
+                columns=block_list_columns,
+                filter_condition=filter_condition,
+                limit=page_size,
+                offset=(page_index - 1) * page_size,
+            )
+            if total_blocks == 0 and len(blocks) > 0:
+                latest_block = get_last_block(columns=["number", "timestamp"])
+                total_blocks = latest_block.number
+        block_list = [
+            format_to_dict(block)
+            | {
+                "transaction_count": block.transactions_count,
+                "internal_transaction_count": (
+                    0 if block.internal_transactions_count is None else block.internal_transactions_count
+                ),
+                "internal_transactions_count": (
+                    0 if block.internal_transactions_count is None else block.internal_transactions_count
+                ),
+            }
+            for block in blocks
+        ]
 
         return {
             "data": block_list,
