@@ -1442,6 +1442,17 @@ class ExplorerAddressLogs(Resource):
         return {"total": len(logs), "data": log_list}, 200
 
 
+def token_type_convert(token_type):
+    if token_type == "erc20":
+        return "tokentxns"
+    elif token_type == "erc721":
+        return "tokentxns-nft"
+    elif token_type == "erc1155":
+        return "tokentxns-nft1155"
+    else:
+        return None
+
+
 @explorer_namespace.route("/v1/explorer/token/<address>/profile")
 class ExplorerTokenProfile(Resource):
     @cache.cached(timeout=60, query_string=True)
@@ -1482,7 +1493,8 @@ class ExplorerTokenProfile(Resource):
             "total_supply": "{:f}".format(token.total_supply or 0),
             "total_holders": token.holder_count,
             "total_transfers": get_token_address_token_transfer_cnt(token.token_type, address),
-            "type": token.token_type,
+            "token_type": token.token_type,
+            "type": token_type_convert(token.token_type),
         }
         token_info.update(extra_token_info)
 
