@@ -10,8 +10,8 @@ class FeatureStakedFBTCDetailStatus(HemeraModel):
     __tablename__ = "feature_staked_fbtc_status"
     contract_address = Column(BYTEA, primary_key=True)
     wallet_address = Column(BYTEA, primary_key=True)
-    block_number = Column(BIGINT, primary_key=True)
-    block_timestamp = Column(BIGINT, primary_key=True)
+    block_number = Column(BIGINT)
+    block_timestamp = Column(BIGINT)
     amount = Column(NUMERIC(100))
     protocol_id = Column(VARCHAR)
 

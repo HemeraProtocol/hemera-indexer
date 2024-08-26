@@ -269,7 +269,7 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
-        sa.PrimaryKeyConstraint("contract_address", "wallet_address", "block_timestamp", "block_number", "log_index"),
+        sa.PrimaryKeyConstraint("contract_address", "wallet_address", "block_timestamp", "block_number"),
     )
     op.create_index(
         "feature_staked_fbtc_detail_records_protocol_block_desc_index",

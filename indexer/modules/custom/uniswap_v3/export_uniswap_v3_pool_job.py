@@ -21,11 +21,8 @@ from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     UniswapV3PoolPrice,
 )
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
-from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
@@ -47,7 +44,8 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._service = (kwargs["config"].get("db_service"),)
         self._pool_prices = {}
         self._pool_prices_lock = threading.Lock()
-        self._load_config("config.ini")
+        self._chain_id = common_utils.get_chain_id(self._web3)
+        self._load_config("config.ini", self._chain_id)
         self._abi_list = UNISWAP_V3_ABI
         self._exist_pools = get_exist_pools(self._service, self._nft_address)
         self._batch_size = kwargs["batch_size"]
@@ -61,17 +59,17 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             ]
         )
 
-    def _load_config(self, filename):
+    def _load_config(self, filename, chain_id):
         base_path = os.path.dirname(os.path.abspath(__file__))
         full_path = os.path.join(base_path, filename)
         config = configparser.ConfigParser()
         config.read(full_path)
 
         try:
-            self._nft_address = config.get("info", "nft_address").lower()
-            self._factory_address = config.get("info", "factory_address").lower()
-            self._create_pool_topic0 = config.get("info", "create_pool_topic0").lower()
-            self._pool_swap_topic0 = config.get("info", "pool_swap_topic0").lower()
+            self._nft_address = config.get(str(chain_id), "nft_address").lower()
+            self._factory_address = config.get(str(chain_id), "factory_address").lower()
+            self._create_pool_topic0 = config.get(str(chain_id), "create_pool_topic0").lower()
+            self._pool_swap_topic0 = config.get(str(chain_id), "pool_swap_topic0").lower()
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
