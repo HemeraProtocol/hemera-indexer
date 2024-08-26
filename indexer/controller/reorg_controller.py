@@ -14,16 +14,10 @@ from indexer.utils.exception_recorder import ExceptionRecorder
 
 exception_recorder = ExceptionRecorder()
 
+
 class ReorgController(BaseController):
 
-    def __init__(
-        self,
-        batch_web3_provider,
-        job_scheduler,
-        ranges,
-        config,
-        max_retries=5
-    ):
+    def __init__(self, batch_web3_provider, job_scheduler, ranges, config, max_retries=5):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
         self.db_service = config.get("db_service")
