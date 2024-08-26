@@ -50,7 +50,8 @@ class PostgresItemExporter(BaseExporter):
                     insert_stmt = sql_insert_statement(
                         item_type, table, do_update, columns, where_clause=update_strategy
                     )
-
+                    print("""----------------------""",insert_stmt)
+                    print("========================""",values)
                     execute_values(cur, insert_stmt, values, page_size=COMMIT_BATCH_SIZE)
                     conn.commit()
                     tables.append(table.__tablename__)

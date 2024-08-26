@@ -19,7 +19,7 @@ class AggrOrderJob(AggrBaseJob):
         date_pairs = self.generate_date_pairs(start_date, end_date)
         for date_pair in date_pairs:
             start_date, end_date = date_pair
-            for sql_name in ["period_wallet_addresses_aggregates", "period_feature_uniswap_v3_aggregates"]:
+            for sql_name in ["period_feature_staked_fbtc_detail_records"]:
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
                 session.execute(text(sql_content))
                 session.commit()
