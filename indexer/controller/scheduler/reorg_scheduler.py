@@ -47,6 +47,7 @@ class ReorgScheduler:
         item_exporters=[],
         required_output_types=[],
         cache="memory",
+        multicall=None,
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -61,6 +62,7 @@ class ReorgScheduler:
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
         self.pg_service = config.get("db_service") if "db_service" in config else None
+        self._is_multicall = multicall
 
         self.discover_and_register_job_classes()
         self.required_job_classes = self.get_required_job_classes(required_output_types)
@@ -119,6 +121,7 @@ class ReorgScheduler:
                 max_workers=self.max_workers,
                 config=self.config,
                 reorg=True,
+                multicall=self._is_multicall,
             )
             if isinstance(job, FilterTransactionDataJob):
                 filters.append(job.get_filter())
@@ -137,6 +140,7 @@ class ReorgScheduler:
                 config=self.config,
                 filters=filters,
                 reorg=True,
+                multicall=self._is_multicall,
             )
             self.jobs.insert(0, export_blocks_job)
 
