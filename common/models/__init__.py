@@ -16,6 +16,7 @@ model_path_patterns = [
     "common/models",
     "indexer/modules/*/models",
     "indexer/modules/custom/*/models",
+    "indexer/aggr_jobs/*/models",
 ]
 
 # db = RouteSQLAlchemy(session_options={"autoflush": False})

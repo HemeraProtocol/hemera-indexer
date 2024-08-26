@@ -13,12 +13,12 @@ with today_table as (select *
 
 insert
 into period_feature_uniswap_v3_token_details
-select COALESCE(s1.nft_address, s2.nft_address)              AS nft_address,
-       date('{start_date}')                                  AS period_date,
-       COALESCE(s1.token_id, s2.token_id)                    AS token_id,
-       COALESCE(s1.wallet_address, s2.wallet_address)        AS wallet_address,
-       COALESCE(s1.pool_address, s2.pool_address)            AS pool_address,
-       COALESCE(s1.liquidity, 0) + COALESCE(s2.liquidity, 0) AS liquidity
+select COALESCE(s1.nft_address, s2.nft_address)       AS nft_address,
+       date('{start_date}')                           AS period_date,
+       COALESCE(s1.token_id, s2.token_id)             AS token_id,
+       COALESCE(s1.wallet_address, s2.wallet_address) AS wallet_address,
+       COALESCE(s1.pool_address, s2.pool_address)     AS pool_address,
+       COALESCE(s1.liquidity, s2.liquidity, 0)        AS liquidity
 from today_table s1
          full join
      yesterday_table s2
@@ -38,9 +38,9 @@ with today_table as (select *
 
 insert
 into period_feature_uniswap_v3_pool_prices
-select COALESCE(s1.pool_address, s2.pool_address)                      AS pool_address,
-       date('{start_date}')                                            AS period_date,
-       COALESCE(s1.sqrt_price_x96, 0) + COALESCE(s2.sqrt_price_x96, 0) AS liquidity
+select COALESCE(s1.pool_address, s2.pool_address)        AS pool_address,
+       date('{start_date}')                              AS period_date,
+       COALESCE(s1.sqrt_price_x96, s2.sqrt_price_x96, 0) AS liquidity
 from today_table s1
          full join
      yesterday_table s2
