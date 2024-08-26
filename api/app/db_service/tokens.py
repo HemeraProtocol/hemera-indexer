@@ -197,7 +197,7 @@ def parse_token_transfers(token_transfers, type=None):
         else:
             token_transfer_json["token_symbol"] = "UNKNOWN"
             token_transfer_json["token_name"] = "Unknown Token"
-            token_transfer_json["token_logo_url"] = f"/images/empty-token-{app_config.chain}.png"
+            token_transfer_json["token_logo_url"] = None
 
         token_transfer_list.append(token_transfer_json)
 
