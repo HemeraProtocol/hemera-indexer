@@ -1443,11 +1443,11 @@ class ExplorerAddressLogs(Resource):
 
 
 def token_type_convert(token_type):
-    if token_type == "erc20":
+    if token_type == "ERC20":
         return "tokentxns"
-    elif token_type == "erc721":
+    elif token_type == "ERC721":
         return "tokentxns-nft"
-    elif token_type == "erc1155":
+    elif token_type == "ERC1155":
         return "tokentxns-nft1155"
     else:
         return None
