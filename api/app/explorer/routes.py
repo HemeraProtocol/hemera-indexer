@@ -1240,7 +1240,7 @@ class ExplorerAddressProfile(Resource):
 
             if token:
                 profile_json["is_token"] = True
-                profile_json["token_type"] = token.type  # ERC20/ERC721/ERC1155
+                profile_json["token_type"] = token.token_type  # ERC20/ERC721/ERC1155
                 profile_json["token_name"] = token.name or "Unknown Token"
                 profile_json["token_symbol"] = token.symbol or "UNKNOWN"
                 profile_json["token_logo_url"] = token.icon_url or None
