@@ -1,8 +1,8 @@
-import json
 import logging
 from itertools import groupby
 from typing import List
 
+import orjson
 from eth_utils import to_int
 
 from common.utils.exception_control import HistoryUnavailableError
@@ -12,7 +12,7 @@ from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
@@ -22,9 +22,10 @@ exception_recorder = ExceptionRecorder()
 
 
 # Exports traces
-class ExportTracesJob(BaseJob):
+class ExportTracesJob(BaseExportJob):
     dependency_types = [Block]
     output_types = [Trace, ContractInternalTransaction, UpdateBlockInternalCount]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -36,9 +37,6 @@ class ExportTracesJob(BaseJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["debug_batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
         self._batch_work_executor.execute(
@@ -65,22 +63,25 @@ class ExportTracesJob(BaseJob):
                     ContractInternalTransaction.from_rpc(trace),
                 )
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[Trace.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
 
         self._data_buff[ContractInternalTransaction.type()].sort(
             key=lambda x: (x.block_number, x.transaction_index, x.trace_index)
         )
 
-        for block_hash, traces in groupby(self._data_buff[Trace.type()], lambda x: x.block_hash):
+        for group_key, traces in groupby(self._data_buff[Trace.type()], lambda x: (x.block_number, x.block_hash)):
+            block_number, block_hash = group_key
             traces_count = len(list(traces))
             internal_transactions_count = sum(1 for trace in traces if trace.is_contract_creation())
-            self._data_buff[UpdateBlockInternalCount.type()].append(
+            self._collect_item(
+                UpdateBlockInternalCount.type(),
                 UpdateBlockInternalCount(
+                    number=block_number,
                     hash=block_hash,
                     traces_count=traces_count,
                     internal_transactions_count=internal_transactions_count,
-                )
+                ),
             )
 
 
@@ -168,9 +169,9 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
     trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_numbers))
 
     if is_batch:
-        responses = make_requests(params=json.dumps(trace_block_rpc))
+        responses = make_requests(params=orjson.dumps(trace_block_rpc))
     else:
-        responses = [make_requests(params=json.dumps(trace_block_rpc[0]))]
+        responses = [make_requests(params=orjson.dumps(trace_block_rpc[0]))]
 
     total_traces = []
     for block, response in zip_rpc_response(blocks, responses, index="number"):
@@ -180,7 +181,7 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
             result = rpc_response_to_result(response)
         except HistoryUnavailableError as e:
             exception_recorder.log(
-                block_number=block_number,
+                block_number=to_int(hexstr=block_number),
                 dataclass=Trace.type(),
                 message_type=HistoryUnavailableError.__name__,
                 message=e.message,
@@ -198,7 +199,7 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
             total_traces.append(trace)
             continue
 
-        if "txHash" not in result[0]:
+        if len(result) > 0 and "txHash" not in result[0]:
             if len(result) != len(transactions):
                 raise ValueError("The number of traces is wrong " + str(result))
 

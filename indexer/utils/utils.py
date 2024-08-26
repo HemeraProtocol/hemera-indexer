@@ -79,7 +79,7 @@ def zip_rpc_response(requests, responses, index="request_id"):
         response_dict[response["id"]] = response
 
     for request in requests:
-        request_id = request[index]
+        request_id = request.get(index) if isinstance(request, dict) else getattr(request, index)
         if request_id in response_dict:
             yield request, response_dict[request_id]
 
@@ -103,19 +103,6 @@ def split_to_batches(start_incl, end_incl, batch_size):
     for batch_start in range(start_incl, end_incl + 1, batch_size):
         batch_end = min(batch_start + batch_size - 1, end_incl)
         yield batch_start, batch_end
-
-
-def dynamic_batch_iterator(iterable, batch_size_getter):
-    batch = []
-    batch_size = batch_size_getter()
-    for item in iterable:
-        batch.append(item)
-        if len(batch) >= batch_size:
-            yield batch
-            batch = []
-            batch_size = batch_size_getter()
-    if len(batch) > 0:
-        yield batch
 
 
 def pairwise(iterable):

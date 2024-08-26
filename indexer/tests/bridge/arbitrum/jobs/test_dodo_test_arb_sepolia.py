@@ -4,30 +4,6 @@
 # @Author  will
 # @File  test_arb_eth.py
 # @Brief
-from dataclasses import asdict
-
-import pytest
-
-from enumeration.entity_type import EntityType
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
-from indexer.modules.bridge.domain.arbitrum import (
-    ArbitrumL1ToL2TransactionOnL1,
-    ArbitrumL1ToL2TransactionOnL2,
-    ArbitrumL2ToL1TransactionOnL1,
-    ArbitrumL2ToL1TransactionOnL2,
-    ArbitrumStateBatchConfirmed,
-    ArbitrumStateBatchCreated,
-    ArbitrumTransactionBatch,
-)
-from indexer.tests import (
-    ARBITRUM_PUBLIC_NODE_RPC_URL,
-    ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL,
-    DODO_TESTNET_PUBLIC_NODE_RPC_URL,
-    ETHEREUM_PUBLIC_NODE_RPC_URL,
-)
-from indexer.utils.provider import get_provider_from_uri
-from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
 """
 DODO
@@ -52,7 +28,7 @@ op-batch {
   ]
 
 """
-
+'''
 l1_rpc = "https://arbitrum-sepolia.blockpi.network/v1/rpc/public"
 # l1_rpc = "https://crimson-magical-uranium.arbitrum-sepolia.quiknode.pro/8e017b6afe915259d38562e178c89a65ec680c39"
 l2_rpc = "https://dodochain-testnet.alt.technology"
@@ -551,3 +527,5 @@ def test_transaction_batch_eth():
     assert txn_batch[0]["end_block_number"] == 18
 
     job_scheduler.clear_data_buff()
+
+'''

@@ -2,15 +2,17 @@ import logging
 import time
 
 import click
+from web3 import Web3
 
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
-from indexer.controller.dispatcher.stream_dispatcher import StreamDispatcher
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.controller.stream_controller import StreamController
 from indexer.domain import Domain
 from indexer.exporters.item_exporter import create_item_exporters
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
+from indexer.utils.parameter_utils import check_file_exporter_parameter
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
@@ -124,12 +126,21 @@ def calculate_execution_time(func):
     envvar="END_BLOCK",
 )
 @click.option(
-    "--partition-size",
-    default=50000,
+    "--retry-from-record",
+    default=False,
+    show_default=True,
+    type=bool,
+    envvar="RETRY_FROM_RECORD",
+    help="With the default parameter, the program will always run from the -s parameter, "
+    "and when set to True, it will run from the record point between -s and -e",
+)
+@click.option(
+    "--blocks-per-file",
+    default=1000,
     show_default=True,
     type=int,
-    envvar="PARTITION_SIZE",
-    help="How many records was written to each file",
+    envvar="BLOCKS_PER_FILE",
+    help="How many blocks data was written to each file",
 )
 @click.option(
     "--period-seconds",
@@ -175,6 +186,14 @@ def calculate_execution_time(func):
     envvar="MAX_WORKERS",
 )
 @click.option(
+    "--delay",
+    default=0,
+    show_default=True,
+    type=int,
+    envvar="DELAY",
+    help="The limit number of blocks which delays from the network current block number.",
+)
+@click.option(
     "--log-file",
     default=None,
     show_default=True,
@@ -192,13 +211,13 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--sync-recorder",
-    default="file_sync_record",
+    default="file:sync_record",
     show_default=True,
     type=str,
     envvar="SYNC_RECORDER",
     help="How to store the sync record data."
-    'e.g pg_base. means sync record data will store in pg as "base" be key'
-    'or file_base. means sync record data will store in file as "base" be file name',
+    'e.g pg:base. means sync record data will store in pg as "base" be key'
+    'or file:base. means sync record data will store in file as "base" be file name',
 )
 @click.option(
     "--cache",
@@ -209,6 +228,23 @@ def calculate_execution_time(func):
     help="How to store the cache data."
     "e.g redis. means cache data will store in redis, redis://localhost:6379"
     "or memory. means cache data will store in memory, memory",
+)
+@click.option(
+    "-m",
+    "--multicall",
+    default=False,
+    show_default=True,
+    type=bool,
+    help="if `multicall` is set to True, it will decrease the consume of rpc calls",
+    envvar="Multicall",
+)
+@click.option(
+    "--auto-reorg",
+    default=True,
+    show_default=True,
+    type=bool,
+    envvar="AUTO_REORG",
+    help="Whether to detect reorg in data streams and automatically repair data.",
 )
 @calculate_execution_time
 def stream(
@@ -221,7 +257,8 @@ def stream(
     end_block,
     entity_types,
     output_types,
-    partition_size,
+    blocks_per_file,
+    delay=0,
     period_seconds=10,
     batch_size=10,
     debug_batch_size=1,
@@ -229,8 +266,11 @@ def stream(
     max_workers=5,
     log_file=None,
     pid_file=None,
-    sync_recorder="file_sync_record",
+    sync_recorder="file:sync_record",
+    retry_from_record=False,
     cache="memory",
+    auto_reorg=True,
+    multicall=True,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -238,9 +278,14 @@ def stream(
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.info("Using provider " + provider_uri)
     logging.info("Using debug provider " + debug_provider_uri)
+
+    # parameter logic checking
+    check_file_exporter_parameter(output, block_batch_size, blocks_per_file)
+
     # build config
     config = {
-        "partition_size": partition_size,
+        "blocks_per_file": blocks_per_file,
+        "chain_id": Web3(Web3.HTTPProvider(provider_uri)).eth.chain_id,
     }
 
     if postgres_url:
@@ -266,23 +311,26 @@ def stream(
             raise click.ClickException("No output types provided")
         output_types = list(parse_output_types)
 
-    stream_dispatcher = StreamDispatcher(
-        service=config.get("db_service", None),
+    job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
         item_exporters=create_item_exporters(output, config),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
-        required_output_types=output_types,
         config=config,
+        required_output_types=output_types,
         cache=cache,
+        auto_reorg=auto_reorg,
+        multicall=multicall,
     )
 
     controller = StreamController(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
-        job_dispatcher=stream_dispatcher,
+        job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
+        retry_from_record=retry_from_record,
+        delay=delay,
     )
 
     controller.action(

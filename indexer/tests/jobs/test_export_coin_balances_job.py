@@ -1,8 +1,8 @@
 import pytest
 
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.domain.coin_balance import CoinBalance
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
 from indexer.tests import LINEA_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
@@ -21,7 +21,7 @@ def test_export_coin_balance_job():
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
-        config=None,
+        config={},
         required_output_types=[CoinBalance],
     )
 

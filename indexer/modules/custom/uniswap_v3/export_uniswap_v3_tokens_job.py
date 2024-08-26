@@ -19,8 +19,6 @@ from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.provider import get_provider_from_uri
-from indexer.utils.thread_local_proxy import ThreadLocalProxy
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
@@ -68,9 +66,6 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 TopicSpecification(addresses=[self._nft_address]),
             ]
         )
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
         # collect the nft_ids which were minted or burned
@@ -126,7 +121,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         for data in new_records:
             self._collect_item(AllFeatureValueRecordUniswapV3Token.type(), data)
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[AllFeatureValueRecordUniswapV3Token.type()].sort(key=lambda x: x.block_number)
 

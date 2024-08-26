@@ -1,7 +1,7 @@
 import pytest
 
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs.job_scheduler import JobScheduler
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordTraitsActiveness
 from indexer.tests import CYBER_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
@@ -21,7 +21,7 @@ def test_export_job():
         batch_size=100,
         debug_batch_size=10,
         max_workers=5,
-        config=None,
+        config={},
         required_output_types=[AllFeatureValueRecordTraitsActiveness],
     )
 

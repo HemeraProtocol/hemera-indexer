@@ -148,3 +148,20 @@ class Event:
 
     def decode_log_ignore_indexed(self, log: Log) -> Optional[Dict[str, Any]]:
         return decode_log_ignore_indexed(self._event_abi, log)
+
+
+def uint256_to_bytes(value: int) -> bytes:
+    if value < 0 or value >= 2**256:
+        raise ValueError("Value out of uint256 range")
+
+    return value.to_bytes(32, byteorder="big")
+
+
+def pad_address(address: str) -> bytes:
+    address = address.lower().replace("0x", "")
+
+    if len(address) != 40:
+        raise ValueError("Invalid address length")
+
+    padded = "0" * 24 + address
+    return bytes.fromhex(padded)

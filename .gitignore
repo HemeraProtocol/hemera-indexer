@@ -48,3 +48,4 @@ docker-compose/postgres/
 # Local Config
 resource/hemera.ini
 sync_record
+alembic.ini

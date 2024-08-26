@@ -1,8 +1,8 @@
-import json
 import logging
 from dataclasses import asdict
 from typing import Dict, List
 
+import orjson
 from eth_abi import abi
 
 from common.utils.format_utils import to_snake_case
@@ -19,11 +19,11 @@ from indexer.domain.token_transfer import (
     extract_transfer_from_log,
 )
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
+from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ abi_mapping = {
 }
 
 
-class ExportTokensAndTransfersJob(BaseJob):
+class ExportTokensAndTransfersJob(BaseExportJob):
     output_transfer_types = [
         ERC20TokenTransfer,
         ERC721TokenTransfer,
@@ -109,6 +109,7 @@ class ExportTokensAndTransfersJob(BaseJob):
 
     dependency_types = [Log]
     output_types = output_transfer_types + output_token_types
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -122,9 +123,6 @@ class ExportTokensAndTransfersJob(BaseJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._token_addresses = set()
         self._token_transfers = []
-
-    def _start(self):
-        super()._start()
 
     def _end(self):
         super()._end()
@@ -209,7 +207,7 @@ class ExportTokensAndTransfersJob(BaseJob):
             if token.get("total_supply") is not None:
                 self._collect_item(UpdateToken.type(), dict_to_dataclass(token, UpdateToken))
 
-    def _process(self):
+    def _process(self, **kwargs):
         for token_transfer_type in self.output_transfer_types:
             if token_transfer_type in self._data_buff:
                 self._data_buff[token_transfer_type.type()].sort(
@@ -248,11 +246,11 @@ def build_rpc_method_data(tokens, fn, arguments=None):
 
 def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
     fn_name = "totalSupply"
-    token_name_rpc = list(generate_eth_call_json_rpc(build_rpc_method_data(tokens, fn_name)))
+    token_name_rpc = list(generate_eth_call_json_rpc_without_block_number(build_rpc_method_data(tokens, fn_name)))
     if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
+        response = make_requests(params=orjson.dumps(token_name_rpc))
     else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+        response = [make_requests(params=orjson.dumps(token_name_rpc[0]))]
 
     res = []
     for data in list(zip_rpc_response(tokens, response)):
@@ -282,16 +280,18 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
 
     for fn_name in function_call.keys():
         token_name_rpc = list(
-            generate_eth_call_json_rpc(build_rpc_method_data(tokens, fn_name, function_call[fn_name]))
+            generate_eth_call_json_rpc_without_block_number(
+                build_rpc_method_data(tokens, fn_name, function_call[fn_name])
+            )
         )
 
         if len(token_name_rpc) == 0:
             continue
 
         if is_batch:
-            response = make_requests(params=json.dumps(token_name_rpc))
+            response = make_requests(params=orjson.dumps(token_name_rpc))
         else:
-            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+            response = [make_requests(params=orjson.dumps(token_name_rpc[0]))]
 
         for data in list(zip_rpc_response(tokens, response)):
             result = rpc_response_to_result(data[1])

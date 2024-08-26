@@ -1,22 +1,22 @@
-import json
 import logging
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
-from eth_abi import abi
+from eth_utils import to_hex
+from hexbytes import HexBytes
 
-from enumeration.record_level import RecordLevel
 from indexer.domain import dict_to_dataclass
 from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_balance import TokenBalance
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
-from indexer.utils.abi import encode_abi
+from indexer.utils.abi import pad_address, uint256_to_bytes
 from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group, rpc_response_to_result, zip_rpc_response
+from indexer.utils.multicall_hemera.util import calculate_execution_time
+from indexer.utils.token_fetcher import TokenFetcher
+from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
@@ -59,9 +59,10 @@ class TokenBalanceParam:
 
 
 # Exports token balance
-class ExportTokenBalancesJob(BaseJob):
+class ExportTokenBalancesJob(BaseExportJob):
     dependency_types = [ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [TokenBalance, CurrentTokenBalance]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -72,24 +73,26 @@ class ExportTokenBalancesJob(BaseJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
+        self._is_multi_call = kwargs["multicall"]
+        self.token_fetcher = TokenFetcher(self._web3, kwargs)
 
-    def _start(self):
-        super()._start()
-
+    @calculate_execution_time
     def _collect(self, **kwargs):
-
         token_transfers = self._collect_all_token_transfers()
         parameters = extract_token_parameters(token_transfers)
+        if self._is_multi_call:
+            self._collect_batch(parameters)
+        else:
+            self._batch_work_executor.execute(parameters, self._collect_batch, total_items=len(parameters))
+            self._batch_work_executor.wait()
 
-        self._batch_work_executor.execute(parameters, self._collect_batch, total_items=len(parameters))
-        self._batch_work_executor.wait()
-
+    @calculate_execution_time
     def _collect_batch(self, parameters):
-        token_balances = token_balances_rpc_requests(self._batch_web3_provider.make_request, parameters, self._is_batch)
-        for token_balance in token_balances:
-            self._collect_item(TokenBalance.type(), dict_to_dataclass(token_balance, TokenBalance))
+        token_balances = self.token_fetcher.fetch_token_balance(parameters)
+        results = [dict_to_dataclass(t, TokenBalance) for t in token_balances]
+        self._collect_items(TokenBalance.type(), results)
 
-    def _process(self):
+    def _process(self, **kwargs):
         if TokenBalance.type() in self._data_buff:
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
@@ -110,6 +113,7 @@ class ExportTokenBalancesJob(BaseJob):
                 max_key="block_number",
             )
 
+    @calculate_execution_time
     def _collect_all_token_transfers(self):
         token_transfers = []
         if ERC20TokenTransfer.type() in self._data_buff:
@@ -126,15 +130,14 @@ class ExportTokenBalancesJob(BaseJob):
 
 def encode_balance_abi_parameter(address, token_type, token_id):
     if token_type == "ERC1155":
-        return encode_abi(
-            BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION,
-            [address, token_id],
-            balance_of_token_id_sig_prefix,
-        )
+        encoded_arguments = HexBytes(pad_address(address) + uint256_to_bytes(token_id))
+        return to_hex(HexBytes(balance_of_token_id_sig_prefix) + encoded_arguments)
     else:
-        return encode_abi(BALANCE_OF_ABI_FUNCTION, [address], balance_of_sig_prefix)
+        encoded_arguments = HexBytes(pad_address(address))
+        return to_hex(HexBytes(balance_of_sig_prefix) + encoded_arguments)
 
 
+@calculate_execution_time
 def extract_token_parameters(
     token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]]
 ):
@@ -169,53 +172,3 @@ def extract_token_parameters(
         )
 
     return token_parameters
-
-
-def token_balances_rpc_requests(make_requests, tokens, is_batch):
-    for idx, token in enumerate(tokens):
-        token["request_id"] = idx
-
-    token_balance_rpc = list(generate_eth_call_json_rpc(tokens))
-
-    if is_batch:
-        response = make_requests(params=json.dumps(token_balance_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_balance_rpc[0]))]
-
-    token_balances = []
-    for data in list(zip_rpc_response(tokens, response)):
-        result = rpc_response_to_result(data[1])
-        balance = None
-
-        try:
-            if result:
-                balance = abi.decode(["uint256"], bytes.fromhex(result[2:]))[0]
-        except Exception as e:
-            logger.warning(
-                f"Decoding token balance value failed. "
-                f"token address: {data[0]['token_address']}. "
-                f"rpc response: {result}. "
-                f"block number: {data[0]['block_number']}. "
-                f"exception: {e}. "
-            )
-            exception_recorder.log(
-                block_number=data[0]["block_number"],
-                dataclass=TokenBalance.type(),
-                message_type="DecodeTokenBalanceFail",
-                message=str(e),
-                level=RecordLevel.WARN,
-            )
-
-        token_balances.append(
-            {
-                "address": data[0]["address"].lower(),
-                "token_id": data[0]["token_id"],
-                "token_type": data[0]["token_type"],
-                "token_address": data[0]["token_address"].lower(),
-                "balance": balance,
-                "block_number": data[0]["block_number"],
-                "block_timestamp": data[0]["block_timestamp"],
-            }
-        )
-
-    return token_balances

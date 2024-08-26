@@ -29,8 +29,8 @@ def upgrade() -> None:
         sa.Column("token1_address", postgresql.BYTEA(), nullable=True),
         sa.Column("length", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("called_block_number", sa.BIGINT(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("factory_address", "pool_address"),
     )
     op.add_column("feature_uniswap_v3_pools", sa.Column("called_block_number", sa.BIGINT(), nullable=True))

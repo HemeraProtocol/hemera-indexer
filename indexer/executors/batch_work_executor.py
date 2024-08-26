@@ -7,9 +7,9 @@ from requests.exceptions import Timeout as RequestsTimeout
 from requests.exceptions import TooManyRedirects
 from web3._utils.threads import Timeout as Web3Timeout
 
+from common.utils.exception_control import RetriableError
 from indexer.executors.bounded_executor import BoundedExecutor
 from indexer.utils.progress_logger import ProgressLogger
-from indexer.utils.utils import dynamic_batch_iterator
 
 RETRY_EXCEPTIONS = (
     ConnectionError,
@@ -18,6 +18,7 @@ RETRY_EXCEPTIONS = (
     TooManyRedirects,
     Web3Timeout,
     OSError,
+    RetriableError,
 )
 
 BATCH_CHANGE_COOLDOWN_PERIOD_SECONDS = 2 * 60
@@ -64,18 +65,13 @@ class BatchWorkExecutor:
             work_handler(batch)
             if not custom_splitting:
                 self._try_increase_batch_size(len(batch))
-        except self.retry_exceptions:
+        except self.retry_exceptions as e:
             self.logger.exception("An exception occurred while executing work_handler.")
-            if not custom_splitting:
+            if not custom_splitting and len(batch) > 1:
                 self._try_decrease_batch_size(len(batch))
                 self.logger.info("The batch of size {} will be retried one item at a time.".format(len(batch)))
-                for item in batch:
-                    execute_with_retries(
-                        work_handler,
-                        [item],
-                        max_retries=self.max_retries,
-                        retry_exceptions=self.retry_exceptions,
-                    )
+                for sub_batch in dynamic_batch_iterator(batch, lambda: self.batch_size):
+                    self._fail_safe_execute(work_handler, sub_batch, custom_splitting)
             else:
                 execute_with_retries(
                     work_handler,
@@ -89,7 +85,7 @@ class BatchWorkExecutor:
     # Some acceptable race conditions are possible
     def _try_decrease_batch_size(self, current_batch_size):
         batch_size = self.batch_size
-        if batch_size == current_batch_size and batch_size > 1:
+        if batch_size > 1:
             new_batch_size = int(current_batch_size / 2)
             self.logger.info("Reducing batch size to {}.".format(new_batch_size))
             self.batch_size = new_batch_size
@@ -143,3 +139,16 @@ def execute_with_retries(func, *args, max_retries=5, retry_exceptions=RETRY_EXCE
                 continue
             else:
                 raise
+
+
+def dynamic_batch_iterator(iterable, batch_size_getter):
+    batch = []
+    batch_size = batch_size_getter()
+    for item in iterable:
+        batch.append(item)
+        if len(batch) >= batch_size:
+            yield batch
+            batch = []
+            batch_size = batch_size_getter()
+    if len(batch) > 0:
+        yield batch

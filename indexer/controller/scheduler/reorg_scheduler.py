@@ -1,18 +1,16 @@
 import logging
 from collections import defaultdict, deque
-from dataclasses import asdict
 from typing import List, Set, Type
 
 from pottery import RedisDict
 from redis.client import Redis
-from sqlalchemy import text
 
-from common import models
+from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
-from indexer.domain.token import Token
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
+from indexer.jobs.export_reorg_job import ExportReorgJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.utils.abi import bytes_to_hex_str
 
@@ -22,7 +20,7 @@ import_submodules("indexer.modules")
 def get_tokens_from_db(session):
     with session_scope(session) as s:
         dict = {}
-        result = s.query(models.Tokens).all()
+        result = s.query(Tokens).all()
         if result is not None:
             for token in result:
                 dict[bytes_to_hex_str(token.address)] = {
@@ -37,7 +35,7 @@ def get_tokens_from_db(session):
         return dict
 
 
-class JobScheduler:
+class ReorgScheduler:
     def __init__(
         self,
         batch_web3_provider,
@@ -45,7 +43,7 @@ class JobScheduler:
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
-        config=None,
+        config={},
         item_exporters=[],
         required_output_types=[],
         cache="memory",
@@ -62,7 +60,7 @@ class JobScheduler:
         self.job_classes = []
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
-        self.pg_service = config.get("db_service") if config is not None else None
+        self.pg_service = config.get("db_service") if "db_service" in config else None
 
         self.discover_and_register_job_classes()
         self.required_job_classes = self.get_required_job_classes(required_output_types)
@@ -81,17 +79,23 @@ class JobScheduler:
                 except Exception as e:
                     logging.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
                     BaseJob.init_token_cache(token_dict_from_db)
+        self.instantiate_jobs()
 
+    @staticmethod
     def get_data_buff(self):
         return BaseJob._data_buff
 
+    @staticmethod
     def clear_data_buff(self):
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
-        all_subclasses = BaseJob.discover_jobs()
+        all_subclasses = BaseExportJob.discover_jobs()
+
+        all_subclasses.extend(ExtensionJob.discover_jobs())
         for cls in all_subclasses:
-            self.job_classes.append(cls)
+            if cls.able_to_reorg:
+                self.job_classes.append(cls)
             for output in cls.output_types:
                 self.job_map[output.type()].append(cls)
             for dependency in cls.dependency_types:
@@ -114,13 +118,29 @@ class JobScheduler:
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
+                reorg=True,
             )
             if isinstance(job, FilterTransactionDataJob):
                 filters.append(job.get_filter())
 
             self.jobs.append(job)
 
-        export_blocks_job = ExportBlocksJob(
+        if ExportBlocksJob in self.resolved_job_classes:
+            export_blocks_job = ExportBlocksJob(
+                required_output_types=self.required_output_types,
+                batch_web3_provider=self.batch_web3_provider,
+                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                item_exporters=self.item_exporters,
+                batch_size=self.batch_size,
+                debug_batch_size=self.debug_batch_size,
+                max_workers=self.max_workers,
+                config=self.config,
+                filters=filters,
+                reorg=True,
+            )
+            self.jobs.insert(0, export_blocks_job)
+
+        export_reorg_job = ExportReorgJob(
             required_output_types=self.required_output_types,
             batch_web3_provider=self.batch_web3_provider,
             batch_web3_debug_provider=self.batch_web3_debug_provider,
@@ -129,13 +149,11 @@ class JobScheduler:
             debug_batch_size=self.debug_batch_size,
             max_workers=self.max_workers,
             config=self.config,
-            filters=filters,
+            reorg=True,
         )
-        self.jobs.insert(0, export_blocks_job)
+        self.jobs.append(export_reorg_job)
 
     def run_jobs(self, start_block, end_block):
-        if not self.jobs:
-            self.instantiate_jobs()
         for job in self.jobs:
             job.run(start_block=start_block, end_block=end_block)
         # TODO: clean data buffer after all jobs are run
@@ -146,7 +164,7 @@ class JobScheduler:
         while job_queue:
             output_type = job_queue.popleft()
             for job_class in self.job_map[output_type.type()]:
-                if job_class not in required_job_classes:
+                if job_class in self.job_classes:
                     required_job_classes.add(job_class)
                     for dependency in job_class.dependency_types:
                         job_queue.append(dependency)

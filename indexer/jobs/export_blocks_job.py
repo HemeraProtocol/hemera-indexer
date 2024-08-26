@@ -1,11 +1,13 @@
-import json
 import logging
 
+import orjson
+
+from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
 from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
@@ -14,15 +16,17 @@ from indexer.specification.specification import (
     TransactionHashSpecification,
 )
 from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rpc
+from indexer.utils.reorg import set_reorg_sign
 from indexer.utils.utils import rpc_response_batch_to_results
 
 logger = logging.getLogger(__name__)
 
 
 # Exports blocks and block number <-> timestamp mapping
-class ExportBlocksJob(BaseJob):
+class ExportBlocksJob(BaseExportJob):
     dependency_types = []
-    output_types = [Block]
+    output_types = [Block, BlockTsMapper]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -37,10 +41,18 @@ class ExportBlocksJob(BaseJob):
         self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
-    def _start(self):
-        super()._start()
+    def _start(self, **kwargs):
+        if self.able_to_reorg and self._reorg:
+            if self._service is None:
+                raise FastShutdownError("PG Service is not set")
+
+            reorg_block = int(kwargs["start_block"])
+            set_reorg_sign(reorg_block, self._service)
+            self._should_reorg_type.add(Block.type())
+            self._should_reorg = True
 
     def _end(self):
+        super()._end()
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
     def _collect(self, **kwargs):
@@ -84,7 +96,7 @@ class ExportBlocksJob(BaseJob):
                 if self._specification.is_satisfied_by(transaction_entity):
                     self._collect_item(Transaction.type(), transaction_entity)
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[Block.type()].sort(key=lambda x: x.number)
         self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
 
@@ -96,16 +108,16 @@ class ExportBlocksJob(BaseJob):
             if timestamp not in ts_dict or block_number < ts_dict[timestamp]:
                 ts_dict[timestamp] = block_number
 
-        self._data_buff[BlockTsMapper.type()] = [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()]
+        self._collect_items(BlockTsMapper.type(), [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()])
 
 
 def blocks_rpc_requests(make_request, block_number_batch, is_batch):
     block_number_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, True))
 
     if is_batch:
-        response = make_request(params=json.dumps(block_number_rpc))
+        response = make_request(params=orjson.dumps(block_number_rpc))
     else:
-        response = [make_request(params=json.dumps(block_number_rpc[0]))]
+        response = [make_request(params=orjson.dumps(block_number_rpc[0]))]
 
     results = rpc_response_batch_to_results(response)
     return results

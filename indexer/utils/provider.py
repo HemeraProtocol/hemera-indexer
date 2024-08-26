@@ -67,7 +67,10 @@ class BatchHTTPProvider(HTTPProvider):
 
     def make_request(self, method=None, params=None):
         self.logger.debug("Making request HTTP. URI: %s, Request: %s", self.endpoint_uri, params)
-        request_data = params.encode("utf-8")
+        if isinstance(params, str):
+            request_data = params.encode("utf-8")
+        else:
+            request_data = params
         raw_response = make_post_request(self.endpoint_uri, request_data, **self.get_request_kwargs())
         response = self.decode_rpc_response(raw_response)
         self.logger.debug(

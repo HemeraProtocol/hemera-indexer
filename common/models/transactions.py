@@ -49,8 +49,8 @@ class Transactions(HemeraModel):
     error = Column(TEXT)
     revert_reason = Column(TEXT)
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
     @staticmethod
@@ -92,19 +92,19 @@ def converter(table: Type[HemeraModel], data: Transaction, is_update=False):
     converted_data = general_converter(table, data, is_update)
     receipt = data.receipt
 
-    converted_data["receipt_root"] = bytes.fromhex(receipt.root[2:]) if receipt.root else None
-    converted_data["receipt_status"] = receipt.status
-    converted_data["receipt_gas_used"] = receipt.gas_used
-    converted_data["receipt_cumulative_gas_used"] = receipt.cumulative_gas_used
-    converted_data["receipt_effective_gas_price"] = receipt.effective_gas_price
-    converted_data["receipt_l1_fee"] = receipt.l1_fee
-    converted_data["receipt_l1_fee_scalar"] = receipt.l1_fee_scalar
-    converted_data["receipt_l1_gas_used"] = receipt.l1_gas_used
-    converted_data["receipt_l1_gas_price"] = receipt.l1_gas_price
-    converted_data["receipt_blob_gas_used"] = receipt.blob_gas_used
-    converted_data["receipt_blob_gas_price"] = receipt.blob_gas_price
+    converted_data["receipt_root"] = bytes.fromhex(receipt.root[2:]) if receipt and receipt.root else None
+    converted_data["receipt_status"] = receipt.status if receipt else None
+    converted_data["receipt_gas_used"] = receipt.gas_used if receipt else None
+    converted_data["receipt_cumulative_gas_used"] = receipt.cumulative_gas_used if receipt else None
+    converted_data["receipt_effective_gas_price"] = receipt.effective_gas_price if receipt else None
+    converted_data["receipt_l1_fee"] = receipt.l1_fee if receipt else None
+    converted_data["receipt_l1_fee_scalar"] = receipt.l1_fee_scalar if receipt else None
+    converted_data["receipt_l1_gas_used"] = receipt.l1_gas_used if receipt else None
+    converted_data["receipt_l1_gas_price"] = receipt.l1_gas_price if receipt else None
+    converted_data["receipt_blob_gas_used"] = receipt.blob_gas_used if receipt else None
+    converted_data["receipt_blob_gas_price"] = receipt.blob_gas_price if receipt else None
     converted_data["receipt_contract_address"] = (
-        bytes.fromhex(receipt.contract_address[2:]) if receipt.contract_address else None
+        bytes.fromhex(receipt.contract_address[2:]) if receipt and receipt.contract_address else None
     )
 
     return converted_data

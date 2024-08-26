@@ -21,8 +21,8 @@ class ERC1155TokenTransfers(HemeraModel):
     block_hash = Column(BYTEA, primary_key=True)
     block_timestamp = Column(TIMESTAMP)
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (PrimaryKeyConstraint("transaction_hash", "block_hash", "log_index", "token_id"),)

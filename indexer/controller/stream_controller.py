@@ -6,7 +6,7 @@ from common.utils.exception_control import HemeraBaseException
 from common.utils.file_utils import delete_file, write_to_file
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
-from indexer.controller.dispatcher.base_dispatcher import BaseDispatcher
+from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.sync_recorder import BaseRecorder
 
@@ -19,14 +19,18 @@ class StreamController(BaseController):
         self,
         batch_web3_provider,
         sync_recorder: BaseRecorder,
-        job_dispatcher=BaseDispatcher(),
+        job_scheduler: JobScheduler,
         max_retries=5,
+        retry_from_record=False,
+        delay=0,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
         self.web3 = build_web3(batch_web3_provider)
-        self.job_dispatcher = job_dispatcher
+        self.job_scheduler = job_scheduler
         self.max_retries = max_retries
+        self.retry_from_record = retry_from_record
+        self.delay = 0
 
     def action(
         self,
@@ -55,7 +59,12 @@ class StreamController(BaseController):
     def _do_stream(self, start_block, end_block, steps, retry_errors, period_seconds):
         last_synced_block = self.sync_recorder.get_last_synced_block()
         if start_block is not None:
-            last_synced_block = start_block - 1
+            if (
+                not self.retry_from_record
+                or last_synced_block < start_block
+                or (end_block is not None and last_synced_block > end_block)
+            ):
+                last_synced_block = start_block - 1
 
         tries, tries_reset = 0, True
         while True and (end_block is None or last_synced_block < end_block):
@@ -76,7 +85,7 @@ class StreamController(BaseController):
 
                 if synced_blocks != 0:
                     # ETL program's main logic
-                    self.job_dispatcher.run(last_synced_block + 1, target_block)
+                    self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
 
                     logging.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
@@ -122,8 +131,7 @@ class StreamController(BaseController):
     def _get_current_block_number(self):
         return int(self.web3.eth.block_number)
 
-    @staticmethod
-    def _calculate_target_block(current_block, last_synced_block, end_block, steps):
-        target_block = min(current_block, last_synced_block + steps)
+    def _calculate_target_block(self, current_block, last_synced_block, end_block, steps):
+        target_block = min(current_block - self.delay, last_synced_block + steps)
         target_block = min(target_block, end_block) if end_block is not None else target_block
         return target_block

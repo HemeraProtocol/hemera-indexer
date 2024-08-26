@@ -4,12 +4,13 @@ from typing import List
 
 from eth_abi import abi
 
+from common.utils.exception_control import HemeraBaseException
 from enumeration.record_level import RecordLevel
 from indexer.domain.block import Block
 from indexer.domain.contract import Contract, extract_contract_from_trace
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -29,9 +30,10 @@ CONTRACT_NAME_ABI = {
 
 
 # Exports contracts
-class ExportContractsJob(BaseJob):
+class ExportContractsJob(BaseExportJob):
     dependency_types = [Block, Trace]
     output_types = [Contract]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -42,9 +44,6 @@ class ExportContractsJob(BaseJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
         contracts = build_contracts(self._data_buff[Trace.type()])
@@ -58,7 +57,7 @@ class ExportContractsJob(BaseJob):
         for contract in contracts:
             self._collect_item(Contract.type(), Contract(contract))
 
-    def _process(self):
+    def _process(self, **kwargs):
         transaction_mapping = {
             transaction.hash: transaction.from_address
             for transaction in [
@@ -114,8 +113,26 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
         response = [make_requests(params=json.dumps(contract_name_rpc[0]))]
 
     for data in list(zip_rpc_response(contracts, response)):
-        result = rpc_response_to_result(data[1])
         contract = data[0]
+        try:
+            result = rpc_response_to_result(data[1])
+        except HemeraBaseException as e:
+            result = None
+            logger.warning(
+                f"eth call contract name failed. "
+                f"contract address: {contract['address']}. "
+                f"rpc response: {result}. "
+                f"exception: {e}"
+            )
+            exception_recorder.log(
+                block_number=data[0]["block_number"],
+                dataclass=Contract.type(),
+                message_type=e.__class__.__name__,
+                message=str(e),
+                exception_env=data[1],
+                level=RecordLevel.WARN,
+            )
+
         info = result[2:] if result is not None else None
 
         try:

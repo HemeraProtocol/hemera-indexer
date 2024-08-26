@@ -12,7 +12,7 @@ from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseJob
+from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_get_balance_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
@@ -29,9 +29,10 @@ class AddressRecord:
 
 
 # Exports coin balances
-class ExportCoinBalancesJob(BaseJob):
+class ExportCoinBalancesJob(BaseExportJob):
     dependency_types = [Block, ContractInternalTransaction]
     output_types = [CoinBalance]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -42,9 +43,6 @@ class ExportCoinBalancesJob(BaseJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-
-    def _start(self):
-        super()._start()
 
     def _collect(self, **kwargs):
         coin_addresses = distinct_addresses(
@@ -63,7 +61,7 @@ class ExportCoinBalancesJob(BaseJob):
         for coin_balance in coin_balances:
             self._collect_item(CoinBalance.type(), CoinBalance(coin_balance))
 
-    def _process(self):
+    def _process(self, **kwargs):
         self._data_buff[CoinBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
 
