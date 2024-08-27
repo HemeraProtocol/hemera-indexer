@@ -108,7 +108,9 @@ class ExplorerUserOperationDetails(Resource):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", hash):
             raise APIError("Invalid user operation hash", code=400)
 
-        user_operation_result = db.session.query(UserOperationResult).get(hash)
+        bytes_hash = bytes.fromhex(hash[2:])
+
+        user_operation_result = db.session.query(UserOperationResult).get(bytes_hash)
         if not user_operation_result:
             raise APIError("Cannot find user operation with hash", code=400)
 
@@ -116,7 +118,7 @@ class ExplorerUserOperationDetails(Resource):
         user_operation_result_dict["user_op_hash"] = user_operation_result.user_op_hash
         user_operation_result_dict["sender"] = user_operation_result.sender
         user_operation_result_dict["status"] = user_operation_result.status
-        user_operation_result_dict["block_timestamp"] = user_operation_result["block_timestamp"]
+        user_operation_result_dict["block_timestamp"] = user_operation_result.block_timestamp
         user_operation_result_dict["fee"] = format(user_operation_result.actual_gas_cost / 10 ** 18, ".10f")
 
         user_operation_result_dict["gas_limit"] = (
@@ -157,9 +159,11 @@ class ExplorerUserOperationTokenTransfers(Resource):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", hash):
             raise APIError("Invalid user operation hash", code=400)
 
+        bytes_hash = bytes.fromhex(hash[2:])
+
         user_operation_result = (
             db.session.query(UserOperationResult)
-            .filter_by(user_op_hash=hash)
+            .filter_by(user_op_hash=bytes_hash)
             .with_entities(
                 UserOperationResult.transactions_hash,
                 UserOperationResult.start_log_index,
@@ -243,9 +247,11 @@ class ExplorerUserOperationLogs(Resource):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", hash):
             raise APIError("Invalid user operation hash", code=400)
 
+        bytes_hash = bytes.fromhex(hash[2:])
+
         user_operation_result = (
             db.session.query(UserOperationResult)
-            .filter_by(user_op_hash=hash)
+            .filter_by(user_op_hash=bytes_hash)
             .with_entities(
                 UserOperationResult.transactions_hash,
                 UserOperationResult.start_log_index,
@@ -276,8 +282,9 @@ class ExplorerUserOperationRaw(Resource):
     def get(self, hash):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", hash):
             raise APIError("Invalid user operation hash", code=400)
+        bytes_hash = bytes.fromhex(hash[2:])
 
-        user_operation_result = db.session.query(UserOperationResult).get(hash)
+        user_operation_result = db.session.query(UserOperationResult).get(bytes_hash)
         if not user_operation_result:
             raise APIError("Cannot find user operation with hash", code=400)
 
@@ -304,7 +311,9 @@ class ExplorerTransactionOperation(Resource):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", txn_hash):
             raise APIError("Invalid user operation hash", code=400)
 
-        user_operation_result = db.session.query(UserOperationResult).filter_by(transactions_hash=txn_hash)
+        bytes_hash = bytes.fromhex(txn_hash[2:])
+
+        user_operation_result = db.session.query(UserOperationResult).filter_by(transactions_hash=bytes_hash)
         if not user_operation_result:
             raise APIError("Cannot find user operation with hash", code=400)
 
@@ -312,7 +321,7 @@ class ExplorerTransactionOperation(Resource):
         for user_operation_result in user_operation_result:
             user_operation_result_dict = {}
             user_operation_result_dict["user_op_hash"] = user_operation_result.user_op_hash
-            user_operation_result_dict["block_timestamp"] = user_operation_result["block_timestamp"]
+            user_operation_result_dict["block_timestamp"] = user_operation_result.block_timestamp
             user_operation_result_dict["status"] = user_operation_result.status
             user_operation_result_dict["sender"] = user_operation_result.sender
             user_operation_result_dict["transactions_hash"] = user_operation_result.transactions_hash
