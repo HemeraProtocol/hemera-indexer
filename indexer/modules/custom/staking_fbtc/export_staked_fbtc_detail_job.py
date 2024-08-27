@@ -5,15 +5,19 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
+from sqlalchemy import and_, func
+
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
+from indexer.modules.custom.staking_fbtc import utils
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
     StakedFBTCCurrentStatus,
     StakedFBTCDetail,
 )
+from indexer.modules.custom.staking_fbtc.models.feature_staked_fbtc_detail_records import FeatureStakedFBTCDetailRecords
 from indexer.modules.custom.staking_fbtc.models.feature_staked_fbtc_detail_status import FeatureStakedFBTCDetailStatus
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
@@ -40,7 +44,9 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("config.ini", self._chain_id)
         self._service = (kwargs["config"].get("db_service"),)
-        self._current_holdings = get_current_status(self._service, list(self.staked_abi_dict.keys()))
+        self._current_holdings = utils.get_staked_fbtc_status(
+            self._service, list(self.staked_abi_dict.keys()), int(kwargs["start_block"])
+        )
 
     def _load_config(self, filename, chain_id):
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -84,46 +90,6 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
     def _process(self, **kwargs):
         self._data_buff[StakedFBTCDetail.type()].sort(key=lambda x: x.block_number)
         self._data_buff[StakedFBTCCurrentStatus.type()].sort(key=lambda x: x.block_number)
-
-
-def get_current_status(db_service, staked_contract_list):
-    if not db_service:
-        return {}
-    bytea_address_list = []
-    for address in staked_contract_list:
-        bytes_address = bytes.fromhex(address[2:])
-        bytea_address_list.append(bytes_address)
-
-    session = db_service[0].get_service_session()
-    try:
-        result = (
-            session.query(FeatureStakedFBTCDetailStatus)
-            .filter(FeatureStakedFBTCDetailStatus.contract_address.in_(bytea_address_list))
-            .all()
-        )
-        staked_fbtc_map = {}
-        if result is not None:
-            for item in result:
-                item.contract_address = "0x" + item.contract_address.hex()
-                item.wallet_address = "0x" + item.wallet_address.hex()
-                if item.contract_address not in staked_fbtc_map:
-                    staked_fbtc_map[item.contract_address] = {}
-                staked_fbtc_map[item.contract_address][item.wallet_address] = StakedFBTCCurrentStatus(
-                    contract_address=item.contract_address,
-                    protocol_id=item.protocol_id,
-                    wallet_address=item.wallet_address,
-                    amount=item.amount,
-                    block_number=item.block_number,
-                    block_timestamp=item.block_timestamp,
-                )
-
-    except Exception as e:
-        print(e)
-        raise e
-    finally:
-        session.close()
-
-    return staked_fbtc_map
 
 
 def collect_detail(
