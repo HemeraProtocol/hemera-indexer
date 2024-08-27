@@ -364,12 +364,10 @@ def process_token_transfer(token_transfers, token_type):
             token_transfer_json["value"] = (
                 "{0:.18f}".format(token_transfer.value / 10 ** (token_transfer.decimals or 18)).rstrip("0").rstrip(".")
             )
-            token_transfer_json["token_logo_url"] = (
-                token_transfer.icon_url or f"/images/empty-token-{app_config.chain}.png"
-            )
+            token_transfer_json["token_logo_url"] = token_transfer.icon_url or None
         else:
             token_transfer_json["token_id"] = "{:f}".format(token_transfer.token_id)
-            token_transfer_json["token_logo_url"] = f"/images/empty-token-{app_config.chain}.png"
+            token_transfer_json["token_logo_url"] = None
             if token_type == "tokentxns-nft1155":
                 token_transfer_json["value"] = "{:f}".format(token_transfer.value)
 
