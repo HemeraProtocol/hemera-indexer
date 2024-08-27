@@ -150,7 +150,6 @@ class AppConfig(YAMLWizard):
     debug_rpc: str = field(default="https://ethereum.publicnode.com")
     token_configuration: TokenConfiguration = field(default_factory=TokenConfiguration)
     api_urls: APIUrls = field(default_factory=APIUrls)
-    token_fdw: bool = field(default=False)
 
     def update_from_env(self):
         self.env = os.getenv("", self.env)
@@ -166,9 +165,6 @@ class AppConfig(YAMLWizard):
         )
         self.rpc = os.getenv("PROVIDER_URI", self.rpc)
         self.debug_rpc = os.getenv("DEBUG_PROVIDER_URI", self.debug_rpc)
-        env_value = os.getenv("TOKEN_FDW")
-        if env_value is not None:
-            self.token_fdw = env_value.lower() == "true"
 
         read_url = get_env_or_set_default("READ_POSTGRES_URL", "POSTGRES_URL")
         write_url = get_env_or_set_default("WRITE_POSTGRES_URL", "POSTGRES_URL")

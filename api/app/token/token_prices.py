@@ -24,26 +24,23 @@ class TokenHourlyPrices(HemeraModel):
 
 @cache.memoize(300)
 def get_token_price(symbol, date=None) -> Decimal:
-    if app_config.token_fdw is False:
-        return Decimal(0.0)
+    if date:
+        token_price = (
+            postgres_db.session.query(TokenHourlyPrices)
+            .filter(
+                TokenHourlyPrices.symbol == symbol,
+                TokenHourlyPrices.timestamp <= date,
+            )
+            .order_by(TokenHourlyPrices.timestamp.desc())
+            .first()
+        )
     else:
-        if date:
-            token_price = (
-                postgres_db.session.query(TokenHourlyPrices)
-                .filter(
-                    TokenHourlyPrices.symbol == symbol,
-                    TokenHourlyPrices.timestamp <= date,
-                )
-                .order_by(TokenHourlyPrices.timestamp.desc())
-                .first()
-            )
-        else:
-            token_price = (
-                postgres_db.session.query(TokenPrices)
-                .filter(TokenPrices.symbol == symbol)
-                .order_by(TokenPrices.timestamp.desc())
-                .first()
-            )
-        if token_price:
-            return token_price.price
-        return Decimal(0.0)
+        token_price = (
+            postgres_db.session.query(TokenPrices)
+            .filter(TokenPrices.symbol == symbol)
+            .order_by(TokenPrices.timestamp.desc())
+            .first()
+        )
+    if token_price:
+        return token_price.price
+    return Decimal(0.0)
