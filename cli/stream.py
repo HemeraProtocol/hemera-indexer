@@ -240,7 +240,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--auto-reorg",
-    default=True,
+    default=False,
     show_default=True,
     type=bool,
     envvar="AUTO_REORG",

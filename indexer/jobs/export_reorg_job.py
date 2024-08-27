@@ -20,36 +20,44 @@ class ExportReorgJob(BaseJob):
         conn = self._service.get_conn()
         cur = conn.cursor()
 
-        for key in self._data_buff.keys():
-            if len(self._data_buff[key]) > 0:
-                items = self._data_buff[key]
-                domain = type(items[0])
-                if domain.__name__ not in domain_model_mapping:
-                    continue
+        try:
+            for key in self._data_buff.keys():
+                if len(self._data_buff[key]) > 0:
+                    items = self._data_buff[key]
+                    domain = type(items[0])
+                    if domain.__name__ not in domain_model_mapping:
+                        continue
 
-                pg_config = domain_model_mapping[domain.__name__]
+                    pg_config = domain_model_mapping[domain.__name__]
 
-                table = pg_config["table"]
-                do_update = pg_config["conflict_do_update"]
-                update_strategy = pg_config["update_strategy"]
-                converter = pg_config["converter"]
+                    table = pg_config["table"]
+                    do_update = pg_config["conflict_do_update"]
+                    update_strategy = pg_config["update_strategy"]
+                    converter = pg_config["converter"]
 
-                if not hasattr(table, "reorg"):
-                    continue
+                    if not hasattr(table, "reorg"):
+                        continue
 
-                reorg_data = [converter(table, item, do_update) for item in items]
+                    reorg_data = [converter(table, item, do_update) for item in items]
 
-                columns = list(reorg_data[0].keys())
-                values = [tuple(d.values()) for d in reorg_data]
+                    columns = list(reorg_data[0].keys())
+                    values = [tuple(d.values()) for d in reorg_data]
 
-                insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
+                    insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
 
-                if table.__tablename__ != "blocks":
-                    cur.execute(self._build_clean_sql(table.__tablename__, block_number))
+                    if table.__tablename__ != "blocks":
+                        cur.execute(self._build_clean_sql(table.__tablename__, block_number))
 
-                execute_values(cur, insert_stmt, values, page_size=500)
+                    execute_values(cur, insert_stmt, values, page_size=500)
 
-        conn.commit()
+            conn.commit()
+        except Exception as e:
+            # print(e)
+            logger.error(f"Reorg chain data error:{e}")
+            # print(item_type, insert_stmt, [i[-1] for i in data])
+            raise Exception("Reorg chain data error")
+        finally:
+            self._service.release_conn(conn)
         self._data_buff.clear()
 
     @staticmethod
