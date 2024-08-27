@@ -41,6 +41,8 @@ class EntityType(IntFlag):
 
     ADDRESS_INDEX = 1 << 7
 
+    ENS = 1 << 8
+
     @staticmethod
     def combine_all_entity_types():
         return reduce(lambda x, y: x | y, EntityType)
@@ -130,3 +132,8 @@ def generate_output_types(entity_types):
         yield CurrentTokenBalance
         yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
+
+    if entity_types & EntityType.ENS:
+        yield Block
+        yield Transaction
+        yield Log
