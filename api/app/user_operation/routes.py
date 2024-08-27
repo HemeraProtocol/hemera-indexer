@@ -12,9 +12,9 @@ from api.app.utils.utils import (
     process_token_transfer,
 )
 from common.models import db
-from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
+from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.logs import Logs
 from common.models.tokens import Tokens
 from common.models.transactions import Transactions
@@ -81,7 +81,7 @@ class ExplorerUserOperations(Resource):
             user_operation_result_dict["transactions_hash"] = user_operation_result.transactions_hash
             user_operation_result_dict["block_number"] = user_operation_result.block_number
             wei_amount = user_operation_result.actual_gas_cost
-            formatted_eth = format(wei_amount / 10 ** 18, ".10f")
+            formatted_eth = format(wei_amount / 10**18, ".10f")
             user_operation_result_dict["fee"] = formatted_eth
 
             user_operation_result_list.append(
@@ -119,12 +119,12 @@ class ExplorerUserOperationDetails(Resource):
         user_operation_result_dict["sender"] = user_operation_result.sender
         user_operation_result_dict["status"] = user_operation_result.status
         user_operation_result_dict["block_timestamp"] = user_operation_result.block_timestamp
-        user_operation_result_dict["fee"] = format(user_operation_result.actual_gas_cost / 10 ** 18, ".10f")
+        user_operation_result_dict["fee"] = format(user_operation_result.actual_gas_cost / 10**18, ".10f")
 
         user_operation_result_dict["gas_limit"] = (
-                user_operation_result.call_gas_limit
-                + user_operation_result.verification_gas_limit
-                + user_operation_result.pre_verification_gas
+            user_operation_result.call_gas_limit
+            + user_operation_result.verification_gas_limit
+            + user_operation_result.pre_verification_gas
         )
         user_operation_result_dict["gas_used"] = user_operation_result.actual_gas_used
         user_operation_result_dict["transactions_hash"] = user_operation_result.transactions_hash
@@ -327,7 +327,7 @@ class ExplorerTransactionOperation(Resource):
             user_operation_result_dict["transactions_hash"] = user_operation_result.transactions_hash
             user_operation_result_dict["block_number"] = user_operation_result.block_number
             wei_amount = user_operation_result.actual_gas_cost
-            formatted_eth = format(wei_amount / 10 ** 18, ".10f")
+            formatted_eth = format(wei_amount / 10**18, ".10f")
             user_operation_result_dict["fee"] = formatted_eth
             user_operation_result_dict["nonce"] = str(user_operation_result.nonce)
             user_operation_result_dict["init_code"] = user_operation_result.init_code

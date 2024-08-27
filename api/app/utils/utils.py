@@ -97,37 +97,37 @@ def format_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
     transaction_json["gas_fee_token_price"] = "{0:.2f}".format(GAS_FEE_TOKEN_PRICE)
 
     transaction_json["value"] = format_coin_value(int(transaction["value"]))
-    transaction_json["value_dollar"] = "{0:.2f}".format(transaction["value"] * GAS_FEE_TOKEN_PRICE / 10 ** 18)
+    transaction_json["value_dollar"] = "{0:.2f}".format(transaction["value"] * GAS_FEE_TOKEN_PRICE / 10**18)
 
     gas_price = transaction["gas_price"] or 0
-    transaction_json["gas_price_gwei"] = "{0:.6f}".format(gas_price / 10 ** 9).rstrip("0").rstrip(".")
-    transaction_json["gas_price"] = "{0:.15f}".format(gas_price / 10 ** 18).rstrip("0").rstrip(".")
+    transaction_json["gas_price_gwei"] = "{0:.6f}".format(gas_price / 10**9).rstrip("0").rstrip(".")
+    transaction_json["gas_price"] = "{0:.15f}".format(gas_price / 10**18).rstrip("0").rstrip(".")
 
     transaction_fee = gas_price * transaction["receipt_gas_used"]
     total_transaction_fee = gas_price * transaction["receipt_gas_used"]
 
     if "receipt_l1_fee" in transaction_json and transaction_json["receipt_l1_fee"]:
         transaction_json["receipt_l1_fee"] = (
-            "{0:.15f}".format(transaction["receipt_l1_fee"] / 10 ** 18).rstrip("0").rstrip(".")
+            "{0:.15f}".format(transaction["receipt_l1_fee"] / 10**18).rstrip("0").rstrip(".")
         )
         transaction_json["receipt_l1_gas_price"] = (
-            "{0:.15f}".format(transaction["receipt_l1_gas_price"] / 10 ** 18).rstrip("0").rstrip(".")
+            "{0:.15f}".format(transaction["receipt_l1_gas_price"] / 10**18).rstrip("0").rstrip(".")
         )
         transaction_json["receipt_l1_gas_price_gwei"] = (
-            "{0:.6f}".format(transaction["receipt_l1_gas_price"] / 10 ** 9).rstrip("0").rstrip(".")
+            "{0:.6f}".format(transaction["receipt_l1_gas_price"] / 10**9).rstrip("0").rstrip(".")
         )
 
         total_transaction_fee = transaction_fee + transaction["receipt_l1_fee"]
-    transaction_json["transaction_fee"] = "{0:.15f}".format(transaction_fee / 10 ** 18).rstrip("0").rstrip(".")
+    transaction_json["transaction_fee"] = "{0:.15f}".format(transaction_fee / 10**18).rstrip("0").rstrip(".")
     transaction_json["transaction_fee_dollar"] = "{0:.2f}".format(
-        gas_price * GAS_FEE_TOKEN_PRICE * transaction["receipt_gas_used"] / 10 ** 18
+        gas_price * GAS_FEE_TOKEN_PRICE * transaction["receipt_gas_used"] / 10**18
     )
 
     transaction_json["total_transaction_fee"] = (
-        "{0:.15f}".format(total_transaction_fee / 10 ** 18).rstrip("0").rstrip(".")
+        "{0:.15f}".format(total_transaction_fee / 10**18).rstrip("0").rstrip(".")
     )
     transaction_json["total_transaction_fee_dollar"] = "{0:.2f}".format(
-        total_transaction_fee * GAS_FEE_TOKEN_PRICE / 10 ** 18
+        total_transaction_fee * GAS_FEE_TOKEN_PRICE / 10**18
     )
     return transaction_json
 
@@ -365,7 +365,7 @@ def process_token_transfer(token_transfers, token_type):
                 "{0:.18f}".format(token_transfer.value / 10 ** (token_transfer.decimals or 18)).rstrip("0").rstrip(".")
             )
             token_transfer_json["token_logo_url"] = (
-                    token_transfer.icon_url or f"/images/empty-token-{app_config.chain}.png"
+                token_transfer.icon_url or f"/images/empty-token-{app_config.chain}.png"
             )
         else:
             token_transfer_json["token_id"] = "{:f}".format(token_transfer.token_id)
