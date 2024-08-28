@@ -29,6 +29,14 @@ services:
       - ENTITY_TYPES=EXPLORER_TRACE
       - SYNC_RECORDER=pg:trace_recorder
 
+  hemera-uop-indexer:
+    <<: *common-settings
+    container_name: indexer-uop
+    environment:
+      - ENTITY_TYPES=USER_OPS
+      - SYNC_RECORDER=pg:uop_recorder
+
+
   hemera-api:
     <<: *common-settings
     container_name: hemera-api

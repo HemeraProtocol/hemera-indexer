@@ -32,7 +32,6 @@ def get_count_by_address(table, chain, wallet_address=None):
 
 
 def get_total_row_count(table):
-
     estimate_transaction = db.session.execute(
         text(
             f"""
@@ -100,11 +99,12 @@ def format_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
     transaction_json["value"] = format_coin_value(int(transaction["value"]))
     transaction_json["value_dollar"] = "{0:.2f}".format(transaction["value"] * GAS_FEE_TOKEN_PRICE / 10**18)
 
-    transaction_json["gas_price_gwei"] = "{0:.6f}".format(transaction["gas_price"] / 10**9).rstrip("0").rstrip(".")
-    transaction_json["gas_price"] = "{0:.15f}".format(transaction["gas_price"] / 10**18).rstrip("0").rstrip(".")
+    gas_price = transaction["gas_price"] or 0
+    transaction_json["gas_price_gwei"] = "{0:.6f}".format(gas_price / 10**9).rstrip("0").rstrip(".")
+    transaction_json["gas_price"] = "{0:.15f}".format(gas_price / 10**18).rstrip("0").rstrip(".")
 
-    transaction_fee = transaction["gas_price"] * transaction["receipt_gas_used"]
-    total_transaction_fee = transaction["gas_price"] * transaction["receipt_gas_used"]
+    transaction_fee = gas_price * transaction["receipt_gas_used"]
+    total_transaction_fee = gas_price * transaction["receipt_gas_used"]
 
     if "receipt_l1_fee" in transaction_json and transaction_json["receipt_l1_fee"]:
         transaction_json["receipt_l1_fee"] = (
@@ -120,7 +120,7 @@ def format_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
         total_transaction_fee = transaction_fee + transaction["receipt_l1_fee"]
     transaction_json["transaction_fee"] = "{0:.15f}".format(transaction_fee / 10**18).rstrip("0").rstrip(".")
     transaction_json["transaction_fee_dollar"] = "{0:.2f}".format(
-        transaction["gas_price"] * GAS_FEE_TOKEN_PRICE * transaction["receipt_gas_used"] / 10**18
+        gas_price * GAS_FEE_TOKEN_PRICE * transaction["receipt_gas_used"] / 10**18
     )
 
     transaction_json["total_transaction_fee"] = (
@@ -364,12 +364,10 @@ def process_token_transfer(token_transfers, token_type):
             token_transfer_json["value"] = (
                 "{0:.18f}".format(token_transfer.value / 10 ** (token_transfer.decimals or 18)).rstrip("0").rstrip(".")
             )
-            token_transfer_json["token_logo_url"] = (
-                token_transfer.icon_url or f"/images/empty-token-{app_config.chain}.png"
-            )
+            token_transfer_json["token_logo_url"] = token_transfer.icon_url or None
         else:
             token_transfer_json["token_id"] = "{:f}".format(token_transfer.token_id)
-            token_transfer_json["token_logo_url"] = f"/images/empty-token-{app_config.chain}.png"
+            token_transfer_json["token_logo_url"] = None
             if token_type == "tokentxns-nft1155":
                 token_transfer_json["value"] = "{:f}".format(token_transfer.value)
 
