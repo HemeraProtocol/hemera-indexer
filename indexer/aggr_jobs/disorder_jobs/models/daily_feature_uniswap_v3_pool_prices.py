@@ -1,4 +1,4 @@
-from sqlalchemy import DATE, Column, Computed, Index
+from sqlalchemy import DATE, Column, Computed, Index, TIMESTAMP, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC
 
 from common.models import HemeraModel
@@ -7,9 +7,12 @@ from common.models import HemeraModel
 class DailyFeatureUniswapV3PoolPrices(HemeraModel):
     __tablename__ = "daily_feature_uniswap_v3_pool_prices"
 
-    pool_address = Column(BYTEA, primary_key=True, nullable=False)
     block_date = Column(DATE, primary_key=True, nullable=False)
+    pool_address = Column(BYTEA, primary_key=True, nullable=False)
+
     sqrt_price_x96 = Column(NUMERIC(78))
+
+    create_time = Column(TIMESTAMP, server_default=func.now())
 
 
 # could be replaced by partition in case of huge amount data

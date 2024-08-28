@@ -6,14 +6,12 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class PeriodFeatureMerChantMoeTokenBinRecords(HemeraModel):
-    __tablename__ = "period_feature_merchant_moe_token_bin_records"
+class DailyFeatureErc20TokenSupplyRecords(HemeraModel):
+    __tablename__ = "daily_feature_erc20_token_supply_records"
 
-    period_date = Column(DATE, primary_key=True)
+    block_date = Column(DATE, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
-    token_id = Column(NUMERIC(100), primary_key=True)
 
-    reserve0_bin = Column(NUMERIC(100))
-    reserve1_bin = Column(NUMERIC(100))
+    total_supply = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())

@@ -14,7 +14,6 @@ class DailyFeatureErc1155TokenHoldings(HemeraModel):
     wallet_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
 
-
     balance = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
