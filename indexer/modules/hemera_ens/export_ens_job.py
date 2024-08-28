@@ -14,7 +14,8 @@ from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler
-from indexer.modules.hemera_ens.ens_domain import ENSAddressChange, ENSNameChanged, ENSNameRenew, ENSRegister
+from indexer.modules.hemera_ens.ens_domain import ENSAddressChange, ENSNameChanged, ENSNameRenew, ENSRegister, \
+    ENSRelDomain
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
@@ -28,7 +29,7 @@ logger = logging.getLogger(__name__)
 # Exports hemera_ens related info
 class ExportEnsJob(FilterTransactionDataJob):
     dependency_types = [Transaction, Log]
-    output_types = [ENSRegister, ENSNameRenew, ENSAddressChange, ENSNameChanged]
+    output_types = [ENSRegister, ENSNameRenew, ENSAddressChange, ENSNameChanged, ENSRelDomain]
     able_to_reorg = True
 
     def __init__(self, **kwargs):

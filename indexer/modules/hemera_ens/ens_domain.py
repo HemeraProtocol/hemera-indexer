@@ -74,7 +74,7 @@ class ENSNameChanged(Domain):
 
 
 @dataclass
-class ENSRel(Domain):
+class ENSRelDomain(Domain):
 
     node: Optional[str] = None
     token_id: Optional[str] = None

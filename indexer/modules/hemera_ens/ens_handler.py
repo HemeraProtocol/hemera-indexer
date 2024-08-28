@@ -15,7 +15,7 @@ from web3 import Web3
 from indexer.modules.hemera_ens import lifo_registry
 from indexer.modules.hemera_ens.ens_abi import abi_map
 from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP
-from indexer.modules.hemera_ens.ens_domain import ENSRel
+from indexer.modules.hemera_ens.ens_domain import ENSRelDomain
 from indexer.modules.hemera_ens.extractors import (
     AddressChangedExtractor,
     NameChangedExtractor,
@@ -204,7 +204,7 @@ class EnsHandler:
                 dic["expires"] = record.get("expires").strftime("%Y-%m-%d %H:%M:%S")
         else:
             dic["expires"] = None
-        return ENSRel(
+        return ENSRelDomain(
             node=dic.get("node"),
             token_id=dic.get("token_id"),
             name=dic.get("name"),

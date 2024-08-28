@@ -23,7 +23,7 @@ class ENSRel(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ENSRel",
+                "domain": "ENSRelDomain",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
