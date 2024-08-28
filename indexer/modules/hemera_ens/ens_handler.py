@@ -173,7 +173,7 @@ class EnsHandler:
 
     def process_middle(self, lis):
         if not lis:
-            return
+            return []
         items = []
         for record in lis:
             dic = self.resolve_dict_to_item(asdict(record))
