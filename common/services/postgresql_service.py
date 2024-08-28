@@ -27,8 +27,8 @@ class PostgreSQLService(object):
         if cls.instance is None:
             cls.instance = super().__new__(cls)
         return cls.instance
-
-    def __init__(self, jdbc_url, db_version="head", script_location="migrations", init_schema=True):
+    # TODO
+    def __init__(self, jdbc_url, db_version="head", script_location="migrations", init_schema=False):
         self.db_version = db_version
         self.engine = create_engine(
             jdbc_url,
