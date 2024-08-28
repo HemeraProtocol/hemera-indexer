@@ -26,7 +26,7 @@ def upgrade() -> None:
         "sync_record",
         sa.Column("mission_sign", sa.VARCHAR(), nullable=False),
         sa.Column("last_block_number", sa.BIGINT(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("mission_sign"),
     )
     # ### end Alembic commands ###
@@ -40,7 +40,7 @@ def downgrade() -> None:
         sa.Column("mission_type", sa.VARCHAR(), nullable=False),
         sa.Column("entity_types", sa.INTEGER(), nullable=False),
         sa.Column("last_block_number", sa.BIGINT(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("mission_type", "entity_types"),
     )
     # ### end Alembic commands ###

@@ -12,7 +12,7 @@ class AddressTransaction(Domain):
     block_timestamp: int
     block_hash: str
     txn_type: int
-    the_other_address: str
+    related_address: str
     value: int
     transaction_fee: int
     receipt_status: int

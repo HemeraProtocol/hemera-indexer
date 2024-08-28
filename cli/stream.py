@@ -2,6 +2,7 @@ import logging
 import time
 
 import click
+from web3 import Web3
 
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
@@ -185,6 +186,14 @@ def calculate_execution_time(func):
     envvar="MAX_WORKERS",
 )
 @click.option(
+    "--delay",
+    default=0,
+    show_default=True,
+    type=int,
+    envvar="DELAY",
+    help="The limit number of blocks which delays from the network current block number.",
+)
+@click.option(
     "--log-file",
     default=None,
     show_default=True,
@@ -220,6 +229,23 @@ def calculate_execution_time(func):
     "e.g redis. means cache data will store in redis, redis://localhost:6379"
     "or memory. means cache data will store in memory, memory",
 )
+@click.option(
+    "-m",
+    "--multicall",
+    default=False,
+    show_default=True,
+    type=bool,
+    help="if `multicall` is set to True, it will decrease the consume of rpc calls",
+    envvar="Multicall",
+)
+@click.option(
+    "--auto-reorg",
+    default=False,
+    show_default=True,
+    type=bool,
+    envvar="AUTO_REORG",
+    help="Whether to detect reorg in data streams and automatically repair data.",
+)
 @calculate_execution_time
 def stream(
     provider_uri,
@@ -232,6 +258,7 @@ def stream(
     entity_types,
     output_types,
     blocks_per_file,
+    delay=0,
     period_seconds=10,
     batch_size=10,
     debug_batch_size=1,
@@ -242,6 +269,8 @@ def stream(
     sync_recorder="file:sync_record",
     retry_from_record=False,
     cache="memory",
+    auto_reorg=True,
+    multicall=True,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -256,6 +285,7 @@ def stream(
     # build config
     config = {
         "blocks_per_file": blocks_per_file,
+        "chain_id": Web3(Web3.HTTPProvider(provider_uri)).eth.chain_id,
     }
 
     if postgres_url:
@@ -291,6 +321,8 @@ def stream(
         config=config,
         required_output_types=output_types,
         cache=cache,
+        auto_reorg=auto_reorg,
+        multicall=multicall,
     )
 
     controller = StreamController(
@@ -298,6 +330,7 @@ def stream(
         job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
         retry_from_record=retry_from_record,
+        delay=delay,
     )
 
     controller.action(

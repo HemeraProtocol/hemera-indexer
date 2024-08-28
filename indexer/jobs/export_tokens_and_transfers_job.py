@@ -1,8 +1,8 @@
-import json
 import logging
 from dataclasses import asdict
 from typing import Dict, List
 
+import orjson
 from eth_abi import abi
 
 from common.utils.format_utils import to_snake_case
@@ -23,7 +23,7 @@ from indexer.jobs.base_job import BaseExportJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc, generate_eth_call_json_rpc_without_block_number
+from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
@@ -248,9 +248,9 @@ def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
     fn_name = "totalSupply"
     token_name_rpc = list(generate_eth_call_json_rpc_without_block_number(build_rpc_method_data(tokens, fn_name)))
     if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
+        response = make_requests(params=orjson.dumps(token_name_rpc))
     else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+        response = [make_requests(params=orjson.dumps(token_name_rpc[0]))]
 
     res = []
     for data in list(zip_rpc_response(tokens, response)):
@@ -289,9 +289,9 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
             continue
 
         if is_batch:
-            response = make_requests(params=json.dumps(token_name_rpc))
+            response = make_requests(params=orjson.dumps(token_name_rpc))
         else:
-            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+            response = [make_requests(params=orjson.dumps(token_name_rpc[0]))]
 
         for data in list(zip_rpc_response(tokens, response)):
             result = rpc_response_to_result(data[1])

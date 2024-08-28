@@ -5,12 +5,9 @@ from typing import Type
 import sqlalchemy
 from dateutil.tz import tzlocal
 from psycopg2.extras import execute_values
-from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import insert
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
-from indexer.domain import Domain
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
@@ -28,6 +25,7 @@ class PostgresItemExporter(BaseExporter):
 
         conn = self.service.get_conn()
         try:
+            insert_stmt = ""
             items_grouped_by_type = group_by_item_type(items)
             tables = []
             for item_type in items_grouped_by_type.keys():
@@ -47,11 +45,8 @@ class PostgresItemExporter(BaseExporter):
                     columns = list(data[0].keys())
                     values = [tuple(d.values()) for d in data]
 
-                    insert_stmt = sql_insert_statement(
-                        item_type, table, do_update, columns, where_clause=update_strategy
-                    )
-                    print("""----------------------""",insert_stmt)
-                    print("========================""",values)
+                    insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
+
                     execute_values(cur, insert_stmt, values, page_size=COMMIT_BATCH_SIZE)
                     conn.commit()
                     tables.append(table.__tablename__)
@@ -59,6 +54,7 @@ class PostgresItemExporter(BaseExporter):
         except Exception as e:
             # print(e)
             logger.error(f"Error exporting items:{e}")
+            logger.error(f"{insert_stmt}")
             # print(item_type, insert_stmt, [i[-1] for i in data])
             raise Exception("Error exporting items")
         finally:
@@ -71,12 +67,10 @@ class PostgresItemExporter(BaseExporter):
         )
 
 
-def sql_insert_statement(domain: Type[Domain], model: Type[HemeraModel], do_update: bool, columns, where_clause=None):
+def sql_insert_statement(model: Type[HemeraModel], do_update: bool, columns, where_clause=None):
     pk_list = []
-    for constraint in model._sa_registry.metadata.tables[model.__tablename__.lower()].constraints:
-        if isinstance(constraint, sqlalchemy.schema.PrimaryKeyConstraint):
-            for column in constraint.columns:
-                pk_list.append(column.name)
+    for pk in model.__table__.primary_key.columns:
+        pk_list.append(pk.name)
 
     update_list = list(set(columns) - set(pk_list))
 

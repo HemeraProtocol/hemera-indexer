@@ -66,7 +66,6 @@ exception_recorder = ExceptionRecorder()
     help="How many parameters to batch in single request",
 )
 @click.option(
-    "-db",
     "--debug-batch-size",
     default=1,
     show_default=True,
@@ -103,11 +102,11 @@ def reorg(
     provider_uri,
     debug_provider_uri,
     postgres_url,
-    db_version,
     block_number,
     ranges,
     batch_size,
     debug_batch_size,
+    db_version="head",
     log_file=None,
     cache=None,
 ):

@@ -49,8 +49,8 @@ class Transactions(HemeraModel):
     error = Column(TEXT)
     revert_reason = Column(TEXT)
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
     @staticmethod

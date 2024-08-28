@@ -32,8 +32,8 @@ class Contracts(HemeraModel):
     verified_implementation_contract = Column(BYTEA)
     proxy_standard = Column(VARCHAR)
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
     @staticmethod

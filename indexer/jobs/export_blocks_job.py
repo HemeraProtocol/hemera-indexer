@@ -1,5 +1,6 @@
-import json
 import logging
+
+import orjson
 
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
@@ -49,9 +50,11 @@ class ExportBlocksJob(BaseExportJob):
 
             reorg_block = int(kwargs["start_block"])
             set_reorg_sign(reorg_block, self._service)
+            self._should_reorg_type.add(Block.type())
             self._should_reorg = True
 
     def _end(self):
+        super()._end()
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
     def _collect(self, **kwargs):
@@ -107,16 +110,16 @@ class ExportBlocksJob(BaseExportJob):
             if timestamp not in ts_dict or block_number < ts_dict[timestamp]:
                 ts_dict[timestamp] = block_number
 
-        self._data_buff[BlockTsMapper.type()] = [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()]
+        self._collect_items(BlockTsMapper.type(), [BlockTsMapper((ts, block)) for ts, block in ts_dict.items()])
 
 
 def blocks_rpc_requests(make_request, block_number_batch, is_batch):
     block_number_rpc = list(generate_get_block_by_number_json_rpc(block_number_batch, True))
 
     if is_batch:
-        response = make_request(params=json.dumps(block_number_rpc))
+        response = make_request(params=orjson.dumps(block_number_rpc))
     else:
-        response = [make_request(params=json.dumps(block_number_rpc[0]))]
+        response = [make_request(params=orjson.dumps(block_number_rpc[0]))]
 
     results = rpc_response_batch_to_results(response)
     return results
