@@ -5,7 +5,6 @@
 # @File  ens_conf.py
 # @Brief
 
-
 CONTRACT_NAME_MAP = {
     "0x283af0b28c62c092c9727f1ee09c02ca627eb7f5": "ENS: Old ETH Registrar Controller",
     "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85": "ENS: Base Registrar Implementation",
@@ -44,10 +43,10 @@ CONTRACT_NAME_MAP = {
     "0x1d6552e8f46fd509f3918a174fe62c34b42564ae": "ETHBulkRegistrarV1",
     "0xf5925e20e3f4002ba17130641a87f574c71a8b3c": "NOT Verified",
     "0x27c9b34eb43523447d3e1bcf26f009d814522687": "TransparentUpgradeableProxy",
-    "0x5d81ce189bf5267e70fb555916ffbc3d4c7b2245": "EnsBatchRenew"
+    "0x5d81ce189bf5267e70fb555916ffbc3d4c7b2245": "EnsBatchRenew",
 }
 
 
 ENS_BEGIN_BLOCK = 9380235
-BASE_NODE = '0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae'
-REVERSE_BASE_NODE = '0x91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2'
+BASE_NODE = "0x93cdeb708b7545dc668eb9280176169d1c33cfd8ed6f04690a0bcc88a93fc4ae"
+REVERSE_BASE_NODE = "0x91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2"

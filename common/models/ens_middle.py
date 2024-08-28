@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, String, TIMESTAMP, PrimaryKeyConstraint, func, Index
+from sqlalchemy import TIMESTAMP, Column, Index, Integer, PrimaryKeyConstraint, String, func
 from sqlalchemy.dialects.postgresql import BOOLEAN
 
-from common.models import HemeraModel
+from common.models import HemeraModel, general_converter
 
 
 class ENSMiddle(HemeraModel):
@@ -33,9 +33,36 @@ class ENSMiddle(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (
-        PrimaryKeyConstraint('transaction_hash', 'log_index', name='ens_tnx_log_index'),
-    )
+    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "log_index", name="ens_tnx_log_index"),)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                "domain": "ENSRegister",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "ENSNameRenew",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "ENSAddressChange",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "ENSNameChanged",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+        ]
 
 
-Index('ens_idx_block_number_log_index', ENSMiddle.block_number, ENSMiddle.log_index.desc())
+Index("ens_idx_block_number_log_index", ENSMiddle.block_number, ENSMiddle.log_index.desc())

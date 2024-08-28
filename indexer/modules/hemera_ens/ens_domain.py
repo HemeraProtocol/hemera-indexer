@@ -71,3 +71,15 @@ class ENSNameChanged(Domain):
     node: Optional[str] = None
     reverse_node: Optional[str] = None
     event_name: Optional[str] = None
+
+
+@dataclass
+class ENSRel(Domain):
+
+    node: Optional[str] = None
+    token_id: Optional[str] = None
+    owner: Optional[str] = None
+    name: Optional[str] = None
+    expires: Optional[datetime] = None
+    address: Optional[str] = None
+    reverse_name: Optional[str] = None

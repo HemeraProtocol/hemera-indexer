@@ -2,7 +2,7 @@ import codecs
 
 from eth_abi import encoding
 from eth_abi.decoding import StringDecoder
-from eth_abi.registry import registry, BaseEquals
+from eth_abi.registry import BaseEquals, registry
 
 
 class CompatibleStringDecoder(StringDecoder):
@@ -29,5 +29,5 @@ lifo_registry.register(
 )
 
 
-from .ens_conf import ENS_BEGIN_BLOCK, CONTRACT_NAME_MAP, BASE_NODE, REVERSE_BASE_NODE
-from .ens_handler import EnsHandler
+from .ens_conf import CONTRACT_NAME_MAP
+from .ens_handler import EnsConfLoader, EnsHandler

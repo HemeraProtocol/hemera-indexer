@@ -15,24 +15,24 @@ def namehash(name):
     :param name: The ENS name to hash (e.g., 'example.eth').
     :return: The namehash as a hexadecimal string.
     """
-    node = b'\x00' * 32
+    node = b"\x00" * 32
     if name:
         labels = name.split(".")
         for label in reversed(labels):
-            node = keccak(node + keccak(label.encode('utf-8')))
+            node = keccak(node + keccak(label.encode("utf-8")))
     return Web3.to_hex(node)
 
 
 def get_label(name):
-    return Web3.to_hex(keccak(name.encode('utf-8')))
+    return Web3.to_hex(keccak(name.encode("utf-8")))
 
 
 def compute_node_label(base_node, label):
     base_node = base_node.lower()
-    if base_node.startswith('0x'):
+    if base_node.startswith("0x"):
         base_node = base_node[2:]
     label = label.lower()
-    if label.startswith('0x'):
+    if label.startswith("0x"):
         label = label[2:]
 
     node = keccak(bytes.fromhex(base_node) + bytes.fromhex(label))
