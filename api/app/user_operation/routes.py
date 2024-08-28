@@ -187,7 +187,7 @@ class ExplorerUserOperationTokenTransfers(Resource):
                 Tokens.name,
                 Tokens.symbol,
                 Tokens.decimals,
-                Tokens.logo,
+                Tokens.icon_url,
             )
             .all()
         )
