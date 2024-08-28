@@ -42,19 +42,19 @@ class ENSClient:
             return {}
 
     def get_address_ens(self, address):
-        url = f"{self.ENS_SERVICE_HOST}/v1/hemera_ens/address/{address}"
+        url = f"{self.ENS_SERVICE_HOST}/v1/ens/address/{address}"
         return self.get_json_response(url)
 
     def get_ens_address(self, ens_name):
-        url = f"{self.ENS_SERVICE_HOST}/v1/hemera_ens/name/{ens_name}"
+        url = f"{self.ENS_SERVICE_HOST}/v1/ens/name/{ens_name}"
         return self.get_json_response(url)
 
     def batch_get_address_ens(self, address_list):
-        url = f"{self.ENS_SERVICE_HOST}/v1/hemera_ens/batch/address"
+        url = f"{self.ENS_SERVICE_HOST}/v1/ens/batch/address"
         payload = {"address": address_list}
         return self.post_json_response(url, payload=payload)
 
     def batch_get_ens_address(self, ens_name_list):
-        url = f"{self.ENS_SERVICE_HOST}/v1/hemera_ens/batch/name"
+        url = f"{self.ENS_SERVICE_HOST}/v1/ens/batch/name"
         payload = {"name": ens_name_list}
         return self.post_json_response(url, payload=payload)
