@@ -79,6 +79,9 @@ class RegisterExtractor(BaseExtractor):
         self.address1 = "0x253553366da8546fc250f225fe3d25d0c782303b"
         self.tp0a = "0x69e37f151eb98a09618ddaa80c8cfaf1ce5996867c489f45b555b412271ebf27"
 
+        self.address2 = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
+        self.tpb = "0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9"
+
     def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map) -> ENSRegister:
         if (tp0 == self.tp0) or (tp0 == self.tp0a):
             event_data = decode_log(log, contract_object_map, event_map)
@@ -109,6 +112,10 @@ class RegisterExtractor(BaseExtractor):
                 node=ens_middle.node,
                 event_name=ens_middle.event_name,
             )
+        elif address == self.address2 and tp0 == self.tpb:
+            token_id = str(log["topic1"]).lower()
+            owner = str(log["topic2"]).lower()
+            return None
         else:
             return None
 

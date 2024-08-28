@@ -14,8 +14,8 @@ class ENSRel(HemeraModel):
     address = Column(String)  # 该域名解析到的地址
     reverse_name = Column(String)
 
-    inserted_at = Column(TIMESTAMP, server_default=func.now())
-    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
     __table_args__ = (UniqueConstraint("node"),)
 

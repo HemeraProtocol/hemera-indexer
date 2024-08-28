@@ -30,7 +30,7 @@ class ENSMiddle(HemeraModel):
     reverse_name = Column(String)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
-    update_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (PrimaryKeyConstraint("transaction_hash", "log_index", name="ens_tnx_log_index"),)

@@ -67,5 +67,23 @@ class ExportEnsJob(FilterTransactionDataJob):
             if dic_lis:
                 middle.extend(dic_lis)
         res = self.ens_handler.process_middle(middle)
+        res = merge_ens_rel_domains(res)
+        # merge by node
         for item in middle + res:
             self._collect_item(item.type(), item)
+
+
+def merge_ens_rel_domains(domains_list):
+    merged = {}
+    for domain in domains_list:
+        node = domain.node
+        if node not in merged:
+            merged[node] = domain
+        else:
+            # 更新现有条目，保留非 None 的值
+            existing = merged[node]
+            for attr in ['token_id', 'name', 'owner', 'expires', 'address', 'reverse_name']:
+                if getattr(domain, attr) is not None:
+                    setattr(existing, attr, getattr(domain, attr))
+
+    return list(merged.values())
