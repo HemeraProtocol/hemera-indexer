@@ -45,7 +45,7 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
         self._load_config("config.ini", self._chain_id)
         self._service = (kwargs["config"].get("db_service"),)
         self._current_holdings = utils.get_staked_fbtc_status(
-            self._service, list(self.staked_abi_dict.keys()), int(kwargs["start_block"])
+            self._service, list(self.staked_abi_dict.keys()), int(kwargs["config"].get("start_block"))
         )
 
     def _load_config(self, filename, chain_id):
