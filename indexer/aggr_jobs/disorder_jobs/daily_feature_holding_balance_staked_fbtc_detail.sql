@@ -1,13 +1,14 @@
 delete
-from daily_feature_staked_fbtc_detail_records
+from daily_feature_holding_balance_staked_fbtc_detail
 where block_date >= '{start_date}'
   and block_date < '{end_date}';
-insert into daily_feature_staked_fbtc_detail_records
-select contract_address,
+insert into public.daily_feature_holding_balance_staked_fbtc_detail (block_date, wallet_address, protocol_id,
+                                                                     contract_address, balance)
+select TO_TIMESTAMP(block_timestamp)::DATE as block_date,
        wallet_address,
-       TO_TIMESTAMP(block_timestamp)::DATE as block_date,
-       amount,
-       protocol_id
+       protocol_id,
+       contract_address,
+       amount
 from (select *,
              row_number()
              over (partition by contract_address, protocol_id, wallet_address order by block_timestamp desc) rn

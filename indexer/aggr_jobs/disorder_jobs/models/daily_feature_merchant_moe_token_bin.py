@@ -13,9 +13,7 @@ class DailyFeatureMerChantMoeTokenBinRecords(HemeraModel):
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
 
-
     reserve0_bin = Column(NUMERIC(100))
     reserve1_bin = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
-
