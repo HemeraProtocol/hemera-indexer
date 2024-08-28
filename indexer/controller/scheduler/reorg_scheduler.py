@@ -5,11 +5,9 @@ from typing import List, Set, Type
 from pottery import RedisDict
 from redis.client import Redis
 
-from common import models
+from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
-from enumeration.schedule_mode import ScheduleMode
-from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_reorg_job import ExportReorgJob
@@ -22,7 +20,7 @@ import_submodules("indexer.modules")
 def get_tokens_from_db(session):
     with session_scope(session) as s:
         dict = {}
-        result = s.query(models.Tokens).all()
+        result = s.query(Tokens).all()
         if result is not None:
             for token in result:
                 dict[bytes_to_hex_str(token.address)] = {

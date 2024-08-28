@@ -85,7 +85,7 @@ class BatchWorkExecutor:
     # Some acceptable race conditions are possible
     def _try_decrease_batch_size(self, current_batch_size):
         batch_size = self.batch_size
-        if batch_size == current_batch_size and batch_size > 1:
+        if batch_size > 1:
             new_batch_size = int(current_batch_size / 2)
             self.logger.info("Reducing batch size to {}.".format(new_batch_size))
             self.batch_size = new_batch_size

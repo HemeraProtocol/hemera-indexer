@@ -16,6 +16,7 @@ class ExportReorgJob(BaseJob):
         self._should_reorg = True
 
     def _process(self, **kwargs):
+        block_number = int(kwargs["start_block"])
         conn = self._service.get_conn()
         cur = conn.cursor()
 
@@ -41,10 +42,10 @@ class ExportReorgJob(BaseJob):
                 columns = list(reorg_data[0].keys())
                 values = [tuple(d.values()) for d in reorg_data]
 
-                insert_stmt = sql_insert_statement(domain, table, do_update, columns, where_clause=update_strategy)
+                insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
 
                 if table.__tablename__ != "blocks":
-                    cur.execute(self._build_clean_sql(table.__tablename__))
+                    cur.execute(self._build_clean_sql(table.__tablename__, block_number))
 
                 execute_values(cur, insert_stmt, values, page_size=500)
 
@@ -52,5 +53,5 @@ class ExportReorgJob(BaseJob):
         self._data_buff.clear()
 
     @staticmethod
-    def _build_clean_sql(table):
-        return f"DELETE FROM {table} WHERE REORG=TRUE"
+    def _build_clean_sql(table, block_number):
+        return f"DELETE FROM {table} WHERE block_number={block_number} AND reorg=TRUE"

@@ -28,8 +28,8 @@ def upgrade() -> None:
         sa.Column("current_count", sa.BIGINT(), nullable=True),
         sa.Column("called_block_number", sa.BIGINT(), nullable=True),
         sa.Column("called_block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("wallet_address"),
     )
     # ### end Alembic commands ###

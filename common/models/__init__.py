@@ -1,14 +1,9 @@
-import ast
-import glob
-import os
 from datetime import datetime, timezone
 from typing import Type
 
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, TIMESTAMP
 
-from common.services.sqlalchemy_session import RouteSQLAlchemy
 from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 from indexer.domain import Domain
 
@@ -17,6 +12,8 @@ model_path_patterns = [
     "indexer/modules/*/models",
     "indexer/modules/custom/*/models",
 ]
+
+model_path_exclude = ["indexer/modules/custom/address_index/models"]
 
 # db = RouteSQLAlchemy(session_options={"autoflush": False})
 db = SQLAlchemy(session_options={"autoflush": False})
@@ -68,22 +65,21 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
 
 def import_all_models():
     for name in __models_imports:
-        __getattr__(name)
+        if name != "ImportError":
+            path = __models_imports.get(name)
+            if not path:
+                raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
+            val = import_string(f"{path}.{name}")
 
-def __getattr__(name):
-    if name != "ImportError":
-        path = __models_imports.get(name)
-        if not path:
-            raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-
-        val = import_string(f"{path}.{name}")
-
-    # Store for next time
-    globals()[name] = val
-    return val
+        # Store for next time
+        globals()[name] = val
+        return val
 
 
 __models_imports = {
-    k: v["module_import_path"] for k, v in scan_subclass_by_path_patterns(model_path_patterns, HemeraModel).items()
+    k: v["module_import_path"]
+    for k, v in scan_subclass_by_path_patterns(
+        model_path_patterns, HemeraModel, exclude_path=model_path_exclude
+    ).items()
 }

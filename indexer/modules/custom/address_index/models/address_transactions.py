@@ -13,18 +13,16 @@ class AddressTransactions(HemeraModel):
     block_number = Column(INT, primary_key=True)
     transaction_index = Column(INT, primary_key=True)
     transaction_hash = Column(BYTEA)
-    block_timestamp = Column(TIMESTAMP)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
     block_hash = Column(BYTEA)
     txn_type = Column(SMALLINT)
-    the_other_address = Column(BYTEA)
+    related_address = Column(BYTEA)
     value = Column(NUMERIC(100))
     transaction_fee = Column(NUMERIC(100))
     receipt_status = Column(INT)
     method = Column(TEXT)
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
-
-    __table_args__ = (PrimaryKeyConstraint("address", "block_timestamp", "block_number", "transaction_index"),)
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
     @staticmethod
     def model_domain_mapping():

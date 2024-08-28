@@ -1,4 +1,5 @@
 import logging
+import os
 import signal
 import sys
 
@@ -22,6 +23,12 @@ def configure_signals():
 
 
 def configure_logging(filename):
+    if filename:
+        log_dir = os.path.dirname(filename)
+
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
     logging_basic_config(filename=filename)

@@ -22,6 +22,7 @@ class StreamController(BaseController):
         job_scheduler: JobScheduler,
         max_retries=5,
         retry_from_record=False,
+        delay=0,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
@@ -29,6 +30,7 @@ class StreamController(BaseController):
         self.job_scheduler = job_scheduler
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
+        self.delay = 0
 
     def action(
         self,
@@ -129,8 +131,7 @@ class StreamController(BaseController):
     def _get_current_block_number(self):
         return int(self.web3.eth.block_number)
 
-    @staticmethod
-    def _calculate_target_block(current_block, last_synced_block, end_block, steps):
-        target_block = min(current_block, last_synced_block + steps)
+    def _calculate_target_block(self, current_block, last_synced_block, end_block, steps):
+        target_block = min(current_block - self.delay, last_synced_block + steps)
         target_block = min(target_block, end_block) if end_block is not None else target_block
         return target_block
