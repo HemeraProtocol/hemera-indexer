@@ -126,7 +126,6 @@ class EnsHandler:
             return []
         tra = transaction
         dic = {
-            "type": "ens_middle",
             "transaction_hash": tra["hash"],
             "log_index": None,
             "block_number": tra["block_number"],
@@ -149,24 +148,22 @@ class EnsHandler:
             "reverse_name": None,
             "reverse_base_node": None,
         }
-        # while setName doesn't mean nameChanged occurs, just ignore it
+        # While, setName doesn't mean `nameChanged` occurs, just ignore it
         # if method == 'setName':
 
         res = []
         for single_log in logs:
             if not self.is_ens_address(single_log["address"]):
                 continue
-            if not single_log["topic0"] or (single_log["topic0"] not in self.event_map):
+            if not single_log.get("topic0") or (single_log["topic0"] not in self.event_map):
                 continue
-            tp0 = single_log["topic0"]
-            address = single_log["address"].lower()
-            single_log["address"] = address
+            single_log["address"] = single_log["address"].lower()
             ens_middle = AttrDict(dic)
             ens_middle.log_index = single_log["log_index"]
 
             for extractor in self.extractors:
                 solved_event = extractor.extract(
-                    address, tp0, single_log, ens_middle, self.contract_object_map, self.event_map
+                    single_log["address"], single_log["topic0"], single_log, ens_middle, self.contract_object_map, self.event_map
                 )
                 if solved_event:
                     res.append(solved_event)
