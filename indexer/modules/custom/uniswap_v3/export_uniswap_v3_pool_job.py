@@ -54,10 +54,12 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._max_worker = kwargs["max_workers"]
 
     def get_filter(self):
+        liquidity_topic_keys = list(self._liquidity_topic0_dict.keys())
+        liquidity_topic_keys.append(self._pool_swap_topic0)
         return TransactionFilterByLogs(
             [
                 TopicSpecification(addresses=[self._factory_address], topics=[self._create_pool_topic0]),
-                TopicSpecification(topics=[self._pool_swap_topic0]),
+                TopicSpecification(topics=liquidity_topic_keys),
             ]
         )
 
@@ -95,6 +97,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             self._exist_pools,
             self._create_pool_topic0,
             self._pool_swap_topic0,
+            list(self._liquidity_topic0_dict.keys()),
             max_log_index_records,
             self._abi_list,
             self._web3,
@@ -215,18 +218,19 @@ def get_exist_pools(db_service, nft_address):
 
 
 def update_exist_pools(
-    nft_address,
-    factory_address,
-    exist_pools,
-    create_topic0,
-    swap_topic0,
-    logs,
-    abi_list,
-    web3,
-    make_requests,
-    is_batch,
-    batch_size,
-    max_worker,
+        nft_address,
+        factory_address,
+        exist_pools,
+        create_topic0,
+        swap_topic0,
+        liquidity_topic0_list,
+        logs,
+        abi_list,
+        web3,
+        make_requests,
+        is_batch,
+        batch_size,
+        max_worker,
 ):
     need_add = {}
     swap_pools = []
@@ -249,7 +253,7 @@ def update_exist_pools(
                 "block_number": log.block_number,
             }
             need_add[pool_address] = new_pool
-        elif swap_topic0 == current_topic0:
+        elif swap_topic0 == current_topic0 or current_topic0 in liquidity_topic0_list:
             # if the address created by factory_address ,collect it
             swap_pools.append({"address": address, "block_number": log.block_number})
     swap_new_pools = collect_swap_new_pools(
@@ -260,16 +264,16 @@ def update_exist_pools(
 
 
 def collect_pool_prices(
-    target0_topic0,
-    target1_topic0_list,
-    exist_pools,
-    logs,
-    web3,
-    make_requests,
-    is_batch,
-    abi_list,
-    batch_size,
-    max_workers,
+        target0_topic0,
+        target1_topic0_list,
+        exist_pools,
+        logs,
+        web3,
+        make_requests,
+        is_batch,
+        abi_list,
+        batch_size,
+        max_workers,
 ):
     pool_block_set = set()
     for log in logs:
@@ -299,7 +303,7 @@ def collect_pool_prices(
 
 
 def collect_swap_new_pools(
-    nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+        nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ):
     factory_infos = common_utils.simple_get_rpc_requests(
         web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
@@ -329,16 +333,17 @@ def collect_swap_new_pools(
     # fee_infos = simple_get_rpc_requests(web3, make_requests, tick_infos, is_batch, abi_list, "fee", "address")
     for data in tick_infos:
         pool_address = data["address"]
-        new_pool = {
-            "nft_address": nft_address,
-            "token0_address": data["token0"],
-            "token1_address": data["token1"],
-            # "fee": data["fee"],
-            "tick_spacing": data["tickSpacing"],
-            "pool_address": pool_address,
-            "block_number": data["block_number"],
-        }
-        need_add[pool_address] = new_pool
+        if "token0" in data and "token1" in data and "tickSpacing" in data:
+            new_pool = {
+                "nft_address": nft_address,
+                "token0_address": data["token0"],
+                "token1_address": data["token1"],
+                # "fee": data["fee"],
+                "tick_spacing": data["tickSpacing"],
+                "pool_address": pool_address,
+                "block_number": data["block_number"],
+            }
+            need_add[pool_address] = new_pool
     return need_add
 
 
