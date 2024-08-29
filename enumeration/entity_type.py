@@ -22,8 +22,8 @@ from indexer.modules.custom.all_features_value_record import (
 )
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
-from indexer.modules.hemera_ens.ens_domain import ENSAddressChange, ENSNameChanged, ENSNameRenew, ENSRegister, \
-    ENSRelDomain
+from indexer.modules.hemera_ens.ens_domain import ENSMiddleD, ENSRegisterTokenD, ENSRegisterD, ENSNameRenewD, \
+    ENSAddressChangeD, ENSAddressD, ENSTokenTransferD
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -136,8 +136,10 @@ def generate_output_types(entity_types):
         yield BlueChipHolder
 
     if entity_types & EntityType.ENS:
-        yield ENSRegister
-        yield ENSNameRenew
-        yield ENSAddressChange
-        yield ENSNameChanged
-        yield ENSRelDomain
+        yield ENSMiddleD
+        yield ENSRegisterD
+        yield ENSRegisterTokenD
+        yield ENSNameRenewD
+        yield ENSAddressChangeD
+        yield ENSAddressD
+        yield ENSTokenTransferD

@@ -9,7 +9,7 @@ import logging
 from web3 import Web3
 
 from indexer.modules.hemera_ens.ens_conf import BASE_NODE, REVERSE_BASE_NODE
-from indexer.modules.hemera_ens.ens_domain import ENSAddressChange, ENSNameChanged, ENSNameRenew, ENSRegister
+from indexer.modules.hemera_ens.ens_domain import ENSMiddleD, ENSTokenTransferD
 from indexer.modules.hemera_ens.ens_hash import namehash
 from indexer.modules.hemera_ens.util import convert_str_ts
 
@@ -67,7 +67,7 @@ def decode_log(lg, contract_object_map, event_map):
 
 
 class BaseExtractor(object):
-    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map):
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
         pass
 
 
@@ -82,7 +82,7 @@ class RegisterExtractor(BaseExtractor):
         self.address2 = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
         self.tpb = "0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9"
 
-    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map) -> ENSRegister:
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
         if (tp0 == self.tp0) or (tp0 == self.tp0a):
             event_data = decode_log(log, contract_object_map, event_map)
             tmp = event_data["args"]
@@ -96,7 +96,16 @@ class RegisterExtractor(BaseExtractor):
             ens_middle.base_node = BASE_NODE
             ens_middle.node = namehash(ens_middle.name + ".eth")
             ens_middle.event_name = event_data["_event"]
-            return ENSRegister(
+            token_id = None
+            w_token_id = None
+            for log in prev_logs:
+                if log['address'] == '0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85' and log['topic1'] == '0x0000000000000000000000000000000000000000000000000000000000000000':
+                    token_id = str(int(log['topic3'], 16))
+                if log['address'] == '0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401' and log['topic0'] == '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62':
+                    evd = decode_log(log, contract_object_map, event_map)
+                    if evd['args'].get('id'):
+                        w_token_id = str(evd["args"].get("id"))
+            return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
                 log_index=ens_middle.log_index,
                 block_number=ens_middle.block_number,
@@ -111,10 +120,31 @@ class RegisterExtractor(BaseExtractor):
                 base_node=ens_middle.base_node,
                 node=ens_middle.node,
                 event_name=ens_middle.event_name,
+                method=ens_middle.method,
+                token_id=token_id,
+                w_token_id=w_token_id
             )
         elif address == self.address2 and tp0 == self.tpb:
-            token_id = str(log["topic1"]).lower()
-            owner = str(log["topic2"]).lower()
+            # token_id = str(log["topic1"]).lower()
+            # owner = str(log["topic2"]).lower()
+            # return ENSMiddleD(
+            #     transaction_hash=ens_middle.transaction_hash,
+            #     log_index=ens_middle.log_index,
+            #     block_number=ens_middle.block_number,
+            #     block_hash=ens_middle.block_hash,
+            #     block_timestamp=ens_middle.block_timestamp,
+            #     from_address=ens_middle.from_address,
+            #     to_address=ens_middle.to_address,
+            #
+            #     expires=ens_middle.expires,
+            #     name=ens_middle.name,
+            #     label=ens_middle.label,
+            #     owner=owner,
+            #     node=ens_middle.node,
+            #     event_name='_NameRegisteredToken',
+            #     method=ens_middle.method,
+            #
+            # )
             return None
         else:
             return None
@@ -126,7 +156,7 @@ class NameRenewExtractor(BaseExtractor):
         self.tp0 = "0x3da24c024582931cfaf8267d8ed24d13a82a8068d5bd337d30ec45cea4e506ae"
         self.address1 = "0x283af0b28c62c092c9727f1ee09c02ca627eb7f5"
 
-    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map) -> ENSNameRenew:
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
         if tp0 == self.tp0:
             event_data = decode_log(log, contract_object_map, event_map)
 
@@ -140,7 +170,7 @@ class NameRenewExtractor(BaseExtractor):
             ens_middle.expires = convert_str_ts(tmp.get("expires", ""))
             ens_middle.event_name = event_data["_event"]
 
-            return ENSNameRenew(
+            return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
                 log_index=ens_middle.log_index,
                 block_number=ens_middle.block_number,
@@ -153,6 +183,8 @@ class NameRenewExtractor(BaseExtractor):
                 label=ens_middle.label,
                 expires=ens_middle.expires,
                 event_name=ens_middle.event_name,
+                method=ens_middle.method,
+
             )
 
 
@@ -162,7 +194,7 @@ class AddressChangedExtractor(BaseExtractor):
         self.address1 = "0x226159d592e2b063810a10ebf6dcbada94ed68b8"
         self.tp0 = "0x65412581168e88a1e60c6459d7f44ae83ad0832e670826c05a4e2476b57af752"
 
-    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map) -> ENSAddressChange:
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
         if tp0 == self.tp0:
             event_data = decode_log(log, contract_object_map, event_map)
             tmp = event_data["args"]
@@ -172,7 +204,7 @@ class AddressChangedExtractor(BaseExtractor):
             ens_middle.node = tmp["node"]
             ens_middle.address = tmp["newAddress"].lower()
             ens_middle.event_name = event_data["_event"]
-            return ENSAddressChange(
+            return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
                 log_index=ens_middle.log_index,
                 block_number=ens_middle.block_number,
@@ -183,6 +215,8 @@ class AddressChangedExtractor(BaseExtractor):
                 node=ens_middle.node,
                 address=ens_middle.address,
                 event_name=ens_middle.event_name,
+                method=ens_middle.method,
+
             )
 
         return None
@@ -193,7 +227,7 @@ class NameChangedExtractor(BaseExtractor):
         self.address = "0x231b0ee14048e9dccd1d247744d114a4eb5e8e63"
         self.tp0 = "0xb7d29e911041e8d9b843369e890bcb72c9388692ba48b65ac54e7214c4c348f7"
 
-    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map) -> ENSNameChanged:
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
         if tp0 == self.tp0:
             event_data = decode_log(log, contract_object_map, event_map)
             tmp = event_data["args"]
@@ -204,9 +238,10 @@ class NameChangedExtractor(BaseExtractor):
             ens_middle.reverse_name = name
             ens_middle.address = ens_middle.from_address
             ens_middle.node = namehash(name)
-            ens_middle.reverse_node = REVERSE_BASE_NODE
+            ens_middle.reverse_base_node = REVERSE_BASE_NODE
+            ens_middle.reverse_node = str(log['topic1']).lower()
             ens_middle.event_name = event_data["_event"]
-            return ENSNameChanged(
+            return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
                 log_index=ens_middle.log_index,
                 block_number=ens_middle.block_number,
@@ -217,6 +252,51 @@ class NameChangedExtractor(BaseExtractor):
                 reverse_name=ens_middle.reverse_name,
                 address=ens_middle.address,
                 node=ens_middle.node,
-                reverse_node=REVERSE_BASE_NODE,
+                reverse_node=ens_middle.reverse_node,
+                reverse_base_node=REVERSE_BASE_NODE,
                 event_name=ens_middle.event_name,
+                method=ens_middle.method,
+
+            )
+
+
+class TransferExtractor(BaseExtractor):
+    def __init__(self):
+        self.address = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
+        self.tp0 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSTokenTransferD:
+        if address == self.address and tp0 == self.tp0:
+            return ENSTokenTransferD(
+                transaction_hash=ens_middle.transaction_hash,
+                log_index=ens_middle.log_index,
+                from_address=log['topic1'],
+                to_address=log['topic2'],
+                token_id=(int(log['topic3'], 16)),
+                token_type='',
+                token_address=log['address'],
+                block_number=ens_middle.block_number,
+                block_hash=ens_middle.block_hash,
+                block_timestamp=ens_middle.block_timestamp,
+            )
+
+class TransferSingle(BaseExtractor):
+    def __init__(self):
+        self.address = '0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401'
+        self.tp0 = '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
+
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSTokenTransferD:
+        if address == self.address and tp0 == self.tp0:
+            event_data = decode_log(log, contract_object_map, event_map)
+            return ENSTokenTransferD(
+                transaction_hash=ens_middle.transaction_hash,
+                log_index=ens_middle.log_index,
+                from_address=log['topic2'],
+                to_address=log['topic3'],
+                token_id=event_data["args"].get("id"),
+                token_type='',
+                token_address=log['address'],
+                block_number=ens_middle.block_number,
+                block_hash=ens_middle.block_hash,
+                block_timestamp=ens_middle.block_timestamp,
             )

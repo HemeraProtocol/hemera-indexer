@@ -15,12 +15,13 @@ from web3 import Web3
 from indexer.modules.hemera_ens import lifo_registry
 from indexer.modules.hemera_ens.ens_abi import abi_map
 from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP
-from indexer.modules.hemera_ens.ens_domain import ENSRelDomain
+from indexer.modules.hemera_ens.ens_domain import ENSAddressD, ENSRegisterD, ENSRegisterTokenD, \
+    ENSNameRenewD, ENSAddressChangeD
 from indexer.modules.hemera_ens.extractors import (
     AddressChangedExtractor,
     NameChangedExtractor,
     NameRenewExtractor,
-    RegisterExtractor,
+    RegisterExtractor, TransferExtractor, TransferSingle,
 )
 from indexer.modules.hemera_ens.util import convert_str_ts
 
@@ -58,7 +59,7 @@ class EnsConfLoader:
             functions = [abi for abi in contract.abi if abi["type"] == "function"]
             for function in functions:
                 sig = self.get_function_signature(function)
-                function_map[sig[0:10]] = function
+                function_map['0x' + sig[0:8]] = function
         self.contract_object_map = contract_object_map
         self.event_map = event_map
         self.function_map = function_map
@@ -95,7 +96,7 @@ class EnsHandler:
         self.contract_object_map = self.ens_conf_loader.contract_object_map
         self.function_map = self.ens_conf_loader.function_map
         self.event_map = self.ens_conf_loader.event_map
-        self.extractors = [RegisterExtractor(), NameRenewExtractor(), AddressChangedExtractor(), NameChangedExtractor()]
+        self.extractors = [RegisterExtractor(), NameRenewExtractor(), AddressChangedExtractor(), NameChangedExtractor(), TransferExtractor(), TransferSingle()]
 
     def is_ens_address(self, address):
         return address.lower() in self.ens_conf_loader.contract_object_map
@@ -124,6 +125,12 @@ class EnsHandler:
     def process(self, transaction, logs):
         if not self.is_ens_address(transaction["to_address"]):
             return []
+        method = None
+        tra_sig = transaction['input'][0:10]
+        if tra_sig in self.function_map:
+            function = self.function_map[tra_sig]
+            if function:
+                method = function.get('name')
         tra = transaction
         dic = {
             "transaction_hash": tra["hash"],
@@ -131,7 +138,7 @@ class EnsHandler:
             "block_number": tra["block_number"],
             "block_hash": tra["block_hash"],
             "block_timestamp": convert_str_ts(tra["block_timestamp"]),
-            "method": None,
+            "method": method,
             "event_name": None,
             "from_address": tra["from_address"],
             "to_address": tra["to_address"],
@@ -152,7 +159,8 @@ class EnsHandler:
         # if method == 'setName':
 
         res = []
-        for single_log in logs:
+        start = 0
+        for idx, single_log in enumerate(logs):
             if not self.is_ens_address(single_log["address"]):
                 continue
             if not single_log.get("topic0") or (single_log["topic0"] not in self.event_map):
@@ -163,50 +171,71 @@ class EnsHandler:
 
             for extractor in self.extractors:
                 solved_event = extractor.extract(
-                    single_log["address"], single_log["topic0"], single_log, ens_middle, self.contract_object_map, self.event_map
+                    single_log["address"], single_log["topic0"], single_log, ens_middle, self.contract_object_map,
+                    self.event_map, logs[start: idx+1]
                 )
                 if solved_event:
                     res.append(solved_event)
+                    if single_log["topic0"] == "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f":
+                        start = idx
                     break
 
         return res
 
     def process_middle(self, lis):
+        # filter transfer
         if not lis:
             return []
         items = []
         for record in lis:
-            dic = self.resolve_dict_to_item(asdict(record))
+            dic = self.resolve_middle(asdict(record))
             items.append(dic)
         return items
 
-    def resolve_dict_to_item(self, record):
+    def resolve_middle(self, record):
         name = record.get("name")
         if name and not name.endswith(".eth"):
             name += ".eth"
         address = record.get("address")
         if address:
             address = address.lower()
-        dic = {
-            "node": record.get("node"),
-            "owner": record.get("owner"),
-            "address": address,
-            "name": name,
-            "reverse_name": record.get("reverse_name"),
-        }
         if record.get("expires"):
             if isinstance(record.get("expires"), str):
-                dic["expires"] = record.get("expires")
+                record["expires"] = record.get("expires")
             else:
-                dic["expires"] = record.get("expires").strftime("%Y-%m-%d %H:%M:%S")
+                record["expires"] = record.get("expires").strftime("%Y-%m-%d %H:%M:%S")
         else:
-            dic["expires"] = None
-        return ENSRelDomain(
-            node=dic.get("node"),
-            token_id=dic.get("token_id"),
-            name=dic.get("name"),
-            owner=dic.get("owner"),
-            expires=dic.get("expires"),
-            address=dic.get("address"),
-            reverse_name=dic.get("reverse_name"),
-        )
+            record["expires"] = None
+
+        event_name = record.get('event_name')
+        if not event_name:
+            return None
+        if event_name == 'NameChanged':
+            return ENSAddressD(
+                address=record['address'],
+                reverse_node=record['reverse_node'],
+                name=record['reverse_name'],
+            )
+        if event_name == "NameRegistered":
+            return ENSRegisterD(
+                node=record['node'],
+                name=record['name'],
+                expires=record['expires'],
+                label=record['label'],
+                owner=record['owner'],
+                base_node=record['base_node'],
+                token_id=record['token_id'],
+                w_token_id=record['w_token_id']
+
+            )
+
+        if event_name == "NameRenewed":
+            return ENSNameRenewD(
+                node=record['node'],
+                expires=record['expires'],
+            )
+        if event_name == "AddressChanged":
+            return ENSAddressChangeD(
+                node=record['node'],
+                address=record['address'],
+            )

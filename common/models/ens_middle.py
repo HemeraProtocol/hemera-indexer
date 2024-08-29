@@ -20,14 +20,20 @@ class ENSMiddle(HemeraModel):
     node = Column(String)  # 完整域名的NameHash
     label = Column(String)  # name的keccak-256
     name = Column(String)
+
+    registration = Column(TIMESTAMP)
     expires = Column(TIMESTAMP)  # 过期时间
+
     owner = Column(String)
     resolver = Column(String)  # 解析器地址
+    registrant = Column(String)
     address = Column(String)  # 该域名解析到的地址
     reverse_base_node = Column(String)
     reverse_node = Column(String)
     reverse_label = Column(String)
     reverse_name = Column(String)
+    token_id = Column(String)
+    w_token_id = Column(String)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
@@ -39,29 +45,11 @@ class ENSMiddle(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ENSRegister",
+                "domain": "ENSMiddleD",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            },
-            {
-                "domain": "ENSNameRenew",
-                "conflict_do_update": True,
-                "update_strategy": None,
-                "converter": general_converter,
-            },
-            {
-                "domain": "ENSAddressChange",
-                "conflict_do_update": True,
-                "update_strategy": None,
-                "converter": general_converter,
-            },
-            {
-                "domain": "ENSNameChanged",
-                "conflict_do_update": True,
-                "update_strategy": None,
-                "converter": general_converter,
-            },
+            }
         ]
 
 

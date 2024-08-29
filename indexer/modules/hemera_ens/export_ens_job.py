@@ -14,8 +14,8 @@ from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler
-from indexer.modules.hemera_ens.ens_domain import ENSAddressChange, ENSNameChanged, ENSNameRenew, ENSRegister, \
-    ENSRelDomain
+from indexer.modules.hemera_ens.ens_domain import ENSRegisterD, ENSMiddleD, ENSRegisterTokenD, ENSNameRenewD, \
+    ENSAddressChangeD, ENSAddressD, ENSTokenTransferD
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # Exports hemera_ens related info
 class ExportEnsJob(FilterTransactionDataJob):
     dependency_types = [Transaction, Log]
-    output_types = [ENSRegister, ENSNameRenew, ENSAddressChange, ENSNameChanged, ENSRelDomain]
+    output_types = [ENSMiddleD, ENSRegisterD, ENSRegisterTokenD, ENSNameRenewD, ENSAddressChangeD, ENSAddressD, ENSTokenTransferD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -57,7 +57,7 @@ class ExportEnsJob(FilterTransactionDataJob):
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
         logs = self._data_buff.get(Log.type(), [])
         transactions_map = {ta.hash: asdict(ta) for ta in transactions}
-        middle = []
+        middles = []
         group_data = defaultdict(list)
         for dl in logs:
             group_data[dl.transaction_hash].append(asdict(dl))
@@ -65,12 +65,14 @@ class ExportEnsJob(FilterTransactionDataJob):
             tra = transactions_map.get(tnx)
             dic_lis = self.ens_handler.process(tra, tnx_lgs)
             if dic_lis:
-                middle.extend(dic_lis)
-        res = self.ens_handler.process_middle(middle)
-        res = merge_ens_rel_domains(res)
+                middles.extend(dic_lis)
+        middles.sort(key=lambda x: (x.block_number, x.log_index), reverse=True)
+        res = self.ens_handler.process_middle(middles)
+        # res = merge_ens_rel_domains(res)
         # merge by node
-        for item in middle + res:
-            self._collect_item(item.type(), item)
+        for item in middles + res:
+            if item:
+                self._collect_item(item.type(), item)
 
 
 def merge_ens_rel_domains(domains_list):
