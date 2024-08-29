@@ -218,19 +218,19 @@ def get_exist_pools(db_service, nft_address):
 
 
 def update_exist_pools(
-        nft_address,
-        factory_address,
-        exist_pools,
-        create_topic0,
-        swap_topic0,
-        liquidity_topic0_list,
-        logs,
-        abi_list,
-        web3,
-        make_requests,
-        is_batch,
-        batch_size,
-        max_worker,
+    nft_address,
+    factory_address,
+    exist_pools,
+    create_topic0,
+    swap_topic0,
+    liquidity_topic0_list,
+    logs,
+    abi_list,
+    web3,
+    make_requests,
+    is_batch,
+    batch_size,
+    max_worker,
 ):
     need_add = {}
     swap_pools = []
@@ -264,16 +264,16 @@ def update_exist_pools(
 
 
 def collect_pool_prices(
-        target0_topic0,
-        target1_topic0_list,
-        exist_pools,
-        logs,
-        web3,
-        make_requests,
-        is_batch,
-        abi_list,
-        batch_size,
-        max_workers,
+    target0_topic0,
+    target1_topic0_list,
+    exist_pools,
+    logs,
+    web3,
+    make_requests,
+    is_batch,
+    abi_list,
+    batch_size,
+    max_workers,
 ):
     pool_block_set = set()
     for log in logs:
@@ -303,7 +303,7 @@ def collect_pool_prices(
 
 
 def collect_swap_new_pools(
-        nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+    nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ):
     factory_infos = common_utils.simple_get_rpc_requests(
         web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
