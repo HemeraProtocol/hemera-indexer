@@ -231,7 +231,7 @@ def test_export_token_id_info_job_on_linea():
         ERC1155TokenIdDetail(
             token_address="0xa53cca02f98d590819141aa85c891e2af713c223",
             token_id=54780668040604116915679158082040366453838453357839560563054770201457212183923,
-            token_uri="hemera_ens-metadata-service.appspot.com/name/0x{id}",
+            token_uri="ens-metadata-service.appspot.com/name/0x{id}",
             block_number=8494071,
             block_timestamp=1724397109,
             token_uri_info=None,
@@ -327,7 +327,7 @@ def test_export_token_id_info_job_on_linea_mul():
         ERC1155TokenIdDetail(
             token_address="0xa53cca02f98d590819141aa85c891e2af713c223",
             token_id=54780668040604116915679158082040366453838453357839560563054770201457212183923,
-            token_uri="hemera_ens-metadata-service.appspot.com/name/0x{id}",
+            token_uri="ens-metadata-service.appspot.com/name/0x{id}",
             block_number=8494071,
             block_timestamp=1724397109,
             token_uri_info=None,
@@ -423,7 +423,7 @@ def test_export_token_id_info_job_on_linea_mul():
         ERC1155TokenIdDetail(
             token_address="0xa53cca02f98d590819141aa85c891e2af713c223",
             token_id=54780668040604116915679158082040366453838453357839560563054770201457212183923,
-            token_uri="hemera_ens-metadata-service.appspot.com/name/0x{id}",
+            token_uri="ens-metadata-service.appspot.com/name/0x{id}",
             block_number=8494071,
             block_timestamp=1724397109,
             token_uri_info=None,
