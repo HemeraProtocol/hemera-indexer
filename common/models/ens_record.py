@@ -8,11 +8,11 @@ class ENSRecord(HemeraModel):
 
     node = Column(String, primary_key=True)
     token_id = Column(String)
-    owner = Column(String)
+    w_token_id = Column(String)
+    first_owned_by = Column(String)
     name = Column(String)  # 域名的明文
     expires = Column(TIMESTAMP)  # 过期时间
     address = Column(String)  # 该域名解析到的地址
-    reverse_name = Column(String)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
