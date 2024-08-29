@@ -31,6 +31,7 @@ class UniswapV3PoolPrice(FilterData):
     nft_address: str
     pool_address: str
     sqrt_price_x96: int
+    tick: int
     block_number: int
     block_timestamp: int
 
@@ -51,6 +52,7 @@ class UniswapV3PoolCurrentPrice(FilterData):
     nft_address: str
     pool_address: str
     sqrt_price_x96: int
+    tick: int
     block_number: int
     block_timestamp: int
 
