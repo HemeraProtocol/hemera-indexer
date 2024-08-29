@@ -13,6 +13,7 @@ class UniswapV3PoolCurrentPrices(HemeraModel):
     block_timestamp = Column(BIGINT)
 
     sqrt_price_x96 = Column(NUMERIC(100))
+    tick = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
