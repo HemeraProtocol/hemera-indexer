@@ -100,18 +100,6 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('period_date', 'protocol_id', 'contract_address', 'token_id')
     )
     op.create_index('period_feature_holding_balance_uniswap_v3_period_date', 'period_feature_holding_balance_uniswap_v3', ['period_date'], unique=False)
-    op.create_table('token_hourly_prices',
-    sa.Column('symbol', sa.String(), nullable=False),
-    sa.Column('timestamp', sa.DateTime(), nullable=False),
-    sa.Column('price', sa.Numeric(), nullable=True),
-    sa.PrimaryKeyConstraint('symbol', 'timestamp')
-    )
-    op.create_table('token_prices',
-    sa.Column('symbol', sa.String(), nullable=False),
-    sa.Column('timestamp', sa.DateTime(), nullable=False),
-    sa.Column('price', sa.Numeric(), nullable=True),
-    sa.PrimaryKeyConstraint('symbol', 'timestamp')
-    )
     op.drop_index('period_feature_uniswap_v3_wallet_address_amount_period_date', table_name='period_feature_uniswap_v3_wallet_address_amount')
     op.drop_table('period_feature_uniswap_v3_wallet_address_amount')
     op.drop_index('period_feature_uniswap_v3_wallet_fbtc_detail_period_date', table_name='period_feature_defi_wallet_fbtc_detail_tmp')
@@ -239,8 +227,6 @@ def downgrade() -> None:
     sa.PrimaryKeyConstraint('protocol_id', 'contract_address', 'period_date', 'token_id', name='period_feature_uniswap_v3_wallet_address_amount_pkey')
     )
     op.create_index('period_feature_uniswap_v3_wallet_address_amount_period_date', 'period_feature_uniswap_v3_wallet_address_amount', ['period_date'], unique=False)
-    op.drop_table('token_prices')
-    op.drop_table('token_hourly_prices')
     op.drop_index('period_feature_holding_balance_uniswap_v3_period_date', table_name='period_feature_holding_balance_uniswap_v3')
     op.drop_table('period_feature_holding_balance_uniswap_v3')
     op.drop_table('period_feature_holding_balance_staked_fbtc_detail')
