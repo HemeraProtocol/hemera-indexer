@@ -1,4 +1,3 @@
-begin;
 delete
 from period_feature_uniswap_v3_token_details
 where period_date >= '{start_date}'
@@ -156,5 +155,3 @@ select case
        token1_symbol,
        token1_balance
 from tick_table;
-
-commit
