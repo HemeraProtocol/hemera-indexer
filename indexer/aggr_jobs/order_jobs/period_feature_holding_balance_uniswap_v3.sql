@@ -138,7 +138,13 @@ into period_feature_holding_balance_uniswap_v3(protocol_id,
                                                token1_address,
                                                token1_symbol,
                                                token1_balance)
-select 'unisawp_v3' as protoco_id,
+select case
+           when nft_address = '\x218bf598d1453383e2f4aa7b14ffb9bfb102d637'
+               then 'agni'
+           when nft_address = '\xaaa78e8c4241990b4ce159e105da08129345946a' then 'cleoexchange'
+           when nft_address = '\xc36442b4a4522e871399cd717abdd847ab11fe88' then 'uniswap_v3'
+           else 'uniswap_v3' end as protoco_id,
+
        nft_address,
        period_date,
        token_id,

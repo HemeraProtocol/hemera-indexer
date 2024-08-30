@@ -18,7 +18,7 @@ class AggrJobScheduler:
 
     def instantiate_jobs(self):
         jobs = []
-        for job_class in [AggrOrderJob]:
+        for job_class in [AggrDisorderJob, AggrOrderJob]:
             job = job_class(
                 config=self.config,
             )
