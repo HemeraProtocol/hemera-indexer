@@ -14,11 +14,11 @@ class DailyFeatureHoldingBalanceUniswapV3(HemeraModel):
     wallet_address = Column(BYTEA, nullable=False)
     token0_address = Column(String, nullable=False)
     token0_symbol = Column(String, nullable=False)
-    token0_balance = Column(NUMERIC(78, 18))
+    token0_balance = Column(NUMERIC(100, 18))
 
     token1_address = Column(String, nullable=False)
     token1_symbol = Column(String, nullable=False)
-    token1_balance = Column(NUMERIC(78, 18))
+    token1_balance = Column(NUMERIC(100, 18))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
 
