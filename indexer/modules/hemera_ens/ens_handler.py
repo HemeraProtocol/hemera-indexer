@@ -15,13 +15,9 @@ from web3 import Web3
 from indexer.modules.hemera_ens import lifo_registry
 from indexer.modules.hemera_ens.ens_abi import abi_map
 from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP
-from indexer.modules.hemera_ens.ens_domain import ENSAddressD, ENSRegisterD, ENSRegisterTokenD, \
-    ENSNameRenewD, ENSAddressChangeD
+from indexer.modules.hemera_ens.ens_domain import ENSAddressD, ENSRegisterD, ENSNameRenewD, ENSAddressChangeD
 from indexer.modules.hemera_ens.extractors import (
-    AddressChangedExtractor,
-    NameChangedExtractor,
-    NameRenewExtractor,
-    RegisterExtractor, TransferExtractor, TransferSingle,
+    BaseExtractor,
 )
 from indexer.modules.hemera_ens.util import convert_str_ts
 
@@ -96,7 +92,7 @@ class EnsHandler:
         self.contract_object_map = self.ens_conf_loader.contract_object_map
         self.function_map = self.ens_conf_loader.function_map
         self.event_map = self.ens_conf_loader.event_map
-        self.extractors = [RegisterExtractor(), NameRenewExtractor(), AddressChangedExtractor(), NameChangedExtractor(), TransferExtractor(), TransferSingle()]
+        self.extractors = [extractor() for extractor in BaseExtractor.__subclasses__()]
 
     def is_ens_address(self, address):
         return address.lower() in self.ens_conf_loader.contract_object_map
@@ -221,8 +217,9 @@ class EnsHandler:
                 node=record['node'],
                 name=record['name'],
                 expires=record['expires'],
+                registration=record['block_timestamp'],
                 label=record['label'],
-                owner=record['owner'],
+                first_owned_by=record['owner'],
                 base_node=record['base_node'],
                 token_id=record['token_id'],
                 w_token_id=record['w_token_id']

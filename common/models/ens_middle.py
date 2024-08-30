@@ -16,18 +16,21 @@ class ENSMiddle(HemeraModel):
     event_name = Column(String)
     from_address = Column(String)
     to_address = Column(String)
-    base_node = Column(String)  # 一级域名的NameHash 譬如 eth
-    node = Column(String)  # 完整域名的NameHash
-    label = Column(String)  # name的keccak-256
+    # namehash of .eth
+    base_node = Column(String)
+    # namehash of full_name
+    node = Column(String)
+    # keccak of name
+    label = Column(String)
     name = Column(String)
 
-    registration = Column(TIMESTAMP)
-    expires = Column(TIMESTAMP)  # 过期时间
+    expires = Column(TIMESTAMP)
 
     owner = Column(String)
-    resolver = Column(String)  # 解析器地址
+    resolver = Column(String)
     registrant = Column(String)
-    address = Column(String)  # 该域名解析到的地址
+    # resolved address
+    address = Column(String)
     reverse_base_node = Column(String)
     reverse_node = Column(String)
     reverse_label = Column(String)

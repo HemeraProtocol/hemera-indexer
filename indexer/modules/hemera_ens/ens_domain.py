@@ -19,19 +19,22 @@ class ENSMiddleD(Domain):
     from_address: Optional[str] = None
     to_address: Optional[str] = None
 
-    base_node: Optional[str] = None  # 一级域名的NameHash 譬如 eth
-    node: Optional[str] = None  # 完整域名的NameHash
-    label: Optional[str] = None  # name的keccak-256
+    base_node: Optional[str] = None
+    node: Optional[str] = None
+    label: Optional[str] = None
     name: Optional[str] = None
-    expires: Optional[datetime] = None  # 过期时间
+    registration: Optional[datetime] = None
+    expires: Optional[datetime] = None
     owner: Optional[str] = None
-    resolver: Optional[str] = None  # 解析器地址
-    address: Optional[str] = None  # 该域名解析到的地址
+    resolver: Optional[str] = None
+    address: Optional[str] = None
     reverse_base_node: Optional[str] = None
     reverse_node: Optional[str] = None
     reverse_label: Optional[str] = None
     reverse_name: Optional[str] = None
+    # erc721
     token_id: Optional[str] = None
+    # erc1155
     w_token_id: Optional[str] = None
     reorg: bool = False
 
@@ -40,10 +43,11 @@ class ENSMiddleD(Domain):
 @dataclass
 class ENSRegisterD(Domain):
 
+    registration: Optional[datetime] = None
     expires: Optional[datetime] = None
     name: Optional[str] = None
     label: Optional[str] = None
-    owner: Optional[str] = None
+    first_owned_by: Optional[str] = None
     base_node: Optional[str] = None
     node: Optional[str] = None
     token_id: Optional[str] = None

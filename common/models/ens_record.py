@@ -10,9 +10,10 @@ class ENSRecord(HemeraModel):
     token_id = Column(String)
     w_token_id = Column(String)
     first_owned_by = Column(String)
-    name = Column(String)  # 域名的明文
-    expires = Column(TIMESTAMP)  # 过期时间
-    address = Column(String)  # 该域名解析到的地址
+    name = Column(String)
+    registration = Column(TIMESTAMP)
+    expires = Column(TIMESTAMP)
+    address = Column(String)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
@@ -51,4 +52,3 @@ class ENSRecord(HemeraModel):
 
 Index("ens_idx_address", ENSRecord.address)
 Index("ens_idx_name", ENSRecord.name)
-Index("ens_idx_reverse_name", ENSRecord.reverse_name)

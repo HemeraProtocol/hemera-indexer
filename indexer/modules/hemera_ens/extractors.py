@@ -260,43 +260,43 @@ class NameChangedExtractor(BaseExtractor):
             )
 
 
-class TransferExtractor(BaseExtractor):
-    def __init__(self):
-        self.address = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
-        self.tp0 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-
-    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSTokenTransferD:
-        if address == self.address and tp0 == self.tp0:
-            return ENSTokenTransferD(
-                transaction_hash=ens_middle.transaction_hash,
-                log_index=ens_middle.log_index,
-                from_address=log['topic1'],
-                to_address=log['topic2'],
-                token_id=(int(log['topic3'], 16)),
-                token_type='ERC721',
-                token_address=log['address'],
-                block_number=ens_middle.block_number,
-                block_hash=ens_middle.block_hash,
-                block_timestamp=ens_middle.block_timestamp,
-            )
-
-class TransferSingle(BaseExtractor):
-    def __init__(self):
-        self.address = '0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401'
-        self.tp0 = '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
-
-    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSTokenTransferD:
-        if address == self.address and tp0 == self.tp0:
-            event_data = decode_log(log, contract_object_map, event_map)
-            return ENSTokenTransferD(
-                transaction_hash=ens_middle.transaction_hash,
-                log_index=ens_middle.log_index,
-                from_address=log['topic2'],
-                to_address=log['topic3'],
-                token_id=event_data["args"].get("id"),
-                token_type='ERC1155',
-                token_address=log['address'],
-                block_number=ens_middle.block_number,
-                block_hash=ens_middle.block_hash,
-                block_timestamp=ens_middle.block_timestamp,
-            )
+# class TransferExtractor(BaseExtractor):
+#     def __init__(self):
+#         self.address = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
+#         self.tp0 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+#
+#     def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSTokenTransferD:
+#         if address == self.address and tp0 == self.tp0:
+#             return ENSTokenTransferD(
+#                 transaction_hash=ens_middle.transaction_hash,
+#                 log_index=ens_middle.log_index,
+#                 from_address=log['topic1'],
+#                 to_address=log['topic2'],
+#                 token_id=(int(log['topic3'], 16)),
+#                 token_type='ERC721',
+#                 token_address=log['address'],
+#                 block_number=ens_middle.block_number,
+#                 block_hash=ens_middle.block_hash,
+#                 block_timestamp=ens_middle.block_timestamp,
+#             )
+#
+# class TransferSingle(BaseExtractor):
+#     def __init__(self):
+#         self.address = '0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401'
+#         self.tp0 = '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62'
+#
+#     def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSTokenTransferD:
+#         if address == self.address and tp0 == self.tp0:
+#             event_data = decode_log(log, contract_object_map, event_map)
+#             return ENSTokenTransferD(
+#                 transaction_hash=ens_middle.transaction_hash,
+#                 log_index=ens_middle.log_index,
+#                 from_address=log['topic2'],
+#                 to_address=log['topic3'],
+#                 token_id=event_data["args"].get("id"),
+#                 token_type='ERC1155',
+#                 token_address=log['address'],
+#                 block_number=ens_middle.block_number,
+#                 block_hash=ens_middle.block_hash,
+#                 block_timestamp=ens_middle.block_timestamp,
+#             )
