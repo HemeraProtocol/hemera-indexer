@@ -102,7 +102,6 @@ def upgrade() -> None:
     op.create_index('period_feature_holding_balance_uniswap_v3_period_date', 'period_feature_holding_balance_uniswap_v3', ['period_date'], unique=False)
     op.drop_index('period_feature_uniswap_v3_wallet_address_amount_period_date', table_name='period_feature_uniswap_v3_wallet_address_amount')
     op.drop_table('period_feature_uniswap_v3_wallet_address_amount')
-    op.drop_table('daily_feature_uniswap_v3_wallet_address_amount')
     op.alter_column('period_feature_defi_wallet_fbtc_detail', 'period_date',
                existing_type=sa.DATE(),
                nullable=False)
@@ -176,21 +175,6 @@ def downgrade() -> None:
     op.alter_column('period_feature_defi_wallet_fbtc_detail', 'period_date',
                existing_type=sa.DATE(),
                nullable=True)
-    op.create_table('daily_feature_uniswap_v3_wallet_address_amount',
-    sa.Column('daily_date', sa.DATE(), autoincrement=False, nullable=False),
-    sa.Column('protocol_id', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('contract_address', postgresql.BYTEA(), autoincrement=False, nullable=False),
-    sa.Column('token_id', sa.INTEGER(), autoincrement=False, nullable=False),
-    sa.Column('wallet_address', postgresql.BYTEA(), autoincrement=False, nullable=False),
-    sa.Column('token0_address', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('token0_symbol', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('token0_balance', sa.NUMERIC(precision=78, scale=0), autoincrement=False, nullable=True),
-    sa.Column('token1_address', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('token1_symbol', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('token1_balance', sa.NUMERIC(precision=78, scale=0), autoincrement=False, nullable=True),
-    sa.Column('create_time', postgresql.TIMESTAMP(), server_default=sa.text('now()'), autoincrement=False, nullable=True),
-    sa.PrimaryKeyConstraint('daily_date', 'protocol_id', 'contract_address', 'token_id', name='daily_feature_uniswap_v3_wallet_address_amount_pkey')
-    )
     op.create_table('period_feature_uniswap_v3_wallet_address_amount',
     sa.Column('protocol_id', sa.VARCHAR(), autoincrement=False, nullable=False),
     sa.Column('contract_address', postgresql.BYTEA(), autoincrement=False, nullable=False),
