@@ -83,6 +83,7 @@ class EntityType(IntFlag):
     FBTC_MANTLE = 1 << 13
     FBTC_20 = 1 << 14
     FBTC_BSC = 1 << 15
+    FBTC_TRANSFER = 1 << 16
 
     @staticmethod
     def combine_all_entity_types():
@@ -314,3 +315,15 @@ def generate_output_types(entity_types):
         yield Erc20CurrentTokenHolding
         yield Erc20TotalSupply
         yield Erc20CurrentTotalSupply
+
+    if entity_types & EntityType.FBTC_TRANSFER:
+        yield Token
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
+        yield Log
+        yield TransferredFBTCDetail
+        yield TransferredFBTCCurrentStatus
+        yield StakedFBTCDetail
+        yield StakedFBTCCurrentStatus
+
