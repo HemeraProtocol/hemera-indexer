@@ -2,14 +2,10 @@ import configparser
 import json
 import logging
 import os
-import threading
-from asyncio import as_completed
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor
 
 import eth_abi
 
-from common import models
 from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -79,6 +75,9 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             self._create_pool_topic0 = chain_config.get("create_pool_topic0").lower()
             self._pool_swap_topic0 = chain_config.get("pool_swap_topic0").lower()
             self._liquidity_topic0_dict = json.loads(chain_config.get("liquidity_topic0_dict", "{}"))
+            topic0_list_str = chain_config.get("liquidity_nft_topic0_list")
+            self._liquidity_nft_topic0_list = [address.strip() for address in topic0_list_str.split(",") if
+                                               address.strip()]
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
@@ -128,9 +127,12 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         logs = logs_dict[token_address]
         block_info = {log.block_number: log.block_timestamp for log in logs}
 
+        liquidity_keys_list = list(self._liquidity_topic0_dict.keys())
+        liquidity_list = self._liquidity_nft_topic0_list + liquidity_keys_list
+
         pool_prices = collect_pool_prices(
             self._pool_swap_topic0,
-            self._liquidity_topic0_dict,
+            liquidity_list,
             self._exist_pools,
             logs,
             self._web3,
