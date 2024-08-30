@@ -49,6 +49,7 @@ class AggrOrderJob(AggrBaseJob):
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
                 session.execute(text(sql_content))
                 session.commit()
+                session.close()
 
             self.results = []
             self.combine_json()
@@ -111,6 +112,7 @@ class AggrOrderJob(AggrBaseJob):
         session.bulk_save_objects(results)
         session.commit()
         print(f'insert successfully, {len(results)}')
+        session.close()
 
     def get_pool_token_data(self, orm_list):
         distinct_symbol_list = []
@@ -523,3 +525,4 @@ class AggrOrderJob(AggrBaseJob):
 
         session.bulk_save_objects(result_orm_list)
         session.commit()
+        session.close()
