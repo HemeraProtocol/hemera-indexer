@@ -11,6 +11,7 @@ from indexer.domain import Domain
 class ENSMiddleD(Domain):
     transaction_hash: str
     log_index: int
+    transaction_index: int
     block_number: Optional[int] = None
     block_hash: Optional[str] = None
     block_timestamp: Optional[datetime] = None
@@ -81,17 +82,3 @@ class ENSAddressD(Domain):
     address: Optional[str] = None
     reverse_node: Optional[str] = None
     name: Optional[str] = None
-
-
-@dataclass
-class ENSTokenTransferD(Domain):
-    transaction_hash: str
-    log_index: int
-    from_address: str
-    to_address: str
-    token_id: int
-    token_type: str
-    token_address: str
-    block_number: int
-    block_hash: str
-    block_timestamp: int

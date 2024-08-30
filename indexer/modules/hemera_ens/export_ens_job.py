@@ -6,8 +6,8 @@
 # @Brief
 import logging
 from collections import defaultdict
-from dataclasses import asdict
-from typing import List
+from dataclasses import asdict, is_dataclass, fields
+from typing import List, Dict, Any
 
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
@@ -15,7 +15,7 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler
 from indexer.modules.hemera_ens.ens_domain import ENSRegisterD, ENSMiddleD, ENSRegisterTokenD, ENSNameRenewD, \
-    ENSAddressChangeD, ENSAddressD, ENSTokenTransferD
+    ENSAddressChangeD, ENSAddressD
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # Exports hemera_ens related info
 class ExportEnsJob(FilterTransactionDataJob):
     dependency_types = [Transaction, Log]
-    output_types = [ENSMiddleD, ENSRegisterD, ENSRegisterTokenD, ENSNameRenewD, ENSAddressChangeD, ENSAddressD, ENSTokenTransferD]
+    output_types = [ENSMiddleD, ENSRegisterD, ENSRegisterTokenD, ENSNameRenewD, ENSAddressChangeD, ENSAddressD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -66,26 +66,28 @@ class ExportEnsJob(FilterTransactionDataJob):
             dic_lis = self.ens_handler.process(tra, tnx_lgs)
             if dic_lis:
                 middles.extend(dic_lis)
-        middles.sort(key=lambda x: (x.block_number, x.log_index), reverse=True)
+        middles.sort(key=lambda x: (x.block_number, x.transaction_index, x.log_index), reverse=False)
         res = self.ens_handler.process_middle(middles)
-        # res = merge_ens_rel_domains(res)
-        # merge by node
+        res = merge_ens_objects(res)
         for item in middles + res:
             if item:
                 self._collect_item(item.type(), item)
 
 
-def merge_ens_rel_domains(domains_list):
-    merged = {}
-    for domain in domains_list:
-        node = domain.node
-        if node not in merged:
-            merged[node] = domain
-        else:
-            # 更新现有条目，保留非 None 的值
-            existing = merged[node]
-            for attr in ['token_id', 'name', 'owner', 'expires', 'address', 'reverse_name']:
-                if getattr(domain, attr) is not None:
-                    setattr(existing, attr, getattr(domain, attr))
+def merge_ens_objects(objects: List[Any]) -> List[Any]:
+    latest_objects: Dict[tuple, Any] = {}
 
-    return list(merged.values())
+    for obj in objects:
+        if not is_dataclass(obj):
+            continue
+
+        key = (type(obj), getattr(obj, 'node', None))
+
+        if key in latest_objects:
+            for field in fields(obj):
+                if getattr(obj, field.name) is not None:
+                    setattr(latest_objects[key], field.name, getattr(obj, field.name))
+        else:
+            latest_objects[key] = obj
+
+    return list(latest_objects.values())

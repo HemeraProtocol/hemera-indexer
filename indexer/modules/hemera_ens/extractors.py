@@ -9,7 +9,7 @@ import logging
 from web3 import Web3
 
 from indexer.modules.hemera_ens.ens_conf import BASE_NODE, REVERSE_BASE_NODE
-from indexer.modules.hemera_ens.ens_domain import ENSMiddleD, ENSTokenTransferD
+from indexer.modules.hemera_ens.ens_domain import ENSMiddleD
 from indexer.modules.hemera_ens.ens_hash import namehash
 from indexer.modules.hemera_ens.util import convert_str_ts
 
@@ -108,6 +108,7 @@ class RegisterExtractor(BaseExtractor):
             return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
                 log_index=ens_middle.log_index,
+                transaction_index=ens_middle.transaction_index,
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,
@@ -173,6 +174,7 @@ class NameRenewExtractor(BaseExtractor):
             return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
                 log_index=ens_middle.log_index,
+                transaction_index=ens_middle.transaction_index,
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,
@@ -207,6 +209,7 @@ class AddressChangedExtractor(BaseExtractor):
             return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
                 log_index=ens_middle.log_index,
+                transaction_index=ens_middle.transaction_index,
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,
@@ -244,6 +247,7 @@ class NameChangedExtractor(BaseExtractor):
             return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
                 log_index=ens_middle.log_index,
+                transaction_index=ens_middle.transaction_index,
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,

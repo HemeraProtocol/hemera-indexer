@@ -31,6 +31,8 @@ def upgrade() -> None:
     op.create_table('ens_middle',
     sa.Column('transaction_hash', sa.String(), nullable=False),
     sa.Column('log_index', sa.Integer(), nullable=False),
+    sa.Column('transaction_index', sa.Integer(), nullable=False),
+
     sa.Column('block_number', sa.Integer(), nullable=True),
     sa.Column('block_hash', sa.String(), nullable=True),
     sa.Column('block_timestamp', sa.TIMESTAMP(), nullable=True),

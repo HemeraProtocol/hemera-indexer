@@ -131,6 +131,7 @@ class EnsHandler:
         dic = {
             "transaction_hash": tra["hash"],
             "log_index": None,
+            "transaction_index": tra['transaction_index'],
             "block_number": tra["block_number"],
             "block_hash": tra["block_hash"],
             "block_timestamp": convert_str_ts(tra["block_timestamp"]),

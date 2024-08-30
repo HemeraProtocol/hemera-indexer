@@ -8,7 +8,9 @@ class ENSMiddle(HemeraModel):
     __tablename__ = "ens_middle"
 
     transaction_hash = Column(String, primary_key=True)
+    transaction_index = Column(Integer, nullable=True)
     log_index = Column(Integer, primary_key=True)
+
     block_number = Column(Integer)
     block_hash = Column(String)
     block_timestamp = Column(TIMESTAMP)
