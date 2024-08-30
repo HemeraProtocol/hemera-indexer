@@ -44,6 +44,12 @@ from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
     UniswapV2PoolTotalSupply,
 )
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    AgniV3Pool,
+    AgniV3PoolCurrentPrice,
+    AgniV3PoolPrice,
+    AgniV3Token,
+    AgniV3TokenCurrentStatus,
+    AgniV3TokenDetail,
     UniswapV3Pool,
     UniswapV3PoolCurrentPrice,
     UniswapV3PoolPrice,
@@ -217,20 +223,20 @@ def generate_output_types(entity_types):
         yield MerChantMoeTokenCurrentBin
 
     if entity_types & EntityType.FBTC_ETH:
-        # yield ERC721TokenTransfer
-        # yield ERC721TokenIdChange
-        # yield UpdateERC721TokenIdDetail
-        # yield ERC721TokenIdDetail
+        yield ERC721TokenTransfer
+        yield ERC721TokenIdChange
+        yield UpdateERC721TokenIdDetail
+        yield ERC721TokenIdDetail
         yield Token
         yield UpdateToken
         yield TokenBalance
         yield CurrentTokenBalance
-        # yield UniswapV3Pool
-        # yield UniswapV3Token
-        # yield UniswapV3PoolPrice
-        # yield UniswapV3TokenDetail
-        # yield UniswapV3PoolCurrentPrice
-        # yield UniswapV3TokenCurrentStatus
+        yield UniswapV3Pool
+        yield UniswapV3Token
+        yield UniswapV3PoolPrice
+        yield UniswapV3TokenDetail
+        yield UniswapV3PoolCurrentPrice
+        yield UniswapV3TokenCurrentStatus
         yield Log
         yield Erc20TokenHolding
         yield ERC20TokenTransfer
@@ -273,6 +279,12 @@ def generate_output_types(entity_types):
         yield MerchantMoeErc1155TokenCurrentSupply
         yield MerChantMoeTokenBin
         yield MerChantMoeTokenCurrentBin
+        yield AgniV3Token
+        yield AgniV3TokenDetail
+        yield AgniV3TokenCurrentStatus
+        yield AgniV3Pool
+        yield AgniV3PoolPrice
+        yield AgniV3PoolCurrentPrice
 
     if entity_types & EntityType.FBTC_20:
         yield Token

@@ -16,11 +16,11 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
-from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
+from indexer.modules.custom.uniswap_v3.constants import AGNI_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
-    UniswapV3Pool,
-    UniswapV3PoolCurrentPrice,
-    UniswapV3PoolPrice,
+    AgniV3Pool,
+    AgniV3PoolCurrentPrice,
+    AgniV3PoolPrice,
 )
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -29,12 +29,12 @@ from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
-FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
+FEATURE_ID = FeatureType.AGNI_V3_POOLS.value
 
 
-class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
+class ExportAgniV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
-    output_types = [UniswapV3Pool, UniswapV3PoolPrice, UniswapV3PoolCurrentPrice]
+    output_types = [AgniV3Pool, AgniV3PoolPrice, AgniV3PoolCurrentPrice]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -47,8 +47,8 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._service = (kwargs["config"].get("db_service"),)
         self._chain_id = common_utils.get_chain_id(self._web3)
-        self._load_config("config.ini", self._chain_id)
-        self._abi_list = UNISWAP_V3_ABI
+        self._load_config("agni_config.ini", self._chain_id)
+        self._abi_list = AGNI_ABI
         self._exist_pools = get_exist_pools(self._service, self._nft_address)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
@@ -113,7 +113,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._exist_pools.update(need_add_in_exists_pools)
 
         for pools in format_pool_item(need_add_in_exists_pools):
-            self._collect_item(UniswapV3Pool.type(), pools)
+            self._collect_item(AgniV3Pool.type(), pools)
 
         self._batch_work_executor.execute(
             max_log_index_records, self._collect_batch, len(max_log_index_records), split_logs
@@ -143,9 +143,9 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         prices = format_value_records(self._exist_pools, self._factory_address, pool_prices, block_info)
         current_price = None
         for price in prices:
-            self._collect_item(UniswapV3PoolPrice.type(), price)
+            self._collect_item(AgniV3PoolPrice.type(), price)
             if current_price is None or price.block_number > current_price.block_number:
-                current_price = UniswapV3PoolCurrentPrice(
+                current_price = AgniV3PoolCurrentPrice(
                     factory_address=price.factory_address,
                     pool_address=price.pool_address,
                     sqrt_price_x96=price.sqrt_price_x96,
@@ -154,18 +154,18 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
                     block_timestamp=price.block_timestamp,
                 )
         if current_price:
-            self._collect_item(UniswapV3PoolCurrentPrice.type(), current_price)
+            self._collect_item(AgniV3PoolCurrentPrice.type(), current_price)
 
     def _process(self, **kwargs):
-        self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[UniswapV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AgniV3Pool.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AgniV3PoolPrice.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AgniV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
 
 
 def format_pool_item(new_pools):
     result = []
     for pool_address, pool in new_pools.items():
-        result.append(dict_to_dataclass(pool, UniswapV3Pool))
+        result.append(dict_to_dataclass(pool, AgniV3Pool))
     return result
 
 
@@ -177,7 +177,7 @@ def format_value_records(exist_pools, factory_address, pool_prices, block_info):
         info = exist_pools.get(address)
         block_number = pool_data["block_number"]
         prices.append(
-            UniswapV3PoolPrice(
+            AgniV3PoolPrice(
                 factory_address=factory_address,
                 pool_address=address,
                 sqrt_price_x96=pool_data["sqrtPriceX96"],

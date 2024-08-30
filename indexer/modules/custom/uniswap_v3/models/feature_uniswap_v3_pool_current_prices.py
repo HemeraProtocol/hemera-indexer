@@ -11,6 +11,7 @@ class UniswapV3PoolCurrentPrices(HemeraModel):
     pool_address = Column(BYTEA, primary_key=True)
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
+    factory_address = Column(BYTEA)
 
     sqrt_price_x96 = Column(NUMERIC(100))
     tick = Column(NUMERIC(100))
@@ -26,5 +27,11 @@ class UniswapV3PoolCurrentPrices(HemeraModel):
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > feature_uniswap_v3_pool_current_prices.block_number",
                 "converter": general_converter,
-            }
+            },
+            {
+                "domain": "AgniV3PoolCurrentPrice",
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number > feature_uniswap_v3_pool_current_prices.block_number",
+                "converter": general_converter,
+            },
         ]
