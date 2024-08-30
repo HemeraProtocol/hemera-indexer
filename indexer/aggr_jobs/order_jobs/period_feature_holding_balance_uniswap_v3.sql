@@ -127,8 +127,8 @@ with period_token_price as (select symbol, price
                                else 0 end / pow(10, toekn1_decimals) AS token1_balance
                     from detail_table)
 insert
-into period_feature_holding_balance_uniswap_v3(protoco_id,
-                                               nft_address,
+into period_feature_holding_balance_uniswap_v3(protocol_id,
+                                               contract_address,
                                                period_date,
                                                token_id,
                                                wallet_address,
