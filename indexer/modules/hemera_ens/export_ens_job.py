@@ -6,8 +6,8 @@
 # @Brief
 import logging
 from collections import defaultdict
-from dataclasses import asdict, is_dataclass, fields
-from typing import List, Dict, Any
+from dataclasses import asdict, fields, is_dataclass
+from typing import Any, Dict, List
 
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.log import Log
@@ -15,8 +15,14 @@ from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler
-from indexer.modules.hemera_ens.ens_domain import ENSRegisterD, ENSMiddleD, ENSRegisterTokenD, ENSNameRenewD, \
-    ENSAddressChangeD, ENSAddressD
+from indexer.modules.hemera_ens.ens_domain import (
+    ENSAddressChangeD,
+    ENSAddressD,
+    ENSMiddleD,
+    ENSNameRenewD,
+    ENSRegisterD,
+    ENSRegisterTokenD,
+)
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
@@ -85,9 +91,9 @@ def merge_ens_objects(objects: List[Any]) -> List[Any]:
         if not is_dataclass(obj):
             continue
         if isinstance(obj, ENSAddressD):
-            key = (type(obj), getattr(obj, 'address', None))
+            key = (type(obj), getattr(obj, "address", None))
         else:
-            key = (type(obj), getattr(obj, 'node', None))
+            key = (type(obj), getattr(obj, "node", None))
 
         if key in latest_objects:
             for field in fields(obj):

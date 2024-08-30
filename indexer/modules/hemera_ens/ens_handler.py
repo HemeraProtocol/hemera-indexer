@@ -14,11 +14,9 @@ from web3 import Web3
 
 from indexer.modules.hemera_ens import lifo_registry
 from indexer.modules.hemera_ens.ens_abi import abi_map
-from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP, ENS_BEGIN_BLOCK
-from indexer.modules.hemera_ens.ens_domain import ENSAddressD, ENSRegisterD, ENSNameRenewD, ENSAddressChangeD
-from indexer.modules.hemera_ens.extractors import (
-    BaseExtractor,
-)
+from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP, ENS_CONTRACT_CREATED_BLOCK
+from indexer.modules.hemera_ens.ens_domain import ENSAddressChangeD, ENSAddressD, ENSNameRenewD, ENSRegisterD
+from indexer.modules.hemera_ens.extractors import BaseExtractor, RegisterExtractor
 from indexer.modules.hemera_ens.util import convert_str_ts
 
 logger = logging.getLogger(__name__)
@@ -55,7 +53,7 @@ class EnsConfLoader:
             functions = [abi for abi in contract.abi if abi["type"] == "function"]
             for function in functions:
                 sig = self.get_function_signature(function)
-                function_map['0x' + sig[0:8]] = function
+                function_map["0x" + sig[0:8]] = function
         self.contract_object_map = contract_object_map
         self.event_map = event_map
         self.function_map = function_map
@@ -119,19 +117,22 @@ class EnsHandler:
         return decoded_input
 
     def process(self, transaction, logs):
-        if not self.is_ens_address(transaction["to_address"]) or transaction["block_number"] < ENS_BEGIN_BLOCK:
+        if (
+            not self.is_ens_address(transaction["to_address"])
+            or transaction["block_number"] < ENS_CONTRACT_CREATED_BLOCK
+        ):
             return []
         method = None
-        tra_sig = transaction['input'][0:10]
+        tra_sig = transaction["input"][0:10]
         if tra_sig in self.function_map:
             function = self.function_map[tra_sig]
             if function:
-                method = function.get('name')
+                method = function.get("name")
         tra = transaction
         dic = {
             "transaction_hash": tra["hash"],
             "log_index": None,
-            "transaction_index": tra['transaction_index'],
+            "transaction_index": tra["transaction_index"],
             "block_number": tra["block_number"],
             "block_hash": tra["block_hash"],
             "block_timestamp": convert_str_ts(tra["block_timestamp"]),
@@ -168,19 +169,23 @@ class EnsHandler:
 
             for extractor in self.extractors:
                 solved_event = extractor.extract(
-                    single_log["address"], single_log["topic0"], single_log, ens_middle, self.contract_object_map,
-                    self.event_map, logs[start: idx+1]
+                    single_log["address"],
+                    single_log["topic0"],
+                    single_log,
+                    ens_middle,
+                    self.contract_object_map,
+                    self.event_map,
+                    logs[start : idx + 1],
                 )
                 if solved_event:
                     res.append(solved_event)
-                    if single_log["topic0"] == "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f":
+                    if single_log["topic0"] == RegisterExtractor.register_tp0:
                         start = idx
                     break
 
         return res
 
     def process_middle(self, lis):
-        # filter transfer
         if not lis:
             return []
         items = []
@@ -204,36 +209,35 @@ class EnsHandler:
         else:
             record["expires"] = None
 
-        event_name = record.get('event_name')
+        event_name = record.get("event_name")
         if not event_name:
             return None
-        if event_name == 'NameChanged':
+        if event_name == "NameChanged":
             return ENSAddressD(
-                address=record['address'],
-                reverse_node=record['reverse_node'],
-                name=record['reverse_name'],
+                address=record["address"],
+                reverse_node=record["reverse_node"],
+                name=record["reverse_name"],
             )
         if event_name == "NameRegistered":
             return ENSRegisterD(
-                node=record['node'],
-                name=record['name'],
-                expires=record['expires'],
-                registration=record['block_timestamp'],
-                label=record['label'],
-                first_owned_by=record['owner'],
-                base_node=record['base_node'],
-                token_id=record['token_id'],
-                w_token_id=record['w_token_id']
-
+                node=record["node"],
+                name=record["name"],
+                expires=record["expires"],
+                registration=record["block_timestamp"],
+                label=record["label"],
+                first_owned_by=record["owner"],
+                base_node=record["base_node"],
+                token_id=record["token_id"],
+                w_token_id=record["w_token_id"],
             )
 
         if event_name == "NameRenewed":
             return ENSNameRenewD(
-                node=record['node'],
-                expires=record['expires'],
+                node=record["node"],
+                expires=record["expires"],
             )
         if event_name == "AddressChanged":
             return ENSAddressChangeD(
-                node=record['node'],
-                address=record['address'],
+                node=record["node"],
+                address=record["address"],
             )

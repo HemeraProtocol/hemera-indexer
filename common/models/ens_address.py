@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, TIMESTAMP, func
+from sqlalchemy import TIMESTAMP, Column, String, func
 
 from common.models import HemeraModel, general_converter
 

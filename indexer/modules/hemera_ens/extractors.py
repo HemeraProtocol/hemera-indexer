@@ -72,9 +72,11 @@ class BaseExtractor(object):
 
 
 class RegisterExtractor(BaseExtractor):
+
+    register_tp0 = "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f"
+
     def __init__(self):
         self.address = "0x283af0b28c62c092c9727f1ee09c02ca627eb7f5"
-        self.tp0 = "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f"
 
         self.address1 = "0x253553366da8546fc250f225fe3d25d0c782303b"
         self.tp0a = "0x69e37f151eb98a09618ddaa80c8cfaf1ce5996867c489f45b555b412271ebf27"
@@ -83,7 +85,7 @@ class RegisterExtractor(BaseExtractor):
         self.tpb = "0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9"
 
     def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
-        if (tp0 == self.tp0) or (tp0 == self.tp0a):
+        if (tp0 == RegisterExtractor.register_tp0) or (tp0 == self.tp0a):
             event_data = decode_log(log, contract_object_map, event_map)
             tmp = event_data["args"]
             ens_middle.expires = convert_str_ts(tmp.get("expires", ""))
@@ -100,11 +102,17 @@ class RegisterExtractor(BaseExtractor):
             token_id = None
             w_token_id = None
             for log in prev_logs:
-                if log['address'] == '0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85' and log['topic1'] == '0x0000000000000000000000000000000000000000000000000000000000000000':
-                    token_id = str(int(log['topic3'], 16))
-                if log['address'] == '0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401' and log['topic0'] == '0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62':
+                if (
+                    log["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
+                    and log["topic1"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
+                ):
+                    token_id = str(int(log["topic3"], 16))
+                if (
+                    log["address"] == "0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401"
+                    and log["topic0"] == "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62"
+                ):
                     evd = decode_log(log, contract_object_map, event_map)
-                    if evd['args'].get('id'):
+                    if evd["args"].get("id"):
                         w_token_id = str(evd["args"].get("id"))
             return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
@@ -124,7 +132,7 @@ class RegisterExtractor(BaseExtractor):
                 event_name=ens_middle.event_name,
                 method=ens_middle.method,
                 token_id=token_id,
-                w_token_id=w_token_id
+                w_token_id=w_token_id,
             )
         elif address == self.address2 and tp0 == self.tpb:
             # token_id = str(log["topic1"]).lower()
@@ -187,7 +195,6 @@ class NameRenewExtractor(BaseExtractor):
                 expires=ens_middle.expires,
                 event_name=ens_middle.event_name,
                 method=ens_middle.method,
-
             )
 
 
@@ -220,7 +227,6 @@ class AddressChangedExtractor(BaseExtractor):
                 address=ens_middle.address,
                 event_name=ens_middle.event_name,
                 method=ens_middle.method,
-
             )
 
         return None
@@ -243,7 +249,7 @@ class NameChangedExtractor(BaseExtractor):
             ens_middle.address = ens_middle.from_address
             ens_middle.node = namehash(name)
             ens_middle.reverse_base_node = REVERSE_BASE_NODE
-            ens_middle.reverse_node = str(log['topic1']).lower()
+            ens_middle.reverse_node = str(log["topic1"]).lower()
             ens_middle.event_name = event_data["_event"]
             return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
@@ -261,10 +267,12 @@ class NameChangedExtractor(BaseExtractor):
                 reverse_base_node=REVERSE_BASE_NODE,
                 event_name=ens_middle.event_name,
                 method=ens_middle.method,
-
             )
 
-# integrate with ERC1155 & ERC721 transactions
+
+"""
+** integrate with ERC1155 & ERC721 transactions **
+"""
 # class TransferExtractor(BaseExtractor):
 #     def __init__(self):
 #         self.address = "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"

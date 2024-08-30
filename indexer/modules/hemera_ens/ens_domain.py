@@ -4,8 +4,8 @@ from typing import Optional
 
 from indexer.domain import Domain
 
-
 """for ens_middle"""
+
 
 @dataclass
 class ENSMiddleD(Domain):
@@ -41,6 +41,8 @@ class ENSMiddleD(Domain):
 
 
 """below is for ens_record"""
+
+
 @dataclass
 class ENSRegisterD(Domain):
 
@@ -76,6 +78,8 @@ class ENSAddressChangeD(Domain):
 
 
 """for ens_address"""
+
+
 @dataclass
 class ENSAddressD(Domain):
 

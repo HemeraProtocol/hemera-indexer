@@ -22,8 +22,14 @@ from indexer.modules.custom.all_features_value_record import (
 )
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
-from indexer.modules.hemera_ens.ens_domain import ENSMiddleD, ENSRegisterTokenD, ENSRegisterD, ENSNameRenewD, \
-    ENSAddressChangeD, ENSAddressD
+from indexer.modules.hemera_ens.ens_domain import (
+    ENSAddressChangeD,
+    ENSAddressD,
+    ENSMiddleD,
+    ENSNameRenewD,
+    ENSRegisterD,
+    ENSRegisterTokenD,
+)
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
