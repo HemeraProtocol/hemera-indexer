@@ -55,7 +55,7 @@ def upgrade() -> None:
     sa.Column('protocol_id', sa.VARCHAR(), nullable=False),
     sa.Column('contract_address', postgresql.BYTEA(), nullable=False),
     sa.Column('token_symbol', sa.VARCHAR(), nullable=True),
-    sa.Column('token_address', sa.VARCHAR(), nullable=True),
+    sa.Column('token_address', postgresql.BYTEA(), nullable=True),
     sa.Column('balance', sa.NUMERIC(precision=100), nullable=True),
     sa.Column('create_time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('period_date', 'wallet_address', 'protocol_id', 'contract_address')
