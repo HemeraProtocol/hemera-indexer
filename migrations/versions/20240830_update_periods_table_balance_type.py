@@ -76,10 +76,6 @@ def upgrade() -> None:
                existing_type=sa.NUMERIC(precision=78, scale=0),
                type_=sa.NUMERIC(precision=100, scale=18),
                existing_nullable=True)
-    op.alter_column('period_feature_holding_balance_lendle', 'token_address',
-               existing_type=sa.VARCHAR(),
-               type_=postgresql.BYTEA(),
-               existing_nullable=True)
     op.alter_column('period_feature_holding_balance_lendle', 'balance',
                existing_type=sa.NUMERIC(precision=100, scale=0),
                type_=sa.NUMERIC(precision=100, scale=18),
@@ -132,10 +128,6 @@ def downgrade() -> None:
     op.alter_column('period_feature_holding_balance_lendle', 'balance',
                existing_type=sa.NUMERIC(precision=100, scale=18),
                type_=sa.NUMERIC(precision=100, scale=0),
-               existing_nullable=True)
-    op.alter_column('period_feature_holding_balance_lendle', 'token_address',
-               existing_type=postgresql.BYTEA(),
-               type_=sa.VARCHAR(),
                existing_nullable=True)
     op.alter_column('period_feature_holding_balance_dodo', 'token1_balance',
                existing_type=sa.NUMERIC(precision=100, scale=18),
