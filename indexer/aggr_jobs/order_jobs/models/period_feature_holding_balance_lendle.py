@@ -14,7 +14,7 @@ class PeriodFeatureHoldingBalanceLendle(HemeraModel):
     contract_address = Column(BYTEA, primary_key=True)
 
     token_symbol = Column(VARCHAR)
-    token_address = Column(VARCHAR)
+    token_address = Column(BYTEA)
 
     balance = Column(NUMERIC(100, 18))
 
