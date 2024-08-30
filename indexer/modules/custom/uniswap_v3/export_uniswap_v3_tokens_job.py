@@ -125,6 +125,8 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             self._factory_address,
             self._is_batch,
             self._abi_list,
+            self._batch_size,
+            self._max_worker,
         )
         self._exist_token_ids.update(update_exist_tokens)
         for data in new_nft_info:
@@ -240,6 +242,8 @@ def get_new_nfts(
     factory_address,
     is_batch,
     abi_list,
+    batch_size,
+    max_worker,
 ):
     result = []
     need_collect_pool_tokens = []
@@ -249,7 +253,9 @@ def get_new_nfts(
         if (token_id, block_number) in want_pool_tokens:
             need_collect_pool_tokens.append(info)
 
-    new_pool_info = get_pool_rpc_requests(web3, make_requests, requests, factory_address, is_batch, abi_list)
+    new_pool_info = get_pool_rpc_requests(
+        web3, make_requests, requests, factory_address, is_batch, abi_list, batch_size, max_worker
+    )
     pool_dict = {}
     for data in new_pool_info:
         key = data["token0"] + data["token1"] + str(data["fee"])
@@ -547,7 +553,7 @@ def build_get_pool_method_data(web3, requests, factory_address, fn, abi_list):
     return parameters
 
 
-def get_pool_rpc_requests(web3, make_requests, requests, factory_address, is_batch, abi_list):
+def get_pool_rpc_requests(web3, make_requests, requests, factory_address, is_batch, abi_list, batch_size, max_worker):
     if len(requests) == 0:
         return []
     fn_name = "getPool"
@@ -558,30 +564,49 @@ def get_pool_rpc_requests(web3, make_requests, requests, factory_address, is_bat
     outputs = function_abi["outputs"]
     output_types = [output["type"] for output in outputs]
 
-    parameters = build_get_pool_method_data(web3, requests, factory_address, fn_name, abi_list)
-    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-    if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+    def process_batch(batch):
+        parameters = build_get_pool_method_data(web3, requests, factory_address, fn_name, abi_list)
+        token_name_rpc = list(generate_eth_call_json_rpc(parameters))
+        if is_batch:
+            response = make_requests(params=json.dumps(token_name_rpc))
+        else:
+            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
-    token_infos = []
-    for data in list(zip_rpc_response(parameters, response)):
-        result = rpc_response_to_result(data[1])
+        token_infos = []
+        for data in list(zip_rpc_response(parameters, response)):
+            result = rpc_response_to_result(data[1])
 
-        token = data[0]
-        value = result[2:] if result is not None else None
-        try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-            token["pool_address"] = decoded_data[0]
+            token = data[0]
+            value = result[2:] if result is not None else None
+            try:
+                decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+                token["pool_address"] = decoded_data[0]
 
-        except Exception as e:
-            logger.error(
-                f"Decoding getPool failed. "
-                f"token: {token}. "
-                f"fn: {fn_name}. "
-                f"rpc response: {result}. "
-                f"exception: {e}"
-            )
-        token_infos.append(token)
-    return token_infos
+            except Exception as e:
+                logger.error(
+                    f"Decoding getPool failed. "
+                    f"token: {token}. "
+                    f"fn: {fn_name}. "
+                    f"rpc response: {result}. "
+                    f"exception: {e}"
+                )
+            token_infos.append(token)
+        return token_infos
+
+    executor = BatchWorkExecutor(
+        starting_batch_size=batch_size,
+        max_workers=max_worker,
+        job_name=f"rpc_requests_{fn_name}",
+    )
+
+    all_token_infos = []
+
+    def work_handler(batch):
+        nonlocal all_token_infos
+        batch_results = process_batch(batch)
+        all_token_infos.extend(batch_results)
+
+    executor.execute(requests, work_handler, total_items=len(requests))
+    executor.wait()
+
+    return all_token_infos
