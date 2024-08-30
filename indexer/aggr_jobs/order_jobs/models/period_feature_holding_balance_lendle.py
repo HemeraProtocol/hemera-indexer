@@ -16,6 +16,6 @@ class PeriodFeatureHoldingBalanceLendle(HemeraModel):
     token_symbol = Column(VARCHAR)
     token_address = Column(VARCHAR)
 
-    balance = Column(NUMERIC(100))
+    balance = Column(NUMERIC(78, 18))
 
     create_time = Column(TIMESTAMP, server_default=func.now())

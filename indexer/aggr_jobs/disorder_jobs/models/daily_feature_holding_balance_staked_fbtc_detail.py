@@ -12,6 +12,6 @@ class DailyFeatureHoldingBalanceStakedFbtcDetail(HemeraModel):
     protocol_id = Column(VARCHAR, primary_key=True)
     contract_address = Column(BYTEA, primary_key=True)
 
-    balance = Column(NUMERIC(100))
+    balance = Column(NUMERIC(78, 18))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
