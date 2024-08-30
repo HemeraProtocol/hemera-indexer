@@ -102,8 +102,6 @@ def upgrade() -> None:
     op.create_index('period_feature_holding_balance_uniswap_v3_period_date', 'period_feature_holding_balance_uniswap_v3', ['period_date'], unique=False)
     op.drop_index('period_feature_uniswap_v3_wallet_address_amount_period_date', table_name='period_feature_uniswap_v3_wallet_address_amount')
     op.drop_table('period_feature_uniswap_v3_wallet_address_amount')
-    op.drop_index('period_feature_uniswap_v3_wallet_fbtc_detail_period_date', table_name='period_feature_defi_wallet_fbtc_detail_tmp')
-    op.drop_table('period_feature_defi_wallet_fbtc_detail_tmp')
     op.drop_table('daily_feature_uniswap_v3_wallet_address_amount')
     op.alter_column('period_feature_defi_wallet_fbtc_detail', 'period_date',
                existing_type=sa.DATE(),
@@ -193,24 +191,6 @@ def downgrade() -> None:
     sa.Column('create_time', postgresql.TIMESTAMP(), server_default=sa.text('now()'), autoincrement=False, nullable=True),
     sa.PrimaryKeyConstraint('daily_date', 'protocol_id', 'contract_address', 'token_id', name='daily_feature_uniswap_v3_wallet_address_amount_pkey')
     )
-    op.create_table('period_feature_defi_wallet_fbtc_detail_tmp',
-    sa.Column('wallet_address', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('period_date', sa.DATE(), autoincrement=False, nullable=False),
-    sa.Column('chain_name', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('contracts', postgresql.JSONB(astext_type=sa.Text()), autoincrement=False, nullable=True),
-    sa.Column('total_fbtc_balance', sa.NUMERIC(), autoincrement=False, nullable=True),
-    sa.Column('total_fbtc_usd', sa.NUMERIC(), autoincrement=False, nullable=True),
-    sa.Column('wallet_holding_fbtc_balance', sa.NUMERIC(), autoincrement=False, nullable=True),
-    sa.Column('wallet_holding_fbtc_usd', sa.NUMERIC(), autoincrement=False, nullable=True),
-    sa.Column('updated_version', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.Column('total_protocol_fbtc_balance', sa.NUMERIC(), autoincrement=False, nullable=True),
-    sa.Column('total_protocol_fbtc_usd', sa.NUMERIC(), autoincrement=False, nullable=True),
-    sa.Column('rank', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.Column('create_time', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-    sa.Column('update_time', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-    sa.Column('protocol_id', sa.VARCHAR(), autoincrement=False, nullable=True)
-    )
-    op.create_index('period_feature_uniswap_v3_wallet_fbtc_detail_period_date', 'period_feature_defi_wallet_fbtc_detail_tmp', ['period_date'], unique=False)
     op.create_table('period_feature_uniswap_v3_wallet_address_amount',
     sa.Column('protocol_id', sa.VARCHAR(), autoincrement=False, nullable=False),
     sa.Column('contract_address', postgresql.BYTEA(), autoincrement=False, nullable=False),
