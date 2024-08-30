@@ -49,11 +49,11 @@ class AggrOrderJob(AggrBaseJob):
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
                 session.execute(text(sql_content))
                 session.commit()
-                session.close()
 
             self.results = []
             self.combine_json()
             self.insert_aggr_job(self.results)
+        session.close()
 
     def get_pool_aggr(self, orm_list, price_dict):
         # 初始化一个字典用于分组
@@ -113,6 +113,7 @@ class AggrOrderJob(AggrBaseJob):
         session.commit()
         print(f'insert successfully, {len(results)}')
         session.close()
+
 
     def get_pool_token_data(self, orm_list):
         distinct_symbol_list = []
@@ -205,7 +206,7 @@ class AggrOrderJob(AggrBaseJob):
         )
 
         latest_per_address_dict = {tp.symbol: tp.price for tp in latest_per_address}
-
+        session.close()
         return latest_per_address_dict
 
     def get_uniswap_v3_json(self):
@@ -219,7 +220,7 @@ class AggrOrderJob(AggrBaseJob):
         ).all()
 
         results = self.get_pool_token_data(uniswapV3_list)
-
+        session.close()
         return results
 
     def get_token_aggr(self, orm_list, price_dict):
@@ -309,7 +310,7 @@ class AggrOrderJob(AggrBaseJob):
             protocol_json.append(h)
             results[(period_date, wallet_address)] = {'contract_json': protocol_json, 'balance': protocol_balance,
                                                       'usd': protocol_usd}
-
+        session.close()
         return results
 
     def get_period_address_token_balances(self):
@@ -357,7 +358,7 @@ class AggrOrderJob(AggrBaseJob):
         ).all()
 
         results = self.get_pool_token_data(orm_list)
-
+        session.close()
         return results
 
     def get_dodo_json(self):
@@ -371,7 +372,7 @@ class AggrOrderJob(AggrBaseJob):
         ).all()
 
         results = self.get_pool_token_data(orm_list)
-
+        session.close()
         return results
 
     def get_lendle_json(self):
@@ -423,7 +424,7 @@ class AggrOrderJob(AggrBaseJob):
             protocol_json.append(h)
             results[(period_date, wallet_address)] = {'contract_json': protocol_json, 'balance': protocol_balance,
                                                       'usd': protocol_usd}
-
+        session.close()
         return results
 
     def combine_json(self):
