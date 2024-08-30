@@ -12,6 +12,7 @@ model_path_patterns = [
     "indexer/modules/*/models",
     "indexer/modules/custom/*/models",
     "indexer/aggr_jobs/*/models",
+    "api/app/token"
 ]
 
 model_path_exclude = ["indexer/modules/custom/address_index/models"]
