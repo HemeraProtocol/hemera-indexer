@@ -14,7 +14,7 @@ class AggrDisorderJob(AggrBaseJob):
     def __init__(self, **kwargs):
         config = kwargs["config"]
         self.db_service = config["db_service"]
-        self._batch_work_executor = BatchWorkExecutor(5, 5)
+        self._batch_work_executor = BatchWorkExecutor(10, 10)
 
     def run(self, **kwargs):
         start_date = kwargs["start_date"]
@@ -24,13 +24,15 @@ class AggrDisorderJob(AggrBaseJob):
         date_pairs = self.generate_date_pairs(start_date, end_date)
         for date_pair in date_pairs:
             start_date, end_date = date_pair
+            # continue
             # Could be replaced to auto and selected
             for sql_name in job_list:
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
                 execute_sql_list.append(sql_content)
 
-                self._batch_work_executor.execute(execute_sql_list, self.execute_sql, total_items=len(execute_sql_list))
-                self._batch_work_executor.wait()
+        self._batch_work_executor.execute(execute_sql_list, self.execute_sql, total_items=len(execute_sql_list))
+        self._batch_work_executor.wait()
+        print(f'finish disorder job {start_date}')
 
     def execute_sql(self, sql_contents):
         session = self.db_service.Session()
