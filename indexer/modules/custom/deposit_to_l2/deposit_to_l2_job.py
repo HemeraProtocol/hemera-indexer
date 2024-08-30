@@ -3,16 +3,21 @@ import json
 import os
 from typing import List
 
+from sqlalchemy import and_
+
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.deposit_to_l2.deposit_parser import DepositToken, parse_deposit_transfer_function
+from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
+from indexer.modules.custom.deposit_to_l2.models.address_token_deposits import AddressTokenDeposits
 from indexer.specification.specification import ToAddressSpecification, TransactionFilterByTransactionInfo
 
 
 class DepositToL2Job(FilterTransactionDataJob):
     dependency_types = [Transaction]
+    output_types = [AddressTokenDeposit]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -59,15 +64,67 @@ class DepositToL2Job(FilterTransactionDataJob):
         deposit_tokens = parse_deposit_transfer_function(transactions, self._contracts, self._contract_chain_mapping)
 
         for deposit in pre_aggregate_deposit_in_same_block(deposit_tokens):
-            cache_value = self.cache.get((deposit.wallet_address, deposit.chain, deposit.token_address))
+            cache_key = (deposit.wallet_address, deposit.chain, deposit.token_address)
+            cache_value = self.cache.get(cache_key)
             if cache_value and cache_value.block_number < deposit.block_number:
                 # add and save 2 cache
-                pass
+                token_deposit = AddressTokenDeposit(
+                    wallet_address=deposit.wallet_address,
+                    chain=deposit.chain,
+                    token_address=deposit.token_address,
+                    value=deposit.value + cache_value,
+                    block_number=deposit.block_number,
+                )
+
+                self.cache.set(cache_key, token_deposit)
+                self._collect_item(AddressTokenDeposit.type(), token_deposit)
+
             elif cache_value is None:
                 # check from db and save 2 cache
-                pass
+                history_deposit = self.check_history_deposit_from_db(
+                    deposit.wallet_address, deposit.chain, deposit.token_address
+                )
+                if history_deposit.block_number < deposit.block_number:
+                    token_deposit = AddressTokenDeposit(
+                        wallet_address=deposit.wallet_address,
+                        chain=deposit.chain,
+                        token_address=deposit.token_address,
+                        value=deposit.value + history_deposit.value,
+                        block_number=deposit.block_number,
+                    )
+                    self.cache.set(cache_key, token_deposit)
+                    self._collect_item(AddressTokenDeposit.type(), token_deposit)
 
-        pass
+    def check_history_deposit_from_db(self, wallet_address: str, chain: str, token_address: str) -> AddressTokenDeposit:
+        session = self._service.get_service_session()
+        try:
+            history_deposit = (
+                session.query(AddressTokenDeposits)
+                .filter(
+                    and_(
+                        AddressTokenDeposits.wallet_address == bytes.fromhex(wallet_address),
+                        AddressTokenDeposits.chain == chain,
+                        AddressTokenDeposits.token_address == bytes.fromhex(token_address),
+                    )
+                )
+                .all()
+            )
+        finally:
+            session.close()
+
+        deposit = (
+            AddressTokenDeposit(
+                wallet_address=history_deposit.wallet_address,
+                chain=history_deposit.chain,
+                token_address=history_deposit.token_address,
+                value=history_deposit.value,
+                block_number=history_deposit.block_number,
+            )
+            if history_deposit
+            else None
+        )
+
+        return deposit
 
 
 def pre_aggregate_deposit_in_same_block(deposit_events: List[DepositToken]) -> List[DepositToken]:
@@ -84,5 +141,4 @@ def pre_aggregate_deposit_in_same_block(deposit_events: List[DepositToken]) -> L
 
 
 if __name__ == "__main__":
-
     pass

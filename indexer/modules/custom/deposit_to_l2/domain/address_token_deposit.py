@@ -4,7 +4,7 @@ from indexer.domain import FilterData
 
 
 @dataclass
-class CurrentDepositToken(FilterData):
+class AddressTokenDeposit(FilterData):
     wallet_address: str
     chain: str
     token_address: str

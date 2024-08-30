@@ -4,8 +4,8 @@ from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP, VA
 from common.models import HemeraModel, general_converter
 
 
-class CurrentDepositTokens(HemeraModel):
-    __tablename__ = "current_deposit_tokens"
+class AddressTokenDeposits(HemeraModel):
+    __tablename__ = "address_token_deposits"
     wallet_address = Column(BYTEA, primary_key=True)
     chain = Column(VARCHAR, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
@@ -22,9 +22,9 @@ class CurrentDepositTokens(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "CurrentDepositToken",
+                "domain": "AddressTokenDeposit",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > current_deposit_tokens.block_number",
+                "update_strategy": "EXCLUDED.block_number > address_token_deposits.block_number",
                 "converter": general_converter,
             }
         ]

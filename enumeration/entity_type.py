@@ -21,6 +21,7 @@ from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordUniswapV3Token,
 )
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
+from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
@@ -31,15 +32,18 @@ class EntityType(IntFlag):
     EXPLORER_TRACE = 1 << 2
 
     BRIDGE = 1 << 3
+
     UNISWAP_V3 = 1 << 4
 
     USER_OPS = 1 << 5
 
     BLUE_CHIP = 1 << 6
 
-    EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
-
     ADDRESS_INDEX = 1 << 7
+
+    DEPOSIT_TO_L2 = 1 << 8
+
+    EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
     @staticmethod
     def combine_all_entity_types():
@@ -130,3 +134,9 @@ def generate_output_types(entity_types):
         yield CurrentTokenBalance
         yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
+
+    if entity_types & EntityType.DEPOSIT_TO_L2:
+        yield Block
+        yield Transaction
+        yield Log
+        yield AddressTokenDeposit
