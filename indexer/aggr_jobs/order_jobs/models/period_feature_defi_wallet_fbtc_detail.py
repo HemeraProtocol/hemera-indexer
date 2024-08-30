@@ -24,6 +24,7 @@ class PeriodFeatureDefiWalletFbtcDetail(HemeraModel):
     rank = Column(INTEGER)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
 
 # could be replaced by partition in case of huge amount data

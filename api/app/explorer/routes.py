@@ -69,7 +69,9 @@ from common.models.contracts import Contracts
 from common.models.current_token_balances import CurrentTokenBalances
 from indexer.aggr_jobs.disorder_jobs.models.daily_address_aggregates import DailyAddressesAggregates
 from indexer.aggr_jobs.disorder_jobs.models.daily_blocks_aggregates import DailyBlocksAggregates
-from common.models.daily_tokens_aggregates import DailyTokensAggregates
+from indexer.aggr_jobs.disorder_jobs.models.daily_tokens_aggregates import DailyTokensAggregates
+
+
 from indexer.aggr_jobs.disorder_jobs.models.daily_transactions_aggregates import DailyTransactionsAggregates
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
