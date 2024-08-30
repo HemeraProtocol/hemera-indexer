@@ -91,10 +91,11 @@ class RegisterExtractor(BaseExtractor):
             if "." in ens_middle.name:
                 # not supported
                 return None
+            ens_middle.name = ens_middle.name + ".eth"
             ens_middle.label = tmp.get("label").lower()
             ens_middle.owner = tmp.get("owner").lower()
             ens_middle.base_node = BASE_NODE
-            ens_middle.node = namehash(ens_middle.name + ".eth")
+            ens_middle.node = namehash(ens_middle.name)
             ens_middle.event_name = event_data["_event"]
             token_id = None
             w_token_id = None

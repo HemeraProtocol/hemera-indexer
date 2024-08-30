@@ -80,8 +80,10 @@ def merge_ens_objects(objects: List[Any]) -> List[Any]:
     for obj in objects:
         if not is_dataclass(obj):
             continue
-
-        key = (type(obj), getattr(obj, 'node', None))
+        if isinstance(obj, ENSAddressD):
+            key = (type(obj), getattr(obj, 'address', None))
+        else:
+            key = (type(obj), getattr(obj, 'node', None))
 
         if key in latest_objects:
             for field in fields(obj):
