@@ -79,7 +79,7 @@ class JobScheduler:
         self.pg_service = config.get("db_service") if "db_service" in config else None
 
         self.discover_and_register_job_classes()
-        self.required_job_classes = self.get_required_job_classes(required_output_types)
+        self.required_job_classes, self.is_pipeline_filter = self.get_required_job_classes(required_output_types)
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
         token_dict_from_db = defaultdict()
         if self.pg_service is not None:
@@ -98,11 +98,28 @@ class JobScheduler:
         self.instantiate_jobs()
         self.logger.info("Export output types: %s", required_output_types)
 
-    def get_data_buff(self):
-        return BaseJob._data_buff
+    def get_required_job_classes(self, output_types) -> (List[Type[BaseJob]], bool):
+        required_job_classes = set()
+        output_type_queue = deque(output_types)
+        is_filter = True
+        for output_type in output_types:
+            for job_class in self.job_map[output_type.type()]:
+                is_filter = job_class.is_filter and is_filter
+
+        while output_type_queue:
+            output_type = output_type_queue.popleft()
+            for job_class in self.job_map[output_type.type()]:
+                if job_class in self.job_classes:
+                    required_job_classes.add(job_class)
+                    for dependency in job_class.dependency_types:
+                        output_type_queue.append(dependency)
+        return required_job_classes, is_filter
 
     def clear_data_buff(self):
         BaseJob._data_buff.clear()
+
+    def get_data_buff(self):
+        return BaseJob._data_buff
 
     def discover_and_register_job_classes(self):
         if self.load_from_source:
@@ -154,6 +171,7 @@ class JobScheduler:
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
+                is_filter=self.is_pipeline_filter,
                 filters=filters,
             )
             self.jobs.insert(0, export_blocks_job)
@@ -188,18 +206,6 @@ class JobScheduler:
             raise e
         finally:
             exception_recorder.force_to_flush()
-
-    def get_required_job_classes(self, output_types):
-        required_job_classes = set()
-        job_queue = deque(output_types)
-        while job_queue:
-            output_type = job_queue.popleft()
-            for job_class in self.job_map[output_type.type()]:
-                if job_class not in required_job_classes:
-                    required_job_classes.add(job_class)
-                    for dependency in job_class.dependency_types:
-                        job_queue.append(dependency)
-        return required_job_classes
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []

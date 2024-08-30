@@ -1,10 +1,12 @@
 import logging
+import os
 import time
 
 import click
 from web3 import Web3
 
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.format_utils import to_snake_case
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.controller.stream_controller import StreamController
@@ -236,7 +238,7 @@ def calculate_execution_time(func):
     show_default=True,
     type=bool,
     help="if `multicall` is set to True, it will decrease the consume of rpc calls",
-    envvar="Multicall",
+    envvar="MULTI_CALL_ENABLE",
 )
 @click.option(
     "--auto-reorg",
@@ -245,6 +247,14 @@ def calculate_execution_time(func):
     type=bool,
     envvar="AUTO_REORG",
     help="Whether to detect reorg in data streams and automatically repair data.",
+)
+@click.option(
+    "--config-file",
+    default=False,
+    show_default=True,
+    type=str,
+    envvar="CONFIG_FILE",
+    help="The path to the configuration file, if provided, the configuration file will be used to load the configuration. Supported formats are json and yaml.",
 )
 @calculate_execution_time
 def stream(
@@ -271,6 +281,7 @@ def stream(
     cache="memory",
     auto_reorg=True,
     multicall=True,
+    config_file=None,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -295,6 +306,21 @@ def stream(
     else:
         logging.warning("No postgres url provided. Exception recorder will not be useful.")
 
+    if config_file:
+        if not os.path.exists(config_file):
+            raise click.ClickException(f"Config file {config_file} not found")
+        with open(config_file, "r") as f:
+            if config_file.endswith(".json"):
+                import json
+
+                config.update(json.load(f))
+            elif config_file.endswith(".yaml") or config_file.endswith(".yml"):
+                import yaml
+
+                config.update(yaml.safe_load(f))
+            else:
+                raise click.ClickException(f"Config file {config_file} is not supported)")
+
     if output_types is None:
         entity_types = calculate_entity_value(entity_types)
         output_types = list(generate_output_types(entity_types))
@@ -303,6 +329,7 @@ def stream(
         parse_output_types = set()
 
         for output_type in output_types.split(","):
+            output_type = to_snake_case(output_type)
             if output_type not in domain_dict:
                 raise click.ClickException(f"Output type {output_type} is not supported")
             parse_output_types.add(domain_dict[output_type])
