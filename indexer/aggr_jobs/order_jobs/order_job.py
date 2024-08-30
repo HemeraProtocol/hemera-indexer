@@ -46,9 +46,11 @@ class AggrOrderJob(AggrBaseJob):
             self.start_date = start_date
 
             for sql_name in job_list:
+                # print(f'----now is inserting {sql_name} {start_date} {end_date}')
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
                 session.execute(text(sql_content))
                 session.commit()
+                print(f'----finished {sql_name} {start_date} {end_date}')
 
             self.results = []
             self.combine_json()
@@ -113,7 +115,6 @@ class AggrOrderJob(AggrBaseJob):
         session.commit()
         print(f'insert successfully, {len(results)}')
         session.close()
-
 
     def get_pool_token_data(self, orm_list):
         distinct_symbol_list = []
@@ -428,7 +429,7 @@ class AggrOrderJob(AggrBaseJob):
         return results
 
     def combine_json(self):
-        print(self.start_date)
+        print('combine josn', self.start_date)
 
         merchantmoe_json = self.get_merchantmoe_json()
         address_token_balances = self.get_period_address_token_balances()
@@ -488,10 +489,6 @@ class AggrOrderJob(AggrBaseJob):
                 total_protocol_fbtc_usd += lendle_json_value.get('usd')
 
             period_date, wallet_address = key
-            if protocol_holding_detail:
-                print(format_value_for_json(wallet_address))
-                print(protocol_holding_detail)
-                pass
 
             record = PeriodFeatureDefiWalletFbtcDetail(
                 period_date=period_date,
