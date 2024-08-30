@@ -14,6 +14,6 @@ class DailyFeatureHoldingBalanceLendle(HemeraModel):
 
     token_address = Column(String, nullable=False)
     token_symbol = Column(String, nullable=False)
-    token_balance = Column(NUMERIC(78, 18))
+    token_balance = Column(NUMERIC(100, 18))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
