@@ -14,7 +14,7 @@ from web3 import Web3
 
 from indexer.modules.hemera_ens import lifo_registry
 from indexer.modules.hemera_ens.ens_abi import abi_map
-from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP
+from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP, ENS_BEGIN_BLOCK
 from indexer.modules.hemera_ens.ens_domain import ENSAddressD, ENSRegisterD, ENSNameRenewD, ENSAddressChangeD
 from indexer.modules.hemera_ens.extractors import (
     BaseExtractor,
@@ -119,7 +119,7 @@ class EnsHandler:
         return decoded_input
 
     def process(self, transaction, logs):
-        if not self.is_ens_address(transaction["to_address"]):
+        if not self.is_ens_address(transaction["to_address"]) or transaction["block_number"] < ENS_BEGIN_BLOCK:
             return []
         method = None
         tra_sig = transaction['input'][0:10]

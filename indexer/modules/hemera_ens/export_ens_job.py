@@ -9,6 +9,7 @@ from collections import defaultdict
 from dataclasses import asdict, is_dataclass, fields
 from typing import List, Dict, Any
 
+from common.utils.exception_control import FastShutdownError
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -33,7 +34,6 @@ class ExportEnsJob(FilterTransactionDataJob):
     able_to_reorg = True
 
     def __init__(self, **kwargs):
-        # TODO check chainId, only available on ethMainNet
         super().__init__(**kwargs)
 
         self._batch_work_executor = BatchWorkExecutor(
@@ -41,6 +41,10 @@ class ExportEnsJob(FilterTransactionDataJob):
             kwargs["max_workers"],
             job_name=self.__class__.__name__,
         )
+        # check chainId, only available on ethMainNet
+        if self._web3.eth.chain_id != 1:
+            raise FastShutdownError("ExportEnsJob is only supported on Ethereum Main networks")
+
         self._is_batch = kwargs["batch_size"] > 1
         self._filters = kwargs.get("filters", [])
         self.ens_handler = EnsHandler(EnsConfLoader())
