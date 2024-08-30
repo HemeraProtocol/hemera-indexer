@@ -196,6 +196,15 @@ class AppConfig(YAMLWizard):
             self.cache_config.cache_type = os.getenv("CACHE_TYPE", self.cache_config.cache_type)
             self.cache_config.cache_redis_host = os.getenv("REDIS_HOST", self.cache_config.cache_redis_host)
 
+        if os.getenv("DASHBOARD_TOKEN"):
+            self.token_configuration.dashboard_token = os.getenv(
+                "DASHBOARD_TOKEN", self.token_configuration.dashboard_token
+            )
+        if os.getenv("NATIVE_TOKEN"):
+            self.token_configuration.native_token = os.getenv("NATIVE_TOKEN", self.token_configuration.native_token)
+        if os.getenv("GAS_FEE_TOKEN"):
+            self.token_configuration.gas_fee_token = os.getenv("GAS_FEE_TOKEN", self.token_configuration.gas_fee_token)
+
     def get_onchain_badge_config(self):
         if "on_chain_badge" in self.extra_config:
             return self.extra_config["ONCHAIN_BADGE_INFO"]
