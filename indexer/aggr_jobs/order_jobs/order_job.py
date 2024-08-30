@@ -43,14 +43,15 @@ class AggrOrderJob(AggrBaseJob):
         date_pairs = self.generate_date_pairs(start_date_limit, end_date_limit)
         for date_pair in date_pairs:
             start_date, end_date = date_pair
+            # continue
+
             self.start_date = start_date
 
             for sql_name in job_list:
-                # print(f'----now is inserting {sql_name} {start_date} {end_date}')
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
                 session.execute(text(sql_content))
                 session.commit()
-                print(f'----finished {sql_name} {start_date} {end_date}')
+            print(f'----finished order job {len(job_list)} {start_date}')
 
             self.results = []
             self.combine_json()
