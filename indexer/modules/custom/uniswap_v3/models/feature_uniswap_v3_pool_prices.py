@@ -14,7 +14,7 @@ class UniswapV3PoolPrices(HemeraModel):
 
     sqrt_price_x96 = Column(NUMERIC(100))
     tick = Column(NUMERIC(100))
-
+    factory_address = Column(BYTEA)
     create_time = Column(TIMESTAMP, default=datetime.utcnow)
     update_time = Column(TIMESTAMP, onupdate=func.now())
     reorg = Column(BOOLEAN, default=False)
@@ -29,5 +29,11 @@ class UniswapV3PoolPrices(HemeraModel):
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            }
+            },
+            {
+                "domain": "AgniV3PoolPrice",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]

@@ -32,7 +32,13 @@ class UniswapV3Tokens(HemeraModel):
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            }
+            },
+            {
+                "domain": "AgniV3Token",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
 
 

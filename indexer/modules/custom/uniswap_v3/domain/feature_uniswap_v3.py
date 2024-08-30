@@ -28,7 +28,7 @@ class UniswapV3Token(FilterData):
 
 @dataclass
 class UniswapV3PoolPrice(FilterData):
-    nft_address: str
+    factory_address: str
     pool_address: str
     sqrt_price_x96: int
     tick: int
@@ -49,7 +49,7 @@ class UniswapV3TokenDetail(FilterData):
 
 @dataclass
 class UniswapV3PoolCurrentPrice(FilterData):
-    nft_address: str
+    factory_address: str
     pool_address: str
     sqrt_price_x96: int
     tick: int
@@ -66,3 +66,33 @@ class UniswapV3TokenCurrentStatus(FilterData):
     liquidity: int
     block_number: int
     block_timestamp: int
+
+
+@dataclass
+class AgniV3Pool(UniswapV3Pool):
+    pass
+
+
+@dataclass
+class AgniV3Token(UniswapV3Token):
+    pass
+
+
+@dataclass
+class AgniV3PoolPrice(UniswapV3PoolPrice):
+    pass
+
+
+@dataclass
+class AgniV3TokenDetail(UniswapV3TokenDetail):
+    pass
+
+
+@dataclass
+class AgniV3PoolCurrentPrice(UniswapV3PoolCurrentPrice):
+    pass
+
+
+@dataclass
+class AgniV3TokenCurrentStatus(UniswapV3TokenCurrentStatus):
+    pass

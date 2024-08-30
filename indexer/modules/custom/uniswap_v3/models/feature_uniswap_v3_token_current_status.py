@@ -30,7 +30,13 @@ class UniswapV3TokenCurrentStatus(HemeraModel):
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > feature_uniswap_v3_token_current_status.block_number",
                 "converter": general_converter,
-            }
+            },
+            {
+                "domain": "AgniV3TokenCurrentStatus",
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number > feature_uniswap_v3_token_current_status.block_number",
+                "converter": general_converter,
+            },
         ]
 
 
