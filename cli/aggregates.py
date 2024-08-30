@@ -47,7 +47,7 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
 @click.option(
     "-D",
     "--date-batch-size",
-    default=30,
+    default=5,
     show_default=True,
     type=int,
     envvar="DATE_BATCH_SIZE",

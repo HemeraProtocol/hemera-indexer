@@ -9,9 +9,8 @@ from common.models import HemeraModel
 class PeriodFeatureDefiWalletFbtcDetail(HemeraModel):
     __tablename__ = "period_feature_defi_wallet_fbtc_detail"
 
-    protocol_id = Column(String, primary_key=True, nullable=False)
-    wallet_address = Column(String, primary_key=True)
     period_date = Column(DATE, primary_key=True)
+    wallet_address = Column(String, primary_key=True)
     chain_name = Column(String, primary_key=True)
     contracts = Column(JSONB)
 
@@ -24,8 +23,8 @@ class PeriodFeatureDefiWalletFbtcDetail(HemeraModel):
     total_protocol_fbtc_usd = Column(NUMERIC)
     rank = Column(INTEGER)
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
 
 # could be replaced by partition in case of huge amount data

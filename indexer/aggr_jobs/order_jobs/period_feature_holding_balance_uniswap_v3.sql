@@ -13,12 +13,12 @@ with today_table as (select *
 
 insert
 into period_feature_uniswap_v3_token_details
-select COALESCE(s1.nft_address, s2.nft_address)              AS nft_address,
-       date('{start_date}')                                  AS period_date,
-       COALESCE(s1.token_id, s2.token_id)                    AS token_id,
-       COALESCE(s1.wallet_address, s2.wallet_address)        AS wallet_address,
-       COALESCE(s1.pool_address, s2.pool_address)            AS pool_address,
-       COALESCE(s1.liquidity, 0) + COALESCE(s2.liquidity, 0) AS liquidity
+select COALESCE(s1.nft_address, s2.nft_address)       AS nft_address,
+       date('{start_date}')                           AS period_date,
+       COALESCE(s1.token_id, s2.token_id)             AS token_id,
+       COALESCE(s1.wallet_address, s2.wallet_address) AS wallet_address,
+       COALESCE(s1.pool_address, s2.pool_address)     AS pool_address,
+       COALESCE(s1.liquidity, s2.liquidity, 0)        AS liquidity
 from today_table s1
          full join
      yesterday_table s2
@@ -38,16 +38,16 @@ with today_table as (select *
 
 insert
 into period_feature_uniswap_v3_pool_prices
-select COALESCE(s1.pool_address, s2.pool_address)                      AS pool_address,
-       date('{start_date}')                                            AS period_date,
-       COALESCE(s1.sqrt_price_x96, 0) + COALESCE(s2.sqrt_price_x96, 0) AS liquidity
+select COALESCE(s1.pool_address, s2.pool_address)        AS pool_address,
+       date('{start_date}')                              AS period_date,
+       COALESCE(s1.sqrt_price_x96, s2.sqrt_price_x96, 0) AS liquidity
 from today_table s1
          full join
      yesterday_table s2
      on s1.pool_address = s2.pool_address;
 
 delete
-from period_feature_uniswap_v3_wallet_address_amount
+from period_feature_holding_balance_uniswap_v3
 where period_date >= '{start_date}'
   and period_date < '{end_date}';
 with period_token_price as (select symbol, price
@@ -127,23 +127,28 @@ with period_token_price as (select symbol, price
                                else 0 end / pow(10, toekn1_decimals) AS token1_balance
                     from detail_table)
 insert
-into period_feature_uniswap_v3_wallet_address_amount
-select 'unisawp_v3'                  as protoco_id,
-       nft_address, --contract address
+into period_feature_holding_balance_uniswap_v3(protocol_id,
+                                               contract_address,
+                                               period_date,
+                                               token_id,
+                                               wallet_address,
+                                               token0_address,
+                                               token0_symbol,
+                                               token0_balance,
+                                               token1_address,
+                                               token1_symbol,
+                                               token1_balance)
+select 'unisawp_v3' as protoco_id,
+       nft_address,
        period_date,
        token_id,
        wallet_address,
        token0_address,
        token0_symbol,
        token0_balance,
-       token0_price,
-       token0_balance * token0_price as token0_price_value,
        token1_address,
        token1_symbol,
-       token1_balance,
-       token1_price,
-       token1_balance * token1_price as token1_price_value
+       token1_balance
 from tick_table;
--- add json table
 
 commit

@@ -14,7 +14,6 @@ from flask import Response
 from flask_restx import Resource, reqparse
 from sqlalchemy.sql import and_, cast, func, nullslast, or_
 from sqlalchemy.sql.sqltypes import VARCHAR, Numeric
-from web3 import Web3
 
 from api.app.cache import cache
 from api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
@@ -68,10 +67,12 @@ from common.models.blocks import Blocks
 from common.models.contract_internal_transactions import ContractInternalTransactions
 from common.models.contracts import Contracts
 from common.models.current_token_balances import CurrentTokenBalances
-from common.models.daily_address_aggregates import DailyAddressesAggregates
-from common.models.daily_blocks_aggregates import DailyBlocksAggregates
-from common.models.daily_tokens_aggregates import DailyTokensAggregates
-from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
+from indexer.aggr_jobs.disorder_jobs.models.daily_address_aggregates import DailyAddressesAggregates
+from indexer.aggr_jobs.disorder_jobs.models.daily_blocks_aggregates import DailyBlocksAggregates
+from indexer.aggr_jobs.disorder_jobs.models.daily_tokens_aggregates import DailyTokensAggregates
+
+
+from indexer.aggr_jobs.disorder_jobs.models.daily_transactions_aggregates import DailyTransactionsAggregates
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
