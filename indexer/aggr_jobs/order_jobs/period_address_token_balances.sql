@@ -12,7 +12,7 @@ select address,
        token_type,
        balance
 from (select *,
-             row_number() over (partition by address order by block_date desc) as rn
+             row_number() over (partition by address, token_address, token_id order by block_date desc) as rn
       from daily_address_token_balances
       WHERE block_date < '{end_date}') t
 where rn = 1;
