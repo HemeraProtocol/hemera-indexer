@@ -52,9 +52,10 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     def get_filter(self):
         liquidity_topic_keys = list(self._liquidity_topic0_dict.keys())
         liquidity_topic_keys.append(self._pool_swap_topic0)
+        liquidity_topic_keys = liquidity_topic_keys + self._liquidity_nft_topic0_list
+        liquidity_topic_keys.append(self._create_pool_topic0)
         return TransactionFilterByLogs(
             [
-                TopicSpecification(addresses=[self._factory_address], topics=[self._create_pool_topic0]),
                 TopicSpecification(topics=liquidity_topic_keys),
             ]
         )
