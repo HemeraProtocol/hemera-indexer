@@ -214,7 +214,7 @@ class EnsHandler:
             return None
         if event_name == "NameChanged":
             return ENSAddressD(
-                address=record["address"],
+                address=address,
                 reverse_node=record["reverse_node"],
                 name=record["reverse_name"],
             )
@@ -239,5 +239,5 @@ class EnsHandler:
         if event_name == "AddressChanged":
             return ENSAddressChangeD(
                 node=record["node"],
-                address=record["address"],
+                address=address,
             )
