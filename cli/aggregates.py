@@ -8,6 +8,15 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
 @click.option(
+    "-cn",
+    "--chain-name",
+    default=None,
+    show_default=True,
+    type=str,
+    help='The chain name of the chain to aggregate data for',
+    envvar="CHAIN_NAME",
+)
+@click.option(
     "-pg",
     "--postgres-url",
     type=str,
@@ -23,8 +32,8 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
     type=str,
     envvar="PROVIDER_URI",
     help="The URI of the web3 provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io"
-    "It helps determine whether the latest synchronized data meets the required execution date range.",
+         "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io"
+         "It helps determine whether the latest synchronized data meets the required execution date range.",
 )
 @click.option(
     "-sd",
@@ -53,7 +62,7 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
     envvar="DATE_BATCH_SIZE",
     help="How many DATEs to batch in single sync round",
 )
-def aggregates(postgres_url, provider_uri, start_date, end_date, date_batch_size):
+def aggregates(chain_name, postgres_url, provider_uri, start_date, end_date, date_batch_size):
     if not start_date and not end_date:
         start_date, end_date = get_yesterday_date()
     elif not end_date:
@@ -63,7 +72,7 @@ def aggregates(postgres_url, provider_uri, start_date, end_date, date_batch_size
 
     # check_data_completeness(db_service, provider_uri, end_date)
 
-    config = {"db_service": db_service}
+    config = {"db_service": db_service, "chain_name": chain_name}
     dispatcher = AggregatesDispatcher(config)
 
     controller = AggregatesController(job_dispatcher=dispatcher)

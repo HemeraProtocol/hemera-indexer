@@ -20,16 +20,15 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_
 
 
 class PeriodFeatureDefiWalletFbtcAggregates:
-    def __init__(self, db_service, start_date):
+    def __init__(self, chain_name, db_service, start_date):
+        self.chain_name = chain_name
         self.db_service = db_service
         self.start_date = start_date
         self.results = []
 
     def get_pool_aggr(self, orm_list, price_dict):
-        # 初始化一个字典用于分组
         grouped_data = defaultdict(list)
 
-        # 按 period, wallet_address, protocol_id 分组
         for record in orm_list:
             key = (record.period_date, record.protocol_id)
             grouped_data[key].append(record)
@@ -50,7 +49,6 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
                 if entity.token0_symbol == 'FBTC':
                     protocol_balance += float(entity.token0_balance)
-
                     protocol_usd += token_usd0
                 if entity.token1_symbol == 'FBTC':
                     protocol_usd += token_usd1
@@ -59,7 +57,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
             results.append(
                 PeriodFeatureDefiFbtcAggregates(
                     period_date=period_date,
-                    chain_name='mantle',
+                    chain_name=self.chain_name,
                     protocol_id=protocol_id,
                     total_fbtc_balance=protocol_balance,
                     total_fbtc_usd=protocol_usd,
@@ -87,10 +85,8 @@ class PeriodFeatureDefiWalletFbtcAggregates:
     def get_pool_token_data(self, orm_list):
         distinct_symbol_list = []
 
-        # 初始化一个字典用于分组
         grouped_data = defaultdict(list)
 
-        # 按 period, wallet_address, protocol_id 分组
         for record in orm_list:
             key = (record.period_date, record.wallet_address, record.protocol_id)
             grouped_data[key].append(record)
@@ -163,11 +159,10 @@ class PeriodFeatureDefiWalletFbtcAggregates:
             )
             .filter(
                 TokenPrice.timestamp <= self.start_date)
-            .filter(TokenPrice.symbol.in_(symbol_list))  # 应用过滤条件
+            .filter(TokenPrice.symbol.in_(symbol_list))
             .subquery()
         )
 
-        # 从子查询中选取 row_number 为 1 的记录
         latest_per_address = (
             session.query(subquery)
             .filter(subquery.c.row_number == 1)
@@ -215,7 +210,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
             results.append(
                 PeriodFeatureDefiFbtcAggregates(
                     period_date=period_date,
-                    chain_name='mantle',
+                    chain_name=self.chain_name,
                     protocol_id=protocol_id,
                     total_fbtc_balance=protocol_balance,
                     total_fbtc_usd=protocol_usd,
@@ -234,10 +229,8 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         fbtc_detail_list = session.query(PeriodFeatureHoldingBalanceStakedFbtcDetail).filter(
             PeriodFeatureHoldingBalanceStakedFbtcDetail.period_date == self.start_date).all()
 
-        # 初始化一个字典用于分组
         grouped_data = defaultdict(list)
 
-        # 按 period, wallet_address, protocol_id 分组
         for record in fbtc_detail_list:
             key = (record.period_date, record.wallet_address, record.protocol_id)
             grouped_data[key].append(record)
@@ -286,25 +279,23 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         address = bytes.fromhex(fbtc_address.lower()[2:])
 
         session = self.db_service.Session()
-        # 创建窗口查询，并将其转换为子查询
         subquery = (
             session.query(
                 PeriodAddressTokenBalances,
                 func.row_number().over(
-                    partition_by=PeriodAddressTokenBalances.address,  # 按 token_address 分区
-                    order_by=desc(PeriodAddressTokenBalances.period_date)  # 按 period_date 倒序排序
+                    partition_by=PeriodAddressTokenBalances.address,
+                    order_by=desc(PeriodAddressTokenBalances.period_date)
                 ).label('row_number')
             ).filter(
                 PeriodAddressTokenBalances.period_date == self.start_date)
-            .filter(PeriodAddressTokenBalances.token_address == address)  # 过滤条件
+            .filter(PeriodAddressTokenBalances.token_address == address)
         ).subquery()
 
         query = session.query(subquery).filter(
             subquery.c.row_number == 1,
-            subquery.c.balance > 0  # 添加 balance > 0 的过滤条件
+            subquery.c.balance > 0
         )
 
-        # 执行查询并获取结果
         result = query.all()
 
         price_dict = self.get_latest_price(['FBTC'])
@@ -347,10 +338,8 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         orm_list = session.query(PeriodFeatureHoldingBalanceLendle).filter(
             PeriodFeatureHoldingBalanceLendle.period_date == self.start_date).all()
 
-        # 初始化一个字典用于分组
         grouped_data = defaultdict(list)
 
-        # 按 period, wallet_address, protocol_id 分组
         for record in orm_list:
             key = (record.period_date, record.wallet_address, record.protocol_id)
             grouped_data[key].append(record)
@@ -396,21 +385,21 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
     def run(self):
         print('combine josn', self.start_date)
-
+        # get all protocol json, actually then can be abstract...
         merchantmoe_json = self.get_merchantmoe_json()
         address_token_balances = self.get_period_address_token_balances()
         uniswapv3 = self.get_uniswap_v3_json()
         staked = self.get_staked_json()
-        dodo_json = self.get_dodo_json()  # 无数据
+        dodo_json = self.get_dodo_json()
         get_lendle_json = self.get_lendle_json()
 
-        protocol_keys_list = list(uniswapv3.keys()) + list(staked.keys()) + list(address_token_balances.keys()) + list(
-            merchantmoe_json.keys()) + list(dodo_json.keys()) + list(get_lendle_json.keys())
+        protocol_wallet_keys_list = list(
+            {key for d in [uniswapv3, staked, address_token_balances, merchantmoe_json, dodo_json, get_lendle_json] for
+             key in d.keys()})
 
-        keys_ = list(set(protocol_keys_list))
         result_orm_list = []
 
-        for key in keys_:
+        for key in protocol_wallet_keys_list:
             total_protocol_fbtc_balance = 0
             total_protocol_fbtc_usd = 0
 
@@ -424,42 +413,21 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                 wallet_holding_fbtc_balance += address_token_balances_value[0]
                 wallet_holding_fbtc_usd += address_token_balances_value[1]
 
-            uniswapv3_value = uniswapv3.get(key, '')
-            if uniswapv3_value:
-                protocol_holding_detail.extend(uniswapv3_value.get('contract_json'))
-                total_protocol_fbtc_balance += uniswapv3_value.get('balance')
-                total_protocol_fbtc_usd += uniswapv3_value.get('usd')
+            protocols = [uniswapv3, staked, merchantmoe_json, dodo_json, get_lendle_json]
 
-            staked_value = staked.get(key, '')
-            if staked_value:
-                protocol_holding_detail.extend(staked_value.get('contract_json'))
-                total_protocol_fbtc_balance += staked_value.get('balance')
-                total_protocol_fbtc_usd += staked_value.get('usd')
-
-            merchantmoe_value = merchantmoe_json.get(key, '')
-            if merchantmoe_value:
-                protocol_holding_detail.extend(merchantmoe_value.get('contract_json'))
-                total_protocol_fbtc_balance += merchantmoe_value.get('balance')
-                total_protocol_fbtc_usd += merchantmoe_value.get('usd')
-
-            dodo_json_value = dodo_json.get(key, '')
-            if dodo_json_value:
-                protocol_holding_detail.extend(dodo_json_value.get('contract_json'))
-                total_protocol_fbtc_balance += dodo_json_value.get('balance')
-                total_protocol_fbtc_usd += dodo_json_value.get('usd')
-
-            lendle_json_value = get_lendle_json.get(key, '')
-            if lendle_json_value:
-                protocol_holding_detail.extend(lendle_json_value.get('contract_json'))
-                total_protocol_fbtc_balance += lendle_json_value.get('balance')
-                total_protocol_fbtc_usd += lendle_json_value.get('usd')
+            for protocol in protocols:
+                protocol_value = protocol.get(key, '')
+                if protocol_value:
+                    protocol_holding_detail.extend(protocol_value.get('contract_json'))
+                    total_protocol_fbtc_balance += protocol_value.get('balance')
+                    total_protocol_fbtc_usd += protocol_value.get('usd')
 
             period_date, wallet_address = key
 
             record = PeriodFeatureDefiWalletFbtcDetail(
                 period_date=period_date,
                 wallet_address=format_value_for_json(wallet_address),
-                chain_name='',
+                chain_name=self.chain_name,
                 contracts=protocol_holding_detail,
                 total_protocol_fbtc_balance=total_protocol_fbtc_balance,
                 total_protocol_fbtc_usd=total_protocol_fbtc_usd,
@@ -479,7 +447,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
         for _, group in grouped:
             for idx, item in enumerate(group, start=1):
-                item.rank = idx  # 模拟 SQL 中的 ROW_NUMBER
+                item.rank = idx
 
         session = self.db_service.Session()
 
