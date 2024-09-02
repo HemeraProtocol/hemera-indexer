@@ -45,7 +45,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         )
         self._is_batch = kwargs["batch_size"] > 1
         self._chain_id = common_utils.get_chain_id(self._web3)
-        self._service = (kwargs["config"].get("db_service"),)
+        self._service = kwargs["config"].get("db_service")
         self._load_config("config.ini", self._chain_id)
         self._abi_list = UNISWAP_V3_ABI
         self._liquidity_token_id_blocks = queue.Queue()

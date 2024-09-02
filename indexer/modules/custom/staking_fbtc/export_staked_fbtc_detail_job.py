@@ -43,7 +43,7 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
         self._max_worker = kwargs["max_workers"]
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("config.ini", self._chain_id)
-        self._service = (kwargs["config"].get("db_service"),)
+        self._service = kwargs["config"].get("db_service")
         self._current_holdings = utils.get_staked_fbtc_status(
             self._service, list(self.staked_abi_dict.keys()), int(kwargs["config"].get("start_block"))
         )

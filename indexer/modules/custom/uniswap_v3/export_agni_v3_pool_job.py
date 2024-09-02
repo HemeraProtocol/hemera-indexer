@@ -41,7 +41,7 @@ class ExportAgniV3PoolJob(FilterTransactionDataJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self._service = (kwargs["config"].get("db_service"),)
+        self._service = kwargs["config"].get("db_service")
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("agni_config.ini", self._chain_id)
         self._abi_list = AGNI_ABI
