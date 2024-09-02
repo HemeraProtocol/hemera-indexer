@@ -1,3 +1,5 @@
+import time
+
 from sqlalchemy import text
 
 from indexer.aggr_jobs.aggr_base_job import AggrBaseJob
@@ -32,9 +34,16 @@ class AggrOrderJob(AggrBaseJob):
 
             for sql_name in job_list:
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
+
+                start_time = time.time()
                 print(f'----------- executing sql: {sql_name}, {start_date}')
+
                 session.execute(text(sql_content))
                 session.commit()
+
+                execution_time = time.time() - start_time
+                print(f'----------- SQL {sql_name} executed in {execution_time:.2f} seconds')
+
             # print(f'----finished order job {len(job_list)} {start_date}')
 
             # todo: improve the logic between sql and py jobs
