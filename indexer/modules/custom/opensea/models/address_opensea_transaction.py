@@ -5,7 +5,7 @@ from common.models import HemeraModel, general_converter
 
 
 class AddressOpenseaTransactions(HemeraModel):
-    __tablename__ = "address_opensea_transactions"
+    __tablename__ = "af_opensea__transactions"
 
     address = Column(BYTEA, primary_key=True)
     is_offer = Column(BOOLEAN, primary_key=True)

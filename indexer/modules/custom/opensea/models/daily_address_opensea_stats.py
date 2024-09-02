@@ -5,7 +5,7 @@ from common.models import HemeraModel
 
 
 class DailyAddressOpenseaTransactions(HemeraModel):
-    __tablename__ = "daily_address_opensea_transactions"
+    __tablename__ = "af_opensea_daily_transactions"
 
     address = Column(BYTEA, primary_key=True)
     related_address = Column(BYTEA)

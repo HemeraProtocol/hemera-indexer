@@ -5,7 +5,7 @@ from common.models import HemeraModel, general_converter
 
 
 class OpenseaOrders(HemeraModel):
-    __tablename__ = "opensea_orders"
+    __tablename__ = "af_opensea_na_orders"
 
     order_hash = Column(BYTEA)
     zone = Column(BYTEA)
