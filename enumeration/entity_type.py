@@ -218,6 +218,8 @@ def generate_output_types(entity_types):
         yield ERC1155TokenTransfer
         yield Token
         yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance
         yield MerchantMoeErc1155TokenHolding
         yield MerchantMoeErc1155TokenCurrentHolding
         yield MerchantMoeErc1155TokenSupply
