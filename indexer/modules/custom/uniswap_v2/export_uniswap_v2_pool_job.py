@@ -331,7 +331,7 @@ def get_exist_pools(db_service, factory_address):
     if not db_service:
         return {}
 
-    session = db_service[0].get_service_session()
+    session = db_service.get_service_session()
     try:
         result = (
             session.query(UniswapV2Pools)

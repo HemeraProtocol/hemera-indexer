@@ -196,7 +196,7 @@ def get_exist_pools(db_service, nft_address):
     if not db_service:
         return {}
 
-    session = db_service[0].get_service_session()
+    session = db_service.get_service_session()
     try:
         result = (
             session.query(UniswapV3Pools).filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:])).all()

@@ -12,7 +12,7 @@ def get_current_status_generic(db_service, contract_list, block_number, status_c
         return {}
     bytea_address_list = [bytes.fromhex(address[2:]) for address in contract_list]
 
-    session = db_service[0].get_service_session()
+    session = db_service.get_service_session()
     try:
         latest_blocks = (
             session.query(

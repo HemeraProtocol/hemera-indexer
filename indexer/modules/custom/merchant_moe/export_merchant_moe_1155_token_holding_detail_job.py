@@ -104,28 +104,23 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         if token_address not in self._exist_pool:
             requests = [{
                 "block_number": infos[0].block_number,
+                "address": token_address,
             }]
-            token0_infos = batch_get_pool_info(
-                self._web3,
-                self._batch_web3_provider.make_request,
-                requests,
-                token_address,
-                self._is_batch,
-                constants.ABI_LIST,
-                "getTokenX")
+
+            token0_infos = common_utils.simple_get_rpc_requests(
+                self._web3, self._batch_web3_provider.make_request, requests, self._is_batch, constants.ABI_LIST,
+                "getTokenX", "address", self._batch_size, self._max_worker
+            )
+
             if len(token0_infos) == 0 or "getTokenX" not in token0_infos[0] or token0_infos[0]["getTokenX"] is None:
                 return
-            token1_infos = batch_get_pool_info(
-                self._web3,
-                self._batch_web3_provider.make_request,
-                requests,
-                token_address,
-                self._is_batch,
-                constants.ABI_LIST,
-                "getTokenY")
+            token1_infos = common_utils.simple_get_rpc_requests(
+                self._web3, self._batch_web3_provider.make_request, requests, self._is_batch, constants.ABI_LIST,
+                "getTokenY", "address", self._batch_size, self._max_worker
+            )
             if len(token1_infos) == 0 or "getTokenY" not in token1_infos[0] or token1_infos[0]["getTokenY"] is None:
                 return
-            self._exist_pool.append(token_address)
+            self._exist_pool.add(token_address)
             self._collect_item(MerChantMoePool.type(),
                                MerChantMoePool(token_address=token_address, token0_address=token1_infos[0]["getTokenX"],
                                                token1_address=token1_infos[0]["getTokenY"],
@@ -362,42 +357,3 @@ def get_exist_pools(db_service):
     finally:
         session.close()
     return history_pools
-
-
-def batch_get_pool_info(web3, make_requests, requests, nft_address, is_batch, abi_list, fn_name):
-    if len(requests) == 0:
-        return []
-    function_abi = next(
-        (abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"),
-        None,
-    )
-    outputs = function_abi["outputs"]
-    output_types = [output["type"] for output in outputs]
-
-    parameters = common_utils.build_one_input_one_output_method_data(web3, requests, nft_address, fn_name, abi_list)
-
-    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-    if is_batch:
-        response = make_requests(params=json.dumps(token_name_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
-
-    token_infos = []
-    for data in list(zip_rpc_response(parameters, response)):
-        result = rpc_response_to_result(data[1])
-        token = data[0]
-        value = result[2:] if result is not None else None
-        try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-            token[fn_name] = decoded_data[0]
-
-        except Exception as e:
-            logger.error(
-                f"Decoding token info failed. "
-                f"token: {token}. "
-                f"fn: {fn_name}. "
-                f"rpc response: {result}. "
-                f"exception: {e}"
-            )
-        token_infos.append(token)
-    return token_infos

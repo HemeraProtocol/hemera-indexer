@@ -108,7 +108,7 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
         if not db_service:
             return {}
 
-        session = db_service[0].get_service_session()
+        session = db_service.get_service_session()
         try:
             result = session.query(FeatureBlueChipHolders).all()
             history_dict = {}

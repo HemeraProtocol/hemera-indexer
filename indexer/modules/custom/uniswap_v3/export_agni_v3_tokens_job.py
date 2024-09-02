@@ -295,7 +295,7 @@ def get_exist_token_ids(db_service, nft_address):
     if not db_service:
         return {}
 
-    session = db_service[0].get_service_session()
+    session = db_service.get_service_session()
     try:
         result = (
             session.query(UniswapV3Tokens.token_id, UniswapV3Tokens.pool_address)
