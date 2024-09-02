@@ -23,8 +23,11 @@ from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenCurrentSupply,
     MerchantMoeErc1155TokenHolding,
     MerchantMoeErc1155TokenSupply,
+
 )
-from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin
+from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin, \
+    MerChantMoePool
+from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -43,6 +46,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         MerchantMoeErc1155TokenCurrentSupply,
         MerChantMoeTokenBin,
         MerChantMoeTokenCurrentBin,
+        MerChantMoePool,
     ]
     able_to_reorg = True
 
@@ -56,11 +60,14 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("config.ini", self._chain_id)
+        self._exist_pool = get_exist_pools(self._service)
+        self._batch_size = kwargs["batch_size"]
+        self._max_worker = kwargs["max_workers"]
 
     def get_filter(self):
         return TransactionFilterByLogs(
             [
-                TopicSpecification(addresses=self._need_collected_list),
+                TopicSpecification(topics=self._need_collected_list),
             ]
         )
 
@@ -71,7 +78,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         config.read(full_path)
 
         try:
-            address_list_str = config.get(str(chain_id), "address_list", fallback="")
+            address_list_str = config.get(str(chain_id), "liquidity_list", fallback="")
             self._need_collected_list = [address.strip() for address in address_list_str.split(",") if address.strip()]
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
@@ -92,11 +99,42 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         if token_balances is None or len(token_balances) == 0:
             return
         token_address = next(iter(token_balances))
-        if token_address not in self._need_collected_list:
-            return
+        infos = token_balances[token_address]
+        # check the token_address is in merchant_moe
+        if token_address not in self._exist_pool:
+            requests = [{
+                "block_number": infos[0].block_number,
+            }]
+            token0_infos = batch_get_pool_info(
+                self._web3,
+                self._batch_web3_provider.make_request,
+                requests,
+                token_address,
+                self._is_batch,
+                constants.ABI_LIST,
+                "getTokenX")
+            if len(token0_infos) == 0 or "getTokenX" not in token0_infos[0] or token0_infos[0]["getTokenX"] is None:
+                return
+            token1_infos = batch_get_pool_info(
+                self._web3,
+                self._batch_web3_provider.make_request,
+                requests,
+                token_address,
+                self._is_batch,
+                constants.ABI_LIST,
+                "getTokenY")
+            if len(token1_infos) == 0 or "getTokenY" not in token1_infos[0] or token1_infos[0]["getTokenY"] is None:
+                return
+            self._exist_pool.append(token_address)
+            self._collect_item(MerChantMoePool.type(),
+                               MerChantMoePool(token_address=token_address, token0_address=token1_infos[0]["getTokenX"],
+                                               token1_address=token1_infos[0]["getTokenY"],
+                                               block_number=infos[0].block_number,
+                                               block_timestamp=infos[0].block_timestamp))
+
         need_call_list = []
         current_token_holding = {}
-        for token_balance in token_balances[token_address]:
+        for token_balance in infos:
             token_address = token_balance.token_address
             block_number = token_balance.block_number
             block_timestamp = token_balance.block_timestamp
@@ -266,6 +304,67 @@ def batch_get_bin(web3, make_requests, requests, nft_address, is_batch, abi_list
 
 def batch_get_total_supply(web3, make_requests, requests, nft_address, is_batch, abi_list):
     fn_name = "totalSupply"
+    if len(requests) == 0:
+        return []
+    function_abi = next(
+        (abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"),
+        None,
+    )
+    outputs = function_abi["outputs"]
+    output_types = [output["type"] for output in outputs]
+
+    parameters = common_utils.build_one_input_one_output_method_data(web3, requests, nft_address, fn_name, abi_list)
+
+    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
+    if is_batch:
+        response = make_requests(params=json.dumps(token_name_rpc))
+    else:
+        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+
+    token_infos = []
+    for data in list(zip_rpc_response(parameters, response)):
+        result = rpc_response_to_result(data[1])
+        token = data[0]
+        value = result[2:] if result is not None else None
+        try:
+            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+            token[fn_name] = decoded_data[0]
+
+        except Exception as e:
+            logger.error(
+                f"Decoding token info failed. "
+                f"token: {token}. "
+                f"fn: {fn_name}. "
+                f"rpc response: {result}. "
+                f"exception: {e}"
+            )
+        token_infos.append(token)
+    return token_infos
+
+
+def get_exist_pools(db_service):
+    if not db_service:
+        return []
+
+    session = db_service.get_service_session()
+    try:
+        result = (
+            session.query(FeatureMerChantMoePools)
+            .all()
+        )
+        history_pools = set()
+        if result is not None:
+            for item in result:
+                history_pools.add("0x" + item.token_address.hex())
+    except Exception as e:
+        print(e)
+        raise e
+    finally:
+        session.close()
+    return history_pools
+
+
+def batch_get_pool_info(web3, make_requests, requests, nft_address, is_batch, abi_list, fn_name):
     if len(requests) == 0:
         return []
     function_abi = next(
