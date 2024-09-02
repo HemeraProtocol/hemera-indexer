@@ -34,13 +34,13 @@ from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_token_curre
 class MerchantMoe1155(Resource):
     def get(self, wallet_address):
         pool_infos = {}
-        tokens = (
+        pool_tokens = (
             db.session.query(FeatureMerChantMoePools)
             .all()
         )
 
         tokens = set()
-        for data in tokens:
+        for data in pool_tokens:
             tokens.add(data.token0_address)
             tokens.add(data.token1_address)
             pool_infos["0x" + data.token_address.hex()] = {
