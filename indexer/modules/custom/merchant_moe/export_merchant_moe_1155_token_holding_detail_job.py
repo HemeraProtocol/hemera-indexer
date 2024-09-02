@@ -104,7 +104,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             return
         # check the token_address is in merchant_moe
         if token_address not in self._exist_pool:
-            if infos[0].token_id is None:
+            if infos[0].token_id is None or infos[0].token_id <= 0:
                 return
             requests = [{
                 "block_number": infos[0].block_number,
