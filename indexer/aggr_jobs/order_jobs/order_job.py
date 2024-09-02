@@ -18,6 +18,7 @@ class AggrOrderJob(AggrBaseJob):
     def __init__(self, **kwargs):
         config = kwargs["config"]
         self.db_service = config["db_service"]
+        self.chain_name = config["chain_name"]
 
     def run(self, **kwargs):
         start_date_limit = kwargs["start_date"]
@@ -28,7 +29,6 @@ class AggrOrderJob(AggrBaseJob):
         date_pairs = self.generate_date_pairs(start_date_limit, end_date_limit)
         for date_pair in date_pairs:
             start_date, end_date = date_pair
-            # continue
 
             for sql_name in job_list:
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
@@ -37,7 +37,8 @@ class AggrOrderJob(AggrBaseJob):
             print(f'----finished order job {len(job_list)} {start_date}')
 
             # todo: improve the logic between sql and py jobs
-            period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates(self.db_service,
+            period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates(self.chain_name,
+                                                                                                   self.db_service,
                                                                                                    start_date)
             period_feature_defi_wallet_fbtc_aggregates_job.run()
 
