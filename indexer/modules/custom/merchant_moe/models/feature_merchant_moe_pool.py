@@ -14,8 +14,8 @@ class FeatureMerChantMoePools(HemeraModel):
     token0_address = Column(BYTEA)
     token1_address = Column(BYTEA)
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (PrimaryKeyConstraint("token_address"),)
