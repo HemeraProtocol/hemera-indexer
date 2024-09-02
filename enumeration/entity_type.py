@@ -26,7 +26,7 @@ from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenHolding,
     MerchantMoeErc1155TokenSupply,
 )
-from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin
+from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin,MerChantMoePool
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
     StakedFBTCCurrentStatus,
     StakedFBTCDetail,
@@ -224,6 +224,7 @@ def generate_output_types(entity_types):
         yield MerchantMoeErc1155TokenCurrentSupply
         yield MerChantMoeTokenBin
         yield MerChantMoeTokenCurrentBin
+        yield MerChantMoePool
 
     if entity_types & EntityType.FBTC_ETH:
         yield ERC721TokenTransfer
@@ -298,6 +299,7 @@ def generate_output_types(entity_types):
         yield MerchantMoeErc1155TokenCurrentSupply
         yield MerChantMoeTokenBin
         yield MerChantMoeTokenCurrentBin
+        yield MerChantMoePool
         yield AgniV3Token
         yield AgniV3TokenDetail
         yield AgniV3TokenCurrentStatus
