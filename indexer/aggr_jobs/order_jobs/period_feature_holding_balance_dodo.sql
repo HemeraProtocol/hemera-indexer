@@ -37,11 +37,11 @@ WITH supply_cte AS (SELECT total_supply, 30373474 as base_fee, 14587260 as quote
 
                                      from period_address_token_balances d1
                                               inner join tokens d2 on d2.address = '\xc96de26018a54d51c097160568752c4e3bd6c364'
-                                              inner join tokens d3 on d3.address = '\x2260fac5e5542a773aa44fbcfedf7c193bc2c599'
+                                              inner join tokens d3 on d3.address = '\xCAbAE6f6Ea1ecaB08Ad02fE02ce9A44F09aebfA2'
                                      where period_date = '{start_date}'
                                        and d1.address = '\xD39DFbfBA9E7eccd813918FfbDa10B783EA3b3C6'
                                        and token_address in ('\xc96de26018a54d51c097160568752c4e3bd6c364',
-                                                             '\x2260fac5e5542a773aa44fbcfedf7c193bc2c599'))
+                                                             '\xCAbAE6f6Ea1ecaB08Ad02fE02ce9A44F09aebfA2'))
 insert
 into period_feature_holding_balance_dodo (period_date, protocol_id, contract_address, wallet_address, balance_of,
                                           total_supply, token0_address, token0_symbol, token0_balance,
