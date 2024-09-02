@@ -84,6 +84,7 @@ class EntityType(IntFlag):
     FBTC_20 = 1 << 14
     FBTC_BSC = 1 << 15
     FBTC_TRANSFER = 1 << 16
+    FBTC_V3_POOLS = 1 << 17
 
     @staticmethod
     def combine_all_entity_types():
@@ -326,4 +327,12 @@ def generate_output_types(entity_types):
         yield TransferredFBTCCurrentStatus
         yield StakedFBTCDetail
         yield StakedFBTCCurrentStatus
+
+    if entity_types & EntityType.FBTC_V3_POOLS:
+        yield AgniV3Pool
+        yield AgniV3PoolPrice
+        yield AgniV3PoolCurrentPrice
+        yield UniswapV3Pool
+        yield UniswapV3PoolPrice
+        yield UniswapV3PoolCurrentPrice
 
