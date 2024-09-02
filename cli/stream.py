@@ -256,6 +256,14 @@ def calculate_execution_time(func):
     envvar="CONFIG_FILE",
     help="The path to the configuration file, if provided, the configuration file will be used to load the configuration. Supported formats are json and yaml.",
 )
+@click.option(
+    "--force-filter-mode",
+    default=False,
+    show_default=True,
+    type=bool,
+    envvar="FORCE_FILTER_MODE",
+    help="Force the filter mode to be enabled, even if no filters job are provided.",
+)
 @calculate_execution_time
 def stream(
     provider_uri,
@@ -282,6 +290,7 @@ def stream(
     auto_reorg=True,
     multicall=True,
     config_file=None,
+    force_filter_mode=False,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -350,6 +359,7 @@ def stream(
         cache=cache,
         auto_reorg=auto_reorg,
         multicall=multicall,
+        force_filter_mode=force_filter_mode,
     )
 
     controller = StreamController(

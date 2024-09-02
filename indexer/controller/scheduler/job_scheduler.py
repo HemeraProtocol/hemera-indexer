@@ -59,6 +59,7 @@ class JobScheduler:
         cache="memory",
         multicall=None,
         auto_reorg=True,
+        force_filter_mode=False,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
@@ -80,6 +81,10 @@ class JobScheduler:
 
         self.discover_and_register_job_classes()
         self.required_job_classes, self.is_pipeline_filter = self.get_required_job_classes(required_output_types)
+
+        if force_filter_mode:
+            self.is_pipeline_filter = True
+
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
         token_dict_from_db = defaultdict()
         if self.pg_service is not None:
