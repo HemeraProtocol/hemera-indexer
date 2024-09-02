@@ -7,6 +7,7 @@ from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIEvent, ABIFunction
 
 from indexer.domain.transaction import Transaction
+from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 from indexer.utils.abi import event_log_abi_to_topic, function_abi_to_4byte_selector_str
 
 ETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
@@ -80,14 +81,15 @@ class DepositToken:
 
 def parse_deposit_transfer_function(
     transactions: List[Transaction], contract_set: set, chain_mapping: dict
-) -> List[DepositToken]:
+) -> List[TokenDepositTransaction]:
     deposit_tokens = []
     for transaction in transactions:
         if transaction.to_address in contract_set:
             input_sig = transaction.input[0:10]
             if input_sig == DEPOSIT_ETH_FUNCTION_SIG or input_sig == BRIDGE_ETH_TO_FUNCTION_SIG:
                 deposit_tokens.append(
-                    DepositToken(
+                    TokenDepositTransaction(
+                        transaction_hash=transaction.hash,
                         wallet_address=transaction.from_address,
                         chain=chain_mapping[transaction.to_address],
                         contract_address=transaction.to_address,
@@ -99,7 +101,8 @@ def parse_deposit_transfer_function(
             elif input_sig == DEPOSIT_ERC20_TO_FUNCTION_SIG:
                 decoded_input = decode_transaction_data(DEPOSIT_TRANSACTION_FUNCTION, HexStr(transaction.input))
                 deposit_tokens.append(
-                    DepositToken(
+                    TokenDepositTransaction(
+                        transaction_hash=transaction.hash,
                         wallet_address=transaction.from_address,
                         chain=chain_mapping[transaction.to_address],
                         contract_address=transaction.to_address,

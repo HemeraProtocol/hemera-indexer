@@ -7,12 +7,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, TIMESTAMP
 from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 from indexer.domain import Domain
 
-model_path_patterns = [
-    "common/models",
-    "indexer/modules/*/models",
-    "indexer/modules/custom/*/models",
-    "api/app/token"
-]
+model_path_patterns = ["common/models", "indexer/modules/*/models", "indexer/modules/custom/*/models", "api/app/token"]
 
 model_path_exclude = ["indexer/modules/custom/address_index/models"]
 

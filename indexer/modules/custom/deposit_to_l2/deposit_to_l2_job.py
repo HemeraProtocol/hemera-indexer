@@ -10,15 +10,16 @@ from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.deposit_to_l2.deposit_parser import DepositToken, parse_deposit_transfer_function
+from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transfer_function
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
-from indexer.modules.custom.deposit_to_l2.models.address_token_deposits import AddressTokenDeposits
+from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
+from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
 from indexer.specification.specification import ToAddressSpecification, TransactionFilterByTransactionInfo
 
 
 class DepositToL2Job(FilterTransactionDataJob):
     dependency_types = [Block]
-    output_types = [AddressTokenDeposit]
+    output_types = [TokenDepositTransaction, AddressTokenDeposit]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -26,9 +27,11 @@ class DepositToL2Job(FilterTransactionDataJob):
         self._service = kwargs["config"].get("db_service", None)
         self._load_config("config.ini")
         self._contracts = set(
-            [to_normalized_address(contract)
-             for chain in self._deposit_contracts.keys()
-             for contract in self._deposit_contracts[chain]]
+            [
+                to_normalized_address(contract)
+                for chain in self._deposit_contracts.keys()
+                for contract in self._deposit_contracts[chain]
+            ]
         )
         self._contract_chain_mapping = {
             to_normalized_address(contract): chain
@@ -67,12 +70,14 @@ class DepositToL2Job(FilterTransactionDataJob):
         return self._filter
 
     def _process(self, **kwargs):
-        blocks = list(filter(self._filter.get_or_specification().is_satisfied_by,
-                             self._data_buff[Block.type()]))
-        transactions = [transaction
-                        for block in blocks
-                        for transaction in block.transactions]
+        transactions = list(
+            filter(
+                self._filter.get_or_specification().is_satisfied_by,
+                [transaction for block in self._data_buff[Block.type()] for transaction in block.transactions],
+            )
+        )
         deposit_tokens = parse_deposit_transfer_function(transactions, self._contracts, self._contract_chain_mapping)
+        self._collect_items(TokenDepositTransaction.type(), deposit_tokens)
 
         for deposit in pre_aggregate_deposit_in_same_block(deposit_tokens):
             cache_key = (deposit.wallet_address, deposit.chain, deposit.token_address)
@@ -110,15 +115,15 @@ class DepositToL2Job(FilterTransactionDataJob):
         session = self._service.get_service_session()
         try:
             history_deposit = (
-                session.query(AddressTokenDeposits)
+                session.query(AFTokenDepositsCurrent)
                 .filter(
                     and_(
-                        AddressTokenDeposits.wallet_address == bytes.fromhex(wallet_address[2:]),
-                        AddressTokenDeposits.chain == chain,
-                        AddressTokenDeposits.token_address == bytes.fromhex(token_address[2:]),
+                        AFTokenDepositsCurrent.wallet_address == bytes.fromhex(wallet_address[2:]),
+                        AFTokenDepositsCurrent.chain == chain,
+                        AFTokenDepositsCurrent.token_address == bytes.fromhex(token_address[2:]),
                     )
                 )
-                .all()
+                .first()
             )
         finally:
             session.close()
@@ -138,7 +143,7 @@ class DepositToL2Job(FilterTransactionDataJob):
         return deposit
 
 
-def pre_aggregate_deposit_in_same_block(deposit_events: List[DepositToken]) -> List[DepositToken]:
+def pre_aggregate_deposit_in_same_block(deposit_events: List[TokenDepositTransaction]) -> List[TokenDepositTransaction]:
     aggregated_deposit_events = {}
     for event in deposit_events:
         key = (event.wallet_address, event.chain, event.token_address, event.block_number)

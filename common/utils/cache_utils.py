@@ -68,7 +68,7 @@ class BlockToLiveDict:
         self._cleanup_thread.start()
 
     def set(self, key: Any, value: Any):
-        if not hasattr(value, 'block_number'):
+        if not hasattr(value, "block_number"):
             raise AttributeError(f"'{key}' object has no attribute 'block_number'")
 
         with self._lock:
@@ -125,6 +125,6 @@ class BlockToLiveDict:
         return self._current_block
 
     def __del__(self):
-        if hasattr(self, '_cleanup_thread'):
+        if hasattr(self, "_cleanup_thread"):
             self._cleanup_queue.put(None)  # 发送退出信号
             self._cleanup_thread.join(timeout=1)
