@@ -50,11 +50,11 @@ WITH supply_cte AS (SELECT total_supply, 30373474 as base_fee, 14587260 as quote
                                             d3.decimals                  as quote_token_decimals,
 
                                             d1.token0_balance - 30373474 as base_balance,
-                                            d1.token0_balance - 14587260 as quote_balance
+                                            d1.token1_balance - 14587260 as quote_balance
 
                                      from address_balance d1
                                               inner join tokens d2 on d1.token0_address = d2.address
-                                              inner join tokens d3 on d1.token0_address = d3.address)
+                                              inner join tokens d3 on d1.token1_address = d3.address)
 
 insert
 into period_feature_holding_balance_dodo (period_date, protocol_id, contract_address, wallet_address, balance_of,
