@@ -32,9 +32,10 @@ class AggrOrderJob(AggrBaseJob):
 
             for sql_name in job_list:
                 sql_content = self.get_sql_content(sql_name, start_date, end_date)
+                print(f'----------- executing sql: {sql_name}, {start_date}')
                 session.execute(text(sql_content))
                 session.commit()
-            print(f'----finished order job {len(job_list)} {start_date}')
+            # print(f'----finished order job {len(job_list)} {start_date}')
 
             # todo: improve the logic between sql and py jobs
             period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates(self.chain_name,
