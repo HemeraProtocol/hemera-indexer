@@ -21,6 +21,7 @@ from common.utils.format_utils import as_dict, format_to_dict, format_value_for_
 from indexer.modules.custom.merchant_moe.models.feature_erc1155_token_current_holdings import (
     FeatureErc1155TokenCurrentHoldings,
 )
+from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.modules.custom.merchant_moe.models.feature_erc1155_token_current_supply import (
     FeatureErc1155TokenCurrentSupplyStatus,
 )
@@ -28,21 +29,24 @@ from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_token_curre
     FeatureMerChantMoeTokenBinCurrentStatus,
 )
 
-TOKEN_ASSET_DICT = {
-    "0x3880233e78966eb13a9c2881d5f162d646633178": {
-        "getTokenX": "0xc96de26018a54d51c097160568752c4e3bd6c364",
-        "getTokenY": "0xcda86a272531e8640cd7f1a92c01839911b90bb0",
-    }
-}
-
 
 @custom_namespace.route("/v1/merchant_moe_1155/<wallet_address>")
 class MerchantMoe1155(Resource):
     def get(self, wallet_address):
+        pool_infos = {}
+        tokens = (
+            db.session.query(FeatureMerChantMoePools)
+            .all()
+        )
+
         tokens = set()
-        for data in TOKEN_ASSET_DICT.values():
-            for token in data.values():
-                tokens.add(bytes.fromhex(token[2:]))
+        for data in tokens:
+            tokens.add(data.token0_address)
+            tokens.add(data.token1_address)
+            pool_infos["0x" + data.token_address.hex()] = {
+                "getTokenX": "0x" + data.token0_address.hex(),
+                "getTokenY": "0x" + data.token1_address.hex()
+            }
         wallet_address = wallet_address.lower()
         address_bytes = bytes.fromhex(wallet_address[2:])
         holdings = (
@@ -87,7 +91,7 @@ class MerchantMoe1155(Resource):
         token_total_amount = {}
         for holding in holdings:
             nft_address = "0x" + holding.token_address.hex()
-            token_info = TOKEN_ASSET_DICT[nft_address]
+            token_info = pool_infos[nft_address]
             token0_address = token_info["getTokenX"]
             token1_address = token_info["getTokenY"]
             token_id = holding.token_id
@@ -102,8 +106,8 @@ class MerchantMoe1155(Resource):
             token0_info = erc20_infos[token0_address]
             token1_info = erc20_infos[token1_address]
 
-            amount0_human = token0_balance / 10**token0_info.decimals
-            amount1_human = token1_balance / 10**token1_info.decimals
+            amount0_human = token0_balance / 10 ** token0_info.decimals
+            amount1_human = token1_balance / 10 ** token1_info.decimals
             if token0_address not in token_total_amount:
                 token_total_amount[token0_address] = amount0_human
             else:
