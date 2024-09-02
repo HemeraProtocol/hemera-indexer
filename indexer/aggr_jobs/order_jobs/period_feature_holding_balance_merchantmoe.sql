@@ -53,16 +53,20 @@ into period_feature_holding_balance_merchantmoe(period_date, protocol_id, contra
                                                 token1_address, token1_symbol, token1_balance)
 
 select date('{start_date}'),
-       'merchantmoe'                                                      as protocol_id,
-       token_address                                                      as nft_addres,
+       'merchantmoe'  as protocol_id,
+       token_address  as nft_addres,
        token_id,
        wallet_address,
        token0_address,
        token0_symbol,
-       (balance / total_supply) * reserve0_bin / pow(10, token0_decimals) as token0_balance,
+       case
+           when total_supply > 0 then (balance / total_supply) * reserve0_bin / pow(10, token0_decimals)
+           else 0 end as token0_balance,
        token1_address,
        token1_symbol,
-       (balance / total_supply) * reserve1_bin / pow(10, token1_decimals) as token1_amount
+       case
+           when total_supply > 0 then (balance / total_supply) * reserve1_bin / pow(10, token1_decimals)
+           else 0 end as token1_balance
 from detail_table
 where token0_symbol = 'FBTC'
    or token1_symbol = 'FBTC'
