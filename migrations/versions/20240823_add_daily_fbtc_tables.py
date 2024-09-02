@@ -26,10 +26,10 @@ def upgrade() -> None:
         sa.Column("address", postgresql.BYTEA(), nullable=False),
         sa.Column("block_date", sa.DATE(), nullable=False),
         sa.Column("token_address", postgresql.BYTEA(), nullable=False),
-        sa.Column("token_id", sa.NUMERIC(precision=100), nullable=True),
+        sa.Column("token_id", sa.NUMERIC(precision=78), nullable=True),
         sa.Column("token_type", sa.VARCHAR(), nullable=True),
         sa.Column("balance", sa.NUMERIC(precision=100), nullable=True),
-        sa.PrimaryKeyConstraint("address", "block_date", "token_address"),
+        sa.PrimaryKeyConstraint("block_date", "address", "token_address", "token_id"),
     )
     op.create_table(
         "daily_feature_uniswap_v3_pool_prices",
@@ -65,10 +65,10 @@ def upgrade() -> None:
         sa.Column("address", postgresql.BYTEA(), nullable=False),
         sa.Column("block_date", sa.DATE(), nullable=False),
         sa.Column("token_address", postgresql.BYTEA(), nullable=False),
-        sa.Column("token_id", sa.NUMERIC(precision=100), nullable=True),
+        sa.Column("token_id", sa.NUMERIC(precision=78), nullable=True),
         sa.Column("token_type", sa.VARCHAR(), nullable=True),
         sa.Column("balance", sa.NUMERIC(precision=100), nullable=True),
-        sa.PrimaryKeyConstraint("address", "block_date", "token_address"),
+        sa.PrimaryKeyConstraint("block_date", "address", "token_address", "token_id"),
     )
     op.create_table(
         "period_feature_defi_wallet_fbtc_detail",
