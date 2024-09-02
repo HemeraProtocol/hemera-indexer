@@ -243,15 +243,6 @@ def upgrade() -> None:
     sa.Column('create_time', postgresql.TIMESTAMP(), server_default=sa.text('now()'), nullable=True),
     sa.PrimaryKeyConstraint('period_date', 'token_address', 'token_id')
     )
-    op.drop_table('token_address_nft_inventories')
-    op.drop_index('period_feature_uniswap_v3_wallet_address_amount_period_date', table_name='period_feature_uniswap_v3_wallet_address_amount')
-    op.drop_table('period_feature_uniswap_v3_wallet_address_amount')
-    op.drop_table('address_token_transfers')
-    op.drop_index('daily_feature_staked_fbtc_detail_records_wallet_block_date', table_name='daily_feature_staked_fbtc_detail_records')
-    op.drop_table('daily_feature_staked_fbtc_detail_records')
-    op.drop_table('address_nft_transfers')
-    op.drop_table('address_token_holders')
-    op.drop_table('address_transactions')
     op.add_column('daily_address_token_balances', sa.Column('create_time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True))
     op.add_column('daily_feature_uniswap_v3_pool_prices', sa.Column('create_time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True))
     op.add_column('daily_feature_uniswap_v3_token_details', sa.Column('create_time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True))
@@ -339,46 +330,7 @@ def downgrade() -> None:
     op.drop_column('daily_feature_uniswap_v3_token_details', 'create_time')
     op.drop_column('daily_feature_uniswap_v3_pool_prices', 'create_time')
     op.drop_column('daily_address_token_balances', 'create_time')
-    op.create_table('address_transactions',
-    sa.Column('address', postgresql.BYTEA(), autoincrement=False, nullable=False),
-    sa.Column('block_number', sa.INTEGER(), autoincrement=False, nullable=False),
-    sa.Column('transaction_index', sa.INTEGER(), autoincrement=False, nullable=False),
-    sa.Column('transaction_hash', postgresql.BYTEA(), autoincrement=False, nullable=True),
-    sa.Column('block_timestamp', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
-    sa.Column('block_hash', postgresql.BYTEA(), autoincrement=False, nullable=True),
-    sa.Column('txn_type', sa.SMALLINT(), autoincrement=False, nullable=True),
-    sa.Column('the_other_address', postgresql.BYTEA(), autoincrement=False, nullable=True),
-    sa.Column('value', sa.NUMERIC(precision=100, scale=0), autoincrement=False, nullable=True),
-    sa.Column('transaction_fee', sa.NUMERIC(precision=100, scale=0), autoincrement=False, nullable=True),
-    sa.Column('receipt_status', sa.INTEGER(), autoincrement=False, nullable=True),
-    sa.Column('method', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('create_time', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-    sa.Column('update_time', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-    sa.PrimaryKeyConstraint('address', 'block_timestamp', 'block_number', 'transaction_index', name='address_transactions_pkey')
-    )
-    op.create_table('address_token_holders',
-    sa.Column('address', postgresql.BYTEA(), autoincrement=False, nullable=False),
-    sa.Column('token_address', postgresql.BYTEA(), autoincrement=False, nullable=False),
-    sa.Column('balance_of', sa.NUMERIC(precision=100, scale=0), autoincrement=False, nullable=True),
-    sa.Column('create_time', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-    sa.Column('update_time', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-    sa.PrimaryKeyConstraint('address', 'token_address', name='address_token_holders_pkey')
-    )
-    op.create_table('address_nft_transfers',
-    sa.Column('address', postgresql.BYTEA(), autoincrement=False, nullable=False),
-    sa.Column('block_number', sa.INTEGER(), autoincrement=False, nullable=False),
-    sa.Column('log_index', sa.INTEGER(), autoincrement=False, nullable=False),
-    sa.Column('transaction_hash', postgresql.BYTEA(), autoincrement=False, nullable=True),
-    sa.Column('block_timestamp', postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
-    sa.Column('block_hash', postgresql.BYTEA(), autoincrement=False, nullable=True),
-    sa.Column('token_address', sa.TEXT(), autoincrement=False, nullable=True),
-    sa.Column('the_other_address', postgresql.BYTEA(), autoincrement=False, nullable=True),
-    sa.Column('transfer_type', sa.SMALLINT(), autoincrement=False, nullable=True),
-    sa.Column('token_id', sa.NUMERIC(precision=100, scale=0), autoincrement=False, nullable=True),
-    sa.Column('create_time', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-    sa.Column('update_time', postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-    sa.PrimaryKeyConstraint('address', 'block_timestamp', 'block_number', 'log_index', name='address_nft_transfers_pkey')
-    )
+
     op.create_table('daily_feature_staked_fbtc_detail_records',
     sa.Column('contract_address', postgresql.BYTEA(), autoincrement=False, nullable=False),
     sa.Column('wallet_address', postgresql.BYTEA(), autoincrement=False, nullable=False),
