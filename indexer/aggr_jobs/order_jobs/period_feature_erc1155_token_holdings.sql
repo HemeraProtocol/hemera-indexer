@@ -10,7 +10,7 @@ select date('{start_date}'),
        token_id,
        balance
 from (select *,
-             row_number() over (partition by wallet_address order by block_timestamp desc) as rn
+             row_number() over (partition by wallet_address,token_id order by block_timestamp desc) as rn
       from feature_erc1155_token_holdings
       WHERE to_timestamp(block_timestamp) < '{end_date}') t
 where rn = 1;
