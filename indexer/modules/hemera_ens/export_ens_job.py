@@ -61,10 +61,9 @@ class ExportEnsJob(FilterTransactionDataJob):
     def get_filter(self):
 
         extractors = [extractor() for extractor in BaseExtractor.__subclasses__()]
-        tp_variables = [getattr(extractor, attr)
-                        for extractor in extractors
-                        for attr in dir(extractor)
-                        if attr.startswith('tp')]
+        tp_variables = [
+            getattr(extractor, attr) for extractor in extractors for attr in dir(extractor) if attr.startswith("tp")
+        ]
 
         addresses = list(CONTRACT_NAME_MAP.keys())
 
