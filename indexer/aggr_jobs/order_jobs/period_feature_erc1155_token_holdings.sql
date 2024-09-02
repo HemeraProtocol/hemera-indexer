@@ -1,4 +1,3 @@
-begin;
 delete
 from period_feature_erc1155_token_holdings
 WHERE period_date = '{start_date}';
@@ -15,4 +14,3 @@ from (select *,
       WHERE to_timestamp(block_timestamp) < '{end_date}') t
 where rn = 1;
 
-commit
