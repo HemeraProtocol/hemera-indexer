@@ -1,7 +1,7 @@
 -- todo change to combine
 delete
 from period_address_token_balances
-WHERE period_date < '{end_date}';
+WHERE period_date = '{start_date}';
 
 insert into public.period_address_token_balances (address, period_date, token_address, token_id, token_type, balance)
 select address,
