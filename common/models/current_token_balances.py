@@ -1,9 +1,8 @@
-from datetime import datetime
-
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
-from common.models import HemeraModel, general_converter
+from common.models import HemeraModel
+from common.models.token_balances import token_balances_general_converter
 
 
 class CurrentTokenBalances(HemeraModel):
@@ -31,7 +30,7 @@ class CurrentTokenBalances(HemeraModel):
                 "domain": "CurrentTokenBalance",
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > address_current_token_balances.block_number",
-                "converter": general_converter,
+                "converter": token_balances_general_converter,
             }
         ]
 
