@@ -26,8 +26,8 @@ def upgrade() -> None:
     sa.Column('block_number', sa.BIGINT(), nullable=False),
     sa.Column('token0_address', postgresql.BYTEA(), nullable=True),
     sa.Column('token1_address', postgresql.BYTEA(), nullable=True),
-    sa.Column('create_time', postgresql.TIMESTAMP(), nullable=True),
-    sa.Column('update_time', postgresql.TIMESTAMP(), nullable=True),
+    sa.Column('create_time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True),
+    sa.Column('update_time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True),
     sa.Column('reorg', sa.BOOLEAN(), nullable=True),
     sa.PrimaryKeyConstraint('token_address')
     )
