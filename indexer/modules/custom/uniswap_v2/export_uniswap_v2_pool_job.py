@@ -60,7 +60,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self._service = (kwargs["config"].get("db_service"),)
+        self._service = kwargs["config"].get("db_service")
         self._load_config("config.ini")
         self._abi_list = UNISWAP_V2_ABI
         self._exist_pools = get_exist_pools(self._service, self._factory_address)

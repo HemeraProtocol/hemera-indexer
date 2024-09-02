@@ -32,7 +32,7 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self._service = (kwargs.get("config", {}).get("db_service"),) if kwargs.get("config") is not None else None
+        self._service = kwargs.get("config", {}).get("db_service") if kwargs.get("config") is not None else None
         self._blue_chip_projects = constants.BLUE_CHIP_PROJECTS
         self._current_holders = self.get_current_holders(self._service)
         self._updates_this_batch = {}
