@@ -125,9 +125,12 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                             "token_balance_usd": token_usd1,
                         }
                     ],
-                    "token_id": int(entity.token_id),
                     "contract_address": format_value_for_json(entity.contract_address),
                 }
+
+                if hasattr(entity, 'token_id'):
+                    j["token_id"] = int(entity.token_id)
+
                 token_json.append(j)
                 if entity.token0_symbol == 'FBTC':
                     protocol_balance += float(entity.token0_balance)
