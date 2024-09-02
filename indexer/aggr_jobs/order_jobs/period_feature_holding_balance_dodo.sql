@@ -70,7 +70,7 @@ select d1.period_date,
        d2.base_token_symbol,
        rate * base_balance / pow(10, base_token_decimals)   as   base_token_balance,
        d2.quote_token_address,
-       d2.quote_token_decimals,
+       d2.quote_token_symbol,
        rate * quote_balance / pow(10, quote_token_decimals) as quote_token_balance
 
 from gcb_balance d1
