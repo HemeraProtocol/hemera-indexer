@@ -24,11 +24,8 @@ with detail_table as (select d1.wallet_address,
                              d2.total_supply,
                              d3.reserve0_bin,
                              d3.reserve1_bin,
---
 --                              concat('0x', encode(d4.address, 'hex')) as token0_address,
 --                              concat('0x', encode(d5.address, 'hex')) as token1_address,
-
-
                              d4.address  as token0_address,
                              d5.address  as token1_address,
 
@@ -36,14 +33,16 @@ with detail_table as (select d1.wallet_address,
                              d4.decimals as token0_decimals,
                              d5.symbol   as token1_symbol,
                              d5.decimals as token1_decimals
-                      from period_feature_erc1155_token_holdings d1
+                      from feature_merchant_moe_pools d0
+                               inner join
+                           period_feature_erc1155_token_holdings d1 on d0.token_address = d1.token_address
                                inner join
                            period_feature_erc1155_token_supply_records d2
                            on d1.token_address = d2.token_address and d1.token_id = d2.token_id
                                inner join period_feature_merchant_moe_token_bin_records d3
                                           on d1.token_address = d3.token_address and d1.token_id = d3.token_id
-                               inner join tokens d4 on d4.address = '\xc96de26018a54d51c097160568752c4e3bd6c364'
-                               inner join tokens d5 on d5.address = '\xcda86a272531e8640cd7f1a92c01839911b90bb0'
+                               inner join tokens d4 on d0.token0_address = d4.address
+                               inner join tokens d5 on d0.token1_address = d5.address
                       where d1.period_date = '{start_date}'
                         and d2.period_date = '{start_date}'
                         and d3.period_date = '{start_date}')
@@ -56,7 +55,7 @@ into period_feature_holding_balance_merchantmoe(period_date, protocol_id, contra
 
 select date('{start_date}'),
        'merchantmoe'                                                      as protocol_id,
-       '0x3880233e78966eb13a9c2881d5f162d646633178'                       as nft_addres,
+       token_address                                                      as nft_addres,
        token_id,
        wallet_address,
        token0_address,
@@ -65,6 +64,9 @@ select date('{start_date}'),
        token1_address,
        token1_symbol,
        (balance / total_supply) * reserve1_bin / pow(10, token1_decimals) as token1_amount
-from detail_table;
+from detail_table
+where token0_symbol = 'FBTC'
+   or token1_symbol = 'FBTC'
+;
 
 commit
