@@ -1,4 +1,3 @@
-begin;
 delete
 from period_feature_merchant_moe_token_bin_records
 where period_date >= '{start_date}'
@@ -69,4 +68,4 @@ where token0_symbol = 'FBTC'
    or token1_symbol = 'FBTC'
 ;
 
-commit
+

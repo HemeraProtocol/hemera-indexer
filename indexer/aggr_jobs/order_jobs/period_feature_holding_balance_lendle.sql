@@ -1,4 +1,3 @@
-begin;
 delete
 from period_feature_holding_balance_lendle
 where period_date >= '{start_date}'
@@ -41,4 +40,3 @@ where d1.period_date = '{start_date}'
                         '\x08fc23af290d538647aa2836c5b3cf2fb3313759'
     );
 
-commit

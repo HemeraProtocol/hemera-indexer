@@ -1,4 +1,3 @@
-begin;
 delete
 from period_feature_holding_balance_dodo
 where period_date >= '{start_date}'
@@ -68,4 +67,4 @@ from gcb_balance d1
      fbtc_and_wbtc_balance_table d2 on d1.address = d2.address
 ;
 
-commit
+

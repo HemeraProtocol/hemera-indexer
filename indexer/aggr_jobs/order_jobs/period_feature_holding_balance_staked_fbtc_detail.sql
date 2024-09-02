@@ -1,4 +1,4 @@
-begin;
+
 delete
 from period_feature_holding_balance_staked_fbtc_detail
 where period_date >= '{start_date}'
@@ -27,5 +27,3 @@ from today_table s1
      on s1.contract_address = s2.contract_address and s1.wallet_address = s2.wallet_address
          and s1.protocol_id = s2.protocol_id
 ;
-
-commit

@@ -1,5 +1,4 @@
 -- todo change to combine
-begin;
 delete
 from period_address_token_balances
 WHERE period_date < '{end_date}';
@@ -17,4 +16,3 @@ from (select *,
       WHERE block_date < '{end_date}') t
 where rn = 1;
 
-commit
