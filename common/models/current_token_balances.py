@@ -10,7 +10,7 @@ class CurrentTokenBalances(HemeraModel):
     __tablename__ = "address_current_token_balances"
 
     address = Column(BYTEA, primary_key=True)
-    token_id = Column(NUMERIC(100), default=-1)
+    token_id = Column(NUMERIC(78), primary_key=True)
     token_type = Column(VARCHAR)
     token_address = Column(BYTEA, primary_key=True)
     balance = Column(NUMERIC(100))
@@ -22,7 +22,7 @@ class CurrentTokenBalances(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (PrimaryKeyConstraint("address", "token_address"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "token_address", "token_id"),)
 
     @staticmethod
     def model_domain_mapping():
