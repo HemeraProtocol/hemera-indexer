@@ -14,8 +14,8 @@ class FeatureErc20TotalSupplyRecords(HemeraModel):
     block_timestamp = Column(BIGINT, primary_key=True)
     total_supply = Column(NUMERIC(100))
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (PrimaryKeyConstraint("token_address", "block_timestamp", "block_number"),)

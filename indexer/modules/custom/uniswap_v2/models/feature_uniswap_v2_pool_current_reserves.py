@@ -17,8 +17,8 @@ class FeatureUniswapV2PoolCurrentReserves(HemeraModel):
     reserve1 = Column(NUMERIC(100))
     block_timestamp_last = Column(NUMERIC(100))
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
     __table_args__ = (PrimaryKeyConstraint("pool_address"),)
 

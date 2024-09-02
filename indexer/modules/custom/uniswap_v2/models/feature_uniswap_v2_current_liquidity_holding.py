@@ -16,8 +16,8 @@ class FeatureUniswapV2CurrentLiquidityHoldings(HemeraModel):
 
     balance = Column(NUMERIC(100))
 
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
 
     __table_args__ = (PrimaryKeyConstraint("wallet_address", "pool_address"),)
 

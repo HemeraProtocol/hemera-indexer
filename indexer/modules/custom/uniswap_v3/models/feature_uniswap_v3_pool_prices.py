@@ -15,8 +15,8 @@ class UniswapV3PoolPrices(HemeraModel):
     sqrt_price_x96 = Column(NUMERIC(100))
     tick = Column(NUMERIC(100))
     factory_address = Column(BYTEA)
-    create_time = Column(TIMESTAMP, default=datetime.utcnow)
-    update_time = Column(TIMESTAMP, onupdate=func.now())
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (PrimaryKeyConstraint("pool_address", "block_timestamp", "block_number"),)
