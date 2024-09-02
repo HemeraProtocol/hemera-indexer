@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
+from sqlalchemy.sql import text
 
 from common.models import HemeraModel, general_converter
 
@@ -8,7 +9,7 @@ class AddressTokenBalances(HemeraModel):
     __tablename__ = "address_token_balances"
 
     address = Column(BYTEA, primary_key=True)
-    token_id = Column(NUMERIC(100))
+    token_id = Column(NUMERIC(78), primary_key=True)
     token_type = Column(VARCHAR)
     token_address = Column(BYTEA, primary_key=True)
     balance = Column(NUMERIC(100))
@@ -20,7 +21,7 @@ class AddressTokenBalances(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (PrimaryKeyConstraint("address", "token_address", "block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "token_address", "token_id", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():

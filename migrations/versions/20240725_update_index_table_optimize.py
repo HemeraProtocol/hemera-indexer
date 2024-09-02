@@ -24,7 +24,7 @@ def upgrade() -> None:
     op.create_table(
         "address_current_token_balances",
         sa.Column("address", postgresql.BYTEA(), nullable=False),
-        sa.Column("token_id", sa.NUMERIC(precision=100), nullable=True),
+        sa.Column("token_id", sa.NUMERIC(precision=78), nullable=True),
         sa.Column("token_type", sa.VARCHAR(), nullable=True),
         sa.Column("token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("balance", sa.NUMERIC(precision=100), nullable=True),
@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
-        sa.PrimaryKeyConstraint("address", "token_address"),
+        sa.PrimaryKeyConstraint("address", "token_address", "token_id"),
     )
     op.create_index(
         "current_token_balances_token_address_balance_of_index",
