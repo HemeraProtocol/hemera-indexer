@@ -16,6 +16,20 @@ ABI_LIST = [
         "stateMutability": "view",
         "type": "function",
     },
+    {
+        "inputs": [],
+        "name": "getTokenX",
+        "outputs": [{"internalType": "address", "name": "tokenX", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "getTokenY",
+        "outputs": [{"internalType": "address", "name": "tokenY", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
 ]
 
 TOKEN_ASSET_DICT = {
