@@ -44,7 +44,7 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
-        sa.PrimaryKeyConstraint("address", "token_address", "block_number"),
+        sa.PrimaryKeyConstraint("address", "token_address", "token_id", "block_number"),
     )
     op.create_table(
         "block_ts_mapper",
