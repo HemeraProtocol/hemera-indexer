@@ -28,7 +28,6 @@ from indexer.modules.hemera_ens.ens_domain import (
     ENSMiddleD,
     ENSNameRenewD,
     ENSRegisterD,
-    ENSRegisterTokenD,
 )
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
@@ -144,7 +143,6 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.ENS:
         yield ENSMiddleD
         yield ENSRegisterD
-        yield ENSRegisterTokenD
         yield ENSNameRenewD
         yield ENSAddressChangeD
         yield ENSAddressD

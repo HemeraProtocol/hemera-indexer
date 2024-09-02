@@ -73,7 +73,7 @@ class BaseExtractor(object):
 
 class RegisterExtractor(BaseExtractor):
 
-    register_tp0 = "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f"
+    tp0_register = "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f"
 
     def __init__(self):
         self.address = "0x283af0b28c62c092c9727f1ee09c02ca627eb7f5"
@@ -85,7 +85,7 @@ class RegisterExtractor(BaseExtractor):
         self.tpb = "0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9"
 
     def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
-        if (tp0 == RegisterExtractor.register_tp0) or (tp0 == self.tp0a):
+        if (tp0 == RegisterExtractor.tp0_register) or (tp0 == self.tp0a):
             event_data = decode_log(log, contract_object_map, event_map)
             tmp = event_data["args"]
             ens_middle.expires = convert_str_ts(tmp.get("expires", ""))

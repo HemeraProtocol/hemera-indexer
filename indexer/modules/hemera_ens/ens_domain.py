@@ -58,12 +58,6 @@ class ENSRegisterD(Domain):
 
 
 @dataclass
-class ENSRegisterTokenD(Domain):
-    node: Optional[str] = None
-    token_id: Optional[str] = None
-
-
-@dataclass
 class ENSNameRenewD(Domain):
 
     node: Optional[str] = None

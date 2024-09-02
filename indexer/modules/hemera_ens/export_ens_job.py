@@ -21,8 +21,8 @@ from indexer.modules.hemera_ens.ens_domain import (
     ENSMiddleD,
     ENSNameRenewD,
     ENSRegisterD,
-    ENSRegisterTokenD,
 )
+from indexer.modules.hemera_ens.extractors import BaseExtractor
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 # Exports hemera_ens related info
 class ExportEnsJob(FilterTransactionDataJob):
     dependency_types = [Transaction, Log]
-    output_types = [ENSMiddleD, ENSRegisterD, ENSRegisterTokenD, ENSNameRenewD, ENSAddressChangeD, ENSAddressD]
+    output_types = [ENSMiddleD, ENSRegisterD, ENSNameRenewD, ENSAddressChangeD, ENSAddressD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -53,15 +53,22 @@ class ExportEnsJob(FilterTransactionDataJob):
 
         self._is_batch = kwargs["batch_size"] > 1
         self._filters = kwargs.get("filters", [])
-        self.ens_handler = EnsHandler(EnsConfLoader())
+        self.ens_handler = EnsHandler(EnsConfLoader(self._web3.provider.endpoint_uri))
 
         self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
     def get_filter(self):
-        topics = []
+
+        extractors = [extractor() for extractor in BaseExtractor.__subclasses__()]
+        tp_variables = [getattr(extractor, attr)
+                        for extractor in extractors
+                        for attr in dir(extractor)
+                        if attr.startswith('tp')]
+
         addresses = list(CONTRACT_NAME_MAP.keys())
-        return TransactionFilterByLogs([TopicSpecification(addresses=addresses, topics=topics)])
+
+        return TransactionFilterByLogs([TopicSpecification(addresses=addresses, topics=tp_variables)])
 
     def _collect(self, **kwargs):
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])

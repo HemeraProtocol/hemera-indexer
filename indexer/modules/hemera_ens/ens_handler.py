@@ -179,7 +179,7 @@ class EnsHandler:
                 )
                 if solved_event:
                     res.append(solved_event)
-                    if single_log["topic0"] == RegisterExtractor.register_tp0:
+                    if single_log["topic0"] == RegisterExtractor.tp0_register:
                         start = idx
                     break
 
