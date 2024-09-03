@@ -4,7 +4,7 @@ from common.models import HemeraModel, general_converter
 
 
 class ENSRecord(HemeraModel):
-    __tablename__ = "ens_record"
+    __tablename__ = "af_ens_record"
 
     node = Column(String, primary_key=True)
     token_id = Column(String)

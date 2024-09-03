@@ -80,3 +80,4 @@ class ENSAddressD(FilterData):
     address: Optional[str] = None
     reverse_node: Optional[str] = None
     name: Optional[str] = None
+    block_number: Optional[int] = None

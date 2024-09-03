@@ -5,7 +5,7 @@ from common.models import HemeraModel, general_converter
 
 
 class ENSMiddle(HemeraModel):
-    __tablename__ = "ens_middle"
+    __tablename__ = "af_ens_middle"
 
     transaction_hash = Column(String, primary_key=True)
     transaction_index = Column(Integer, nullable=True)

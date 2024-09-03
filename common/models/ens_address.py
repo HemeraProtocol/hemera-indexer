@@ -1,14 +1,15 @@
-from sqlalchemy import TIMESTAMP, Column, String, func
+from sqlalchemy import TIMESTAMP, Column, String, func, BIGINT
 
 from common.models import HemeraModel, general_converter
 
 
 class ENSAddress(HemeraModel):
-    __tablename__ = "ens_address"
+    __tablename__ = "af_ens_address"
 
     address = Column(String, primary_key=True)
     name = Column(String)
     reverse_node = Column(String)
+    block_number = Column(BIGINT)
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
 
@@ -18,7 +19,7 @@ class ENSAddress(HemeraModel):
             {
                 "domain": "ENSAddressD",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > address_current_token_balances.block_number",
                 "converter": general_converter,
             }
         ]

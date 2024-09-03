@@ -217,6 +217,7 @@ class EnsHandler:
                 address=address,
                 reverse_node=record["reverse_node"],
                 name=record["reverse_name"],
+                block_number=record["block_number"],
             )
         if event_name == "NameRegistered":
             return ENSRegisterD(
