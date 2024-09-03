@@ -7,6 +7,7 @@ from web3 import Web3
 
 from common.converter.pg_converter import domain_model_mapping
 from common.utils.exception_control import FastShutdownError
+from common.utils.format_utils import to_snake_case
 from indexer.utils.reorg import should_reorg
 
 
@@ -42,6 +43,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     tokens = None
 
+    is_filter = False
     dependency_types = []
     output_types = []
     able_to_reorg = False
@@ -70,6 +72,9 @@ class BaseJob(metaclass=BaseJobMeta):
         self._should_reorg = False
         self._should_reorg_type = set()
         self._service = kwargs["config"].get("db_service", None)
+
+        job_name_snake = to_snake_case(self.job_name)
+        self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
 
     def run(self, **kwargs):
         try:
