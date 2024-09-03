@@ -250,7 +250,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--config-file",
-    default=False,
+    default=None,
     show_default=True,
     type=str,
     envvar="CONFIG_FILE",
