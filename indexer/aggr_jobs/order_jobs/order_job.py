@@ -40,11 +40,11 @@ class AggrOrderJob(AggrBaseJob):
                 execution_time = time.time() - start_time
                 print(f'----------- executed in {execution_time:.2f} seconds: SQL {sql_name}')
 
-
             # todo: improve the logic between sql and py jobs
             period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates(self.chain_name,
                                                                                                    self.db_service,
                                                                                                    start_date)
             period_feature_defi_wallet_fbtc_aggregates_job.run()
+            print('======== finished date', start_date)
 
         session.close()

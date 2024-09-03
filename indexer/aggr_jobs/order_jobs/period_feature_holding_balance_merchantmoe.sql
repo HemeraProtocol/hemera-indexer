@@ -34,17 +34,20 @@ with detail_table as (select d1.wallet_address,
                              d5.decimals as token1_decimals
                       from feature_merchant_moe_pools d0
                                inner join
-                           period_feature_erc1155_token_holdings d1 on d0.token_address = d1.token_address
+
+                           (select * from period_feature_erc1155_token_holdings where period_date = '{start_date}') d1
+                           on d0.token_address = d1.token_address
                                inner join
-                           period_feature_erc1155_token_supply_records d2
+                           (select *
+                            from period_feature_erc1155_token_supply_records
+                            where period_date = '{start_date}') d2
                            on d1.token_address = d2.token_address and d1.token_id = d2.token_id
-                               inner join period_feature_merchant_moe_token_bin_records d3
+                               inner join (select *
+                                           from period_feature_merchant_moe_token_bin_records
+                                           where period_date = '{start_date}') d3
                                           on d1.token_address = d3.token_address and d1.token_id = d3.token_id
                                inner join tokens d4 on d0.token0_address = d4.address
-                               inner join tokens d5 on d0.token1_address = d5.address
-                      where d1.period_date = '{start_date}'
-                        and d2.period_date = '{start_date}'
-                        and d3.period_date = '{start_date}')
+                               inner join tokens d5 on d0.token1_address = d5.address)
 
 
 insert
