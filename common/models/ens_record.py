@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from typing import Type
 
 from psycopg2._json import Json
-from sqlalchemy import NUMERIC, TIMESTAMP, Column, Index, String, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSONB, TIMESTAMP
+from sqlalchemy import Column, Index, String, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSONB, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, get_column_type
 from indexer.domain import Domain
@@ -24,7 +24,12 @@ def ens_general_converter(table: Type[HemeraModel], data: Domain, is_update=Fals
             elif isinstance(column_type, TIMESTAMP):
                 if isinstance(getattr(data, key), datetime):
                     converted_data[key] = getattr(data, key)
-                converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
+                elif isinstance(getattr(data, key), str):
+                    converted_data[key] = datetime.utcfromtimestamp(
+                        datetime.fromisoformat(getattr(data, key)).timestamp()
+                    )
+                else:
+                    converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
             elif isinstance(column_type, ARRAY) and isinstance(column_type.item_type, BYTEA):
                 converted_data[key] = [bytes.fromhex(address[2:]) for address in getattr(data, key)]
             elif isinstance(column_type, JSONB) and getattr(data, key) is not None:
