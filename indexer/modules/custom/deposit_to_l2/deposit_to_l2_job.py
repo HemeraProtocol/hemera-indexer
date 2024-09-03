@@ -159,9 +159,19 @@ def pre_aggregate_deposit_in_same_block(deposit_events: List[TokenDepositTransac
         key = (event.wallet_address, event.chain, event.contract_address, event.token_address, event.block_number)
         if key in aggregated_deposit_events:
             earlier_event = aggregated_deposit_events[key]
-            event.value = earlier_event.value + event.value
+            value = earlier_event.value + event.value
+        else:
+            value = event.value
 
-        aggregated_deposit_events[key] = event
+        aggregated_deposit_events[key] = TokenDepositTransaction(
+            transaction_hash='merged_transaction',
+            wallet_address=event.wallet_address,
+            chain=event.chain,
+            contract_address=event.contract_address,
+            token_address=event.token_address,
+            value=value,
+            block_number=event.block_number,
+        )
 
     return [event for event in aggregated_deposit_events.values()]
 
