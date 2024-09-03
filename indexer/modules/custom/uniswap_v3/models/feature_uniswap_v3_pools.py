@@ -11,6 +11,8 @@ class UniswapV3Pools(HemeraModel):
     nft_address = Column(BYTEA, primary_key=True)
     pool_address = Column(BYTEA, primary_key=True)
 
+    factory_address = Column(BYTEA)
+
     token0_address = Column(BYTEA)
     token1_address = Column(BYTEA)
     fee = Column(NUMERIC(100))
@@ -18,6 +20,7 @@ class UniswapV3Pools(HemeraModel):
     tick_spacing = Column(NUMERIC(100))
 
     block_number = Column(BIGINT)
+    block_timestamp = Column(BIGINT)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())

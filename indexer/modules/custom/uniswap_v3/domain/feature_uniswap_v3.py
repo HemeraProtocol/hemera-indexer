@@ -7,12 +7,14 @@ from indexer.domain import Domain, FilterData
 @dataclass
 class UniswapV3Pool(FilterData):
     nft_address: str
+    factory_address: str
     pool_address: str
     token0_address: str
     token1_address: str
     fee: int
     tick_spacing: int
     block_number: int
+    block_timestamp: int
 
 
 @dataclass
@@ -24,6 +26,7 @@ class UniswapV3Token(FilterData):
     tick_upper: int
     fee: int
     block_number: int
+    block_timestamp: int
 
 
 @dataclass
