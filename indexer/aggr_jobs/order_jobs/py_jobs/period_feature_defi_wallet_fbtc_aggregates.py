@@ -43,8 +43,8 @@ class PeriodFeatureDefiWalletFbtcAggregates:
             protocol_usd = 0
 
             for entity in entity_list:
-                token_usd0 = float(price_dict[entity.token0_symbol] * entity.token0_balance)
-                token_usd1 = float(price_dict[entity.token1_symbol] * entity.token1_balance)
+                token_usd0 = float(price_dict.get(entity.token0_symbol, 0) * entity.token0_balance)
+                token_usd1 = float(price_dict.get(entity.token1_symbol, 0) * entity.token1_balance)
 
                 wallet_count += 1
 
@@ -128,8 +128,8 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
                     for record in records:
 
-                        token_usd0 = float(price_dict[record.token0_symbol] * record.token0_balance)
-                        token_usd1 = float(price_dict[record.token1_symbol] * record.token1_balance)
+                        token_usd0 = float(price_dict.get(record.token0_symbol, 0) * record.token0_balance)
+                        token_usd1 = float(price_dict.get(record.token1_symbol, 0) * record.token1_balance)
 
                         if record.token0_symbol == 'FBTC':
                             total_balance += float(record.token0_balance)
