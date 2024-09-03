@@ -8,8 +8,8 @@ select date('{start_date}'),
        token_id,
        total_supply
 from (select *,
-             row_number() over (partition by token_address, token_id order by block_date desc) as rn
-      from daily_feature_erc1155_token_supply_records
-      WHERE block_date < '{end_date}') t
+             row_number() over (partition by token_address, token_id order by block_timestamp desc) as rn
+      from feature_erc1155_token_supply_records
+      WHERE to_timestamp(block_timestamp) < '{end_date}') t
 where rn = 1;
 

@@ -172,6 +172,8 @@ class PeriodFeatureDefiWalletFbtcAggregates:
     def get_latest_price(self, symbol_list):
         session = self.db_service.Session()
 
+        price_date_limit = max(self.start_date, '2024-07-12')
+
         subquery = (
             session.query(
                 TokenPrice.symbol,
@@ -182,7 +184,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                 ).label('row_number')
             )
             .filter(
-                TokenPrice.timestamp <= self.start_date)
+                TokenPrice.timestamp <= price_date_limit)
             .filter(TokenPrice.symbol.in_(symbol_list))
             .subquery()
         )
