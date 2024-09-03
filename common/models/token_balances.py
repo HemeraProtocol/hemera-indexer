@@ -1,14 +1,25 @@
+from typing import Type
+
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.domain.token_balance import TokenBalance
+
+
+def token_balances_general_converter(table: Type[HemeraModel], data: TokenBalance, is_update=False):
+
+    if data.token_id is None:
+        data.token_id = -1
+
+    return general_converter(table, data, is_update)
 
 
 class AddressTokenBalances(HemeraModel):
     __tablename__ = "address_token_balances"
 
     address = Column(BYTEA, primary_key=True)
-    token_id = Column(NUMERIC(100))
+    token_id = Column(NUMERIC(78), primary_key=True)
     token_type = Column(VARCHAR)
     token_address = Column(BYTEA, primary_key=True)
     balance = Column(NUMERIC(100))
@@ -20,7 +31,7 @@ class AddressTokenBalances(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (PrimaryKeyConstraint("address", "token_address", "block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "token_address", "token_id", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():
@@ -29,7 +40,7 @@ class AddressTokenBalances(HemeraModel):
                 "domain": "TokenBalance",
                 "conflict_do_update": False,
                 "update_strategy": None,
-                "converter": general_converter,
+                "converter": token_balances_general_converter,
             }
         ]
 
