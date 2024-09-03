@@ -38,12 +38,13 @@ def upgrade() -> None:
         "af_token_deposits_current",
         sa.Column("wallet_address", postgresql.BYTEA(), nullable=False),
         sa.Column("chain", sa.VARCHAR(), nullable=False),
+        sa.Column("contract_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("value", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.PrimaryKeyConstraint("wallet_address", "chain", "token_address"),
+        sa.PrimaryKeyConstraint("wallet_address", "token_address", "contract_address", "chain"),
     )
     # ### end Alembic commands ###
 

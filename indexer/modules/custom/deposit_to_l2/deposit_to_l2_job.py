@@ -80,13 +80,14 @@ class DepositToL2Job(FilterTransactionDataJob):
         self._collect_items(TokenDepositTransaction.type(), deposit_tokens)
 
         for deposit in pre_aggregate_deposit_in_same_block(deposit_tokens):
-            cache_key = (deposit.wallet_address, deposit.chain, deposit.token_address)
+            cache_key = (deposit.wallet_address, deposit.chain, deposit.contract_address, deposit.token_address)
             cache_value = self.cache.get(cache_key)
             if cache_value and cache_value.block_number < deposit.block_number:
                 # add and save 2 cache
                 token_deposit = AddressTokenDeposit(
                     wallet_address=deposit.wallet_address,
                     chain=deposit.chain,
+                    contract_address=deposit.contract_address,
                     token_address=deposit.token_address,
                     value=deposit.value + cache_value,
                     block_number=deposit.block_number,
@@ -104,6 +105,7 @@ class DepositToL2Job(FilterTransactionDataJob):
                     token_deposit = AddressTokenDeposit(
                         wallet_address=deposit.wallet_address,
                         chain=deposit.chain,
+                        contract_address=deposit.contract_address,
                         token_address=deposit.token_address,
                         value=deposit.value + history_deposit.value if history_deposit else deposit.value,
                         block_number=deposit.block_number,

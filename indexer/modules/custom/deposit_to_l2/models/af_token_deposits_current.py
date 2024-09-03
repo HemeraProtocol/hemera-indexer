@@ -8,6 +8,7 @@ class AFTokenDepositsCurrent(HemeraModel):
     __tablename__ = "af_token_deposits_current"
     wallet_address = Column(BYTEA, primary_key=True)
     chain = Column(VARCHAR, primary_key=True)
+    contract_address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
     value = Column(NUMERIC(100))
 
@@ -16,7 +17,7 @@ class AFTokenDepositsCurrent(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("wallet_address", "chain", "token_address"),)
+    __table_args__ = (PrimaryKeyConstraint("wallet_address", "token_address", "contract_address", "chain"),)
 
     @staticmethod
     def model_domain_mapping():
