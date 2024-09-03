@@ -1,7 +1,8 @@
-from sqlalchemy import TIMESTAMP, Column, Index, Integer, PrimaryKeyConstraint, String, func, BIGINT, NUMERIC
+from sqlalchemy import BIGINT, NUMERIC, TIMESTAMP, Column, Index, Integer, PrimaryKeyConstraint, String, func
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA
 
-from common.models import HemeraModel, general_converter
+from common.models import HemeraModel
+from common.models.ens_record import ens_general_converter
 
 
 class ENSMiddle(HemeraModel):
@@ -53,7 +54,7 @@ class ENSMiddle(HemeraModel):
                 "domain": "ENSMiddleD",
                 "conflict_do_update": True,
                 "update_strategy": None,
-                "converter": general_converter,
+                "converter": ens_general_converter,
             }
         ]
 

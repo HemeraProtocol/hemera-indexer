@@ -1,7 +1,44 @@
-from sqlalchemy import TIMESTAMP, Column, Index, String, UniqueConstraint, func, NUMERIC
-from sqlalchemy.dialects.postgresql import BYTEA
+from datetime import datetime, timezone
+from typing import Type
 
-from common.models import HemeraModel, general_converter
+from psycopg2._json import Json
+from sqlalchemy import NUMERIC, TIMESTAMP, Column, Index, String, UniqueConstraint, func
+from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSONB, TIMESTAMP
+
+from common.models import HemeraModel, get_column_type
+from indexer.domain import Domain
+
+
+def ens_general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
+    converted_data = {}
+    for key in data.__dict__.keys():
+        if key in table.__table__.c:
+            column_type = get_column_type(table, key)
+            if isinstance(column_type, BYTEA) and not isinstance(getattr(data, key), bytes):
+                if isinstance(getattr(data, key), str):
+                    converted_data[key] = bytes.fromhex(getattr(data, key)[2:]) if getattr(data, key) else None
+                elif isinstance(getattr(data, key), int):
+                    converted_data[key] = getattr(data, key).to_bytes(32, byteorder="big")
+                else:
+                    converted_data[key] = None
+            elif isinstance(column_type, TIMESTAMP):
+                converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
+            elif isinstance(column_type, ARRAY) and isinstance(column_type.item_type, BYTEA):
+                converted_data[key] = [bytes.fromhex(address[2:]) for address in getattr(data, key)]
+            elif isinstance(column_type, JSONB) and getattr(data, key) is not None:
+                converted_data[key] = Json(getattr(data, key))
+            elif isinstance(column_type, String):
+                converted_data[key] = getattr(data, key).replace("\x00", "") if getattr(data, key) else None
+            else:
+                converted_data[key] = getattr(data, key)
+
+    if is_update:
+        converted_data["update_time"] = datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())
+
+    if "reorg" in table.__table__.columns:
+        converted_data["reorg"] = False
+
+    return converted_data
 
 
 class ENSRecord(HemeraModel):
@@ -28,25 +65,25 @@ class ENSRecord(HemeraModel):
                 "domain": "ENSRegisterD",
                 "conflict_do_update": True,
                 "update_strategy": None,
-                "converter": general_converter,
+                "converter": ens_general_converter,
             },
             {
                 "domain": "ENSRegisterTokenD",
                 "conflict_do_update": True,
                 "update_strategy": None,
-                "converter": general_converter,
+                "converter": ens_general_converter,
             },
             {
                 "domain": "ENSNameRenewD",
                 "conflict_do_update": True,
                 "update_strategy": None,
-                "converter": general_converter,
+                "converter": ens_general_converter,
             },
             {
                 "domain": "ENSAddressChangeD",
                 "conflict_do_update": True,
                 "update_strategy": None,
-                "converter": general_converter,
+                "converter": ens_general_converter,
             },
         ]
 
