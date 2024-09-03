@@ -255,6 +255,7 @@ def upgrade() -> None:
     op.add_column('period_address_token_balances', sa.Column('period_date', sa.DATE(), nullable=False))
     op.add_column('period_address_token_balances', sa.Column('create_time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True))
     op.drop_column('period_address_token_balances', 'block_date')
+    op.drop_index('period_feature_uniswap_v3_wallet_fbtc_detail_period_date', table_name='period_feature_defi_wallet_fbtc_detail')
     op.create_index('period_feature_uniswap_v3_wallet_fbtc_detail_period_date', 'period_feature_defi_wallet_fbtc_detail', ['period_date'], unique=False)
     op.drop_column('period_feature_defi_wallet_fbtc_detail', 'protocol_id')
     op.add_column('period_feature_staked_fbtc_detail_records', sa.Column('create_time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=True))
