@@ -2,16 +2,16 @@ import logging
 from datetime import datetime
 from typing import Type
 
-import sqlalchemy
 from dateutil.tz import tzlocal
 from psycopg2.extras import execute_values
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
 from common.services.hemera_postgresql_service import HemeraPostgreSQLService
-from common.services.postgresql_service import PostgreSQLService
+from indexer.domain.token import Token
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 from indexer.modules.custom.address_index.domain import *
+from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,10 @@ class HemeraAddressPostgresItemExporter(BaseExporter):
         AddressTransaction,
         AddressNftTransfer,
         AddressTokenTransfer,
+        AddressNft1155Holder,
+        AddressTokenHolder,
+        Token,
+        TokenAddressNftInventory,
     ]
 
     def __init__(self, output, chain_id):

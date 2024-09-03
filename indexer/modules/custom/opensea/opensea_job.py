@@ -169,7 +169,7 @@ class OpenseaJob(FilterTransactionDataJob):
             )
 
     def _process(self, **kwargs):
-        transactions = self._get_domain(Transaction)
+        transactions = self.get_filter_transactions()
         for transaction in transactions:
             self._collect_domains(
                 self.transfer(

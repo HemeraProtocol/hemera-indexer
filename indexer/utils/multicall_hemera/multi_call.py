@@ -32,7 +32,7 @@ class Multicall:
         self,
         calls: List[Call],
         chain_id: int = None,
-        block_id: Optional[int] = None,
+        block_id: Union[Optional[int], str] = None,
         require_success: bool = True,
         gas_limit: int = GAS_LIMIT,
     ) -> None:
