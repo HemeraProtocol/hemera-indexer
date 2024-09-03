@@ -1,4 +1,5 @@
-from sqlalchemy import TIMESTAMP, Column, Index, String, UniqueConstraint, func
+from sqlalchemy import TIMESTAMP, Column, Index, String, UniqueConstraint, func, NUMERIC
+from sqlalchemy.dialects.postgresql import BYTEA
 
 from common.models import HemeraModel, general_converter
 
@@ -6,14 +7,14 @@ from common.models import HemeraModel, general_converter
 class ENSRecord(HemeraModel):
     __tablename__ = "af_ens_record"
 
-    node = Column(String, primary_key=True)
-    token_id = Column(String)
-    w_token_id = Column(String)
-    first_owned_by = Column(String)
+    node = Column(BYTEA, primary_key=True)
+    token_id = Column(NUMERIC(100))
+    w_token_id = Column(NUMERIC(100))
+    first_owned_by = Column(BYTEA)
     name = Column(String)
     registration = Column(TIMESTAMP)
     expires = Column(TIMESTAMP)
-    address = Column(String)
+    address = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

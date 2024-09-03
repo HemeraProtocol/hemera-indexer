@@ -1,5 +1,5 @@
-from sqlalchemy import TIMESTAMP, Column, Index, Integer, PrimaryKeyConstraint, String, func
-from sqlalchemy.dialects.postgresql import BOOLEAN
+from sqlalchemy import TIMESTAMP, Column, Index, Integer, PrimaryKeyConstraint, String, func, BIGINT, NUMERIC
+from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA
 
 from common.models import HemeraModel, general_converter
 
@@ -7,38 +7,38 @@ from common.models import HemeraModel, general_converter
 class ENSMiddle(HemeraModel):
     __tablename__ = "af_ens_middle"
 
-    transaction_hash = Column(String, primary_key=True)
+    transaction_hash = Column(BYTEA, primary_key=True)
     transaction_index = Column(Integer, nullable=True)
     log_index = Column(Integer, primary_key=True)
 
-    block_number = Column(Integer)
-    block_hash = Column(String)
+    block_number = Column(BIGINT)
+    block_hash = Column(BYTEA)
     block_timestamp = Column(TIMESTAMP)
     method = Column(String)
     event_name = Column(String)
-    from_address = Column(String)
-    to_address = Column(String)
+    from_address = Column(BYTEA)
+    to_address = Column(BYTEA)
     # namehash of .eth
-    base_node = Column(String)
+    base_node = Column(BYTEA)
     # namehash of full_name
-    node = Column(String)
+    node = Column(BYTEA)
     # keccak of name
-    label = Column(String)
+    label = Column(BYTEA)
     name = Column(String)
 
     expires = Column(TIMESTAMP)
 
-    owner = Column(String)
-    resolver = Column(String)
-    registrant = Column(String)
+    owner = Column(BYTEA)
+    resolver = Column(BYTEA)
+    registrant = Column(BYTEA)
     # resolved address
-    address = Column(String)
-    reverse_base_node = Column(String)
-    reverse_node = Column(String)
-    reverse_label = Column(String)
+    address = Column(BYTEA)
+    reverse_base_node = Column(BYTEA)
+    reverse_node = Column(BYTEA)
+    reverse_label = Column(BYTEA)
     reverse_name = Column(String)
-    token_id = Column(String)
-    w_token_id = Column(String)
+    token_id = Column(NUMERIC(100))
+    w_token_id = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

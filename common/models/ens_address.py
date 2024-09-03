@@ -1,4 +1,5 @@
 from sqlalchemy import TIMESTAMP, Column, String, func, BIGINT
+from sqlalchemy.dialects.postgresql import BYTEA
 
 from common.models import HemeraModel, general_converter
 
@@ -6,9 +7,9 @@ from common.models import HemeraModel, general_converter
 class ENSAddress(HemeraModel):
     __tablename__ = "af_ens_address"
 
-    address = Column(String, primary_key=True)
+    address = Column(BYTEA, primary_key=True)
     name = Column(String)
-    reverse_node = Column(String)
+    reverse_node = Column(BYTEA)
     block_number = Column(BIGINT)
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
