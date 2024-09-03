@@ -15,6 +15,7 @@ from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import Ad
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
 from indexer.specification.specification import ToAddressSpecification, TransactionFilterByTransactionInfo
+from indexer.utils.utils import distinct_collections_by_group
 
 
 class DepositToL2Job(FilterTransactionDataJob):
@@ -89,7 +90,7 @@ class DepositToL2Job(FilterTransactionDataJob):
                     chain=deposit.chain,
                     contract_address=deposit.contract_address,
                     token_address=deposit.token_address,
-                    value=deposit.value + cache_value,
+                    value=deposit.value + cache_value.value,
                     block_number=deposit.block_number,
                 )
 
@@ -113,6 +114,12 @@ class DepositToL2Job(FilterTransactionDataJob):
                     self.cache.set(cache_key, token_deposit)
                     self._collect_item(AddressTokenDeposit.type(), token_deposit)
 
+        self._data_buff[AddressTokenDeposit.type()] = distinct_collections_by_group(
+            collections=self._data_buff[AddressTokenDeposit.type()],
+            group_by=["wallet_address", "chain", "contract_address", "token_address"],
+            max_key="block_number",
+        )
+
     def check_history_deposit_from_db(self, wallet_address: str, chain: str, token_address: str) -> AddressTokenDeposit:
         session = self._service.get_service_session()
         try:
@@ -134,6 +141,7 @@ class DepositToL2Job(FilterTransactionDataJob):
             AddressTokenDeposit(
                 wallet_address=history_deposit.wallet_address,
                 chain=history_deposit.chain,
+                contract_address=history_deposit.contract_address,
                 token_address=history_deposit.token_address,
                 value=history_deposit.value,
                 block_number=history_deposit.block_number,
@@ -148,7 +156,7 @@ class DepositToL2Job(FilterTransactionDataJob):
 def pre_aggregate_deposit_in_same_block(deposit_events: List[TokenDepositTransaction]) -> List[TokenDepositTransaction]:
     aggregated_deposit_events = {}
     for event in deposit_events:
-        key = (event.wallet_address, event.chain, event.token_address, event.block_number)
+        key = (event.wallet_address, event.chain, event.contract_address, event.token_address, event.block_number)
         if key in aggregated_deposit_events:
             earlier_event = aggregated_deposit_events[key]
             event.value = earlier_event.value + event.value

@@ -11,6 +11,7 @@ from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction impor
 from indexer.utils.abi import event_log_abi_to_topic, function_abi_to_4byte_selector_str
 
 ETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
 
 ETH_DEPOSIT_INITIATED_EVENT = cast(
     ABIEvent,
@@ -68,15 +69,102 @@ DEPOSIT_TRANSACTION_FUNCTION = cast(
 )
 DEPOSIT_TRANSACTION_FUNCTION_SIG = function_abi_to_4byte_selector_str(DEPOSIT_TRANSACTION_FUNCTION)
 
+DEPOSIT_ETH_TO_ARBI_FUNCTION_SIG = "0x439370b1"
 
-@dataclass
-class DepositToken:
-    wallet_address: str
-    chain: str
-    contract_address: str
-    token_address: str
-    value: int
-    block_number: int
+OUT_BOUND_TRANSFER_FUNCTION = cast(
+    ABIFunction,
+    json.loads(
+        """{"inputs":[{"name":"_l1Token","type":"address","internalType":"address"},{"name":"_to","type":"address","internalType":"address"},{"name":"_amount","type":"uint256","internalType":"uint256"},{"name":"_maxGas","type":"uint256","internalType":"uint256"},{"name":"_gasPriceBid","type":"uint256","internalType":"uint256"},{"name":"_data","type":"bytes","internalType":"bytes"}],"name":"outboundTransfer","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}"""
+    ),
+)
+OUT_BOUND_TRANSFER_FUNCTION_SIG = function_abi_to_4byte_selector_str(OUT_BOUND_TRANSFER_FUNCTION)
+
+DEPOSIT_ETH_TO_LINEA_FUNCTION = cast(
+    ABIFunction,
+    json.loads(
+        """{"inputs":[{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_fee","type":"uint256"},{"internalType":"bytes","name":"_calldata","type":"bytes"}],"name":"sendMessage","outputs":[],"stateMutability":"payable","type":"function"}"""
+    ),
+)
+DEPOSIT_ETH_TO_LINEA_FUNCTION_SIG = function_abi_to_4byte_selector_str(DEPOSIT_ETH_TO_LINEA_FUNCTION)
+
+BRIDGE_TOKEN_TO_LINEA_FUNCTION = cast(
+    ABIFunction,
+    json.loads(
+        """{"inputs":[{"internalType":"address","name":"_l1Token","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"address","name":"_recipient","type":"address"}],"name":"bridgeToken","outputs":[],"stateMutability":"payable","type":"function"}"""
+    ),
+)
+BRIDGE_TOKEN_TO_LINEA_FUNCTION_SIG = function_abi_to_4byte_selector_str(BRIDGE_TOKEN_TO_LINEA_FUNCTION)
+
+DEPOSIT_USDC_TO_LINEA_FUNCTION = cast(
+    ABIFunction,
+    json.loads(
+        """{"inputs":[{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"address","name":"_to","type":"address"}],"name":"depositTo","outputs":[],"stateMutability":"payable","type":"function"}"""
+    ),
+)
+DEPOSIT_USDC_TO_LINEA_FUNCTION_SIG = function_abi_to_4byte_selector_str(DEPOSIT_USDC_TO_LINEA_FUNCTION)
+
+
+def eth_deposit_parse(transaction: Transaction, chain_mapping: dict, function: ABIFunction) -> TokenDepositTransaction:
+    return TokenDepositTransaction(
+        transaction_hash=transaction.hash,
+        wallet_address=transaction.from_address,
+        chain=chain_mapping[transaction.to_address],
+        contract_address=transaction.to_address,
+        token_address=ETH_ADDRESS,
+        value=transaction.value,
+        block_number=transaction.block_number,
+    )
+
+
+def usdc_deposit_parse(transaction: Transaction, chain_mapping: dict, function: ABIFunction) -> TokenDepositTransaction:
+    decoded_input = decode_transaction_data(function, HexStr(transaction.input))
+    return TokenDepositTransaction(
+        transaction_hash=transaction.hash,
+        wallet_address=transaction.from_address,
+        chain=chain_mapping[transaction.to_address],
+        contract_address=transaction.to_address,
+        token_address=USDC_ADDRESS,
+        value=decoded_input["_amount"],
+        block_number=transaction.block_number,
+    )
+
+
+def token_deposit_parse(
+    transaction: Transaction, chain_mapping: dict, function: ABIFunction
+) -> TokenDepositTransaction:
+    decoded_input = decode_transaction_data(function, HexStr(transaction.input))
+    return TokenDepositTransaction(
+        transaction_hash=transaction.hash,
+        wallet_address=transaction.from_address,
+        chain=chain_mapping[transaction.to_address],
+        contract_address=transaction.to_address,
+        token_address=decoded_input["_l1Token"],
+        value=decoded_input["_amount"],
+        block_number=transaction.block_number,
+    )
+
+
+SIG_FUNCTION_MAPPING = {
+    DEPOSIT_ETH_FUNCTION_SIG: DEPOSIT_ETH_FUNCTION,
+    BRIDGE_ETH_TO_FUNCTION_SIG: BRIDGE_ETH_TO_FUNCTION,
+    DEPOSIT_ETH_TO_ARBI_FUNCTION_SIG: None,
+    DEPOSIT_ERC20_TO_FUNCTION_SIG: DEPOSIT_ERC20_TO_FUNCTION,
+    OUT_BOUND_TRANSFER_FUNCTION_SIG: OUT_BOUND_TRANSFER_FUNCTION,
+    DEPOSIT_ETH_TO_LINEA_FUNCTION_SIG: DEPOSIT_ETH_TO_LINEA_FUNCTION,
+    BRIDGE_TOKEN_TO_LINEA_FUNCTION_SIG: BRIDGE_TOKEN_TO_LINEA_FUNCTION,
+    DEPOSIT_USDC_TO_LINEA_FUNCTION_SIG: DEPOSIT_USDC_TO_LINEA_FUNCTION,
+}
+
+SIG_PARSE_MAPPING = {
+    DEPOSIT_ETH_FUNCTION_SIG: eth_deposit_parse,
+    BRIDGE_ETH_TO_FUNCTION_SIG: eth_deposit_parse,
+    DEPOSIT_ETH_TO_ARBI_FUNCTION_SIG: eth_deposit_parse,
+    DEPOSIT_ERC20_TO_FUNCTION_SIG: token_deposit_parse,
+    OUT_BOUND_TRANSFER_FUNCTION_SIG: token_deposit_parse,
+    DEPOSIT_ETH_TO_LINEA_FUNCTION_SIG: eth_deposit_parse,
+    BRIDGE_TOKEN_TO_LINEA_FUNCTION_SIG: token_deposit_parse,
+    DEPOSIT_USDC_TO_LINEA_FUNCTION_SIG: usdc_deposit_parse,
+}
 
 
 def parse_deposit_transfer_function(
@@ -86,37 +174,20 @@ def parse_deposit_transfer_function(
     for transaction in transactions:
         if transaction.to_address in contract_set:
             input_sig = transaction.input[0:10]
-            if input_sig == DEPOSIT_ETH_FUNCTION_SIG or input_sig == BRIDGE_ETH_TO_FUNCTION_SIG:
-                deposit_tokens.append(
-                    TokenDepositTransaction(
-                        transaction_hash=transaction.hash,
-                        wallet_address=transaction.from_address,
-                        chain=chain_mapping[transaction.to_address],
-                        contract_address=transaction.to_address,
-                        token_address=ETH_ADDRESS,
-                        value=transaction.value,
-                        block_number=transaction.block_number,
-                    )
+            if input_sig in SIG_FUNCTION_MAPPING:
+                deposit_transaction = SIG_PARSE_MAPPING[input_sig](
+                    transaction=transaction,
+                    chain_mapping=chain_mapping,
+                    function=SIG_FUNCTION_MAPPING[input_sig],
                 )
-            elif input_sig == DEPOSIT_ERC20_TO_FUNCTION_SIG:
-                decoded_input = decode_transaction_data(DEPOSIT_TRANSACTION_FUNCTION, HexStr(transaction.input))
-                deposit_tokens.append(
-                    TokenDepositTransaction(
-                        transaction_hash=transaction.hash,
-                        wallet_address=transaction.from_address,
-                        chain=chain_mapping[transaction.to_address],
-                        contract_address=transaction.to_address,
-                        token_address=decoded_input["_l1Token"],
-                        value=decoded_input["_amount"],
-                        block_number=transaction.block_number,
-                    )
-                )
+                deposit_tokens.append(deposit_transaction)
     return deposit_tokens
 
 
 if __name__ == "__main__":
-    print(ETH_DEPOSIT_INITIATED_EVENT_SIG)
-    print(ETH_BRIDGE_INITIATED_EVENT_SIG)
-    print(TRANSACTION_DEPOSITED_EVENT_SIG)
     print(BRIDGE_ETH_TO_FUNCTION_SIG)
     print(DEPOSIT_ERC20_TO_FUNCTION_SIG)
+    print(DEPOSIT_ETH_FUNCTION_SIG)
+    print(DEPOSIT_ETH_TO_LINEA_FUNCTION_SIG)
+    print(BRIDGE_TOKEN_TO_LINEA_FUNCTION_SIG)
+    print(DEPOSIT_USDC_TO_LINEA_FUNCTION_SIG)
