@@ -22,6 +22,8 @@ def ens_general_converter(table: Type[HemeraModel], data: Domain, is_update=Fals
                 else:
                     converted_data[key] = None
             elif isinstance(column_type, TIMESTAMP):
+                if isinstance(getattr(data, key), datetime):
+                    converted_data[key] = getattr(data, key)
                 converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
             elif isinstance(column_type, ARRAY) and isinstance(column_type.item_type, BYTEA):
                 converted_data[key] = [bytes.fromhex(address[2:]) for address in getattr(data, key)]
