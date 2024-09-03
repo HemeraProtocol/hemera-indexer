@@ -32,6 +32,14 @@ with moe_pools_table as (select d0.*,
                          where d4.symbol = 'FBTC'
                             or d5.symbol = 'FBTC'),
 
+     moe_pool_with_records_table as (select d0.*, d1.wallet_address, d1.token_id, d1.balance
+                                     from moe_pools_table d0
+                                              inner join
+                                          (select *
+                                           from period_feature_erc1155_token_holdings
+                                           where period_date = '{start_date}') d1
+                                          on d0.token_address = d1.token_address),
+
      detail_table as (select d1.wallet_address
                            , d1.token_address
                            , d1.token_id
@@ -45,11 +53,7 @@ with moe_pools_table as (select d0.*,
                            , token1_address
                            , token1_symbol
                            , token1_decimals
-
-                      from moe_pools_table d0
-                               inner join
-                           (select * from period_feature_erc1155_token_holdings where period_date = '{start_date}') d1
-                           on d0.token_address = d1.token_address
+                      from moe_pool_with_records_table d1
                                inner join
                            (select *
                             from period_feature_erc1155_token_supply_records
@@ -77,5 +81,4 @@ select date('{start_date}'),
            else 0 end as token1_balance
 from detail_table
 ;
-
 
