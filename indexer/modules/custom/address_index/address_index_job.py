@@ -292,7 +292,7 @@ class AddressIndexerJob(ExtensionJob):
 
     def _collect_balance_batch(self, parameters):
         token_balances = self.token_fetcher.fetch_token_balance(parameters)
-        token_balances.sort(key=lambda x: (x["address"], x["token_address"], x["token_id"]))
+        token_balances.sort(key=lambda x: (x["address"], x["token_address"]))
         for token_balance in token_balances:
             if token_balance["token_type"] == "ERC1155":
                 self._collect_domain(
