@@ -19,7 +19,7 @@ class ENSAddress(HemeraModel):
             {
                 "domain": "ENSAddressD",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > address_current_token_balances.block_number",
+                "update_strategy": "EXCLUDED.block_number > af_ens_address.block_number",
                 "converter": general_converter,
             }
         ]
