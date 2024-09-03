@@ -1,5 +1,4 @@
 import json
-from dataclasses import dataclass
 from typing import List, cast
 
 from eth_typing import HexStr
@@ -144,41 +143,29 @@ def token_deposit_parse(
     )
 
 
-SIG_FUNCTION_MAPPING = {
-    DEPOSIT_ETH_FUNCTION_SIG: DEPOSIT_ETH_FUNCTION,
-    BRIDGE_ETH_TO_FUNCTION_SIG: BRIDGE_ETH_TO_FUNCTION,
-    DEPOSIT_ETH_TO_ARBI_FUNCTION_SIG: None,
-    DEPOSIT_ERC20_TO_FUNCTION_SIG: DEPOSIT_ERC20_TO_FUNCTION,
-    OUT_BOUND_TRANSFER_FUNCTION_SIG: OUT_BOUND_TRANSFER_FUNCTION,
-    DEPOSIT_ETH_TO_LINEA_FUNCTION_SIG: DEPOSIT_ETH_TO_LINEA_FUNCTION,
-    BRIDGE_TOKEN_TO_LINEA_FUNCTION_SIG: BRIDGE_TOKEN_TO_LINEA_FUNCTION,
-    DEPOSIT_USDC_TO_LINEA_FUNCTION_SIG: DEPOSIT_USDC_TO_LINEA_FUNCTION,
-}
-
-SIG_PARSE_MAPPING = {
-    DEPOSIT_ETH_FUNCTION_SIG: eth_deposit_parse,
-    BRIDGE_ETH_TO_FUNCTION_SIG: eth_deposit_parse,
-    DEPOSIT_ETH_TO_ARBI_FUNCTION_SIG: eth_deposit_parse,
-    DEPOSIT_ERC20_TO_FUNCTION_SIG: token_deposit_parse,
-    OUT_BOUND_TRANSFER_FUNCTION_SIG: token_deposit_parse,
-    DEPOSIT_ETH_TO_LINEA_FUNCTION_SIG: eth_deposit_parse,
-    BRIDGE_TOKEN_TO_LINEA_FUNCTION_SIG: token_deposit_parse,
-    DEPOSIT_USDC_TO_LINEA_FUNCTION_SIG: usdc_deposit_parse,
+token_parse_mapping = {
+    "eth": eth_deposit_parse,
+    "usdc": usdc_deposit_parse,
+    "_l1Token": token_deposit_parse,
 }
 
 
 def parse_deposit_transfer_function(
-    transactions: List[Transaction], contract_set: set, chain_mapping: dict
+    transactions: List[Transaction],
+    contract_set: set,
+    chain_mapping: dict,
+    sig_function_mapping: dict,
+    sig_parse_mapping: dict,
 ) -> List[TokenDepositTransaction]:
     deposit_tokens = []
     for transaction in transactions:
         if transaction.to_address in contract_set:
             input_sig = transaction.input[0:10]
-            if input_sig in SIG_FUNCTION_MAPPING:
-                deposit_transaction = SIG_PARSE_MAPPING[input_sig](
+            if input_sig in sig_function_mapping:
+                deposit_transaction = sig_parse_mapping[input_sig](
                     transaction=transaction,
                     chain_mapping=chain_mapping,
-                    function=SIG_FUNCTION_MAPPING[input_sig],
+                    function=sig_function_mapping[input_sig],
                 )
                 deposit_tokens.append(deposit_transaction)
     return deposit_tokens

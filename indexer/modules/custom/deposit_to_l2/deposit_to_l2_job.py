@@ -1,20 +1,22 @@
 import configparser
 import json
 import os
-from typing import List
+from typing import List, cast
 
 from eth_utils import to_normalized_address
 from sqlalchemy import and_
+from web3.types import ABIFunction
 
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transfer_function
+from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transfer_function, token_parse_mapping
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
 from indexer.specification.specification import ToAddressSpecification, TransactionFilterByTransactionInfo
+from indexer.utils.abi import function_abi_to_4byte_selector_str
 from indexer.utils.utils import distinct_collections_by_group
 
 
@@ -26,19 +28,12 @@ class DepositToL2Job(FilterTransactionDataJob):
         super().__init__(**kwargs)
 
         self._service = kwargs["config"].get("db_service", None)
+        self._contracts = set()
+        self._contract_chain_mapping = {}
+        self._sig_function_mapping = {}
+        self._sig_parse_mapping = {}
+
         self._load_config("config.ini")
-        self._contracts = set(
-            [
-                to_normalized_address(contract)
-                for chain in self._deposit_contracts.keys()
-                for contract in self._deposit_contracts[chain]
-            ]
-        )
-        self._contract_chain_mapping = {
-            to_normalized_address(contract): chain
-            for chain in self._deposit_contracts.keys()
-            for contract in self._deposit_contracts[chain]
-        }
 
         if self._service is None:
             raise FastShutdownError("-pg or --postgres-url is required to run DepositToL2Job")
@@ -67,6 +62,22 @@ class DepositToL2Job(FilterTransactionDataJob):
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
+        for chain in self._deposit_contracts.keys():
+            for contract_info in self._deposit_contracts[chain]:
+                contract_address = to_normalized_address(contract_info["contract"])
+                self._contracts.add(contract_address)
+                self._contract_chain_mapping[contract_address] = chain
+                for function in contract_info["ABIFunction"]:
+                    abi_function = None
+                    if "json" in function:
+                        abi_function = cast(ABIFunction, function["json"])
+                        sig = function_abi_to_4byte_selector_str(abi_function)
+                    else:
+                        sig = function["method_id"]
+
+                    self._sig_function_mapping[sig] = abi_function
+                    self._sig_parse_mapping[sig] = token_parse_mapping[function["token"]]
+
     def get_filter(self):
         return self._filter
 
@@ -77,7 +88,13 @@ class DepositToL2Job(FilterTransactionDataJob):
                 [transaction for block in self._data_buff[Block.type()] for transaction in block.transactions],
             )
         )
-        deposit_tokens = parse_deposit_transfer_function(transactions, self._contracts, self._contract_chain_mapping)
+        deposit_tokens = parse_deposit_transfer_function(
+            transactions=transactions,
+            contract_set=self._contracts,
+            chain_mapping=self._contract_chain_mapping,
+            sig_function_mapping=self._sig_function_mapping,
+            sig_parse_mapping=self._sig_parse_mapping,
+        )
         self._collect_items(TokenDepositTransaction.type(), deposit_tokens)
 
         for deposit in pre_aggregate_deposit_in_same_block(deposit_tokens):
@@ -164,7 +181,7 @@ def pre_aggregate_deposit_in_same_block(deposit_events: List[TokenDepositTransac
             value = event.value
 
         aggregated_deposit_events[key] = TokenDepositTransaction(
-            transaction_hash='merged_transaction',
+            transaction_hash="merged_transaction",
             wallet_address=event.wallet_address,
             chain=event.chain,
             contract_address=event.contract_address,
@@ -177,4 +194,35 @@ def pre_aggregate_deposit_in_same_block(deposit_events: List[TokenDepositTransac
 
 
 if __name__ == "__main__":
+    # base_path = os.path.dirname(os.path.abspath(__file__))
+    # full_path = os.path.join(base_path, 'config.ini')
+    # config = configparser.ConfigParser()
+    # config.read(full_path)
+    #
+    # deposit_contracts = json.loads(config.get("chain_deposit_info", "contract_info_test"))
+    # contracts = set()
+    # contract_chain_mapping = {}
+    # sig_function_mapping = {}
+    # sig_parse_mapping = {}
+    #
+    # for chain in deposit_contracts.keys():
+    #     for contract_info in deposit_contracts[chain]:
+    #         contract_address = to_normalized_address(contract_info['contract'])
+    #         contracts.add(contract_address)
+    #         contract_chain_mapping[contract_address] = chain
+    #         for function in contract_info['ABIFunction']:
+    #             abi_function = None
+    #             if "json" in function:
+    #                 abi_function = cast(ABIFunction, function["json"])
+    #                 sig = function_abi_to_4byte_selector_str(abi_function)
+    #             else:
+    #                 sig = function['method_id']
+    #
+    #             sig_function_mapping[sig] = abi_function
+    #             sig_parse_mapping[sig] = token_parse_mapping[function['token']]
+    #
+    # print(contracts)
+    # print(contract_chain_mapping)
+    # print(sig_function_mapping)
+    # print(sig_parse_mapping)
     pass
