@@ -161,4 +161,4 @@ def distinct_collections_by_group(collections: List[Domain], group_by: List[str]
 
 
 def format_block_id(block_id: Union[Optional[int], str]) -> str:
-    return hex(block_id) if block_id and block_id and isinstance(block_id, int) else "latest"
+    return hex(block_id) if block_id and isinstance(block_id, int) else block_id

@@ -1,3 +1,6 @@
+from indexer.utils.utils import format_block_id
+
+
 def generate_get_block_by_number_json_rpc(block_numbers, include_transactions):
     for idx, block_number in enumerate(block_numbers):
         yield generate_json_rpc(
@@ -50,7 +53,7 @@ def generate_eth_call_json_rpc(params):
             method="eth_call",
             params=[
                 {"to": param["param_to"], "data": param["param_data"]},
-                param["param_number"],
+                format_block_id(param["param_number"]),
             ],
             request_id=param["request_id"],
         )
