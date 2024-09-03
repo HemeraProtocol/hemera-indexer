@@ -248,7 +248,7 @@ class AddressIndexerJob(ExtensionJob):
         all_token_parameters.sort(key=lambda x: (x["address"], x["token_address"], x["token_id"]))
         parameters = [
             list(group)[-1]
-            for key, group in groupby(all_token_parameters, lambda x: (x["address"], x["token_address"], x["token_id"]))
+            for key, group in groupby(all_token_parameters, lambda x: (x["address"], x["token_address"]))
         ]
 
         all_owner_parameters = generate_token_id_info(self._data_buff[ERC721TokenTransfer.type()], [], "latest")
@@ -292,7 +292,7 @@ class AddressIndexerJob(ExtensionJob):
 
     def _collect_balance_batch(self, parameters):
         token_balances = self.token_fetcher.fetch_token_balance(parameters)
-        token_balances.sort(key=lambda x: (x["address"], x["token_address"], x["token_id"]))
+        token_balances.sort(key=lambda x: (x["address"], x["token_address"]))
         for token_balance in token_balances:
             if token_balance["token_type"] == "ERC1155":
                 self._collect_domain(
