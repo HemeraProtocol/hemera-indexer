@@ -73,9 +73,12 @@ class ExportEnsJob(FilterTransactionDataJob):
     def _collect(self, **kwargs):
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
         logs = self._data_buff.get(Log.type(), [])
-        transactions_map = {ta.hash: asdict(ta) for ta in transactions}
         middles = []
+        transactions_map = {}
         group_data = defaultdict(list)
+        for ta in transactions:
+            transactions_map[ta.hash] = asdict(ta)
+            group_data[ta.hash] = []
         for dl in logs:
             group_data[dl.transaction_hash].append(asdict(dl))
         for tnx, tnx_lgs in group_data.items():

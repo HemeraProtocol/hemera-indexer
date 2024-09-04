@@ -60,7 +60,7 @@ class EnsConfLoader:
             functions = [abi for abi in contract.abi if abi["type"] == "function"]
             for function in functions:
                 sig = self.get_function_signature(function)
-                function_map["0x" + sig[0:8]] = function
+                function_map[sig[0:10]] = function
         self.contract_object_map = contract_object_map
         self.event_map = event_map
         self.function_map = function_map
@@ -77,10 +77,8 @@ class EnsConfLoader:
         name = function_abi["name"]
         inputs = [input["type"] for input in function_abi["inputs"]]
         signature = f"{name}({','.join(inputs)})"
-        keccak_hash = self.w3.keccak(text=signature)
-        function_selector = keccak_hash
-        function_selector_hex = function_selector.hex()
-        return function_selector_hex
+        sig = self.w3.to_hex(Web3.keccak(text=signature))
+        return sig
 
 
 class AttrDict(dict):
@@ -250,9 +248,7 @@ class EnsHandler:
             record["expires"] = None
 
         event_name = record.get("event_name")
-        if not event_name:
-            return None
-        if event_name == "NameChanged" or record['function'] == "setName":
+        if event_name == "NameChanged" or record['method'] == "setName":
             return ENSAddressD(
                 address=address,
                 reverse_node=record["reverse_node"],

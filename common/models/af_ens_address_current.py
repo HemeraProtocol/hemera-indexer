@@ -2,7 +2,7 @@ from sqlalchemy import BIGINT, TIMESTAMP, Column, String, func
 from sqlalchemy.dialects.postgresql import BYTEA
 
 from common.models import HemeraModel, general_converter
-from common.models.ens_record import ens_general_converter
+from common.models.af_ens_node_current import ens_general_converter
 
 
 class ENSAddress(HemeraModel):
@@ -21,7 +21,7 @@ class ENSAddress(HemeraModel):
             {
                 "domain": "ENSAddressD",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > af_ens_address.block_number",
+                "update_strategy": "EXCLUDED.block_number > af_ens_address_current.block_number",
                 "converter": ens_general_converter,
             }
         ]

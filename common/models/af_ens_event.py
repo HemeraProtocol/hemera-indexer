@@ -2,7 +2,7 @@ from sqlalchemy import BIGINT, NUMERIC, TIMESTAMP, Column, Index, Integer, Prima
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA
 
 from common.models import HemeraModel
-from common.models.ens_record import ens_general_converter
+from common.models.af_ens_node_current import ens_general_converter
 
 
 class ENSMiddle(HemeraModel):
@@ -60,3 +60,4 @@ class ENSMiddle(HemeraModel):
 
 
 Index("ens_idx_block_number_log_index", ENSMiddle.block_number, ENSMiddle.log_index.desc())
+Index("ens_event_address", ENSMiddle.from_address)
