@@ -10,6 +10,7 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
+from indexer.modules.custom.uniswap_v3 import util
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3PoolPrice, \
     UniswapV3PoolCurrentPrice
@@ -122,30 +123,16 @@ class UniSwapV3FindPoolJob(FilterTransactionDataJob):
 
 
 def decode_pool_created(nft_address, factory_address, log):
-    token0_address = parse_hex_to_address(log.topic1)
-    token1_address = parse_hex_to_address(log.topic2)
-    fee = parse_hex_to_uint256(log.topic3)
+    token0_address = util.parse_hex_to_address(log.topic1)
+    token1_address = util.parse_hex_to_address(log.topic2)
+    fee = util.parse_hex_to_uint256(log.topic3)
     tick_hex, pool_hex = split_hex_string(log.data)
-    pool_address = parse_hex_to_address(pool_hex)
-    tick_spacing = parse_hex_to_uint256(tick_hex)
+    pool_address = util.parse_hex_to_address(pool_hex)
+    tick_spacing = util.parse_hex_to_uint256(tick_hex)
     return UniswapV3Pool(nft_address=nft_address, factory_address=factory_address, pool_address=pool_address,
                          token0_address=token0_address, token1_address=token1_address,
                          fee=fee, tick_spacing=tick_spacing,
                          block_number=log.block_number, block_timestamp=log.block_timestamp)
-
-
-def parse_hex_to_address(hex_string):
-    hex_string = hex_string.lower().replace('0x', '')
-
-    if len(hex_string) > 40:
-        hex_string = hex_string[-40:]
-
-    hex_string = hex_string.zfill(40)
-    return Web3.to_checksum_address(hex_string).lower()
-
-
-def parse_hex_to_uint256(hex_string):
-    return Web3.to_int(hexstr=hex_string)
 
 
 def split_hex_string(hex_string):

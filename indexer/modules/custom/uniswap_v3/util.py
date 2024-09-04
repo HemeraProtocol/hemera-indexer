@@ -40,3 +40,17 @@ def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_ke
 
         parameters.append(token)
     return parameters
+
+
+def parse_hex_to_address(hex_string):
+    hex_string = hex_string.lower().replace('0x', '')
+
+    if len(hex_string) > 40:
+        hex_string = hex_string[-40:]
+
+    hex_string = hex_string.zfill(40)
+    return Web3.to_checksum_address(hex_string).lower()
+
+
+def parse_hex_to_uint256(hex_string):
+    return Web3.to_int(hexstr=hex_string)
