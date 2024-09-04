@@ -245,7 +245,7 @@ class AddressIndexerJob(ExtensionJob):
         token_transfers = self._collect_all_token_transfers()
 
         all_token_parameters = extract_token_parameters(token_transfers, "latest")
-        all_token_parameters.sort(key=lambda x: (x["address"], x["token_address"]))
+        all_token_parameters.sort(key=lambda x: (x["address"], x["token_address"], x.get("token_id", 0)))
         parameters = [
             list(group)[-1]
             for key, group in groupby(all_token_parameters, lambda x: (x["address"], x["token_address"], x["token_id"]))
