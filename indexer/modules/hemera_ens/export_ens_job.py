@@ -26,8 +26,10 @@ from indexer.modules.hemera_ens.extractors import BaseExtractor
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
+    ToAddressSpecification,
     TopicSpecification,
     TransactionFilterByLogs,
+    TransactionFilterByTransactionInfo,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,9 +57,6 @@ class ExportEnsJob(FilterTransactionDataJob):
         self._filters = kwargs.get("filters", [])
         self.ens_handler = EnsHandler(EnsConfLoader(self._web3.provider.endpoint_uri))
 
-        self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
-        self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
-
     def get_filter(self):
 
         extractors = [extractor() for extractor in BaseExtractor.__subclasses__()]
@@ -66,8 +65,10 @@ class ExportEnsJob(FilterTransactionDataJob):
         ]
 
         addresses = list(CONTRACT_NAME_MAP.keys())
-
-        return TransactionFilterByLogs([TopicSpecification(addresses=addresses, topics=tp_variables)])
+        return TransactionFilterByTransactionInfo(
+            TopicSpecification(addresses=addresses, topics=tp_variables),
+            ToAddressSpecification("0x084b1c3c81545d370f3634392de611caabff8148"),
+        )
 
     def _collect(self, **kwargs):
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
