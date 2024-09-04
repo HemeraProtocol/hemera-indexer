@@ -1,3 +1,7 @@
+delete
+from period_address_token_balances
+where period_date = '{start_date}';
+
 with today_table as (select *
                      from daily_address_token_balances
                      where block_date = '{start_date}'),
