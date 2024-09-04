@@ -1,17 +1,7 @@
 import configparser
-import json
 import logging
 import os
-import threading
 from collections import defaultdict
-from queue import Queue
-from typing import List, cast
-
-import eth_abi
-from web3.types import ABIEvent
-
-from common import models
-from indexer.domain import dict_to_dataclass
 from indexer.domain.token_transfer import ERC20TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
@@ -20,15 +10,12 @@ from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.total_supply import constants
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20CurrentTotalSupply, Erc20TotalSupply
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import decode_log
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.ERC20_TOTAL_SUPPLY.value
 
 
-class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
+class ExportErc20TotalSupplyJob(FilterTransactionDataJob):
     dependency_types = [ERC20TokenTransfer]
     output_types = [Erc20TotalSupply, Erc20CurrentTotalSupply]
     able_to_reorg = True
