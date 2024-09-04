@@ -32,7 +32,7 @@ with moe_pools_table as (select d0.*,
                          where d4.symbol = 'FBTC'
                             or d5.symbol = 'FBTC'),
 
-     moe_pool_with_records_table as (select d0.*, d1.wallet_address, d1.token_id, d1.balance
+     moe_pool_with_records_table as (select d0.*, d1.address, d1.token_id, d1.balance
                                      from moe_pools_table d0
                                               inner join
                                           (select *
@@ -40,7 +40,7 @@ with moe_pools_table as (select d0.*,
                                            where token_type = 'ERC1155') d1
                                           on d0.token_address = d1.token_address),
 
-     detail_table as (select d1.wallet_address
+     detail_table as (select d1.address
                            , d1.token_address
                            , d1.token_id
                            , d1.balance
@@ -68,7 +68,7 @@ select date('{start_date}'),
        'merchantmoe'  as protocol_id,
        token_address  as nft_addres,
        token_id,
-       wallet_address,
+       address,
        token0_address,
        token0_symbol,
        case
