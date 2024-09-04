@@ -16,16 +16,17 @@ from api.app.contract.contract_verify import (
     get_implementation_contract,
     get_solidity_version,
     get_vyper_version,
+    hex_string_to_bytes,
     send_async_verification_request,
     send_sync_verification_request,
     validate_input,
 )
 from api.app.limiter import limiter
-from api.app.utils.utils import hex_string_to_bytes
 from common.models import db as postgres_db
 from common.models.contracts import Contracts
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict
+from indexer.utils.utils import ZERO_ADDRESS
 
 
 @contract_namespace.route("/v1/explorer/verify_contract/verify")
@@ -55,6 +56,7 @@ class ExplorerVerifyContract(Resource):
 
         payload = {
             "address": address,
+            "wallet_address": ZERO_ADDRESS,
             "compiler_type": compiler_type,
             "compiler_version": compiler_version,
             "evm_version": evm_version,
@@ -301,7 +303,7 @@ class ExplorerContractCode(Resource):
         if not contract or contract.is_verified == False:
             raise APIError("Contract not exist or contract is not verified.", code=400)
 
-        contracts_verification = get_contract_code_by_address(address=hex_string_to_bytes(contract_address))
+        contracts_verification = get_contract_code_by_address(address=contract_address)
         if not contracts_verification:
             raise APIError("Contract code not found!", code=400)
 
