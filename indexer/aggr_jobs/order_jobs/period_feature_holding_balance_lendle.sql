@@ -31,7 +31,7 @@ select date('{start_date}'),
 
 from period_address_token_balances d1
          inner join tokens_table d2 on d1.token_address = d2.address
-         inner join tokens d3 on d3.symbol = 'FBTC'
+         inner join tokens d3 on d3.address = '\xC96DE26018A54D51C097160568752C4E3BD6C364'
 
 where  token_address in (
                         '\xdef3542bb1b2969c1966dd91ebc504f4b37462fe',

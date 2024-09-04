@@ -41,6 +41,6 @@ select date('{start_date}'),
            as balance
 
 from sbtc_balance_address_balance d1
-         left join tokens d2 on d2.symbol = 'FBTC'
+         left join tokens d2 on d2.address = '\xC96DE26018A54D51C097160568752C4E3BD6C364'
          left join tokens d3 on d1.token_address = d3.address
 ;
