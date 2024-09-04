@@ -304,7 +304,7 @@ def get_abis_for_logs(address_signed_prefix_list: List[Tuple[str, str, int]]):
 def get_abis_by_address_signed_prefix(address_signed_prefix_list: List[Tuple[str, str, int]]):
     result_list = []
     for address, signed_prefix, indexed_true_count in address_signed_prefix_list:
-        contract = db.session.get(Contracts, address)
+        contract = db.session.get(Contracts, hex_string_to_bytes(address))
         if not contract:
             continue
         deployed_code_hash = contract.deployed_code_hash
