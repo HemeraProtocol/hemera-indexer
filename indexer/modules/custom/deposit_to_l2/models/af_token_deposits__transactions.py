@@ -1,5 +1,5 @@
-from sqlalchemy import Column, PrimaryKeyConstraint, func
-from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
+from sqlalchemy import Column, PrimaryKeyConstraint, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -17,6 +17,7 @@ class AFTokenDepositsTransactions(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
+    reorg = Column(BOOLEAN, server_default=text("False"))
 
     @staticmethod
     def model_domain_mapping():

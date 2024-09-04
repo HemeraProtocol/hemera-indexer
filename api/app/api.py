@@ -3,6 +3,7 @@
 
 from flask_restx import Api
 
+from api.app.deposit_to_l2.routes import token_deposit_namespace
 from api.app.explorer.routes import explorer_namespace
 from api.app.user_operation.routes import user_operation_namespace
 
@@ -11,5 +12,6 @@ from api.app.user_operation.routes import user_operation_namespace
 api = Api()
 
 api.add_namespace(explorer_namespace)
+api.add_namespace(token_deposit_namespace)
 api.add_namespace(user_operation_namespace)
 # api.add_namespace(l2_explorer_namespace)
