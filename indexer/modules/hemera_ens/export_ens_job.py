@@ -65,10 +65,10 @@ class ExportEnsJob(FilterTransactionDataJob):
         ]
 
         addresses = list(CONTRACT_NAME_MAP.keys())
-        return TransactionFilterByTransactionInfo(
-            TopicSpecification(addresses=addresses, topics=tp_variables),
-            ToAddressSpecification("0x084b1c3c81545d370f3634392de611caabff8148"),
-        )
+        return [
+            TransactionFilterByLogs([TopicSpecification(addresses=addresses, topics=tp_variables)]),
+            TransactionFilterByTransactionInfo(ToAddressSpecification("0x084b1c3c81545d370f3634392de611caabff8148")),
+        ]
 
     def _collect(self, **kwargs):
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])

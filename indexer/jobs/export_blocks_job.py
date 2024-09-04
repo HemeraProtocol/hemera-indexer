@@ -23,6 +23,16 @@ from indexer.utils.utils import rpc_response_batch_to_results
 logger = logging.getLogger(__name__)
 
 
+def flatten(lst):
+    result = []
+    for item in lst:
+        if isinstance(item, list):
+            result.extend(flatten(item))
+        else:
+            result.append(item)
+    return result
+
+
 # Exports blocks and block number <-> timestamp mapping
 class ExportBlocksJob(BaseExportJob):
     dependency_types = []
@@ -38,7 +48,7 @@ class ExportBlocksJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self._filters = kwargs.get("filters", [])
+        self._filters = flatten(kwargs.get("filters", []))
         self._is_filter = kwargs.get("is_filter", False)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
