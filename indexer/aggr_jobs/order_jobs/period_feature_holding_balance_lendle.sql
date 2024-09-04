@@ -21,7 +21,7 @@ with tokens_table as (select *,
 insert
 into period_feature_holding_balance_lendle (period_date, wallet_address, protocol_id, contract_address,
                                             token_symbol, token_address, balance)
-select d1.period_date,
+select date('{start_date}'),
        d1.address,
        'lendle',
        d1.token_address,

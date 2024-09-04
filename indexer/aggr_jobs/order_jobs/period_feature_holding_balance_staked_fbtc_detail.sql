@@ -31,7 +31,7 @@ with sbtc_table as (select d1.*,
                                                          on d1.wallet_address = d2.address
                                                              and d1.token_address = d2.token_address)
 
-select d1.period_date,
+select date('{start_date}'),
        d1.wallet_address,
        d1.protocol_id,
        d1.contract_address,
