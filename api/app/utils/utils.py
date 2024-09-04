@@ -373,3 +373,11 @@ def process_token_transfer(token_transfers, token_type):
 
         token_transfer_list.append(token_transfer_json)
     return token_transfer_list
+
+
+def hex_string_to_bytes(hex_string):
+    if not hex_string:
+        return None
+    if hex_string.startswith("0x"):
+        return bytes.fromhex(hex_string[2:])
+    return bytes.fromhex(hex_string)
