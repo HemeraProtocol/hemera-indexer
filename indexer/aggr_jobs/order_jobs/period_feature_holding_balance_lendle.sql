@@ -33,8 +33,7 @@ from period_address_token_balances d1
          inner join tokens_table d2 on d1.token_address = d2.address
          inner join tokens d3 on d3.symbol = 'FBTC'
 
-where d1.period_date = '{start_date}'
-  and token_address in (
+where  token_address in (
                         '\xdef3542bb1b2969c1966dd91ebc504f4b37462fe',
                         '\x874712c653aaaa7cfb201317f46e00238c2649bb',
                         '\x08fc23af290d538647aa2836c5b3cf2fb3313759'

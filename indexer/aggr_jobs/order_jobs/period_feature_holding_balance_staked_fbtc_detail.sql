@@ -15,7 +15,7 @@ with sbtc_table as (select d1.*,
 
      period_address_token_balance_table as (select *
                                             from period_address_token_balances
-                                            where period_date = '{start_date}'),
+                                            ),
 
 
      sbtc_balance_address_balance as (select d1.period_date,
