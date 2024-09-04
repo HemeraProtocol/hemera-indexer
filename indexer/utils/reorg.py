@@ -4,22 +4,24 @@ from datetime import datetime, timezone
 from sqlalchemy import and_
 
 from common.converter.pg_converter import domain_model_mapping
-from common.models import HemeraModel, __models_imports
+from common.models import HemeraModel
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import RetriableError
-from common.utils.module_loading import import_string
 
 
 def set_reorg_sign(jobs, block_number, service):
     conn = service.get_conn()
     cur = conn.cursor()
     try:
+        table_done = set()
         for job in jobs:
             for output in job.output_types:
                 model = domain_model_mapping[output.__name__]
-                model_path = __models_imports[model["table"].__name__]
-                table = import_string(f"{model_path}.{model['table'].__name__}")
+                table = model["table"]
+                if table.__name__ in table_done:
+                    continue
 
+                table_done.add(table.__name__)
                 if hasattr(table, "reorg"):
                     update_stmt = (
                         f"UPDATE {table.__tablename__} "
