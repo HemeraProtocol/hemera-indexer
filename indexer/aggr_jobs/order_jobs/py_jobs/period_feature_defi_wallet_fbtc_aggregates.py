@@ -239,8 +239,8 @@ class PeriodFeatureDefiWalletFbtcAggregates:
             wallet_count = 0
 
             for entity in entity_list:
-                token_usd = float(price_dict['FBTC'] * entity.balance) / 10 ** 8
-                balance = float(entity.balance) / pow(10, 8)
+                token_usd = float(price_dict['FBTC'] * entity.balance)
+                balance = float(entity.balance)
                 protocol_balance += balance
                 protocol_usd += token_usd
                 wallet_count += 1
@@ -287,8 +287,8 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
             for entity in entity_list:
                 fbtc_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
-                token_usd = float(price_dict['FBTC'] * entity.balance) / 10 ** 8
-                balance = float(entity.balance) / pow(10, 8)
+                token_usd = float(price_dict['FBTC'] * entity.balance)
+                balance = float(entity.balance)
                 j = {
                     "token_data": [
                         {
@@ -413,11 +413,12 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
     def run(self):
         # get all protocol json, actually then can be abstract...
+        staked = self.timed_call(self.get_staked_json, 'get_staked_json')
         uniswapv3 = self.timed_call(self.get_uniswap_v3_json, 'get_uniswap_v3_json')
         merchantmoe_json = self.timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
         address_token_balances = self.timed_call(self.get_period_address_token_balances,
                                                  'get_period_address_token_balances')
-        staked = self.timed_call(self.get_staked_json, 'get_staked_json')
+
         dodo_json = self.timed_call(self.get_dodo_json, 'get_dodo_json')
         get_lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
 

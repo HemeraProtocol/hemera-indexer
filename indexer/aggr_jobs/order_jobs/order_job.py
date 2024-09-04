@@ -7,6 +7,7 @@ from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_fbtc_aggreg
     PeriodFeatureDefiWalletFbtcAggregates
 
 job_list = ['period_address_token_balances', 'period_feature_holding_balance_uniswap_v3.sql',
+            'period_feature_staked_fbtc_detail_records.sql',
             'period_feature_holding_balance_staked_fbtc_detail.sql', 'period_feature_erc1155_token_holdings.sql',
             'period_feature_erc1155_token_supply_records.sql', 'period_feature_holding_balance_merchantmoe.sql',
             'period_feature_erc20_token_supply_records.sql', 'period_feature_holding_balance_dodo.sql',

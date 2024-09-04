@@ -1,29 +1,46 @@
-
 delete
 from period_feature_holding_balance_staked_fbtc_detail
 where period_date >= '{start_date}'
   and period_date < '{end_date}';
 
-with today_table as (select *
-                     from daily_feature_holding_balance_staked_fbtc_detail
-                     where block_date = '{start_date}'),
-     yesterday_table as (select *
-                         from period_feature_holding_balance_staked_fbtc_detail
-                         where period_date = '{start_date_previous}')
-
 insert
-into period_feature_holding_balance_staked_fbtc_detail(period_date, wallet_address, protocol_id,
-                                                       contract_address, balance)
-select date('{start_date}')
-                                                          AS period_date,
-       COALESCE(s1.wallet_address, s2.wallet_address)     AS wallet_address,
-       COALESCE(s1.protocol_id, s2.protocol_id)           AS protocol_id,
-       COALESCE(s1.contract_address, s2.contract_address) AS contract_address,
-       COALESCE(s1.balance, s2.balance, 0)    AS amount
+into period_feature_holding_balance_staked_fbtc_detail(period_date, wallet_address, protocol_id, contract_address, balance)
+with sbtc_table as (select d1.*,
+                           decode(substring(token_address, 3), 'hex')                    as token_address,
+                           case when d2.protocol_id is not null then True else FALSE end as flag
+                    from period_feature_staked_fbtc_detail_records d1
+                             left join feature_staked_fbtc_lp_config d2 on d1.protocol_id = d2.protocol_id
+                        and d1.contract_address = decode(substring(d2.contract_address, 3), 'hex')
+                    where period_date = '{start_date}'),
 
-from today_table s1
-         full join
-     yesterday_table s2
-     on s1.contract_address = s2.contract_address and s1.wallet_address = s2.wallet_address
-         and s1.protocol_id = s2.protocol_id
+     period_address_token_balance_table as (select *
+                                            from period_address_token_balances
+                                            where period_date = '{start_date}'),
+
+
+     sbtc_balance_address_balance as (select d1.period_date,
+                                             d1.wallet_address,
+                                             d1.protocol_id,
+                                             d1.contract_address,
+                                             d1.amount as fbtc_balance,
+                                             d1.flag,
+                                             d2.token_address,
+                                             d2.balance as btc_balance
+                                      from sbtc_table d1
+                                               left join period_address_token_balance_table d2
+                                                         on d1.wallet_address = d2.address
+                                                             and d1.token_address = d2.token_address)
+
+select d1.period_date,
+       d1.wallet_address,
+       d1.protocol_id,
+       d1.contract_address,
+       greatest(0, case
+                       when not flag then d1.fbtc_balance / pow(10, d2.decimals)
+                       else LEAST(d1.fbtc_balance / d2.decimals, d1.btc_balance / pow(10, d3.decimals)) end)
+           as balance
+
+from sbtc_balance_address_balance d1
+         left join tokens d2 on d2.symbol = 'FBTC'
+         left join tokens d3 on d1.token_address = d3.address
 ;
