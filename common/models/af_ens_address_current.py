@@ -6,7 +6,7 @@ from common.models.ens_record import ens_general_converter
 
 
 class ENSAddress(HemeraModel):
-    __tablename__ = "af_ens_address"
+    __tablename__ = "af_ens_address_current"
 
     address = Column(BYTEA, primary_key=True)
     name = Column(String)

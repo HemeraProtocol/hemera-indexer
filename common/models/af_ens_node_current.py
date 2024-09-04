@@ -49,7 +49,7 @@ def ens_general_converter(table: Type[HemeraModel], data: Domain, is_update=Fals
 
 
 class ENSRecord(HemeraModel):
-    __tablename__ = "af_ens_record"
+    __tablename__ = "af_ens_node_current"
 
     node = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100))

@@ -15,8 +15,13 @@ from web3 import Web3
 from indexer.modules.hemera_ens import lifo_registry
 from indexer.modules.hemera_ens.ens_abi import abi_map
 from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP, ENS_CONTRACT_CREATED_BLOCK, REVERSE_BASE_NODE
-from indexer.modules.hemera_ens.ens_domain import ENSAddressChangeD, ENSAddressD, ENSNameRenewD, ENSRegisterD, \
-    ENSMiddleD
+from indexer.modules.hemera_ens.ens_domain import (
+    ENSAddressChangeD,
+    ENSAddressD,
+    ENSMiddleD,
+    ENSNameRenewD,
+    ENSRegisterD,
+)
 from indexer.modules.hemera_ens.ens_hash import namehash
 from indexer.modules.hemera_ens.extractors import BaseExtractor, RegisterExtractor
 from indexer.modules.hemera_ens.util import convert_str_ts
@@ -156,39 +161,41 @@ class EnsHandler:
             "reverse_base_node": None,
         }
         # While, setName doesn't mean `nameChanged` occurs, just ignore it
-        if method == 'setName':
+        if method == "setName":
             d_tnx = self.decode_transaction(transaction)
             ens_middle = AttrDict(dic)
             ens_middle.log_index = -1
             name = None
-            if d_tnx[1].get('name'):
-                name = d_tnx[1]['name']
-            elif d_tnx[1].get('newName'):
-                name = d_tnx[1]['newName']
-            if not name or len(name) - 4 != name.find('.'):
+            if d_tnx[1].get("name"):
+                name = d_tnx[1]["name"]
+            elif d_tnx[1].get("newName"):
+                name = d_tnx[1]["newName"]
+            if not name or len(name) - 4 != name.find("."):
                 # 二级或者非法
                 return []
             ens_middle.reverse_name = name
 
             ens_middle.node = namehash(name)
-            ens_middle.address = tra['from_address'].lower()
-            return [ENSMiddleD(
-                transaction_hash=ens_middle.transaction_hash,
-                log_index=ens_middle.log_index,
-                transaction_index=ens_middle.transaction_index,
-                block_number=ens_middle.block_number,
-                block_hash=ens_middle.block_hash,
-                block_timestamp=ens_middle.block_timestamp,
-                from_address=ens_middle.from_address,
-                to_address=ens_middle.to_address,
-                reverse_name=ens_middle.reverse_name,
-                address=ens_middle.address,
-                node=ens_middle.node,
-                reverse_node=None,
-                reverse_base_node=REVERSE_BASE_NODE,
-                event_name=None,
-                method='setName',
-            )]
+            ens_middle.address = tra["from_address"].lower()
+            return [
+                ENSMiddleD(
+                    transaction_hash=ens_middle.transaction_hash,
+                    log_index=ens_middle.log_index,
+                    transaction_index=ens_middle.transaction_index,
+                    block_number=ens_middle.block_number,
+                    block_hash=ens_middle.block_hash,
+                    block_timestamp=ens_middle.block_timestamp,
+                    from_address=ens_middle.from_address,
+                    to_address=ens_middle.to_address,
+                    reverse_name=ens_middle.reverse_name,
+                    address=ens_middle.address,
+                    node=ens_middle.node,
+                    reverse_node=None,
+                    reverse_base_node=REVERSE_BASE_NODE,
+                    event_name=None,
+                    method="setName",
+                )
+            ]
         res = []
         start = 0
         for idx, single_log in enumerate(logs):
@@ -245,7 +252,7 @@ class EnsHandler:
         event_name = record.get("event_name")
         if not event_name:
             return None
-        if event_name == "NameChanged":
+        if event_name == "NameChanged" or record['function'] == "setName":
             return ENSAddressD(
                 address=address,
                 reverse_node=record["reverse_node"],

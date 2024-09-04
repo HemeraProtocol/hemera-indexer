@@ -6,7 +6,7 @@ from common.models.ens_record import ens_general_converter
 
 
 class ENSMiddle(HemeraModel):
-    __tablename__ = "af_ens_middle"
+    __tablename__ = "af_ens_event"
 
     transaction_hash = Column(BYTEA, primary_key=True)
     transaction_index = Column(Integer, nullable=True)
