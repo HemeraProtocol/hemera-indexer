@@ -140,6 +140,7 @@ class ReorgScheduler:
                 config=self.config,
                 filters=filters,
                 reorg=True,
+                reorg_jobs=self.job_classes,
                 multicall=self._is_multicall,
             )
             self.jobs.insert(0, export_blocks_job)

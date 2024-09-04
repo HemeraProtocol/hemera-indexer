@@ -3,38 +3,43 @@ from datetime import datetime, timezone
 
 from sqlalchemy import and_
 
+from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel, __models_imports
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import RetriableError
 from common.utils.module_loading import import_string
 
 
-def set_reorg_sign(block_number, service):
+def set_reorg_sign(jobs, block_number, service):
     conn = service.get_conn()
     cur = conn.cursor()
     try:
-        for model, path in __models_imports.items():
-            table = import_string(f"{path}.{model}")
-            if hasattr(table, "reorg"):
-                update_stmt = (
-                    f"UPDATE {table.__tablename__} "
-                    + f"SET reorg=TRUE, update_time='{datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())}'"
-                )
+        for job in jobs:
+            for output in job.output_types:
+                model = domain_model_mapping[output.__name__]
+                model_path = __models_imports[model["table"].__name__]
+                table = import_string(f"{model_path}.{model['table'].__name__}")
 
-                if hasattr(table, "number"):
-                    update_stmt += f"WHERE number={block_number}"
-                elif hasattr(table, "block_number"):
-                    update_stmt += f"WHERE block_number={block_number}"
-                else:
-                    update_stmt = None
-                    logging.warning(
-                        f"Reorging table: {table} has no block number info, "
-                        f"could not complete reorg action, "
-                        f"reorging will be skipped this table."
+                if hasattr(table, "reorg"):
+                    update_stmt = (
+                        f"UPDATE {table.__tablename__} "
+                        + f"SET reorg=TRUE, update_time='{datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())}'"
                     )
 
-                if update_stmt:
-                    cur.execute(update_stmt)
+                    if hasattr(table, "number"):
+                        update_stmt += f"WHERE number={block_number}"
+                    elif hasattr(table, "block_number"):
+                        update_stmt += f"WHERE block_number={block_number}"
+                    else:
+                        update_stmt = None
+                        logging.warning(
+                            f"Reorging table: {table} has no block number info, "
+                            f"could not complete reorg action, "
+                            f"reorging will be skipped this table."
+                        )
+
+                    if update_stmt:
+                        cur.execute(update_stmt)
         conn.commit()
     except Exception as e:
         logging.error(e)
