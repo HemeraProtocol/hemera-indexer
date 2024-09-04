@@ -20,4 +20,5 @@ select coalesce(d1.address, d2.address)             as address,
 from today_table d1
          full join yesterday_table d2
                    on d1.address = d2.address
-                       and d1.token_address = d2.token_address;
+                       and d1.token_address = d2.token_address
+                       and d1.token_id = d2.token_id;
