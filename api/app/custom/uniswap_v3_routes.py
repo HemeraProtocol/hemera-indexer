@@ -27,7 +27,7 @@ from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import U
 Q96 = 2**96
 
 
-@custom_namespace.route("/v1/uniswapv3/<wallet_address>")
+@custom_namespace.route("/v1/uniswapv3/current_holding/<wallet_address>")
 class UniswapV3WalletHolding(Resource):
     def get(self, wallet_address):
         wallet_address = wallet_address.lower()

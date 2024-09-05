@@ -14,6 +14,7 @@ class UniswapV3TokenLiquidityRecords(HemeraModel):
     block_timestamp = Column(BIGINT, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
     transaction_hash = Column(BYTEA)
+    owner = Column(BYTEA)
 
     liquidity = Column(NUMERIC(100))
     amount0 = Column(NUMERIC(100))
@@ -57,6 +58,10 @@ Index(
     UniswapV3TokenLiquidityRecords.token1_address,
 )
 Index(
-    "af_uniswap_v3_token_liquidity_hist_token_id_desc_index",
+    "af_uniswap_v3_token_liquidity_hist_token_id_index",
     UniswapV3TokenLiquidityRecords.token_id,
+)
+Index(
+    "af_uniswap_v3_token_liquidity_hist_owner_index",
+    UniswapV3TokenLiquidityRecords.owner,
 )

@@ -145,6 +145,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             self._max_worker,
         )
         token_id_current_status = {}
+        token_owner_dict = {}
         for data in token_infos:
             token_id = data["token_id"]
             block_number = data["block_number"]
@@ -168,6 +169,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             wallet_address = constants.ZERO_ADDRESS
             if "owner" in data:
                 wallet_address = data["owner"]
+            token_owner_dict.setdefault(token_id, {})[block_number] = wallet_address
             liquidity = 0
             if "liquidity" in data:
                 liquidity = data["liquidity"]
@@ -191,47 +193,39 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
         # collect fee and liquidity
         for log in logs:
             topic0 = log.topic0
-            if topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0:
-                token_id = util.parse_hex_to_uint256(log.topic1)
-                pool_address = self._exist_token_ids[token_id]
-                pool_info = self._exist_pool_infos[pool_address]
+            block_number = log.block_number
+            block_timestamp = log.block_timestamp
+            if topic0 not in (
+                    constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0,
+                    constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0,
+                    constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0,
+            ):
+                continue
+            token_id = util.parse_hex_to_uint256(log.topic1)
+            owner = token_owner_dict[token_id][block_number]
+            pool_address = self._exist_token_ids[token_id]
+            pool_info = self._exist_pool_infos[pool_address]
+            if topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0 or topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0:
                 liquidity_hex, amount0_hex, amount1_hex = split_hex_string(log.data)
+                action_type = constants.DECREASE_TYPE if topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0 else constants.INCREASE_TYPE
                 self._collect_item(UniswapV3TokenUpdateLiquidity.type(), UniswapV3TokenUpdateLiquidity(
-                    nft_address=self._nft_address, token_id=token_id,
-                    action_type=constants.DECREASE_TYPE, transaction_hash=log.transaction_hash,
+                    nft_address=self._nft_address, token_id=token_id, owner=owner,
+                    action_type=action_type, transaction_hash=log.transaction_hash,
                     liquidity=util.parse_hex_to_uint256(liquidity_hex), amount0=util.parse_hex_to_uint256(amount0_hex),
                     amount1=util.parse_hex_to_uint256(amount1_hex), pool_address=pool_address,
                     token0_address=pool_info.token0_address, token1_address=pool_info.token1_address,
-                    log_index=log.log_index, block_number=log.block_number, block_timestamp=log.block_timestamp
+                    log_index=log.log_index, block_number=block_number, block_timestamp=block_timestamp
                 ))
-            elif topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0:
-                token_id = util.parse_hex_to_uint256(log.topic1)
-                pool_address = self._exist_token_ids[token_id]
-                pool_info = self._exist_pool_infos[pool_address]
-                liquidity_hex, amount0_hex, amount1_hex = split_hex_string(log.data)
-                self._collect_item(UniswapV3TokenUpdateLiquidity.type(), UniswapV3TokenUpdateLiquidity(
-                    nft_address=self._nft_address, token_id=token_id,
-                    action_type=constants.INCREASE_TYPE, transaction_hash=log.transaction_hash,
-                    liquidity=util.parse_hex_to_uint256(liquidity_hex), amount0=util.parse_hex_to_uint256(amount0_hex),
-                    amount1=util.parse_hex_to_uint256(amount1_hex), pool_address=pool_address,
-                    token0_address=pool_info.token0_address, token1_address=pool_info.token1_address,
-                    log_index=log.log_index, block_number=log.block_number, block_timestamp=log.block_timestamp
-                ))
-            elif topic0 == constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0:
-                token_id = util.parse_hex_to_uint256(log.topic1)
-                pool_address = self._exist_token_ids[token_id]
-                pool_info = self._exist_pool_infos[pool_address]
+            else:
                 recipient_hex, amount0_hex, amount1_hex = split_hex_string(log.data)
                 self._collect_item(UniswapV3TokenCollectFee.type(), UniswapV3TokenCollectFee(
-                    nft_address=self._nft_address, token_id=token_id,
+                    nft_address=self._nft_address, token_id=token_id, owner=owner,
                     transaction_hash=log.transaction_hash, recipient=util.parse_hex_to_address(recipient_hex),
                     amount0=util.parse_hex_to_uint256(amount0_hex), amount1=util.parse_hex_to_uint256(amount1_hex),
                     pool_address=pool_address,
                     token0_address=pool_info.token0_address, token1_address=pool_info.token1_address,
-                    log_index=log.log_index, block_number=log.block_number, block_timestamp=log.block_timestamp
+                    log_index=log.log_index, block_number=block_number, block_timestamp=block_timestamp
                 ))
-            else:
-                continue
 
     def _process(self, **kwargs):
         self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.block_number)

@@ -71,11 +71,11 @@ class UniswapV3TokenCurrentStatus(FilterData):
     block_timestamp: int
 
 
-
 @dataclass
 class UniswapV3TokenUpdateLiquidity(FilterData):
     nft_address: str
     token_id: int
+    owner: str
     liquidity: int
     amount0: int
     amount1: int
@@ -88,10 +88,12 @@ class UniswapV3TokenUpdateLiquidity(FilterData):
     block_number: int
     block_timestamp: int
 
+
 @dataclass
 class UniswapV3TokenCollectFee(FilterData):
     nft_address: str
     recipient: str
+    owner: str
     token_id: int
     amount0: int
     amount1: int
@@ -102,6 +104,7 @@ class UniswapV3TokenCollectFee(FilterData):
     log_index: int
     block_number: int
     block_timestamp: int
+
 
 @dataclass
 class AgniV3Pool(UniswapV3Pool):

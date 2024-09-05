@@ -14,6 +14,8 @@ class UniswapV3CollectFeeRecords(HemeraModel):
     block_timestamp = Column(BIGINT, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
     transaction_hash = Column(BYTEA)
+    owner = Column(BYTEA)
+    recipient = Column(BYTEA)
 
     amount0 = Column(NUMERIC(100))
     amount1 = Column(NUMERIC(100))
@@ -54,6 +56,10 @@ Index(
     UniswapV3CollectFeeRecords.token1_address,
 )
 Index(
-    "af_uniswap_v3_token_collect_fee_hist_token_id_desc_index",
+    "af_uniswap_v3_token_collect_fee_hist_token_id_index",
     UniswapV3CollectFeeRecords.token_id,
+)
+Index(
+    "af_uniswap_v3_token_collect_fee_hist_owner_index",
+    UniswapV3CollectFeeRecords.owner,
 )
