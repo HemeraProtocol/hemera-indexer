@@ -430,7 +430,7 @@ class ExplorerInternalTransactions(Resource):
 
 @explorer_namespace.route("/v1/explorer/transactions")
 class ExplorerTransactions(Resource):
-    @cache.cached(timeout=10, query_string=True)
+    @cache.cached(timeout=3, query_string=True)
     def get(self):
         page_index = int(flask.request.args.get("page", 1))
         page_size = int(flask.request.args.get("size", 25))
@@ -1091,7 +1091,7 @@ blocks_parser.add_argument("batch", type=int, default=None, help="Batch filter")
 
 @explorer_namespace.route("/v1/explorer/blocks")
 class ExplorerBlocks(Resource):
-    @cache.cached(timeout=10, query_string=True)
+    @cache.cached(timeout=3, query_string=True)
     def get(self):
         args = blocks_parser.parse_args()
         page_index = args.get("page")
