@@ -44,6 +44,7 @@ CONTRACT_NAME_MAP = {
     "0xf5925e20e3f4002ba17130641a87f574c71a8b3c": "NOT Verified",
     "0x27c9b34eb43523447d3e1bcf26f009d814522687": "TransparentUpgradeableProxy",
     "0x5d81ce189bf5267e70fb555916ffbc3d4c7b2245": "EnsBatchRenew",
+    "0x6109dd117aa5486605fc85e040ab00163a75c662": "RegistrarMigration"
 }
 
 

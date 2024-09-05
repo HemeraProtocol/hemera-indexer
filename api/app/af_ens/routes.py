@@ -9,6 +9,7 @@ from common.models.af_ens_address_current import ENSAddress
 from common.models.af_ens_event import ENSMiddle
 from common.models.af_ens_node_current import ENSRecord
 from common.models.erc721_token_id_changes import ERC721TokenIdChanges
+from common.models.current_token_balances import CurrentTokenBalances
 from common.utils.config import get_config
 
 app_config = get_config()
@@ -39,8 +40,10 @@ class ExplorerUserOperationDetails(Resource):
         all_owned = db.session.query(ENSRecord).filter(ENSRecord.token_id.in_(all_721_ids)).all()
         res['ens_holdings'] = [r.name for r in all_owned]
         # TODO support 1155
-        # all_1155_owns = db.session.query(ENSRecord).filter(ENSRecord.address == address).all()
-
+        all_1155_owns = db.session.query(CurrentTokenBalances).filter(CurrentTokenBalances.address == address).all()
+        all_1155_ids = [r.token_id for r in all_1155_owns]
+        all_owned_1155_ens = db.session.query(ENSRecord).filter(ENSRecord.w_token_id.in_(all_1155_ids)).all()
+        res['ens_holdings'].extend([r.name for r in all_owned_1155_ens])
         primary_address_row = db.session.query(ENSAddress).filter(ENSAddress.address == address).first()
         if primary_address_row:
             primary_record = db.session.query(ENSRecord).filter(ENSRecord.name == primary_address_row.name).first()
@@ -67,8 +70,13 @@ class ExplorerUserOperationDetails(Resource):
             return lis
 
         all_records_rows = db.session.query(ENSMiddle).filter(ENSMiddle.from_address == address).order_by(ENSMiddle.block_number, ENSMiddle.transaction_index, ENSMiddle.log_index.desc()).all()
-        all_ens_records = db.session.query(ENSRecord).filter(ENSRecord.node.in_([r.node for r in all_records_rows])).all()
-        node_name_map = {r.node: r.name for r in all_ens_records if r.name}
+        node_name_map = {}
+        for r in all_records_rows:
+            if r.name:
+                if r.name.endswith('.eth'):
+                    node_name_map[r.node] = r.name
+                else:
+                    node_name_map[r.node] = r.name + '.eth'
         for r in all_records_rows:
             lis.append({
                 'method': r.method,

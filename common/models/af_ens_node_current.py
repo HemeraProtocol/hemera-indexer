@@ -29,7 +29,7 @@ def ens_general_converter(table: Type[HemeraModel], data: Domain, is_update=Fals
                         datetime.fromisoformat(getattr(data, key)).timestamp()
                     )
                 else:
-                    converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
+                    converted_data[key] = datetime.utcfromtimestamp(getattr(data, key)) if getattr(data, key) else None
             elif isinstance(column_type, ARRAY) and isinstance(column_type.item_type, BYTEA):
                 converted_data[key] = [bytes.fromhex(address[2:]) for address in getattr(data, key)]
             elif isinstance(column_type, JSONB) and getattr(data, key) is not None:

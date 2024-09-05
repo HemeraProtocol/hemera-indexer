@@ -10,7 +10,7 @@ from web3 import Web3
 
 from indexer.modules.hemera_ens.ens_conf import BASE_NODE, REVERSE_BASE_NODE
 from indexer.modules.hemera_ens.ens_domain import ENSMiddleD
-from indexer.modules.hemera_ens.ens_hash import namehash
+from indexer.modules.hemera_ens.ens_hash import namehash, compute_node_label
 from indexer.modules.hemera_ens.util import convert_str_ts
 
 logger = logging.getLogger(__name__)
@@ -75,6 +75,8 @@ class RegisterExtractor(BaseExtractor):
 
     tp0_register = "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f"
 
+    tp_register_with_token = "0xce0457fe73731f824cc272376169235128c118b49d344817417c6d108d155e82"
+
     def __init__(self):
         self.address = "0x283af0b28c62c092c9727f1ee09c02ca627eb7f5"
 
@@ -121,6 +123,7 @@ class RegisterExtractor(BaseExtractor):
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,
+                topic0=tp0.topic0,
                 from_address=ens_middle.from_address,
                 to_address=ens_middle.to_address,
                 expires=ens_middle.expires,
@@ -135,27 +138,43 @@ class RegisterExtractor(BaseExtractor):
                 w_token_id=w_token_id,
             )
         elif address == self.address2 and tp0 == self.tpb:
-            # token_id = str(log["topic1"]).lower()
-            # owner = str(log["topic2"]).lower()
-            # return ENSMiddleD(
-            #     transaction_hash=ens_middle.transaction_hash,
-            #     log_index=ens_middle.log_index,
-            #     block_number=ens_middle.block_number,
-            #     block_hash=ens_middle.block_hash,
-            #     block_timestamp=ens_middle.block_timestamp,
-            #     from_address=ens_middle.from_address,
-            #     to_address=ens_middle.to_address,
-            #
-            #     expires=ens_middle.expires,
-            #     name=ens_middle.name,
-            #     label=ens_middle.label,
-            #     owner=owner,
-            #     node=ens_middle.node,
-            #     event_name='_NameRegisteredToken',
-            #     method=ens_middle.method,
-            #
-            # )
-            return None
+            token_id = str(log["topic1"]).lower()
+            owner = extract_eth_address(str(log["topic2"]).lower()[2:])
+            event_data = decode_log(log, contract_object_map, event_map)
+            ens_middle.event_name = event_data["_event"]
+
+            node = None
+            label = None
+            base_node = None
+            for log in prev_logs:
+                if log["address"] == "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e" and log['topic0'] == RegisterExtractor.tp_register_with_token:
+                    base_node = log['topic1']
+                    label = log['topic2']
+                    node = compute_node_label(base_node, label)
+                    break
+
+            return ENSMiddleD(
+                transaction_hash=ens_middle.transaction_hash,
+                log_index=ens_middle.log_index,
+                transaction_index=ens_middle.transaction_index,
+                block_number=ens_middle.block_number,
+                topic0=tp0,
+                block_hash=ens_middle.block_hash,
+                block_timestamp=ens_middle.block_timestamp,
+                from_address=ens_middle.from_address,
+                to_address=ens_middle.to_address,
+
+                expires=ens_middle.expires,
+                name=ens_middle.name,
+                base_node=base_node,
+                label=label,
+                owner=owner,
+                node=node,
+                event_name=ens_middle.event_name,
+                method=ens_middle.method,
+                token_id=token_id,
+
+            )
         else:
             return None
 
@@ -174,6 +193,7 @@ class NameRenewExtractor(BaseExtractor):
             name = tmp.get("name")
             if "." in name:
                 return None
+            name = name + '.eth'
             ens_middle.name = name
             ens_middle.node = namehash(name + ".eth")
             ens_middle.label = tmp.get("label").lower()
@@ -187,6 +207,7 @@ class NameRenewExtractor(BaseExtractor):
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,
+                topic0=tp0,
                 from_address=ens_middle.from_address,
                 to_address=ens_middle.to_address,
                 name=ens_middle.name,
@@ -221,6 +242,7 @@ class AddressChangedExtractor(BaseExtractor):
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,
+                topic0=tp0,
                 from_address=ens_middle.from_address,
                 to_address=ens_middle.to_address,
                 node=ens_middle.node,
@@ -258,6 +280,7 @@ class NameChangedExtractor(BaseExtractor):
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,
+                topic0=tp0,
                 from_address=ens_middle.from_address,
                 to_address=ens_middle.to_address,
                 reverse_name=ens_middle.reverse_name,
@@ -313,3 +336,11 @@ class NameChangedExtractor(BaseExtractor):
 #                 block_hash=ens_middle.block_hash,
 #                 block_timestamp=ens_middle.block_timestamp,
 #             )
+
+def extract_eth_address(input_str):
+    cleaned_str = input_str.lstrip('0')
+    if len(cleaned_str) != 40:
+        raise ValueError("error address length")
+
+    eth_address = '0x' + cleaned_str
+    return eth_address

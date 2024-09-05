@@ -17,6 +17,7 @@ class ENSMiddleD(FilterData):
     block_timestamp: Optional[datetime] = None
     method: Optional[str] = None
     event_name: Optional[str] = None
+    topic0: Optional[str] = None
     from_address: Optional[str] = None
     to_address: Optional[str] = None
 

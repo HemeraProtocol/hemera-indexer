@@ -17,6 +17,7 @@ class ENSMiddle(HemeraModel):
     block_timestamp = Column(TIMESTAMP)
     method = Column(String)
     event_name = Column(String)
+    topic0 = Column(String)
     from_address = Column(BYTEA)
     to_address = Column(BYTEA)
     # namehash of .eth
