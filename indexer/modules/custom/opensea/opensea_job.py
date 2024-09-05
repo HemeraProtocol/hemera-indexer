@@ -145,7 +145,8 @@ class OpenseaJob(FilterTransactionDataJob):
             fee = calculate_fee_amount(opensea_log.consideration, opensea_log.fee_addresses)
 
             opensea_transaciton_type = get_opensea_transaction_type(opensea_log.offer, opensea_log.consideration)
-
+            if opensea_log.offerer == opensea_log.recipient:
+                continue
             yield AddressOpenseaTransaction(
                 address=opensea_log.offerer,
                 related_address=opensea_log.recipient,
