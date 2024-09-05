@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+from datetime import datetime
 from itertools import groupby
 from operator import attrgetter
 
@@ -316,32 +317,19 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         fbtc_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
         address = bytes.fromhex(fbtc_address.lower()[2:])
 
+        the_period_date = datetime.strptime(self.start_date, '%Y-%m-%d').date()
         session = self.db_service.Session()
-        subquery = (
-            session.query(
-                PeriodAddressTokenBalances,
-                func.row_number().over(
-                    partition_by=PeriodAddressTokenBalances.address,
-                    order_by=desc(PeriodAddressTokenBalances.period_date)
-                ).label('row_number')
-            ).filter(
-                PeriodAddressTokenBalances.period_date == self.start_date)
-            .filter(PeriodAddressTokenBalances.token_address == address)
-        ).subquery()
 
-        query = session.query(subquery).filter(
-            subquery.c.row_number == 1,
-            subquery.c.balance > 0
-        )
-
-        result = query.all()
+        period_addresses = session.query(PeriodAddressTokenBalances).filter(
+            PeriodAddressTokenBalances.token_address == address).all()
 
         price_dict = self.get_latest_price(['FBTC'])
+        results = {
+            (the_period_date, r.address): [float(r.balance / 10 ** 8), float(r.balance * price_dict['FBTC'] / 10 ** 8)]
+            for r in period_addresses}
+        session.close()
 
-        # remember decimals
-        return {
-            (r.period_date, r.address): [float(r.balance / 10 ** 8), float(r.balance * price_dict['FBTC'] / 10 ** 8)]
-            for r in result}
+        return results
 
     def get_merchantmoe_json(self):
         orm_list = self.get_filter_fbtc_orm(PeriodFeatureHoldingBalanceMerchantmoe)
@@ -413,15 +401,17 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
     def run(self):
         # get all protocol json, actually then can be abstract...
+        address_token_balances = self.timed_call(self.get_period_address_token_balances,
+                                                 'get_period_address_token_balances')
+
         staked = self.timed_call(self.get_staked_json, 'get_staked_json')
         uniswapv3 = self.timed_call(self.get_uniswap_v3_json, 'get_uniswap_v3_json')
         merchantmoe_json = self.timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
-        address_token_balances = self.timed_call(self.get_period_address_token_balances,
-                                                 'get_period_address_token_balances')
 
         dodo_json = self.timed_call(self.get_dodo_json, 'get_dodo_json')
         get_lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
 
+        # period_date can be removed from the key
         protocol_wallet_keys_list = list(
             {key for d in [uniswapv3, staked, address_token_balances, merchantmoe_json, dodo_json, get_lendle_json] for
              key in d.keys()})

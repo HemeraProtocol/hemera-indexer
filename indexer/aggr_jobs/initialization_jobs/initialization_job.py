@@ -46,7 +46,7 @@ class InitializationJob:
 
         session.commit()
         execution_time = time.time() - start_time
-        print(f'----------- executed in {execution_time:.2f} seconds: init token price')
+        print(f'----------- executed in {execution_time:.2f} seconds: init period_address_token_balances')
 
         session.close()
 
