@@ -26,6 +26,13 @@ class OpenseaTransactionType(Enum):
     SWAP = 2
 
 
+def get_opensea_transaction_type_string(value: int) -> str:
+    try:
+        return OpenseaTransactionType(value).name.lower()
+    except ValueError:
+        return f"UNKNOWN_TYPE_{value}"
+
+
 class ItemType(Enum):
     # 0: ETH on mainnet, MATIC on polygon, etc.
     NATIVE = 0

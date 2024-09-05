@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import date, datetime
+from functools import lru_cache
 from typing import Any, Dict, List, Union
 
 from flask import request
@@ -17,7 +18,7 @@ from indexer.modules.custom.opensea.models.address_opensea_transaction import Ad
 from indexer.modules.custom.opensea.models.opensea_crypto_mapping import OpenseaCryptoTokenMapping
 from indexer.modules.custom.opensea.models.opensea_order import OpenseaOrders
 from indexer.modules.custom.opensea.models.scheduled_metadata import ScheduledMetadata
-from indexer.modules.custom.opensea.opensea_job import get_item_type_string
+from indexer.modules.custom.opensea.opensea_job import get_item_type_string, get_opensea_transaction_type_string
 
 PAGE_SIZE = 10
 MAX_TRANSACTION = 500000
@@ -71,34 +72,34 @@ def get_opensea_address_order_cnt(address: Union[str, bytes]):
     return total_count
 
 
-def get_token_price(token_address: str, timestamp: datetime) -> float:
+@lru_cache(maxsize=1000)
+def get_token_price_symbol(token_address: str) -> str:
     if token_address == "0x0000000000000000000000000000000000000000":
-        # For ETH, get the price from TokenHourlyPrices
-        price_record = (
-            db.session.query(TokenHourlyPrices)
-            .filter(TokenHourlyPrices.symbol == "ETH")
-            .filter(TokenHourlyPrices.timestamp <= timestamp)
-            .order_by(desc(TokenHourlyPrices.timestamp))
-            .first()
-        )
-        return float(price_record.price) if price_record else 0
-    else:
-        # For other tokens, get the price symbol from the mapping table
-        mapping = (
-            db.session.query(OpenseaCryptoTokenMapping)
-            .filter(OpenseaCryptoTokenMapping.address_var == token_address)
-            .first()
-        )
-        if mapping and mapping.price_symbol:
-            price_record = (
-                db.session.query(TokenHourlyPrices)
-                .filter(TokenHourlyPrices.symbol == mapping.price_symbol)
-                .filter(TokenHourlyPrices.timestamp <= timestamp)
-                .order_by(desc(TokenHourlyPrices.timestamp))
-                .first()
-            )
-            return float(price_record.price) if price_record else 0
-    return 0
+        return "ETH"
+    mapping = (
+        db.session.query(OpenseaCryptoTokenMapping)
+        .filter(OpenseaCryptoTokenMapping.address_var == token_address)
+        .first()
+    )
+    return mapping.price_symbol if mapping and mapping.price_symbol else "ETH"
+
+
+@cache.memoize(timeout=86400)  # 缓存24小时
+def get_token_daily_price(token_symbol: str, day: date) -> float:
+    end_of_day = datetime.combine(day, datetime.max.time())
+    price_record = (
+        db.session.query(TokenHourlyPrices)
+        .filter(TokenHourlyPrices.symbol == token_symbol)
+        .filter(TokenHourlyPrices.timestamp <= end_of_day)
+        .order_by(desc(TokenHourlyPrices.timestamp))
+        .first()
+    )
+    return float(price_record.price) if price_record else 0
+
+
+def get_token_price(token_address: str, timestamp: datetime) -> float:
+    price_symbol = get_token_price_symbol(token_address)
+    return get_token_daily_price(price_symbol, timestamp.date())
 
 
 def calculate_usd_value(amount: float, token_address: str, timestamp: datetime) -> float:
@@ -153,11 +154,13 @@ def format_opensea_transaction(transaction: Dict[str, Any]) -> Dict[str, Any]:
         "order_hash": transaction["order_hash"],
         "protocol_version": transaction["protocol_version"],
         "zone": transaction["zone"],
-        "transaction_type": "buy" if not transaction["is_offer"] else "sell",
+        "transaction_type": get_opensea_transaction_type_string(transaction["transaction_type"]),
     }
 
     # Calculate volume and determine items
-    if not transaction["is_offer"]:  # Buy transaction
+    if (not transaction["is_offer"] and transaction["transaction_type"] == 0)(
+        transaction["is_offer"] and transaction["transaction_type"] == 1
+    ):  # Buy transaction
         volume = sum(item.get("usd_value", 0) for item in transaction["consideration"])
         items = transaction["offer"]
     else:  # Sell transaction
