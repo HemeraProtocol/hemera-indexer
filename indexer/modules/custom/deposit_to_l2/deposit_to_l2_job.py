@@ -23,6 +23,7 @@ from indexer.utils.utils import distinct_collections_by_group
 class DepositToL2Job(FilterTransactionDataJob):
     dependency_types = [Block]
     output_types = [TokenDepositTransaction, AddressTokenDeposit]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -97,45 +98,46 @@ class DepositToL2Job(FilterTransactionDataJob):
         )
         self._collect_items(TokenDepositTransaction.type(), deposit_tokens)
 
-        for deposit in pre_aggregate_deposit_in_same_block(deposit_tokens):
-            cache_key = (deposit.wallet_address, deposit.chain, deposit.contract_address, deposit.token_address)
-            cache_value = self.cache.get(cache_key)
-            if cache_value and cache_value.block_number < deposit.block_number:
-                # add and save 2 cache
-                token_deposit = AddressTokenDeposit(
-                    wallet_address=deposit.wallet_address,
-                    chain=deposit.chain,
-                    contract_address=deposit.contract_address,
-                    token_address=deposit.token_address,
-                    value=deposit.value + cache_value.value,
-                    block_number=deposit.block_number,
-                )
-
-                self.cache.set(cache_key, token_deposit)
-                self._collect_item(AddressTokenDeposit.type(), token_deposit)
-
-            elif cache_value is None:
-                # check from db and save 2 cache
-                history_deposit = self.check_history_deposit_from_db(
-                    deposit.wallet_address, deposit.chain, deposit.token_address
-                )
-                if history_deposit is None or history_deposit.block_number < deposit.block_number:
+        if not self._reorg:
+            for deposit in pre_aggregate_deposit_in_same_block(deposit_tokens):
+                cache_key = (deposit.wallet_address, deposit.chain, deposit.contract_address, deposit.token_address)
+                cache_value = self.cache.get(cache_key)
+                if cache_value and cache_value.block_number < deposit.block_number:
+                    # add and save 2 cache
                     token_deposit = AddressTokenDeposit(
                         wallet_address=deposit.wallet_address,
                         chain=deposit.chain,
                         contract_address=deposit.contract_address,
                         token_address=deposit.token_address,
-                        value=deposit.value + history_deposit.value if history_deposit else deposit.value,
+                        value=deposit.value + cache_value.value,
                         block_number=deposit.block_number,
                     )
+
                     self.cache.set(cache_key, token_deposit)
                     self._collect_item(AddressTokenDeposit.type(), token_deposit)
 
-        self._data_buff[AddressTokenDeposit.type()] = distinct_collections_by_group(
-            collections=self._data_buff[AddressTokenDeposit.type()],
-            group_by=["wallet_address", "chain", "contract_address", "token_address"],
-            max_key="block_number",
-        )
+                elif cache_value is None:
+                    # check from db and save 2 cache
+                    history_deposit = self.check_history_deposit_from_db(
+                        deposit.wallet_address, deposit.chain, deposit.token_address
+                    )
+                    if history_deposit is None or history_deposit.block_number < deposit.block_number:
+                        token_deposit = AddressTokenDeposit(
+                            wallet_address=deposit.wallet_address,
+                            chain=deposit.chain,
+                            contract_address=deposit.contract_address,
+                            token_address=deposit.token_address,
+                            value=deposit.value + history_deposit.value if history_deposit else deposit.value,
+                            block_number=deposit.block_number,
+                        )
+                        self.cache.set(cache_key, token_deposit)
+                        self._collect_item(AddressTokenDeposit.type(), token_deposit)
+
+            self._data_buff[AddressTokenDeposit.type()] = distinct_collections_by_group(
+                collections=self._data_buff[AddressTokenDeposit.type()],
+                group_by=["wallet_address", "chain", "contract_address", "token_address"],
+                max_key="block_number",
+            )
 
     def check_history_deposit_from_db(self, wallet_address: str, chain: str, token_address: str) -> AddressTokenDeposit:
         session = self._service.get_service_session()
@@ -194,35 +196,4 @@ def pre_aggregate_deposit_in_same_block(deposit_events: List[TokenDepositTransac
 
 
 if __name__ == "__main__":
-    # base_path = os.path.dirname(os.path.abspath(__file__))
-    # full_path = os.path.join(base_path, 'config.ini')
-    # config = configparser.ConfigParser()
-    # config.read(full_path)
-    #
-    # deposit_contracts = json.loads(config.get("chain_deposit_info", "contract_info_test"))
-    # contracts = set()
-    # contract_chain_mapping = {}
-    # sig_function_mapping = {}
-    # sig_parse_mapping = {}
-    #
-    # for chain in deposit_contracts.keys():
-    #     for contract_info in deposit_contracts[chain]:
-    #         contract_address = to_normalized_address(contract_info['contract'])
-    #         contracts.add(contract_address)
-    #         contract_chain_mapping[contract_address] = chain
-    #         for function in contract_info['ABIFunction']:
-    #             abi_function = None
-    #             if "json" in function:
-    #                 abi_function = cast(ABIFunction, function["json"])
-    #                 sig = function_abi_to_4byte_selector_str(abi_function)
-    #             else:
-    #                 sig = function['method_id']
-    #
-    #             sig_function_mapping[sig] = abi_function
-    #             sig_parse_mapping[sig] = token_parse_mapping[function['token']]
-    #
-    # print(contracts)
-    # print(contract_chain_mapping)
-    # print(sig_function_mapping)
-    # print(sig_parse_mapping)
     pass
