@@ -21,7 +21,7 @@ with tokens_table as (select *,
 insert
 into period_feature_holding_balance_lendle (period_date, wallet_address, protocol_id, contract_address,
                                             token_symbol, token_address, balance)
-select d1.period_date,
+select date('{start_date}'),
        d1.address,
        'lendle',
        d1.token_address,
@@ -31,10 +31,9 @@ select d1.period_date,
 
 from period_address_token_balances d1
          inner join tokens_table d2 on d1.token_address = d2.address
-         inner join tokens d3 on d3.symbol = 'FBTC'
+         inner join tokens d3 on d3.address = '\xC96DE26018A54D51C097160568752C4E3BD6C364'
 
-where d1.period_date = '{start_date}'
-  and token_address in (
+where  token_address in (
                         '\xdef3542bb1b2969c1966dd91ebc504f4b37462fe',
                         '\x874712c653aaaa7cfb201317f46e00238c2649bb',
                         '\x08fc23af290d538647aa2836c5b3cf2fb3313759'

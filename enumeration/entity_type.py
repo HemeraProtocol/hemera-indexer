@@ -318,8 +318,8 @@ def generate_output_types(entity_types):
         yield Erc20TokenHolding
         yield ERC20TokenTransfer
         yield Erc20CurrentTokenHolding
-        yield Erc20TotalSupply
-        yield Erc20CurrentTotalSupply
+        # yield Erc20TotalSupply
+        # yield Erc20CurrentTotalSupply
 
     if entity_types & EntityType.FBTC_TRANSFER:
         yield Token

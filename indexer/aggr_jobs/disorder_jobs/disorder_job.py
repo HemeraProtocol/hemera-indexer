@@ -3,9 +3,13 @@ from sqlalchemy import text
 from indexer.aggr_jobs.aggr_base_job import AggrBaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 
-job_list = ['daily_address_token_balances', 'daily_feature_holding_balance_staked_fbtc_detail.sql',
-            'daily_feature_holding_balance_uniswap_v3.sql', 'daily_feature_erc1155_token_holdings.sql',
-            'daily_feature_erc1155_token_supply_records.sql']
+job_list = ['daily_feature_holding_balance_staked_fbtc_detail.sql',
+            'daily_feature_holding_balance_uniswap_v3.sql',
+            'daily_address_token_balances',
+            'daily_feature_erc20_token_supply_records.sql',
+            # 'daily_feature_erc1155_token_holdings.sql',
+            # 'daily_feature_erc1155_token_supply_records.sql'
+            ]
 
 
 class AggrDisorderJob(AggrBaseJob):

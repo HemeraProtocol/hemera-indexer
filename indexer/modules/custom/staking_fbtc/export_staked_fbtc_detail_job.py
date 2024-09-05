@@ -5,7 +5,6 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
-from sqlalchemy import and_, func
 
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -17,8 +16,6 @@ from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail impor
     StakedFBTCCurrentStatus,
     StakedFBTCDetail,
 )
-from indexer.modules.custom.staking_fbtc.models.feature_staked_fbtc_detail_records import FeatureStakedFBTCDetailRecords
-from indexer.modules.custom.staking_fbtc.models.feature_staked_fbtc_detail_status import FeatureStakedFBTCDetailStatus
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 

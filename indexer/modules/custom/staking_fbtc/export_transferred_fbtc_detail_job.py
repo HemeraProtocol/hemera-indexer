@@ -15,15 +15,13 @@ from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail impor
     TransferredFBTCCurrentStatus,
     TransferredFBTCDetail,
 )
-from indexer.modules.custom.staking_fbtc.models.feature_staked_fbtc_detail_status import FeatureStakedFBTCDetailStatus
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import decode_log
 
 logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.TRANSFERRED_FBTC.value
 
 
-class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
+class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
     dependency_types = [ERC20TokenTransfer]
     output_types = [TransferredFBTCDetail, TransferredFBTCCurrentStatus]
     able_to_reorg = True

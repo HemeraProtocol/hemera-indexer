@@ -1,18 +1,10 @@
--- todo change to combine
-delete
-from period_address_token_balances
-WHERE period_date = '{start_date}';
-
-insert into public.period_address_token_balances (address, period_date, token_address, token_id, token_type, balance)
-select address,
-       '{start_date}',
-       token_address,
-       token_id,
-       token_type,
-       balance
-from (select *,
-             row_number() over (partition by address, token_address, token_id order by block_date desc) as rn
-      from daily_address_token_balances
-      WHERE block_date < '{end_date}') t
-where rn = 1;
-
+INSERT INTO period_address_token_balances (address, period_date, token_address, token_id, token_type, balance)
+SELECT d1.address, d1.block_date, d1.token_address, d1.token_id, d1.token_type, d1.balance
+FROM daily_address_token_balances d1
+where block_date = '{start_date}'
+ON CONFLICT (address, token_address, token_id)
+    DO UPDATE
+    SET balance     = EXCLUDED.balance,
+        token_type  = EXCLUDED.token_type,
+        period_date = EXCLUDED.period_date
+;

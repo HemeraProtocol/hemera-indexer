@@ -2,15 +2,10 @@ import configparser
 import json
 import logging
 import os
-import threading
 from collections import defaultdict
-from queue import Queue
-from typing import List, Tuple, cast
+from typing import List, Tuple
 
 import eth_abi
-from web3.types import ABIEvent
-
-from common import models
 from indexer.domain import dict_to_dataclass
 from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.log import Log

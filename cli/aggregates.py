@@ -62,7 +62,16 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
     envvar="DATE_BATCH_SIZE",
     help="How many DATEs to batch in single sync round",
 )
-def aggregates(chain_name, postgres_url, provider_uri, start_date, end_date, date_batch_size):
+@click.option(
+    "-du",
+    "--dblink-url",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="DBLINK_URL",
+    help="dblink to take token price, maybe moved to other replace later",
+)
+def aggregates(chain_name, postgres_url, provider_uri, start_date, end_date, date_batch_size, dblink_url):
     if not start_date and not end_date:
         start_date, end_date = get_yesterday_date()
     elif not end_date:
@@ -72,7 +81,7 @@ def aggregates(chain_name, postgres_url, provider_uri, start_date, end_date, dat
 
     # check_data_completeness(db_service, provider_uri, end_date)
 
-    config = {"db_service": db_service, "chain_name": chain_name}
+    config = {"db_service": db_service, "chain_name": chain_name, 'dblink_url': dblink_url}
     dispatcher = AggregatesDispatcher(config)
 
     controller = AggregatesController(job_dispatcher=dispatcher)
