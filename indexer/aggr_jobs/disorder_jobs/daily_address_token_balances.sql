@@ -1,4 +1,3 @@
-begin;
 delete
 from daily_address_token_balances
 WHERE block_date >= '{start_date}'
@@ -8,7 +7,7 @@ insert into public.daily_address_token_balances (address, block_date, token_addr
                                                  )
 
 select address,
-       date(block_timestamp),
+       date(block_timestamp) as block_date,
        token_address,
        token_id,
        token_type,
@@ -20,4 +19,3 @@ from (select *,
         and block_timestamp < '{end_date}') t
 where rn = 1;
 
-commit
