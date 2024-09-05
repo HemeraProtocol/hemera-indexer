@@ -195,7 +195,7 @@ class NameRenewExtractor(BaseExtractor):
                 return None
             name = name + '.eth'
             ens_middle.name = name
-            ens_middle.node = namehash(name + ".eth")
+            ens_middle.node = namehash(name)
             ens_middle.label = tmp.get("label").lower()
             ens_middle.expires = convert_str_ts(tmp.get("expires", ""))
             ens_middle.event_name = event_data["_event"]
