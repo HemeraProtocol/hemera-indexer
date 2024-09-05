@@ -158,7 +158,7 @@ def format_opensea_transaction(transaction: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     # Calculate volume and determine items
-    if (not transaction["is_offer"] and transaction["transaction_type"] == 0)(
+    if (not transaction["is_offer"] and transaction["transaction_type"] == 0) or (
         transaction["is_offer"] and transaction["transaction_type"] == 1
     ):  # Buy transaction
         volume = sum(item.get("usd_value", 0) for item in transaction["consideration"])
