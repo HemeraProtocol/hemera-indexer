@@ -31,7 +31,7 @@ def get_opensea_profile_by_address(address: Union[str, bytes]):
         address = bytes.fromhex(address[2:])
     opensea_profile = db.session().query(AddressOpenseaProfile).filter_by(address=address).first()
     if not opensea_profile:
-        raise APIError("The address is not a contract", code=400)
+        raise APIError("The address has no opensea transaction", code=400)
     return opensea_profile
 
 
