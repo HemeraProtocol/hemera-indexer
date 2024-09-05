@@ -138,7 +138,7 @@ class RegisterExtractor(BaseExtractor):
                 w_token_id=w_token_id,
             )
         elif address == self.address2 and tp0 == self.tpb:
-            token_id = str(log["topic1"]).lower()
+            token_id = int(str(log["topic1"]).lower(), 16)
             owner = extract_eth_address(str(log["topic2"]).lower()[2:])
             event_data = decode_log(log, contract_object_map, event_map)
             ens_middle.event_name = event_data["_event"]

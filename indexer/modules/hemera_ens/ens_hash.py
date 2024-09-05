@@ -41,3 +41,4 @@ def compute_node_label(base_node, label):
 
 if __name__ == "__main__":
     print(compute_node_label('93CDEB708B7545DC668EB9280176169D1C33CFD8ED6F04690A0BCC88A93FC4AE', "AF2CAA1C2CA1D027F1AC823B529D0A67CD144264B2789FA2EA4D63A67C7103CC"))
+    print(int(get_label('will0x0909'), 16))
