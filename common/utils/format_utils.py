@@ -39,8 +39,10 @@ def format_to_dict(row):
         return None
     if hasattr(row, "_asdict"):
         return row_to_dict(row)
-    else:
+    elif hasattr(row, "__table__"):
         return as_dict(row)
+    else:
+        return format_value_for_json(row)
 
 
 def format_value_for_json(value):
@@ -50,6 +52,10 @@ def format_value_for_json(value):
         return float(value)
     elif isinstance(value, bytes):
         return "0x" + value.hex()
+    elif isinstance(value, list):
+        return [format_value_for_json(v) for v in value]
+    elif isinstance(value, dict):
+        return {k: format_value_for_json(v) for k, v in value.items()}
     else:
         return value
 

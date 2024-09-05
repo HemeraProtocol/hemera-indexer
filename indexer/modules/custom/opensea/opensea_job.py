@@ -41,6 +41,13 @@ class ItemType(Enum):
     ERC1155_WITH_CRITERIA = 5
 
 
+def get_item_type_string(value: int) -> str:
+    try:
+        return ItemType(value).name
+    except ValueError:
+        return f"UNKNOWN_TYPE_{value}"
+
+
 def get_opensea_transaction_type(offer, consideration):
     for item in offer:
         if item["itemType"] > 1:
