@@ -109,7 +109,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 token_id_hex = log.topic1
             else:
                 continue
-            token_id = util.parse_hex_to_uint256(log.topic3)
+            token_id = util.parse_hex_to_uint256(token_id_hex)
             key = (token_id, block_number, block_timestamp)
             data = {
                 "token_id": token_id,
@@ -238,6 +238,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
         self._data_buff[UniswapV3TokenDetail.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3TokenCurrentStatus.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3TokenUpdateLiquidity.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV3TokenCollectFee.type()].sort(key=lambda x: x.block_number)
 
 
 def get_exist_pools(db_service, nft_address):

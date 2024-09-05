@@ -15,14 +15,12 @@ class UniswapV3CollectFeeRecords(HemeraModel):
     log_index = Column(INTEGER, primary_key=True)
     transaction_hash = Column(BYTEA)
 
-    liquidity = Column(NUMERIC(100))
     amount0 = Column(NUMERIC(100))
     amount1 = Column(NUMERIC(100))
     pool_address = Column(BYTEA)
     token0_address = Column(BYTEA)
     token1_address = Column(BYTEA)
 
-    action_type = Column(VARCHAR)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())

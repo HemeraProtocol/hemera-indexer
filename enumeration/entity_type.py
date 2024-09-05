@@ -26,7 +26,8 @@ from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenHolding,
     MerchantMoeErc1155TokenSupply,
 )
-from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin,MerChantMoePool
+from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin, \
+    MerChantMoePool
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
     StakedFBTCCurrentStatus,
     StakedFBTCDetail,
@@ -56,6 +57,8 @@ from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     UniswapV3Token,
     UniswapV3TokenCurrentStatus,
     UniswapV3TokenDetail,
+    UniswapV3TokenCollectFee,
+    UniswapV3TokenUpdateLiquidity,
 )
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
@@ -334,4 +337,10 @@ def generate_output_types(entity_types):
 
     if entity_types & EntityType.V3_POOLS:
         yield UniswapV3Pool
-
+        yield UniswapV3Token
+        yield UniswapV3PoolPrice
+        yield UniswapV3TokenDetail
+        yield UniswapV3PoolCurrentPrice
+        yield UniswapV3TokenCurrentStatus
+        yield UniswapV3TokenUpdateLiquidity
+        yield UniswapV3TokenCollectFee
