@@ -14,15 +14,14 @@ with sbtc_table as (select d1.*,
                     where period_date = '{start_date}'),
 
      period_address_token_balance_table as (select *
-                                            from period_address_token_balances
-                                            ),
+                                            from period_address_token_balances),
 
 
      sbtc_balance_address_balance as (select d1.period_date,
                                              d1.wallet_address,
                                              d1.protocol_id,
                                              d1.contract_address,
-                                             d1.amount as fbtc_balance,
+                                             d1.amount  as fbtc_balance,
                                              d1.flag,
                                              d2.token_address,
                                              d2.balance as btc_balance
@@ -37,7 +36,7 @@ select date('{start_date}'),
        d1.contract_address,
        greatest(0, case
                        when not flag then d1.fbtc_balance / pow(10, d2.decimals)
-                       else LEAST(d1.fbtc_balance / d2.decimals, d1.btc_balance / pow(10, d3.decimals)) end)
+                       else LEAST(d1.fbtc_balance / pow(10, d2.decimals), d1.btc_balance / pow(10, d3.decimals)) end)
            as balance
 
 from sbtc_balance_address_balance d1
