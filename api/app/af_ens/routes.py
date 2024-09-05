@@ -11,11 +11,11 @@ from common.models.af_ens_node_current import ENSRecord
 from common.models.erc721_token_id_changes import ERC721TokenIdChanges
 from common.models.current_token_balances import CurrentTokenBalances
 from common.utils.config import get_config
-
+from web3 import Web3
 app_config = get_config()
 from sqlalchemy import or_, and_, desc, func
 
-
+w3 = Web3(Web3.HTTPProvider("https://ethereum-rpc.publicnode.com"))
 af_ens_namespace = Namespace("User Operation Namespace", path="/", description="ENS feature")
 
 
@@ -25,7 +25,6 @@ class ExplorerUserOperationDetails(Resource):
         res = {
             "primary_name": None,
             "be_resolved_by_ens": [],
-            "first_set_primary_name": None,
             "ens_holdings": [],
             "first_register_time": None
         }
@@ -34,24 +33,26 @@ class ExplorerUserOperationDetails(Resource):
         else:
             return res
 
+        dn = datetime.now()
         # current_address holds 721 & 1155 tokens
         all_721_owns = db.session.query(ERC721TokenIdChanges).filter(ERC721TokenIdChanges.token_owner == address).all()
         all_721_ids = [r.token_id for r in all_721_owns]
-        all_owned = db.session.query(ENSRecord).filter(ENSRecord.token_id.in_(all_721_ids)).all()
-        res['ens_holdings'] = [r.name for r in all_owned]
-        # TODO support 1155
+        all_owned = db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids), ENSRecord.expires >= dn)).all()
+        res['ens_holdings'] = [r.name for r in all_owned if r.name and r.name.endswith('.eth')]
         all_1155_owns = db.session.query(CurrentTokenBalances).filter(CurrentTokenBalances.address == address).all()
         all_1155_ids = [r.token_id for r in all_1155_owns]
-        all_owned_1155_ens = db.session.query(ENSRecord).filter(ENSRecord.w_token_id.in_(all_1155_ids)).all()
-        res['ens_holdings'].extend([r.name for r in all_owned_1155_ens])
+        all_owned_1155_ens = db.session.query(ENSRecord).filter(and_(ENSRecord.expires >= dn, ENSRecord.w_token_id.in_(all_1155_ids))).all()
+        res['ens_holdings'].extend([r.name for r in all_owned_1155_ens if r.name and r.name.endswith('.eth')])
         primary_address_row = db.session.query(ENSAddress).filter(ENSAddress.address == address).first()
         if primary_address_row:
             primary_record = db.session.query(ENSRecord).filter(ENSRecord.name == primary_address_row.name).first()
             if primary_record:
                 res["primary_name"] = primary_record.name
+        else:
+            res['primary_name'] = w3.ens.name(w3.to_checksum_address(w3.to_hex(address)))
 
-        be_resolved_ens = db.session.query(ENSAddress).filter(ENSAddress.address == address).all()
-        res['be_resolved_by_ens'] = [r.name for r in be_resolved_ens]
+        be_resolved_ens = db.session.query(ENSRecord).filter(and_(ENSRecord.address == address, ENSRecord.expires >= dn)).all()
+        res['be_resolved_by_ens'] = [r.name for r in be_resolved_ens if r.name and r.name.endswith('.eth')]
 
         first_register = db.session.query(ENSMiddle).filter(and_(ENSMiddle.from_address == address, ENSMiddle.event_name == 'NameRegistered')).first()
         if first_register:
@@ -82,6 +83,7 @@ class ExplorerUserOperationDetails(Resource):
                 'method': r.method,
                 'event': r.event_name,
                 'block_number': r.block_number,
+                'block_timestamp': datetime_to_string(r.block_timestamp),
                 'transaction_index': r.transaction_index,
                 'log_index': r.log_index,
                 'transaction_hash': '0x' + r.transaction_hash.hex(),

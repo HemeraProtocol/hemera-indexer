@@ -123,7 +123,7 @@ class RegisterExtractor(BaseExtractor):
                 block_number=ens_middle.block_number,
                 block_hash=ens_middle.block_hash,
                 block_timestamp=ens_middle.block_timestamp,
-                topic0=tp0.topic0,
+                topic0=tp0,
                 from_address=ens_middle.from_address,
                 to_address=ens_middle.to_address,
                 expires=ens_middle.expires,
