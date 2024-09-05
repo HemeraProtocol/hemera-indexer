@@ -4,6 +4,7 @@ AggrDisorderJob -> AggrOrderJob
 """
 
 from indexer.aggr_jobs.disorder_jobs.disorder_job import AggrDisorderJob
+from indexer.aggr_jobs.initialization_jobs.initialization_job import InitializationJob
 from indexer.aggr_jobs.order_jobs.order_job import AggrOrderJob
 
 
@@ -18,7 +19,8 @@ class AggrJobScheduler:
 
     def instantiate_jobs(self):
         jobs = []
-        for job_class in [AggrDisorderJob, AggrOrderJob]:
+        # InitializationJob should be executed once only
+        for job_class in [InitializationJob, AggrDisorderJob, AggrOrderJob]:
             job = job_class(
                 config=self.config,
             )
