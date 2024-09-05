@@ -28,6 +28,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
         ERC1155TokenIdDetail,
         UpdateERC1155TokenIdDetail,
     ]
+    able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
