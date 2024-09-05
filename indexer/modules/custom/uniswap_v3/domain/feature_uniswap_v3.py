@@ -61,6 +61,26 @@ class UniswapV3PoolCurrentPrice(FilterData):
 
 
 @dataclass
+class UniswapV3SwapEvent(FilterData):
+    pool_address: str
+    nft_address: str
+    transaction_from_address: str
+    sender: str
+    recipient: str
+    amount0: int
+    amount1: int
+    liquidity: int
+    tick: int
+    sqrt_price_x96: int
+    token0_address: str
+    token1_address: str
+    transaction_hash: str
+    log_index: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
 class UniswapV3TokenCurrentStatus(FilterData):
     nft_address: str
     token_id: int

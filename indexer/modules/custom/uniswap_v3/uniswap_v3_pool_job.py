@@ -46,6 +46,7 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
         self._max_worker = kwargs["max_workers"]
         self._abi_list = UNISWAP_V3_ABI
         self._create_pool_topic0 = constants.UNISWAP_V3_CREATE_POOL_TOPIC0
+        self._pool_price_topic0_list = constants.UNISWAP_V3_POOL_PRICE_TOPIC0_LIST
 
     def get_filter(self):
         return TransactionFilterByLogs(
@@ -65,8 +66,6 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
         try:
             self._nft_address = chain_config.get("nft_address").lower()
             self._factory_address = chain_config.get("factory_address").lower()
-            topic0_list_str = chain_config.get("pool_price_topic0_list")
-            self._pool_price_topic0_list = [topic0.strip() for topic0 in topic0_list_str.split(",") if topic0.strip()]
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
