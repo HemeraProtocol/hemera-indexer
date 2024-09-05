@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
 
 
-class UniSwapV3FindPoolJob(FilterTransactionDataJob):
+class UniSwapV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
     output_types = [UniswapV3Pool, UniswapV3PoolPrice, UniswapV3PoolCurrentPrice]
     able_to_reorg = True
