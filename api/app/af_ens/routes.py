@@ -6,15 +6,15 @@ from flask_restx.namespace import Namespace
 from web3 import Web3
 
 from common.models import db
-from common.models.af_ens_address_current import ENSAddress
-from common.models.af_ens_event import ENSMiddle
-from common.models.af_ens_node_current import ENSRecord
 from common.models.current_token_balances import CurrentTokenBalances
 from common.models.erc721_token_id_changes import ERC721TokenIdChanges
 from common.utils.config import get_config
+from indexer.modules.custom.hemera_ens.models.af_ens_address_current import ENSAddress
+from indexer.modules.custom.hemera_ens.models.af_ens_event import ENSMiddle
+from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ENSRecord
 
 app_config = get_config()
-from sqlalchemy import and_, desc, func, or_
+from sqlalchemy import and_, or_
 
 w3 = Web3(Web3.HTTPProvider("https://ethereum-rpc.publicnode.com"))
 af_ens_namespace = Namespace("User Operation Namespace", path="/", description="ENS feature")

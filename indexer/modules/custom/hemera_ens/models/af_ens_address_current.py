@@ -1,8 +1,8 @@
 from sqlalchemy import BIGINT, TIMESTAMP, Column, String, func
 from sqlalchemy.dialects.postgresql import BYTEA
 
-from common.models import HemeraModel, general_converter
-from common.models.af_ens_node_current import ens_general_converter
+from common.models import HemeraModel
+from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
 
 
 class ENSAddress(HemeraModel):

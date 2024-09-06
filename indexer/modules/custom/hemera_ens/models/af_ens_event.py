@@ -2,7 +2,7 @@ from sqlalchemy import BIGINT, NUMERIC, TIMESTAMP, Column, Index, Integer, Prima
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA
 
 from common.models import HemeraModel
-from common.models.af_ens_node_current import ens_general_converter
+from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
 
 
 class ENSMiddle(HemeraModel):
