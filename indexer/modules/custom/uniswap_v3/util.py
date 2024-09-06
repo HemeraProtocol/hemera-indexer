@@ -43,7 +43,7 @@ def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_ke
 
 
 def parse_hex_to_address(hex_string):
-    hex_string = hex_string.lower().replace('0x', '')
+    hex_string = hex_string.lower().replace("0x", "")
 
     if len(hex_string) > 40:
         hex_string = hex_string[-40:]
@@ -54,6 +54,6 @@ def parse_hex_to_address(hex_string):
 
 def parse_hex_to_int256(hex_string):
     value = Web3.to_int(hexstr=hex_string)
-    if value >= 2 ** 255:
-        value -= 2 ** 256
+    if value >= 2**255:
+        value -= 2**256
     return value

@@ -16,7 +16,7 @@ def get_chain_id(web3):
 
 
 def simple_get_rpc_requests(
-        web3, make_requests, requests, is_batch, abi_list, fn_name, contract_address_key, batch_size, max_worker
+    web3, make_requests, requests, is_batch, abi_list, fn_name, contract_address_key, batch_size, max_worker
 ):
     if len(requests) == 0:
         return []

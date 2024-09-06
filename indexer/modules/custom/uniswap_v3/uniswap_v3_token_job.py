@@ -17,11 +17,11 @@ from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3 import constants, util
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Pool,
     UniswapV3Token,
+    UniswapV3TokenCollectFee,
     UniswapV3TokenCurrentStatus,
     UniswapV3TokenDetail,
-    UniswapV3Pool,
-    UniswapV3TokenCollectFee,
     UniswapV3TokenUpdateLiquidity,
 )
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
@@ -36,8 +36,13 @@ FEATURE_ID = FeatureType.UNISWAP_V3_TOKENS.value
 
 class UniswapV3TokenJob(FilterTransactionDataJob):
     dependency_types = [Log, UniswapV3Pool]
-    output_types = [UniswapV3Token, UniswapV3TokenDetail, UniswapV3TokenCurrentStatus, UniswapV3TokenUpdateLiquidity,
-                    UniswapV3TokenCollectFee]
+    output_types = [
+        UniswapV3Token,
+        UniswapV3TokenDetail,
+        UniswapV3TokenCurrentStatus,
+        UniswapV3TokenUpdateLiquidity,
+        UniswapV3TokenCollectFee,
+    ]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -105,17 +110,16 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 continue
             if topic0 == constants.TRANSFER_TOPIC0:
                 token_id_hex = log.topic3
-            elif topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0 or topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0:
+            elif (
+                topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0
+                or topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0
+            ):
                 token_id_hex = log.topic1
             else:
                 continue
             token_id = util.parse_hex_to_uint256(token_id_hex)
             key = (token_id, block_number, block_timestamp)
-            data = {
-                "token_id": token_id,
-                "block_number": block_number,
-                "block_timestamp": block_timestamp
-            }
+            data = {"token_id": token_id, "block_number": block_number, "block_timestamp": block_timestamp}
             if key not in need_collect_token_id_set:
                 need_collect_token_id_data.append(data)
                 need_collect_token_id_set.add(key)
@@ -130,9 +134,16 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             return
 
         # call owners
-        owner_info = owner_rpc_requests(self._web3, self._batch_web3_provider.make_request, need_collect_token_id_data,
-                                        self._nft_address, self._is_batch, self._abi_list, self._batch_size,
-                                        self._max_worker)
+        owner_info = owner_rpc_requests(
+            self._web3,
+            self._batch_web3_provider.make_request,
+            need_collect_token_id_data,
+            self._nft_address,
+            self._is_batch,
+            self._abi_list,
+            self._batch_size,
+            self._max_worker,
+        )
         # call positions
         token_infos = positions_rpc_requests(
             self._web3,
@@ -155,14 +166,21 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 fee = data["fee"]
                 key = (data["token0"], data["token1"], fee)
                 pool_address = info_pool_dict[key]
-                tick_lower = data["tickLower"],
-                tick_upper = data["tickUpper"],
-                self._collect_item(UniswapV3Token.type(), UniswapV3Token(nft_address=self._nft_address,
-                                                                         token_id=token_id,
-                                                                         pool_address=pool_address,
-                                                                         tick_lower=tick_lower, tick_upper=tick_upper,
-                                                                         fee=fee, block_number=block_number,
-                                                                         block_timestamp=block_timestamp))
+                tick_lower = (data["tickLower"],)
+                tick_upper = (data["tickUpper"],)
+                self._collect_item(
+                    UniswapV3Token.type(),
+                    UniswapV3Token(
+                        nft_address=self._nft_address,
+                        token_id=token_id,
+                        pool_address=pool_address,
+                        tick_lower=tick_lower,
+                        tick_upper=tick_upper,
+                        fee=fee,
+                        block_number=block_number,
+                        block_timestamp=block_timestamp,
+                    ),
+                )
                 self._exist_token_ids[token_id] = pool_address
             else:
                 pool_address = self._exist_token_ids[token_id]
@@ -196,36 +214,64 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             block_number = log.block_number
             block_timestamp = log.block_timestamp
             if topic0 not in (
-                    constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0,
-                    constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0,
-                    constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0,
+                constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0,
+                constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0,
+                constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0,
             ):
                 continue
             token_id = util.parse_hex_to_uint256(log.topic1)
             owner = token_owner_dict[token_id][block_number]
             pool_address = self._exist_token_ids[token_id]
             pool_info = self._exist_pool_infos[pool_address]
-            if topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0 or topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0:
+            if (
+                topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0
+                or topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0
+            ):
                 liquidity_hex, amount0_hex, amount1_hex = split_hex_string(log.data)
-                action_type = constants.DECREASE_TYPE if topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0 else constants.INCREASE_TYPE
-                self._collect_item(UniswapV3TokenUpdateLiquidity.type(), UniswapV3TokenUpdateLiquidity(
-                    nft_address=self._nft_address, token_id=token_id, owner=owner,
-                    action_type=action_type, transaction_hash=log.transaction_hash,
-                    liquidity=util.parse_hex_to_uint256(liquidity_hex), amount0=util.parse_hex_to_uint256(amount0_hex),
-                    amount1=util.parse_hex_to_uint256(amount1_hex), pool_address=pool_address,
-                    token0_address=pool_info.token0_address, token1_address=pool_info.token1_address,
-                    log_index=log.log_index, block_number=block_number, block_timestamp=block_timestamp
-                ))
+                action_type = (
+                    constants.DECREASE_TYPE
+                    if topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0
+                    else constants.INCREASE_TYPE
+                )
+                self._collect_item(
+                    UniswapV3TokenUpdateLiquidity.type(),
+                    UniswapV3TokenUpdateLiquidity(
+                        nft_address=self._nft_address,
+                        token_id=token_id,
+                        owner=owner,
+                        action_type=action_type,
+                        transaction_hash=log.transaction_hash,
+                        liquidity=util.parse_hex_to_uint256(liquidity_hex),
+                        amount0=util.parse_hex_to_uint256(amount0_hex),
+                        amount1=util.parse_hex_to_uint256(amount1_hex),
+                        pool_address=pool_address,
+                        token0_address=pool_info.token0_address,
+                        token1_address=pool_info.token1_address,
+                        log_index=log.log_index,
+                        block_number=block_number,
+                        block_timestamp=block_timestamp,
+                    ),
+                )
             else:
                 recipient_hex, amount0_hex, amount1_hex = split_hex_string(log.data)
-                self._collect_item(UniswapV3TokenCollectFee.type(), UniswapV3TokenCollectFee(
-                    nft_address=self._nft_address, token_id=token_id, owner=owner,
-                    transaction_hash=log.transaction_hash, recipient=util.parse_hex_to_address(recipient_hex),
-                    amount0=util.parse_hex_to_uint256(amount0_hex), amount1=util.parse_hex_to_uint256(amount1_hex),
-                    pool_address=pool_address,
-                    token0_address=pool_info.token0_address, token1_address=pool_info.token1_address,
-                    log_index=log.log_index, block_number=block_number, block_timestamp=block_timestamp
-                ))
+                self._collect_item(
+                    UniswapV3TokenCollectFee.type(),
+                    UniswapV3TokenCollectFee(
+                        nft_address=self._nft_address,
+                        token_id=token_id,
+                        owner=owner,
+                        transaction_hash=log.transaction_hash,
+                        recipient=util.parse_hex_to_address(recipient_hex),
+                        amount0=util.parse_hex_to_uint256(amount0_hex),
+                        amount1=util.parse_hex_to_uint256(amount1_hex),
+                        pool_address=pool_address,
+                        token0_address=pool_info.token0_address,
+                        token1_address=pool_info.token1_address,
+                        log_index=log.log_index,
+                        block_number=block_number,
+                        block_timestamp=block_timestamp,
+                    ),
+                )
 
     def _process(self, **kwargs):
         self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.block_number)
@@ -257,7 +303,7 @@ def get_exist_pools(db_service, nft_address):
                     fee=item.fee,
                     tick_spacing=item.tick_spacing,
                     block_number=item.block_number,
-                    block_timestamp=item.block_timestamp
+                    block_timestamp=item.block_timestamp,
                 )
     except Exception as e:
         raise e
@@ -375,7 +421,7 @@ def positions_rpc_requests(web3, make_requests, requests, nft_address, is_batch,
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for i in range(0, len(token_name_rpc), batch_size):
-            batch = token_name_rpc[i: i + batch_size]
+            batch = token_name_rpc[i : i + batch_size]
             futures.append(executor.submit(process_batch, batch))
 
         for future in as_completed(futures):
@@ -434,7 +480,7 @@ def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for i in range(0, len(token_name_rpc), batch_size):
-            batch = token_name_rpc[i: i + batch_size]
+            batch = token_name_rpc[i : i + batch_size]
             futures.append(executor.submit(process_batch, batch))
 
         for future in as_completed(futures):

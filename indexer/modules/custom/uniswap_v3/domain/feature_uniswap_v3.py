@@ -124,33 +124,3 @@ class UniswapV3TokenCollectFee(FilterData):
     log_index: int
     block_number: int
     block_timestamp: int
-
-
-@dataclass
-class AgniV3Pool(UniswapV3Pool):
-    pass
-
-
-@dataclass
-class AgniV3Token(UniswapV3Token):
-    pass
-
-
-@dataclass
-class AgniV3PoolPrice(UniswapV3PoolPrice):
-    pass
-
-
-@dataclass
-class AgniV3TokenDetail(UniswapV3TokenDetail):
-    pass
-
-
-@dataclass
-class AgniV3PoolCurrentPrice(UniswapV3PoolCurrentPrice):
-    pass
-
-
-@dataclass
-class AgniV3TokenCurrentStatus(UniswapV3TokenCurrentStatus):
-    pass

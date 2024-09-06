@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, INTEGER, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -41,7 +41,6 @@ class UniswapV3TokenLiquidityRecords(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
-
         ]
 
 

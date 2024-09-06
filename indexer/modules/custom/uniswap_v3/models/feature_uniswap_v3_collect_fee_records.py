@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, INTEGER, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -23,7 +23,6 @@ class UniswapV3CollectFeeRecords(HemeraModel):
     token0_address = Column(BYTEA)
     token1_address = Column(BYTEA)
 
-
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
@@ -39,7 +38,6 @@ class UniswapV3CollectFeeRecords(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
-
         ]
 
 
