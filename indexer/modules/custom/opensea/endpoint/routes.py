@@ -305,7 +305,7 @@ def get_latest_opensea_transaction_by_address(address: Union[str, bytes]):
     }
 
 
-@opensea_namespace.route("/v1/explorer/custom/opensea/address/<address>/profile")
+@opensea_namespace.route("/v1/aci/<address>/opensea/profile")
 class ExplorerCustomOpenseaAddressProfile(Resource):
     @cache.cached(timeout=60)
     def get(self, address):
@@ -316,7 +316,7 @@ class ExplorerCustomOpenseaAddressProfile(Resource):
         return profile, 200
 
 
-@opensea_namespace.route("/v1/explorer/custom/opensea/address/<address>/transactions")
+@opensea_namespace.route("/v1/aci/<address>/opensea/transactions")
 class ExplorerCustomOpenseaAddressTransactions(Resource):
     @cache.cached(timeout=10)
     def get(self, address):
