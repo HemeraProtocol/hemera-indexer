@@ -33,7 +33,17 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
 )
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Pool,
+    UniswapV3PoolCurrentPrice,
+    UniswapV3PoolPrice,
+    UniswapV3SwapEvent,
+    UniswapV3Token,
+    UniswapV3TokenCollectFee,
+    UniswapV3TokenCurrentStatus,
+    UniswapV3TokenDetail,
+    UniswapV3TokenUpdateLiquidity,
+)
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -118,10 +128,17 @@ def generate_output_types(entity_types):
         yield UpdateBlockInternalCount
 
     if entity_types & EntityType.UNISWAP_V3:
+        yield Token
+        yield UpdateToken
         yield UniswapV3Pool
+        yield UniswapV3SwapEvent
+        yield UniswapV3PoolPrice
+        yield UniswapV3PoolCurrentPrice
         yield UniswapV3Token
-        yield AllFeatureValueRecordUniswapV3Pool
-        yield AllFeatureValueRecordUniswapV3Token
+        yield UniswapV3TokenCollectFee
+        yield UniswapV3TokenUpdateLiquidity
+        yield UniswapV3TokenDetail
+        yield UniswapV3TokenCurrentStatus
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult
