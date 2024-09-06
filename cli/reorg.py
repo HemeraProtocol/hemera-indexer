@@ -1,4 +1,5 @@
 import logging
+import os
 
 import click
 
@@ -97,6 +98,15 @@ exception_recorder = ExceptionRecorder()
     envvar="LOG_FILE",
     help="Log file",
 )
+@click.option(
+    "-m",
+    "--multicall",
+    default=False,
+    show_default=True,
+    type=bool,
+    help="if `multicall` is set to True, it will decrease the consume of rpc calls",
+    envvar="MULTI_CALL_ENABLE",
+)
 @click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE", help="Cache")
 def reorg(
     provider_uri,
@@ -107,8 +117,10 @@ def reorg(
     batch_size,
     debug_batch_size,
     db_version="head",
+    multicall=True,
     log_file=None,
     cache=None,
+    config_file=None,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -127,6 +139,21 @@ def reorg(
         logging.error("No postgres url provided. Exception recorder will not be useful.")
         exit(1)
 
+    if config_file:
+        if not os.path.exists(config_file):
+            raise click.ClickException(f"Config file {config_file} not found")
+        with open(config_file, "r") as f:
+            if config_file.endswith(".json"):
+                import json
+
+                config.update(json.load(f))
+            elif config_file.endswith(".yaml") or config_file.endswith(".yml"):
+                import yaml
+
+                config.update(yaml.safe_load(f))
+            else:
+                raise click.ClickException(f"Config file {config_file} is not supported)")
+
     entity_types = calculate_entity_value(",".join(ALL_ENTITY_COLLECTIONS))
     output_types = list(generate_output_types(entity_types))
 
@@ -139,6 +166,7 @@ def reorg(
         required_output_types=output_types,
         config=config,
         cache=cache,
+        multicall=multicall,
     )
 
     controller = ReorgController(
