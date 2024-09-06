@@ -35,7 +35,11 @@ services:
     environment:
       - ENTITY_TYPES=USER_OPS
       - SYNC_RECORDER=pg:uop_recorder
-
+  hemera-fbtc:
+    <<: *common-settings
+    container_name: fbtc
+    environment:
+      - SYNC_RECORDER=pg:fbtc_recorder
 
   hemera-api:
     <<: *common-settings
