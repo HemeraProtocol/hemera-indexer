@@ -21,7 +21,17 @@ from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordUniswapV3Token,
 )
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Pool,
+    UniswapV3Token,
+    UniswapV3SwapEvent,
+    UniswapV3PoolPrice,
+    UniswapV3PoolCurrentPrice,
+    UniswapV3TokenCollectFee,
+    UniswapV3TokenUpdateLiquidity,
+    UniswapV3TokenDetail,
+    UniswapV3TokenCurrentStatus
+)
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -100,9 +110,14 @@ def generate_output_types(entity_types):
 
     if entity_types & EntityType.UNISWAP_V3:
         yield UniswapV3Pool
+        yield UniswapV3SwapEvent
+        yield UniswapV3PoolPrice
+        yield UniswapV3PoolCurrentPrice
         yield UniswapV3Token
-        yield AllFeatureValueRecordUniswapV3Pool
-        yield AllFeatureValueRecordUniswapV3Token
+        yield UniswapV3TokenCollectFee
+        yield UniswapV3TokenUpdateLiquidity
+        yield UniswapV3TokenDetail
+        yield UniswapV3TokenCurrentStatus
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult

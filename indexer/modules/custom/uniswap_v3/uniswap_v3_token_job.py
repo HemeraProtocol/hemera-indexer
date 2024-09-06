@@ -117,7 +117,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 token_id_hex = log.topic1
             else:
                 continue
-            token_id = util.parse_hex_to_uint256(token_id_hex)
+            token_id = util.parse_hex_to_int256(token_id_hex)
             key = (token_id, block_number, block_timestamp)
             data = {"token_id": token_id, "block_number": block_number, "block_timestamp": block_timestamp}
             if key not in need_collect_token_id_set:
@@ -219,7 +219,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0,
             ):
                 continue
-            token_id = util.parse_hex_to_uint256(log.topic1)
+            token_id = util.parse_hex_to_int256(log.topic1)
             owner = token_owner_dict[token_id][block_number]
             pool_address = self._exist_token_ids[token_id]
             pool_info = self._exist_pool_infos[pool_address]
@@ -241,9 +241,9 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                         owner=owner,
                         action_type=action_type,
                         transaction_hash=log.transaction_hash,
-                        liquidity=util.parse_hex_to_uint256(liquidity_hex),
-                        amount0=util.parse_hex_to_uint256(amount0_hex),
-                        amount1=util.parse_hex_to_uint256(amount1_hex),
+                        liquidity=util.parse_hex_to_int256(liquidity_hex),
+                        amount0=util.parse_hex_to_int256(amount0_hex),
+                        amount1=util.parse_hex_to_int256(amount1_hex),
                         pool_address=pool_address,
                         token0_address=pool_info.token0_address,
                         token1_address=pool_info.token1_address,
@@ -262,8 +262,8 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                         owner=owner,
                         transaction_hash=log.transaction_hash,
                         recipient=util.parse_hex_to_address(recipient_hex),
-                        amount0=util.parse_hex_to_uint256(amount0_hex),
-                        amount1=util.parse_hex_to_uint256(amount1_hex),
+                        amount0=util.parse_hex_to_int256(amount0_hex),
+                        amount1=util.parse_hex_to_int256(amount1_hex),
                         pool_address=pool_address,
                         token0_address=pool_info.token0_address,
                         token1_address=pool_info.token1_address,
