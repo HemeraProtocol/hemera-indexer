@@ -1,0 +1,212 @@
+{
+    "abi": [
+        {
+            "inputs": [
+                {
+                    "internalType": "contract OldBaseRegistrarImplementation",
+                    "name": "_old",
+                    "type": "address"
+                },
+                {
+                    "internalType": "contract BaseRegistrarImplementation",
+                    "name": "_new",
+                    "type": "address"
+                },
+                {
+                    "internalType": "contract AbstractSubdomainRegistrar",
+                    "name": "_oldSubdomainRegistrar",
+                    "type": "address"
+                },
+                {
+                    "internalType": "contract AbstractSubdomainRegistrar",
+                    "name": "_newSubdomainRegistrar",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "constructor"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "baseNode",
+            "outputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "",
+                    "type": "bytes32"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "legacyRegistrar",
+            "outputs": [
+                {
+                    "internalType": "contract Registrar",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "internalType": "uint256",
+                    "name": "tokenId",
+                    "type": "uint256"
+                }
+            ],
+            "name": "migrate",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "internalType": "uint256[]",
+                    "name": "tokenIds",
+                    "type": "uint256[]"
+                }
+            ],
+            "name": "migrateAll",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "internalType": "bytes32[]",
+                    "name": "labels",
+                    "type": "bytes32[]"
+                }
+            ],
+            "name": "migrateAllLegacy",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": false,
+            "inputs": [
+                {
+                    "internalType": "bytes32",
+                    "name": "label",
+                    "type": "bytes32"
+                }
+            ],
+            "name": "migrateLegacy",
+            "outputs": [],
+            "payable": false,
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "newENS",
+            "outputs": [
+                {
+                    "internalType": "contract ENS",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "newRegistrar",
+            "outputs": [
+                {
+                    "internalType": "contract BaseRegistrarImplementation",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "newSubdomainRegistrar",
+            "outputs": [
+                {
+                    "internalType": "contract AbstractSubdomainRegistrar",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "oldENS",
+            "outputs": [
+                {
+                    "internalType": "contract OldENS",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "oldRegistrar",
+            "outputs": [
+                {
+                    "internalType": "contract OldBaseRegistrarImplementation",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "constant": true,
+            "inputs": [],
+            "name": "oldSubdomainRegistrar",
+            "outputs": [
+                {
+                    "internalType": "contract AbstractSubdomainRegistrar",
+                    "name": "",
+                    "type": "address"
+                }
+            ],
+            "payable": false,
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ],
+    "address": "0x6109dd117aa5486605fc85e040ab00163a75c662"
+}
