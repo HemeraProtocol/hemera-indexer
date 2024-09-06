@@ -188,6 +188,7 @@ class JobScheduler:
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
+                multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
