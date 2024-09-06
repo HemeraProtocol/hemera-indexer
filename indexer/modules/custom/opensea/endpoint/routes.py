@@ -7,8 +7,8 @@ from flask_restx import Resource
 from sqlalchemy import and_, case, desc, func
 
 from api.app.cache import cache
-from api.app.token.token_prices import TokenHourlyPrices
 from common.models import db
+from common.models.token_hourly_price import TokenHourlyPrices
 from common.models.tokens import Tokens
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict, format_to_dict

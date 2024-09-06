@@ -13,6 +13,99 @@ from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.middleware import geth_poa_middleware
 from web3.types import ABIFunction
 
+SUPPORT_CHAINS = {
+    "ethereum": {
+        "display_name": "Ethereum",
+        "rpc": "https://cloudflare-eth.com",
+        "etherscan_address_link": "https://etherscan.io/address/",
+        "explorer_transaction_link": "https://etherscan.io/tx/",
+        "debank_address_link": "https://debank.com/profile/",
+        "token_name": "ETH",
+        "chain_id": 1,
+        "coin": {
+            "symbol": "ETH",
+            "id": 1027,
+        },
+    },
+    "arbitrum": {
+        "display_name": "Arbitrum",
+        "rpc": "https://arb1.arbitrum.io/rpc",
+        "etherscan_address_link": "https://arbiscan.io/address/",
+        "explorer_transaction_link": "https://arbiscan.io/tx/",
+        "debank_address_link": "https://debank.com/profile/",
+        "token_name": "ETH",
+        "chain_id": 42161,
+        "coin": {
+            "symbol": "ETH",
+            "id": 1027,
+        },
+    },
+    "optimism": {
+        "display_name": "Optimism",
+        "rpc": "https://mainnet.optimism.io",
+        "etherscan_address_link": "https://optimistic.etherscan.io/address/",
+        "explorer_transaction_link": "https://optimistic.etherscan.io/tx/",
+        "debank_address_link": "https://debank.com/profile/",
+        "token_name": "ETH",
+        "chain_id": 10,
+        "coin": {
+            "symbol": "ETH",
+            "id": 1027,
+        },
+    },
+    "base": {
+        "display_name": "Base",
+        "rpc": "https://mainnet.base.org",
+        "etherscan_address_link": "https://basescan.org/address/",
+        "explorer_transaction_link": "https://basescan.org/tx/",
+        "debank_address_link": "https://debank.com/profile/",
+        "token_name": "ETH",
+        "chain_id": 8453,
+        "coin": {
+            "symbol": "ETH",
+            "id": 1027,
+        },
+    },
+    "linea": {
+        "display_name": "Linea",
+        "rpc": "https://rpc.linea.build",
+        "etherscan_address_link": "https://lineascan.build/address/",
+        "explorer_transaction_link": "https://lineascan.build/tx/",
+        "debank_address_link": "https://debank.com/profile/",
+        "token_name": "ETH",
+        "chain_id": 59144,
+        "coin": {
+            "symbol": "ETH",
+            "id": 1027,
+        },
+    },
+    "mantle": {
+        "display_name": "Mantle",
+        "rpc": "https://rpc.mantle.xyz",
+        "etherscan_address_link": "https://explorer.mantle.xyz/address/",
+        "explorer_transaction_link": "https://explorer.mantle.xyz/tx/",
+        "debank_address_link": "https://debank.com/profile/",
+        "token_name": "MNT",
+        "chain_id": 5000,
+        "coin": {
+            "symbol": "MNT",
+            "id": 27075,
+        },
+    },
+}
+
+chain_id_name_mapping = {SUPPORT_CHAINS[chain_name]["chain_id"]: chain_name for chain_name in SUPPORT_CHAINS.keys()}
+
+ERC20_ABI = """
+  [{
+    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"internalType": "uint256", "name": "balance", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  }]
+"""
+
 ERC721_ABI = [
     {
         "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
@@ -161,17 +254,6 @@ def get_debug_trace_transaction(traces):
         add_trace_to_tree(root, trace, path)
 
     return prune_delegates(root)
-
-
-ERC20ABI = """
-  [{
-    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
-    "name": "balanceOf",
-    "outputs": [{"internalType": "uint256", "name": "balance", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  }]
-"""
 
 
 def generate_type_str(component):
