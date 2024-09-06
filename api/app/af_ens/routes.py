@@ -26,7 +26,8 @@ class ExplorerUserOperationDetails(Resource):
             "primary_name": None,
             "be_resolved_by_ens": [],
             "ens_holdings": [],
-            "first_register_time": None
+            "first_register_time": None,
+            "first_set_primary_name": None,
         }
         if address:
             address = bytes.fromhex(address[2:])
@@ -57,6 +58,9 @@ class ExplorerUserOperationDetails(Resource):
         first_register = db.session.query(ENSMiddle).filter(and_(ENSMiddle.from_address == address, ENSMiddle.event_name == 'NameRegistered')).first()
         if first_register:
             res['first_register_time'] = datetime_to_string(first_register.block_timestamp)
+        first_set_name = db.session.query(ENSMiddle).filter(or_(ENSMiddle.method == 'setName', ENSMiddle.event_name == 'NameChanged')).first()
+        if first_set_name:
+            res['first_set_primary_name'] = datetime_to_string(first_set_name.block_timestamp)
 
         return res
 

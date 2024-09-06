@@ -103,17 +103,17 @@ class RegisterExtractor(BaseExtractor):
             ens_middle.event_name = event_data["_event"]
             token_id = None
             w_token_id = None
-            for log in prev_logs:
+            for sl in prev_logs:
                 if (
-                    log["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
-                    and log["topic1"] == "0x0000000000000000000000000000000000000000000000000000000000000000"
+                    sl["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
+                    and (sl["topic2"]) == log["topic2"]
                 ):
-                    token_id = str(int(log["topic3"], 16))
+                    token_id = str(int(sl["topic3"], 16))
                 if (
-                    log["address"] == "0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401"
-                    and log["topic0"] == "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62"
+                    sl["address"] == "0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401"
+                    and sl["topic0"] == "0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62"
                 ):
-                    evd = decode_log(log, contract_object_map, event_map)
+                    evd = decode_log(sl, contract_object_map, event_map)
                     if evd["args"].get("id"):
                         w_token_id = str(evd["args"].get("id"))
             return ENSMiddleD(
