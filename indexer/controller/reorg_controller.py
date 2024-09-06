@@ -78,8 +78,8 @@ class ReorgController(BaseController):
             self.update_job_info(
                 job_id,
                 job_info={
-                    "last_fixed_block_number": block_number - offset,
-                    "remain_process": limit - offset - 1,
+                    "last_fixed_block_number": block_number - offset + 1,
+                    "remain_process": limit - offset,
                     "update_time": datetime.now(timezone.utc),
                     "job_status": "interrupt",
                 },
