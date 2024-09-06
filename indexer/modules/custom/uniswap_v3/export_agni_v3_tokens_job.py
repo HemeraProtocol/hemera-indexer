@@ -81,6 +81,11 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
         )
 
     def _collect(self, **kwargs):
+        blocks = self._data_buff[Block.type()]
+        self._block_infos = {}
+        for data in blocks:
+            self._block_infos[data.number] = data.timestamp
+
         # collect the nft_ids which were minted or burned
         mint_token_ids, burn_token_ids, all_token_dict = extract_changed_tokens(
             self._data_buff[ERC721TokenTransfer.type()], self._nft_address
@@ -105,6 +110,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._abi_list,
             self._batch_size,
             self._max_worker,
+
         )
 
         # call positions
@@ -131,22 +137,20 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._abi_list,
             self._batch_size,
             self._max_worker,
+            self._block_infos
         )
         self._exist_token_ids.update(update_exist_tokens)
         for data in new_nft_info:
             self._collect_item(AgniV3Token.type(), data)
-        block_list = self._data_buff[Block.type()]
-        block_info = {}
-        for block in block_list:
-            block_info[block.number] = block.timestamp
         token_result, current_statuses = parse_token_records(
-            self._nft_address, self._exist_token_ids, owner_dict, token_infos, block_info
+            self._nft_address, self._exist_token_ids, owner_dict, token_infos, self._block_infos
         )
 
         for data in token_result:
             self._collect_item(AgniV3TokenDetail.type(), data)
         for data in current_statuses:
             self._collect_item(AgniV3TokenCurrentStatus.type(), data)
+        self._block_infos = {}
 
     def _process(self, **kwargs):
         self._data_buff[AgniV3Token.type()].sort(key=lambda x: x.block_number)
@@ -237,17 +241,18 @@ def get_owner_dict(web3, make_requests, requests, nft_address, is_batch, abi_lis
 
 
 def get_new_nfts(
-    all_token_infos,
-    want_pool_tokens,
-    nft_address,
-    web3,
-    make_requests,
-    requests,
-    factory_address,
-    is_batch,
-    abi_list,
-    batch_size,
-    max_worker,
+        all_token_infos,
+        want_pool_tokens,
+        nft_address,
+        web3,
+        make_requests,
+        requests,
+        factory_address,
+        is_batch,
+        abi_list,
+        batch_size,
+        max_worker,
+        block_infos
 ):
     result = []
     need_collect_pool_tokens = []
@@ -286,6 +291,7 @@ def get_new_nfts(
                 tick_upper=data["tickUpper"],
                 fee=data["fee"],
                 block_number=data["block_number"],
+                block_timestamp=block_infos[data["block_number"]]
             )
         )
     return update_exist_tokens, result
@@ -451,7 +457,7 @@ def positions_rpc_requests(web3, make_requests, requests, nft_address, is_batch,
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for i in range(0, len(token_name_rpc), batch_size):
-            batch = token_name_rpc[i : i + batch_size]
+            batch = token_name_rpc[i: i + batch_size]
             futures.append(executor.submit(process_batch, batch))
 
         for future in as_completed(futures):
@@ -510,7 +516,7 @@ def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for i in range(0, len(token_name_rpc), batch_size):
-            batch = token_name_rpc[i : i + batch_size]
+            batch = token_name_rpc[i: i + batch_size]
             futures.append(executor.submit(process_batch, batch))
 
         for future in as_completed(futures):
