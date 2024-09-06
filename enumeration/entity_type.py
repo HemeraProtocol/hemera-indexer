@@ -22,17 +22,6 @@ from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordUniswapV3Token,
 )
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
-    UniswapV3Pool,
-    UniswapV3PoolCurrentPrice,
-    UniswapV3PoolPrice,
-    UniswapV3SwapEvent,
-    UniswapV3Token,
-    UniswapV3TokenCollectFee,
-    UniswapV3TokenCurrentStatus,
-    UniswapV3TokenDetail,
-    UniswapV3TokenUpdateLiquidity
-)
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 from indexer.modules.custom.hemera_ens.ens_domain import (
@@ -44,7 +33,17 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
 )
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
-
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+    UniswapV3Pool,
+    UniswapV3PoolCurrentPrice,
+    UniswapV3PoolPrice,
+    UniswapV3SwapEvent,
+    UniswapV3Token,
+    UniswapV3TokenCollectFee,
+    UniswapV3TokenCurrentStatus,
+    UniswapV3TokenDetail,
+    UniswapV3TokenUpdateLiquidity,
+)
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
