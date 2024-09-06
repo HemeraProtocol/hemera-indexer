@@ -52,7 +52,6 @@ class EntityType(IntFlag):
     ADDRESS_INDEX = 1 << 7
     OPEN_SEA = 1 << 8
     ENS = 1 << 9
-    
 
     @staticmethod
     def combine_all_entity_types():
