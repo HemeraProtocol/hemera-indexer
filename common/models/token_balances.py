@@ -8,7 +8,6 @@ from indexer.domain.token_balance import TokenBalance
 
 
 def token_balances_general_converter(table: Type[HemeraModel], data: TokenBalance, is_update=False):
-
     if data.token_id is None:
         data.token_id = -1
 
@@ -51,4 +50,9 @@ Index(
     AddressTokenBalances.token_address,
     desc(AddressTokenBalances.token_id),
     desc(AddressTokenBalances.block_number),
+)
+
+Index(
+    "token_balance_address_timestamp_index",
+    AddressTokenBalances.block_timestamp
 )
