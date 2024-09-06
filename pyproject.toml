@@ -49,6 +49,7 @@ dependencies = [
     "eth_typing>=2.2.0,<5",
     "orjson==3.10.7",
     "mpire==2.10.2",
+    "apscheduler==3.10.4"
 ]
 
 [tool.setuptools.dynamic]
