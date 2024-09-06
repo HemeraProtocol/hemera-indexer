@@ -158,7 +158,6 @@ class EnsHandler:
             "reverse_name": None,
             "reverse_base_node": None,
         }
-        # While, setName doesn't mean `nameChanged` occurs, just ignore it
         if method == "setName":
             d_tnx = self.decode_transaction(transaction)
             ens_middle = AttrDict(dic)
@@ -169,7 +168,6 @@ class EnsHandler:
             elif d_tnx[1].get("newName"):
                 name = d_tnx[1]["newName"]
             if not name or len(name) - 4 != name.find("."):
-                # 二级或者非法
                 return []
             ens_middle.reverse_name = name
 
