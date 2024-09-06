@@ -12,19 +12,19 @@ from multiprocessing import Queue
 from eth_abi.codec import ABICodec
 from web3 import Web3
 
-from indexer.modules.hemera_ens import lifo_registry
-from indexer.modules.hemera_ens.ens_abi import abi_map
-from indexer.modules.hemera_ens.ens_conf import CONTRACT_NAME_MAP, ENS_CONTRACT_CREATED_BLOCK, REVERSE_BASE_NODE
-from indexer.modules.hemera_ens.ens_domain import (
+from indexer.modules.custom.hemera_ens import lifo_registry
+from indexer.modules.custom.hemera_ens.ens_abi import abi_map
+from indexer.modules.custom.hemera_ens.ens_conf import CONTRACT_NAME_MAP, ENS_CONTRACT_CREATED_BLOCK, REVERSE_BASE_NODE
+from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSAddressChangeD,
     ENSAddressD,
     ENSMiddleD,
     ENSNameRenewD,
     ENSRegisterD,
 )
-from indexer.modules.hemera_ens.ens_hash import namehash
-from indexer.modules.hemera_ens.extractors import BaseExtractor, RegisterExtractor
-from indexer.modules.hemera_ens.util import convert_str_ts
+from indexer.modules.custom.hemera_ens.ens_hash import namehash
+from indexer.modules.custom.hemera_ens.extractors import BaseExtractor, RegisterExtractor
+from indexer.modules.custom.hemera_ens.util import convert_str_ts
 
 logger = logging.getLogger(__name__)
 

@@ -8,10 +8,10 @@ import logging
 
 from web3 import Web3
 
-from indexer.modules.hemera_ens.ens_conf import BASE_NODE, REVERSE_BASE_NODE
-from indexer.modules.hemera_ens.ens_domain import ENSMiddleD
-from indexer.modules.hemera_ens.ens_hash import compute_node_label, namehash
-from indexer.modules.hemera_ens.util import convert_str_ts
+from indexer.modules.custom.hemera_ens.ens_conf import BASE_NODE, REVERSE_BASE_NODE
+from indexer.modules.custom.hemera_ens.ens_domain import ENSMiddleD
+from indexer.modules.custom.hemera_ens.ens_hash import compute_node_label, namehash
+from indexer.modules.custom.hemera_ens.util import convert_str_ts
 
 logger = logging.getLogger(__name__)
 

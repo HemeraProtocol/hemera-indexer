@@ -10,7 +10,7 @@ def get_absolute_path(relative_path):
 
 abi_map = {}
 
-relative_path = "./abi"
+relative_path = "abi"
 absolute_path = get_absolute_path(relative_path)
 fs = os.listdir(absolute_path)
 for a_f in fs:

@@ -14,18 +14,16 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler
-from indexer.modules.hemera_ens.ens_domain import (
+from indexer.modules.custom.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler
+from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSAddressChangeD,
     ENSAddressD,
     ENSMiddleD,
     ENSNameRenewD,
     ENSRegisterD,
 )
-from indexer.modules.hemera_ens.extractors import BaseExtractor
+from indexer.modules.custom.hemera_ens.extractors import BaseExtractor
 from indexer.specification.specification import (
-    AlwaysFalseSpecification,
-    AlwaysTrueSpecification,
     ToAddressSpecification,
     TopicSpecification,
     TransactionFilterByLogs,

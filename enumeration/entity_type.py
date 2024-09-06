@@ -21,14 +21,14 @@ from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordUniswapV3Token,
 )
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
-from indexer.modules.hemera_ens.ens_domain import (
+from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSAddressChangeD,
     ENSAddressD,
     ENSMiddleD,
     ENSNameRenewD,
     ENSRegisterD,
 )
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -48,7 +48,7 @@ class EntityType(IntFlag):
 
     ADDRESS_INDEX = 1 << 7
 
-    ENS = 1 << 8
+    ENS = 1 << 9
 
     @staticmethod
     def combine_all_entity_types():
