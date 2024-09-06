@@ -163,6 +163,8 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             block_timestamp = data["block_timestamp"]
             if token_id not in self._exist_token_ids:
                 # need save token_info
+                if "fee" not in data:
+                    continue
                 fee = data["fee"]
                 key = (data["token0"], data["token1"], fee)
                 pool_address = info_pool_dict[key]
