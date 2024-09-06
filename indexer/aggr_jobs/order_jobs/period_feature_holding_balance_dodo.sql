@@ -47,8 +47,8 @@ WITH supply_cte AS (SELECT total_supply
                                             d3.symbol                  as quote_token_symbol,
                                             d3.decimals                as quote_token_decimals,
                                             --                                  mantle,
-                                            d1.token0_balance - 983144 as base_balance,
-                                            d1.token1_balance - 307568 as quote_balance
+                                            d1.token0_balance as base_balance,
+                                            d1.token1_balance as quote_balance
 
                                      from address_balance d1
                                               inner join tokens d2 on d1.token0_address = d2.address
