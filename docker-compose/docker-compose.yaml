@@ -41,8 +41,8 @@ services:
     environment:
       - RETRY_FROM_RECORD=True
       - SYNC_RECORDER=pg:fbtc_recorder
-      - BATCH_SIZE=1400
-      - BLOCK_BATCH_SIZE=110
+      - BATCH_SIZE=110
+      - BLOCK_BATCH_SIZE=1400
       - FORCE_FILTER_MODE=true
 
   hemera-api:
