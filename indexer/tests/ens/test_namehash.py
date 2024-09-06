@@ -6,7 +6,7 @@
 # @Brief
 import pytest
 
-from indexer.modules.custom.hemera_ens import compute_node_label, get_label, namehash
+from indexer.modules.custom.hemera_ens.ens_hash import compute_node_label, get_label, namehash
 
 
 @pytest.mark.indexer
