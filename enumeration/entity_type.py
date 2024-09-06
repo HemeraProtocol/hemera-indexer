@@ -31,7 +31,8 @@ from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     UniswapV3TokenCollectFee,
     UniswapV3TokenCurrentStatus,
     UniswapV3TokenDetail,
-    UniswapV3TokenUpdateLiquidity,
+    UniswapV3TokenUpdateLiquidity
+)
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 from indexer.modules.custom.hemera_ens.ens_domain import (
