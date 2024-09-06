@@ -1,10 +1,10 @@
 from datetime import date, datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from flask import request
 from flask_restx import Resource
-from sqlalchemy import and_, desc, func
+from sqlalchemy import and_, case, desc, func
 
 from api.app.cache import cache
 from api.app.token.token_prices import TokenHourlyPrices
@@ -18,7 +18,11 @@ from indexer.modules.custom.opensea.models.address_opensea_transaction import Ad
 from indexer.modules.custom.opensea.models.opensea_crypto_mapping import OpenseaCryptoTokenMapping
 from indexer.modules.custom.opensea.models.opensea_order import OpenseaOrders
 from indexer.modules.custom.opensea.models.scheduled_metadata import ScheduledMetadata
-from indexer.modules.custom.opensea.opensea_job import get_item_type_string, get_opensea_transaction_type_string
+from indexer.modules.custom.opensea.opensea_job import (
+    OpenseaTransactionType,
+    get_item_type_string,
+    get_opensea_transaction_type_string,
+)
 
 PAGE_SIZE = 10
 MAX_TRANSACTION = 500000
@@ -27,13 +31,70 @@ MAX_INTERNAL_TRANSACTION = 10000
 MAX_TOKEN_TRANSFER = 10000
 
 
-def get_opensea_profile_by_address(address: Union[str, bytes]):
-    if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
-    opensea_profile = db.session().query(AddressOpenseaProfile).filter_by(address=address).first()
-    if not opensea_profile:
-        raise APIError("The address has no opensea transaction", code=400)
-    return opensea_profile
+def get_opensea_profile(address: Union[str, bytes]) -> dict:
+    """
+    Fetch and combine OpenSea profile data from both the profile table and recent transactions.
+    """
+    address_bytes = bytes.fromhex(address[2:]) if isinstance(address, str) else address
+
+    profile = db.session.query(AddressOpenseaProfile).filter_by(address=address_bytes).first()
+    if not profile:
+        raise APIError("No OpenSea profile found for this address", code=400)
+
+    profile_data = as_dict(profile)
+
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
+    recent_data = get_recent_opensea_transactions(address_bytes, last_timestamp)
+
+    for key in recent_data:
+        if key != "address":
+            profile_data[key] += recent_data[key]
+
+    return profile_data | get_latest_opensea_transaction_by_address(address)
+
+
+def get_recent_opensea_transactions(address: bytes, timestamp: datetime) -> Dict[str, int]:
+    """
+    Fetch recent OpenSea transactions data for a given address.
+    """
+    base_query = db.session.query(AddressOpenseaTransactions.address)
+
+    # Define transaction types
+    transaction_types = [
+        (OpenseaTransactionType.BUY, "buy"),
+        (OpenseaTransactionType.SELL, "sell"),
+        (OpenseaTransactionType.SWAP, "swap"),
+    ]
+
+    for tx_type, tx_name in transaction_types:
+        # Count distinct transaction hashes
+        base_query = base_query.add_columns(
+            func.count(func.distinct(AddressOpenseaTransactions.transaction_hash))
+            .filter(AddressOpenseaTransactions.transaction_type == tx_type.value)
+            .label(f"{tx_name}_txn_count")
+        )
+        # Count opensa transactions
+        base_query = base_query.add_columns(
+            func.count()
+            .filter(AddressOpenseaTransactions.transaction_type == tx_type.value)
+            .label(f"{tx_name}_opensea_order_count")
+        )
+
+    # Apply filters and group by
+    query = base_query.filter(
+        and_(AddressOpenseaTransactions.address == address, AddressOpenseaTransactions.block_timestamp > timestamp)
+    ).group_by(AddressOpenseaTransactions.address)
+
+    result = query.one_or_none()
+
+    if not result:
+        return {
+            f"{tx_name}_{hash_type}_count": 0
+            for tx_name in ["buy", "sell", "swap"]
+            for hash_type in ["txn", "opensea_order"]
+        }
+
+    return format_to_dict(result)
 
 
 def get_opensea_order_count_by_address(address: Union[str, bytes]):
@@ -84,7 +145,7 @@ def get_token_price_symbol(token_address: str) -> str:
     return mapping.price_symbol if mapping and mapping.price_symbol else "ETH"
 
 
-@cache.memoize(timeout=86400)  # 缓存24小时
+@cache.memoize(timeout=86400)
 def get_token_daily_price(token_symbol: str, day: date) -> float:
     end_of_day = datetime.combine(day, datetime.max.time())
     price_record = (
@@ -250,9 +311,9 @@ class ExplorerCustomOpenseaAddressProfile(Resource):
     def get(self, address):
         address = address.lower()
 
-        profile = get_opensea_profile_by_address(address)
+        profile = get_opensea_profile(address)
 
-        return as_dict(profile) | get_latest_opensea_transaction_by_address(address)
+        return profile, 200
 
 
 @opensea_namespace.route("/v1/explorer/custom/opensea/address/<address>/transactions")
