@@ -39,6 +39,7 @@ services:
     <<: *common-settings
     container_name: fbtc
     environment:
+      - RETRY_FROM_RECORD=True
       - SYNC_RECORDER=pg:fbtc_recorder
 
   hemera-api:
