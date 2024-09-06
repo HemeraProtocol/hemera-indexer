@@ -23,14 +23,14 @@ from indexer.modules.custom.all_features_value_record import (
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     UniswapV3Pool,
-    UniswapV3Token,
-    UniswapV3SwapEvent,
-    UniswapV3PoolPrice,
     UniswapV3PoolCurrentPrice,
+    UniswapV3PoolPrice,
+    UniswapV3SwapEvent,
+    UniswapV3Token,
     UniswapV3TokenCollectFee,
-    UniswapV3TokenUpdateLiquidity,
+    UniswapV3TokenCurrentStatus,
     UniswapV3TokenDetail,
-    UniswapV3TokenCurrentStatus
+    UniswapV3TokenUpdateLiquidity,
 )
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
