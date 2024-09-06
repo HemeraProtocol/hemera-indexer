@@ -24,6 +24,13 @@ from indexer.modules.custom.all_features_value_record import (
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
+from indexer.modules.custom.hemera_ens.ens_domain import (
+    ENSAddressChangeD,
+    ENSAddressD,
+    ENSMiddleD,
+    ENSNameRenewD,
+    ENSRegisterD,
+)
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
@@ -49,8 +56,10 @@ class EntityType(IntFlag):
 
     OPEN_SEA = 1 << 9
 
-    EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
+    ENS = 1 << 10
 
+    EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
+    
     @staticmethod
     def combine_all_entity_types():
         return reduce(lambda x, y: x | y, EntityType)
@@ -143,9 +152,17 @@ def generate_output_types(entity_types):
         yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
 
+
     if entity_types & EntityType.DEPOSIT_TO_L2:
         yield TokenDepositTransaction
         yield AddressTokenDeposit
+
+    if entity_types & EntityType.ENS:
+        yield ENSMiddleD
+        yield ENSRegisterD
+        yield ENSNameRenewD
+        yield ENSAddressChangeD
+        yield ENSAddressD
 
     if entity_types & EntityType.OPEN_SEA:
         yield AddressOpenseaTransaction
