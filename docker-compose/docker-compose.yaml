@@ -43,6 +43,7 @@ services:
       - SYNC_RECORDER=pg:fbtc_recorder
       - BATCH_SIZE=1400
       - BLOCK_BATCH_SIZE=110
+      - FORCE_FILTER_MODE=true
 
   hemera-api:
     <<: *common-settings
