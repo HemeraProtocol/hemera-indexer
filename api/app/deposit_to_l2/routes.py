@@ -8,13 +8,16 @@ from api.app.db_service.af_token_deposit import (
     get_deposit_chain_list,
     get_transactions_by_condition,
     get_transactions_cnt_by_condition,
+    get_transactions_cnt_by_wallet,
     parse_assets,
+    parse_deposit_transactions,
 )
 from api.app.db_service.blocks import get_block_by_hash
 from api.app.deposit_to_l2 import token_deposit_namespace
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
 from common.utils.format_utils import row_to_dict
+from common.utils.web3_utils import SUPPORT_CHAINS, chain_id_name_mapping
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
 
 MAX_TRANSACTION = 500000
@@ -58,7 +61,17 @@ class ExplorerDepositTransactions(Resource):
             filter_condition = AFTokenDepositsTransactions.wallet_address == bytes_wallet_address
 
         elif chain:
-            filter_condition = AFTokenDepositsTransactions.chain == chain
+            if chain.isnumeric():
+                filter_condition = AFTokenDepositsTransactions.chain_id == chain
+            else:
+                if chain not in SUPPORT_CHAINS:
+                    raise APIError(
+                        f"{chain} is not supported yet, it will coming soon.",
+                        code=400,
+                    )
+
+                chain_id = SUPPORT_CHAINS[chain]["chain_id"]
+                filter_condition = AFTokenDepositsTransactions.chain_id == chain_id
 
         elif contract:
             contract = contract.lower()
@@ -83,17 +96,18 @@ class ExplorerDepositTransactions(Resource):
             columns=[
                 "transaction_hash",
                 "wallet_address",
-                "chain",
+                "chain_id",
                 "contract_address",
                 "token_address",
                 "value",
                 "block_number",
+                "block_timestamp",
             ],
             limit=page_size,
             offset=(page_index - 1) * page_size,
         )
 
-        transaction_list = [row_to_dict(transaction) for transaction in transactions]
+        transaction_list = parse_deposit_transactions(transactions)
 
         return {
             "data": transaction_list,
@@ -107,35 +121,53 @@ class ExplorerDepositTransactions(Resource):
         }, 200
 
 
-@token_deposit_namespace.route("/v1/explorer/deposit/times")
-class ExplorerDepositTimes(Resource):
+@token_deposit_namespace.route("/v1/explorer/deposit/statistic")
+class ExplorerDepositStatistic(Resource):
 
     @cache.cached(timeout=10, query_string=True)
     def get(self):
         wallet_address = flask.request.args.get("wallet_address", None)
-        contract = flask.request.args.get("contract", None)
 
-        if wallet_address is None or contract is None:
+        if wallet_address is None:
             raise APIError(
-                f"parameter 'wallet_address' and 'contract' are both required",
+                f"parameter 'wallet_address' are required",
                 code=400,
             )
 
-        wallet_address = wallet_address.lower()
-        bytes_wallet_address = bytes.fromhex(wallet_address[2:])
-        contract = contract.lower()
-        bytes_contract = bytes.fromhex(contract[2:])
-        filter_condition = and_(
-            AFTokenDepositsTransactions.wallet_address == bytes_wallet_address,
-            AFTokenDepositsTransactions.contract == bytes_contract,
-        )
+        deposit_times = get_transactions_cnt_by_wallet(wallet_address)
 
-        times = get_transactions_cnt_by_condition(filter_condition=filter_condition)
+        chains = get_deposit_chain_list(wallet_address)
+        chain_list = [chain_id_name_mapping[row_to_dict(chain)["chain_id"]] for chain in chains]
+
+        assets = get_deposit_assets_list(wallet_address)
+        asset_list = parse_assets(assets)
 
         return {
             "wallet_address": wallet_address,
-            "bridge": contract,
-            "times": times,
+            "deposit_times": deposit_times,
+            "chain_list": chain_list,
+            "asset_list": asset_list,
+        }, 200
+
+
+@token_deposit_namespace.route("/v1/explorer/deposit/bridge_times")
+class ExplorerDepositBridgeTimes(Resource):
+
+    @cache.cached(timeout=10, query_string=True)
+    def get(self):
+        wallet_address = flask.request.args.get("wallet_address", None)
+
+        if wallet_address is None:
+            raise APIError(
+                f"parameter 'wallet_address' are required",
+                code=400,
+            )
+
+        times = get_transactions_cnt_by_wallet(wallet_address)
+
+        return {
+            "wallet_address": wallet_address,
+            "bridge_times": times,
         }, 200
 
 
@@ -154,7 +186,7 @@ class ExplorerDepositChainList(Resource):
 
         chains = get_deposit_chain_list(wallet_address)
 
-        chain_list = [row_to_dict(chain)["chain"] for chain in chains]
+        chain_list = [chain_id_name_mapping[row_to_dict(chain)["chain_id"]] for chain in chains]
         return {
             "wallet_address": wallet_address,
             "chain_list": chain_list,
@@ -176,8 +208,8 @@ class ExplorerDepositAssetsList(Resource):
 
         assets = get_deposit_assets_list(wallet_address)
 
-        chain_list = parse_assets(assets)
+        asset_list = parse_assets(assets)
         return {
             "wallet_address": wallet_address,
-            "chain_list": chain_list,
+            "asset_list": asset_list,
         }, 200

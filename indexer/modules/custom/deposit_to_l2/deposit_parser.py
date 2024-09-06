@@ -107,11 +107,12 @@ def eth_deposit_parse(transaction: Transaction, chain_mapping: dict, function: A
     return TokenDepositTransaction(
         transaction_hash=transaction.hash,
         wallet_address=transaction.from_address,
-        chain=chain_mapping[transaction.to_address],
+        chain_id=chain_mapping[transaction.to_address],
         contract_address=transaction.to_address,
         token_address=ETH_ADDRESS,
         value=transaction.value,
         block_number=transaction.block_number,
+        block_timestamp=transaction.block_timestamp,
     )
 
 
@@ -120,11 +121,12 @@ def usdc_deposit_parse(transaction: Transaction, chain_mapping: dict, function: 
     return TokenDepositTransaction(
         transaction_hash=transaction.hash,
         wallet_address=transaction.from_address,
-        chain=chain_mapping[transaction.to_address],
+        chain_id=chain_mapping[transaction.to_address],
         contract_address=transaction.to_address,
         token_address=USDC_ADDRESS,
         value=decoded_input["_amount"],
         block_number=transaction.block_number,
+        block_timestamp=transaction.block_timestamp,
     )
 
 
@@ -135,11 +137,12 @@ def token_deposit_parse(
     return TokenDepositTransaction(
         transaction_hash=transaction.hash,
         wallet_address=transaction.from_address,
-        chain=chain_mapping[transaction.to_address],
+        chain_id=chain_mapping[transaction.to_address],
         contract_address=transaction.to_address,
         token_address=decoded_input["_l1Token"],
         value=decoded_input["_amount"],
         block_number=transaction.block_number,
+        block_timestamp=transaction.block_timestamp,
     )
 
 
@@ -150,7 +153,7 @@ token_parse_mapping = {
 }
 
 
-def parse_deposit_transfer_function(
+def parse_deposit_transaction_function(
     transactions: List[Transaction],
     contract_set: set,
     chain_mapping: dict,

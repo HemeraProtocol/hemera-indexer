@@ -1,6 +1,8 @@
+from api.app.db_service.tokens import get_token_by_address
 from common.models import db
 from common.utils.db_utils import build_entities
 from common.utils.format_utils import row_to_dict
+from common.utils.web3_utils import chain_id_name_mapping
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
 
@@ -32,14 +34,25 @@ def get_transactions_cnt_by_condition(filter_condition=None, columns="*"):
     return count
 
 
+def get_transactions_cnt_by_wallet(wallet_address):
+    wallet_address = wallet_address.lower()
+    bytes_wallet_address = bytes.fromhex(wallet_address[2:])
+
+    count = get_transactions_cnt_by_condition(
+        filter_condition=AFTokenDepositsTransactions.wallet_address == bytes_wallet_address
+    )
+
+    return count
+
+
 def get_deposit_chain_list(wallet_address):
     wallet_address = wallet_address.lower()
     bytes_wallet_address = bytes.fromhex(wallet_address[2:])
 
     chain_list = (
-        db.session.query(AFTokenDepositsTransactions.wallet_address, AFTokenDepositsTransactions.chain)
+        db.session.query(AFTokenDepositsTransactions.wallet_address, AFTokenDepositsTransactions.chain_id)
         .filter(AFTokenDepositsTransactions.wallet_address == bytes_wallet_address)
-        .group_by(AFTokenDepositsTransactions.wallet_address, AFTokenDepositsTransactions.chain)
+        .group_by(AFTokenDepositsTransactions.wallet_address, AFTokenDepositsTransactions.chain_id)
         .all()
     )
 
@@ -48,7 +61,7 @@ def get_deposit_chain_list(wallet_address):
 
 def get_deposit_assets_list(wallet_address):
     entities = build_entities(
-        AFTokenDepositsCurrent, ["wallet_address", "chain", "contract_address", "token_address", "value"]
+        AFTokenDepositsCurrent, ["wallet_address", "chain_id", "contract_address", "token_address", "value"]
     )
 
     wallet_address = wallet_address.lower()
@@ -68,13 +81,36 @@ def parse_assets(assets):
     asset_list = []
     for asset in assets:
         asset_dict = row_to_dict(asset)
+
+        token_info = get_token_by_address(asset_dict["token_address"], ["name", "symbol", "icon_url", "token_type"])
+
         asset_list.append(
             {
-                "chain": asset_dict["chain"],
+                "chain": chain_id_name_mapping[asset_dict["chain_id"]],
                 "bridge": asset_dict["contract_address"],
                 "token": asset_dict["token_address"],
+                "token_name": token_info.name if token_info else None,
+                "token_symbol": token_info.symbol if token_info else None,
+                "token_icon_url": token_info.icon_url if token_info else None,
+                "token_type": token_info.token_type if token_info else None,
                 "amount": asset_dict["value"],
             }
         )
 
     return asset_list
+
+
+def parse_deposit_transactions(transactions):
+    transaction_list = []
+    for transaction in transactions:
+        tx_dict = row_to_dict(transaction)
+        tx_dict["chain_name"] = chain_id_name_mapping[tx_dict["chain_id"]]
+
+        token_info = get_token_by_address(tx_dict["token_address"], ["name", "symbol", "icon_url", "token_type"])
+        tx_dict["name"] = token_info.name if token_info else None
+        tx_dict["symbol"] = token_info.symbol if token_info else None
+        tx_dict["icon_url"] = token_info.icon_url if token_info else None
+        tx_dict["token_type"] = token_info.token_type if token_info else None
+
+        transaction_list.append(tx_dict)
+    return transaction_list
