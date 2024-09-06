@@ -52,5 +52,8 @@ def parse_hex_to_address(hex_string):
     return Web3.to_checksum_address(hex_string).lower()
 
 
-def parse_hex_to_uint256(hex_string):
-    return Web3.to_int(hexstr=hex_string)
+def parse_hex_to_int256(hex_string):
+    value = Web3.to_int(hexstr=hex_string)
+    if value >= 2 ** 255:
+        value -= 2 ** 256
+    return value

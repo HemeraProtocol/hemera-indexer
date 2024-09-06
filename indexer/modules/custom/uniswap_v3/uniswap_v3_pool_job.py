@@ -3,9 +3,12 @@ import json
 import logging
 import os
 from collections import defaultdict
+from dataclasses import fields
+
 import eth_abi
 
 from indexer.domain.log import Log
+from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
@@ -13,7 +16,7 @@ from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3 import util, constants
 from indexer.modules.custom.uniswap_v3.constants import UNISWAP_V3_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3PoolPrice, \
-    UniswapV3PoolCurrentPrice
+    UniswapV3PoolCurrentPrice, UniswapV3SwapEvent
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from web3 import Web3
@@ -26,8 +29,8 @@ FEATURE_ID = FeatureType.UNISWAP_V3_POOLS.value
 
 
 class UniSwapV3PoolJob(FilterTransactionDataJob):
-    dependency_types = [Log]
-    output_types = [UniswapV3Pool, UniswapV3PoolPrice, UniswapV3PoolCurrentPrice]
+    dependency_types = [Transaction, Log]
+    output_types = [UniswapV3Pool, UniswapV3PoolPrice, UniswapV3PoolCurrentPrice, UniswapV3SwapEvent]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -76,9 +79,14 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
 
         collected_pools = self._data_buff[UniswapV3Pool.type()]
         for data in collected_pools:
-            self._exist_pools.add(data.pool_address)
+            self._exist_pools[data.pool_address] = data
+        transactions = self._data_buff[Transaction.type()]
+        self._transaction_hash_from_dict = {}
+        for transaction in transactions:
+            self._transaction_hash_from_dict[transaction.hash] = transaction.from_address
         self._batch_work_executor.execute(logs, self._collect_price_batch, len(logs), split_logs)
         self._batch_work_executor.wait()
+        self._transaction_hash_from_dict = {}
 
     def _collect_pool_batch(self, logs):
         for log in logs:
@@ -92,13 +100,41 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
     def _collect_price_batch(self, logs_dict):
         if not logs_dict:
             return
-
         contract_address = next(iter(logs_dict))
         if contract_address not in self._exist_pools:
             return
+
         logs = logs_dict[contract_address]
         unique_logs = set()
         for log in logs:
+            # Collect swap logs
+            if log.topic0 == constants.UNISWAP_V3_POOL_SWAP_TOPIC0:
+                transaction_hash = log.transaction_hash
+                part1, part2, part3, part4, part5 = split_swap_data_hex_string(log.data)
+                amount0 = util.parse_hex_to_int256(part1)
+                amount1 = util.parse_hex_to_int256(part2)
+                sqrt_price_x96 = util.parse_hex_to_int256(part3)
+                liquidity = util.parse_hex_to_int256(part4)
+                tick = util.parse_hex_to_int256(part5)
+                pool_data = self._exist_pools[log.address]
+                self._collect_item(UniswapV3SwapEvent.type(), UniswapV3SwapEvent(
+                    pool_address=log.address,
+                    nft_address=self._nft_address,
+                    transaction_hash=transaction_hash,
+                    transaction_from_address=self._transaction_hash_from_dict[transaction_hash],
+                    log_index=log.log_index,
+                    block_number=log.block_number,
+                    block_timestamp=log.block_timestamp,
+                    sender=util.parse_hex_to_address(log.topic1),
+                    recipient=util.parse_hex_to_address(log.topic2),
+                    amount0=amount0,
+                    amount1=amount1,
+                    liquidity=liquidity,
+                    tick=tick,
+                    sqrt_price_x96=sqrt_price_x96,
+                    token0_address=pool_data.token0_address,
+                    token1_address=pool_data.token1_address
+                ))
             log_tuple = (log.address, log.block_number, log.block_timestamp)
             unique_logs.add(log_tuple)
         requests = [
@@ -109,25 +145,33 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
                                          self._abi_list, self._batch_size, self._max_worker)
         current_price = None
         for data in pool_prices:
-            pool_data = {
-                "sqrtPriceX96": data["sqrtPriceX96"],
-                "tick": data["tick"],
-                "block_number": data["block_number"],
-            }
+            detail = UniswapV3PoolPrice(
+                factory_address=self._factory_address,
+                pool_address=data["pool_address"],
+                sqrt_price_x96=data["sqrtPriceX96"],
+                tick=data["tick"],
+                block_number=data["block_number"],
+                block_timestamp=data["block_timestamp"],
+            )
+            self._collect_item(UniswapV3PoolPrice.type(), detail)
+            if current_price is None or current_price.block_number < detail.block_number:
+                current_price = create_current_price_status(detail)
+        self._collect_item(UniswapV3PoolCurrentPrice.type(), current_price)
 
     def _process(self, **kwargs):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[UniswapV3SwapEvent.type()].sort(key=lambda x: x.block_number)
 
 
 def decode_pool_created(nft_address, factory_address, log):
     token0_address = util.parse_hex_to_address(log.topic1)
     token1_address = util.parse_hex_to_address(log.topic2)
-    fee = util.parse_hex_to_uint256(log.topic3)
+    fee = util.parse_hex_to_int256(log.topic3)
     tick_hex, pool_hex = split_hex_string(log.data)
     pool_address = util.parse_hex_to_address(pool_hex)
-    tick_spacing = util.parse_hex_to_uint256(tick_hex)
+    tick_spacing = util.parse_hex_to_int256(tick_hex)
     return UniswapV3Pool(nft_address=nft_address, factory_address=factory_address, pool_address=pool_address,
                          token0_address=token0_address, token1_address=token1_address,
                          fee=fee, tick_spacing=tick_spacing,
@@ -155,11 +199,21 @@ def get_exist_pools(db_service, nft_address):
         result = (
             session.query(UniswapV3Pools).filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:])).all()
         )
-        history_pools = set()
+        history_pools = {}
         if result is not None:
             for item in result:
                 pool_key = "0x" + item.pool_address.hex()
-                history_pools.add(pool_key)
+                history_pools[pool_key] = UniswapV3Pool(
+                    nft_address="0x" + item.nft_address.hex(),
+                    pool_address=pool_key,
+                    token0_address="0x" + item.token0_address.hex(),
+                    token1_address="0x" + item.token1_address.hex(),
+                    factory_address="0x" + item.factory_address.hex(),
+                    fee=item.fee,
+                    tick_spacing=item.tick_spacing,
+                    block_number=item.block_number,
+                    block_timestamp=item.block_timestamp
+                )
     except Exception as e:
         raise e
     finally:
@@ -225,3 +279,23 @@ def slot0_rpc_requests(web3, make_requests, requests, is_batch, abi_list, batch_
     executor.wait()
 
     return all_token_infos
+
+
+def create_current_price_status(detail: UniswapV3PoolPrice) -> UniswapV3PoolCurrentPrice:
+    return UniswapV3PoolCurrentPrice(
+        **{field.name: getattr(detail, field.name) for field in fields(UniswapV3PoolPrice)}
+    )
+
+
+def split_swap_data_hex_string(hex_string):
+    if hex_string.startswith("0x"):
+        hex_string = hex_string[2:]
+    if len(hex_string) == 320:
+        part1 = hex_string[:64]
+        part2 = hex_string[64:128]
+        part3 = hex_string[128:192]
+        part4 = hex_string[192:256]
+        part5 = hex_string[256:]
+        return part1, part2, part3, part4, part5
+    else:
+        raise ValueError("The data length is not suitable for this operation.")
