@@ -59,7 +59,7 @@ class EntityType(IntFlag):
     ENS = 1 << 10
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
-    
+
     @staticmethod
     def combine_all_entity_types():
         return reduce(lambda x, y: x | y, EntityType)
@@ -151,7 +151,6 @@ def generate_output_types(entity_types):
         yield CurrentTokenBalance
         yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
-
 
     if entity_types & EntityType.DEPOSIT_TO_L2:
         yield TokenDepositTransaction
