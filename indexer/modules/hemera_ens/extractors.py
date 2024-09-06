@@ -10,7 +10,7 @@ from web3 import Web3
 
 from indexer.modules.hemera_ens.ens_conf import BASE_NODE, REVERSE_BASE_NODE
 from indexer.modules.hemera_ens.ens_domain import ENSMiddleD
-from indexer.modules.hemera_ens.ens_hash import namehash, compute_node_label
+from indexer.modules.hemera_ens.ens_hash import compute_node_label, namehash
 from indexer.modules.hemera_ens.util import convert_str_ts
 
 logger = logging.getLogger(__name__)
@@ -104,10 +104,7 @@ class RegisterExtractor(BaseExtractor):
             token_id = None
             w_token_id = None
             for sl in prev_logs:
-                if (
-                    sl["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
-                    and (sl["topic2"]) == log["topic2"]
-                ):
+                if sl["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85" and (sl["topic2"]) == log["topic2"]:
                     token_id = str(int(sl["topic3"], 16))
                 if (
                     sl["address"] == "0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401"
@@ -147,9 +144,12 @@ class RegisterExtractor(BaseExtractor):
             label = None
             base_node = None
             for log in prev_logs:
-                if log["address"] == "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e" and log['topic0'] == RegisterExtractor.tp_register_with_token:
-                    base_node = log['topic1']
-                    label = log['topic2']
+                if (
+                    log["address"] == "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e"
+                    and log["topic0"] == RegisterExtractor.tp_register_with_token
+                ):
+                    base_node = log["topic1"]
+                    label = log["topic2"]
                     node = compute_node_label(base_node, label)
                     break
 
@@ -163,7 +163,6 @@ class RegisterExtractor(BaseExtractor):
                 block_timestamp=ens_middle.block_timestamp,
                 from_address=ens_middle.from_address,
                 to_address=ens_middle.to_address,
-
                 expires=ens_middle.expires,
                 name=ens_middle.name,
                 base_node=base_node,
@@ -173,7 +172,6 @@ class RegisterExtractor(BaseExtractor):
                 event_name=ens_middle.event_name,
                 method=ens_middle.method,
                 token_id=token_id,
-
             )
         else:
             return None
@@ -193,7 +191,7 @@ class NameRenewExtractor(BaseExtractor):
             name = tmp.get("name")
             if "." in name:
                 return None
-            name = name + '.eth'
+            name = name + ".eth"
             ens_middle.name = name
             ens_middle.node = namehash(name)
             ens_middle.label = tmp.get("label").lower()
@@ -337,10 +335,11 @@ class NameChangedExtractor(BaseExtractor):
 #                 block_timestamp=ens_middle.block_timestamp,
 #             )
 
+
 def extract_eth_address(input_str):
-    cleaned_str = input_str.lstrip('0')
+    cleaned_str = input_str.lstrip("0")
     if len(cleaned_str) != 40:
         raise ValueError("error address length")
 
-    eth_address = '0x' + cleaned_str
+    eth_address = "0x" + cleaned_str
     return eth_address

@@ -215,17 +215,27 @@ class EnsHandler:
                 )
                 if solved_event:
                     res.append(solved_event)
-                    if single_log["topic0"] == RegisterExtractor.tp0_register or RegisterExtractor.tp_register_with_token:
+                    if (
+                        single_log["topic0"] == RegisterExtractor.tp0_register
+                        or RegisterExtractor.tp_register_with_token
+                    ):
                         start = idx
                     break
         # merge same node register, keep 0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f delete 0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9
         mark_register = set()
         for rr in res:
-            if rr.event_name == 'NameRegistered' and rr.topic0 == '0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f':
+            if (
+                rr.event_name == "NameRegistered"
+                and rr.topic0 == "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f"
+            ):
                 mark_register.add(rr.node)
         new_res = []
         for rr in res:
-            if rr.event_name == 'NameRegistered' and rr.node in mark_register and rr.topic0 == '0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9':
+            if (
+                rr.event_name == "NameRegistered"
+                and rr.node in mark_register
+                and rr.topic0 == "0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9"
+            ):
                 continue
             else:
                 new_res.append(rr)
@@ -256,7 +266,7 @@ class EnsHandler:
             record["expires"] = None
 
         event_name = record.get("event_name")
-        if event_name == "NameChanged" or record['method'] == "setName":
+        if event_name == "NameChanged" or record["method"] == "setName":
             return ENSAddressD(
                 address=address,
                 reverse_node=record["reverse_node"],
