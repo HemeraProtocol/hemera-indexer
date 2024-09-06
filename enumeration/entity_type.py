@@ -109,6 +109,8 @@ def generate_output_types(entity_types):
         yield UpdateBlockInternalCount
 
     if entity_types & EntityType.UNISWAP_V3:
+        yield Token
+        yield UpdateToken
         yield UniswapV3Pool
         yield UniswapV3SwapEvent
         yield UniswapV3PoolPrice
