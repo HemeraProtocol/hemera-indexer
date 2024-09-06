@@ -163,6 +163,8 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             block_timestamp = data["block_timestamp"]
             if token_id not in self._exist_token_ids:
                 # need save token_info
+                if "fee" not in data:
+                    continue
                 fee = data["fee"]
                 key = (data["token0"], data["token1"], fee)
                 pool_address = info_pool_dict[key]
@@ -220,7 +222,15 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             ):
                 continue
             token_id = util.parse_hex_to_int256(log.topic1)
-            owner = token_owner_dict[token_id][block_number]
+            owner = constants.ZERO_ADDRESS
+            if token_id in token_owner_dict:
+                if block_number in token_owner_dict[token_id]:
+                    owner = token_owner_dict[token_id][block_number]
+            if token_id not in self._exist_token_ids:
+                logger.error(
+                    f"the token id {token_id} block_number = {block_number} transaction_hash = {log.transaction_hash} is not collected"
+                )
+                continue
             pool_address = self._exist_token_ids[token_id]
             pool_info = self._exist_pool_infos[pool_address]
             if (
