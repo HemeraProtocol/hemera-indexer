@@ -36,7 +36,7 @@ from indexer.utils.multicall_hemera.util import (
     rebatch_by_size,
 )
 from indexer.utils.provider import get_provider_from_uri
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.utils import format_block_id, rpc_response_to_result, zip_rpc_response
 
 BALANCE_OF_ERC20 = "balanceOf(address)(uint256)"
 BALANCE_OF_ERC1155 = "balanceOf(address,uint256)(uint256)"
@@ -92,7 +92,7 @@ class TokenFetcher:
             row[self.fixed_k] = self.build_key(row, self.token_ids_infos_k_fields)
             grouped_data[row["block_number"]].append(row)
         for block_id, items in grouped_data.items():
-            if block_id < self.deploy_block_number or not self._is_multi_call:
+            if (isinstance(block_id, int) and block_id < self.deploy_block_number) or not self._is_multi_call:
                 to_execute_batch_calls.extend(items)
             else:
                 calls = []
@@ -229,7 +229,7 @@ class TokenFetcher:
                         "request_id": item["request_id"],
                         "param_to": item["address"],
                         "param_data": abi_selector_encode_and_decode_type(item),
-                        "param_number": hex(item["block_number"]),
+                        "param_number": format_block_id(item["block_number"]),
                     }
                     for item in token_info_items
                 ]
@@ -260,7 +260,7 @@ class TokenFetcher:
         wrapped_calls = []
 
         for block_id, items in grouped_data.items():
-            if block_id < self.deploy_block_number or not self._is_multi_call:
+            if (isinstance(block_id, int) and block_id < self.deploy_block_number) or not self._is_multi_call:
                 to_execute_batch_calls.extend(items)
             else:
                 calls = []

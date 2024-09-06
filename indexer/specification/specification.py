@@ -115,7 +115,7 @@ class TransactionFilterByLogs:
     def __init__(self, topics_filters: List[TopicSpecification]):
         self.specifications = topics_filters
         self.eth_log_filters_params = {
-            "topics": [[topic for spec in self.specifications for topic in spec.topics]],
+            "topics": [list(set([topic for spec in self.specifications for topic in spec.topics]))],
         }
         filter_addresses = [to_checksum_address(address) for spec in self.specifications for address in spec.addresses]
         if len(filter_addresses) > 0:

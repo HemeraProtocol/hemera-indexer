@@ -26,6 +26,13 @@ class OpenseaTransactionType(Enum):
     SWAP = 2
 
 
+def get_opensea_transaction_type_string(value: int) -> str:
+    try:
+        return OpenseaTransactionType(value).name.lower()
+    except ValueError:
+        return f"UNKNOWN_TYPE_{value}"
+
+
 class ItemType(Enum):
     # 0: ETH on mainnet, MATIC on polygon, etc.
     NATIVE = 0
@@ -39,6 +46,13 @@ class ItemType(Enum):
     ERC721_WITH_CRITERIA = 4
     # 5: ERC1155 items where a number of ids are supported
     ERC1155_WITH_CRITERIA = 5
+
+
+def get_item_type_string(value: int) -> str:
+    try:
+        return ItemType(value).name
+    except ValueError:
+        return f"UNKNOWN_TYPE_{value}"
 
 
 def get_opensea_transaction_type(offer, consideration):
@@ -104,8 +118,8 @@ class OpenseaJob(FilterTransactionDataJob):
             job_name=self.__class__.__name__,
         )
 
-        self._seaport_contract_address = self.user_defined_config["seaport_contract_address"]
-        self._seaport_fee_addresses = self.user_defined_config["seaport_fee_addresses"]
+        self._seaport_1_6_config = self.user_defined_config.get("seaport_1_6", None)
+        self._seaport_1_5_config = self.user_defined_config.get("seaport_1_5", None)
 
     def _collect(self, **kwargs):
         pass
@@ -124,13 +138,15 @@ class OpenseaJob(FilterTransactionDataJob):
                 transaction_hash=opensea_log.transaction_hash,
                 block_number=opensea_log.block_number,
                 log_index=opensea_log.log_index,
+                protocol_version=opensea_log.protocol_version,
             )
             offer = calculate_total_amount(opensea_log.offer)
             consideration = calculate_total_amount(opensea_log.consideration)
-            fee = calculate_fee_amount(opensea_log.consideration, self._seaport_fee_addresses)
+            fee = calculate_fee_amount(opensea_log.consideration, opensea_log.fee_addresses)
 
             opensea_transaciton_type = get_opensea_transaction_type(opensea_log.offer, opensea_log.consideration)
-
+            if opensea_log.offerer == opensea_log.recipient:
+                continue
             yield AddressOpenseaTransaction(
                 address=opensea_log.offerer,
                 related_address=opensea_log.recipient,
@@ -146,6 +162,7 @@ class OpenseaJob(FilterTransactionDataJob):
                 log_index=opensea_log.log_index,
                 block_timestamp=opensea_log.block_timestamp,
                 block_hash=opensea_log.block_hash,
+                protocol_version=opensea_log.protocol_version,
             )
             yield AddressOpenseaTransaction(
                 address=opensea_log.recipient,
@@ -166,24 +183,44 @@ class OpenseaJob(FilterTransactionDataJob):
                 log_index=opensea_log.log_index,
                 block_timestamp=opensea_log.block_timestamp,
                 block_hash=opensea_log.block_hash,
+                protocol_version=opensea_log.protocol_version,
             )
 
     def _process(self, **kwargs):
-        transactions = self._get_domain(Transaction)
+        transactions = self.get_filter_transactions()
         for transaction in transactions:
-            self._collect_domains(
-                self.transfer(
-                    parse_opensea_transaction_order_fulfilled_event(transaction, self._seaport_contract_address)
+            orders = []
+            if self._seaport_1_6_config:
+                orders += parse_opensea_transaction_order_fulfilled_event(
+                    transaction,
+                    self._seaport_1_6_config["contract_address"],
+                    protocol_version="1.6",
+                    fee_addresses=self._seaport_1_6_config["fee_addresses"],
                 )
-            )
+            if self._seaport_1_5_config:
+                orders += parse_opensea_transaction_order_fulfilled_event(
+                    transaction,
+                    self._seaport_1_5_config["contract_address"],
+                    protocol_version="1.5",
+                    fee_addresses=self._seaport_1_5_config.get("fee_addresses"),
+                )
+            self._collect_domains(self.transfer(orders))
 
     def get_filter(self):
         topic_filter_list = []
-        topic_filter_list.append(
-            TopicSpecification(
-                addresses=[self._seaport_contract_address],
-                topics=list(OPENSEA_EVENT_ABI_SIGNATURE_MAPPING.values()),
+        if self._seaport_1_6_config:
+            topic_filter_list.append(
+                TopicSpecification(
+                    addresses=[self._seaport_1_6_config["contract_address"]],
+                    topics=list(OPENSEA_EVENT_ABI_SIGNATURE_MAPPING.values()),
+                )
             )
-        )
+        if self._seaport_1_5_config:
+            topic_filter_list.append(
+                TopicSpecification(
+                    addresses=[self._seaport_1_5_config["contract_address"]],
+                    topics=list(OPENSEA_EVENT_ABI_SIGNATURE_MAPPING.values()),
+                )
+            )
 
         return TransactionFilterByLogs(topic_filter_list)

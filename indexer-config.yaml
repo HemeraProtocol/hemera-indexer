@@ -1,4 +1,9 @@
 opensea_job:
-  seaport_contract_address: "0x0000000000000068f116a894984e2db1123eb395"
-  seaport_fee_addresses:
-    - "0x0000a26b00c1f0df003000390027140000faa719"
+  seaport_1_6:
+    contract_address: "0x0000000000000068f116a894984e2db1123eb395"
+    fee_addresses:
+      - "0x0000a26b00c1f0df003000390027140000faa719"
+  seaport_1_5:
+    contract_address: "0x00000000000000adc04c56bf30ac9d3c0aaf14dc"
+    fee_addresses:
+      - "0x0000a26b00c1f0df003000390027140000faa719"

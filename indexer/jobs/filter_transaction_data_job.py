@@ -9,3 +9,6 @@ class FilterTransactionDataJob(ExtensionJob):
 
     def get_filter(self):
         raise NotImplementedError
+
+    def get_filter_transactions(self):
+        return list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
