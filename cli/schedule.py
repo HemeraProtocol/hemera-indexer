@@ -39,8 +39,8 @@ def schedule(chain_name: str, postgres_url: str, dblink_url: str) -> None:
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', buffering=1)  # Line-buffered stdout
     sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', buffering=1)  # Line-buffered stderr
 
-    # may be can
-    hour = 9
+    # Can be passed from outside in the form of crontab
+    hour = 1
     minute = 0
 
     scheduler = BlockingScheduler()
@@ -48,5 +48,5 @@ def schedule(chain_name: str, postgres_url: str, dblink_url: str) -> None:
     scheduler.add_job(aggregates_yesterday_job, 'cron', hour=hour, minute=minute, args=job_args)
 
     scheduler.start()
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    print(f'Job started {current_time}, schedule time is {hour}:{minute} daily')
+    # current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    # print(f'Job started {current_time}, schedule time is {hour}:{minute} daily')
