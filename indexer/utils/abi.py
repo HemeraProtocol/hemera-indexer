@@ -1,6 +1,5 @@
 import logging
 from typing import Any, Dict, Optional, Sequence, Tuple
-from urllib.parse import to_bytes
 
 import eth_abi
 from eth_abi.codec import ABICodec
@@ -13,6 +12,7 @@ from eth_utils import (
     hexstr_if_str,
     is_binary_address,
     text_if_str,
+    to_bytes,
     to_hex,
     to_text,
 )
