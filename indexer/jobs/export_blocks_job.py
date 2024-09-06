@@ -38,9 +38,10 @@ class ExportBlocksJob(BaseExportJob):
         )
         self._is_batch = kwargs["batch_size"] > 1
         self._filters = kwargs.get("filters", [])
-        # self._is_filter = kwargs.get("is_filter", False) TODO
-        self._is_filter = True
+        self._is_filter = kwargs.get("is_filter", False)
+
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
+        self._reorg_jobs = kwargs.get("reorg_jobs", [])
 
     def _start(self, **kwargs):
         if self.able_to_reorg and self._reorg:
@@ -48,7 +49,7 @@ class ExportBlocksJob(BaseExportJob):
                 raise FastShutdownError("PG Service is not set")
 
             reorg_block = int(kwargs["start_block"])
-            set_reorg_sign(reorg_block, self._service)
+            set_reorg_sign(self._reorg_jobs, reorg_block, self._service)
             self._should_reorg_type.add(Block.type())
             self._should_reorg = True
 

@@ -147,7 +147,7 @@ def parse_transactions(transactions: list[Transactions]):
         bytea_address_list.append(transaction.to_address)
 
         transaction_json = format_to_dict(transaction)
-
+        transaction_json["method_id"] = "0x" + transaction_json["method_id"]
         transaction_json["method"] = transaction_json["method_id"]
         transaction_json["is_contract"] = False
         transaction_json["contract_name"] = None
@@ -162,7 +162,7 @@ def parse_transactions(transactions: list[Transactions]):
 
     # Find contract
     contracts = get_contracts_by_addresses(address_list=to_address_list, columns=["address"])
-    contract_list = set(map(lambda x: x.address, contracts))
+    contract_list = set(map(lambda x: "0x" + x.address.hex(), contracts))
 
     method_list = []
     for transaction_json in transaction_list:
