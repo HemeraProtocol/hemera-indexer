@@ -1,6 +1,5 @@
 import flask
 from flask_restx import Resource
-from sqlalchemy import and_
 
 from api.app.cache import cache
 from api.app.db_service.af_token_deposit import (
@@ -9,11 +8,10 @@ from api.app.db_service.af_token_deposit import (
     get_transactions_by_condition,
     get_transactions_cnt_by_condition,
     get_transactions_cnt_by_wallet,
-    parse_assets,
-    parse_deposit_transactions,
 )
 from api.app.db_service.blocks import get_block_by_hash
 from api.app.deposit_to_l2 import token_deposit_namespace
+from api.app.utils.parse_utils import parse_deposit_assets, parse_deposit_transactions
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
 from common.utils.format_utils import row_to_dict
@@ -140,7 +138,7 @@ class ExplorerDepositStatistic(Resource):
         chain_list = [chain_id_name_mapping[row_to_dict(chain)["chain_id"]] for chain in chains]
 
         assets = get_deposit_assets_list(wallet_address)
-        asset_list = parse_assets(assets)
+        asset_list = parse_deposit_assets(assets)
 
         return {
             "wallet_address": wallet_address,
@@ -207,8 +205,7 @@ class ExplorerDepositAssetsList(Resource):
             )
 
         assets = get_deposit_assets_list(wallet_address)
-
-        asset_list = parse_assets(assets)
+        asset_list = parse_deposit_assets(assets)
         return {
             "wallet_address": wallet_address,
             "asset_list": asset_list,
