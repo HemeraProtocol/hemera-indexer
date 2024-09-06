@@ -15,6 +15,7 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.address_index.domain import *
+from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordBlueChipHolders,
     AllFeatureValueRecordUniswapV3Pool,
@@ -23,6 +24,8 @@ from indexer.modules.custom.all_features_value_record import (
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
+from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
+from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import UniswapV3Pool, UniswapV3Token
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
@@ -43,6 +46,8 @@ class EntityType(IntFlag):
     ADDRESS_INDEX = 1 << 7
 
     DEPOSIT_TO_L2 = 1 << 8
+    
+    OPEN_SEA = 1 << 9
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -119,11 +124,13 @@ def generate_output_types(entity_types):
         yield Token
         yield ERC20TokenTransfer
         yield ERC721TokenTransfer
+        yield ERC1155TokenTransfer
         yield AddressNftTransfer
         yield AddressTokenHolder
         yield AddressTokenTransfer
         yield TokenAddressNftInventory
         yield AddressTransaction
+        yield AddressNft1155Holder
 
     if entity_types & EntityType.BLUE_CHIP:
         yield Block
@@ -139,3 +146,8 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.DEPOSIT_TO_L2:
         yield TokenDepositTransaction
         yield AddressTokenDeposit
+
+    if entity_types & EntityType.OPEN_SEA:
+        yield AddressOpenseaTransaction
+        yield OpenseaOrder
+

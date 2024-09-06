@@ -8,6 +8,7 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional, Union
 
 import orjson
 from mpire import WorkerPool

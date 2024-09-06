@@ -1,4 +1,4 @@
-from sqlalchemy import Column, func
+from sqlalchemy import VARCHAR, Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSON, JSONB, SMALLINT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
@@ -28,6 +28,7 @@ class AddressOpenseaTransactions(HemeraModel):
     block_timestamp = Column(TIMESTAMP)
     block_hash = Column(BYTEA, primary_key=True)
     reorg = Column(BOOLEAN, default=False)
+    protocol_version = Column(VARCHAR, server_default="1.6")
 
     @staticmethod
     def model_domain_mapping():
