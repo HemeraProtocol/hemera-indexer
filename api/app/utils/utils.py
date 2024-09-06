@@ -12,7 +12,7 @@ from web3 import Web3
 from api.app.contract.contract_verify import get_abis_for_logs, get_names_from_method_or_topic_list
 from api.app.db_service.contracts import get_contracts_by_addresses
 from api.app.db_service.wallet_addresses import get_address_display_mapping
-from api.app.token.token_prices import get_token_price
+from api.app.utils.token_utils import get_token_price
 from common.models import db
 from common.models.transactions import Transactions
 from common.utils.config import get_config

@@ -53,7 +53,7 @@ from api.app.db_service.transactions import (
 )
 from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
 from api.app.explorer import explorer_namespace
-from api.app.token.token_prices import get_token_price
+from api.app.utils.token_utils import get_token_price
 from api.app.utils.utils import (
     fill_address_display_to_transactions,
     fill_is_contract_to_transactions,
