@@ -6,34 +6,26 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class UniswapV3Pools(HemeraModel):
-    __tablename__ = "af_uniswap_v3_pools"
-    nft_address = Column(BYTEA, primary_key=True)
+class UniswapV3PoolCurrentPrices(HemeraModel):
+    __tablename__ = "af_uniswap_v3_pool_prices_current"
     pool_address = Column(BYTEA, primary_key=True)
-
-    factory_address = Column(BYTEA)
-
-    token0_address = Column(BYTEA)
-    token1_address = Column(BYTEA)
-    fee = Column(NUMERIC(100))
-
-    tick_spacing = Column(NUMERIC(100))
-
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
+    factory_address = Column(BYTEA)
+
+    sqrt_price_x96 = Column(NUMERIC(100))
+    tick = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-
-    __table_args__ = (PrimaryKeyConstraint("nft_address", "pool_address"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                "domain": "UniswapV3Pool",
+                "domain": "UniswapV3PoolCurrentPrice",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > af_uniswap_v3_pool_prices_current.block_number",
                 "converter": general_converter,
-            }
+            },
         ]
