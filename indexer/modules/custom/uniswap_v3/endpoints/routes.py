@@ -28,7 +28,7 @@ from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import U
 Q96 = 2**96
 
 
-@uniswap_v3_namespace.route("/v1/uniswapv3/current_holding/<wallet_address>")
+@uniswap_v3_namespace.route("/v1/aci/<wallet_address>/uniswapv3/current_holding")
 class UniswapV3WalletHolding(Resource):
     def get(self, wallet_address):
         wallet_address = wallet_address.lower()
@@ -116,7 +116,7 @@ class UniswapV3WalletHolding(Resource):
         return result, 200
 
 
-@uniswap_v3_namespace.route("/v1/uniswapv3/first_liquidity_time/<wallet_address>")
+@uniswap_v3_namespace.route("/v1/aci/<wallet_address>/uniswapv3/first_liquidity_time")
 class UniswapV3WalletLiquidityDetail(Resource):
     def get(self, wallet_address):
         wallet_address = wallet_address.lower()
@@ -140,7 +140,7 @@ class UniswapV3WalletLiquidityDetail(Resource):
         }, 200
 
 
-@uniswap_v3_namespace.route("/v1/uniswapv3/liquidity_pools/<wallet_address>")
+@uniswap_v3_namespace.route("/v1/aci/<wallet_address>/uniswapv3/provide_liquidity_pool_count")
 class UniswapV3WalletLiquidityDetail(Resource):
     def get(self, wallet_address):
         wallet_address = wallet_address.lower()
