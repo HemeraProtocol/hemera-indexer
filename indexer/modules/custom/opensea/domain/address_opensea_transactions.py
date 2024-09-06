@@ -22,3 +22,5 @@ class AddressOpenseaTransaction(Domain):
     log_index: int
     block_timestamp: int
     block_hash: str
+
+    protocol_version: str = "1.6"

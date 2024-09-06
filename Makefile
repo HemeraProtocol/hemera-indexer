@@ -11,6 +11,7 @@ RESET=\033[0m
 image:
 
 	docker build $(IMAGE_FLAGS) --network host -t hemera-protocol:$(VERSION)-$(BUILD) . -q
+	echo "Built image hemera-protocol:$(VERSION)-$(BUILD)"
 
 test:
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \

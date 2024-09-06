@@ -15,6 +15,7 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.address_index.domain import *
+from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 from indexer.modules.custom.all_features_value_record import (
     AllFeatureValueRecordBlueChipHolders,
     AllFeatureValueRecordUniswapV3Pool,
@@ -32,6 +33,9 @@ from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     UniswapV3TokenDetail,
     UniswapV3TokenUpdateLiquidity,
 )
+from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
+from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
+
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -50,6 +54,8 @@ class EntityType(IntFlag):
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
     ADDRESS_INDEX = 1 << 7
+
+    OPEN_SEA = 1 << 8
 
     @staticmethod
     def combine_all_entity_types():
@@ -131,11 +137,13 @@ def generate_output_types(entity_types):
         yield Token
         yield ERC20TokenTransfer
         yield ERC721TokenTransfer
+        yield ERC1155TokenTransfer
         yield AddressNftTransfer
         yield AddressTokenHolder
         yield AddressTokenTransfer
         yield TokenAddressNftInventory
         yield AddressTransaction
+        yield AddressNft1155Holder
 
     if entity_types & EntityType.BLUE_CHIP:
         yield Block
@@ -147,3 +155,7 @@ def generate_output_types(entity_types):
         yield CurrentTokenBalance
         yield AllFeatureValueRecordBlueChipHolders
         yield BlueChipHolder
+
+    if entity_types & EntityType.OPEN_SEA:
+        yield AddressOpenseaTransaction
+        yield OpenseaOrder

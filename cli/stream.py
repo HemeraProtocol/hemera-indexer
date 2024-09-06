@@ -332,7 +332,7 @@ def stream(
 
     if output_types is None:
         entity_types = calculate_entity_value(entity_types)
-        output_types = list(generate_output_types(entity_types))
+        output_types = list(set(generate_output_types(entity_types)))
     else:
         domain_dict = Domain.get_all_domain_dict()
         parse_output_types = set()
@@ -345,7 +345,7 @@ def stream(
 
         if not output_types:
             raise click.ClickException("No output types provided")
-        output_types = list(parse_output_types)
+        output_types = list(set(parse_output_types))
 
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),

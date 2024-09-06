@@ -16,3 +16,5 @@ class OpenseaOrder(Domain):
     transaction_hash: str
     log_index: int
     block_number: int
+
+    protocol_version: str = "1.6"

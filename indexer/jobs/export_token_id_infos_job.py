@@ -1,6 +1,6 @@
 import logging
 from itertools import groupby
-from typing import List
+from typing import List, Optional, Union
 
 from indexer.domain.token_id_infos import (
     ERC721TokenIdChange,
@@ -90,6 +90,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
 def generate_token_id_info(
     erc721_token_transfers: List[ERC721TokenTransfer],
     erc1155_token_transfers: List[ERC1155TokenTransfer],
+    block_number: Union[Optional[int], str] = None,
 ) -> List[dict]:
     info = []
     seen_keys = set()
@@ -100,13 +101,13 @@ def generate_token_id_info(
         if key not in seen_keys:
             seen_keys.add(key)
 
-            if token_transfer.from_address == ZERO_ADDRESS:
+            if token_transfer.from_address == ZERO_ADDRESS and block_number is None:
                 info.append(
                     {
                         "address": token_transfer.token_address,
                         "token_id": token_transfer.token_id,
                         "token_type": token_transfer.token_type,
-                        "block_number": token_transfer.block_number,
+                        "block_number": token_transfer.block_number if block_number is None else block_number,
                         "block_timestamp": token_transfer.block_timestamp,
                         "is_get_token_uri": True,
                         "request_id": abs(hash(key + "_get_token_uri")),
@@ -118,7 +119,7 @@ def generate_token_id_info(
                     "address": token_transfer.token_address,
                     "token_id": token_transfer.token_id,
                     "token_type": token_transfer.token_type,
-                    "block_number": token_transfer.block_number,
+                    "block_number": token_transfer.block_number if block_number is None else block_number,
                     "block_timestamp": token_transfer.block_timestamp,
                     "is_get_token_uri": False,
                     "request_id": abs(hash(key)),

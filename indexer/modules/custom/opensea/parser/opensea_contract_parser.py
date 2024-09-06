@@ -34,10 +34,13 @@ class OpenseaLog:
     block_number: int
     transaction_hash: str
     log_index: int
+    protocol_version: str = "1.6"
+
+    fee_addresses: List[str] = None
 
 
 def parse_opensea_transaction_order_fulfilled_event(
-    transaction: Transaction, contract_address: str
+    transaction: Transaction, contract_address: str, protocol_version: str = 1.6, fee_addresses: List[str] = []
 ) -> List[OpenseaLog]:
     results = []
     logs = transaction.receipt.logs
@@ -61,6 +64,8 @@ def parse_opensea_transaction_order_fulfilled_event(
                     block_number=transaction.block_number,
                     transaction_hash=transaction.hash,
                     log_index=log.log_index,
+                    protocol_version=protocol_version,
+                    fee_addresses=fee_addresses,
                 )
             )
 

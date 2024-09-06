@@ -7,6 +7,7 @@ from eth_typing.abi import Decodable
 from eth_utils import to_checksum_address
 
 from indexer.utils.multicall_hemera.signature import Signature, _get_signature
+from indexer.utils.utils import format_block_id
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ class Call:
         target: AnyAddress,
         function: Union[str, Iterable[Union[str, Any]]],
         returns: Optional[Iterable[Tuple[str, Callable]]] = None,
-        block_id: Optional[int] = None,
+        block_id: Union[Optional[int], str] = None,
         gas_limit: Optional[int] = None,
     ) -> None:
         self.target = to_checksum_address(target)
@@ -85,10 +86,12 @@ class Call:
         }
 
 
-def prep_args(target: str, signature: Signature, args: Optional[Any], block_id: Optional[int], gas_limit: int) -> List:
+def prep_args(
+    target: str, signature: Signature, args: Optional[Any], block_id: Union[Optional[int], str], gas_limit: int
+) -> List:
     call_data = signature.encode_data(args)
 
-    args = [{"to": target, "data": call_data}, hex(block_id)]
+    args = [{"to": target, "data": call_data}, format_block_id(block_id)]
 
     if gas_limit:
         args[0]["gas"] = gas_limit
