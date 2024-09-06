@@ -4,8 +4,8 @@
 from flask_restx import Api
 
 from api.app.contract.routes import contract_namespace
-from api.app.explorer.routes import explorer_namespace
 from api.app.deposit_to_l2.routes import token_deposit_namespace
+from api.app.explorer.routes import explorer_namespace
 from api.app.user_operation.routes import user_operation_namespace
 
 # from api.app.l2_explorer.routes import l2_explorer_namespace
