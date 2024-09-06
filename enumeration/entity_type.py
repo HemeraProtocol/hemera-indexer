@@ -46,7 +46,7 @@ class EntityType(IntFlag):
     ADDRESS_INDEX = 1 << 7
 
     DEPOSIT_TO_L2 = 1 << 8
-    
+
     OPEN_SEA = 1 << 9
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
@@ -150,4 +150,3 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.OPEN_SEA:
         yield AddressOpenseaTransaction
         yield OpenseaOrder
-
