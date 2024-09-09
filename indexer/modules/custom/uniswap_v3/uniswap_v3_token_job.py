@@ -487,7 +487,6 @@ def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi
             token_infos.append(token)
         return token_infos
 
-    # 分批处理请求
     all_token_infos = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
