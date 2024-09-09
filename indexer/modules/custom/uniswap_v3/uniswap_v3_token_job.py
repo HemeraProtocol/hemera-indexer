@@ -212,6 +212,8 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
 
         # collect fee and liquidity
         for log in logs:
+            if log.address != self._nft_address:
+                continue
             topic0 = log.topic0
             block_number = log.block_number
             block_timestamp = log.block_timestamp
@@ -220,8 +222,6 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0,
                 constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0,
             ):
-                continue
-            if log.address != self._nft_address:
                 continue
             token_id = util.parse_hex_to_int256(log.topic1)
             owner = constants.ZERO_ADDRESS
