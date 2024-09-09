@@ -1,5 +1,4 @@
 import logging
-from collections import defaultdict
 from enum import Enum
 from typing import List
 
@@ -16,8 +15,6 @@ from indexer.modules.custom.opensea.parser.opensea_contract_parser import (
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
-
-from collections import defaultdict
 
 
 class OpenseaTransactionType(Enum):
@@ -117,9 +114,15 @@ class OpenseaJob(FilterTransactionDataJob):
             kwargs["max_workers"],
             job_name=self.__class__.__name__,
         )
-
-        self._seaport_1_6_config = self.user_defined_config.get("seaport_1_6", None)
-        self._seaport_1_5_config = self.user_defined_config.get("seaport_1_5", None)
+        self._seaport_configs = {
+            "1.6": self.user_defined_config.get("seaport_1_6", None),
+            "1.5": self.user_defined_config.get("seaport_1_5", None),
+            "1.4": self.user_defined_config.get("seaport_1_4", None),
+            "1.3": self.user_defined_config.get("seaport_1_3", None),
+            "1.2": self.user_defined_config.get("seaport_1_2", None),
+            "1.1": self.user_defined_config.get("seaport_1_1", None),
+            "1.0": self.user_defined_config.get("seaport_1_0", None),
+        }
 
     def _collect(self, **kwargs):
         pass
@@ -186,41 +189,35 @@ class OpenseaJob(FilterTransactionDataJob):
                 protocol_version=opensea_log.protocol_version,
             )
 
+    def process_transaction(self, transaction):
+        contract_addresses = [log.address for log in (transaction.receipt.logs if transaction.receipt else [])]
+
+        orders = [
+            parse_opensea_transaction_order_fulfilled_event(
+                transaction,
+                config["contract_address"],
+                protocol_version=version,
+                fee_addresses=config.get("fee_addresses"),
+            )
+            for version, config in self._seaport_configs.items()
+            if config and config.get("contract_address") in contract_addresses
+        ]
+
+        return [order for sublist in orders for order in sublist]
+
     def _process(self, **kwargs):
         transactions = self.get_filter_transactions()
         for transaction in transactions:
-            orders = []
-            if self._seaport_1_6_config:
-                orders += parse_opensea_transaction_order_fulfilled_event(
-                    transaction,
-                    self._seaport_1_6_config["contract_address"],
-                    protocol_version="1.6",
-                    fee_addresses=self._seaport_1_6_config["fee_addresses"],
-                )
-            if self._seaport_1_5_config:
-                orders += parse_opensea_transaction_order_fulfilled_event(
-                    transaction,
-                    self._seaport_1_5_config["contract_address"],
-                    protocol_version="1.5",
-                    fee_addresses=self._seaport_1_5_config.get("fee_addresses"),
-                )
+            orders = self.process_transaction(transaction)
             self._collect_domains(self.transfer(orders))
 
     def get_filter(self):
-        topic_filter_list = []
-        if self._seaport_1_6_config:
-            topic_filter_list.append(
-                TopicSpecification(
-                    addresses=[self._seaport_1_6_config["contract_address"]],
-                    topics=list(OPENSEA_EVENT_ABI_SIGNATURE_MAPPING.values()),
-                )
+        topic_filter_list = [
+            TopicSpecification(
+                addresses=[config["contract_address"]], topics=list(OPENSEA_EVENT_ABI_SIGNATURE_MAPPING.values())
             )
-        if self._seaport_1_5_config:
-            topic_filter_list.append(
-                TopicSpecification(
-                    addresses=[self._seaport_1_5_config["contract_address"]],
-                    topics=list(OPENSEA_EVENT_ABI_SIGNATURE_MAPPING.values()),
-                )
-            )
+            for config in self._seaport_configs.values()
+            if config
+        ]
 
         return TransactionFilterByLogs(topic_filter_list)
