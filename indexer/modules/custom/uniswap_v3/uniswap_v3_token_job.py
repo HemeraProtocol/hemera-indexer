@@ -221,6 +221,8 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0,
             ):
                 continue
+            if log.address != self._nft_address:
+                continue
             token_id = util.parse_hex_to_int256(log.topic1)
             owner = constants.ZERO_ADDRESS
             if token_id in token_owner_dict:
