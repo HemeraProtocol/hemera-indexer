@@ -113,6 +113,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             elif (
                 topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0
                 or topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0
+                or topic0 == constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0
             ):
                 token_id_hex = log.topic1
             else:
@@ -212,6 +213,8 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
 
         # collect fee and liquidity
         for log in logs:
+            if log.address != self._nft_address:
+                continue
             topic0 = log.topic0
             block_number = log.block_number
             block_timestamp = log.block_timestamp
@@ -485,7 +488,6 @@ def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi
             token_infos.append(token)
         return token_infos
 
-    # 分批处理请求
     all_token_infos = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
