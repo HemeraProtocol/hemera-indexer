@@ -113,6 +113,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             elif (
                 topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0
                 or topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0
+                or topic0 == constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0
             ):
                 token_id_hex = log.topic1
             else:
