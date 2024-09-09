@@ -7,7 +7,7 @@ from operator import or_
 
 from flask import request
 from flask_restx import Resource
-from sqlalchemy import and_, func
+from sqlalchemy import and_, asc, desc, func
 
 from api.app import explorer
 from api.app.cache import cache
@@ -125,6 +125,7 @@ class UniswapV3WalletLiquidityDetail(Resource):
         first_holding = (
             db.session.query(UniswapV3TokenLiquidityRecords)
             .filter(UniswapV3TokenLiquidityRecords.owner == address_bytes)
+            .order_by(UniswapV3TokenLiquidityRecords.block_timestamp)
             .first()
         )
         if not first_holding:
@@ -136,8 +137,9 @@ class UniswapV3WalletLiquidityDetail(Resource):
         return {
             "first_provide_time": first_provide_time,
             "token_id": str(first_holding.token_id),
-            "token0_address": first_holding.token0_address,
-            "token1_address": first_holding.token1_address,
+            "transaction_hash": "0x" + first_holding.transaction_hash.hex(),
+            "token0_address": "0x" + first_holding.token0_address.hex(),
+            "token1_address": "0x" + first_holding.token1_address.hex(),
         }, 200
 
 
