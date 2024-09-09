@@ -54,14 +54,13 @@ class ExportBlocksJob(BaseExportJob):
         self._reorg_jobs = kwargs.get("reorg_jobs", [])
 
     def _start(self, **kwargs):
-        if self.able_to_reorg and self._reorg:
-            if self._service is None:
-                raise FastShutdownError("PG Service is not set")
+        if self._service is None:
+            raise FastShutdownError("PG Service is not set")
 
-            reorg_block = int(kwargs["start_block"])
-            set_reorg_sign(self._reorg_jobs, reorg_block, self._service)
-            self._should_reorg_type.add(Block.type())
-            self._should_reorg = True
+        reorg_block = int(kwargs["start_block"])
+        set_reorg_sign(self._reorg_jobs, reorg_block, self._service)
+        self._should_reorg_type.add(Block.type())
+        self._should_reorg = True
 
     def _end(self):
         super()._end()

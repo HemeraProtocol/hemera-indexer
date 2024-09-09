@@ -78,19 +78,26 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def run(self, **kwargs):
         try:
-            self._start(**kwargs)
+            if self.able_to_reorg and self._reorg:
+                start_time = datetime.now()
+                self.logger.info(f"Stage _start starting.")
+                self._start(**kwargs)
+                self.logger.info(f"Stage _start finished. Took {datetime.now() - start_time}")
 
             if not self._reorg or self._should_reorg:
                 start_time = datetime.now()
+                self.logger.info(f"Stage collect starting.")
                 self._collect(**kwargs)
                 self.logger.info(f"Stage collect finished. Took {datetime.now() - start_time}")
 
                 start_time = datetime.now()
+                self.logger.info(f"Stage process starting.")
                 self._process(**kwargs)
                 self.logger.info(f"Stage process finished. Took {datetime.now() - start_time}")
 
             if not self._reorg:
                 start_time = datetime.now()
+                self.logger.info(f"Stage export starting.")
                 self._export()
                 self.logger.info(f"Stage export finished. Took {datetime.now() - start_time}")
 
@@ -98,21 +105,21 @@ class BaseJob(metaclass=BaseJobMeta):
             self._end()
 
     def _start(self, **kwargs):
-        if self.able_to_reorg and self._reorg:
-            if self._service is None:
-                raise FastShutdownError("PG Service is not set")
 
-            reorg_block = int(kwargs["start_block"])
+        if self._service is None:
+            raise FastShutdownError("PG Service is not set")
 
-            output_table = {}
-            for domain in self.output_types:
-                output_table[domain_model_mapping[domain.__name__]["table"]] = domain.type()
-                # output_table.add(domain_model_mapping[domain.__name__]["table"])
+        reorg_block = int(kwargs["start_block"])
 
-            for table in output_table.keys():
-                if should_reorg(reorg_block, table, self._service):
-                    self._should_reorg_type.add(output_table[table])
-                    self._should_reorg = True
+        output_table = {}
+        for domain in self.output_types:
+            output_table[domain_model_mapping[domain.__name__]["table"]] = domain.type()
+            # output_table.add(domain_model_mapping[domain.__name__]["table"])
+
+        for table in output_table.keys():
+            if should_reorg(reorg_block, table, self._service):
+                self._should_reorg_type.add(output_table[table])
+                self._should_reorg = True
 
     def _end(self):
         if self._reorg:
