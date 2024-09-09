@@ -7,3 +7,13 @@ opensea_job:
     contract_address: "0x00000000000000adc04c56bf30ac9d3c0aaf14dc"
     fee_addresses:
       - "0x0000a26b00c1f0df003000390027140000faa719"
+large_transfer_job:
+  eth: 100
+  rules:
+    - name: "usdc"
+      token_address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+      limit: 100000
+
+    - name: "usdt"
+      token_address: "0xdac17f958d2ee523a2206206994597c13d831ec7"
+      limit: 100000

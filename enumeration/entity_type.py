@@ -31,6 +31,7 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSNameRenewD,
     ENSRegisterD,
 )
+from indexer.modules.custom.large_transfer.domain.large_transfer_domain import LargeTransferD
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
@@ -67,6 +68,8 @@ class EntityType(IntFlag):
     OPEN_SEA = 1 << 9
 
     ENS = 1 << 10
+
+    LARGE_TRANSFER = 1 << 11
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -183,3 +186,6 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.OPEN_SEA:
         yield AddressOpenseaTransaction
         yield OpenseaOrder
+
+    if entity_types & EntityType.LARGE_TRANSFER:
+        yield LargeTransferD
