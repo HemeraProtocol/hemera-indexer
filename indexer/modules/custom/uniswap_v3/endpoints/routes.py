@@ -36,6 +36,7 @@ class UniswapV3WalletHolding(Resource):
         holdings = (
             db.session.query(UniswapV3TokenCurrentStatus)
             .filter(UniswapV3TokenCurrentStatus.wallet_address == address_bytes)
+            .filter(UniswapV3TokenCurrentStatus.liquidity > 0)
             .all()
         )
 
