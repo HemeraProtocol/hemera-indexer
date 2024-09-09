@@ -104,7 +104,11 @@ class RegisterExtractor(BaseExtractor):
             token_id = None
             w_token_id = None
             for sl in prev_logs:
-                if sl["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85" and (sl["topic2"]) == log["topic2"]:
+                if (
+                    sl["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
+                    and (sl["topic2"]) == log["topic2"]
+                    and sl["topic0"] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+                ):
                     token_id = str(int(sl["topic3"], 16))
                 if (
                     sl["address"] == "0xd4416b13d2b3a9abae7acd5d6c2bbdbe25686401"
