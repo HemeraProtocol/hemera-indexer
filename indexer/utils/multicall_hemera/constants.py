@@ -17,7 +17,7 @@ class Network(Enum):
     RSK = (30, 0)
     RSKTestnet = (31, 0)
     Kovan = (42, 0)
-    Bsc = (56, 0)
+    Bsc = (56, 15921452)
     OKC = (66, 0)
     OptimismKovan = (69, 0)
     BscTestnet = (97, 0)

@@ -41,9 +41,12 @@ class LargeTransferTransactionD(Domain):
     reorg: Optional[bool] = False
 
 
+@dataclass
 class LargeTransferAddressD(Domain):
     address: str
+    token_address: str
+    transaction_count: int
+    amount_in: int
+    amount_out: int
+    block_number: int
 
-    transaction_count = int
-    amount = int
-    block_number = int
