@@ -31,7 +31,7 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSNameRenewD,
     ENSRegisterD,
 )
-from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
+from indexer.modules.custom.merchant_moe.domain.merchant_moe_1155_total_supply import (
     MerchantMoeErc1155TokenCurrentSupply,
     MerchantMoeErc1155TokenSupply,
 )

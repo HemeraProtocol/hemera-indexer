@@ -12,7 +12,7 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.merchant_moe import constants
-from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
+from indexer.modules.custom.merchant_moe.domain.merchant_moe_1155_total_supply import (
     MerchantMoeErc1155TokenCurrentSupply,
     MerchantMoeErc1155TokenSupply,
 )
