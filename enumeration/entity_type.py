@@ -31,6 +31,15 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSNameRenewD,
     ENSRegisterD,
 )
+from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
+    MerchantMoeErc1155TokenCurrentSupply,
+    MerchantMoeErc1155TokenSupply,
+)
+from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
+    MerChantMoePool,
+    MerChantMoeTokenBin,
+    MerChantMoeTokenCurrentBin,
+)
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
@@ -67,6 +76,8 @@ class EntityType(IntFlag):
     OPEN_SEA = 1 << 9
 
     ENS = 1 << 10
+
+    TEST = 1 << 11
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -183,3 +194,14 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.OPEN_SEA:
         yield AddressOpenseaTransaction
         yield OpenseaOrder
+
+    if entity_types & EntityType.TEST:
+        yield MerchantMoeErc1155TokenCurrentSupply
+        yield MerchantMoeErc1155TokenSupply
+        yield MerChantMoePool
+        yield MerChantMoeTokenCurrentBin
+        yield MerChantMoeTokenBin
+        yield Token
+        yield UpdateToken
+        yield TokenBalance
+        yield CurrentTokenBalance

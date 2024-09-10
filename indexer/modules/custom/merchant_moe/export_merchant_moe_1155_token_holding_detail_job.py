@@ -131,9 +131,21 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             )
 
         need_call_list = []
-        current_token_holding = {}
         token_id_info_set = set()
-
+        for token_balance in infos:
+            token_address = token_balance.token_address
+            block_number = token_balance.block_number
+            block_timestamp = token_balance.block_timestamp
+            token_id = token_balance.token_id
+            if (token_id, block_number) not in token_id_info_set:
+                token_id_info_set.add((token_id, block_number))
+                need_call_list.append(
+                    {
+                        "block_number": block_number,
+                        "block_timestamp": block_timestamp,
+                        "token_id": token_id,
+                    }
+                )
         total_supply_dtos = batch_get_total_supply(
             self._web3,
             self._batch_web3_provider.make_request,
