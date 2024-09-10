@@ -38,7 +38,7 @@ class LargeTransferTransactions(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "LargeTransferD",
+                "domain": "LargeTransferTransactionD",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

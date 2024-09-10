@@ -13,14 +13,14 @@ from indexer.domain.token_transfer import ERC20TokenTransfer
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import ExtensionJob
-from indexer.modules.custom.large_transfer.domain.large_transfer_domain import LargeTransferD
+from indexer.modules.custom.large_transfer.domain.large_transfer_domain import LargeTransferAddressD, LargeTransferTransactionD
 
 logger = logging.getLogger(__name__)
 
 
 class LargeTransferJob(ExtensionJob):
     dependency_types = [Transaction, ERC20TokenTransfer]
-    output_types = [LargeTransferD]
+    output_types = [LargeTransferAddressD, LargeTransferTransactionD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -56,7 +56,7 @@ class LargeTransferJob(ExtensionJob):
         for tnx, tfs in group_data.items():
             tra = transactions_map.get(tnx)
             if tra.value > self.limit_eth:
-                res.append(LargeTransferD(
+                res.append(LargeTransferTransactionD(
                     transaction_hash=tra.hash,
                     transaction_index=tra.transaction_index,
                     from_address=tra.from_address,
@@ -81,7 +81,7 @@ class LargeTransferJob(ExtensionJob):
                     if large_flag:
                         break
                 if large_flag:
-                    res.append(LargeTransferD(
+                    res.append(LargeTransferTransactionD(
                     transaction_hash=tra.hash,
                     transaction_index=tra.transaction_index,
                     from_address=tra.from_address,

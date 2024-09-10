@@ -12,7 +12,7 @@ from indexer.domain import Domain
 
 
 @dataclass
-class LargeTransferD(Domain):
+class LargeTransferTransactionD(Domain):
     transaction_hash: bytes
     transaction_index: Optional[int] = None
     from_address: Optional[bytes] = None
@@ -39,3 +39,11 @@ class LargeTransferD(Domain):
     create_time: datetime = field(default_factory=datetime.now)
     update_time: datetime = field(default_factory=datetime.now)
     reorg: Optional[bool] = False
+
+
+class LargeTransferAddressD(Domain):
+    address: str
+
+    transaction_count = int
+    amount = int
+    block_number = int

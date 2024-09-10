@@ -31,7 +31,7 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSNameRenewD,
     ENSRegisterD,
 )
-from indexer.modules.custom.large_transfer.domain.large_transfer_domain import LargeTransferD
+from indexer.modules.custom.large_transfer.domain.large_transfer_domain import LargeTransferTransactionD, LargeTransferAddressD
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
@@ -188,4 +188,5 @@ def generate_output_types(entity_types):
         yield OpenseaOrder
 
     if entity_types & EntityType.LARGE_TRANSFER:
-        yield LargeTransferD
+        yield LargeTransferTransactionD
+        yield LargeTransferAddressD
