@@ -340,10 +340,11 @@ class NameChangedExtractor(BaseExtractor):
 #             )
 
 
-def extract_eth_address(input_str):
-    cleaned_str = input_str.lstrip("0")
-    if len(cleaned_str) != 40:
-        raise ValueError("error address length")
+def extract_eth_address(input_string):
+    hex_string = input_string.lower().replace("0x", "")
 
-    eth_address = "0x" + cleaned_str
-    return eth_address
+    if len(hex_string) > 40:
+        hex_string = hex_string[-40:]
+
+    hex_string = hex_string.zfill(40)
+    return Web3.to_checksum_address(hex_string).lower()
