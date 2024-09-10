@@ -31,14 +31,14 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSNameRenewD,
     ENSRegisterD,
 )
-from indexer.modules.custom.merchant_moe.domain.merchant_moe_1155_total_supply import (
-    MerchantMoeErc1155TokenCurrentSupply,
-    MerchantMoeErc1155TokenSupply,
-)
 from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
     MerChantMoePool,
     MerChantMoeTokenBin,
     MerChantMoeTokenCurrentBin,
+)
+from indexer.modules.custom.merchant_moe.domain.merchant_moe_1155_total_supply import (
+    MerchantMoeErc1155TokenCurrentSupply,
+    MerchantMoeErc1155TokenSupply,
 )
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
