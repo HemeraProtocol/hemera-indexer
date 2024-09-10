@@ -28,7 +28,55 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         self.start_date = start_date
         self.results = []
 
-    def get_pool_aggr(self, orm_list, price_dict):
+    def insert_aggr_job(self, results):
+        session = self.db_service.Session()
+
+        session.query(PeriodFeatureDefiFbtcAggregates).filter(
+            PeriodFeatureDefiFbtcAggregates.period_date == self.start_date
+        ).delete()
+
+        session.bulk_save_objects(results)
+        session.commit()
+        print(f'insert successfully, {len(results)}')
+        session.close()
+
+    def get_token_aggr_by_protocol(self, orm_list, price_dict):
+        grouped_data = defaultdict(list)
+        for record in orm_list:
+            key = (record.period_date, record.protocol_id)
+            grouped_data[key].append(record)
+
+        results = []
+        for k, entity_list in grouped_data.items():
+            period_date, protocol_id = k
+            protocol_balance = 0
+            protocol_usd = 0
+            wallet_count = 0
+
+            for entity in entity_list:
+                token_usd = float(price_dict['FBTC'] * entity.balance)
+                balance = float(entity.balance)
+                protocol_balance += balance
+                protocol_usd += token_usd
+                wallet_count += 1
+
+            results.append(
+                PeriodFeatureDefiFbtcAggregates(
+                    period_date=period_date,
+                    chain_name=self.chain_name,
+                    protocol_id=protocol_id,
+                    total_fbtc_balance=protocol_balance,
+                    total_fbtc_usd=protocol_usd,
+                    day_user_count=wallet_count,
+                    total_user_count=wallet_count,
+                    updated_version=1
+                )
+
+            )
+
+        self.results.extend(results)
+
+    def get_pool_token_pair_aggr_by_protocol(self, orm_list, price_dict):
         grouped_data = defaultdict(list)
 
         for record in orm_list:
@@ -72,22 +120,9 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
         self.results.extend(results)
 
-    def insert_aggr_job(self, results):
-        session = self.db_service.Session()
-
-        session.query(PeriodFeatureDefiFbtcAggregates).filter(
-            PeriodFeatureDefiFbtcAggregates.period_date == self.start_date
-        ).delete()
-
-        session.bulk_save_objects(results)
-        session.commit()
-        print(f'insert successfully, {len(results)}')
-        session.close()
-
-    def get_pool_token_data(self, orm_list):
+    def get_pool_token_pair_data(self, orm_list):
         distinct_symbol_list = []
 
-        # 初始化三层字典
         wallet_protocol_contract_group = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
         for record in orm_list:
@@ -95,7 +130,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
             wallet_key = record.wallet_address
             protocol_key = record.protocol_id
             contract_key = record.contract_address
-            # 使用 wallet_address 作为第一层的键，protocol_id 作为第二层的键，contract_address 作为第三层的键
+
             wallet_protocol_contract_group[(period_date_key, wallet_key)][protocol_key][contract_key].append(record)
 
             if record.token0_symbol not in distinct_symbol_list:
@@ -105,13 +140,11 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
         price_dict = self.get_latest_price(distinct_symbol_list)
 
-        self.get_pool_aggr(orm_list, price_dict)
+        self.get_pool_token_pair_aggr_by_protocol(orm_list, price_dict)
 
         results = {}
         for period_date_wallet, protocol_contract_group in wallet_protocol_contract_group.items():
             period_date, wallet_address = period_date_wallet
-            # if wallet_address.hex() == '505d981b8d0df243f06f8a8b49d7d514dab98552':
-            #     print(1)
 
             wallet_address_json = []
             total_balance = 0
@@ -220,99 +253,6 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         session.close()
         return orm_list
 
-    def get_uniswap_v3_json(self):
-        uniswapV3_list = self.get_filter_fbtc_orm(PeriodFeatureHoldingBalanceUniswapV3)
-        results = self.get_pool_token_data(uniswapV3_list)
-
-        return results
-
-    def get_token_aggr(self, orm_list, price_dict):
-        grouped_data = defaultdict(list)
-        for record in orm_list:
-            key = (record.period_date, record.protocol_id)
-            grouped_data[key].append(record)
-
-        results = []
-        for k, entity_list in grouped_data.items():
-            period_date, protocol_id = k
-            protocol_balance = 0
-            protocol_usd = 0
-            wallet_count = 0
-
-            for entity in entity_list:
-                token_usd = float(price_dict['FBTC'] * entity.balance)
-                balance = float(entity.balance)
-                protocol_balance += balance
-                protocol_usd += token_usd
-                wallet_count += 1
-
-            results.append(
-                PeriodFeatureDefiFbtcAggregates(
-                    period_date=period_date,
-                    chain_name=self.chain_name,
-                    protocol_id=protocol_id,
-                    total_fbtc_balance=protocol_balance,
-                    total_fbtc_usd=protocol_usd,
-                    day_user_count=wallet_count,
-                    total_user_count=wallet_count,
-                    updated_version=1
-                )
-
-            )
-
-        self.results.extend(results)
-
-    def get_staked_json(self):
-        session = self.db_service.Session()
-
-        fbtc_detail_list = session.query(PeriodFeatureHoldingBalanceStakedFbtcDetail).filter(
-            PeriodFeatureHoldingBalanceStakedFbtcDetail.period_date == self.start_date).all()
-
-        grouped_data = defaultdict(list)
-
-        for record in fbtc_detail_list:
-            key = (record.period_date, record.wallet_address, record.protocol_id)
-            grouped_data[key].append(record)
-
-        price_dict = self.get_latest_price(['FBTC'])
-
-        self.get_token_aggr(fbtc_detail_list, price_dict)
-
-        results = {}
-        for k, entity_list in grouped_data.items():
-            period_date, wallet_address, protocol_id = k
-            protocol_json = []
-            token_json = []
-            protocol_balance = 0
-            protocol_usd = 0
-
-            for entity in entity_list:
-                fbtc_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
-                token_usd = float(price_dict['FBTC'] * entity.balance)
-                balance = float(entity.balance)
-                j = {
-                    "token_data": [
-                        {
-                            "token_symbol": 'FBTC',
-                            "token_address": fbtc_address,
-                            "token_balance": balance,
-                            "token_balance_usd": token_usd}
-                    ],
-                    "contract_address": format_value_for_json(entity.contract_address),
-                }
-
-                token_json.append(j)
-
-                protocol_balance += balance
-                protocol_usd += token_usd
-            h = {'pool_data': token_json,
-                 'protocol_id': protocol_id}
-            protocol_json.append(h)
-            results[(period_date, wallet_address)] = {'contract_json': protocol_json, 'balance': protocol_balance,
-                                                      'usd': protocol_usd}
-        session.close()
-        return results
-
     def get_period_address_token_balances(self):
         fbtc_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
         address = bytes.fromhex(fbtc_address.lower()[2:])
@@ -331,65 +271,93 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
         return results
 
+    def get_uniswap_v3_json(self):
+        uniswapV3_list = self.get_filter_fbtc_orm(PeriodFeatureHoldingBalanceUniswapV3)
+        results = self.get_pool_token_pair_data(uniswapV3_list)
+        return results
+
     def get_merchantmoe_json(self):
         orm_list = self.get_filter_fbtc_orm(PeriodFeatureHoldingBalanceMerchantmoe)
-        results = self.get_pool_token_data(orm_list)
+        results = self.get_pool_token_pair_data(orm_list)
         return results
 
     def get_dodo_json(self):
         orm_list = self.get_filter_fbtc_orm(PeriodFeatureHoldingBalanceDoDo)
-        results = self.get_pool_token_data(orm_list)
+        results = self.get_pool_token_pair_data(orm_list)
         return results
+
+    def get_token_data(self, orm_list):
+        price_dict = self.get_latest_price(['FBTC'])
+
+        wallet_protocol_contract_group = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+        for record in orm_list:
+            period_date_key = record.period_date
+            wallet_key = record.wallet_address
+            protocol_key = record.protocol_id
+            contract_key = record.contract_address
+
+            wallet_protocol_contract_group[(period_date_key, wallet_key)][protocol_key][contract_key].append(record)
+
+        self.get_token_aggr_by_protocol(orm_list, price_dict)
+
+        results = {}
+        fbtc_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
+
+        for period_date_wallet, protocol_contract_group in wallet_protocol_contract_group.items():
+            period_date, wallet_address = period_date_wallet
+
+            wallet_address_json = []
+            total_balance = 0
+            total_usd = 0
+
+            for protocol_id, contract_group in protocol_contract_group.items():
+                protocol_json = {'pool_data': [],
+                                 'protocol_id': protocol_id}
+                for contract_address, records in contract_group.items():
+                    contract_token_balance = 0
+                    contract_token_usd = 0
+
+                    for record in records:
+                        token0_used = float(price_dict['FBTC'] * record.balance)
+
+                        contract_token_balance += float(record.balance)
+                        contract_token_usd += token0_used
+
+                        total_balance += float(record.balance)
+                        total_usd += token0_used
+
+                    token_json = {
+                        "token_data": [
+                            {
+                                "token_symbol": 'FBTC',
+                                "token_address": fbtc_address,
+                                "token_balance": contract_token_balance,
+                                "token_balance_usd": contract_token_usd}
+                        ],
+                        "contract_address": format_value_for_json(record.contract_address),
+                    }
+
+                    protocol_json['pool_data'].append(token_json)
+                wallet_address_json.append(protocol_json)
+
+            results[(period_date, wallet_address)] = {'contract_json': wallet_address_json, 'balance': total_balance,
+                                                      'usd': total_usd}
+        return results
+
+    def get_staked_json(self):
+        session = self.db_service.Session()
+
+        fbtc_detail_list = session.query(PeriodFeatureHoldingBalanceStakedFbtcDetail).filter(
+            PeriodFeatureHoldingBalanceStakedFbtcDetail.period_date == self.start_date).all()
+
+        return self.get_token_data(fbtc_detail_list)
 
     def get_lendle_json(self):
         session = self.db_service.Session()
         orm_list = session.query(PeriodFeatureHoldingBalanceLendle).filter(
             PeriodFeatureHoldingBalanceLendle.period_date == self.start_date).all()
-
-        grouped_data = defaultdict(list)
-
-        for record in orm_list:
-            key = (record.period_date, record.wallet_address, record.protocol_id)
-            grouped_data[key].append(record)
-
-        price_dict = self.get_latest_price(['FBTC'])
-
-        self.get_token_aggr(orm_list, price_dict)
-
-        results = {}
-        for k, entity_list in grouped_data.items():
-            period_date, wallet_address, protocol_id = k
-            protocol_json = []
-            token_json = []
-            protocol_balance = 0
-            protocol_usd = 0
-
-            for entity in entity_list:
-                fbtc_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
-                token_usd = float(price_dict['FBTC'] * entity.balance)
-                balance = float(entity.balance)
-                j = {
-                    "token_data": [
-                        {
-                            "token_symbol": 'FBTC',
-                            "token_address": fbtc_address,
-                            "token_balance": balance,
-                            "token_balance_usd": token_usd}
-                    ],
-                    "contract_address": format_value_for_json(entity.contract_address),
-                }
-
-                token_json.append(j)
-
-                protocol_balance += balance
-                protocol_usd += token_usd
-            h = {'pool_data': token_json,
-                 'protocol_id': protocol_id}
-            protocol_json.append(h)
-            results[(period_date, wallet_address)] = {'contract_json': protocol_json, 'balance': protocol_balance,
-                                                      'usd': protocol_usd}
-        session.close()
-        return results
+        return self.get_token_data(orm_list)
 
     @staticmethod
     def timed_call(method, method_name):
