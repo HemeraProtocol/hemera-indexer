@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 
 from common.models import HemeraModel, general_converter
 
-
+# TODO 增加增量值，而不是只有amount，记得增加一下。往里面合的时候
 class FeatureStakedFBTCDetailRecords(HemeraModel):
     __tablename__ = "feature_staked_fbtc_detail_records"
     contract_address = Column(BYTEA, primary_key=True)
