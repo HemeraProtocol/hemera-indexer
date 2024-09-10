@@ -13,13 +13,11 @@ from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.merchant_moe import constants
 from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
+    MerchantMoeErc1155TokenCurrentSupply,
+    MerchantMoeErc1155TokenSupply,
     MerChantMoePool,
     MerChantMoeTokenBin,
     MerChantMoeTokenCurrentBin,
-)
-from indexer.modules.custom.merchant_moe.domain.merchant_moe_1155_total_supply import (
-    MerchantMoeErc1155TokenCurrentSupply,
-    MerchantMoeErc1155TokenSupply,
 )
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
