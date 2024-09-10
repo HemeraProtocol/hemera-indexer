@@ -109,7 +109,7 @@ class ExportTokenBalancesJob(BaseExportJob):
                     )
                     for token_balance in self._data_buff[TokenBalance.type()]
                 ],
-                group_by=["token_address", "address"],
+                group_by=["token_address", "address", "token_id"],
                 max_key="block_number",
             )
 
