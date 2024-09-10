@@ -77,7 +77,7 @@ class EntityType(IntFlag):
 
     ENS = 1 << 10
 
-    TEST = 1 << 11
+    MERCHANT_MOE = 1 << 11
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -195,7 +195,7 @@ def generate_output_types(entity_types):
         yield AddressOpenseaTransaction
         yield OpenseaOrder
 
-    if entity_types & EntityType.TEST:
+    if entity_types & EntityType.MERCHANT_MOE:
         yield MerchantMoeErc1155TokenCurrentSupply
         yield MerchantMoeErc1155TokenSupply
         yield MerChantMoePool
