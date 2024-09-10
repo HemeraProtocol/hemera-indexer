@@ -156,6 +156,16 @@ class RegisterExtractor(BaseExtractor):
                     label = log["topic2"]
                     node = compute_node_label(base_node, label)
                     break
+                elif (
+                    log["address"] == "0x314159265dd8dbb310642f98f50c066173c1259b"
+                    and log["topic0"] == "0xce0457fe73731f824cc272376169235128c118b49d344817417c6d108d155e82"
+                ):
+                    base_node = log["topic1"]
+                    label = log["topic2"]
+                    node = compute_node_label(base_node, label)
+                    break
+            if not node:
+                return None
 
             return ENSMiddleD(
                 transaction_hash=ens_middle.transaction_hash,
