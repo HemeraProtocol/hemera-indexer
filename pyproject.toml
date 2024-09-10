@@ -50,6 +50,7 @@ dependencies = [
     "orjson==3.10.7",
     "mpire==2.10.2",
     "PyYAML==6.0.2",
+    "apscheduler==3.10.4"
 ]
 
 [tool.setuptools.dynamic]
