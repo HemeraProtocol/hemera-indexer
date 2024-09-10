@@ -198,9 +198,15 @@ class TokenFetcher:
             tmp = self.decode_result(wrapped_calls, res, chunks)
             multicall_result.update(tmp)
 
-        for k, v in multicall_result.items():
-            if v is None:
-                to_execute_batch_calls.append(return_data_map[k])
+        if not multicall_result:
+            for cals in wrapped_calls:
+                for cl in cals:
+                    k = cl.returns[0][0]
+                    to_execute_batch_calls.append(return_data_map[k])
+        else:
+            for k, v in multicall_result.items():
+                if v is None:
+                    to_execute_batch_calls.append(return_data_map[k])
 
         raw_result = self.fetch_to_execute_batch_calls(self._token_ids_info_rpc_requests, to_execute_batch_calls)
 
@@ -330,9 +336,15 @@ class TokenFetcher:
         res = self.fetch_result(chunks)
         tmp = self.decode_result(wrapped_calls, res, chunks)
         multicall_result.update(tmp)
-        for k, v in multicall_result.items():
-            if v is None:
-                to_execute_batch_calls.append(return_data_map[k])
+        if not multicall_result:
+            for cals in wrapped_calls:
+                for cl in cals:
+                    k = cl.returns[0][0]
+                    to_execute_batch_calls.append(return_data_map[k])
+        else:
+            for k, v in multicall_result.items():
+                if v is None:
+                    to_execute_batch_calls.append(return_data_map[k])
 
         tmp = self.fetch_to_execute_batch_calls(self._token_balances, to_execute_batch_calls)
         multicall_result.update(tmp)
