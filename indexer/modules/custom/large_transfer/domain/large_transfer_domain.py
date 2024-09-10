@@ -13,19 +13,18 @@ from indexer.domain import Domain
 
 @dataclass
 class LargeTransferTransactionD(Domain):
-    transaction_hash: bytes
+    transaction_hash: str
     transaction_index: Optional[int] = None
-    from_address: Optional[bytes] = None
-    to_address: Optional[bytes] = None
+    from_address: Optional[str] = None
+    to_address: Optional[str] = None
     value: Optional[float] = None
     transaction_type: Optional[int] = None
-    input: Optional[bytes] = None
-    method_id: Optional[str] = field(default=None, repr=False)
+    input: Optional[str] = None
     nonce: Optional[int] = None
 
-    block_hash: Optional[bytes] = None
+    block_hash: Optional[str] = None
     block_number: Optional[int] = None
-    block_timestamp: Optional[datetime] = None
+    block_timestamp: Optional[int] = None
 
     gas: Optional[float] = None
     gas_price: Optional[float] = None
@@ -36,8 +35,6 @@ class LargeTransferTransactionD(Domain):
     error: Optional[str] = None
     revert_reason: Optional[str] = None
 
-    create_time: datetime = field(default_factory=datetime.now)
-    update_time: datetime = field(default_factory=datetime.now)
     reorg: Optional[bool] = False
 
 
@@ -49,4 +46,3 @@ class LargeTransferAddressD(Domain):
     amount_in: int
     amount_out: int
     block_number: int
-

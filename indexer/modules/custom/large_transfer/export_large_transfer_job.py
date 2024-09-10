@@ -15,20 +15,22 @@ from indexer.domain.token_transfer import ERC20TokenTransfer
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import ExtensionJob
-from indexer.modules.custom.large_transfer.domain.large_transfer_domain import LargeTransferAddressD, LargeTransferTransactionD
+from indexer.modules.custom.large_transfer.domain.large_transfer_domain import (
+    LargeTransferAddressD,
+    LargeTransferTransactionD,
+)
 from indexer.modules.custom.large_transfer.models.large_transfer_address import LargeTransferAddress
 
 logger = logging.getLogger(__name__)
 
-ETH = 'ETH'
-TC = 'transaction_count'
+ETH = "0x0000000000000000000000000000000000000000"
+TC = "transaction_count"
 
 
 class LargeTransferJob(ExtensionJob):
     dependency_types = [Transaction, ERC20TokenTransfer]
     output_types = [LargeTransferAddressD, LargeTransferTransactionD]
     able_to_reorg = True
-
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -38,7 +40,7 @@ class LargeTransferJob(ExtensionJob):
             kwargs["max_workers"],
             job_name=self.__class__.__name__,
         )
-        self.limit_eth = self.user_defined_config.get("eth") * (10 ** 18)
+        self.limit_eth = self.user_defined_config.get("eth") * (10**18)
 
         self.rules = self.user_defined_config.get("rules")
 
@@ -67,21 +69,21 @@ class LargeTransferJob(ExtensionJob):
         for tnx, tfs in group_data.items():
             tra = transactions_map.get(tnx)
             if tra.value > self.limit_eth:
-                res.append(LargeTransferTransactionD(
-                    transaction_hash=tra.hash,
-                    transaction_index=tra.transaction_index,
-                    from_address=tra.from_address,
-                    to_address=tra.to_address,
-                    value=tra.value,
-                    transaction_type=tra.transaction_type,
-                    input=tra.input,
-                    method_id=tra.input,
-                    nonce=tra.nonce,
-                    block_hash=tra.block_hash,
-                    block_number=tra.block_number,
-                    block_timestamp=tra.block_timestamp,
-
-                ))
+                res.append(
+                    LargeTransferTransactionD(
+                        transaction_hash=tra.hash,
+                        transaction_index=tra.transaction_index,
+                        from_address=tra.from_address,
+                        to_address=tra.to_address,
+                        value=tra.value,
+                        transaction_type=tra.transaction_type,
+                        input=tra.input,
+                        nonce=tra.nonce,
+                        block_hash=tra.block_hash,
+                        block_number=tra.block_number,
+                        block_timestamp=tra.block_timestamp,
+                    )
+                )
 
                 address_token_in[tra.to_address][ETH] += tra.value
                 address_token_in[tra.to_address][TC] += 1
@@ -92,7 +94,7 @@ class LargeTransferJob(ExtensionJob):
                 large_flag = False
                 for tf in tfs:
                     for rule in self.rules:
-                        if tf.token_address == rule["token_address"] and tf.value > (rule["limit"] * 10 ** 6):
+                        if tf.token_address == rule["token_address"] and tf.value > (rule["limit"] * 10**6):
                             large_flag = True
                             address_token_in[tf.to_address][tf.token_address] += tf.value
                             address_token_in[tf.to_address][TC] += 1
@@ -101,20 +103,21 @@ class LargeTransferJob(ExtensionJob):
                             break
 
                 if large_flag:
-                    res.append(LargeTransferTransactionD(
-                    transaction_hash=tra.hash,
-                    transaction_index=tra.transaction_index,
-                    from_address=tra.from_address,
-                    to_address=tra.to_address,
-                    value=tra.value,
-                    transaction_type=tra.transaction_type,
-                    input=tra.input,
-                    method_id=tra.input,
-                    nonce=tra.nonce,
-                    block_hash=tra.block_hash,
-                    block_number=tra.block_number,
-                    block_timestamp=tra.block_timestamp,
-                    ))
+                    res.append(
+                        LargeTransferTransactionD(
+                            transaction_hash=tra.hash,
+                            transaction_index=tra.transaction_index,
+                            from_address=tra.from_address,
+                            to_address=tra.to_address,
+                            value=tra.value,
+                            transaction_type=tra.transaction_type,
+                            input=tra.input,
+                            nonce=tra.nonce,
+                            block_hash=tra.block_hash,
+                            block_number=tra.block_number,
+                            block_timestamp=tra.block_timestamp,
+                        )
+                    )
         # query exists
         address_lis = list(set(address_token_in.keys()) | set(address_token_out.keys()))
         token_lis = list(set(get_second_level_keys(address_token_in)) | set(get_second_level_keys(address_token_out)))
@@ -127,15 +130,15 @@ class LargeTransferJob(ExtensionJob):
                 if tk == TC:
                     if k in exists_dic:
                         exists_dic[k].transaction_count += balance
-                    else:
-                        exists_dic[k] = LargeTransferAddressD(
-                            address=ad,
-                            token_address=tk,
-                            transaction_count=balance,
-                            amount_in=0,
-                            amount_out=0,
-                            block_number=block_number
-                        )
+                    # else:
+                    #     exists_dic[k] = LargeTransferAddressD(
+                    #         address=ad,
+                    #         token_address=tk,
+                    #         transaction_count=balance,
+                    #         amount_in=0,
+                    #         amount_out=0,
+                    #         block_number=block_number
+                    #     )
                 else:
                     if k in exists_dic:
                         exists_dic[k].amount_in += balance
@@ -146,7 +149,7 @@ class LargeTransferJob(ExtensionJob):
                             transaction_count=1,
                             amount_in=balance,
                             amount_out=0,
-                            block_number=block_number
+                            block_number=block_number,
                         )
 
         for ad, token_balance_dic in address_token_out.items():
@@ -155,15 +158,15 @@ class LargeTransferJob(ExtensionJob):
                 if tk == TC:
                     if k in exists_dic:
                         exists_dic[k].transaction_count += balance
-                    else:
-                        exists_dic[k] = LargeTransferAddressD(
-                            address=ad,
-                            token_address=tk,
-                            transaction_count=balance,
-                            amount_in=0,
-                            amount_out=0,
-                            block_number=block_number
-                        )
+                    # else:
+                    #     exists_dic[k] = LargeTransferAddressD(
+                    #         address=ad,
+                    #         token_address=tk,
+                    #         transaction_count=balance,
+                    #         amount_in=0,
+                    #         amount_out=0,
+                    #         block_number=block_number
+                    #     )
                 else:
                     if k in exists_dic:
                         exists_dic[k].amount_out += balance
@@ -174,11 +177,14 @@ class LargeTransferJob(ExtensionJob):
                             transaction_count=1,
                             amount_in=0,
                             amount_out=balance,
-                            block_number=block_number
+                            block_number=block_number,
                         )
-        for item in res + list(exists_dic.values()):
+        # for item in res + list(exists_dic.values()):
+        for item in list(exists_dic.values()):
+
             if item:
                 self._collect_item(item.type(), item)
+
 
 def get_second_level_keys(nested_dict):
     second_level_keys = set()
@@ -194,8 +200,20 @@ def get_exist_large_transfers(db_service, address_lis, token_address_lis):
 
     session = db_service.get_service_session()
     try:
+        address_lis = [addr.encode("utf-8") if isinstance(addr, str) else addr for addr in address_lis]
+        token_address_lis = [
+            tok_addr.encode("utf-8") if isinstance(tok_addr, str) else tok_addr for tok_addr in token_address_lis
+        ]
+
         result = (
-            session.query(LargeTransferAddress).filter(and_(LargeTransferAddress.address.in_(address_lis), LargeTransferAddress.token_address.in_(token_address_lis))).all()
+            session.query(LargeTransferAddress)
+            .filter(
+                and_(
+                    LargeTransferAddress.address.in_(address_lis),
+                    LargeTransferAddress.token_address.in_(token_address_lis),
+                )
+            )
+            .all()
         )
         res = {}
         for row in result:
@@ -205,7 +223,7 @@ def get_exist_large_transfers(db_service, address_lis, token_address_lis):
                 transaction_count=row.transaction_count,
                 amount_in=row.amount_in,
                 amount_out=row.amount_out,
-                block_number=row.block_number
+                block_number=row.block_number,
             )
 
     except Exception as e:
@@ -215,5 +233,6 @@ def get_exist_large_transfers(db_service, address_lis, token_address_lis):
 
     return res
 
+
 def build_k(address, token_address):
-    return address + '.' + token_address
+    return address + "." + token_address

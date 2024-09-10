@@ -5,7 +5,7 @@ from common.models import HemeraModel, general_converter
 
 
 class LargeTransferTransactions(HemeraModel):
-    __tablename__ = "large_transfer_transactions"
+    __tablename__ = "af_large_transfer_transactions"
 
     transaction_hash = Column(BYTEA, primary_key=True)
     transaction_index = Column(INTEGER)
@@ -14,7 +14,7 @@ class LargeTransferTransactions(HemeraModel):
     value = Column(NUMERIC(100))
     transaction_type = Column(INTEGER)
     input = Column(BYTEA)
-    method_id = Column(VARCHAR, Computed("substring((input)::varchar for 8)::bigint::varchar"))
+    # method_id = Column(VARCHAR, Computed("substring((input)::varchar for 8)::bigint::varchar"))
     nonce = Column(INTEGER)
 
     block_hash = Column(BYTEA)
