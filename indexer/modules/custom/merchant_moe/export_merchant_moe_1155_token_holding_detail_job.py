@@ -49,8 +49,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self._chain_id = common_utils.get_chain_id(self._web3)
-        self._load_config("config.ini", self._chain_id)
+        self._need_collected_list = constants.LIQUIDITY_LIST
         self._exist_pool = get_exist_pools(self._service)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
@@ -61,18 +60,6 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 TopicSpecification(topics=self._need_collected_list),
             ]
         )
-
-    def _load_config(self, filename, chain_id):
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(base_path, filename)
-        config = configparser.ConfigParser()
-        config.read(full_path)
-
-        try:
-            address_list_str = config.get(str(chain_id), "liquidity_list", fallback="")
-            self._need_collected_list = [address.strip() for address in address_list_str.split(",") if address.strip()]
-        except (configparser.NoOptionError, configparser.NoSectionError) as e:
-            raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
     def _collect(self, **kwargs):
         if self._need_collected_list is None or len(self._need_collected_list) == 0:
@@ -172,11 +159,9 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             total_supply = data["totalSupply"]
             reserve0_bin = data["reserve0_bin"]
             reserve1_bin = data["reserve1_bin"]
-            common_token_data = {
+            common_data = {
                 "token_address": token_address,
                 "token_id": token_id,
-            }
-            common_block_data = {
                 "block_number": block_number,
                 "block_timestamp": block_timestamp,
             }
@@ -184,30 +169,26 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             key = token_id
             if key not in current_total_supply_dict or block_number > current_total_supply_dict[key].block_number:
                 current_total_supply_dict[key] = MerchantMoeErc1155TokenCurrentSupply(
-                    **common_token_data,
-                    **common_block_data,
+                    **common_data,
                     total_supply=total_supply,
                 )
             if key not in current_token_bin_dict or block_number > current_token_bin_dict[key].block_number:
                 current_token_bin_dict[key] = MerChantMoeTokenCurrentBin(
-                    **common_token_data,
-                    **common_block_data,
+                    **common_data,
                     reserve0_bin=reserve0_bin,
                     reserve1_bin=reserve1_bin,
                 )
             self._collect_item(
                 MerchantMoeErc1155TokenSupply.type(),
                 MerchantMoeErc1155TokenSupply(
-                    **common_token_data,
-                    **common_block_data,
+                    **common_data,
                     total_supply=total_supply,
                 ),
             )
             self._collect_item(
                 MerChantMoeTokenBin.type(),
                 MerChantMoeTokenBin(
-                    **common_token_data,
-                    **common_block_data,
+                    **common_data,
                     reserve0_bin=reserve0_bin,
                     reserve1_bin=reserve1_bin,
                 ),

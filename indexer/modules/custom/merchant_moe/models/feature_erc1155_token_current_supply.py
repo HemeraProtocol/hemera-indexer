@@ -7,7 +7,7 @@ from common.models import HemeraModel, general_converter
 
 
 class FeatureErc1155TokenCurrentSupplyStatus(HemeraModel):
-    __tablename__ = "feature_erc1155_token_current_supply_status"
+    __tablename__ = "af_merchant_moe_token_supply_current"
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_timestamp = Column(BIGINT)
@@ -26,7 +26,7 @@ class FeatureErc1155TokenCurrentSupplyStatus(HemeraModel):
             {
                 "domain": "MerchantMoeErc1155TokenCurrentSupply",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > feature_erc1155_token_current_supply_status.block_number",
+                "update_strategy": "EXCLUDED.block_number > af_merchant_moe_token_supply_current.block_number",
                 "converter": general_converter,
             }
         ]

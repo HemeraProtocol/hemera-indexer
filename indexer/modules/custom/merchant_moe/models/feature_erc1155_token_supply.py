@@ -7,7 +7,7 @@ from common.models import HemeraModel, general_converter
 
 
 class FeatureErc1155TokenSupplyRecords(HemeraModel):
-    __tablename__ = "feature_erc1155_token_supply_records"
+    __tablename__ = "af_merchant_moe_token_supply_hist"
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
@@ -34,7 +34,7 @@ class FeatureErc1155TokenSupplyRecords(HemeraModel):
 
 
 Index(
-    "feature_erc1155_token_supply_token_block_desc_index",
+    "af_merchant_moe_token_supply_hist_token_block_desc_index",
     desc(FeatureErc1155TokenSupplyRecords.token_address),
     desc(FeatureErc1155TokenSupplyRecords.block_timestamp),
 )
