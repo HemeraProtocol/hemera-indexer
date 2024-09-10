@@ -274,6 +274,10 @@ class EnsHandler:
             record["expires"] = None
 
         event_name = record.get("event_name")
+
+        node = record.get("node")
+        if not node:
+            raise Exception("pass")
         if event_name == "NameChanged" or record["method"] == "setName":
             return ENSAddressD(
                 address=address,
