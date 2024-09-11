@@ -8,7 +8,7 @@ import logging
 from collections import defaultdict
 from typing import List
 
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.token_transfer import ERC20TokenTransfer
@@ -140,23 +140,20 @@ class LargeTransferJob(ExtensionJob):
     def get_existing_large_transfers(self, addresses, tokens):
         if not self.db_service:
             return {}
+        addresses = [ad[2:] for ad in addresses if ad.startswith("0x")]
+        tokens = [td[2:] for td in tokens if td.startswith("0x")]
 
-        addresses = [addr.encode("utf-8") if isinstance(addr, str) else addr for addr in addresses]
-        tokens = [tok_addr.encode("utf-8") if isinstance(tok_addr, str) else tok_addr for tok_addr in tokens]
         with self.db_service.get_service_session() as session:
-            result = (
-                session.query(LargeTransferAddress)
-                .filter(
-                    and_(
-                        LargeTransferAddress.address.in_(addresses),
-                        LargeTransferAddress.token_address.in_(tokens),
-                    )
+            query = session.query(LargeTransferAddress).filter(
+                and_(
+                    func.encode(LargeTransferAddress.address, "hex").in_(addresses),
+                    func.encode(LargeTransferAddress.token_address, "hex").in_(tokens),
                 )
-                .all()
             )
+            result = query.all()
 
         return {
-            f"{row.address}.{row.token_address}": LargeTransferAddressD(
+            f"{'0x' + row.address.hex()}.{'0x' + row.token_address.hex()}": LargeTransferAddressD(
                 address=row.address,
                 token_address=row.token_address,
                 transaction_count=row.transaction_count,
@@ -205,4 +202,4 @@ class LargeTransferJob(ExtensionJob):
 
     @staticmethod
     def get_second_level_keys(nested_dict):
-        return {key for subdict in nested_dict.values() for key in subdict}
+        return {key for subdict in nested_dict.values() for key in subdict if key != TC}
