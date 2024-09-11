@@ -10,7 +10,7 @@ class AggrDisorderJob(AggrBaseJob):
     def __init__(self, **kwargs):
         config = kwargs["config"]
         job_list = kwargs["job_list"]
-        self.job_list = job_list.get_disordered_jobs()
+        self.job_list = job_list.get_disorder_jobs()
         self.db_service = config["db_service"]
         self._batch_work_executor = BatchWorkExecutor(10, 10)
 

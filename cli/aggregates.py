@@ -1,10 +1,10 @@
 import click
 
 from common.services.postgresql_service import PostgreSQLService
-from indexer.aggr_jobs.job_list_generator import JobListGenerator
-from indexer.aggr_jobs.utils import DateType, check_data_completeness, get_yesterday_date
+from indexer.aggr_jobs.utils import DateType, get_yesterday_date
 from indexer.controller.aggregates_controller import AggregatesController
 from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispatcher
+from indexer.schedule_jobs.aggregates_jobs import parse_aggregate_schedule
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -42,8 +42,8 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
     type=str,
     envvar="PROVIDER_URI",
     help="The URI of the web3 provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io"
-    "It helps determine whether the latest synchronized data meets the required execution date range.",
+         "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io"
+         "It helps determine whether the latest synchronized data meets the required execution date range.",
 )
 @click.option(
     "-sd",
@@ -92,7 +92,10 @@ def aggregates(chain_name, job_name, postgres_url, provider_uri, start_date, end
     # check_data_completeness(db_service, provider_uri, end_date)
 
     config = {"db_service": db_service, "chain_name": chain_name, "dblink_url": dblink_url}
-    job_list = JobListGenerator(job_name)
+
+    jobs = parse_aggregate_schedule()
+
+    job_list = [job for job in jobs if job.job_name == job_name][0]
 
     dispatcher = AggregatesDispatcher(config, job_list)
 

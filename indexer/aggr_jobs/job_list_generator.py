@@ -1,48 +1,15 @@
 class JobListGenerator(object):
-    def __init__(self, job_name):
+    def __init__(self, job_name,initialization_jobs, disorder_jobs, order_jobs):
         self.job_name = job_name
+        self.initialization_jobs = initialization_jobs
+        self.disorder_jobs = disorder_jobs
+        self.order_jobs = order_jobs
 
     def get_initialization_jobs(self):
-        job_list = []
-        if self.job_name == "FBTC":
-            job_list = ["init_token_price", "init_period_address_token_balance"]
-        return job_list
+        return self.initialization_jobs
 
-    def get_disordered_jobs(self):
-        job_list = []
-
-        if self.job_name == "FBTC":
-            job_list = [
-                "daily_feature_holding_balance_staked_fbtc_detail.sql",
-                "daily_feature_holding_balance_uniswap_v3.sql",
-                "daily_address_token_balances",
-                "daily_feature_erc20_token_supply_records.sql",
-                # 'daily_feature_erc1155_token_holdings.sql',
-                # 'daily_feature_erc1155_token_supply_records.sql'
-            ]
-        elif self.job_name == "EXPLORE":
-            job_list = [
-                "daily_explore_aggregates.sql",
-            ]
-
-        return job_list
+    def get_disorder_jobs(self):
+        return self.disorder_jobs
 
     def get_order_jobs(self):
-        job_list = []
-
-        if self.job_name == "FBTC":
-            job_list = [
-                "period_address_token_balances",
-                "period_feature_holding_balance_uniswap_v3.sql",
-                "period_feature_staked_fbtc_detail_records.sql",
-                "period_feature_holding_balance_staked_fbtc_detail.sql",
-                # 'period_feature_erc1155_token_holdings.sql',
-                "period_feature_erc1155_token_supply_records.sql",
-                "period_feature_holding_balance_merchantmoe.sql",
-                "period_feature_erc20_token_supply_records.sql",
-                "period_feature_holding_balance_dodo.sql",
-                "period_feature_holding_balance_lendle.sql",
-                "period_feature_defi_wallet_fbtc_aggregates.py",
-            ]
-
-        return job_list
+        return self.order_jobs

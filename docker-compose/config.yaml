@@ -1,0 +1,36 @@
+common_config:
+  schedule_time: 0 1 * * *
+
+jobs:
+  FBTC:
+    initialization_jobs:
+      - init_token_price
+      - init_period_address_token_balance
+
+    disorder_jobs:
+      - daily_feature_holding_balance_staked_fbtc_detail.sql
+      - daily_feature_holding_balance_uniswap_v3.sql
+      - daily_address_token_balances.sql
+      - daily_feature_erc20_token_supply_records.sql
+      # - daily_feature_erc1155_token_holdings.sql
+      # - daily_feature_erc1155_token_supply_records.sql
+
+    order_jobs:
+      - period_address_token_balances.sql
+      - period_feature_holding_balance_uniswap_v3.sql
+      - period_feature_staked_fbtc_detail_records.sql
+      - period_feature_holding_balance_staked_fbtc_detail.sql
+      # - period_feature_erc1155_token_holdings.sql
+      - period_feature_erc1155_token_supply_records.sql
+      - period_feature_holding_balance_merchantmoe.sql
+      - period_feature_erc20_token_supply_records.sql
+      - period_feature_holding_balance_dodo.sql
+      - period_feature_holding_balance_lendle.sql
+      - period_feature_defi_wallet_fbtc_aggregates.py
+
+  EXPLORE:
+    config:
+      schedule_time: 1 1 * * * # default 0 1 * * *
+
+    disordered_jobs:
+      - daily_explore_aggregates.sql

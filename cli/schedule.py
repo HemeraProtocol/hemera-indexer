@@ -4,8 +4,9 @@ from datetime import datetime
 
 import click
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.triggers.cron import CronTrigger
 
-from indexer.schedule_jobs.aggregates_jobs import aggregates_yesterday_job, parse_crontab
+from indexer.schedule_jobs.aggregates_jobs import aggregates_yesterday_job, parse_crontab, parse_aggregate_schedule
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -17,15 +18,6 @@ from indexer.schedule_jobs.aggregates_jobs import aggregates_yesterday_job, pars
     type=str,
     help="The chain name of the chain to aggregate data for",
     envvar="CHAIN_NAME",
-)
-@click.option(
-    "-jn",
-    "--job-name",
-    default=None,
-    show_default=True,
-    type=str,
-    help="Job list to aggregate data for",
-    envvar="JOB_NAME",
 )
 @click.option(
     "-pg",
@@ -44,40 +36,22 @@ from indexer.schedule_jobs.aggregates_jobs import aggregates_yesterday_job, pars
     envvar="DBLINK_URL",
     help="dblink to take token price, maybe moved to other replace later",
 )
-@click.option(
-    "-st",
-    "--schedule-time",
-    default="0 1 * * *",
-    show_default=True,
-    type=str,
-    envvar="SCHEDULE_TIME",
-    help="schedule time by crontab expression: default: 0 1 * * *",
-)
-def schedule(schedule_time, job_name, chain_name, postgres_url, dblink_url) -> None:
+def schedule(chain_name, postgres_url, dblink_url) -> None:
     sys.stdout = os.fdopen(sys.stdout.fileno(), "w", buffering=1)  # Line-buffered stdout
     sys.stderr = os.fdopen(sys.stderr.fileno(), "w", buffering=1)  # Line-buffered stderr
 
-    parsed_crontab = parse_crontab(schedule_time)
-    minute = parsed_crontab["minute"]
-    hour = parsed_crontab["hour"]
-
-    day = parsed_crontab["day"]
-    month = parsed_crontab["month"]
-    day_of_week = parsed_crontab["day_of_week"]
+    jobs = parse_aggregate_schedule()
 
     scheduler = BlockingScheduler()
-    job_args = (chain_name, job_name, postgres_url, dblink_url)
-    scheduler.add_job(
-        aggregates_yesterday_job,
-        "cron",
-        hour=hour,
-        minute=minute,
-        day=day,
-        month=month,
-        day_of_week=day_of_week,
-        args=job_args,
-    )
+
+    for job in jobs:
+        schedule_time = job["schedule_time"]
+        trigger = CronTrigger.from_crontab(schedule_time)
+
+        job_list_generator = job['job_list_generator']
+
+        job_args = (chain_name, job_list_generator, postgres_url, dblink_url)
+
+        scheduler.add_job(func=aggregates_yesterday_job, trigger=trigger, args=job_args)
 
     scheduler.start()
-    # current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    # print(f'Job started {current_time}, schedule time is {hour}:{minute} daily')
