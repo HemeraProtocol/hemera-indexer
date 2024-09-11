@@ -11,7 +11,6 @@ from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding impor
     Erc20CurrentTokenHolding,
     Erc20TokenHolding,
 )
-from indexer.modules.custom.feature_type import FeatureType
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
