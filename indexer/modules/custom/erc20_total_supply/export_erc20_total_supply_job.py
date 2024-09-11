@@ -12,11 +12,9 @@ from indexer.modules.custom.erc20_total_supply.domain.erc20_total_supply import 
     Erc20CurrentTotalSupply,
     Erc20TotalSupply,
 )
-from indexer.modules.custom.feature_type import FeatureType
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
-FEATURE_ID = FeatureType.ERC20_TOTAL_SUPPLY.value
 
 
 class ExportErc20TotalSupplyJob(FilterTransactionDataJob):
