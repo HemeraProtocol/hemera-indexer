@@ -8,12 +8,11 @@ from indexer.aggr_jobs.utils import get_yesterday_date
 from indexer.controller.aggregates_controller import AggregatesController
 from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispatcher
 
-# 设置日志格式
 logging.basicConfig(
-    level=logging.INFO,  # 设置日志级别为 INFO
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',  # 日志格式
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.StreamHandler()  # 将日志输出到控制台
+        logging.StreamHandler()
     ]
 )
 
@@ -34,7 +33,7 @@ def parse_crontab(expression):
 
 
 def parse_aggregate_schedule():
-    with open("/app/config.yaml", "r") as file:  # 注意这个路径是在容器内的路径
+    with open("/app/config.yaml", "r") as file:
         config = yaml.safe_load(file)
 
     common_config = config["common_config"]
