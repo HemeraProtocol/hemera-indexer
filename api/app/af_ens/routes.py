@@ -73,7 +73,12 @@ class ExplorerUserOperationDetails(Resource):
             res["first_register_time"] = datetime_to_string(first_register.block_timestamp)
         first_set_name = (
             db.session.query(ENSMiddle)
-            .filter(or_(ENSMiddle.method == "setName", ENSMiddle.event_name == "NameChanged"))
+            .filter(
+                and_(
+                    ENSMiddle.from_address == address,
+                    or_(ENSMiddle.method == "setName", ENSMiddle.event_name == "NameChanged"),
+                )
+            )
             .first()
         )
         if first_set_name:
