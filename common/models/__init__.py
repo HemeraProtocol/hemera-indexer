@@ -11,7 +11,7 @@ from indexer.domain import Domain
 
 model_path_patterns = ["common/models", "indexer/modules/*/models", "indexer/modules/custom/*/models"]
 
-model_path_exclude = ["indexer/modules/custom/address_index/models"]
+model_path_exclude = []
 
 # db = RouteSQLAlchemy(session_options={"autoflush": False})
 db = SQLAlchemy(session_options={"autoflush": False})
