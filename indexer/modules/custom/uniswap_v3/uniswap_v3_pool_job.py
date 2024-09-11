@@ -177,7 +177,16 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
 
     def _process_current_pool_prices(self):
         prices = self._data_buff[UniswapV3PoolPrice.type()]
-        sorted_prices = sorted(prices, key=lambda x: (x.pool_address, x.block_number))
+        self._data_buff[UniswapV3PoolPrice.type()] = []
+        unique_prices = {}
+        for price in prices:
+            key = (price.pool_address, price.block_number)
+            unique_prices[key] = price
+
+        for price in unique_prices.values():
+            self._collect_item(UniswapV3PoolPrice.type(), price)
+
+        sorted_prices = sorted(unique_prices.values(), key=lambda x: (x.pool_address, x.block_number))
         current_prices = [
             max(group, key=attrgetter("block_number"))
             for _, group in groupby(sorted_prices, key=attrgetter("pool_address"))
