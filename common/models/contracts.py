@@ -37,7 +37,8 @@ class Contracts(HemeraModel):
     reorg = Column(BOOLEAN, default=False)
 
     deployed_code_hash = Column(
-        TIMESTAMP, Computed("encode(digest('0x'||encode(deployed_code, 'hex'), 'sha256'), 'hex')")
+        VARCHAR,
+        Computed("encode(digest('0x'||encode(deployed_code, 'hex'), 'sha256'), 'hex')"),
     )
 
     @staticmethod

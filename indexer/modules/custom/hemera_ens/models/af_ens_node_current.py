@@ -97,3 +97,14 @@ class ENSRecord(HemeraModel):
 
 Index("ens_idx_address", ENSRecord.address)
 Index("ens_idx_name", ENSRecord.name)
+
+# because of sqlalchemy doesn't recognize 'english' with datatype REGCONFIG
+# alembic could not track this index
+# before sqlalchemy support this case, we suggest running this sql manually
+
+# Index('ens_idx_name_full_text',
+#       func.to_tsvector('english', (ENSRecord.name)), postgresql_using='gin')
+
+# CREATE INDEX ens_idx_name_full_text
+# ON af_ens_node_current
+# USING gin (to_tsvector('english’, name::text));
