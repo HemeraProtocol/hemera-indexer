@@ -88,6 +88,7 @@ class TokenFetcher:
     def _prepare_token_ids_info_parameters(self, token_info_items):
         to_execute_batch_calls = []
         wrapped_calls = []
+        wrapped_calls_map = {}
         grouped_data = defaultdict(list)
         for row in token_info_items:
             row[self.fixed_k] = self.build_key(row, self.token_ids_infos_k_fields)
@@ -134,9 +135,10 @@ class TokenFetcher:
                             )
 
                     if construct_call:
+                        wrapped_calls_map[construct_call.returns[0][0]] = row
                         calls.append(construct_call)
                 wrapped_calls.append(calls)
-        return wrapped_calls, to_execute_batch_calls
+        return wrapped_calls, wrapped_calls_map, to_execute_batch_calls
 
     def create_token_detail(self, token_info, value, decode_flag):
         common_args = {
@@ -177,14 +179,10 @@ class TokenFetcher:
     def fetch_token_ids_info(self, token_info_items):
         # export token_ids_info
         self.logger.info(f"TokenFetcher fetch_token_ids_info size={len(token_info_items)}")
-        wrapped_calls, to_execute_batch_calls = self._prepare_token_ids_info_parameters(token_info_items)
+        wrapped_calls, wrapped_calls_map, to_execute_batch_calls = self._prepare_token_ids_info_parameters(
+            token_info_items
+        )
 
-        return_data_map = {it[self.fixed_k]: it for it in token_info_items}
-        wrapped_calls_map = {}
-        for calls in wrapped_calls:
-            for cal in calls:
-                k = cal.returns[0][0]
-                wrapped_calls_map[k] = return_data_map[k]
         multicall_result = {}
         multicall_rpc = []
         return_data = []
@@ -266,7 +264,7 @@ class TokenFetcher:
 
         to_execute_batch_calls = []
         wrapped_calls = []
-
+        wrapped_calls_map = {}
         for block_id, items in grouped_data.items():
             if (isinstance(block_id, int) and block_id < self.deploy_block_number) or not self._is_multi_call:
                 to_execute_batch_calls.extend(items)
@@ -291,10 +289,11 @@ class TokenFetcher:
                             block_id=block_id,
                         )
                     if construct_call:
+                        wrapped_calls_map[construct_call.returns[0][0]] = row
                         calls.append(construct_call)
                 wrapped_calls.append(calls)
 
-        return wrapped_calls, to_execute_batch_calls
+        return wrapped_calls, wrapped_calls_map, to_execute_batch_calls
 
     @calculate_execution_time
     def fetch_result(self, chunks):
@@ -326,14 +325,7 @@ class TokenFetcher:
     @calculate_execution_time
     def fetch_token_balance(self, tokens):
         self.logger.info(f"TokenFetcher fetch_token_balance size={len(tokens)}")
-        wrapped_calls, to_execute_batch_calls = self._prepare_token_balance_parameters(tokens)
-
-        return_data_map = {it[self.fixed_k]: it for it in tokens}
-        wrapped_calls_map = {}
-        for calls in wrapped_calls:
-            for cal in calls:
-                k = cal.returns[0][0]
-                wrapped_calls_map[k] = return_data_map[k]
+        wrapped_calls, wrapped_calls_map, to_execute_batch_calls = self._prepare_token_balance_parameters(tokens)
 
         multicall_result = {}
         multicall_rpc = self.construct_multicall_rpc(wrapped_calls)
