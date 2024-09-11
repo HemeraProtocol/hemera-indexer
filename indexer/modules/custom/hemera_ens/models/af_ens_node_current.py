@@ -2,8 +2,9 @@ from datetime import datetime, timezone
 from typing import Type
 
 from psycopg2._json import Json
-from sqlalchemy import Column, Index, String, UniqueConstraint, func
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSONB, NUMERIC, TIMESTAMP
+from sqlalchemy import Column, Index, text
+from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSONB, NUMERIC, TEXT, TIMESTAMP, VARCHAR
+from sqlalchemy.sql import func
 
 from common.models import HemeraModel, get_column_type
 from indexer.domain import Domain
@@ -34,7 +35,7 @@ def ens_general_converter(table: Type[HemeraModel], data: Domain, is_update=Fals
                 converted_data[key] = [bytes.fromhex(address[2:]) for address in getattr(data, key)]
             elif isinstance(column_type, JSONB) and getattr(data, key) is not None:
                 converted_data[key] = Json(getattr(data, key))
-            elif isinstance(column_type, String):
+            elif isinstance(column_type, VARCHAR):
                 converted_data[key] = getattr(data, key).replace("\x00", "") if getattr(data, key) else None
             else:
                 converted_data[key] = getattr(data, key)
@@ -55,15 +56,13 @@ class ENSRecord(HemeraModel):
     token_id = Column(NUMERIC(100))
     w_token_id = Column(NUMERIC(100))
     first_owned_by = Column(BYTEA)
-    name = Column(String)
+    name = Column(VARCHAR)
     registration = Column(TIMESTAMP)
     expires = Column(TIMESTAMP)
     address = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-
-    __table_args__ = (UniqueConstraint("node"),)
 
     @staticmethod
     def model_domain_mapping():
@@ -96,7 +95,8 @@ class ENSRecord(HemeraModel):
 
 
 Index("ens_idx_address", ENSRecord.address)
-Index("ens_idx_name", ENSRecord.name)
+# Index("ens_idx_name_md5", text("md5(name)"))
+Index("ens_idx_name_md5", func.md5(ENSRecord.name), unique=False)
 
 # because of sqlalchemy doesn't recognize 'english' with datatype REGCONFIG
 # alembic could not track this index

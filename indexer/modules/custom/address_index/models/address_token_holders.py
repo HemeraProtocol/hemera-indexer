@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import TIMESTAMP, Column, PrimaryKeyConstraint, func
-from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC
+from sqlalchemy import Column, Index, desc, func
+from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
@@ -25,3 +25,10 @@ class AddressTokenHolders(HemeraModel):
                 "converter": general_converter,
             }
         ]
+
+
+Index(
+    "address_token_holders_token_address_balance_of_idx",
+    AddressTokenHolders.token_address,
+    desc(AddressTokenHolders.balance_of),
+)

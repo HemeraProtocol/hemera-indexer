@@ -766,7 +766,6 @@ def downgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
-
         sa.PrimaryKeyConstraint(
             "token_address",
             "wallet_address",

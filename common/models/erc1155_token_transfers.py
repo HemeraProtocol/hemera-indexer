@@ -23,7 +23,7 @@ class ERC1155TokenTransfers(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text('false'))
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("transaction_hash", "block_hash", "log_index", "token_id"),)
 

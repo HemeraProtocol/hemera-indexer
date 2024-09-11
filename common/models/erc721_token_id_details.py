@@ -20,7 +20,7 @@ class ERC721TokenIdDetails(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text('false'))
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("token_address", "token_id"),)
 

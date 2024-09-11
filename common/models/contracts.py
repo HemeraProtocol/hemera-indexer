@@ -34,7 +34,7 @@ class Contracts(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text('false'))
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     deployed_code_hash = Column(
         VARCHAR,

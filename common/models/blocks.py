@@ -40,7 +40,7 @@ class Blocks(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text('false'))
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     @staticmethod
     def model_domain_mapping():

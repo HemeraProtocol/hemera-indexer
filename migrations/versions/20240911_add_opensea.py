@@ -39,14 +39,32 @@ def upgrade() -> None:
         sa.Column("log_index", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=False),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
+        sa.Column("reorg", sa.BOOLEAN(), server_default=sa.text("false"), nullable=True),
         sa.Column("protocol_version", sa.VARCHAR(), server_default="1.6", nullable=True),
         sa.PrimaryKeyConstraint("address", "is_offer", "block_number", "log_index", "block_hash"),
+    )
+    op.create_index(
+        "af_opensea__transactions_address_block_number_log_index_blo_idx",
+        "af_opensea__transactions",
+        ["address", sa.text("block_number DESC"), sa.text("log_index DESC"), sa.text("block_timestamp DESC")],
+        unique=False,
+    )
+    op.create_index(
+        "af_opensea__transactions_address_block_timestamp_idx",
+        "af_opensea__transactions",
+        ["address", sa.text("block_timestamp DESC")],
+        unique=False,
+    )
+    op.create_index(
+        "af_opensea__transactions_block_timestamp_idx",
+        "af_opensea__transactions",
+        [sa.text("block_timestamp DESC")],
+        unique=False,
     )
     op.create_table(
         "af_opensea_daily_transactions",
         sa.Column("address", postgresql.BYTEA(), nullable=False),
-        sa.Column("block_date", sa.Date(), nullable=False),
+        sa.Column("block_date", sa.DATE(), nullable=False),
         sa.Column("buy_txn_count", sa.INTEGER(), nullable=True),
         sa.Column("sell_txn_count", sa.INTEGER(), nullable=True),
         sa.Column("swap_txn_count", sa.INTEGER(), nullable=True),
@@ -65,10 +83,11 @@ def upgrade() -> None:
     )
     op.create_table(
         "af_opensea_na_crypto_token_mapping",
-        sa.Column("address_var", sa.VARCHAR(), nullable=False),
+        sa.Column("id", sa.INTEGER(), autoincrement=True, nullable=False),
+        sa.Column("address_var", sa.VARCHAR(length=42), nullable=True),
         sa.Column("price_symbol", sa.VARCHAR(), nullable=True),
-        sa.Column("decimals", sa.INTEGER(), nullable=True),
-        sa.PrimaryKeyConstraint("address_var"),
+        sa.Column("decimals", sa.INTEGER(), server_default=sa.text("18"), nullable=False),
+        sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
         "af_opensea_na_orders",
@@ -76,23 +95,24 @@ def upgrade() -> None:
         sa.Column("zone", postgresql.BYTEA(), nullable=True),
         sa.Column("offerer", postgresql.BYTEA(), nullable=True),
         sa.Column("recipient", postgresql.BYTEA(), nullable=True),
-        sa.Column("offer", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("consideration", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column("offer", postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column("consideration", postgresql.JSON(astext_type=sa.Text()), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("transaction_hash", postgresql.BYTEA(), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=False),
-        sa.Column("log_index", sa.BIGINT(), nullable=False),
+        sa.Column("log_index", sa.INTEGER(), nullable=False),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=False),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
+        sa.Column("reorg", sa.BOOLEAN(), server_default=sa.text("false"), nullable=True),
         sa.Column("protocol_version", sa.VARCHAR(), server_default="1.6", nullable=True),
         sa.PrimaryKeyConstraint("block_number", "log_index", "block_hash"),
     )
+    op.create_index("idx_order_hash", "af_opensea_na_orders", ["order_hash"], unique=False)
     op.create_table(
         "af_opensea_na_scheduled_metadata",
-        sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("dag_id", sa.String(), nullable=True),
+        sa.Column("id", sa.INTEGER(), nullable=False),
+        sa.Column("dag_id", sa.VARCHAR(), nullable=True),
         sa.Column("execution_date", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("last_data_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
@@ -100,12 +120,12 @@ def upgrade() -> None:
     op.create_table(
         "af_opensea_profile",
         sa.Column("address", postgresql.BYTEA(), nullable=False),
-        sa.Column("buy_txn_count", sa.BIGINT(), nullable=True),
-        sa.Column("sell_txn_count", sa.BIGINT(), nullable=True),
-        sa.Column("swap_txn_count", sa.BIGINT(), nullable=True),
-        sa.Column("buy_opensea_order_count", sa.BIGINT(), nullable=True),
-        sa.Column("sell_opensea_order_count", sa.BIGINT(), nullable=True),
-        sa.Column("swap_opensea_order_count", sa.BIGINT(), nullable=True),
+        sa.Column("buy_txn_count", sa.INTEGER(), server_default=sa.text("0"), nullable=True),
+        sa.Column("sell_txn_count", sa.INTEGER(), server_default=sa.text("0"), nullable=True),
+        sa.Column("swap_txn_count", sa.INTEGER(), server_default=sa.text("0"), nullable=True),
+        sa.Column("buy_opensea_order_count", sa.INTEGER(), server_default=sa.text("0"), nullable=True),
+        sa.Column("sell_opensea_order_count", sa.INTEGER(), server_default=sa.text("0"), nullable=True),
+        sa.Column("swap_opensea_order_count", sa.INTEGER(), server_default=sa.text("0"), nullable=True),
         sa.Column("buy_nft_stats", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("sell_nft_stats", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
         sa.Column("buy_volume_usd", sa.NUMERIC(), nullable=True),
@@ -114,149 +134,40 @@ def upgrade() -> None:
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("first_transaction_hash", postgresql.BYTEA(), nullable=True),
         sa.Column("first_block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("txn_count", sa.BIGINT(), nullable=True),
-        sa.Column("opensea_order_count", sa.BIGINT(), nullable=True),
-        sa.Column("volume_usd", sa.NUMERIC(), nullable=True),
+        sa.Column(
+            "txn_count",
+            sa.INTEGER(),
+            sa.Computed(
+                "(buy_txn_count + sell_txn_count) + swap_txn_count",
+            ),
+            nullable=True,
+        ),
+        sa.Column(
+            "opensea_order_count",
+            sa.INTEGER(),
+            sa.Computed(
+                "(buy_opensea_order_count + sell_opensea_order_count) + swap_opensea_order_count",
+            ),
+            nullable=True,
+        ),
+        sa.Column("volume_usd", sa.NUMERIC(), server_default=sa.text("0"), nullable=True),
         sa.PrimaryKeyConstraint("address"),
-    )
-    op.alter_column(
-        "address_nft_1155_holders",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=True,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.drop_index("address_nft_1155_holders_token_address_balance_of_idx", table_name="address_nft_1155_holders")
-    op.alter_column(
-        "address_nft_transfers",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=True,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.alter_column(
-        "address_token_holders",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=True,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.drop_index("address_token_holders_token_address_balance_of_idx", table_name="address_token_holders")
-    op.alter_column(
-        "address_token_transfers",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=True,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.alter_column(
-        "address_transactions",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=True,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.drop_index("address_transactions_address_block_timestamp_block_number_t_idx", table_name="address_transactions")
-    op.drop_index("address_transactions_address_txn_type_block_timestamp_block_idx", table_name="address_transactions")
-    op.create_unique_constraint(None, "af_ens_node_current", ["node"])
-    op.alter_column(
-        "token_address_nft_inventories",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=True,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.drop_index(
-        "token_address_nft_inventories_wallet_address_token_address__idx", table_name="token_address_nft_inventories"
     )
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.create_index(
-        "token_address_nft_inventories_wallet_address_token_address__idx",
-        "token_address_nft_inventories",
-        ["wallet_address", "token_address", "token_id"],
-        unique=False,
-    )
-    op.alter_column(
-        "token_address_nft_inventories",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=False,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.drop_constraint(None, "af_ens_node_current", type_="unique")
-    op.create_index(
-        "address_transactions_address_txn_type_block_timestamp_block_idx",
-        "address_transactions",
-        [
-            "address",
-            "txn_type",
-            sa.text("block_timestamp DESC"),
-            sa.text("block_number DESC"),
-            sa.text("transaction_index DESC"),
-        ],
-        unique=False,
-    )
-    op.create_index(
-        "address_transactions_address_block_timestamp_block_number_t_idx",
-        "address_transactions",
-        ["address", sa.text("block_timestamp DESC"), sa.text("block_number DESC"), sa.text("transaction_index DESC")],
-        unique=False,
-    )
-    op.alter_column(
-        "address_transactions",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=False,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.alter_column(
-        "address_token_transfers",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=False,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.create_index(
-        "address_token_holders_token_address_balance_of_idx",
-        "address_token_holders",
-        ["token_address", sa.text("balance_of DESC")],
-        unique=False,
-    )
-    op.alter_column(
-        "address_token_holders",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=False,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.alter_column(
-        "address_nft_transfers",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=False,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
-    op.create_index(
-        "address_nft_1155_holders_token_address_balance_of_idx",
-        "address_nft_1155_holders",
-        ["token_address", "token_id", sa.text("balance_of DESC")],
-        unique=False,
-    )
-    op.alter_column(
-        "address_nft_1155_holders",
-        "create_time",
-        existing_type=postgresql.TIMESTAMP(),
-        nullable=False,
-        existing_server_default=sa.text("CURRENT_TIMESTAMP"),
-    )
     op.drop_table("af_opensea_profile")
     op.drop_table("af_opensea_na_scheduled_metadata")
+    op.drop_index("idx_order_hash", table_name="af_opensea_na_orders")
     op.drop_table("af_opensea_na_orders")
     op.drop_table("af_opensea_na_crypto_token_mapping")
     op.drop_table("af_opensea_daily_transactions")
+    op.drop_index("af_opensea__transactions_block_timestamp_idx", table_name="af_opensea__transactions")
+    op.drop_index("af_opensea__transactions_address_block_timestamp_idx", table_name="af_opensea__transactions")
+    op.drop_index(
+        "af_opensea__transactions_address_block_number_log_index_blo_idx", table_name="af_opensea__transactions"
+    )
     op.drop_table("af_opensea__transactions")
     # ### end Alembic commands ###
