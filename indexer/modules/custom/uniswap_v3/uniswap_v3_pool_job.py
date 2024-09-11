@@ -177,7 +177,16 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
 
     def _process_current_pool_prices(self):
         prices = self._data_buff[UniswapV3PoolPrice.type()]
-        sorted_prices = sorted(prices, key=lambda x: (x.pool_address, x.block_number))
+        self._data_buff[UniswapV3PoolPrice.type()] = []
+        unique_prices = {}
+        for price in prices:
+            key = (price.pool_address, price.block_number)
+            unique_prices[key] = price
+
+        for price in unique_prices.values():
+            self._collect_item(UniswapV3PoolPrice.type(), price)
+
+        sorted_prices = sorted(unique_prices.values(), key=lambda x: (x.pool_address, x.block_number))
         current_prices = [
             max(group, key=attrgetter("block_number"))
             for _, group in groupby(sorted_prices, key=attrgetter("pool_address"))
@@ -277,13 +286,21 @@ def slot0_rpc_requests(web3, make_requests, requests, is_batch, abi_list, batch_
         pool = data[0]
         value = result[2:] if result is not None else None
         try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-            pool["sqrtPriceX96"] = decoded_data[0]
-            pool["tick"] = decoded_data[1]
+            part1, part2 = get_price_and_tick_from_hex(value)
+            pool["sqrtPriceX96"] = part1
+            pool["tick"] = part2
         except Exception as e:
             logger.error(f"Decoding {fn_name} failed. " f"rpc response: {result}. " f"exception: {e}")
         token_infos.append(pool)
     return token_infos
+
+
+def get_price_and_tick_from_hex(hex_string):
+    if hex_string.startswith("0x"):
+        hex_string = hex_string[2:]
+    part1 = hex_string[:64]
+    part2 = hex_string[64:128]
+    return util.parse_hex_to_int256(part1), util.parse_hex_to_int256(part2)
 
 
 def split_swap_data_hex_string(hex_string):
