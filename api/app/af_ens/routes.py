@@ -24,7 +24,7 @@ af_ens_namespace = Namespace("User Operation Namespace", path="/", description="
 
 
 @af_ens_namespace.route("/v1/aci/<address>/ens/current")
-class ExplorerUserOperationDetails(Resource):
+class ACIEnsCurrent(Resource):
     def get(self, address):
         res = {
             "primary_name": None,
@@ -91,7 +91,7 @@ class ExplorerUserOperationDetails(Resource):
 
 
 @af_ens_namespace.route("/v1/aci/<address>/ens/detail")
-class ExplorerUserOperationDetails(Resource):
+class ACIEnsDetail(Resource):
     def get(self, address):
         lis = []
         if address:

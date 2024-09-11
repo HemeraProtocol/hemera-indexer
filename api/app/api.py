@@ -3,6 +3,7 @@
 
 from flask_restx import Api
 
+from api.app.address.routes import address_features_namespace
 from api.app.af_ens.routes import af_ens_namespace
 from api.app.contract.routes import contract_namespace
 from api.app.deposit_to_l2.routes import token_deposit_namespace
@@ -26,3 +27,5 @@ api.add_namespace(merchant_moe_namespace)
 
 # api.add_namespace(l2_explorer_namespace)
 api.add_namespace(af_ens_namespace)
+
+api.add_namespace(address_features_namespace)

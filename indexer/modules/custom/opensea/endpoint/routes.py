@@ -39,7 +39,7 @@ def get_opensea_profile(address: Union[str, bytes]) -> dict:
 
     profile = db.session.query(AddressOpenseaProfile).filter_by(address=address_bytes).first()
     if not profile:
-        raise APIError("No OpenSea profile found for this address", code=400)
+        return {}
 
     profile_data = as_dict(profile)
 
@@ -306,18 +306,18 @@ def get_latest_opensea_transaction_by_address(address: Union[str, bytes]):
 
 
 @opensea_namespace.route("/v1/aci/<address>/opensea/profile")
-class ExplorerCustomOpenseaAddressProfile(Resource):
+class ACIOpenseaProfile(Resource):
     @cache.cached(timeout=60)
     def get(self, address):
         address = address.lower()
 
         profile = get_opensea_profile(address)
 
-        return profile, 200
+        return profile
 
 
 @opensea_namespace.route("/v1/aci/<address>/opensea/transactions")
-class ExplorerCustomOpenseaAddressTransactions(Resource):
+class ACIOpenseaTransactions(Resource):
     @cache.cached(timeout=10)
     def get(self, address):
         address = address.lower()
@@ -340,4 +340,4 @@ class ExplorerCustomOpenseaAddressTransactions(Resource):
         return {
             "data": transaction_list,
             "total": total_count,
-        }, 200
+        }
