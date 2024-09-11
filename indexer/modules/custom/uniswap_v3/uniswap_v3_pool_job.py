@@ -4,6 +4,9 @@ import logging
 import os
 from collections import defaultdict
 from dataclasses import fields
+from itertools import groupby
+from operator import attrgetter
+from typing import Dict, List
 
 import eth_abi
 from web3 import Web3
@@ -90,9 +93,10 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
         self._transaction_hash_from_dict = {}
         for transaction in transactions:
             self._transaction_hash_from_dict[transaction.hash] = transaction.from_address
-        self._batch_work_executor.execute(logs, self._collect_price_batch, len(logs), split_logs)
+        self._batch_work_executor.execute(logs, self._collect_price_batch, len(logs))
         self._batch_work_executor.wait()
         self._transaction_hash_from_dict = {}
+        self._process_current_pool_prices()
 
     def _collect_pool_batch(self, logs):
         for log in logs:
@@ -103,16 +107,11 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
             entity = decode_pool_created(self._nft_address, self._factory_address, log)
             self._collect_item(UniswapV3Pool.type(), entity)
 
-    def _collect_price_batch(self, logs_dict):
-        if not logs_dict:
-            return
-        contract_address = next(iter(logs_dict))
-        if contract_address not in self._exist_pools:
-            return
-
-        logs = logs_dict[contract_address]
+    def _collect_price_batch(self, logs):
         unique_logs = set()
         for log in logs:
+            if log.address not in self._exist_pools:
+                continue
             # Collect swap logs
             if log.topic0 == constants.UNISWAP_V3_POOL_SWAP_TOPIC0:
                 transaction_hash = log.transaction_hash
@@ -159,7 +158,6 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
             self._batch_size,
             self._max_worker,
         )
-        current_price = None
         for data in pool_prices:
             detail = UniswapV3PoolPrice(
                 factory_address=self._factory_address,
@@ -170,15 +168,28 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
                 block_timestamp=data["block_timestamp"],
             )
             self._collect_item(UniswapV3PoolPrice.type(), detail)
-            if current_price is None or current_price.block_number < detail.block_number:
-                current_price = create_current_price_status(detail)
-        self._collect_item(UniswapV3PoolCurrentPrice.type(), current_price)
 
     def _process(self, **kwargs):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3SwapEvent.type()].sort(key=lambda x: x.block_number)
+
+    def _process_current_pool_prices(self):
+        prices = self._data_buff[UniswapV3PoolPrice.type()]
+        sorted_prices = sorted(prices, key=lambda x: (x.pool_address, x.block_number))
+        current_prices = [
+            max(group, key=attrgetter("block_number"))
+            for _, group in groupby(sorted_prices, key=attrgetter("pool_address"))
+        ]
+        for data in current_prices:
+            self._collect_item(UniswapV3PoolCurrentPrice.type(), self.create_current_price_status(data))
+
+    @staticmethod
+    def create_current_price_status(detail: UniswapV3PoolPrice) -> UniswapV3PoolCurrentPrice:
+        return UniswapV3PoolCurrentPrice(
+            **{field.name: getattr(detail, field.name) for field in fields(UniswapV3PoolPrice)}
+        )
 
 
 def decode_pool_created(nft_address, factory_address, log):
@@ -245,15 +256,6 @@ def get_exist_pools(db_service, nft_address):
     return history_pools
 
 
-def split_logs(logs):
-    log_dict = defaultdict(list)
-    for data in logs:
-        log_dict[data.address].append(data)
-
-    for contract_address, data in log_dict.items():
-        yield {contract_address: data}
-
-
 def slot0_rpc_requests(web3, make_requests, requests, is_batch, abi_list, batch_size, max_worker):
     if len(requests) == 0:
         return []
@@ -262,52 +264,26 @@ def slot0_rpc_requests(web3, make_requests, requests, is_batch, abi_list, batch_
     outputs = function_abi["outputs"]
     output_types = [output["type"] for output in outputs]
 
-    def process_batch(batch):
-        parameters = common_utils.build_no_input_method_data(web3, batch, fn_name, abi_list)
-        token_name_rpc = list(generate_eth_call_json_rpc(parameters))
+    parameters = common_utils.build_no_input_method_data(web3, requests, fn_name, abi_list)
+    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
+    if is_batch:
+        response = make_requests(params=json.dumps(token_name_rpc))
+    else:
+        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
 
-        if is_batch:
-            response = make_requests(params=json.dumps(token_name_rpc))
-        else:
-            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
-
-        token_infos = []
-        for data in list(zip_rpc_response(parameters, response)):
-            result = rpc_response_to_result(data[1])
-            pool = data[0]
-            value = result[2:] if result is not None else None
-            try:
-                decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-                pool["sqrtPriceX96"] = decoded_data[0]
-                pool["tick"] = decoded_data[1]
-            except Exception as e:
-                logger.error(f"Decoding {fn_name} failed. " f"rpc response: {result}. " f"exception: {e}")
-            token_infos.append(pool)
-        return token_infos
-
-    executor = BatchWorkExecutor(
-        starting_batch_size=batch_size,
-        max_workers=max_worker,
-        job_name=f"slot0_rpc_requests_{fn_name}",
-    )
-
-    all_token_infos = []
-
-    def work_handler(batch):
-        nonlocal all_token_infos
-        batch_results = process_batch(batch)
-        all_token_infos.extend(batch_results)
-
-    executor.execute(requests, work_handler, total_items=len(requests))
-    executor.wait()
-
-    return all_token_infos
-
-
-def create_current_price_status(detail: UniswapV3PoolPrice) -> UniswapV3PoolCurrentPrice:
-    return UniswapV3PoolCurrentPrice(
-        **{field.name: getattr(detail, field.name) for field in fields(UniswapV3PoolPrice)}
-    )
+    token_infos = []
+    for data in list(zip_rpc_response(parameters, response)):
+        result = rpc_response_to_result(data[1])
+        pool = data[0]
+        value = result[2:] if result is not None else None
+        try:
+            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+            pool["sqrtPriceX96"] = decoded_data[0]
+            pool["tick"] = decoded_data[1]
+        except Exception as e:
+            logger.error(f"Decoding {fn_name} failed. " f"rpc response: {result}. " f"exception: {e}")
+        token_infos.append(pool)
+    return token_infos
 
 
 def split_swap_data_hex_string(hex_string):
