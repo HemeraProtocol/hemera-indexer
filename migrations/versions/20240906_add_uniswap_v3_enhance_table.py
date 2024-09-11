@@ -1,7 +1,7 @@
 """add uniswap v3 enhance table
 
 Revision ID: f4efa18760cc
-Revises: 2359a28d63cb
+Revises: 43d14640a8ac
 Create Date: 2024-09-06 13:24:28.201489
 
 """
