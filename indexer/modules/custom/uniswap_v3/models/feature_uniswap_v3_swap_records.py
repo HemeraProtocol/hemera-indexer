@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
@@ -29,7 +29,7 @@ class UniswapV3PoolSwapRecords(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text('false'))
 
     __table_args__ = (PrimaryKeyConstraint("pool_address", "transaction_hash", "log_index"),)
 

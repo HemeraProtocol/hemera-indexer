@@ -44,7 +44,7 @@ def upgrade() -> None:
         sa.Column("factory_address", postgresql.BYTEA(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("pool_address", "block_timestamp", "block_number"),
     )
     op.create_table(
@@ -67,7 +67,7 @@ def upgrade() -> None:
         sa.Column("token1_address", postgresql.BYTEA(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("pool_address", "transaction_hash", "log_index"),
     )
     op.create_table(
@@ -102,7 +102,7 @@ def upgrade() -> None:
         sa.Column("token1_address", postgresql.BYTEA(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number", "log_index"),
     )
     op.create_index(
@@ -165,7 +165,7 @@ def upgrade() -> None:
         sa.Column("liquidity", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number"),
     )
     op.create_index(
@@ -198,7 +198,7 @@ def upgrade() -> None:
         sa.Column("action_type", sa.VARCHAR(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number", "log_index"),
     )
     op.create_index(

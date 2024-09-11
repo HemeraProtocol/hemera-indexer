@@ -61,7 +61,7 @@ def upgrade() -> None:
         sa.Column("w_token_id", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("create_time", sa.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", sa.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("transaction_hash", "log_index", name="ens_tnx_log_index"),
     )
     op.create_index("ens_event_address", "af_ens_event", ["from_address"], unique=False)

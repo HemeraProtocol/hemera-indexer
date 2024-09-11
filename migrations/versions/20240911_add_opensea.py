@@ -39,7 +39,7 @@ def upgrade() -> None:
         sa.Column("log_index", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=False),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.Column("protocol_version", sa.VARCHAR(), server_default="1.6", nullable=True),
         sa.PrimaryKeyConstraint("address", "is_offer", "block_number", "log_index", "block_hash"),
     )
@@ -85,7 +85,7 @@ def upgrade() -> None:
         sa.Column("log_index", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=False),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.Column("protocol_version", sa.VARCHAR(), server_default="1.6", nullable=True),
         sa.PrimaryKeyConstraint("block_number", "log_index", "block_hash"),
     )

@@ -33,7 +33,7 @@ def upgrade() -> None:
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("transaction_hash"),
     )
     op.create_index(

@@ -1,4 +1,4 @@
-from sqlalchemy import BIGINT, NUMERIC, TIMESTAMP, Column, Index, Integer, PrimaryKeyConstraint, String, func
+from sqlalchemy import BIGINT, NUMERIC, TIMESTAMP, Column, Index, Integer, PrimaryKeyConstraint, String, func, text
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA
 
 from common.models import HemeraModel
@@ -44,7 +44,7 @@ class ENSMiddle(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text('false'))
 
     __table_args__ = (PrimaryKeyConstraint("transaction_hash", "log_index", name="ens_tnx_log_index"),)
 
