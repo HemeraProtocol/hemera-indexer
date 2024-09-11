@@ -180,7 +180,11 @@ class TokenFetcher:
         wrapped_calls, to_execute_batch_calls = self._prepare_token_ids_info_parameters(token_info_items)
 
         return_data_map = {it[self.fixed_k]: it for it in token_info_items}
-
+        wrapped_calls_map = {}
+        for calls in wrapped_calls:
+            for cal in calls:
+                k = cal.returns[0][0]
+                wrapped_calls_map[k] = return_data_map[k]
         multicall_result = {}
         multicall_rpc = []
         return_data = []
@@ -200,11 +204,11 @@ class TokenFetcher:
             tmp = self.decode_result(wrapped_calls, res, chunks)
             multicall_result.update(tmp)
 
-        for k, v in return_data_map.items():
-            if k in multicall_result and multicall_result[k] is not None:
-                pass
-            else:
-                to_execute_batch_calls.append(v)
+            for k, v in wrapped_calls_map.items():
+                if k in multicall_result and multicall_result[k] is not None:
+                    pass
+                else:
+                    to_execute_batch_calls.append(v)
 
         raw_result = self.fetch_to_execute_batch_calls(self._token_ids_info_rpc_requests, to_execute_batch_calls)
 
@@ -325,6 +329,11 @@ class TokenFetcher:
         wrapped_calls, to_execute_batch_calls = self._prepare_token_balance_parameters(tokens)
 
         return_data_map = {it[self.fixed_k]: it for it in tokens}
+        wrapped_calls_map = {}
+        for calls in wrapped_calls:
+            for cal in calls:
+                k = cal.returns[0][0]
+                wrapped_calls_map[k] = return_data_map[k]
 
         multicall_result = {}
         multicall_rpc = self.construct_multicall_rpc(wrapped_calls)
@@ -335,7 +344,7 @@ class TokenFetcher:
         tmp = self.decode_result(wrapped_calls, res, chunks)
         multicall_result.update(tmp)
 
-        for k, v in return_data_map.items():
+        for k, v in wrapped_calls_map.items():
             if k in multicall_result and multicall_result[k] is not None:
                 pass
             else:
