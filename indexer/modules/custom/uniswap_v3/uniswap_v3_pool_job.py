@@ -256,15 +256,6 @@ def get_exist_pools(db_service, nft_address):
     return history_pools
 
 
-def split_logs(logs):
-    log_dict = defaultdict(list)
-    for data in logs:
-        log_dict[data.address].append(data)
-
-    for contract_address, data in log_dict.items():
-        yield {contract_address: data}
-
-
 def slot0_rpc_requests(web3, make_requests, requests, is_batch, abi_list, batch_size, max_worker):
     if len(requests) == 0:
         return []
