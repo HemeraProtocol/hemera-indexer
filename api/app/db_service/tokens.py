@@ -310,8 +310,11 @@ def get_token_holders_cnt(token_address: str, model, columns="*"):
 
 
 def get_token_price_map_by_symbol_list(token_symbol_list):
-    token_prices = db.session.execute(
-        select(TokenPrices).where(TokenPrices.symbol.in_(token_symbol_list))
-    ).scalars().all()
-    token_price_map = {token.symbol: token.price for token in token_prices}
+    token_price_map = {}
+    for symbol in token_symbol_list:
+        token_price = db.session.execute(
+            select(TokenPrices).where(TokenPrices.symbol == symbol).order_by(TokenPrices.timestamp.desc()).limit(1)
+        ).scalar()
+        if token_price:
+            token_price_map[symbol] = token_price.price
     return token_price_map

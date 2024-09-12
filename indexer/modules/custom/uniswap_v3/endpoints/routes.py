@@ -1,13 +1,13 @@
 import math
 from datetime import datetime
+from time import time
 
 from flask import request
 from flask_restx import Resource
-from sqlalchemy.sql import select
+from sqlalchemy.sql import select, tuple_
 
 from common.models import db
 from common.models.tokens import Tokens
-from common.models.token_prices import TokenPrices
 from common.utils.exception_control import APIError
 from indexer.modules.custom.uniswap_v3.endpoints import uniswap_v3_namespace
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_liquidity_records import UniswapV3TokenLiquidityRecords
@@ -16,6 +16,7 @@ from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import Un
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_swap_records import UniswapV3PoolSwapRecords
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_token_current_status import UniswapV3TokenCurrentStatus
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
+from api.app.db_service.tokens import get_token_price_map_by_symbol_list
 
 Q96 = 2**96
 PAGE_SIZE = 10
@@ -132,6 +133,8 @@ class UniswapV3WalletLiquidityHolding(Resource):
     def get(self, address):
         address = address.lower()
         address_bytes = bytes.fromhex(address[2:])
+
+        # Get all LP holdings
         holdings = (
             db.session.query(UniswapV3TokenCurrentStatus)
             .filter(UniswapV3TokenCurrentStatus.wallet_address == address_bytes)
@@ -139,6 +142,7 @@ class UniswapV3WalletLiquidityHolding(Resource):
             .all()
         )
 
+        # Get Pool Price
         unique_pool_addresses = {holding.pool_address for holding in holdings}
         pool_prices = (
             db.session.query(UniswapV3PoolCurrentPrices)
@@ -150,8 +154,17 @@ class UniswapV3WalletLiquidityHolding(Resource):
             pool_address = "0x" + data.pool_address.hex()
             pool_price_map[pool_address] = data.sqrt_price_x96
 
-        tokenIds = db.session.query(UniswapV3Tokens).all()
+        # Get token id info
+        token_id_list = [(holding.position_token_address, holding.token_id) for holding in holdings]
+        tokenIds = db.session.query(UniswapV3Tokens).filter(tuple_(UniswapV3Tokens.position_token_address, UniswapV3Tokens.token_id).in_(token_id_list)).all()
         token_id_infos = {}
+        for token in tokenIds:
+            position_token_address = "0x" + token.position_token_address.hex()
+            token_id = token.token_id
+            key = (position_token_address, token_id)
+            token_id_infos[key] = token
+
+        # Get Token info
         erc20_tokens = set()
         pool_infos = {}
         pools = db.session.query(UniswapV3Pools).filter(UniswapV3Pools.pool_address.in_(unique_pool_addresses)).all()
@@ -168,16 +181,8 @@ class UniswapV3WalletLiquidityHolding(Resource):
             erc20_infos["0x" + data.address.hex()] = data
             token_symbol_list.append(data.symbol)
 
-        token_prices = db.session.execute(
-            select(TokenPrices).where(TokenPrices.symbol.in_(token_symbol_list))
-        ).scalars().all()
-        token_price_map = {token.symbol: token.price for token in token_prices}
-
-        for token in tokenIds:
-            position_token_address = "0x" + token.position_token_address.hex()
-            token_id = token.token_id
-            key = (position_token_address, token_id)
-            token_id_infos[key] = token
+        # Get Token Price
+        token_price_map = get_token_price_map_by_symbol_list(list(set(token_symbol_list)))
 
         result = []
         total_value_usd = 0

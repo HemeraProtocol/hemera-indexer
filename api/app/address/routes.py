@@ -1,5 +1,7 @@
 from typing import Union
+from time import time
 
+import flask
 from flask_restx import Resource
 from sqlalchemy import func
 
@@ -81,7 +83,6 @@ class ACIProfiles(Resource):
 class ACIContractDeployerProfile(Resource):
     def get(self, address):
         address = address.lower()
-
         return {"deployed_countract_count": 353, "first_deployed_time": "2015-10-06T07:56:55+00:00"}
 
 
@@ -129,7 +130,7 @@ class ACIContractDeployerEvents(Resource):
 
 @address_features_namespace.route("/v1/aci/<address>/all_features")
 class ACIAllFeatures(Resource):
-    @cache.cached(timeout=60)
+    @cache.cached(timeout=3600, query_string=True)
     def get(self, address):
         address = address.lower()
         feature_list = [
@@ -140,7 +141,11 @@ class ACIAllFeatures(Resource):
             "deposit_to_l2",
             "contract_deployer",
         ]
+        features = flask.request.args.get("features")
+        if features:
+            feature_list = features.split(",")
 
+        timer = time()
         feature_result = {}
 
         if "contract_deployer" in feature_list:
@@ -197,6 +202,8 @@ class ACIAllFeatures(Resource):
                         "events": feature_result.get(feature_id).get("events"),
                     }
                 )
+
+        print(time() - timer)
 
         combined_result = {
             "address": address,

@@ -1,3 +1,6 @@
+
+from time import time
+
 import flask
 from flask_restx import Resource
 
@@ -137,7 +140,7 @@ class ACIDepositToL2Current(Resource):
         for asset in asset_list:
             token_symbol_list.append(asset["token_symbol"])
         
-        token_price_map = get_token_price_map_by_symbol_list(token_symbol_list)
+        token_price_map = get_token_price_map_by_symbol_list(list(set(token_symbol_list)))
 
         total_value_usd = 0
         for asset in asset_list:

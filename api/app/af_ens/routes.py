@@ -1,5 +1,6 @@
 import decimal
 from datetime import date, datetime
+from time import time
 
 from flask_restx import Resource
 from flask_restx.namespace import Namespace
