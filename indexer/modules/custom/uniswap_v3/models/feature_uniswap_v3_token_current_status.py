@@ -9,7 +9,7 @@ from common.models import HemeraModel, general_converter
 class UniswapV3TokenCurrentStatus(HemeraModel):
     __tablename__ = "af_uniswap_v3_token_data_current"
 
-    nft_address = Column(BYTEA, primary_key=True)
+    position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
@@ -20,7 +20,7 @@ class UniswapV3TokenCurrentStatus(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("nft_address", "token_id"),)
+    __table_args__ = (PrimaryKeyConstraint("position_token_address", "token_id"),)
 
     @staticmethod
     def model_domain_mapping():
