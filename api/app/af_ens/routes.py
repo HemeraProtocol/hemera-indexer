@@ -136,7 +136,6 @@ class ExplorerUserOperationDetails(Resource):
                 token_id_name_map[r.w_token_id] = node_name_map[r.node]
 
         all_rows = merge_ens_middle(all_records_rows)
-        all_rows.sort(key=lambda x: x.block_number)
 
         for r in all_rows:
             name = None
