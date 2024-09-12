@@ -212,6 +212,7 @@ class UniswapV3WalletLiquidityHolding(Resource):
                     "pool_address": pool_address,
                     "position_token_address": position_token_address,
                     "token_id": str(token_id),
+                    "block_timestamp": datetime.fromtimestamp(holding.block_timestamp).isoformat("T", "seconds"),
                     "token0": {
                         "token0_symbol": token0_info.symbol,
                         "token0_icon_url": token0_info.icon_url,
@@ -256,7 +257,7 @@ class UniswapV3WalletLiquidityDetail(Resource):
             .count()
         )
         return {
-            "first_provide_time": first_holding.block_timestamp.isoformat("T", "seconds"),
+            "first_provide_time": datetime.fromtimestamp(first_holding.block_timestamp).isoformat("T", "seconds"),
             "pool_count": pool_count,
             "total_value_usd": 0,
         }, 200

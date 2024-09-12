@@ -26,7 +26,6 @@ MAX_TRANSACTION_WITH_CONDITION = 10000
 
 app_config = get_config()
 
-
 @token_deposit_namespace.route("/v1/aci/<address>/deposit_to_l2/transactions")
 class ACIDepositToL2Transactions(Resource):
     def get(self, address):
