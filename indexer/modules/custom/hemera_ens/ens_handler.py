@@ -298,15 +298,18 @@ class EnsHandler:
                 base_node=record["base_node"],
                 token_id=record["token_id"],
                 w_token_id=record["w_token_id"],
+                block_number=record["block_number"],
             )
 
         if event_name == "NameRenewed":
             return ENSNameRenewD(
                 node=record["node"],
                 expires=record["expires"],
+                block_number=record["block_number"],
             )
         if event_name == "AddressChanged":
             return ENSAddressChangeD(
                 node=record["node"],
                 address=address,
+                block_number=record["block_number"],
             )
