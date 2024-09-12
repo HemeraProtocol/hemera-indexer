@@ -38,6 +38,12 @@ class UniswapV3CollectFeeRecords(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
+            {
+                "domain": "AgniV3TokenCollectFee",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
 
 

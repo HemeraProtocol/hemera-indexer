@@ -35,5 +35,11 @@ class UniswapV3Pools(HemeraModel):
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            }
+            },
+            {
+                "domain": "AgniV3Pool",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
