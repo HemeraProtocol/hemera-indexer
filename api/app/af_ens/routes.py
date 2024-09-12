@@ -5,9 +5,12 @@ from flask_restx import Resource
 from flask_restx.namespace import Namespace
 from web3 import Web3
 
+from api.app.af_ens.action_types import OperationType
 from common.models import db
 from common.models.current_token_balances import CurrentTokenBalances
 from common.models.erc721_token_id_changes import ERC721TokenIdChanges
+from common.models.erc721_token_transfers import ERC721TokenTransfers
+from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.utils.config import get_config
 from indexer.modules.custom.hemera_ens.models.af_ens_address_current import ENSAddress
 from indexer.modules.custom.hemera_ens.models.af_ens_event import ENSMiddle
@@ -102,6 +105,22 @@ class ExplorerUserOperationDetails(Resource):
             .order_by(ENSMiddle.block_number, ENSMiddle.transaction_index, ENSMiddle.log_index.desc())
             .all()
         )
+        erc721_ids = list({r.token_id for r in all_records_rows if r.token_id})
+        erc721_id_transfers = (
+            db.session.query(ERC721TokenTransfers)
+            .filter(ERC721TokenTransfers.token_id.in_(erc721_ids))
+            .order_by(ERC721TokenTransfers.block_number)
+            .all()
+        )
+
+        erc1155_ids = list({r.w_token_id for r in all_records_rows if r.w_token_id})
+        erc1155_id_transfers = (
+            db.session.query(ERC1155TokenTransfers)
+            .filter(ERC1155TokenTransfers.token_id.in_(erc1155_ids))
+            .order_by(ERC1155TokenTransfers.block_number)
+            .all()
+        )
+
         node_name_map = {}
         for r in all_records_rows:
             if r.name:
@@ -109,22 +128,87 @@ class ExplorerUserOperationDetails(Resource):
                     node_name_map[r.node] = r.name
                 else:
                     node_name_map[r.node] = r.name + ".eth"
+        token_id_name_map = dict()
         for r in all_records_rows:
-            lis.append(
-                {
-                    "method": r.method,
-                    "event": r.event_name,
-                    "block_number": r.block_number,
-                    "block_timestamp": datetime_to_string(r.block_timestamp),
-                    "transaction_index": r.transaction_index,
-                    "log_index": r.log_index,
-                    "transaction_hash": "0x" + r.transaction_hash.hex(),
-                    "node": "0x" + r.node.hex(),
-                    "name": node_name_map.get(r.node),
-                }
-            )
+            if r.token_id:
+                token_id_name_map[r.token_id] = node_name_map[r.node]
+            if r.w_token_id:
+                token_id_name_map[r.w_token_id] = node_name_map[r.node]
+
+        all_rows = merge_ens_middle(all_records_rows) + erc721_id_transfers + erc1155_id_transfers
+        all_rows.sort(key=lambda x: x.block_number)
+
+        for r in all_rows:
+            name = None
+            if hasattr(r, "node") and r.node:
+                name = node_name_map[r.node]
+            elif hasattr(r, "token_id") and r.token_id:
+                name = token_id_name_map[r.token_id]
+            elif hasattr(r, "w_token_id") and r.w_token_id:
+                name = token_id_name_map[r.w_token_id]
+            base = {
+                "block_number": r.block_number,
+                "block_timestamp": datetime_to_string(r.block_timestamp),
+                # "transaction_index": r.transaction_index,
+                # "log_index": r.log_index,
+                "transaction_hash": "0x" + r.transaction_hash.hex(),
+                # "node": "0x" + r.node.hex(),
+                "name": name,
+            }
+
+            extras = get_action_type(r)
+            base.update(extras)
+            lis.append(base)
 
         return lis
+
+
+def merge_ens_middle(records):
+    """Merge consecutive records when setAddr and nameRegistered are duplicated"""
+    if not records:
+        return []
+
+    res = [records[0]]
+
+    for current_record in records[1:]:
+        previous_record = res[-1]
+
+        # Check if the current record should be merged with the previous one
+        if (
+            current_record.event_name == previous_record.event_name == "AddressChanged"
+            and current_record.name == previous_record.name
+        ) or (
+            current_record.event_name == previous_record.event_name == "NameRegistered"
+            and current_record.name == previous_record.name
+        ):
+            for column in ENSMiddle.__table__.columns:
+                current_value = getattr(current_record, column.name)
+                previous_value = getattr(previous_record, column.name)
+                if previous_value is None and current_value is not None:
+                    setattr(previous_record, column.name, current_value)
+        else:
+            res.append(current_record)
+
+    return res
+
+
+def get_action_type(record):
+    if isinstance(record, ERC721TokenTransfers) or isinstance(record, ERC1155TokenTransfers):
+        return {
+            "action_type": OperationType.TRANSFER.name,
+            "from": "0x" + record.from_address.hex(),
+            "to": "0x" + record.to_address.hex(),
+            "token_id": int(record.token_id),
+        }
+    if record.method == "setName" or record.event_name == "NameChanged":
+        return {"action_type": OperationType.SET_PRIMARY_NAME.name}
+    if record.event_name == "NameRegistered":
+        return {"action_type": OperationType.REGISTER.name}
+    if record.event_name == "NameRenewed":
+        return {"action_type": OperationType.RENEW.name, "expires": datetime_to_string(record.expires)}
+    if record.event_name == "AddressChanged":
+        return {"action_type": OperationType.SET_RESOLVED_ADDRESS.name, "address": "0x" + record.address.hex()}
+    raise ValueError("Unknown operation type")
 
 
 def datetime_to_string(dt, format="%Y-%m-%d %H:%M:%S"):
