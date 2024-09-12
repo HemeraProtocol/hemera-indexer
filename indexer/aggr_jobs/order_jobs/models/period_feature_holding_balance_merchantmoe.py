@@ -23,4 +23,5 @@ class PeriodFeatureHoldingBalanceMerchantmoe(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
 
+
 Index("af_holding_balance_merchantmoe_period_period_date", PeriodFeatureHoldingBalanceMerchantmoe.period_date)
