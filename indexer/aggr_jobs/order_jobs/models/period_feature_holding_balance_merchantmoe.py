@@ -9,7 +9,7 @@ class PeriodFeatureHoldingBalanceMerchantmoe(HemeraModel):
 
     period_date = Column(DATE, primary_key=True, nullable=False)
     protocol_id = Column(VARCHAR, primary_key=True, nullable=False)
-    contract_address = Column(BYTEA, primary_key=True, nullable=False)
+    position_token_address = Column(BYTEA, primary_key=True, nullable=False)
     token_id = Column(NUMERIC, primary_key=True, nullable=False)
     wallet_address = Column(BYTEA, primary_key=True, nullable=False)
 

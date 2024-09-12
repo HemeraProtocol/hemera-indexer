@@ -17,7 +17,7 @@ from af_holding_balance_merchantmoe_period
 where period_date >= '{start_date}'
   and period_date < '{end_date}';
 insert
-into af_holding_balance_merchantmoe_period(period_date, protocol_id, contract_address, token_id,
+into af_holding_balance_merchantmoe_period(period_date, protocol_id, position_token_address, token_id,
                                                 wallet_address, token0_address, token0_symbol, token0_balance,
                                                 token1_address, token1_symbol, token1_balance)
 with moe_pools_table as (select d0.*,
@@ -66,7 +66,7 @@ with moe_pools_table as (select d0.*,
 
 select date('{start_date}'),
        'merchantmoe'  as protocol_id,
-       token_address  as nft_addres,
+       token_address  as position_token_address,
        token_id,
        address,
        token0_address,

@@ -99,6 +99,8 @@ class EnsHandler:
         self.extractors = [extractor() for extractor in BaseExtractor.__subclasses__()]
 
     def is_ens_address(self, address):
+        if address == "0x00000000008794027c69c26d2a048dbec09de67c":
+            return True
         return address.lower() in self.ens_conf_loader.contract_object_map
 
     def get_event_name(self, sig):
