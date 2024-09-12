@@ -103,7 +103,7 @@ def upgrade() -> None:
         "af_holding_balance_merchantmoe_period",
         sa.Column("period_date", sa.DATE(), nullable=False),
         sa.Column("protocol_id", sa.VARCHAR(), nullable=False),
-        sa.Column("contract_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token_id", sa.NUMERIC(), nullable=False),
         sa.Column("wallet_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token0_address", postgresql.BYTEA(), nullable=False),
@@ -113,7 +113,7 @@ def upgrade() -> None:
         sa.Column("token1_symbol", sa.VARCHAR(), nullable=False),
         sa.Column("token1_balance", sa.NUMERIC(precision=100, scale=18), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.PrimaryKeyConstraint("period_date", "protocol_id", "contract_address", "token_id", "wallet_address"),
+        sa.PrimaryKeyConstraint("period_date", "protocol_id", "position_token_address", "token_id", "wallet_address"),
     )
     op.create_index(
         "af_holding_balance_merchantmoe_period_period_date",
@@ -125,7 +125,7 @@ def upgrade() -> None:
         "af_holding_balance_uniswap_v3_period",
         sa.Column("period_date", sa.DATE(), nullable=False),
         sa.Column("protocol_id", sa.VARCHAR(), nullable=False),
-        sa.Column("contract_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token_id", sa.INTEGER(), nullable=False),
         sa.Column("wallet_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token0_address", postgresql.BYTEA(), nullable=False),
@@ -135,7 +135,7 @@ def upgrade() -> None:
         sa.Column("token1_symbol", sa.VARCHAR(), nullable=False),
         sa.Column("token1_balance", sa.NUMERIC(precision=100, scale=18), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.PrimaryKeyConstraint("period_date", "protocol_id", "contract_address", "token_id"),
+        sa.PrimaryKeyConstraint("period_date", "protocol_id", "position_token_address", "token_id"),
     )
     op.create_index(
         "af_holding_balance_uniswap_v3_period_period_date",

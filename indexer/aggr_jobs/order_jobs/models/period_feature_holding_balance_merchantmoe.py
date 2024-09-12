@@ -24,7 +24,7 @@ class PeriodFeatureHoldingBalanceMerchantmoe(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
 
     __table_args__ = (
-        PrimaryKeyConstraint("period_date", "protocol_id", "contract_address", "token_id", "wallet_address"),
+        PrimaryKeyConstraint("period_date", "protocol_id", "position_token_address", "token_id", "wallet_address"),
     )
 
 

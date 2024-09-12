@@ -22,7 +22,7 @@ class PeriodFeatureHoldingBalanceUniswapV3(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("period_date", "protocol_id", "contract_address", "token_id"),)
+    __table_args__ = (PrimaryKeyConstraint("period_date", "protocol_id", "position_token_address", "token_id"),)
 
 
 # could be replaced by partition in case of huge amount data
