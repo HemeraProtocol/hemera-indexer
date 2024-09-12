@@ -7,8 +7,8 @@ from common.models import HemeraModel, general_converter
 
 
 class FeatureErc1155TokenSupplyRecords(HemeraModel):
-    position_token_address = "af_merchant_moe_token_supply_hist"
-    token_address = Column(BYTEA, primary_key=True)
+    __tablename__ = "af_merchant_moe_token_supply_hist"
+    position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
     block_number = Column(BIGINT, primary_key=True)
