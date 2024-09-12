@@ -127,7 +127,7 @@ with period_token_price as (select symbol, price
                     from detail_table)
 insert
 into af_holding_balance_uniswap_v3_period(protocol_id,
-                                               contract_address,
+                                               position_token_address,
                                                period_date,
                                                token_id,
                                                wallet_address,

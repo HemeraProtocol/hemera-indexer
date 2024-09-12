@@ -12,7 +12,7 @@ class PeriodFeatureHoldingBalanceUniswapV3(HemeraModel):
 
     period_date = Column(DATE, primary_key=True, nullable=False)
     protocol_id = Column(String, primary_key=True, nullable=False)
-    contract_address = Column(BYTEA, primary_key=True, nullable=False)
+    position_token_address = Column(BYTEA, primary_key=True, nullable=False)
     token_id = Column(INTEGER, primary_key=True, nullable=False)
     wallet_address = Column(BYTEA, nullable=False)
     token0_address = Column(BYTEA, nullable=False)
