@@ -8,7 +8,7 @@ from common.models import HemeraModel, general_converter
 
 class FeatureMerChantMoeTokenBinCurrentStatus(HemeraModel):
     __tablename__ = "af_merchant_moe_token_bin_current"
-    token_address = Column(BYTEA, primary_key=True)
+    position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_timestamp = Column(BIGINT)
     block_number = Column(BIGINT)
@@ -34,6 +34,6 @@ class FeatureMerChantMoeTokenBinCurrentStatus(HemeraModel):
 
 Index(
     "af_merchant_moe_token_bin_current_token_id_index",
-    desc(FeatureMerChantMoeTokenBinCurrentStatus.token_address),
+    desc(FeatureMerChantMoeTokenBinCurrentStatus.position_token_address),
     asc(FeatureMerChantMoeTokenBinCurrentStatus.token_id),
 )

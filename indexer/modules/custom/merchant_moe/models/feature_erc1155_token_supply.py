@@ -7,7 +7,7 @@ from common.models import HemeraModel, general_converter
 
 
 class FeatureErc1155TokenSupplyRecords(HemeraModel):
-    __tablename__ = "af_merchant_moe_token_supply_hist"
+    position_token_address = "af_merchant_moe_token_supply_hist"
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
@@ -19,7 +19,7 @@ class FeatureErc1155TokenSupplyRecords(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (PrimaryKeyConstraint("token_address", "token_id", "block_timestamp", "block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("position_token_address", "token_id", "block_timestamp", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():
@@ -35,6 +35,6 @@ class FeatureErc1155TokenSupplyRecords(HemeraModel):
 
 Index(
     "af_merchant_moe_token_supply_hist_token_block_desc_index",
-    desc(FeatureErc1155TokenSupplyRecords.token_address),
+    desc(FeatureErc1155TokenSupplyRecords.position_token_address),
     desc(FeatureErc1155TokenSupplyRecords.block_timestamp),
 )

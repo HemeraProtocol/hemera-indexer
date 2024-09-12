@@ -5,7 +5,7 @@ from indexer.domain import Domain, FilterData
 
 @dataclass
 class MerChantMoeTokenBin(FilterData):
-    token_address: str
+    position_token_address: str
     token_id: int
     reserve0_bin: int
     reserve1_bin: int
@@ -15,7 +15,7 @@ class MerChantMoeTokenBin(FilterData):
 
 @dataclass
 class MerChantMoeTokenCurrentBin(FilterData):
-    token_address: str
+    position_token_address: str
     token_id: int
     reserve0_bin: int
     reserve1_bin: int
@@ -25,7 +25,7 @@ class MerChantMoeTokenCurrentBin(FilterData):
 
 @dataclass
 class MerChantMoePool(FilterData):
-    token_address: str
+    position_token_address: str
     token0_address: str
     token1_address: str
     block_number: int
@@ -34,7 +34,7 @@ class MerChantMoePool(FilterData):
 
 @dataclass
 class MerchantMoeErc1155TokenSupply(FilterData):
-    token_address: str
+    position_token_address: str
     token_id: int
     total_supply: int
     block_number: int
@@ -43,7 +43,7 @@ class MerchantMoeErc1155TokenSupply(FilterData):
 
 @dataclass
 class MerchantMoeErc1155TokenCurrentSupply(FilterData):
-    token_address: str
+    position_token_address: str
     token_id: int
     total_supply: int
     block_number: int

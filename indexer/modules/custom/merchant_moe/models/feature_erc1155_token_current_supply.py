@@ -8,7 +8,7 @@ from common.models import HemeraModel, general_converter
 
 class FeatureErc1155TokenCurrentSupplyStatus(HemeraModel):
     __tablename__ = "af_merchant_moe_token_supply_current"
-    token_address = Column(BYTEA, primary_key=True)
+    position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_timestamp = Column(BIGINT)
     block_number = Column(BIGINT)

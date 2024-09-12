@@ -120,7 +120,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             self._collect_item(
                 MerChantMoePool.type(),
                 MerChantMoePool(
-                    token_address=token_address,
+                    position_token_address=token_address,
                     token0_address=token1_infos[0]["getTokenX"],
                     token1_address=token1_infos[0]["getTokenY"],
                     block_number=infos[0].block_number,
@@ -170,7 +170,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             reserve0_bin = data["reserve0_bin"]
             reserve1_bin = data["reserve1_bin"]
             common_data = {
-                "token_address": token_address,
+                "position_token_address": token_address,
                 "token_id": token_id,
                 "block_number": block_number,
                 "block_timestamp": block_timestamp,
