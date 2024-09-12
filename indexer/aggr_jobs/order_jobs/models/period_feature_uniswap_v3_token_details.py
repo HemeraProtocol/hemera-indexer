@@ -1,5 +1,5 @@
-from sqlalchemy import DATE, TIMESTAMP, Column, Computed, Index, func
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BYTEA, DATE, INTEGER, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel
 
@@ -15,6 +15,8 @@ class PeriodFeatureUniswapV3TokenDeatils(HemeraModel):
     liquidity = Column(NUMERIC(78))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
+
+    __table_args__ = (PrimaryKeyConstraint("period_date", "position_token_address", "token_id"),)
 
 
 # could be replaced by partition in case of huge amount data

@@ -1,9 +1,7 @@
-from datetime import datetime
+from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BYTEA, DATE, NUMERIC, TIMESTAMP
 
-from sqlalchemy import DATE, Column, Index, PrimaryKeyConstraint, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
-
-from common.models import HemeraModel, general_converter
+from common.models import HemeraModel
 
 
 class PeriodFeatureMerChantMoeTokenBinRecords(HemeraModel):
@@ -17,3 +15,5 @@ class PeriodFeatureMerChantMoeTokenBinRecords(HemeraModel):
     reserve1_bin = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
+
+    __table_args__ = (PrimaryKeyConstraint("period_date", "position_token_address", "token_id"),)

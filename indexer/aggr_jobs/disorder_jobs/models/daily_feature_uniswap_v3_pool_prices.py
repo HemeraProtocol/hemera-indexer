@@ -1,5 +1,5 @@
-from sqlalchemy import DATE, TIMESTAMP, Column, Computed, Index, func
-from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BYTEA, DATE, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel
 
@@ -13,6 +13,8 @@ class DailyFeatureUniswapV3PoolPrices(HemeraModel):
     sqrt_price_x96 = Column(NUMERIC(78))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
+
+    __table_args__ = (PrimaryKeyConstraint("block_date", "pool_address"),)
 
 
 # could be replaced by partition in case of huge amount data
