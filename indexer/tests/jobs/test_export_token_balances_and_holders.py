@@ -44,6 +44,39 @@ def test_export_current_token_balance_job():
 @pytest.mark.indexer
 @pytest.mark.indexer_exporter
 @pytest.mark.serial
+def test_export_current_token_balance_job_mul():
+    # ERC1155 current token balance case
+    job_scheduler = JobScheduler(
+        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(MANTLE_PUBLIC_NODE_RPC_URL, batch=True)),
+        batch_web3_debug_provider=ThreadLocalProxy(
+            lambda: get_provider_from_uri(MANTLE_PUBLIC_NODE_DEBUG_RPC_URL, batch=True)
+        ),
+        item_exporters=[ConsoleItemExporter()],
+        batch_size=100,
+        debug_batch_size=1,
+        max_workers=5,
+        config={},
+        required_output_types=[TokenBalance, CurrentTokenBalance],
+        multicall=True,
+    )
+
+    job_scheduler.run_jobs(
+        start_block=68891458,
+        end_block=68891458,
+    )
+
+    data_buff = job_scheduler.get_data_buff()
+
+    token_balances = data_buff[TokenBalance.type()]
+    assert len(token_balances) == 33
+
+    current_token_balances = data_buff[CurrentTokenBalance.type()]
+    assert len(current_token_balances) == 33
+
+
+@pytest.mark.indexer
+@pytest.mark.indexer_exporter
+@pytest.mark.serial
 def test_export_token_balance_job():
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(LINEA_PUBLIC_NODE_RPC_URL, batch=True)),

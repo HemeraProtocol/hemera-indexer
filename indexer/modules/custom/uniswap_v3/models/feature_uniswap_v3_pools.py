@@ -8,7 +8,7 @@ from common.models import HemeraModel, general_converter
 
 class UniswapV3Pools(HemeraModel):
     __tablename__ = "af_uniswap_v3_pools"
-    nft_address = Column(BYTEA, primary_key=True)
+    position_token_address = Column(BYTEA, primary_key=True)
     pool_address = Column(BYTEA, primary_key=True)
 
     factory_address = Column(BYTEA)
@@ -25,7 +25,7 @@ class UniswapV3Pools(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("nft_address", "pool_address"),)
+    __table_args__ = (PrimaryKeyConstraint("position_token_address", "pool_address"),)
 
     @staticmethod
     def model_domain_mapping():
