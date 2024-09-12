@@ -7,6 +7,7 @@ from sqlalchemy.sql import select
 
 from common.models import db
 from common.models.tokens import Tokens
+from common.models.token_prices import TokenPrices
 from common.utils.exception_control import APIError
 from indexer.modules.custom.uniswap_v3.endpoints import uniswap_v3_namespace
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_liquidity_records import UniswapV3TokenLiquidityRecords
@@ -18,6 +19,13 @@ from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import U
 
 Q96 = 2**96
 PAGE_SIZE = 10
+
+STABLE_COINS = {
+    "0xdac17f958d2ee523a2206206994597c13d831ec7": "USDT",
+    "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "WETH",
+    "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": "USDC",
+    "0x6b175474e89094c44da98b954eedeac495271d0f": "DAI"
+}
 
 
 @uniswap_v3_namespace.route("/v1/aci/<address>/uniswap_v3_trading/swaps")
@@ -37,19 +45,39 @@ class UniswapV3WalletTradingRecords(Resource):
             .all()
         )
         swap_records = []
+        token_list = []
         for swap in swaps:
+            token_list.append(swap.token0_address)
+            token_list.append(swap.token1_address)
+
+        tokens = db.session.execute(
+            select(Tokens).where(Tokens.address.in_(list(set(token_list))))
+        ).scalars().all()
+
+        token_map = {token.address : token for token in tokens}
+        
+        for swap in swaps:
+            token0 = token_map.get(swap.token0_address)
+            token1 = token_map.get(swap.token1_address)
             swap_records.append(
                 {
                     "block_number": swap.block_number,
                     "block_timestamp": datetime.fromtimestamp(swap.block_timestamp).isoformat("T", "seconds"),
                     "transaction_hash": "0x" + swap.transaction_hash.hex(),
                     "pool_address": "0x" + swap.pool_address.hex(),
-                    "amount0": float(swap.amount0),
-                    "amount1": float(swap.amount1),
+                    "amount0": "{0:.18f}".format(swap.amount0 / 10 ** token0.decimals).rstrip("0").rstrip("."),
+                    "amount1": "{0:.18f}".format(swap.amount1/ 10 ** token1.decimals).rstrip("0").rstrip("."),
                     "token0_address": "0x" + swap.token0_address.hex(),
+                    "token0_symbol": token0.symbol,
+                    "token0_name": token0.name,
+                    "token0_icon": token0.icon_url,
                     "token1_address": "0x" + swap.token1_address.hex(),
+                    "token1_symbol": token1.symbol,
+                    "token1_name": token1.name,
+                    "token1_icon": token1.icon_url,
                 }
             )
+
         return {
             "data": swap_records,
             "total": len(swap_records),
@@ -89,7 +117,7 @@ class UniswapV3WalletTradingSummary(Resource):
 
         return {
             "trade_count": len(transaction_hash_list),
-            "unique_asset_count": len(token_list),
+            "trade_asset_count": len(token_list),
             "total_volume_usd": 0,
             "average_value_usd": 0,
         }
@@ -131,22 +159,30 @@ class UniswapV3WalletLiquidityHolding(Resource):
 
         erc20_datas = db.session.query(Tokens).filter(Tokens.address.in_(erc20_tokens)).all()
         erc20_infos = {}
+        token_symbol_list = []
         for data in erc20_datas:
             erc20_infos["0x" + data.address.hex()] = data
+            token_symbol_list.append(data.symbol)
+
+        token_prices = db.session.execute(
+            select(TokenPrices).where(TokenPrices.symbol.in_(token_symbol_list))
+        ).scalars().all()
+        token_price_map = {token.symbol: token.price for token in token_prices}
 
         for token in tokenIds:
-            nft_address = "0x" + token.nft_address.hex()
+            position_token_address = "0x" + token.position_token_address.hex()
             token_id = token.token_id
-            key = (nft_address, token_id)
+            key = (position_token_address, token_id)
             token_id_infos[key] = token
 
         result = []
+        total_value_usd = 0
         for holding in holdings:
-            nft_address = "0x" + holding.nft_address.hex()
+            position_token_address = "0x" + holding.position_token_address.hex()
             token_id = holding.token_id
             pool_address = "0x" + holding.pool_address.hex()
             sqrt_price = pool_price_map[pool_address]
-            token_id_info = token_id_infos[(nft_address, token_id)]
+            token_id_info = token_id_infos[(position_token_address, token_id)]
             pool_info = pool_infos[pool_address]
             token0_address = "0x" + pool_info.token0_address.hex()
             token1_address = "0x" + pool_info.token1_address.hex()
@@ -166,17 +202,24 @@ class UniswapV3WalletLiquidityHolding(Resource):
                 token0_info.decimals,
                 token1_info.decimals,
             )
+            token0_value_usd = float(amount0_str) * float(token_price_map.get(token0_info.symbol, 0))
+            token1_value_usd = float(amount1_str) * float(token_price_map.get(token1_info.symbol, 0))
+            total_value_usd += token0_value_usd
+            total_value_usd += token1_value_usd
             result.append(
                 {
-                    "nft_address": nft_address,
+                    "pool_address": pool_address,
+                    "position_token_address": position_token_address,
                     "token_id": str(token_id),
                     "token0": {
                         "token0_symbol": token0_info.symbol,
                         "token0_balance": amount0_str,
+                        "token0_value_usd": token0_value_usd,
                     },
                     "token1": {
                         "token1_symbol": token1_info.symbol,
                         "token1_balance": amount1_str,
+                        "token1_value_usd": token1_value_usd,
                     },
                 }
             )
@@ -184,6 +227,8 @@ class UniswapV3WalletLiquidityHolding(Resource):
         return {
             "data": result,
             "total": len(result),
+            "pool_count": len(unique_pool_addresses),
+            "total_value_usd": total_value_usd,
         }
 
 
@@ -210,10 +255,7 @@ class UniswapV3WalletLiquidityDetail(Resource):
         return {
             "first_provide_time": first_holding.block_timestamp.isoformat("T", "seconds"),
             "pool_count": pool_count,
-            "token_id": str(first_holding.token_id),
-            "transaction_hash": "0x" + first_holding.transaction_hash.hex(),
-            "token0_address": "0x" + first_holding.token0_address.hex(),
-            "token1_address": "0x" + first_holding.token1_address.hex(),
+            "total_value_usd": 0,
         }, 200
 
 
