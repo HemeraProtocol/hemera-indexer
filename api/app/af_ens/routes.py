@@ -3,6 +3,7 @@ from datetime import date, datetime
 
 from flask_restx import Resource
 from flask_restx.namespace import Namespace
+from sqlalchemy.sql import and_, or_
 from web3 import Web3
 
 from api.app.af_ens.action_types import OperationType
@@ -12,15 +13,18 @@ from common.models.erc721_token_id_changes import ERC721TokenIdChanges
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.utils.config import get_config
+from common.utils.exception_control import APIError
 from indexer.modules.custom.hemera_ens.models.af_ens_address_current import ENSAddress
 from indexer.modules.custom.hemera_ens.models.af_ens_event import ENSMiddle
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ENSRecord
 
 app_config = get_config()
-from sqlalchemy import and_, or_
 
 w3 = Web3(Web3.HTTPProvider("https://ethereum-rpc.publicnode.com"))
 af_ens_namespace = Namespace("User Operation Namespace", path="/", description="ENS feature")
+
+
+PAGE_SIZE = 10
 
 
 @af_ens_namespace.route("/v1/aci/<address>/ens/current")
@@ -28,15 +32,15 @@ class ACIEnsCurrent(Resource):
     def get(self, address):
         res = {
             "primary_name": None,
-            "be_resolved_by_ens": [],
+            "resolve_to_names": [],
             "ens_holdings": [],
             "first_register_time": None,
-            "first_set_primary_name": None,
+            "first_set_primary_time": None,
         }
         if address:
             address = bytes.fromhex(address[2:])
         else:
-            return res
+            raise APIError("Invalid Address Format", code=400)
 
         dn = datetime.now()
         # current_address holds 721 & 1155 tokens
@@ -65,7 +69,7 @@ class ACIEnsCurrent(Resource):
         be_resolved_ens = (
             db.session.query(ENSRecord).filter(and_(ENSRecord.address == address, ENSRecord.expires >= dn)).all()
         )
-        res["be_resolved_by_ens"] = [r.name for r in be_resolved_ens if r.name and r.name.endswith(".eth")]
+        res["resolve_to_names"] = [r.name for r in be_resolved_ens if r.name and r.name.endswith(".eth")]
 
         first_register = (
             db.session.query(ENSMiddle)
@@ -85,7 +89,7 @@ class ACIEnsCurrent(Resource):
             .first()
         )
         if first_set_name:
-            res["first_set_primary_name"] = datetime_to_string(first_set_name.block_timestamp)
+            res["first_set_primary_time"] = datetime_to_string(first_set_name.block_timestamp)
 
         return res
 
@@ -93,16 +97,17 @@ class ACIEnsCurrent(Resource):
 @af_ens_namespace.route("/v1/aci/<address>/ens/detail")
 class ACIEnsDetail(Resource):
     def get(self, address):
-        lis = []
         if address:
             address = bytes.fromhex(address[2:])
         else:
-            return lis
+            raise APIError("Invalid Address Format", code=400)
 
+        events = []
         all_records_rows = (
             db.session.query(ENSMiddle)
             .filter(ENSMiddle.from_address == address)
-            .order_by(ENSMiddle.block_number, ENSMiddle.transaction_index, ENSMiddle.log_index.desc())
+            .order_by(ENSMiddle.block_number.desc(), ENSMiddle.log_index.desc())
+            .limit(PAGE_SIZE)
             .all()
         )
         # erc721_ids = list({r.token_id for r in all_records_rows if r.token_id})
@@ -154,9 +159,14 @@ class ACIEnsDetail(Resource):
 
             extras = get_action_type(r)
             base.update(extras)
-            lis.append(base)
+            events.append(base)
 
-        return lis
+        return {
+            "data": events,
+            "total": len(events),
+            "page": 1,
+            "size": PAGE_SIZE,
+        }
 
 
 def merge_ens_middle(records):
@@ -209,9 +219,9 @@ def get_action_type(record):
 
 def datetime_to_string(dt, format="%Y-%m-%d %H:%M:%S"):
     if isinstance(dt, datetime):
-        return dt.strftime(format)
+        return dt.astimezone().isoformat("T", "seconds")
     elif isinstance(dt, date):
-        return dt.strftime(format)
+        return dt.astimezone().isoformat("T", "seconds")
     elif dt is None:
         return None
     else:

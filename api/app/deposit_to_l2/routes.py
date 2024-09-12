@@ -18,32 +18,31 @@ from common.utils.format_utils import row_to_dict
 from common.utils.web3_utils import SUPPORT_CHAINS, chain_id_name_mapping
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
 
+PAGE_SIZE = 10
 MAX_TRANSACTION = 500000
 MAX_TRANSACTION_WITH_CONDITION = 10000
 
 app_config = get_config()
 
 
-@token_deposit_namespace.route("/v1/aci/deposit/transactions")
-class ExplorerDepositTransactions(Resource):
-    @cache.cached(timeout=10, query_string=True)
-    def get(self):
+@token_deposit_namespace.route("/v1/aci/<address>/deposit_to_l2/transactions")
+class ACIDepositToL2Transactions(Resource):
+    def get(self, address):
         page_index = int(flask.request.args.get("page", 1))
-        page_size = int(flask.request.args.get("size", 25))
+        page_size = int(flask.request.args.get("size", PAGE_SIZE))
         if page_index <= 0 or page_size <= 0:
             raise APIError("Invalid page or size", code=400)
 
         if page_index * page_size > MAX_TRANSACTION:
             raise APIError(f"Showing the last {MAX_TRANSACTION} records only", code=400)
 
-        wallet_address = flask.request.args.get("wallet_address", None)
         chain = flask.request.args.get("chain", None)
         contract = flask.request.args.get("contract", None)
         token = flask.request.args.get("token", None)
         block = flask.request.args.get("block", None)
 
         has_filter = False
-        if wallet_address or chain or contract or token or block:
+        if address or chain or contract or token or block:
             has_filter = True
             if page_index * page_size > MAX_TRANSACTION_WITH_CONDITION:
                 raise APIError(
@@ -53,10 +52,10 @@ class ExplorerDepositTransactions(Resource):
 
         filter_condition = True
 
-        if wallet_address:
-            wallet_address = wallet_address.lower()
-            bytes_wallet_address = bytes.fromhex(wallet_address[2:])
-            filter_condition = AFTokenDepositsTransactions.wallet_address == bytes_wallet_address
+        if address:
+            address = address.lower()
+            bytes_address = bytes.fromhex(address[2:])
+            filter_condition = AFTokenDepositsTransactions.wallet_address == bytes_address
 
         elif chain:
             if chain.isnumeric():
@@ -88,7 +87,6 @@ class ExplorerDepositTransactions(Resource):
                 block_number = get_block_by_hash(hash=block, columns=["number"])
                 filter_condition = AFTokenDepositsTransactions.block_number == block_number
 
-        total_records = get_transactions_cnt_by_condition(filter_condition=filter_condition)
         transactions = get_transactions_by_condition(
             filter_condition=filter_condition,
             columns=[
@@ -105,49 +103,44 @@ class ExplorerDepositTransactions(Resource):
             offset=(page_index - 1) * page_size,
         )
 
+        total_records = get_transactions_cnt_by_condition(filter_condition=filter_condition)
         transaction_list = parse_deposit_transactions(transactions)
 
         return {
             "data": transaction_list,
             "total": total_records,
-            "max_display": min(
-                (MAX_TRANSACTION_WITH_CONDITION if has_filter else MAX_TRANSACTION),
-                total_records,
-            ),
             "page": page_index,
             "size": page_size,
-        }, 200
+        }
 
 
-@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit/current")
-class ExplorerDepositCurrent(Resource):
-
-    @cache.cached(timeout=10, query_string=True)
-    def get(self, wallet_address):
-        if wallet_address is None:
+@token_deposit_namespace.route("/v1/aci/<address>/deposit_to_l2/current")
+class ACIDepositToL2Current(Resource):
+    def get(self, address):
+        if address is None:
             raise APIError(
-                f"parameter 'wallet_address' are required",
+                f"parameter 'address' are required",
                 code=400,
             )
 
-        deposit_times = get_transactions_cnt_by_wallet(wallet_address)
+        deposit_times = get_transactions_cnt_by_wallet(address)
 
-        chains = get_deposit_chain_list(wallet_address)
+        chains = get_deposit_chain_list(address)
         chain_list = [chain_id_name_mapping[row_to_dict(chain)["chain_id"]] for chain in chains]
 
-        assets = get_deposit_assets_list(wallet_address)
+        assets = get_deposit_assets_list(address)
         asset_list = parse_deposit_assets(assets)
 
         return {
-            "wallet_address": wallet_address,
+            "address": address,
             "deposit_times": deposit_times,
             "chain_list": chain_list,
             "asset_list": asset_list,
-        }, 200
+        }
 
 
-@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit/bridge_times")
-class ExplorerDepositBridgeTimes(Resource):
+@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit_to_l2/bridge_times")
+class ACIDepositToL2BridgeTimes(Resource):
 
     @cache.cached(timeout=10, query_string=True)
     def get(self, wallet_address):
@@ -162,11 +155,11 @@ class ExplorerDepositBridgeTimes(Resource):
         return {
             "wallet_address": wallet_address,
             "bridge_times": times,
-        }, 200
+        }
 
 
-@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit/chain_list")
-class ExplorerDepositChainList(Resource):
+@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit_to_l2/chain_list")
+class ACIDepositToL2ChainList(Resource):
 
     @cache.cached(timeout=10, query_string=True)
     def get(self, wallet_address):
@@ -185,8 +178,8 @@ class ExplorerDepositChainList(Resource):
         }, 200
 
 
-@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit/assets_list")
-class ExplorerDepositAssetsList(Resource):
+@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit_to_l2/assets_list")
+class ACIDepositToL2AssetsList(Resource):
 
     @cache.cached(timeout=10, query_string=True)
     def get(self, wallet_address):

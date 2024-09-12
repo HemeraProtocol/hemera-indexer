@@ -1,38 +1,105 @@
-import binascii
 import math
-import re
-from datetime import datetime, timedelta
-from decimal import Decimal, getcontext
-from operator import or_
+from datetime import datetime
 
 from flask import request
 from flask_restx import Resource
-from sqlalchemy import and_, asc, desc, func
+from sqlalchemy.sql import select
 
-from api.app import explorer
-from api.app.cache import cache
-from api.app.explorer import explorer_namespace
 from common.models import db
-from common.models import db as postgres_db
 from common.models.tokens import Tokens
 from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict, format_to_dict, format_value_for_json, row_to_dict
-from common.utils.web3_utils import is_eth_address
 from indexer.modules.custom.uniswap_v3.endpoints import uniswap_v3_namespace
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_liquidity_records import UniswapV3TokenLiquidityRecords
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pool_current_prices import UniswapV3PoolCurrentPrices
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
+from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_swap_records import UniswapV3PoolSwapRecords
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_token_current_status import UniswapV3TokenCurrentStatus
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 
 Q96 = 2**96
+PAGE_SIZE = 10
 
 
-@uniswap_v3_namespace.route("/v1/aci/<wallet_address>/uniswapv3/current_holding")
-class UniswapV3WalletHolding(Resource):
-    def get(self, wallet_address):
-        wallet_address = wallet_address.lower()
-        address_bytes = bytes.fromhex(wallet_address[2:])
+@uniswap_v3_namespace.route("/v1/aci/<address>/uniswap_v3_trading/swaps")
+class UniswapV3WalletTradingRecords(Resource):
+    def get(self, address):
+        address = address.lower()
+        address_bytes = bytes.fromhex(address[2:])
+
+        swaps = (
+            db.session.execute(
+                select(UniswapV3PoolSwapRecords)
+                .where(UniswapV3PoolSwapRecords.transaction_from_address == address_bytes)
+                .order_by(UniswapV3PoolSwapRecords.block_timestamp.desc())
+                .limit(PAGE_SIZE)
+            )
+            .scalars()
+            .all()
+        )
+        swap_records = []
+        for swap in swaps:
+            swap_records.append(
+                {
+                    "block_number": swap.block_number,
+                    "block_timestamp": datetime.fromtimestamp(swap.block_timestamp).isoformat("T", "seconds"),
+                    "transaction_hash": "0x" + swap.transaction_hash.hex(),
+                    "pool_address": "0x" + swap.pool_address.hex(),
+                    "amount0": float(swap.amount0),
+                    "amount1": float(swap.amount1),
+                    "token0_address": "0x" + swap.token0_address.hex(),
+                    "token1_address": "0x" + swap.token1_address.hex(),
+                }
+            )
+        return {
+            "data": swap_records,
+            "total": len(swap_records),
+            "page": 1,
+            "szie": PAGE_SIZE,
+        }
+
+
+@uniswap_v3_namespace.route("/v1/aci/<address>/uniswap_v3_trading/summary")
+class UniswapV3WalletTradingSummary(Resource):
+    def get(self, address):
+        address = address.lower()
+        address_bytes = bytes.fromhex(address[2:])
+
+        swaps = db.session.execute(
+            select(
+                UniswapV3PoolSwapRecords.transaction_hash,
+                UniswapV3PoolSwapRecords.token0_address,
+                UniswapV3PoolSwapRecords.token1_address,
+                UniswapV3PoolSwapRecords.amount0,
+                UniswapV3PoolSwapRecords.amount1,
+            )
+            .where(UniswapV3PoolSwapRecords.transaction_from_address == address_bytes)
+            .order_by(UniswapV3PoolSwapRecords.block_timestamp.desc())
+        ).all()
+
+        token_list = []
+        transaction_hash_list = []
+
+        for swap in swaps:
+            token_list.append(swap.token0_address)
+            token_list.append(swap.token1_address)
+            transaction_hash_list.append(swap.transaction_hash)
+
+        token_list = list(set(token_list))
+        transaction_hash_list = list(set(transaction_hash_list))
+
+        return {
+            "trade_count": len(transaction_hash_list),
+            "unique_asset_count": len(token_list),
+            "total_volume_usd": 0,
+            "average_value_usd": 0,
+        }
+
+
+@uniswap_v3_namespace.route("/v1/aci/<address>/uniswap_v3_liquidity/current_holding")
+class UniswapV3WalletLiquidityHolding(Resource):
+    def get(self, address):
+        address = address.lower()
+        address_bytes = bytes.fromhex(address[2:])
         holdings = (
             db.session.query(UniswapV3TokenCurrentStatus)
             .filter(UniswapV3TokenCurrentStatus.wallet_address == address_bytes)
@@ -114,14 +181,17 @@ class UniswapV3WalletHolding(Resource):
                 }
             )
 
-        return result, 200
+        return {
+            "data": result,
+            "total": len(result),
+        }
 
 
-@uniswap_v3_namespace.route("/v1/aci/<wallet_address>/uniswapv3/first_liquidity_time")
+@uniswap_v3_namespace.route("/v1/aci/<address>/uniswap_v3_liquidity/summary")
 class UniswapV3WalletLiquidityDetail(Resource):
-    def get(self, wallet_address):
-        wallet_address = wallet_address.lower()
-        address_bytes = bytes.fromhex(wallet_address[2:])
+    def get(self, address):
+        address = address.lower()
+        address_bytes = bytes.fromhex(address[2:])
         first_holding = (
             db.session.query(UniswapV3TokenLiquidityRecords)
             .filter(UniswapV3TokenLiquidityRecords.owner == address_bytes)
@@ -129,32 +199,22 @@ class UniswapV3WalletLiquidityDetail(Resource):
             .first()
         )
         if not first_holding:
-            return {
-                "message": "no provide history",
-            }, 200
-        dt_object = datetime.utcfromtimestamp(first_holding.block_timestamp)
-        first_provide_time = dt_object.strftime("%Y-%m-%d %H:%M:%S")
-        return {
-            "first_provide_time": first_provide_time,
-            "token_id": str(first_holding.token_id),
-            "transaction_hash": "0x" + first_holding.transaction_hash.hex(),
-            "token0_address": "0x" + first_holding.token0_address.hex(),
-            "token1_address": "0x" + first_holding.token1_address.hex(),
-        }, 200
+            return {}
 
-
-@uniswap_v3_namespace.route("/v1/aci/<wallet_address>/uniswapv3/provide_liquidity_pool_count")
-class UniswapV3WalletLiquidityDetail(Resource):
-    def get(self, wallet_address):
-        wallet_address = wallet_address.lower()
-        address_bytes = bytes.fromhex(wallet_address[2:])
-        count = (
+        pool_count = (
             db.session.query(UniswapV3TokenLiquidityRecords.pool_address)
             .filter(UniswapV3TokenLiquidityRecords.owner == address_bytes)
             .distinct()
             .count()
         )
-        return {"provide_pool_count": count}, 200
+        return {
+            "first_provide_time": first_holding.block_timestamp.isoformat("T", "seconds"),
+            "pool_count": pool_count,
+            "token_id": str(first_holding.token_id),
+            "transaction_hash": "0x" + first_holding.transaction_hash.hex(),
+            "token0_address": "0x" + first_holding.token0_address.hex(),
+            "token1_address": "0x" + first_holding.token1_address.hex(),
+        }, 200
 
 
 def get_tick_at_sqrt_ratio(sqrt_price_x96):
