@@ -7,3 +7,4 @@ class FeatureType(Enum):
     DAY_MINING = 3
     UNISWAP_V2_INFO = 4
     BLUE_CHIP_HOLDING = 5
+    MERCHANT_MOE_1155_LIQUIDITY = 6
