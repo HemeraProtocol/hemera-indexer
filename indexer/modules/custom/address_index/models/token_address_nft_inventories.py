@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import TIMESTAMP, Column, PrimaryKeyConstraint, func
-from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
@@ -27,3 +27,11 @@ class TokenAddressNftInventories(HemeraModel):
                 "converter": general_converter,
             }
         ]
+
+
+Index(
+    "token_address_nft_inventories_wallet_address_token_address__idx",
+    TokenAddressNftInventories.wallet_address,
+    TokenAddressNftInventories.token_address,
+    TokenAddressNftInventories.token_id,
+)

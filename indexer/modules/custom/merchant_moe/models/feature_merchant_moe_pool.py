@@ -1,7 +1,5 @@
-from datetime import datetime
-
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+from sqlalchemy import Column, PrimaryKeyConstraint, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
@@ -16,7 +14,7 @@ class FeatureMerChantMoePools(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("position_token_address"),)
 

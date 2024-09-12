@@ -1,7 +1,7 @@
 from typing import Type
 
 from sqlalchemy import Column, Index
-from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -29,7 +29,7 @@ class UserOperationResult(HemeraModel):
 
     transactions_hash = Column(BYTEA)
     transactions_index = Column(INTEGER)
-    block_number = Column(INTEGER)
+    block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
     bundler = Column(VARCHAR(42))
     start_log_index = Column(INTEGER)

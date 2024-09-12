@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, asc, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
@@ -18,7 +18,7 @@ class FeatureMerChantMoeTokenBinCurrentStatus(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("token_address", "token_id"),)
+    __table_args__ = (PrimaryKeyConstraint("position_token_address", "token_id"),)
 
     @staticmethod
     def model_domain_mapping():
