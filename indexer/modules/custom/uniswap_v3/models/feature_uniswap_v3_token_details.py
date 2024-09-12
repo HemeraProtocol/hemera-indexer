@@ -9,7 +9,7 @@ from common.models import HemeraModel, general_converter
 class UniswapV3TokenDetails(HemeraModel):
     __tablename__ = "af_uniswap_v3_token_data_hist"
 
-    nft_address = Column(BYTEA, primary_key=True)
+    position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_number = Column(BIGINT, primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
@@ -21,7 +21,7 @@ class UniswapV3TokenDetails(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("position_token_address", "token_id", "block_timestamp", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():
@@ -37,13 +37,13 @@ class UniswapV3TokenDetails(HemeraModel):
 
 Index(
     "af_uniswap_v3_token_data_hist_token_block_desc_index",
-    desc(UniswapV3TokenDetails.nft_address),
+    desc(UniswapV3TokenDetails.position_token_address),
     desc(UniswapV3TokenDetails.block_timestamp),
 )
 
 Index(
     "af_uniswap_v3_token_data_hist_wallet_token_block_desc_index",
     desc(UniswapV3TokenDetails.wallet_address),
-    desc(UniswapV3TokenDetails.nft_address),
+    desc(UniswapV3TokenDetails.position_token_address),
     desc(UniswapV3TokenDetails.block_timestamp),
 )

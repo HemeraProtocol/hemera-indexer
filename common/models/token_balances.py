@@ -38,7 +38,7 @@ class AddressTokenBalances(HemeraModel):
         return [
             {
                 "domain": "TokenBalance",
-                "conflict_do_update": False,
+                "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": token_balances_general_converter,
             }
