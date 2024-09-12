@@ -22,9 +22,12 @@ PAGE_SIZE = 10
 
 STABLE_COINS = {
     "0xdac17f958d2ee523a2206206994597c13d831ec7": "USDT",
-    "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "WETH",
     "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": "USDC",
-    "0x6b175474e89094c44da98b954eedeac495271d0f": "DAI"
+    "0x6b175474e89094c44da98b954eedeac495271d0f": "DAI",
+}
+
+NATIVE_COINS = {
+    "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": "WETH",
 }
 
 
@@ -298,4 +301,18 @@ def get_token_amounts(liquidity, sqrt_price_x96, tick_low, tick_high, token0_dec
 
 
 def get_swap_action_type(swap: UniswapV3PoolSwapRecords):
-    return "buy"
+    token0_address_str = '0x' + swap.token0_address.hex()
+    token1_address_str = '0x' + swap.token1_address.hex()
+
+    if token0_address_str in STABLE_COINS and token1_address_str in STABLE_COINS:
+        return "swap"
+    elif token0_address_str in STABLE_COINS:
+        return "buy" if swap.amount0 > 0 else "sell"
+    elif token1_address_str in STABLE_COINS:
+        return "buy" if swap.amount1 > 0 else "sell"
+    elif token0_address_str in NATIVE_COINS:
+        return "buy" if swap.amount0 > 0 else "sell"
+    elif token1_address_str in NATIVE_COINS:
+        return "buy" if swap.amount1 > 0 else "sell"
+
+    return "swap"
