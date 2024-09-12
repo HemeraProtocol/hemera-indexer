@@ -264,6 +264,14 @@ def calculate_execution_time(func):
     envvar="FORCE_FILTER_MODE",
     help="Force the filter mode to be enabled, even if no filters job are provided.",
 )
+@click.option(
+    "--auto-upgrade-db",
+    default=True,
+    show_default=True,
+    type=bool,
+    envvar="AUTO_UPGRADE_DB",
+    help="Whether to automatically run database migration scripts to update the database to the latest version.",
+)
 @calculate_execution_time
 def stream(
     provider_uri,
@@ -291,6 +299,7 @@ def stream(
     multicall=True,
     config_file=None,
     force_filter_mode=False,
+    auto_upgrade_db=True,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -309,7 +318,7 @@ def stream(
     }
 
     if postgres_url:
-        service = PostgreSQLService(postgres_url, db_version=db_version)
+        service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
         config["db_service"] = service
         exception_recorder.init_pg_service(service)
     else:
