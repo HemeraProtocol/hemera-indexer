@@ -6,7 +6,7 @@ from indexer.domain import Domain, FilterData
 
 @dataclass
 class StakedFBTCDetail(FilterData):
-    contract_address: str
+    vault_address: str
     protocol_id: str
     wallet_address: str
     amount: int
@@ -17,7 +17,7 @@ class StakedFBTCDetail(FilterData):
 
 @dataclass
 class StakedFBTCCurrentStatus(FilterData):
-    contract_address: str
+    vault_address: str
     protocol_id: str
     wallet_address: str
     amount: int
@@ -28,7 +28,7 @@ class StakedFBTCCurrentStatus(FilterData):
 
 @dataclass
 class TransferredFBTCDetail(FilterData):
-    contract_address: str
+    vault_address: str
     protocol_id: str
     wallet_address: str
     amount: int
@@ -39,7 +39,7 @@ class TransferredFBTCDetail(FilterData):
 
 @dataclass
 class TransferredFBTCCurrentStatus(FilterData):
-    contract_address: str
+    vault_address: str
     protocol_id: str
     wallet_address: str
     amount: int

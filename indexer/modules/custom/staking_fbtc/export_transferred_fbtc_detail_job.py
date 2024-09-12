@@ -88,11 +88,10 @@ def process_token_transfers(
 ) -> Tuple[
     List[TransferredFBTCDetail], List[TransferredFBTCCurrentStatus], Dict[str, Dict[str, TransferredFBTCCurrentStatus]]
 ]:
-    # Initialize current_status with existing holdings
     current_status = defaultdict(
         lambda: defaultdict(
             lambda: TransferredFBTCCurrentStatus(
-                contract_address="",
+                vault_address="",
                 protocol_id="",
                 wallet_address="",
                 amount=0,
@@ -106,7 +105,6 @@ def process_token_transfers(
         for wallet_address, status in wallet_dict.items():
             current_status[contract_address][wallet_address] = status
 
-    # Group transfers by contract address and then by block number
     transfers_by_address = defaultdict(lambda: defaultdict(list))
     for transfer in token_transfers:
         if transfer.token_address == fbtc_address:
@@ -117,30 +115,26 @@ def process_token_transfers(
 
     transferred_details = []
 
-    # Process transfers for each contract address
     for address, blocks in transfers_by_address.items():
         protocol_id = transferred_protocol_dict[address]
 
-        # Process transfers block by block
         for block_number in sorted(blocks.keys()):
             block_transfers = blocks[block_number]
             block_changes = defaultdict(int)
             block_timestamp = block_transfers[0].block_timestamp
 
-            # Accumulate changes within the block
             for entity in block_transfers:
                 if entity.from_address == address:
                     block_changes[entity.to_address] -= entity.value
                 if entity.to_address == address:
                     block_changes[entity.from_address] += entity.value
 
-            # Apply accumulated changes and create TransferredFBTCDetail
             for wallet_address, change in block_changes.items():
                 current_amount = current_status[address][wallet_address].amount
                 new_amount = current_amount + change
 
                 current_status[address][wallet_address] = TransferredFBTCCurrentStatus(
-                    contract_address=address,
+                    vault_address=address,
                     protocol_id=protocol_id,
                     wallet_address=wallet_address,
                     amount=new_amount,
@@ -151,7 +145,7 @@ def process_token_transfers(
 
                 transferred_details.append(
                     TransferredFBTCDetail(
-                        contract_address=address,
+                        vault_address=address,
                         protocol_id=protocol_id,
                         wallet_address=wallet_address,
                         amount=new_amount,
@@ -161,10 +155,8 @@ def process_token_transfers(
                     )
                 )
 
-    # Convert current_status to list
     current_status_list = [status for address_dict in current_status.values() for status in address_dict.values()]
 
-    # Update current_holdings with the latest status
     updated_current_holdings = {}
     for contract_address, wallet_dict in current_status.items():
         updated_current_holdings[contract_address] = {}

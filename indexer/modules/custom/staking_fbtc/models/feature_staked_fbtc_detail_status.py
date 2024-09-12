@@ -8,7 +8,7 @@ from common.models import HemeraModel, general_converter
 
 class FeatureStakedFBTCDetailStatus(HemeraModel):
     __tablename__ = "af_staked_fbtc_current"
-    contract_address = Column(BYTEA, primary_key=True)
+    vault_address = Column(BYTEA, primary_key=True)
     wallet_address = Column(BYTEA, primary_key=True)
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
@@ -19,7 +19,7 @@ class FeatureStakedFBTCDetailStatus(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("contract_address", "wallet_address"),)
+    __table_args__ = (PrimaryKeyConstraint("vault_address", "wallet_address"),)
 
     @staticmethod
     def model_domain_mapping():

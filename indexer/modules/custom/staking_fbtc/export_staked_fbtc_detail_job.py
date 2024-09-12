@@ -95,7 +95,7 @@ def collect_detail(
     current_status = defaultdict(
         lambda: defaultdict(
             lambda: StakedFBTCCurrentStatus(
-                contract_address="",
+                vault_address="",
                 protocol_id="",
                 wallet_address="",
                 amount=0,
@@ -135,7 +135,7 @@ def collect_detail(
                 new_amount = current_amount + change
 
                 current_status[address][wallet_address] = StakedFBTCCurrentStatus(
-                    contract_address=address,
+                    vault_address=address,
                     protocol_id=protocol_id,
                     wallet_address=wallet_address,
                     amount=new_amount,
@@ -146,7 +146,7 @@ def collect_detail(
 
                 staked_details.append(
                     StakedFBTCDetail(
-                        contract_address=address,
+                        vault_address=address,
                         protocol_id=protocol_id,
                         wallet_address=wallet_address,
                         amount=new_amount,
