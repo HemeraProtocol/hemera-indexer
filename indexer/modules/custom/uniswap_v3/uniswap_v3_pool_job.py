@@ -50,7 +50,7 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
         self._service = kwargs["config"].get("db_service")
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("config.ini", self._chain_id)
-        self._exist_pools = get_exist_pools(self._service, self._nft_address)
+        self._exist_pools = get_exist_pools(self._service, self._position_token_address)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
         self._abi_list = UNISWAP_V3_ABI
@@ -76,7 +76,7 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
         except KeyError:
             return
         try:
-            self._nft_address = chain_config.get("nft_address").lower()
+            self._position_token_address = chain_config.get("nft_address").lower()
             self._factory_address = chain_config.get("factory_address").lower()
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
@@ -104,7 +104,7 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
             current_topic0 = log.topic0
             if self._factory_address != address or self._create_pool_topic0 != current_topic0:
                 continue
-            entity = decode_pool_created(self._nft_address, self._factory_address, log)
+            entity = decode_pool_created(self._position_token_address, self._factory_address, log)
             self._collect_item(UniswapV3Pool.type(), entity)
 
     def _collect_price_batch(self, logs):
@@ -126,7 +126,7 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
                     UniswapV3SwapEvent.type(),
                     UniswapV3SwapEvent(
                         pool_address=log.address,
-                        nft_address=self._nft_address,
+                        position_token_address=self._position_token_address,
                         transaction_hash=transaction_hash,
                         transaction_from_address=self._transaction_hash_from_dict[transaction_hash],
                         log_index=log.log_index,
@@ -201,7 +201,7 @@ class UniSwapV3PoolJob(FilterTransactionDataJob):
         )
 
 
-def decode_pool_created(nft_address, factory_address, log):
+def decode_pool_created(position_token_address, factory_address, log):
     token0_address = util.parse_hex_to_address(log.topic1)
     token1_address = util.parse_hex_to_address(log.topic2)
     fee = util.parse_hex_to_int256(log.topic3)
@@ -209,7 +209,7 @@ def decode_pool_created(nft_address, factory_address, log):
     pool_address = util.parse_hex_to_address(pool_hex)
     tick_spacing = util.parse_hex_to_int256(tick_hex)
     return UniswapV3Pool(
-        nft_address=nft_address,
+        position_token_address=position_token_address,
         factory_address=factory_address,
         pool_address=pool_address,
         token0_address=token0_address,
@@ -233,21 +233,23 @@ def split_hex_string(hex_string):
         raise ValueError("The data is not belong to Uniswap-V3 Factory")
 
 
-def get_exist_pools(db_service, nft_address):
+def get_exist_pools(db_service, position_token_address):
     if not db_service:
         return {}
 
     session = db_service.get_service_session()
     try:
         result = (
-            session.query(UniswapV3Pools).filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:])).all()
+            session.query(UniswapV3Pools)
+            .filter(UniswapV3Pools.position_token_address == bytes.fromhex(position_token_address[2:]))
+            .all()
         )
         history_pools = {}
         if result is not None:
             for item in result:
                 pool_key = "0x" + item.pool_address.hex()
                 history_pools[pool_key] = UniswapV3Pool(
-                    nft_address="0x" + item.nft_address.hex(),
+                    position_token_address="0x" + item.position_token_address.hex(),
                     pool_address=pool_key,
                     token0_address="0x" + item.token0_address.hex(),
                     token1_address="0x" + item.token1_address.hex(),
