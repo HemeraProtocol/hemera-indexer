@@ -191,6 +191,47 @@ class RegisterExtractor(BaseExtractor):
             return None
 
 
+class AncientRegister(BaseExtractor):
+
+    def __init__(self):
+        self.address = "0x6090a6e47849629b7245dfa1ca21d94cd15878ef"
+        self.tp0 = "0x0f0c27adfd84b60b6f456b0e87cdccb1e5fb9603991588d87fa99f5b6b61e670"
+
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
+        if tp0 == self.tp0:
+            event_data = decode_log(log, contract_object_map, event_map)
+            tmp = event_data["args"]
+            ens_middle.expires = convert_str_ts(tmp.get("expires", ""))
+
+            ens_middle.label = log["topic1"]
+            ens_middle.owner = extract_eth_address(log["topic2"])
+            ens_middle.base_node = BASE_NODE
+            ens_middle.node = compute_node_label(BASE_NODE, ens_middle.label)
+            ens_middle.event_name = event_data["_event"]
+            token_id = str(int(log["topic1"], 16))
+            return ENSMiddleD(
+                transaction_hash=ens_middle.transaction_hash,
+                log_index=ens_middle.log_index,
+                transaction_index=ens_middle.transaction_index,
+                block_number=ens_middle.block_number,
+                block_hash=ens_middle.block_hash,
+                block_timestamp=ens_middle.block_timestamp,
+                topic0=tp0,
+                from_address=ens_middle.from_address,
+                to_address=ens_middle.to_address,
+                expires=ens_middle.expires,
+                name=ens_middle.name,
+                label=ens_middle.label,
+                owner=ens_middle.owner,
+                base_node=ens_middle.base_node,
+                node=ens_middle.node,
+                event_name=ens_middle.event_name,
+                method=ens_middle.method,
+                token_id=token_id,
+                w_token_id=None,
+            )
+
+
 class NameRenewExtractor(BaseExtractor):
     def __init__(self):
         self.address = "0x253553366da8546fc250f225fe3d25d0c782303b"
