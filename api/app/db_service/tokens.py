@@ -1,4 +1,4 @@
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, func, select
 
 from api.app.db_service.contracts import get_contracts_by_addresses
 from api.app.db_service.wallet_addresses import get_token_txn_cnt_by_address
@@ -13,6 +13,7 @@ from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.scheduled_metadata import ScheduledTokenCountMetadata, ScheduledWalletCountMetadata
 from common.models.tokens import Tokens
+from common.models.token_prices import TokenPrices
 from common.utils.config import get_config
 from common.utils.db_utils import build_entities
 from common.utils.exception_control import APIError
@@ -306,3 +307,11 @@ def get_token_holders_cnt(token_address: str, model, columns="*"):
     )
 
     return holders_count
+
+
+def get_token_price_map_by_symbol_list(token_symbol_list):
+    token_prices = db.session.execute(
+        select(TokenPrices).where(TokenPrices.symbol.in_(token_symbol_list))
+    ).scalars().all()
+    token_price_map = {token.symbol: token.price for token in token_prices}
+    return token_price_map

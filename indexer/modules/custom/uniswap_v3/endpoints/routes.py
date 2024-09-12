@@ -65,16 +65,17 @@ class UniswapV3WalletTradingRecords(Resource):
                     "block_timestamp": datetime.fromtimestamp(swap.block_timestamp).isoformat("T", "seconds"),
                     "transaction_hash": "0x" + swap.transaction_hash.hex(),
                     "pool_address": "0x" + swap.pool_address.hex(),
-                    "amount0": "{0:.18f}".format(swap.amount0 / 10 ** token0.decimals).rstrip("0").rstrip("."),
-                    "amount1": "{0:.18f}".format(swap.amount1/ 10 ** token1.decimals).rstrip("0").rstrip("."),
+                    "amount0": "{0:.18f}".format(abs(swap.amount0) / 10 ** token0.decimals).rstrip("0").rstrip("."),
+                    "amount1": "{0:.18f}".format(abs(swap.amount1) / 10 ** token1.decimals).rstrip("0").rstrip("."),
                     "token0_address": "0x" + swap.token0_address.hex(),
                     "token0_symbol": token0.symbol,
                     "token0_name": token0.name,
-                    "token0_icon": token0.icon_url,
+                    "token0_icon_url": token0.icon_url,
                     "token1_address": "0x" + swap.token1_address.hex(),
                     "token1_symbol": token1.symbol,
                     "token1_name": token1.name,
-                    "token1_icon": token1.icon_url,
+                    "token1_icon_url": token1.icon_url,
+                    "action_type": get_swap_action_type(swap)
                 }
             )
 
@@ -213,11 +214,13 @@ class UniswapV3WalletLiquidityHolding(Resource):
                     "token_id": str(token_id),
                     "token0": {
                         "token0_symbol": token0_info.symbol,
+                        "token0_icon_url": token0_info.icon_url,
                         "token0_balance": amount0_str,
                         "token0_value_usd": token0_value_usd,
                     },
                     "token1": {
                         "token1_symbol": token1_info.symbol,
+                        "token1_icon_url": token1_info.icon_url,
                         "token1_balance": amount1_str,
                         "token1_value_usd": token1_value_usd,
                     },
@@ -291,3 +294,7 @@ def get_token_amounts(liquidity, sqrt_price_x96, tick_low, tick_high, token0_dec
     amount0_str = f"{amount0_human:.{token0_decimal}f}"
     amount1_str = f"{amount1_human:.{token1_decimal}f}"
     return [amount0_str, amount1_str]
+
+
+def get_swap_action_type(swap: UniswapV3PoolSwapRecords):
+    return "buy"

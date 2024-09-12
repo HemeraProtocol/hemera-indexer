@@ -1,6 +1,8 @@
+
 from api.app.db_service.tokens import get_token_by_address
 from common.utils.format_utils import row_to_dict
 from common.utils.web3_utils import chain_id_name_mapping
+
 
 
 def parse_deposit_assets(assets):
@@ -11,7 +13,7 @@ def parse_deposit_assets(assets):
         token_info = get_token_by_address(
             asset_dict["token_address"], ["name", "symbol", "decimals", "icon_url", "token_type"]
         )
-        decimals = token_info.decimals if token_info else 18
+        decimals = int(token_info.decimals) if token_info else 18
         asset_list.append(
             {
                 "chain": chain_id_name_mapping[asset_dict["chain_id"]],
@@ -21,7 +23,7 @@ def parse_deposit_assets(assets):
                 "token_symbol": token_info.symbol if token_info else None,
                 "token_icon_url": token_info.icon_url if token_info else None,
                 "token_type": token_info.token_type if token_info else None,
-                "amount": "{0:.18f}".format(asset_dict["value"] / 10**decimals).rstrip("0").rstrip("."),
+                "amount": "{0:.18f}".format(asset_dict["value"] / 10 ** decimals).rstrip("0").rstrip("."),
             }
         )
 
@@ -37,10 +39,10 @@ def parse_deposit_transactions(transactions):
         token_info = get_token_by_address(
             tx_dict["token_address"], ["name", "symbol", "decimals", "icon_url", "token_type"]
         )
-        decimals = token_info.decimals if token_info else 18
-        tx_dict["name"] = token_info.name if token_info else None
-        tx_dict["symbol"] = token_info.symbol if token_info else None
-        tx_dict["icon_url"] = token_info.icon_url if token_info else None
+        decimals = int(token_info.decimals) if token_info else 18
+        tx_dict["token_name"] = token_info.name if token_info else None
+        tx_dict["token_symbol"] = token_info.symbol if token_info else None
+        tx_dict["token_icon_url"] = token_info.icon_url if token_info else None
         tx_dict["token_type"] = token_info.token_type if token_info else None
 
         tx_dict["value"] = "{0:.18f}".format(tx_dict["value"] / 10**decimals).rstrip("0").rstrip(".")

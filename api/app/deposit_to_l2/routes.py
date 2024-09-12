@@ -9,6 +9,7 @@ from api.app.db_service.af_token_deposit import (
     get_transactions_cnt_by_condition,
     get_transactions_cnt_by_wallet,
 )
+from api.app.db_service.tokens import get_token_price_map_by_symbol_list
 from api.app.db_service.blocks import get_block_by_hash
 from api.app.deposit_to_l2 import token_deposit_namespace
 from api.app.utils.parse_utils import parse_deposit_assets, parse_deposit_transactions
@@ -17,6 +18,7 @@ from common.utils.exception_control import APIError
 from common.utils.format_utils import row_to_dict
 from common.utils.web3_utils import SUPPORT_CHAINS, chain_id_name_mapping
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
+
 
 PAGE_SIZE = 10
 MAX_TRANSACTION = 500000
@@ -123,19 +125,34 @@ class ACIDepositToL2Current(Resource):
                 code=400,
             )
 
-        deposit_times = get_transactions_cnt_by_wallet(address)
+        deposit_count = get_transactions_cnt_by_wallet(address)
 
         chains = get_deposit_chain_list(address)
         chain_list = [chain_id_name_mapping[row_to_dict(chain)["chain_id"]] for chain in chains]
 
         assets = get_deposit_assets_list(address)
+
         asset_list = parse_deposit_assets(assets)
+
+        token_symbol_list = []
+        for asset in asset_list:
+            token_symbol_list.append(asset["token_symbol"])
+        
+        token_price_map = get_token_price_map_by_symbol_list(token_symbol_list)
+
+        total_value_usd = 0
+        for asset in asset_list:
+            if asset["token_symbol"] in token_price_map:
+                amount_usd = float(asset["amount"]) * float(token_price_map[asset["token_symbol"]])
+                asset["amount_usd"] = amount_usd
+                total_value_usd += amount_usd
 
         return {
             "address": address,
-            "deposit_times": deposit_times,
+            "deposit_count": deposit_count,
             "chain_list": chain_list,
             "asset_list": asset_list,
+            "total_value_usd": total_value_usd,
         }
 
 
