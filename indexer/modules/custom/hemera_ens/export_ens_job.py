@@ -67,7 +67,7 @@ class ExportEnsJob(FilterTransactionDataJob):
         tp_variables.append("0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62")
         addresses = list(CONTRACT_NAME_MAP.keys())
         return [
-            TransactionFilterByLogs([TopicSpecification(addresses=['0x6109dd117aa5486605fc85e040ab00163a75c662'], topics=tp_variables)]),
+            TransactionFilterByLogs([TopicSpecification(addresses=addresses, topics=tp_variables)]),
             # TransactionFilterByTransactionInfo(ToAddressSpecification("0x084b1c3c81545d370f3634392de611caabff8148")),
         ]
 
