@@ -8,7 +8,6 @@ from web3 import Web3
 from api.app.af_ens.action_types import OperationType
 from common.models import db
 from common.models.current_token_balances import CurrentTokenBalances
-from common.models.erc721_token_id_changes import ERC721TokenIdChanges
 from common.models.erc721_token_id_details import ERC721TokenIdDetails
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
@@ -31,6 +30,7 @@ class ExplorerUserOperationDetails(Resource):
             "primary_name": None,
             "be_resolved_by_ens": [],
             "ens_holdings": [],
+            "ens_holdings_total": None,
             "first_register_time": None,
             "first_set_primary_name": None,
         }
@@ -52,10 +52,18 @@ class ExplorerUserOperationDetails(Resource):
             .all()
         )
         all_721_ids = [r.token_id for r in all_721_owns]
-        all_owned = (
-            db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids), ENSRecord.expires >= dn)).all()
-        )
-        res["ens_holdings"] = [r.name for r in all_owned if r.name and r.name.endswith(".eth")]
+        all_owned = db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids))).all()
+        all_owned_map = {r.token_id: r for r in all_owned}
+        for id in all_721_ids:
+            r = all_owned_map.get(id)
+            res["ens_holdings"].append(
+                {
+                    "name": r.name if r else None,
+                    "is_expire": r.expires < dn if r and r.expires else True,
+                    "type": "ERC721",
+                    "token_id": str(id),
+                }
+            )
         ens_1155_address = bytes.fromhex("d4416b13d2b3a9abae7acd5d6c2bbdbe25686401")
         all_1155_owns = (
             db.session.query(CurrentTokenBalances)
@@ -70,7 +78,14 @@ class ExplorerUserOperationDetails(Resource):
             .filter(and_(ENSRecord.expires >= dn, ENSRecord.w_token_id.in_(all_1155_ids)))
             .all()
         )
-        res["ens_holdings"].extend([r.name for r in all_owned_1155_ens if r.name and r.name.endswith(".eth")])
+        res["ens_holdings"].extend(
+            [
+                {"name": r.name, "is_expire": r.expires < dn, "type": "ERC1155", "token_id": str(r.w_token_id)}
+                for r in all_owned_1155_ens
+                if r.name and r.name.endswith(".eth")
+            ]
+        )
+        res["ens_holdings_total"] = len(res["ens_holdings"])
         primary_address_row = db.session.query(ENSAddress).filter(ENSAddress.address == address).first()
         if primary_address_row:
             primary_record = db.session.query(ENSRecord).filter(ENSRecord.name == primary_address_row.name).first()
@@ -215,7 +230,7 @@ def get_action_type(record):
         }
     if record.method == "setName" or record.event_name == "NameChanged":
         return {"action_type": OperationType.SET_PRIMARY_NAME.value}
-    if record.event_name == "NameRegistered":
+    if record.event_name == "NameRegistered" or record.event_name == "HashRegistered":
         return {"action_type": OperationType.REGISTER.value}
     if record.event_name == "NameRenewed":
         return {"action_type": OperationType.RENEW.value, "expires": datetime_to_string(record.expires)}
