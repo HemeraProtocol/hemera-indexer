@@ -3,7 +3,6 @@ from functools import reduce
 
 from indexer.domain.block import Block, UpdateBlockInternalCount
 from indexer.domain.block_ts_mapper import BlockTsMapper
-from indexer.domain.coin_balance import CoinBalance
 from indexer.domain.contract import Contract
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.current_token_balance import CurrentTokenBalance
@@ -15,12 +14,10 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.address_index.domain import *
+from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
+from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
 from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
-from indexer.modules.custom.all_features_value_record import (
-    AllFeatureValueRecordBlueChipHolders,
-    AllFeatureValueRecordUniswapV3Pool,
-    AllFeatureValueRecordUniswapV3Token,
-)
+from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordBlueChipHolders
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
@@ -123,7 +120,7 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.EXPLORER_TRACE:
         yield Trace
         yield Contract
-        yield CoinBalance
+        # yield CoinBalance
         yield ContractInternalTransaction
         yield UpdateBlockInternalCount
 
@@ -157,6 +154,8 @@ def generate_output_types(entity_types):
         yield TokenAddressNftInventory
         yield AddressTransaction
         yield AddressNft1155Holder
+        yield AddressContractOperation
+        yield AddressInternalTransaction
 
     if entity_types & EntityType.BLUE_CHIP:
         yield Block

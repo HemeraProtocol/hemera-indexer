@@ -24,6 +24,8 @@ class ContractInternalTransaction(Domain):
     transaction_index: int
     transaction_hash: str
     trace_index: int
+    input: str
+    output: str
 
     @staticmethod
     def from_rpc(trace_dict: dict):
@@ -45,4 +47,9 @@ class ContractInternalTransaction(Domain):
             transaction_index=trace_dict["transaction_index"],
             transaction_hash=trace_dict["transaction_hash"],
             trace_index=trace_dict["trace_index"],
+            input=trace_dict["input"],
+            output=trace_dict["output"],
         )
+
+    def is_contract_creation(self):
+        return self.trace_type == "create" or self.trace_type == "create2"
