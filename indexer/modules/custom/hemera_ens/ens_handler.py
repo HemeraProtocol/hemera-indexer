@@ -56,6 +56,8 @@ class EnsConfLoader:
         function_map = defaultdict(dict)
 
         for contract_address, contract in contract_object_map.items():
+            if not contract:
+                continue
             abi_events = [abi for abi in contract.abi if abi["type"] == "event"]
             for event in abi_events:
                 sig = self.get_signature_of_event(event)
