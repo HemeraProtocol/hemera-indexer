@@ -101,7 +101,8 @@ class ExplorerUserOperationDetails(Resource):
 
         first_register = (
             db.session.query(ENSMiddle)
-            .filter(and_(ENSMiddle.from_address == address, ENSMiddle.event_name == "NameRegistered"))
+            .filter(and_(ENSMiddle.from_address == address, or_(ENSMiddle.event_name == "NameRegistered", ENSMiddle.event_name == "HashRegistered")))
+            .order_by(ENSMiddle.block_number)
             .first()
         )
         if first_register:
