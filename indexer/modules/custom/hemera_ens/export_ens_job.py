@@ -68,7 +68,7 @@ class ExportEnsJob(FilterTransactionDataJob):
         addresses = list(CONTRACT_NAME_MAP.keys())
         return [
             TransactionFilterByLogs([TopicSpecification(addresses=addresses, topics=tp_variables)]),
-            TransactionFilterByTransactionInfo(ToAddressSpecification("0x084b1c3c81545d370f3634392de611caabff8148")),
+            # TransactionFilterByTransactionInfo(ToAddressSpecification("0x084b1c3c81545d370f3634392de611caabff8148")),
         ]
 
     def _collect(self, **kwargs):
