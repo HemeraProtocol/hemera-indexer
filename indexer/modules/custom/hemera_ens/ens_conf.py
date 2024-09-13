@@ -46,6 +46,7 @@ CONTRACT_NAME_MAP = {
     "0x5d81ce189bf5267e70fb555916ffbc3d4c7b2245": "EnsBatchRenew",
     "0x6109dd117aa5486605fc85e040ab00163a75c662": "RegistrarMigration",
     "0x6090a6e47849629b7245dfa1ca21d94cd15878ef": "ENS: Old Registrar",
+    "0xfca3df2bcd9c3d594923ffae0f132bfa1e8297c4": "NOT Verified",
 }
 
 
