@@ -95,9 +95,13 @@ class ExplorerUserOperationDetails(Resource):
             res["primary_name"] = w3.ens.name(w3.to_checksum_address(w3.to_hex(address)))
 
         be_resolved_ens = (
-            db.session.query(ENSRecord).filter(and_(ENSRecord.address == address, ENSRecord.expires >= dn)).all()
+            db.session.query(ENSRecord).filter(and_(ENSRecord.address == address)).all()
         )
-        res["be_resolved_by_ens"] = [r.name for r in be_resolved_ens if r.name and r.name.endswith(".eth")]
+        res["be_resolved_by_ens"] = [{
+            "name": r.name,
+            "is_expire": r.expires < dn if r and r.expires else True,
+        } for r in be_resolved_ens if r.name and r.name.endswith(".eth")]
+        res["be_resolved_by_ens_total"] = len(res["be_resolved_by_ens"])
 
         first_register = (
             db.session.query(ENSMiddle)
