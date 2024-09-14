@@ -9,23 +9,29 @@ class AggregatesController(BaseController):
 
     def action(self, start_date, end_date, date_batch_size=None):
         # no batch size
-        self.job_dispatcher.run(start_date, end_date)
+        # self.job_dispatcher.run(start_date, end_date)
 
         # batch size
-        # date_batches = self.split_date_range(start_date, end_date, date_batch_size)
-        # for date_batch in date_batches:
-        #     start_date, end_date = date_batch
-        #     self.job_dispatcher.run(start_date, end_date)
+        date_batches = self.split_date_range_with_pairs(start_date, end_date, date_batch_size)
+        for date_batch in date_batches:
+            start_date_, end_date_ = date_batch
+            self.job_dispatcher.run(start_date_, end_date_)
 
     @staticmethod
-    def split_date_range(start_date, end_date, batch_size):
+    def split_date_range_with_pairs(start_date, end_date, batch_size):
         start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
         end_date_obj = datetime.strptime(end_date, "%Y-%m-%d")
 
-        date_ranges = []
-        while start_date_obj < end_date_obj:
-            batch_end_date = min(start_date_obj + timedelta(days=batch_size - 1), end_date_obj)
-            date_ranges.append((start_date_obj.strftime("%Y-%m-%d"), batch_end_date.strftime("%Y-%m-%d")))
-            start_date_obj = batch_end_date + timedelta(days=1)
+        date_pairs = []
 
-        return date_ranges
+        current_date = start_date_obj
+        while current_date < end_date_obj:
+            next_date = current_date + timedelta(days=1)
+            date_pairs.append((current_date.strftime("%Y-%m-%d"), next_date.strftime("%Y-%m-%d")))
+            current_date = next_date
+
+        batch_ranges = []
+        for i in range(0, len(date_pairs), batch_size):
+            batch_ranges.append(date_pairs[i:i + batch_size])
+
+        return batch_ranges

@@ -3,13 +3,13 @@ import time
 from sqlalchemy import text
 
 from indexer.aggr_jobs.aggr_base_job import AggrBaseJob
-from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_fbtc_aggregates import (
+from indexer.aggr_jobs.ordered_tasks.py_jobs.period_feature_defi_wallet_fbtc_aggregates import (
     PeriodFeatureDefiWalletFbtcAggregates,
 )
 
 
-class AggrOrderJob(AggrBaseJob):
-    sql_folder = "order_jobs"
+class AggrOrderedTaskDispatchJob(AggrBaseJob):
+    sql_folder = "ordered_tasks"
 
     def __init__(self, **kwargs):
         config = kwargs["config"]
@@ -18,8 +18,8 @@ class AggrOrderJob(AggrBaseJob):
         self.db_service = config["db_service"]
         self.chain_name = config["chain_name"]
 
-    def generator_py_jobs(self, name, start_date, end_date):
-        if name == "period_feature_defi_wallet_fbtc_aggregates.py":
+    def generator_py_jobs(self, job_name, start_date, end_date):
+        if job_name == "period_feature_defi_wallet_fbtc_aggregates.py":
             period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates(
                 self.chain_name, self.db_service, start_date
             )

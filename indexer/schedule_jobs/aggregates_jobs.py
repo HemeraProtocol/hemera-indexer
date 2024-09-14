@@ -32,8 +32,8 @@ def parse_crontab(expression):
     return parsed_fields
 
 
-def parse_aggregate_schedule():
-    with open("/app/config.yaml", "r") as file:
+def parse_aggregate_schedule(configure_file):
+    with open(configure_file, "r") as file:
         config = yaml.safe_load(file)
 
     common_config = config["common_config"]
@@ -43,9 +43,9 @@ def parse_aggregate_schedule():
 
     result_jobs = []
     for job_name, job_config in jobs.items():
-        initialization_jobs = job_config.get("initialization_jobs", [])
-        disorder_jobs = job_config.get("disorder_jobs", [])
-        order_jobs = job_config.get("order_jobs", [])
+        initialization_jobs = job_config.get("initialization_tasks", [])
+        disorder_jobs = job_config.get("regular_tasks", [])
+        order_jobs = job_config.get("ordered_tasks", [])
 
         job_list_generator = JobListGenerator(job_name=job_name, initialization_jobs=initialization_jobs,
                                               disorder_jobs=disorder_jobs,

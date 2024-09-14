@@ -3,9 +3,9 @@ This scheduler can handle complex relationship dependencies, etc. The current ex
 AggrDisorderJob -> AggrOrderJob
 """
 
-from indexer.aggr_jobs.disorder_jobs.disorder_job import AggrDisorderJob
-from indexer.aggr_jobs.initialization_jobs.initialization_job import InitializationJob
-from indexer.aggr_jobs.order_jobs.order_job import AggrOrderJob
+from indexer.aggr_jobs.regular_tasks.regular_task_dispatch_job import AggrRegularTaskDispatchJob
+from indexer.aggr_jobs.initialization_tasks.initialization_task_dispatch_job import InitializationTaskDispatchJob
+from indexer.aggr_jobs.ordered_tasks.ordered_task_dispatch_job import AggrOrderedTaskDispatchJob
 
 
 class AggrJobScheduler:
@@ -21,7 +21,7 @@ class AggrJobScheduler:
     def instantiate_jobs(self):
         jobs = []
         # InitializationJob should be executed once only
-        for job_class in [InitializationJob, AggrDisorderJob, AggrOrderJob]:
+        for job_class in [InitializationTaskDispatchJob, AggrRegularTaskDispatchJob, AggrOrderedTaskDispatchJob]:
             job = job_class(config=self.config, job_list=self.job_list)
             jobs.append(job)
         return jobs

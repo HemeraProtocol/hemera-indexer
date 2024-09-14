@@ -77,3 +77,6 @@ def read_sync_record(db_service) -> int:
     if not record:
         record = read_sync_record_from_pg(db_service)
     return record
+
+def parse_job_list(job_name, configure_file):
+    pass

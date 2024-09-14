@@ -4,8 +4,8 @@ from indexer.aggr_jobs.aggr_base_job import AggrBaseJob
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 
 
-class AggrDisorderJob(AggrBaseJob):
-    sql_folder = "disorder_jobs"
+class AggrRegularTaskDispatchJob(AggrBaseJob):
+    sql_folder = "regular_tasks"
 
     def __init__(self, **kwargs):
         config = kwargs["config"]

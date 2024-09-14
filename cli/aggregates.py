@@ -1,7 +1,9 @@
+import datetime
+
 import click
 
 from common.services.postgresql_service import PostgreSQLService
-from indexer.aggr_jobs.utils import DateType, get_yesterday_date
+from indexer.aggr_jobs.utils import DateType, get_yesterday_date, parse_job_list
 from indexer.controller.aggregates_controller import AggregatesController
 from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispatcher
 from indexer.schedule_jobs.aggregates_jobs import parse_aggregate_schedule
@@ -9,21 +11,12 @@ from indexer.schedule_jobs.aggregates_jobs import parse_aggregate_schedule
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
 @click.option(
-    "-cn",
-    "--chain-name",
-    default=None,
-    show_default=True,
-    type=str,
-    help="The chain name of the chain to aggregate data for",
-    envvar="CHAIN_NAME",
-)
-@click.option(
     "-jn",
     "--job-name",
-    default=None,
+    default=all,
     show_default=True,
     type=str,
-    help="Job list to aggregate data for",
+    help="Job list to aggregate data for, e.g. 'all', 'FBTC', 'EXPLORE',  'FBTC,EXPLORE'",
     envvar="JOB_NAME",
 )
 @click.option(
@@ -73,30 +66,27 @@ from indexer.schedule_jobs.aggregates_jobs import parse_aggregate_schedule
     help="How many DATEs to batch in single sync round",
 )
 @click.option(
-    "-du",
-    "--dblink-url",
-    default=None,
+    "--config-file",
+    default='/app/aggr_schedule_config.yaml',
     show_default=True,
     type=str,
-    envvar="DBLINK_URL",
-    help="dblink to take token price, maybe moved to other replace later",
+    envvar="CONFIG_FILE",
+    help="",
 )
-def aggregates(chain_name, job_name, postgres_url, provider_uri, start_date, end_date, date_batch_size, dblink_url):
+def aggregates(job_name, postgres_url, start_date, end_date, date_batch_size, configure_file, provider_uri):
     if not start_date and not end_date:
         start_date, end_date = get_yesterday_date()
     elif not end_date:
         _, end_date = get_yesterday_date()
 
-    db_service = PostgreSQLService(postgres_url)
-
     # check_data_completeness(db_service, provider_uri, end_date)
 
-    config = {"db_service": db_service, "chain_name": chain_name, "dblink_url": dblink_url}
+    db_service = PostgreSQLService(postgres_url)
+    version = int(datetime.datetime.now().timestamp())
 
-    jobs = parse_aggregate_schedule()
+    config = {"db_service": db_service, 'version': version}
 
-    job_list = [job for job in jobs if job.job_name == job_name][0]
-
+    job_list = parse_job_list(job_name, configure_file)
     dispatcher = AggregatesDispatcher(config, job_list)
 
     controller = AggregatesController(job_dispatcher=dispatcher)
