@@ -10,7 +10,7 @@ from web3 import Web3
 from api.app.af_ens.action_types import OperationType
 from common.models import db
 from common.models.current_token_balances import CurrentTokenBalances
-from common.models.erc721_token_id_changes import ERC721TokenIdChanges
+from common.models.erc721_token_id_details import ERC721TokenIdDetails
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.utils.config import get_config
@@ -45,13 +45,29 @@ class ACIEnsCurrent(Resource):
 
         dn = datetime.now()
         # current_address holds 721 & 1155 tokens
-        all_721_owns = db.session.query(ERC721TokenIdChanges).filter(ERC721TokenIdChanges.token_owner == address).all()
+        ens_token_address = bytes.fromhex("57F1887A8BF19B14FC0DF6FD9B2ACC9AF147EA85")
+        all_721_owns = (
+            db.session.query(ERC721TokenIdDetails)
+            .filter(
+                and_(
+                    ERC721TokenIdDetails.token_owner == address, ERC721TokenIdDetails.token_address == ens_token_address
+                )
+            )
+            .all()
+        )
         all_721_ids = [r.token_id for r in all_721_owns]
         all_owned = (
             db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids), ENSRecord.expires >= dn)).all()
         )
         res["ens_holdings"] = [r.name for r in all_owned if r.name and r.name.endswith(".eth")]
-        all_1155_owns = db.session.query(CurrentTokenBalances).filter(CurrentTokenBalances.address == address).all()
+        ens_1155_address = bytes.fromhex("d4416b13d2b3a9abae7acd5d6c2bbdbe25686401")
+        all_1155_owns = (
+            db.session.query(CurrentTokenBalances)
+            .filter(
+                and_(CurrentTokenBalances.address == address, CurrentTokenBalances.token_address == ens_1155_address)
+            )
+            .all()
+        )
         all_1155_ids = [r.token_id for r in all_1155_owns]
         all_owned_1155_ens = (
             db.session.query(ENSRecord)
@@ -59,6 +75,7 @@ class ACIEnsCurrent(Resource):
             .all()
         )
         res["ens_holdings"].extend([r.name for r in all_owned_1155_ens if r.name and r.name.endswith(".eth")])
+       
         primary_address_row = db.session.query(ENSAddress).filter(ENSAddress.address == address).first()
         if primary_address_row:
             primary_record = db.session.query(ENSRecord).filter(ENSRecord.name == primary_address_row.name).first()
@@ -75,6 +92,7 @@ class ACIEnsCurrent(Resource):
         first_register = (
             db.session.query(ENSMiddle)
             .filter(and_(ENSMiddle.from_address == address, ENSMiddle.event_name == "NameRegistered"))
+            .order_by(ENSMiddle.block_timestamp)
             .first()
         )
         if first_register:
@@ -87,6 +105,7 @@ class ACIEnsCurrent(Resource):
                     or_(ENSMiddle.method == "setName", ENSMiddle.event_name == "NameChanged"),
                 )
             )
+            .order_by(ENSMiddle.block_timestamp)
             .first()
         )
         if first_set_name:
