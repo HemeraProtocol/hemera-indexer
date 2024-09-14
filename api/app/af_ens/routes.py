@@ -57,7 +57,11 @@ class ACIEnsCurrent(Resource):
             .all()
         )
         all_721_ids = [r.token_id for r in all_721_owns]
-        all_owned = db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids))).all()
+        all_owned = (
+            db.session.query(ENSRecord)
+            .filter(and_(ENSRecord.token_id.in_(all_721_ids), ENSRecord.w_token_id.is_(None)))
+            .all()
+        )
         all_owned_map = {r.token_id: r for r in all_owned}
         for id in all_721_ids:
             r = all_owned_map.get(id)
