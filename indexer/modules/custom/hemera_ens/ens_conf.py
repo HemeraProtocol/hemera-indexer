@@ -48,7 +48,8 @@ CONTRACT_NAME_MAP = {
     "0x6090a6e47849629b7245dfa1ca21d94cd15878ef": "ENS: Old Registrar",
     "0xfca3df2bcd9c3d594923ffae0f132bfa1e8297c4": "NOT Verified",
     "0xfc70fd608b3fb13a145e5d0e700b0fc00c10c5ef": "ENSVisionBulk",
-    "0xc55079a6ab7a123746806748d847228afe1d2397": "BulkRegister"
+    "0xc55079a6ab7a123746806748d847228afe1d2397": "BulkRegister",
+    "0x000000000000509081d6fcd3ee63e791ad1db763": "NOT Verified",
 }
 
 
