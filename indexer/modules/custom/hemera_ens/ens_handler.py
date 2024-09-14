@@ -45,6 +45,8 @@ class EnsConfLoader:
         contract_object_map = {}
         for ad_lower in CONTRACT_NAME_MAP:
             if ad_lower not in abi_map:
+                # keep it, not use decode
+                contract_object_map[ad_lower] = None
                 continue
             abi = abi_map[ad_lower]
             contract = self.w3.eth.contract(address=Web3.to_checksum_address(ad_lower), abi=abi)
@@ -54,6 +56,8 @@ class EnsConfLoader:
         function_map = defaultdict(dict)
 
         for contract_address, contract in contract_object_map.items():
+            if not contract:
+                continue
             abi_events = [abi for abi in contract.abi if abi["type"] == "event"]
             for event in abi_events:
                 sig = self.get_signature_of_event(event)
@@ -99,8 +103,6 @@ class EnsHandler:
         self.extractors = [extractor() for extractor in BaseExtractor.__subclasses__()]
 
     def is_ens_address(self, address):
-        if address == "0x00000000008794027c69c26d2a048dbec09de67c":
-            return True
         return address.lower() in self.ens_conf_loader.contract_object_map
 
     def get_event_name(self, sig):
