@@ -1,4 +1,5 @@
 import decimal
+import logging
 from datetime import date, datetime
 
 from flask_restx import Resource
@@ -15,6 +16,10 @@ from common.utils.config import get_config
 from indexer.modules.custom.hemera_ens.models.af_ens_address_current import ENSAddress
 from indexer.modules.custom.hemera_ens.models.af_ens_event import ENSMiddle
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ENSRecord
+
+logging.basicConfig()
+logging.getLogger("sqlalchemy.engine").setLevel(logging.DEBUG)
+
 
 app_config = get_config()
 from sqlalchemy import and_, or_
@@ -52,7 +57,11 @@ class ExplorerUserOperationDetails(Resource):
             .all()
         )
         all_721_ids = [r.token_id for r in all_721_owns]
-        all_owned = db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids))).all()
+        all_owned = (
+            db.session.query(ENSRecord)
+            .filter(and_(ENSRecord.token_id.in_(all_721_ids), ENSRecord.w_token_id.is_(None)))
+            .all()
+        )
         all_owned_map = {r.token_id: r for r in all_owned}
         for id in all_721_ids:
             r = all_owned_map.get(id)
