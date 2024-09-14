@@ -14,7 +14,7 @@ def get_yesterday_date():
     today_str = now.strftime("%Y-%m-%d")
     yesterday_str = yesterday_datetime.strftime("%Y-%m-%d")
 
-    return today_str, yesterday_str
+    return yesterday_str, today_str
 
 
 class DateType(click.ParamType):
@@ -77,3 +77,6 @@ def read_sync_record(db_service) -> int:
     if not record:
         record = read_sync_record_from_pg(db_service)
     return record
+
+def parse_job_list(job_name, configure_file):
+    pass

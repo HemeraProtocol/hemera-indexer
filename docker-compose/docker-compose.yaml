@@ -44,6 +44,13 @@ services:
     ports:
       - 8082:8082
 
+  hemera-schedule:
+    <<: *common-settings
+    container_name: hemera-schedule
+    command: [ "schedule" ]
+    volumes:
+      - ./config.yaml:/app/config.yaml
+
   postgresql:
     env_file:
       - hemera-indexer.env

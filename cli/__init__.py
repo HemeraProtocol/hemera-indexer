@@ -6,6 +6,7 @@ from cli.aggregates import aggregates
 from cli.api import api
 from cli.load import load
 from cli.reorg import reorg
+from cli.schedule import schedule
 from cli.stream import stream
 from indexer.utils.logging_utils import logging_basic_config
 
@@ -29,3 +30,4 @@ cli.add_command(load, "load")
 cli.add_command(api, "api")
 cli.add_command(aggregates, "aggregates")
 cli.add_command(reorg, "reorg")
+cli.add_command(schedule, "schedule")
