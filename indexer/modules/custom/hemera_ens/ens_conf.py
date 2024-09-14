@@ -50,6 +50,7 @@ CONTRACT_NAME_MAP = {
     "0xfc70fd608b3fb13a145e5d0e700b0fc00c10c5ef": "ENSVisionBulk",
     "0xc55079a6ab7a123746806748d847228afe1d2397": "BulkRegister",
     "0x000000000000509081d6fcd3ee63e791ad1db763": "NOT Verified",
+    "0xc71930b83cbabfeb35bedaaf2122e41595179b14": "NOT Verified",
 }
 
 
