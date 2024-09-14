@@ -7,5 +7,8 @@ class AggregatesDispatcher(BaseDispatcher):
         super().__init__()
         self._job_scheduler = AggrJobScheduler(config=config, job_list=job_list)
 
+    def run_initialization_task_dispatch_job(self, start_date, end_date):
+        self._job_scheduler.run_init_job(start_date, end_date)
+
     def run(self, start_date, end_date):
         self._job_scheduler.run_jobs(start_date=start_date, end_date=end_date)

@@ -13,7 +13,7 @@ from indexer.schedule_jobs.aggregates_jobs import parse_aggregate_schedule
 @click.option(
     "-jn",
     "--job-name",
-    default=all,
+    default='all',
     show_default=True,
     type=str,
     help="Job list to aggregate data for, e.g. 'all', 'FBTC', 'EXPLORE',  'FBTC,EXPLORE'",
@@ -59,7 +59,7 @@ from indexer.schedule_jobs.aggregates_jobs import parse_aggregate_schedule
 @click.option(
     "-D",
     "--date-batch-size",
-    default=5,
+    default=30,
     show_default=True,
     type=int,
     envvar="DATE_BATCH_SIZE",
@@ -73,7 +73,7 @@ from indexer.schedule_jobs.aggregates_jobs import parse_aggregate_schedule
     envvar="CONFIG_FILE",
     help="",
 )
-def aggregates(job_name, postgres_url, start_date, end_date, date_batch_size, configure_file, provider_uri):
+def aggregates(job_name, postgres_url, start_date, end_date, date_batch_size, config_file, provider_uri):
     if not start_date and not end_date:
         start_date, end_date = get_yesterday_date()
     elif not end_date:
@@ -86,7 +86,7 @@ def aggregates(job_name, postgres_url, start_date, end_date, date_batch_size, co
 
     config = {"db_service": db_service, 'version': version}
 
-    job_list = parse_job_list(job_name, configure_file)
+    job_list = parse_job_list(job_name, config_file)
     dispatcher = AggregatesDispatcher(config, job_list)
 
     controller = AggregatesController(job_dispatcher=dispatcher)

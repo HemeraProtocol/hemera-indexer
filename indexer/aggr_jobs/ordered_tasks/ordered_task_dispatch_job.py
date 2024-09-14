@@ -13,10 +13,9 @@ class AggrOrderedTaskDispatchJob(AggrBaseJob):
 
     def __init__(self, **kwargs):
         config = kwargs["config"]
-        job_list = kwargs["job_list"]
-        self.job_list = job_list.get_order_jobs()
+        tasks_dict = kwargs["tasks_dict"]
+        self.tasks_dict = tasks_dict.get('ordered_tasks', [])
         self.db_service = config["db_service"]
-        self.chain_name = config["chain_name"]
 
     def generator_py_jobs(self, job_name, start_date, end_date):
         if job_name == "period_feature_defi_wallet_fbtc_aggregates.py":
@@ -35,7 +34,7 @@ class AggrOrderedTaskDispatchJob(AggrBaseJob):
         for date_pair in date_pairs:
             start_date, end_date = date_pair
 
-            for job_name in self.job_list:
+            for job_name in self.tasks_dict:
                 start_time = time.time()
                 if job_name.endswith(".py"):
                     self.generator_py_jobs(job_name, start_date, end_date)

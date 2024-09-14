@@ -12,16 +12,26 @@ class AggrJobScheduler:
     def __init__(self, config, job_list):
         self.config = config
         self.job_list = job_list
-        self.jobs = self.instantiate_jobs()
+        self.init_job = {}
+        self.jobs = {}
+        self.instantiate_jobs()
+        pass
 
-    def run_jobs(self, start_date, end_date):
-        for job in self.jobs:
+    def run_init_job(self, start_date, end_date):
+        for job_name, job in self.init_job.items():
             job.run(start_date=start_date, end_date=end_date)
 
+    def run_jobs(self, start_date, end_date):
+        for job_name, jobs in self.jobs.items():
+            for job in jobs:
+                job.run(start_date=start_date, end_date=end_date)
+
     def instantiate_jobs(self):
-        jobs = []
-        # InitializationJob should be executed once only
-        for job_class in [InitializationTaskDispatchJob, AggrRegularTaskDispatchJob, AggrOrderedTaskDispatchJob]:
-            job = job_class(config=self.config, job_list=self.job_list)
-            jobs.append(job)
-        return jobs
+        for job_name, tasks_dict in self.job_list.items():
+            self.init_job[job_name] = InitializationTaskDispatchJob(config=self.config, tasks_dict=tasks_dict)
+
+            jobs = []
+            for job_class in [AggrRegularTaskDispatchJob, AggrOrderedTaskDispatchJob]:
+                job = job_class(config=self.config, tasks_dict=tasks_dict)
+                jobs.append(job)
+            self.jobs[job_name] = jobs
