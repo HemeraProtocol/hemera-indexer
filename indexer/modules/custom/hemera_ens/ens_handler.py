@@ -45,6 +45,8 @@ class EnsConfLoader:
         contract_object_map = {}
         for ad_lower in CONTRACT_NAME_MAP:
             if ad_lower not in abi_map:
+                # keep it, not use decode
+                contract_object_map[ad_lower] = None
                 continue
             abi = abi_map[ad_lower]
             contract = self.w3.eth.contract(address=Web3.to_checksum_address(ad_lower), abi=abi)
@@ -54,6 +56,8 @@ class EnsConfLoader:
         function_map = defaultdict(dict)
 
         for contract_address, contract in contract_object_map.items():
+            if not contract:
+                continue
             abi_events = [abi for abi in contract.abi if abi["type"] == "event"]
             for event in abi_events:
                 sig = self.get_signature_of_event(event)
@@ -296,15 +300,18 @@ class EnsHandler:
                 base_node=record["base_node"],
                 token_id=record["token_id"],
                 w_token_id=record["w_token_id"],
+                block_number=record["block_number"],
             )
 
         if event_name == "NameRenewed":
             return ENSNameRenewD(
                 node=record["node"],
                 expires=record["expires"],
+                block_number=record["block_number"],
             )
         if event_name == "AddressChanged":
             return ENSAddressChangeD(
                 node=record["node"],
                 address=address,
+                block_number=record["block_number"],
             )

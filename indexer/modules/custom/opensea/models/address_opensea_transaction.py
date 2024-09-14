@@ -1,5 +1,5 @@
-from sqlalchemy import VARCHAR, Column, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSON, JSONB, SMALLINT, TIMESTAMP
+from sqlalchemy import Column, Index, desc, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, SMALLINT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -27,7 +27,7 @@ class AddressOpenseaTransactions(HemeraModel):
     log_index = Column(BIGINT, primary_key=True)
     block_timestamp = Column(TIMESTAMP)
     block_hash = Column(BYTEA, primary_key=True)
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text("false"))
     protocol_version = Column(VARCHAR, server_default="1.6")
 
     @staticmethod
@@ -40,3 +40,20 @@ class AddressOpenseaTransactions(HemeraModel):
                 "converter": general_converter,
             }
         ]
+
+
+Index(
+    "af_opensea__transactions_address_block_timestamp_idx",
+    AddressOpenseaTransactions.address,
+    desc(AddressOpenseaTransactions.block_timestamp),
+)
+
+Index("af_opensea__transactions_block_timestamp_idx", desc(AddressOpenseaTransactions.block_timestamp))
+
+Index(
+    "af_opensea__transactions_address_block_number_log_index_blo_idx",
+    AddressOpenseaTransactions.address,
+    desc(AddressOpenseaTransactions.block_number),
+    desc(AddressOpenseaTransactions.log_index),
+    desc(AddressOpenseaTransactions.block_timestamp),
+)

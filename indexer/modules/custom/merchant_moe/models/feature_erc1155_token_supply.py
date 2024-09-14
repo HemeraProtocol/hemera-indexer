@@ -1,14 +1,12 @@
-from datetime import datetime
-
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
 
 class FeatureErc1155TokenSupplyRecords(HemeraModel):
-    position_token_address = "af_merchant_moe_token_supply_hist"
-    token_address = Column(BYTEA, primary_key=True)
+    __tablename__ = "af_merchant_moe_token_supply_hist"
+    position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
     block_number = Column(BIGINT, primary_key=True)
@@ -17,7 +15,7 @@ class FeatureErc1155TokenSupplyRecords(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("position_token_address", "token_id", "block_timestamp", "block_number"),)
 

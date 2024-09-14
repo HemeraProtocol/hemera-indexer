@@ -1,5 +1,5 @@
-from sqlalchemy import BIGINT, NUMERIC, TIMESTAMP, Column, Index, Integer, PrimaryKeyConstraint, String, func
-from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
@@ -9,15 +9,15 @@ class ENSMiddle(HemeraModel):
     __tablename__ = "af_ens_event"
 
     transaction_hash = Column(BYTEA, primary_key=True)
-    transaction_index = Column(Integer, nullable=True)
-    log_index = Column(Integer, primary_key=True)
+    transaction_index = Column(INTEGER, nullable=False)
+    log_index = Column(INTEGER, primary_key=True)
 
     block_number = Column(BIGINT)
     block_hash = Column(BYTEA)
     block_timestamp = Column(TIMESTAMP)
-    method = Column(String)
-    event_name = Column(String)
-    topic0 = Column(String)
+    method = Column(VARCHAR)
+    event_name = Column(VARCHAR)
+    topic0 = Column(VARCHAR)
     from_address = Column(BYTEA)
     to_address = Column(BYTEA)
     # namehash of .eth
@@ -26,7 +26,7 @@ class ENSMiddle(HemeraModel):
     node = Column(BYTEA)
     # keccak of name
     label = Column(BYTEA)
-    name = Column(String)
+    name = Column(VARCHAR)
 
     expires = Column(TIMESTAMP)
 
@@ -38,13 +38,13 @@ class ENSMiddle(HemeraModel):
     reverse_base_node = Column(BYTEA)
     reverse_node = Column(BYTEA)
     reverse_label = Column(BYTEA)
-    reverse_name = Column(String)
+    reverse_name = Column(VARCHAR)
     token_id = Column(NUMERIC(100))
     w_token_id = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("transaction_hash", "log_index", name="ens_tnx_log_index"),)
 

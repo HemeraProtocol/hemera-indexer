@@ -1,7 +1,7 @@
 """add exception recorder table
 
 Revision ID: 040e5251f45d
-Revises: aa99dd347ef1
+Revises: 9a1e927f02bb
 Create Date: 2024-08-02 17:57:31.418456
 
 """

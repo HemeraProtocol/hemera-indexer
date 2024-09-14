@@ -9,9 +9,14 @@ from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSONB, TIMESTAMP
 from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 from indexer.domain import Domain
 
-model_path_patterns = ["common/models", "indexer/modules/*/models", "indexer/modules/custom/*/models"]
+model_path_patterns = [
+    "common/models",
+    "indexer/modules/*/models",
+    "indexer/modules/custom/*/models",
+    "indexer/aggr_jobs/*/models",
+]
 
-model_path_exclude = ["indexer/modules/custom/address_index/models"]
+model_path_exclude = []
 
 # db = RouteSQLAlchemy(session_options={"autoflush": False})
 db = SQLAlchemy(session_options={"autoflush": False})

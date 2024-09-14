@@ -68,18 +68,18 @@ class UniswapV3WalletHolding(Resource):
             erc20_infos["0x" + data.address.hex()] = data
 
         for token in tokenIds:
-            nft_address = "0x" + token.nft_address.hex()
+            nft_address = "0x" + token.position_token_address.hex()
             token_id = token.token_id
             key = (nft_address, token_id)
             token_id_infos[key] = token
 
         result = []
         for holding in holdings:
-            nft_address = "0x" + holding.nft_address.hex()
+            position_token_address = "0x" + holding.position_token_address.hex()
             token_id = holding.token_id
             pool_address = "0x" + holding.pool_address.hex()
             sqrt_price = pool_price_map[pool_address]
-            token_id_info = token_id_infos[(nft_address, token_id)]
+            token_id_info = token_id_infos[(position_token_address, token_id)]
             pool_info = pool_infos[pool_address]
             token0_address = "0x" + pool_info.token0_address.hex()
             token1_address = "0x" + pool_info.token1_address.hex()
@@ -101,7 +101,7 @@ class UniswapV3WalletHolding(Resource):
             )
             result.append(
                 {
-                    "nft_address": nft_address,
+                    "nft_address": position_token_address,
                     "token_id": str(token_id),
                     "token0": {
                         "token0_symbol": token0_info.symbol,

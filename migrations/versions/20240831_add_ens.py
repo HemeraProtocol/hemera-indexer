@@ -1,7 +1,7 @@
 """ens
 
 Revision ID: 43d14640a8ac
-Revises: 2359a28d63cb
+Revises: 6c2eecd6316b
 Create Date: 2024-09-05 11:08:15.501786
 
 """
@@ -24,31 +24,31 @@ def upgrade() -> None:
     op.create_table(
         "af_ens_address_current",
         sa.Column("address", postgresql.BYTEA(), nullable=False),
-        sa.Column("name", sa.String(), nullable=True),
+        sa.Column("name", sa.VARCHAR(), nullable=True),
         sa.Column("reverse_node", postgresql.BYTEA(), nullable=True),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
-        sa.Column("create_time", sa.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("update_time", sa.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address"),
     )
     op.create_table(
         "af_ens_event",
         sa.Column("transaction_hash", postgresql.BYTEA(), nullable=False),
-        sa.Column("transaction_index", sa.Integer(), nullable=True),
-        sa.Column("log_index", sa.Integer(), nullable=False),
+        sa.Column("transaction_index", sa.INTEGER(), nullable=False),
+        sa.Column("log_index", sa.INTEGER(), nullable=False),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_hash", postgresql.BYTEA(), nullable=True),
-        sa.Column("block_timestamp", sa.TIMESTAMP(), nullable=True),
-        sa.Column("method", sa.String(), nullable=True),
-        sa.Column("event_name", sa.String(), nullable=True),
-        sa.Column("topic0", sa.String(), nullable=True),
+        sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
+        sa.Column("method", sa.VARCHAR(), nullable=True),
+        sa.Column("event_name", sa.VARCHAR(), nullable=True),
+        sa.Column("topic0", sa.VARCHAR(), nullable=True),
         sa.Column("from_address", postgresql.BYTEA(), nullable=True),
         sa.Column("to_address", postgresql.BYTEA(), nullable=True),
         sa.Column("base_node", postgresql.BYTEA(), nullable=True),
         sa.Column("node", postgresql.BYTEA(), nullable=True),
         sa.Column("label", postgresql.BYTEA(), nullable=True),
-        sa.Column("name", sa.String(), nullable=True),
-        sa.Column("expires", sa.TIMESTAMP(), nullable=True),
+        sa.Column("name", sa.VARCHAR(), nullable=True),
+        sa.Column("expires", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("owner", postgresql.BYTEA(), nullable=True),
         sa.Column("resolver", postgresql.BYTEA(), nullable=True),
         sa.Column("registrant", postgresql.BYTEA(), nullable=True),
@@ -56,12 +56,12 @@ def upgrade() -> None:
         sa.Column("reverse_base_node", postgresql.BYTEA(), nullable=True),
         sa.Column("reverse_node", postgresql.BYTEA(), nullable=True),
         sa.Column("reverse_label", postgresql.BYTEA(), nullable=True),
-        sa.Column("reverse_name", sa.String(), nullable=True),
+        sa.Column("reverse_name", sa.VARCHAR(), nullable=True),
         sa.Column("token_id", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("w_token_id", sa.NUMERIC(precision=100), nullable=True),
-        sa.Column("create_time", sa.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("update_time", sa.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), server_default=sa.text("false"), nullable=True),
         sa.PrimaryKeyConstraint("transaction_hash", "log_index", name="ens_tnx_log_index"),
     )
     op.create_index("ens_event_address", "af_ens_event", ["from_address"], unique=False)
@@ -81,91 +81,15 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("node"),
-        sa.UniqueConstraint("node"),
     )
     op.create_index("ens_idx_address", "af_ens_node_current", ["address"], unique=False)
-    op.create_index("ens_idx_name", "af_ens_node_current", ["name"], unique=False)
-    op.create_table(
-        "af_opensea__transactions",
-        sa.Column("address", postgresql.BYTEA(), nullable=False),
-        sa.Column("is_offer", sa.BOOLEAN(), nullable=False),
-        sa.Column("related_address", postgresql.BYTEA(), nullable=True),
-        sa.Column("transaction_type", sa.SMALLINT(), nullable=True),
-        sa.Column("order_hash", postgresql.BYTEA(), nullable=True),
-        sa.Column("zone", postgresql.BYTEA(), nullable=True),
-        sa.Column("offer", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("consideration", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("fee", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("transaction_hash", postgresql.BYTEA(), nullable=True),
-        sa.Column("block_number", sa.BIGINT(), nullable=False),
-        sa.Column("log_index", sa.BIGINT(), nullable=False),
-        sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("block_hash", postgresql.BYTEA(), nullable=False),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
-        sa.PrimaryKeyConstraint("address", "is_offer", "block_number", "log_index", "block_hash"),
-    )
-    op.create_table(
-        "af_opensea_daily_transactions",
-        sa.Column("address", postgresql.BYTEA(), nullable=False),
-        sa.Column("related_address", postgresql.BYTEA(), nullable=True),
-        sa.Column("transaction_type", sa.SMALLINT(), nullable=True),
-        sa.Column("block_date", sa.Date(), nullable=False),
-        sa.Column("buy_txn_count", sa.INTEGER(), nullable=True),
-        sa.Column("sell_txn_count", sa.INTEGER(), nullable=True),
-        sa.Column("swap_txn_count", sa.INTEGER(), nullable=True),
-        sa.Column("buy_txn_volume_crypto", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("sell_txn_volume_crypto", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("buy_txn_volume_usd", sa.NUMERIC(), nullable=True),
-        sa.Column("sell_txn_volume_usd", sa.NUMERIC(), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.PrimaryKeyConstraint("address", "block_date"),
-    )
-    op.create_table(
-        "af_opensea_na_orders",
-        sa.Column("order_hash", postgresql.BYTEA(), nullable=True),
-        sa.Column("zone", postgresql.BYTEA(), nullable=True),
-        sa.Column("offerer", postgresql.BYTEA(), nullable=True),
-        sa.Column("recipient", postgresql.BYTEA(), nullable=True),
-        sa.Column("offer", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("consideration", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
-        sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("transaction_hash", postgresql.BYTEA(), nullable=True),
-        sa.Column("block_number", sa.BIGINT(), nullable=False),
-        sa.Column("log_index", sa.BIGINT(), nullable=False),
-        sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
-        sa.Column("block_hash", postgresql.BYTEA(), nullable=False),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
-        sa.PrimaryKeyConstraint("block_number", "log_index", "block_hash"),
-    )
-    op.drop_table("token_prices")
-    op.drop_table("token_hourly_prices")
+    op.create_index("ens_idx_name_md5", "af_ens_node_current", [sa.text("md5(name)")], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.create_table(
-        "token_hourly_prices",
-        sa.Column("symbol", sa.VARCHAR(), autoincrement=False, nullable=False),
-        sa.Column("timestamp", postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
-        sa.Column("price", sa.NUMERIC(), autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint("symbol", "timestamp", name="token_hourly_prices_pkey"),
-    )
-    op.create_table(
-        "token_prices",
-        sa.Column("symbol", sa.VARCHAR(), autoincrement=False, nullable=False),
-        sa.Column("timestamp", postgresql.TIMESTAMP(), autoincrement=False, nullable=False),
-        sa.Column("price", sa.NUMERIC(), autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint("symbol", "timestamp", name="token_prices_pkey"),
-    )
-    op.drop_table("af_opensea_na_orders")
-    op.drop_table("af_opensea_daily_transactions")
-    op.drop_table("af_opensea__transactions")
-    op.drop_index("ens_idx_name", table_name="af_ens_node_current")
+    op.drop_index("ens_idx_name_md5", table_name="af_ens_node_current")
     op.drop_index("ens_idx_address", table_name="af_ens_node_current")
     op.drop_table("af_ens_node_current")
     op.drop_index("ens_idx_block_number_log_index", table_name="af_ens_event")

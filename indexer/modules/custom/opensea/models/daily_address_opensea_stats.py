@@ -1,5 +1,5 @@
-from sqlalchemy import INTEGER, NUMERIC, Column, Date, func
-from sqlalchemy.dialects.postgresql import BYTEA, JSONB, TIMESTAMP
+from sqlalchemy import Column, func
+from sqlalchemy.dialects.postgresql import BYTEA, DATE, INTEGER, JSONB, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel
 
@@ -8,7 +8,7 @@ class DailyAddressOpenseaTransactions(HemeraModel):
     __tablename__ = "af_opensea_daily_transactions"
 
     address = Column(BYTEA, primary_key=True)
-    block_date = Column(Date, primary_key=True)
+    block_date = Column(DATE, primary_key=True)
 
     buy_txn_count = Column(INTEGER)
     sell_txn_count = Column(INTEGER)

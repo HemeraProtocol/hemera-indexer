@@ -224,6 +224,14 @@ def calculate_execution_time(func):
     "e.g redis. means cache data will store in redis, redis://localhost:6379"
     "or memory. means cache data will store in memory, memory",
 )
+@click.option(
+    "--auto-upgrade-db",
+    default=True,
+    show_default=True,
+    type=bool,
+    envvar="AUTO_UPGRADE_DB",
+    help="Whether to automatically run database migration scripts to update the database to the latest version.",
+)
 @calculate_execution_time
 def load(
     provider_uri,
@@ -246,6 +254,7 @@ def load(
     source_path=None,
     sync_recorder="file_sync_record",
     cache="memory",
+    auto_upgrade_db=True,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -262,7 +271,7 @@ def load(
     config = {"blocks_per_file": blocks_per_file, "source_path": source_path}
 
     if postgres_url:
-        service = PostgreSQLService(postgres_url, db_version=db_version)
+        service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
         config["db_service"] = service
         exception_recorder.init_pg_service(service)
     else:
