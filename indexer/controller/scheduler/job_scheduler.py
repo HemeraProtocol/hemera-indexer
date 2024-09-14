@@ -15,6 +15,7 @@ from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
+from indexer.jobs.pg_source_job import PGSourceJob
 from indexer.utils.abi import bytes_to_hex_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 
@@ -43,6 +44,8 @@ def get_tokens_from_db(session):
 def get_source_job_type(source_path: str):
     if source_path.startswith("csvfile://"):
         return CSVSourceJob
+    elif source_path.startswith("postgresql://"):
+        return PGSourceJob
 
 
 class JobScheduler:
@@ -130,6 +133,17 @@ class JobScheduler:
         if self.load_from_source:
             source_job = get_source_job_type(source_path=self.load_from_source)
             all_subclasses = [source_job]
+
+            source_output_types = set(source_job.output_types)
+            for export_job in BaseExportJob.discover_jobs():
+                skip = False
+                for output_type in export_job.output_types:
+                    if output_type in source_output_types:
+                        skip = True
+                        break
+                if not skip:
+                    all_subclasses.append(export_job)
+
         else:
             all_subclasses = BaseExportJob.discover_jobs()
 

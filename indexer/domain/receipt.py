@@ -58,3 +58,23 @@ class Receipt(Domain):
                 to_int(hexstr=receipt_dict.get("blobGasPrice")) if receipt_dict.get("blobGasPrice") else None
             ),
         )
+
+    @staticmethod
+    def from_pg(table_row: dict):
+        return Receipt(
+            transaction_hash=table_row["hash"],
+            transaction_index=table_row["transaction_index"],
+            contract_address=table_row["receipt_contract_address"],
+            status=table_row["receipt_status"],
+            logs=[],
+            root=table_row["receipt_root"],
+            cumulative_gas_used=table_row["receipt_cumulative_gas_used"],
+            gas_used=table_row["receipt_gas_used"],
+            effective_gas_price=table_row["receipt_effective_gas_price"],
+            l1_fee=table_row["receipt_l1_fee"],
+            l1_fee_scalar=table_row["receipt_l1_fee_scalar"],
+            l1_gas_used=table_row["receipt_l1_gas_used"],
+            l1_gas_price=table_row["receipt_l1_gas_price"],
+            blob_gas_used=table_row["receipt_blob_gas_used"],
+            blob_gas_price=table_row["receipt_blob_gas_price"],
+        )

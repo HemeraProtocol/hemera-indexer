@@ -25,6 +25,8 @@ db = SQLAlchemy(session_options={"autoflush": False})
 class HemeraModel(db.Model):
     __abstract__ = True
 
+    __query_order__ = []
+
     @staticmethod
     def model_domain_mapping():
         pass
