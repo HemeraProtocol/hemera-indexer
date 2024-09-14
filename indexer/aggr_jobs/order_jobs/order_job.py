@@ -23,6 +23,7 @@ class AggrOrderJob(AggrBaseJob):
         config = kwargs["config"]
         self.db_service = config["db_service"]
         self.chain_name = config["chain_name"]
+        self.version = config["version"]
 
     def run(self, **kwargs):
         start_date_limit = kwargs["start_date"]
@@ -45,7 +46,10 @@ class AggrOrderJob(AggrBaseJob):
             # todo: improve the logic between sql and py jobs
             period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates(self.chain_name,
                                                                                                    self.db_service,
-                                                                                                   start_date)
+                                                                                                   start_date,
+                                                                                                   end_date,
+                                                                                                   self.version
+                                                                                                   )
             period_feature_defi_wallet_fbtc_aggregates_job.run()
             print('======== finished date', start_date)
 

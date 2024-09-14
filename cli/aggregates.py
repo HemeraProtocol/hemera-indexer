@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import click
 
 from common.services.postgresql_service import PostgreSQLService
@@ -80,8 +82,9 @@ def aggregates(chain_name, postgres_url, provider_uri, start_date, end_date, dat
     db_service = PostgreSQLService(postgres_url)
 
     # check_data_completeness(db_service, provider_uri, end_date)
+    version = datetime.now().strftime("%Y%m%d%H%M")
 
-    config = {"db_service": db_service, "chain_name": chain_name, 'dblink_url': dblink_url}
+    config = {"db_service": db_service, "chain_name": chain_name, 'dblink_url': dblink_url, 'version': version}
     dispatcher = AggregatesDispatcher(config)
 
     controller = AggregatesController(job_dispatcher=dispatcher)

@@ -22,10 +22,12 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_
 
 
 class PeriodFeatureDefiWalletFbtcAggregates:
-    def __init__(self, chain_name, db_service, start_date):
+    def __init__(self, chain_name, db_service, start_date, end_date, version):
         self.chain_name = chain_name
         self.db_service = db_service
         self.start_date = start_date
+        self.end_date = end_date
+        self.version = version
         self.results = []
 
     def insert_aggr_job(self, results):
@@ -69,7 +71,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                     total_fbtc_usd=protocol_usd,
                     day_user_count=wallet_count,
                     total_user_count=wallet_count,
-                    updated_version=1
+                    updated_version=self.version
                 )
 
             )
@@ -113,7 +115,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                     total_fbtc_usd=protocol_usd,
                     day_user_count=wallet_count,
                     total_user_count=wallet_count,
-                    updated_version=1
+                    updated_version=self.version
                 )
 
             )
@@ -206,7 +208,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
     def get_latest_price(self, symbol_list):
         session = self.db_service.Session()
 
-        price_date_limit = max(self.start_date, '2024-07-12')
+        price_date_limit = max(self.end_date, '2024-07-12')
 
         subquery = (
             session.query(
@@ -419,7 +421,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                 total_protocol_fbtc_balance=total_protocol_fbtc_balance,
                 total_protocol_fbtc_usd=total_protocol_fbtc_usd,
                 wallet_holding_fbtc_balance=wallet_holding_fbtc_balance,
-                updated_version=1,
+                updated_version=self.version,
                 wallet_holding_fbtc_usd=wallet_holding_fbtc_usd,
                 total_fbtc_balance=total_protocol_fbtc_balance + wallet_holding_fbtc_balance,
                 total_fbtc_usd=total_protocol_fbtc_usd + wallet_holding_fbtc_usd,
