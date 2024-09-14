@@ -181,6 +181,7 @@ class ReorgController(BaseController):
 
     def wake_up_next_job(self):
         session = self.db_service.get_service_session()
+        job = None
         try:
             job = (
                 session.query(FixRecord)
@@ -188,15 +189,21 @@ class ReorgController(BaseController):
                 .order_by(FixRecord.create_time)
                 .first()
             )
+        except Exception as e:
+            logging.error(f"Wake up uncompleted job error: {e}.")
+        finally:
+            session.close()
 
-            if job:
+        if job:
+            try:
                 self.action(
                     job_id=job.job_id,
                     block_number=job.last_fixed_block_number - 1,
                     remains=job.remain_process,
                 )
-        finally:
-            session.close()
+            except Exception as e:
+                if job:
+                    logging.error(f"Catch exception while waking up job: {job.job_id}. error: {e}")
 
     def check_block_been_synced(self, block_number):
         session = self.db_service.get_service_session()

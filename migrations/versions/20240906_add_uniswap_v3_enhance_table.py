@@ -54,7 +54,7 @@ def upgrade() -> None:
         sa.Column("log_index", sa.INTEGER(), nullable=False),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_timestamp", sa.BIGINT(), nullable=True),
-        sa.Column("nft_address", postgresql.BYTEA(), nullable=True),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=True),
         sa.Column("transaction_from_address", postgresql.BYTEA(), nullable=True),
         sa.Column("sender", postgresql.BYTEA(), nullable=True),
         sa.Column("recipient", postgresql.BYTEA(), nullable=True),
@@ -72,7 +72,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "af_uniswap_v3_pools",
-        sa.Column("nft_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("pool_address", postgresql.BYTEA(), nullable=False),
         sa.Column("factory_address", postgresql.BYTEA(), nullable=True),
         sa.Column("token0_address", postgresql.BYTEA(), nullable=True),
@@ -83,11 +83,11 @@ def upgrade() -> None:
         sa.Column("block_timestamp", sa.BIGINT(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.PrimaryKeyConstraint("nft_address", "pool_address"),
+        sa.PrimaryKeyConstraint("position_token_address", "pool_address"),
     )
     op.create_table(
         "af_uniswap_v3_token_collect_fee_hist",
-        sa.Column("nft_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token_id", sa.NUMERIC(precision=100), nullable=False),
         sa.Column("block_number", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", sa.BIGINT(), nullable=False),
@@ -103,7 +103,7 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
-        sa.PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number", "log_index"),
+        sa.PrimaryKeyConstraint("position_token_address", "token_id", "block_timestamp", "block_number", "log_index"),
     )
     op.create_index(
         "af_uniswap_v3_token_collect_fee_hist_owner_index",
@@ -137,7 +137,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "af_uniswap_v3_token_data_current",
-        sa.Column("nft_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token_id", sa.NUMERIC(precision=100), nullable=False),
         sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_timestamp", sa.BIGINT(), nullable=True),
@@ -146,7 +146,7 @@ def upgrade() -> None:
         sa.Column("liquidity", sa.NUMERIC(precision=100), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.PrimaryKeyConstraint("nft_address", "token_id"),
+        sa.PrimaryKeyConstraint("position_token_address", "token_id"),
     )
     op.create_index(
         "af_uniswap_v3_token_data_current_wallet_desc_index",
@@ -156,7 +156,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "af_uniswap_v3_token_data_hist",
-        sa.Column("nft_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token_id", sa.NUMERIC(precision=100), nullable=False),
         sa.Column("block_number", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", sa.BIGINT(), nullable=False),
@@ -166,23 +166,23 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
-        sa.PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number"),
+        sa.PrimaryKeyConstraint("position_token_address", "token_id", "block_timestamp", "block_number"),
     )
     op.create_index(
         "af_uniswap_v3_token_data_hist_token_block_desc_index",
         "af_uniswap_v3_token_data_hist",
-        [sa.text("nft_address DESC"), sa.text("block_timestamp DESC")],
+        [sa.text("position_token_address DESC"), sa.text("block_timestamp DESC")],
         unique=False,
     )
     op.create_index(
         "af_uniswap_v3_token_data_hist_wallet_token_block_desc_index",
         "af_uniswap_v3_token_data_hist",
-        [sa.text("wallet_address DESC"), sa.text("nft_address DESC"), sa.text("block_timestamp DESC")],
+        [sa.text("wallet_address DESC"), sa.text("position_token_address DESC"), sa.text("block_timestamp DESC")],
         unique=False,
     )
     op.create_table(
         "af_uniswap_v3_token_liquidity_hist",
-        sa.Column("nft_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token_id", sa.NUMERIC(precision=100), nullable=False),
         sa.Column("block_number", sa.BIGINT(), nullable=False),
         sa.Column("block_timestamp", sa.BIGINT(), nullable=False),
@@ -199,7 +199,7 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("reorg", sa.BOOLEAN(), nullable=True),
-        sa.PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number", "log_index"),
+        sa.PrimaryKeyConstraint("position_token_address", "token_id", "block_timestamp", "block_number", "log_index"),
     )
     op.create_index(
         "af_uniswap_v3_token_liquidity_hist_owner_index", "af_uniswap_v3_token_liquidity_hist", ["owner"], unique=False
@@ -230,7 +230,7 @@ def upgrade() -> None:
     )
     op.create_table(
         "af_uniswap_v3_tokens",
-        sa.Column("nft_address", postgresql.BYTEA(), nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), nullable=False),
         sa.Column("token_id", sa.NUMERIC(precision=100), nullable=False),
         sa.Column("pool_address", postgresql.BYTEA(), nullable=True),
         sa.Column("tick_lower", sa.NUMERIC(precision=100), nullable=True),
@@ -240,9 +240,9 @@ def upgrade() -> None:
         sa.Column("block_timestamp", sa.BIGINT(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.PrimaryKeyConstraint("nft_address", "token_id"),
+        sa.PrimaryKeyConstraint("position_token_address", "token_id"),
     )
-    op.create_index("af_uniswap_v3_tokens_nft_index", "af_uniswap_v3_tokens", ["nft_address"], unique=False)
+    op.create_index("af_uniswap_v3_tokens_nft_index", "af_uniswap_v3_tokens", ["position_token_address"], unique=False)
     op.drop_index("feature_uniswap_v3_tokens_nft_index", table_name="feature_uniswap_v3_tokens")
     op.drop_table("feature_uniswap_v3_tokens")
     op.drop_table("feature_uniswap_v3_pools")
@@ -253,7 +253,7 @@ def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
     op.create_table(
         "feature_uniswap_v3_pools",
-        sa.Column("nft_address", postgresql.BYTEA(), autoincrement=False, nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), autoincrement=False, nullable=False),
         sa.Column("pool_address", postgresql.BYTEA(), autoincrement=False, nullable=False),
         sa.Column("token0_address", postgresql.BYTEA(), autoincrement=False, nullable=True),
         sa.Column("token1_address", postgresql.BYTEA(), autoincrement=False, nullable=True),
@@ -266,11 +266,11 @@ def downgrade() -> None:
             "update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), autoincrement=False, nullable=True
         ),
         sa.Column("called_block_number", sa.BIGINT(), autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint("nft_address", "pool_address", name="feature_uniswap_v3_pools_pkey"),
+        sa.PrimaryKeyConstraint("position_token_address", "pool_address", name="feature_uniswap_v3_pools_pkey"),
     )
     op.create_table(
         "feature_uniswap_v3_tokens",
-        sa.Column("nft_address", postgresql.BYTEA(), autoincrement=False, nullable=False),
+        sa.Column("position_token_address", postgresql.BYTEA(), autoincrement=False, nullable=False),
         sa.Column("token_id", sa.NUMERIC(precision=100, scale=0), autoincrement=False, nullable=False),
         sa.Column("pool_address", postgresql.BYTEA(), autoincrement=False, nullable=True),
         sa.Column("tick_lower", sa.NUMERIC(precision=100, scale=0), autoincrement=False, nullable=True),
@@ -283,9 +283,11 @@ def downgrade() -> None:
             "update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), autoincrement=False, nullable=True
         ),
         sa.Column("called_block_number", sa.BIGINT(), autoincrement=False, nullable=True),
-        sa.PrimaryKeyConstraint("nft_address", "token_id", name="feature_uniswap_v3_tokens_pkey"),
+        sa.PrimaryKeyConstraint("position_token_address", "token_id", name="feature_uniswap_v3_tokens_pkey"),
     )
-    op.create_index("feature_uniswap_v3_tokens_nft_index", "feature_uniswap_v3_tokens", ["nft_address"], unique=False)
+    op.create_index(
+        "feature_uniswap_v3_tokens_nft_index", "feature_uniswap_v3_tokens", ["position_token_address"], unique=False
+    )
 
     op.drop_index("af_uniswap_v3_tokens_nft_index", table_name="af_uniswap_v3_tokens")
     op.drop_table("af_uniswap_v3_tokens")

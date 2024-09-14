@@ -1,10 +1,13 @@
 import json
 import logging
+from typing import cast
 
 import eth_abi
 from web3 import Web3
+from web3.types import ABIFunction
 
 from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
 
@@ -72,9 +75,12 @@ def simple_get_rpc_requests(
     return all_token_infos
 
 
-def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_key="pool_address"):
-    parameters = []
+def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_key="pool_address", arguments=None):
+    arguments = arguments or []
 
+    parameters = []
+    function_abi = next((abi for abi in abi_list if abi["name"] == fn and abi["type"] == "function"), None)
+    abi_function = cast(ABIFunction, function_abi)
     for idx, token in enumerate(requests):
         # token["request_id"] = idx
         token_data = {
@@ -85,9 +91,11 @@ def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_ke
         token.update(token_data)
         try:
             # Encode the ABI for the specific token_id
-            token["param_data"] = web3.eth.contract(
-                address=Web3.to_checksum_address(token[contract_address_key]), abi=abi_list
-            ).encodeABI(fn_name=fn)
+            token["param_data"] = encode_abi(
+                abi_function,
+                arguments,
+                function_abi_to_4byte_selector_str(abi_function),
+            )
         except Exception as e:
             logger.error(
                 f"Encoding for function {fn} failed. "

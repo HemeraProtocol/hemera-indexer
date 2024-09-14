@@ -58,8 +58,8 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
         self._load_config("config.ini", self._chain_id)
         self._abi_list = UNISWAP_V3_ABI
         self._liquidity_token_id_blocks = queue.Queue()
-        self._exist_token_ids = get_exist_token_ids(self._service, self._nft_address)
-        self._exist_pool_infos = get_exist_pools(self._service, self._nft_address)
+        self._exist_token_ids = get_exist_token_ids(self._service, self._position_token_address)
+        self._exist_pool_infos = get_exist_pools(self._service, self._position_token_address)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
 
@@ -74,7 +74,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
         except KeyError:
             return
         try:
-            self._nft_address = chain_config.get("nft_address").lower()
+            self._position_token_address = chain_config.get("nft_address").lower()
             self._factory_address = chain_config.get("factory_address").lower()
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
@@ -82,7 +82,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
     def get_filter(self):
         return TransactionFilterByLogs(
             [
-                TopicSpecification(addresses=[self._nft_address]),
+                TopicSpecification(addresses=[self._position_token_address]),
             ]
         )
 
@@ -106,13 +106,14 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             address = log.address
             block_number = log.block_number
             block_timestamp = log.block_timestamp
-            if address != self._nft_address:
+            if address != self._position_token_address:
                 continue
             if topic0 == constants.TRANSFER_TOPIC0:
                 token_id_hex = log.topic3
             elif (
                 topic0 == constants.UNISWAP_V3_ADD_LIQUIDITY_TOPIC0
                 or topic0 == constants.UNISWAP_V3_REMOVE_LIQUIDITY_TOPIC0
+                or topic0 == constants.UNISWAP_V3_TOKEN_COLLECT_FEE_TOPIC0
             ):
                 token_id_hex = log.topic1
             else:
@@ -138,7 +139,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             self._web3,
             self._batch_web3_provider.make_request,
             need_collect_token_id_data,
-            self._nft_address,
+            self._position_token_address,
             self._is_batch,
             self._abi_list,
             self._batch_size,
@@ -149,7 +150,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             self._web3,
             self._batch_web3_provider.make_request,
             owner_info,
-            self._nft_address,
+            self._position_token_address,
             self._is_batch,
             self._abi_list,
             self._batch_size,
@@ -173,7 +174,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 self._collect_item(
                     UniswapV3Token.type(),
                     UniswapV3Token(
-                        nft_address=self._nft_address,
+                        position_token_address=self._position_token_address,
                         token_id=token_id,
                         pool_address=pool_address,
                         tick_lower=tick_lower,
@@ -194,7 +195,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
             if "liquidity" in data:
                 liquidity = data["liquidity"]
             detail = UniswapV3TokenDetail(
-                nft_address=self._nft_address,
+                position_token_address=self._position_token_address,
                 pool_address=pool_address,
                 token_id=token_id,
                 wallet_address=wallet_address,
@@ -212,6 +213,8 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
 
         # collect fee and liquidity
         for log in logs:
+            if log.address != self._position_token_address:
+                continue
             topic0 = log.topic0
             block_number = log.block_number
             block_timestamp = log.block_timestamp
@@ -246,7 +249,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 self._collect_item(
                     UniswapV3TokenUpdateLiquidity.type(),
                     UniswapV3TokenUpdateLiquidity(
-                        nft_address=self._nft_address,
+                        position_token_address=self._position_token_address,
                         token_id=token_id,
                         owner=owner,
                         action_type=action_type,
@@ -267,7 +270,7 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
                 self._collect_item(
                     UniswapV3TokenCollectFee.type(),
                     UniswapV3TokenCollectFee(
-                        nft_address=self._nft_address,
+                        position_token_address=self._position_token_address,
                         token_id=token_id,
                         owner=owner,
                         transaction_hash=log.transaction_hash,
@@ -291,14 +294,16 @@ class UniswapV3TokenJob(FilterTransactionDataJob):
         self._data_buff[UniswapV3TokenCollectFee.type()].sort(key=lambda x: x.block_number)
 
 
-def get_exist_pools(db_service, nft_address):
+def get_exist_pools(db_service, position_token_address):
     if not db_service:
         return {}
 
     session = db_service.get_service_session()
     try:
         result = (
-            session.query(UniswapV3Pools).filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:])).all()
+            session.query(UniswapV3Pools)
+            .filter(UniswapV3Pools.position_token_address == bytes.fromhex(position_token_address[2:]))
+            .all()
         )
         history_pools = {}
         if result is not None:
@@ -306,7 +311,7 @@ def get_exist_pools(db_service, nft_address):
                 pool_key = "0x" + item.pool_address.hex()
                 history_pools[pool_key] = UniswapV3Pool(
                     pool_address=pool_key,
-                    nft_address="0x" + item.nft_address.hex(),
+                    position_token_address="0x" + item.position_token_address.hex(),
                     factory_address="0x" + item.factory_address.hex(),
                     token0_address="0x" + item.token0_address.hex(),
                     token1_address="0x" + item.token1_address.hex(),
@@ -323,7 +328,7 @@ def get_exist_pools(db_service, nft_address):
     return history_pools
 
 
-def get_exist_token_ids(db_service, nft_address):
+def get_exist_token_ids(db_service, position_token_address):
     if not db_service:
         return {}
 
@@ -332,7 +337,7 @@ def get_exist_token_ids(db_service, nft_address):
         result = (
             session.query(UniswapV3Tokens.token_id, UniswapV3Tokens.pool_address)
             .filter(
-                UniswapV3Tokens.nft_address == bytes.fromhex(nft_address[2:]),
+                UniswapV3Tokens.position_token_address == bytes.fromhex(position_token_address[2:]),
             )
             .all()
         )
@@ -485,7 +490,6 @@ def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi
             token_infos.append(token)
         return token_infos
 
-    # 分批处理请求
     all_token_infos = []
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []

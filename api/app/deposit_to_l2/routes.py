@@ -24,7 +24,7 @@ MAX_TRANSACTION_WITH_CONDITION = 10000
 app_config = get_config()
 
 
-@token_deposit_namespace.route("/v1/explorer/deposit/transactions")
+@token_deposit_namespace.route("/v1/aci/deposit/transactions")
 class ExplorerDepositTransactions(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self):
@@ -119,13 +119,11 @@ class ExplorerDepositTransactions(Resource):
         }, 200
 
 
-@token_deposit_namespace.route("/v1/explorer/deposit/statistic")
-class ExplorerDepositStatistic(Resource):
+@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit/current")
+class ExplorerDepositCurrent(Resource):
 
     @cache.cached(timeout=10, query_string=True)
-    def get(self):
-        wallet_address = flask.request.args.get("wallet_address", None)
-
+    def get(self, wallet_address):
         if wallet_address is None:
             raise APIError(
                 f"parameter 'wallet_address' are required",
@@ -148,13 +146,11 @@ class ExplorerDepositStatistic(Resource):
         }, 200
 
 
-@token_deposit_namespace.route("/v1/explorer/deposit/bridge_times")
+@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit/bridge_times")
 class ExplorerDepositBridgeTimes(Resource):
 
     @cache.cached(timeout=10, query_string=True)
-    def get(self):
-        wallet_address = flask.request.args.get("wallet_address", None)
-
+    def get(self, wallet_address):
         if wallet_address is None:
             raise APIError(
                 f"parameter 'wallet_address' are required",
@@ -169,13 +165,11 @@ class ExplorerDepositBridgeTimes(Resource):
         }, 200
 
 
-@token_deposit_namespace.route("/v1/explorer/deposit/chain_list")
+@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit/chain_list")
 class ExplorerDepositChainList(Resource):
 
     @cache.cached(timeout=10, query_string=True)
-    def get(self):
-        wallet_address = flask.request.args.get("wallet_address", None)
-
+    def get(self, wallet_address):
         if wallet_address is None:
             raise APIError(
                 f"parameter 'wallet_address' are required",
@@ -191,13 +185,11 @@ class ExplorerDepositChainList(Resource):
         }, 200
 
 
-@token_deposit_namespace.route("/v1/explorer/deposit/assets_list")
+@token_deposit_namespace.route("/v1/aci/<wallet_address>/deposit/assets_list")
 class ExplorerDepositAssetsList(Resource):
 
     @cache.cached(timeout=10, query_string=True)
-    def get(self):
-        wallet_address = flask.request.args.get("wallet_address", None)
-
+    def get(self, wallet_address):
         if wallet_address is None:
             raise APIError(
                 f"parameter 'wallet_address' are required",

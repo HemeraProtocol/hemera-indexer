@@ -7,3 +7,24 @@ opensea_job:
     contract_address: "0x00000000000000adc04c56bf30ac9d3c0aaf14dc"
     fee_addresses:
       - "0x0000a26b00c1f0df003000390027140000faa719"
+  seaport_1_4:
+    contract_address: "0x00000000000001ad428e4906ae43d8f9852d0dd6"
+    fee_addresses:
+      - "0x0000a26b00c1f0df003000390027140000faa719"
+  seaport_1_3:
+    contract_address: "0x0000000000000ad24e80fd803c6ac37206a45f15"
+    fee_addresses:
+      - "0x0000a26b00c1f0df003000390027140000faa719"
+  seaport_1_2:
+    contract_address: "0x00000000000006c7676171937c444f6bde3d6282"
+    fee_addresses:
+      - "0x0000a26b00c1f0df003000390027140000faa719"
+  seaport_1_1:
+    contract_address: "0x00000000006c3852cbef3e08e8df289169ede581"
+    fee_addresses:
+      - "0x0000a26b00c1f0df003000390027140000faa719"
+  seaport_1_0:
+    contract_address: "0x00000000006cee72100d161c57ada5bb2be1ca79"
+    fee_addresses:
+      - "0x0000a26b00c1f0df003000390027140000faa719"
+      - "0x5b3256965e7c3cf26e11fcaf296dfc8807c01073"

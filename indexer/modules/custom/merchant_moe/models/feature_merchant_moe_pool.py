@@ -6,35 +6,27 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class UniswapV3Tokens(HemeraModel):
-    __tablename__ = "af_uniswap_v3_tokens"
-
+class FeatureMerChantMoePools(HemeraModel):
+    __tablename__ = "af_merchant_moe_pools"
     position_token_address = Column(BYTEA, primary_key=True)
-    token_id = Column(NUMERIC(100), primary_key=True)
-
-    pool_address = Column(BYTEA)
-    tick_lower = Column(NUMERIC(100))
-    tick_upper = Column(NUMERIC(100))
-    fee = Column(NUMERIC(100))
-
-    block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
+    block_number = Column(BIGINT)
+    token0_address = Column(BYTEA)
+    token1_address = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
+    reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (PrimaryKeyConstraint("position_token_address", "token_id"),)
+    __table_args__ = (PrimaryKeyConstraint("position_token_address"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                "domain": "UniswapV3Token",
+                "domain": "MerChantMoePool",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             }
         ]
-
-
-Index("af_uniswap_v3_tokens_nft_index", UniswapV3Tokens.position_token_address)

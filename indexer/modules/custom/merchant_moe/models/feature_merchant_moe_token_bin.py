@@ -6,16 +6,14 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class UniswapV3TokenDetails(HemeraModel):
-    __tablename__ = "af_uniswap_v3_token_data_hist"
-
+class FeatureMerChantMoeTokenBinRecords(HemeraModel):
+    __tablename__ = "af_merchant_moe_token_bin_hist"
     position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
-    block_number = Column(BIGINT, primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
-    wallet_address = Column(BYTEA)
-    pool_address = Column(BYTEA)
-    liquidity = Column(NUMERIC(100))
+    block_number = Column(BIGINT, primary_key=True)
+    reserve0_bin = Column(NUMERIC(100))
+    reserve1_bin = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
@@ -27,23 +25,16 @@ class UniswapV3TokenDetails(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "UniswapV3TokenDetail",
+                "domain": "MerChantMoeTokenBin",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            },
+            }
         ]
 
 
 Index(
-    "af_uniswap_v3_token_data_hist_token_block_desc_index",
-    desc(UniswapV3TokenDetails.position_token_address),
-    desc(UniswapV3TokenDetails.block_timestamp),
-)
-
-Index(
-    "af_uniswap_v3_token_data_hist_wallet_token_block_desc_index",
-    desc(UniswapV3TokenDetails.wallet_address),
-    desc(UniswapV3TokenDetails.position_token_address),
-    desc(UniswapV3TokenDetails.block_timestamp),
+    "af_merchant_moe_token_bin_hist_token_block_desc_index",
+    desc(FeatureMerChantMoeTokenBinRecords.position_token_address),
+    desc(FeatureMerChantMoeTokenBinRecords.block_timestamp),
 )

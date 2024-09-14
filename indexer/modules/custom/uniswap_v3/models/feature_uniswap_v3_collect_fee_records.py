@@ -8,7 +8,7 @@ from common.models import HemeraModel, general_converter
 
 class UniswapV3CollectFeeRecords(HemeraModel):
     __tablename__ = "af_uniswap_v3_token_collect_fee_hist"
-    nft_address = Column(BYTEA, primary_key=True)
+    position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_number = Column(BIGINT, primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
@@ -27,7 +27,9 @@ class UniswapV3CollectFeeRecords(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (PrimaryKeyConstraint("nft_address", "token_id", "block_timestamp", "block_number", "log_index"),)
+    __table_args__ = (
+        PrimaryKeyConstraint("position_token_address", "token_id", "block_timestamp", "block_number", "log_index"),
+    )
 
     @staticmethod
     def model_domain_mapping():

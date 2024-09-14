@@ -6,7 +6,7 @@ from indexer.domain import Domain, FilterData
 
 @dataclass
 class UniswapV3Pool(FilterData):
-    nft_address: str
+    position_token_address: str
     factory_address: str
     pool_address: str
     token0_address: str
@@ -19,7 +19,7 @@ class UniswapV3Pool(FilterData):
 
 @dataclass
 class UniswapV3Token(FilterData):
-    nft_address: str
+    position_token_address: str
     token_id: int
     pool_address: str
     tick_lower: int
@@ -41,7 +41,7 @@ class UniswapV3PoolPrice(FilterData):
 
 @dataclass
 class UniswapV3TokenDetail(FilterData):
-    nft_address: str
+    position_token_address: str
     token_id: int
     pool_address: str
     wallet_address: str
@@ -63,7 +63,7 @@ class UniswapV3PoolCurrentPrice(FilterData):
 @dataclass
 class UniswapV3SwapEvent(FilterData):
     pool_address: str
-    nft_address: str
+    position_token_address: str
     transaction_from_address: str
     sender: str
     recipient: str
@@ -82,7 +82,7 @@ class UniswapV3SwapEvent(FilterData):
 
 @dataclass
 class UniswapV3TokenCurrentStatus(FilterData):
-    nft_address: str
+    position_token_address: str
     token_id: int
     pool_address: str
     wallet_address: str
@@ -93,7 +93,7 @@ class UniswapV3TokenCurrentStatus(FilterData):
 
 @dataclass
 class UniswapV3TokenUpdateLiquidity(FilterData):
-    nft_address: str
+    position_token_address: str
     token_id: int
     owner: str
     liquidity: int
@@ -111,7 +111,7 @@ class UniswapV3TokenUpdateLiquidity(FilterData):
 
 @dataclass
 class UniswapV3TokenCollectFee(FilterData):
-    nft_address: str
+    position_token_address: str
     recipient: str
     owner: str
     token_id: int

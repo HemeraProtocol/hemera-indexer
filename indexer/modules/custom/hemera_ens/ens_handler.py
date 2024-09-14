@@ -6,8 +6,9 @@
 # @Brief
 import logging
 from collections import defaultdict
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from multiprocessing import Queue
+from typing import List
 
 from eth_abi.codec import ABICodec
 from web3 import Web3
@@ -222,24 +223,31 @@ class EnsHandler:
                         start = idx
                     break
         # merge same node register, keep 0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f delete 0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9
-        mark_register = set()
-        for rr in res:
-            if (
-                rr.event_name == "NameRegistered"
-                and rr.topic0 == "0xca6abbe9d7f11422cb6ca7629fbf6fe9efb1c621f71ce8f02b9f2a230097404f"
-            ):
-                mark_register.add(rr.node)
-        new_res = []
-        for rr in res:
-            if (
-                rr.event_name == "NameRegistered"
-                and rr.node in mark_register
-                and rr.topic0 == "0xb3d987963d01b2f68493b4bdb130988f157ea43070d4ad840fee0466ed9370d9"
-            ):
-                continue
-            else:
-                new_res.append(rr)
+        new_res = self.merge_ens_middle_d(res)
         return new_res
+
+    def merge_ens_middle_d(self, data: List[ENSMiddleD]) -> List[ENSMiddleD]:
+        node_dict = {}
+
+        new_data = []
+        for item in data:
+            if item.method == "NameRegistered":
+                if item.node not in node_dict:
+                    node_dict[item.node] = item
+                else:
+                    existing = node_dict[item.node]
+                    merged = {}
+                    for key, value in asdict(item).items():
+                        if value is not None:
+                            merged[key] = value
+                        elif getattr(existing, key) is not None:
+                            merged[key] = getattr(existing, key)
+                    node_dict[item.node] = replace(existing, **merged)
+            else:
+                new_data.append(item)
+        if node_dict:
+            new_data.extend(list(node_dict.values()))
+        return new_data
 
     def process_middle(self, lis):
         if not lis:
@@ -266,6 +274,10 @@ class EnsHandler:
             record["expires"] = None
 
         event_name = record.get("event_name")
+
+        node = record.get("node")
+        if not node:
+            raise Exception("pass")
         if event_name == "NameChanged" or record["method"] == "setName":
             return ENSAddressD(
                 address=address,
