@@ -35,6 +35,7 @@ class ACIEnsCurrent(Resource):
             "primary_name": None,
             "resolve_to_names": [],
             "ens_holdings": [],
+            "ens_holdings_total": None,
             "first_register_time": None,
             "first_set_primary_time": None,
         }
@@ -56,10 +57,18 @@ class ACIEnsCurrent(Resource):
             .all()
         )
         all_721_ids = [r.token_id for r in all_721_owns]
-        all_owned = (
-            db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids), ENSRecord.expires >= dn)).all()
-        )
-        res["ens_holdings"] = [r.name for r in all_owned if r.name and r.name.endswith(".eth")]
+        all_owned = db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids))).all()
+        all_owned_map = {r.token_id: r for r in all_owned}
+        for id in all_721_ids:
+            r = all_owned_map.get(id)
+            res["ens_holdings"].append(
+                {
+                    "name": r.name if r else None,
+                    "is_expire": r.expires < dn if r and r.expires else True,
+                    "type": "ERC721",
+                    "token_id": str(id),
+                }
+            )
         ens_1155_address = bytes.fromhex("d4416b13d2b3a9abae7acd5d6c2bbdbe25686401")
         all_1155_owns = (
             db.session.query(CurrentTokenBalances)
@@ -74,8 +83,14 @@ class ACIEnsCurrent(Resource):
             .filter(and_(ENSRecord.expires >= dn, ENSRecord.w_token_id.in_(all_1155_ids)))
             .all()
         )
-        res["ens_holdings"].extend([r.name for r in all_owned_1155_ens if r.name and r.name.endswith(".eth")])
-
+        res["ens_holdings"].extend(
+            [
+                {"name": r.name, "is_expire": r.expires < dn, "type": "ERC1155", "token_id": str(r.w_token_id)}
+                for r in all_owned_1155_ens
+                if r.name and r.name.endswith(".eth")
+            ]
+        )
+        res["ens_holdings_total"] = len(res["ens_holdings"])
         primary_address_row = db.session.query(ENSAddress).filter(ENSAddress.address == address).first()
         if primary_address_row:
             primary_record = db.session.query(ENSRecord).filter(ENSRecord.name == primary_address_row.name).first()
@@ -84,15 +99,26 @@ class ACIEnsCurrent(Resource):
         else:
             res["primary_name"] = w3.ens.name(w3.to_checksum_address(w3.to_hex(address)))
 
-        be_resolved_ens = (
-            db.session.query(ENSRecord).filter(and_(ENSRecord.address == address, ENSRecord.expires >= dn)).all()
-        )
-        res["resolve_to_names"] = [r.name for r in be_resolved_ens if r.name and r.name.endswith(".eth")]
+        be_resolved_ens = db.session.query(ENSRecord).filter(and_(ENSRecord.address == address)).all()
+        res["resolve_to_names"] = [
+            {
+                "name": r.name,
+                "is_expire": r.expires < dn if r and r.expires else True,
+            }
+            for r in be_resolved_ens
+            if r.name and r.name.endswith(".eth")
+        ]
+        res["resolve_to_names_total"] = len(res["resolve_to_names"])
 
         first_register = (
             db.session.query(ENSMiddle)
-            .filter(and_(ENSMiddle.from_address == address, ENSMiddle.event_name == "NameRegistered"))
-            .order_by(ENSMiddle.block_timestamp)
+            .filter(
+                and_(
+                    ENSMiddle.from_address == address,
+                    or_(ENSMiddle.event_name == "NameRegistered", ENSMiddle.event_name == "HashRegistered"),
+                )
+            )
+            .order_by(ENSMiddle.block_number)
             .first()
         )
         if first_register:
@@ -105,7 +131,7 @@ class ACIEnsCurrent(Resource):
                     or_(ENSMiddle.method == "setName", ENSMiddle.event_name == "NameChanged"),
                 )
             )
-            .order_by(ENSMiddle.block_timestamp)
+            .order_by(ENSMiddle.block_number)
             .first()
         )
         if first_set_name:
@@ -228,7 +254,7 @@ def get_action_type(record):
         }
     if record.method == "setName" or record.event_name == "NameChanged":
         return {"action_type": OperationType.SET_PRIMARY_NAME.value}
-    if record.event_name == "NameRegistered":
+    if record.event_name == "NameRegistered" or record.event_name == "HashRegistered":
         return {"action_type": OperationType.REGISTER.value}
     if record.event_name == "NameRenewed":
         return {"action_type": OperationType.RENEW.value, "expires": datetime_to_string(record.expires)}

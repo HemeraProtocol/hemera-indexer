@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Type
 
 from psycopg2._json import Json
-from sqlalchemy import Column, Index, text
+from sqlalchemy import BIGINT, Column, Index, text
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSONB, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 from sqlalchemy.sql import func
 
@@ -60,6 +60,7 @@ class ENSRecord(HemeraModel):
     registration = Column(TIMESTAMP)
     expires = Column(TIMESTAMP)
     address = Column(BYTEA)
+    block_number = Column(BIGINT)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
@@ -70,25 +71,25 @@ class ENSRecord(HemeraModel):
             {
                 "domain": "ENSRegisterD",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
                 "converter": ens_general_converter,
             },
             {
                 "domain": "ENSRegisterTokenD",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
                 "converter": ens_general_converter,
             },
             {
                 "domain": "ENSNameRenewD",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
                 "converter": ens_general_converter,
             },
             {
                 "domain": "ENSAddressChangeD",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
                 "converter": ens_general_converter,
             },
         ]

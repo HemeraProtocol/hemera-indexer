@@ -103,7 +103,7 @@ class RegisterExtractor(BaseExtractor):
             ens_middle.event_name = event_data["_event"]
             token_id = None
             w_token_id = None
-            for sl in prev_logs:
+            for sl in prev_logs[::-1]:
                 if (
                     sl["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
                     and (sl["topic2"]) == log["topic2"]
@@ -147,21 +147,21 @@ class RegisterExtractor(BaseExtractor):
             node = None
             label = None
             base_node = None
-            for log in prev_logs:
+            for sl in prev_logs[::-1]:
                 if (
-                    log["address"] == "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e"
-                    and log["topic0"] == RegisterExtractor.tp_register_with_token
+                    sl["address"] == "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e"
+                    and sl["topic0"] == RegisterExtractor.tp_register_with_token
                 ):
-                    base_node = log["topic1"]
-                    label = log["topic2"]
+                    base_node = sl["topic1"]
+                    label = sl["topic2"]
                     node = compute_node_label(base_node, label)
                     break
                 elif (
-                    log["address"] == "0x314159265dd8dbb310642f98f50c066173c1259b"
-                    and log["topic0"] == "0xce0457fe73731f824cc272376169235128c118b49d344817417c6d108d155e82"
+                    sl["address"] == "0x314159265dd8dbb310642f98f50c066173c1259b"
+                    and sl["topic0"] == "0xce0457fe73731f824cc272376169235128c118b49d344817417c6d108d155e82"
                 ):
-                    base_node = log["topic1"]
-                    label = log["topic2"]
+                    base_node = sl["topic1"]
+                    label = sl["topic2"]
                     node = compute_node_label(base_node, label)
                     break
             if not node:

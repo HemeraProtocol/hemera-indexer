@@ -316,7 +316,7 @@ def get_exist_pools(db_service):
         history_pools = set()
         if result is not None:
             for item in result:
-                history_pools.add("0x" + item.token_address.hex())
+                history_pools.add("0x" + item.position_token_address.hex())
     except Exception as e:
         print(e)
         raise e
