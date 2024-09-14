@@ -71,7 +71,7 @@ class ENSRecord(HemeraModel):
             {
                 "domain": "ENSRegisterD",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
                 "converter": ens_general_converter,
             },
             {
