@@ -25,10 +25,6 @@ from indexer.modules.custom.opensea.opensea_job import (
 )
 
 PAGE_SIZE = 10
-MAX_TRANSACTION = 500000
-MAX_TRANSACTION_WITH_CONDITION = 10000
-MAX_INTERNAL_TRANSACTION = 10000
-MAX_TOKEN_TRANSFER = 10000
 
 
 def get_opensea_profile(address: Union[str, bytes]) -> dict:
@@ -39,7 +35,7 @@ def get_opensea_profile(address: Union[str, bytes]) -> dict:
 
     profile = db.session.query(AddressOpenseaProfile).filter_by(address=address_bytes).first()
     if not profile:
-        raise APIError("No OpenSea profile found for this address", code=400)
+        return {}
 
     profile_data = as_dict(profile)
 
@@ -239,6 +235,7 @@ def format_opensea_transaction(transaction: Dict[str, Any]) -> Dict[str, Any]:
             "token_symbol": item["token_symbol"],
             "amount": item["amount"],
             "identifier": item["identifier"],
+            "token_id": item["identifier"],  # Naming conversion
         }
         formatted_items.append(formatted_item)
 
@@ -306,19 +303,17 @@ def get_latest_opensea_transaction_by_address(address: Union[str, bytes]):
 
 
 @opensea_namespace.route("/v1/aci/<address>/opensea/profile")
-class ExplorerCustomOpenseaAddressProfile(Resource):
-    @cache.cached(timeout=60)
+class ACIOpenseaProfile(Resource):
     def get(self, address):
         address = address.lower()
 
         profile = get_opensea_profile(address)
 
-        return profile, 200
+        return profile
 
 
 @opensea_namespace.route("/v1/aci/<address>/opensea/transactions")
-class ExplorerCustomOpenseaAddressTransactions(Resource):
-    @cache.cached(timeout=10)
+class ACIOpenseaTransactions(Resource):
     def get(self, address):
         address = address.lower()
         page_index = int(request.args.get("page", 1))
@@ -340,4 +335,6 @@ class ExplorerCustomOpenseaAddressTransactions(Resource):
         return {
             "data": transaction_list,
             "total": total_count,
-        }, 200
+            "page": page_index,
+            "size": page_size,
+        }
