@@ -1,5 +1,5 @@
-from typing import Union
 from time import time
+from typing import Union
 
 import flask
 from flask_restx import Resource
@@ -170,14 +170,8 @@ class ACIAllFeatures(Resource):
         if "uniswap_v3_liquidity" in feature_list:
             holdings = UniswapV3WalletLiquidityHolding.get(self, address)
             feature_result["uniswap_v3_liquidity"] = {
-                "value": {
-                    "pool_count": holdings["pool_count"],
-                    "total_value_usd": holdings["total_value_usd"]
-                },
-                "events": {
-                    "data": holdings["data"],
-                    "total": holdings["total"]
-                },
+                "value": {"pool_count": holdings["pool_count"], "total_value_usd": holdings["total_value_usd"]},
+                "events": {"data": holdings["data"], "total": holdings["total"]},
             }
 
         if "uniswap_v3_trading" in feature_list:

@@ -1,4 +1,3 @@
-
 from api.app.db_service.tokens import get_token_by_address
 from common.utils.format_utils import row_to_dict
 from common.utils.web3_utils import chain_id_name_mapping
@@ -6,7 +5,7 @@ from common.utils.web3_utils import chain_id_name_mapping
 SUPPORT_BRIDGES = {
     "0x99c9fc46f92e8a1c0dec1b1747d010903e884be1": {
         "bridge_name": "Optimism Bridge",
-        "bridge_logo": "https://storage.googleapis.com/socialscan-public-asset/bridge/optimism.png"
+        "bridge_logo": "https://storage.googleapis.com/socialscan-public-asset/bridge/optimism.png",
     }
 }
 
@@ -31,7 +30,7 @@ def parse_deposit_assets(assets):
                 "token_symbol": token_info.symbol if token_info else None,
                 "token_icon_url": token_info.icon_url if token_info else None,
                 "token_type": token_info.token_type if token_info else None,
-                "amount": "{0:.18f}".format(asset_dict["value"] / 10 ** decimals).rstrip("0").rstrip("."),
+                "amount": "{0:.18f}".format(asset_dict["value"] / 10**decimals).rstrip("0").rstrip("."),
             }
         )
 

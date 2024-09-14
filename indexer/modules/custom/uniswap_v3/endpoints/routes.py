@@ -6,6 +6,7 @@ from flask import request
 from flask_restx import Resource
 from sqlalchemy.sql import select, tuple_
 
+from api.app.db_service.tokens import get_token_price_map_by_symbol_list
 from common.models import db
 from common.models.tokens import Tokens
 from common.utils.exception_control import APIError
@@ -16,7 +17,6 @@ from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import Un
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_swap_records import UniswapV3PoolSwapRecords
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_token_current_status import UniswapV3TokenCurrentStatus
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
-from api.app.db_service.tokens import get_token_price_map_by_symbol_list
 
 Q96 = 2**96
 PAGE_SIZE = 10
@@ -54,12 +54,10 @@ class UniswapV3WalletTradingRecords(Resource):
             token_list.append(swap.token0_address)
             token_list.append(swap.token1_address)
 
-        tokens = db.session.execute(
-            select(Tokens).where(Tokens.address.in_(list(set(token_list))))
-        ).scalars().all()
+        tokens = db.session.execute(select(Tokens).where(Tokens.address.in_(list(set(token_list))))).scalars().all()
 
-        token_map = {token.address : token for token in tokens}
-        
+        token_map = {token.address: token for token in tokens}
+
         for swap in swaps:
             token0 = token_map.get(swap.token0_address)
             token1 = token_map.get(swap.token1_address)
@@ -69,8 +67,8 @@ class UniswapV3WalletTradingRecords(Resource):
                     "block_timestamp": datetime.fromtimestamp(swap.block_timestamp).isoformat("T", "seconds"),
                     "transaction_hash": "0x" + swap.transaction_hash.hex(),
                     "pool_address": "0x" + swap.pool_address.hex(),
-                    "amount0": "{0:.18f}".format(abs(swap.amount0) / 10 ** token0.decimals).rstrip("0").rstrip("."),
-                    "amount1": "{0:.18f}".format(abs(swap.amount1) / 10 ** token1.decimals).rstrip("0").rstrip("."),
+                    "amount0": "{0:.18f}".format(abs(swap.amount0) / 10**token0.decimals).rstrip("0").rstrip("."),
+                    "amount1": "{0:.18f}".format(abs(swap.amount1) / 10**token1.decimals).rstrip("0").rstrip("."),
                     "token0_address": "0x" + swap.token0_address.hex(),
                     "token0_symbol": token0.symbol,
                     "token0_name": token0.name,
@@ -79,7 +77,7 @@ class UniswapV3WalletTradingRecords(Resource):
                     "token1_symbol": token1.symbol,
                     "token1_name": token1.name,
                     "token1_icon_url": token1.icon_url,
-                    "action_type": get_swap_action_type(swap)
+                    "action_type": get_swap_action_type(swap),
                 }
             )
 
@@ -156,7 +154,11 @@ class UniswapV3WalletLiquidityHolding(Resource):
 
         # Get token id info
         token_id_list = [(holding.position_token_address, holding.token_id) for holding in holdings]
-        tokenIds = db.session.query(UniswapV3Tokens).filter(tuple_(UniswapV3Tokens.position_token_address, UniswapV3Tokens.token_id).in_(token_id_list)).all()
+        tokenIds = (
+            db.session.query(UniswapV3Tokens)
+            .filter(tuple_(UniswapV3Tokens.position_token_address, UniswapV3Tokens.token_id).in_(token_id_list))
+            .all()
+        )
         token_id_infos = {}
         for token in tokenIds:
             position_token_address = "0x" + token.position_token_address.hex()
@@ -306,8 +308,8 @@ def get_token_amounts(liquidity, sqrt_price_x96, tick_low, tick_high, token0_dec
 
 
 def get_swap_action_type(swap: UniswapV3PoolSwapRecords):
-    token0_address_str = '0x' + swap.token0_address.hex()
-    token1_address_str = '0x' + swap.token1_address.hex()
+    token0_address_str = "0x" + swap.token0_address.hex()
+    token1_address_str = "0x" + swap.token1_address.hex()
 
     if token0_address_str in STABLE_COINS and token1_address_str in STABLE_COINS:
         return "swap"

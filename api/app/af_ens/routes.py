@@ -75,7 +75,7 @@ class ACIEnsCurrent(Resource):
             .all()
         )
         res["ens_holdings"].extend([r.name for r in all_owned_1155_ens if r.name and r.name.endswith(".eth")])
-       
+
         primary_address_row = db.session.query(ENSAddress).filter(ENSAddress.address == address).first()
         if primary_address_row:
             primary_record = db.session.query(ENSRecord).filter(ENSRecord.name == primary_address_row.name).first()

@@ -12,8 +12,8 @@ from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.models.scheduled_metadata import ScheduledTokenCountMetadata, ScheduledWalletCountMetadata
-from common.models.tokens import Tokens
 from common.models.token_prices import TokenPrices
+from common.models.tokens import Tokens
 from common.utils.config import get_config
 from common.utils.db_utils import build_entities
 from common.utils.exception_control import APIError
