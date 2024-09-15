@@ -150,7 +150,19 @@ class TokenFetcher:
         try:
 
             if token_info["is_get_token_uri"]:
-                token_uri = decode_string(value) if decode_flag else value
+                try:
+                    token_uri = decode_string(value) if decode_flag else value
+                except Exception as e:
+                    token_uri = None
+                    exception_recorder.log(
+                        block_number=token_info.block_number,
+                        dataclass=to_snake_case("token_id_info"),
+                        message_type="decode_token_id_info_fail",
+                        message=str(e),
+                        exception_env=asdict(token_info),
+                        level=RecordLevel.WARN,
+                    )
+                    logging.error(f"decode token uri failed, token_info={token_info}, value={value}")
                 if token_info["token_type"] == "ERC721":
                     return [ERC721TokenIdDetail(**common_args, token_uri=token_uri)]
                 else:
