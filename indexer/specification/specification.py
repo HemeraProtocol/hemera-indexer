@@ -105,7 +105,7 @@ class TopicSpecification(Specification):
 
 class TransactionHashSpecification(Specification):
     def __init__(self, hashes: List[str]):
-        self.hashes = hashes
+        self.hashes = set(hashes)
 
     def is_satisfied_by(self, item: Transaction):
         return item.hash in self.hashes
