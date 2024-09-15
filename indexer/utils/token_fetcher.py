@@ -151,7 +151,7 @@ class TokenFetcher:
 
             if token_info["is_get_token_uri"]:
                 try:
-                    token_uri = decode_string(value) if decode_flag else value
+                    token_uri = decode_string(value) if decode_flag else None
                 except Exception as e:
                     token_uri = None
                     logging.error(f"decode token uri failed, token_info={token_info}, value={value}")
