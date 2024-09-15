@@ -422,5 +422,3 @@ class AddressIndexerJob(ExtensionJob):
         self._collect_domains(
             list(internal_transactions_to_address_internal_transactions(internal_transactions, transaction_dict))
         )
-
-        print("hello")
