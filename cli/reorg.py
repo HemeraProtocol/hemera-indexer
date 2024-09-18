@@ -116,6 +116,14 @@ exception_recorder = ExceptionRecorder()
     envvar="AUTO_UPGRADE_DB",
     help="Whether to automatically run database migration scripts to update the database to the latest version.",
 )
+@click.option(
+    "--log-level",
+    default="INFO",
+    show_default=True,
+    type=str,
+    envvar="LOG_LEVEL",
+    help="Set the logging output level.",
+)
 def reorg(
     provider_uri,
     debug_provider_uri,
@@ -130,8 +138,9 @@ def reorg(
     cache=None,
     config_file=None,
     auto_upgrade_db=True,
+    log_level="INFO",
 ):
-    configure_logging(log_file)
+    configure_logging(log_level=log_level, log_file=log_file)
     configure_signals()
 
     provider_uri = pick_random_provider_uri(provider_uri)

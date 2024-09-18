@@ -42,3 +42,18 @@ def check_file_load_parameter(cli_path: str):
         "Providing data path does not have any .csv or .json file. "
         "The Following custom job will not have any data input. "
     )
+
+
+def check_log_level_parameter(log_level: str):
+    if not os.path.exists(load_file_path):
+        raise click.ClickException(f"--source-path must be an existing file path. provide path:{load_file_path}")
+
+    for root, dirs, files in os.walk(load_file_path):
+        for file in files:
+            if file.endswith("csv") or file.endswith("json"):
+                return
+
+    logging.warning(
+        "Providing data path does not have any .csv or .json file. "
+        "The Following custom job will not have any data input. "
+    )

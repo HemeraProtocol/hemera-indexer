@@ -2,16 +2,15 @@ import logging
 import os
 import signal
 import sys
+from fileinput import filename
 
 
-def logging_basic_config(filename=None):
+def logging_basic_config(log_level=logging.INFO, log_file=None):
     format = "%(asctime)s - %(name)s [%(levelname)s] - %(message)s"
     if filename is not None:
-        logging.basicConfig(level=logging.INFO, format=format, filename=filename)
+        logging.basicConfig(level=log_level, format=format, filename=log_file)
     else:
-        logging.basicConfig(level=logging.INFO, format=format)
-
-    logging.getLogger("ethereum_dasm.evmdasm").setLevel(logging.ERROR)
+        logging.basicConfig(level=log_level, format=format)
 
 
 def configure_signals():
@@ -22,13 +21,17 @@ def configure_signals():
     signal.signal(signal.SIGTERM, sigterm_handler)
 
 
-def configure_logging(filename):
-    if filename:
-        log_dir = os.path.dirname(filename)
+def configure_logging(log_level="INFO", log_file=None):
+    if log_file:
+        log_dir = os.path.dirname(log_file)
 
         if not os.path.exists(log_dir):
             os.makedirs(log_dir)
 
     for handler in logging.root.handlers[:]:
         logging.root.removeHandler(handler)
-    logging_basic_config(filename=filename)
+
+    level = logging.getLevelName(log_level)
+    if level is str:
+        raise ValueError("Unknown log level: %r" % log_level)
+    logging_basic_config(log_level=level, log_file=log_file)
