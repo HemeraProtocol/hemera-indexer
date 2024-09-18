@@ -12,7 +12,12 @@ from api.app.cache import cache
 from api.app.deposit_to_l2.routes import ACIDepositToL2Current, ACIDepositToL2Transactions
 from common.models import db
 from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict
+from common.utils.format_utils import as_dict, format_to_dict
+from indexer.modules.custom.address_index.endpoint.routes import (
+    get_address_contract_operations,
+    get_address_deploy_contract_count,
+    get_address_first_deploy_contract_time,
+)
 from indexer.modules.custom.opensea.endpoint.routes import ACIOpenseaProfile, ACIOpenseaTransactions
 from indexer.modules.custom.uniswap_v3.endpoints.routes import (
     UniswapV3WalletLiquidityDetail,
@@ -83,49 +88,25 @@ class ACIProfiles(Resource):
 class ACIContractDeployerProfile(Resource):
     def get(self, address):
         address = address.lower()
-        return {"deployed_countract_count": 353, "first_deployed_time": "2015-10-06T07:56:55+00:00"}
+        return {
+            "deployed_countract_count": get_address_deploy_contract_count(address),
+            "first_deployed_time": get_address_first_deploy_contract_time(address),
+        }
 
 
 @address_features_namespace.route("/v1/aci/<address>/contract_deployer/events")
 class ACIContractDeployerEvents(Resource):
     def get(self, address):
         address = address.lower()
-
-        return {
-            "data": [
-                {
-                    "contract_address": "0xfeb016d0d14ac0fa6d69199608b0776d007203b2",
-                    "block_number": "20297335",
-                    "transaction_hash": "0x3a15ac802a8cfc8e2be090fd4d3522ac4382798c82f6a3e3e82716a76f488962",
-                    "block_timestamp": "2024-07-13T11:37:35+00:00",
-                },
-                {
-                    "contract_address": "0x0b19e087493a6ec31661470bd9ba6c49873e97f0",
-                    "block_number": "18325782",
-                    "transaction_hash": "0x9c87cc852d831b39f25d789c79b4ff25d7880202a133d500ced8d59629ab2317",
-                    "block_timestamp": "2023-10-11T07:42:11+00:00",
-                },
-                {
-                    "contract_address": "0xb36082ba6c35490d1e167cc6dd5ad20884a21afb",
-                    "block_number": "17426924",
-                    "transaction_hash": "0xe94f6728f2247bf0157e1cc20e68d862b576e74192775ab7959d079a25ce8512",
-                    "block_timestamp": "2023-06-07T07:09:23+00:00",
-                },
-                {
-                    "contract_address": "0x8e160c8e949967d6b797cdf2a2f38f6344a5c95f",
-                    "block_number": "16553954",
-                    "transaction_hash": "0x9eaf21a7415c44d9c2c925493b35bd518a15ff6d19e0a10d4a95114033c20b65",
-                    "block_timestamp": "2023-02-04T07:32:35+00:00",
-                },
-                {
-                    "contract_address": "0x00a0b1f5be3a7a4b715a2b8d395a76abc0a8e149",
-                    "block_number": "14781402",
-                    "transaction_hash": "0x3839ea3360fcbc0375ea95fd29a8a26c6a2fadd0697aeaaeff4de89512beed8a",
-                    "block_timestamp": "2022-05-15T18:02:18+00:00",
-                },
-            ],
-            "total": 5,
-        }
+        page_index = int(flask.request.args.get("page", 1))
+        page_size = int(flask.request.args.get("size", PAGE_SIZE))
+        limit = page_size
+        offset = (page_index - 1) * page_size
+        events = get_address_contract_operations(address, limit=limit, offset=offset)
+        res = []
+        for event in events:
+            res.append(format_to_dict(event))
+        return {"data": res}
 
 
 @address_features_namespace.route("/v1/aci/<address>/all_features")
