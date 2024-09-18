@@ -31,3 +31,20 @@ class MerChantMoePool(FilterData):
     block_number: int
     block_timestamp: int
 
+
+@dataclass
+class MerChantMoePoolRecord(FilterData):
+    pool_address: str
+    active_id: int
+    bin_step: int
+    block_number: int
+    block_timestamp: int
+
+
+@dataclass
+class MerChantMoePoolCurrentStatu(FilterData):
+    pool_address: str
+    active_id: int
+    bin_step: int
+    block_number: int
+    block_timestamp: int
