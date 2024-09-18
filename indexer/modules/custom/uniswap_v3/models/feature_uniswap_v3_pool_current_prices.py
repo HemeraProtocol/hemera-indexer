@@ -28,4 +28,10 @@ class UniswapV3PoolCurrentPrices(HemeraModel):
                 "update_strategy": "EXCLUDED.block_number > af_uniswap_v3_pool_prices_current.block_number",
                 "converter": general_converter,
             },
+            {
+                "domain": "AgniV3PoolCurrentPrice",
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number > af_uniswap_v3_pool_prices_current.block_number",
+                "converter": general_converter,
+            },
         ]
