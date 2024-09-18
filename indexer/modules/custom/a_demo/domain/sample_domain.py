@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Optional
 
 from indexer.domain import FilterData
@@ -13,7 +12,7 @@ class ATransferD(FilterData):
     transaction_index: int
     block_number: Optional[int] = None
     block_hash: Optional[str] = None
-    block_timestamp: Optional[datetime] = None
+    block_timestamp: Optional[int] = None
     from_address: Optional[str] = None
     to_address: Optional[str] = None
 
@@ -31,7 +30,7 @@ class SampleAddressCurrentD(FilterData):
     transfer_from_value: Optional[int] = None
     transfer_to_count: Optional[int] = None
     transfer_to_value: Optional[int] = None
-    block_number = None
+    block_number: Optional[int] = None
 
 
 def sample_address_current_factory():

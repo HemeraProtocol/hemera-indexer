@@ -4,7 +4,6 @@
 #
 import logging
 from collections import defaultdict
-from datetime import datetime
 from typing import List
 
 from eth_abi import abi
@@ -73,7 +72,7 @@ class SampleJob(FilterTransactionDataJob):
                         transaction_index=transaction.transaction_index,
                         block_number=transaction.block_number,
                         block_hash=transaction.block_hash,
-                        block_timestamp=datetime.fromtimestamp(transaction.block_timestamp),
+                        block_timestamp=transaction.block_timestamp,
                         from_address=transaction.from_address,
                         to_address=transaction.to_address,
                         transfer_from=extract_eth_address(log.topic1),
@@ -97,7 +96,7 @@ class SampleJob(FilterTransactionDataJob):
 
         self._collect_items(ATransferD.type(), res)
         # fetch exists
-        exists_address_current = self.get_existing_large_transfers(list(address_current_map.keys()))
+        exists_address_current = self.get_existing_transfers(list(address_current_map.keys()))
         for address, address_current in address_current_map.items():
             if address in exists_address_current:
                 # if exists, merge data
@@ -112,7 +111,7 @@ class SampleJob(FilterTransactionDataJob):
             else:
                 self._collect_item(address_current.type(), address_current)
 
-    def get_existing_large_transfers(self, addresses):
+    def get_existing_transfers(self, addresses):
         if not self.db_service:
             return {}
         addresses = [ad[2:] for ad in addresses if ad.startswith("0x")]
