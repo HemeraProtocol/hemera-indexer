@@ -1,15 +1,18 @@
 from sqlalchemy import Column, func
-from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, TIMESTAMP, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
 
-class ENSAddress(HemeraModel):
+class SampleAddressCurrent(HemeraModel):
     __tablename__ = "af_sample_address_current"
 
     address = Column(BYTEA, primary_key=True)
-    name = Column(VARCHAR)
-    reverse_node = Column(BYTEA)
+    transaction_count = Column(BIGINT)
+    transfer_from_count = Column(BIGINT)
+    transfer_from_value = Column(BIGINT)
+    transfer_to_count = Column(BIGINT)
+    transfer_to_value = Column(BIGINT)
     block_number = Column(BIGINT)
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
@@ -18,9 +21,9 @@ class ENSAddress(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ENSAddressD",
+                "domain": "SampleAddressCurrent",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > af_ens_address_current.block_number",
+                "update_strategy": None,
                 "converter": general_converter,
             }
         ]
