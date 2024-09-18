@@ -2,9 +2,6 @@ name: Python application test
 
 on: [pull_request]
 
-env:
-  LINEA_PUBLIC_NODE_RPC_URL: ${{ vars.LINEA_PUBLIC_NODE_RPC_URL }}
-
 jobs:
   test:
 
@@ -29,6 +26,8 @@ jobs:
         run: echo $PYTHONPATH
 
       - name: Test with pytest
+        env:
+          LINEA_PUBLIC_NODE_RPC_URL: ${{ vars.LINEA_PUBLIC_NODE_RPC_URL }}
         run: |
           export PYTHONPATH=$(pwd)
           make test indexer
