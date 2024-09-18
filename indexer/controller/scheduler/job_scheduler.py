@@ -15,7 +15,7 @@ from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.jobs.pg_source_job import PGSourceJob
+from indexer.jobs.source_job.pg_source_job import PGSourceJob
 from indexer.utils.abi import bytes_to_hex_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 
@@ -44,25 +44,27 @@ def get_tokens_from_db(session):
 def get_source_job_type(source_path: str):
     if source_path.startswith("csvfile://"):
         return CSVSourceJob
-    elif source_path.startswith("postgresql://"):
+    elif source_path == "postgres":
         return PGSourceJob
+    else:
+        raise ValueError(f"Unknown source job type with source path: {source_path}")
 
 
 class JobScheduler:
     def __init__(
-        self,
-        batch_web3_provider,
-        batch_web3_debug_provider,
-        batch_size=100,
-        debug_batch_size=1,
-        max_workers=5,
-        config={},
-        item_exporters=[ConsoleItemExporter()],
-        required_output_types=[],
-        cache="memory",
-        multicall=None,
-        auto_reorg=True,
-        force_filter_mode=False,
+            self,
+            batch_web3_provider,
+            batch_web3_debug_provider,
+            batch_size=100,
+            debug_batch_size=1,
+            max_workers=5,
+            config={},
+            item_exporters=[ConsoleItemExporter()],
+            required_output_types=[],
+            cache="memory",
+            multicall=None,
+            auto_reorg=True,
+            force_filter_mode=False,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
@@ -161,7 +163,7 @@ class JobScheduler:
     def instantiate_jobs(self):
         filters = []
         for job_class in self.resolved_job_classes:
-            if job_class is ExportBlocksJob:
+            if job_class is ExportBlocksJob or job_class is PGSourceJob:
                 continue
             job = job_class(
                 required_output_types=self.required_output_types,
@@ -194,6 +196,21 @@ class JobScheduler:
                 filters=filters,
             )
             self.jobs.insert(0, export_blocks_job)
+        else:
+            pg_source_job = PGSourceJob(
+                required_output_types=self.required_output_types,
+                batch_web3_provider=self.batch_web3_provider,
+                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                item_exporters=self.item_exporters,
+                batch_size=self.batch_size,
+                multicall=self._is_multicall,
+                debug_batch_size=self.debug_batch_size,
+                max_workers=self.max_workers,
+                config=self.config,
+                is_filter=self.is_pipeline_filter,
+                filters=filters,
+            )
+            self.jobs.insert(0, pg_source_job)
 
         if self.auto_reorg:
             check_job = CheckBlockConsensusJob(

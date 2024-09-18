@@ -206,7 +206,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--sync-recorder",
-    default="file_sync_record",
+    default="file:sync_record",
     show_default=True,
     type=str,
     envvar="SYNC_RECORDER",
@@ -252,7 +252,7 @@ def load(
     log_file=None,
     pid_file=None,
     source_path=None,
-    sync_recorder="file_sync_record",
+    sync_recorder="file:sync_record",
     cache="memory",
     auto_upgrade_db=True,
 ):

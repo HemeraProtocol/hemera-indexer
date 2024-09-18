@@ -1,5 +1,6 @@
 __all__ = [
     "CSVSourceJob",
+    "PGSourceJob",
     "ExportBlocksJob",
     "ExportTransactionsAndLogsJob",
     "FilterTransactionDataJob",
@@ -11,7 +12,6 @@ __all__ = [
     "ExportCoinBalancesJob",
 ]
 
-from indexer.jobs.csv_source_job import CSVSourceJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_coin_balances_job import ExportCoinBalancesJob
 from indexer.jobs.export_contracts_job import ExportContractsJob
@@ -21,3 +21,5 @@ from indexer.jobs.export_tokens_and_transfers_job import ExportTokensAndTransfer
 from indexer.jobs.export_traces_job import ExportTracesJob
 from indexer.jobs.export_transactions_and_logs_job import ExportTransactionsAndLogsJob
 from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
+from indexer.jobs.source_job.csv_source_job import CSVSourceJob
+from indexer.jobs.source_job.pg_source_job import PGSourceJob

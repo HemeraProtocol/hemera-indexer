@@ -28,6 +28,9 @@ def check_file_exporter_parameter(outputs, block_batch_size, blocks_per_file):
 
 
 def check_file_load_parameter(cli_path: str):
+    if cli_path.startswith("postgres"):
+        return
+
     load_file_path = extract_path_from_parameter(cli_path)
 
     if not os.path.exists(load_file_path):
