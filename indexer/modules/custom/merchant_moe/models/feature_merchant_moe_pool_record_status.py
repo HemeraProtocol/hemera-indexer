@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class FeatureMerChantMoePools(HemeraModel):
+class FeatureMerChantMoePoolRecordStatus(HemeraModel):
     __tablename__ = "feature_merchant_moe_pool_status"
     pool_address = Column(BYTEA, primary_key=True)
     block_timestamp = Column(BIGINT)
