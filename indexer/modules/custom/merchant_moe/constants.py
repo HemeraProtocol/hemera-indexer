@@ -30,6 +30,20 @@ ABI_LIST = [
         "stateMutability": "view",
         "type": "function",
     },
+    {
+        "inputs": [],
+        "name": "getActiveId",
+        "outputs": [{"internalType": "uint24", "name": "activeId", "type": "uint24"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "getBinStep",
+        "outputs": [{"internalType": "uint24", "name": "binStep", "type": "uint16"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
 ]
 
 TOKEN_ASSET_DICT = {
