@@ -3,7 +3,9 @@ import json
 import logging
 import os
 from collections import defaultdict
+
 import eth_abi
+
 from indexer.domain.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
@@ -15,10 +17,14 @@ from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenCurrentSupply,
     MerchantMoeErc1155TokenHolding,
     MerchantMoeErc1155TokenSupply,
-
 )
-from indexer.modules.custom.merchant_moe.domain.merchant_moe import MerChantMoeTokenBin, MerChantMoeTokenCurrentBin, \
-    MerChantMoePool, MerChantMoePoolCurrentStatu, MerChantMoePoolRecord
+from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
+    MerChantMoePool,
+    MerChantMoePoolCurrentStatu,
+    MerChantMoePoolRecord,
+    MerChantMoeTokenBin,
+    MerChantMoeTokenCurrentBin,
+)
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -39,8 +45,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         MerChantMoeTokenCurrentBin,
         MerChantMoePool,
         MerChantMoePoolCurrentStatu,
-        MerChantMoePoolRecord
-
+        MerChantMoePoolRecord,
     ]
     able_to_reorg = True
 
@@ -100,30 +105,51 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         if token_address not in self._exist_pool:
             if infos[0].token_id is None or infos[0].token_id < 0:
                 return
-            requests = [{
-                "block_number": infos[0].block_number,
-                "address": token_address,
-            }]
+            requests = [
+                {
+                    "block_number": infos[0].block_number,
+                    "address": token_address,
+                }
+            ]
 
             token0_infos = common_utils.simple_get_rpc_requests(
-                self._web3, self._batch_web3_provider.make_request, requests, self._is_batch, constants.ABI_LIST,
-                "getTokenX", "address", self._batch_size, self._max_worker
+                self._web3,
+                self._batch_web3_provider.make_request,
+                requests,
+                self._is_batch,
+                constants.ABI_LIST,
+                "getTokenX",
+                "address",
+                self._batch_size,
+                self._max_worker,
             )
 
             if len(token0_infos) == 0 or "getTokenX" not in token0_infos[0] or token0_infos[0]["getTokenX"] is None:
                 return
             token1_infos = common_utils.simple_get_rpc_requests(
-                self._web3, self._batch_web3_provider.make_request, requests, self._is_batch, constants.ABI_LIST,
-                "getTokenY", "address", self._batch_size, self._max_worker
+                self._web3,
+                self._batch_web3_provider.make_request,
+                requests,
+                self._is_batch,
+                constants.ABI_LIST,
+                "getTokenY",
+                "address",
+                self._batch_size,
+                self._max_worker,
             )
             if len(token1_infos) == 0 or "getTokenY" not in token1_infos[0] or token1_infos[0]["getTokenY"] is None:
                 return
             self._exist_pool.add(token_address)
-            self._collect_item(MerChantMoePool.type(),
-                               MerChantMoePool(token_address=token_address, token0_address=token1_infos[0]["getTokenX"],
-                                               token1_address=token1_infos[0]["getTokenY"],
-                                               block_number=infos[0].block_number,
-                                               block_timestamp=infos[0].block_timestamp))
+            self._collect_item(
+                MerChantMoePool.type(),
+                MerChantMoePool(
+                    token_address=token_address,
+                    token0_address=token1_infos[0]["getTokenX"],
+                    token1_address=token1_infos[0]["getTokenY"],
+                    block_number=infos[0].block_number,
+                    block_timestamp=infos[0].block_timestamp,
+                ),
+            )
 
         need_call_list = []
         current_token_holding = {}
@@ -161,30 +187,37 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
 
         pool_array = []
         for token_address, block_number, block_timestamp in blocks_set:
-            pool_array.append({
-                "block_number": block_number,
-                "block_timestamp": block_timestamp,
-                "token_address": token_address,
-            })
-        bin_step_array = batch_get_pool_bin_step(self._web3, self._batch_web3_provider.make_request, pool_array,
-                                                 self._is_batch,
-                                                 constants.ABI_LIST)
+            pool_array.append(
+                {
+                    "block_number": block_number,
+                    "block_timestamp": block_timestamp,
+                    "token_address": token_address,
+                }
+            )
+        bin_step_array = batch_get_pool_bin_step(
+            self._web3, self._batch_web3_provider.make_request, pool_array, self._is_batch, constants.ABI_LIST
+        )
 
-        active_id_array = batch_get_pool_active_id(self._web3, self._batch_web3_provider.make_request, bin_step_array,
-                                                   self._is_batch,
-                                                   constants.ABI_LIST)
+        active_id_array = batch_get_pool_active_id(
+            self._web3, self._batch_web3_provider.make_request, bin_step_array, self._is_batch, constants.ABI_LIST
+        )
         current_pool_data = None
         for data in active_id_array:
-            entity = MerChantMoePoolRecord(pool_address=data["token_address"],
-                                           active_id=data["getActiveId"],
-                                           bin_step=data["getBinStep"],
-                                           block_number=data["block_number"],
-                                           block_timestamp=data["block_timestamp"])
+            entity = MerChantMoePoolRecord(
+                pool_address=data["token_address"],
+                active_id=data["getActiveId"],
+                bin_step=data["getBinStep"],
+                block_number=data["block_number"],
+                block_timestamp=data["block_timestamp"],
+            )
             if current_pool_data is None or current_pool_data.block_number < entity.block_number:
-                current_pool_data = MerChantMoePoolCurrentStatu(pool_address=entity.pool_address,
-                                                                active_id=entity.active_id, bin_step=entity.bin_step,
-                                                                block_number=entity.block_number,
-                                                                block_timestamp=entity.block_timestamp)
+                current_pool_data = MerChantMoePoolCurrentStatu(
+                    pool_address=entity.pool_address,
+                    active_id=entity.active_id,
+                    bin_step=entity.bin_step,
+                    block_number=entity.block_number,
+                    block_timestamp=entity.block_timestamp,
+                )
             self._collect_item(MerChantMoePoolRecord.type(), entity)
         if current_pool_data:
             self._collect_item(MerChantMoePoolCurrentStatu.type(), current_pool_data)
@@ -426,10 +459,7 @@ def get_exist_pools(db_service):
 
     session = db_service.get_service_session()
     try:
-        result = (
-            session.query(FeatureMerChantMoePools)
-            .all()
-        )
+        result = session.query(FeatureMerChantMoePools).all()
         history_pools = set()
         if result is not None:
             for item in result:
