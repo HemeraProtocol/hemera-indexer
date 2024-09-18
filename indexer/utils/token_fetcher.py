@@ -47,6 +47,10 @@ exception_recorder = ExceptionRecorder()
 
 class TokenFetcher:
 
+    """
+    TODO make works and chunk_size configable
+    """
+
     def __init__(self, web3, kwargs=None, logger=None):
         self.web3 = web3
         self.provider = get_provider_from_uri(self.web3.provider.endpoint_uri, batch=True)
