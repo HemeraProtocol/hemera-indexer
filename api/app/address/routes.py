@@ -98,7 +98,11 @@ class ACIContractDeployerProfile(Resource):
 class ACIContractDeployerEvents(Resource):
     def get(self, address):
         address = address.lower()
-        events = get_address_contract_operations(address)
+        page_index = int(flask.request.args.get("page", 1))
+        page_size = int(flask.request.args.get("size", PAGE_SIZE))
+        limit = page_size
+        offset = (page_index - 1) * page_size
+        events = get_address_contract_operations(address, limit=limit, offset=offset)
         res = []
         for event in events:
             res.append(format_to_dict(event))
