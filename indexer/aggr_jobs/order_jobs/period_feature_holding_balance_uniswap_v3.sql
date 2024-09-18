@@ -100,6 +100,7 @@ with period_token_price as (select symbol, price
      tick_table as (select period_date,
                            wallet_address,
                            nft_address,
+                           pool_address,
                            token_id,
                            token0_address,
                            token0_symbol,
@@ -144,7 +145,7 @@ select case
            when nft_address = '\xc36442b4a4522e871399cd717abdd847ab11fe88' then 'uniswap_v3'
            else 'uniswap_v3' end as protoco_id,
 
-       nft_address,
+       pool_address,
        period_date,
        token_id,
        wallet_address,
