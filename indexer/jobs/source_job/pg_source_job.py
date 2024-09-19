@@ -7,7 +7,7 @@ from decimal import Decimal
 from queue import Queue
 from typing import List, Type, Union, get_args, get_origin
 
-from sqlalchemy import text, or_, and_
+from sqlalchemy import text, or_, and_, select, func
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models.logs import Logs
@@ -52,54 +52,54 @@ class PGSourceJob(BaseSourceJob):
         if self._service is None:
             raise FastShutdownError("-pg or --postgres-url is required to run PGSourceJob")
 
+        self.build_dependency = {}
+        for output_type in self.output_types:
+            self._dataclass_build_dependence(output_type, Domain)
+        self.build_order = []
+        self._calculate_build_queue()
+
+        self.has_logs_filter = False
+        self.has_transaction_filter = False
+        self.log_filter = {"address": [], "topics": [], "transaction_hash": []}
+        self.transaction_filter = {"hash": [], "from_address": [], "to_address": []}
+        if self._is_filter:
+            self._extract_filter_params()
+
     def _collect(self, **kwargs):
         start_block = int(kwargs["start_block"])
         end_block = int(kwargs["end_block"])
 
-        has_logs_filter = False
-        has_transaction_filter = False
+        self.pg_datas.clear()
         if self._is_filter:
             filter_blocks = set()
-            log_filter = {"address": [], "topics": []}
-            transaction_filter = {"hash": [], "from_address": [], "to_address": []}
-            for filter in self._filters:
-                if isinstance(filter, TransactionFilterByLogs):
-                    for filter_param in filter.get_eth_log_filters_params():
-                        log_filter["address"].extend(filter_param["address"])
-                        log_filter["topics"].extend(flatten(filter_param["topics"]))
-                    has_logs_filter = True
-
-                elif isinstance(filter, TransactionFilterByTransactionInfo):
-                    for spe in filter.specifications:
-                        params = spe.to_filter_params()
-                        if isinstance(spe, TransactionHashSpecification) and params:
-                            transaction_filter["hash"].extend(params["hashes"])
-                        elif isinstance(spe, FromAddressSpecification):
-                            transaction_filter["from_address"].append(params["from_address"])
-                        elif isinstance(spe, ToAddressSpecification):
-                            transaction_filter["to_address"].append(params["to_address"])
-                        else:
-                            raise ValueError(f"Unsupported transaction filter type: {type(filter)}")
-                    has_transaction_filter = True
-                else:
-                    raise ValueError(f"Unsupported filter type: {type(filter)}")
-
-            if has_logs_filter:
-                logs = self.query_logs_filter(start_block, end_block, log_filter)
+            extra_transaction = set()
+            if self.has_logs_filter:
+                logs = self._query_logs_filter(start_block, end_block, self.log_filter)
                 self.pg_datas[Logs] = logs
 
                 for log in logs:
-                    filter_blocks.add(log['block_number'])
-                    transaction_filter["hash"].append(log["transaction_hash"])
+                    filter_blocks.add(log.block_number)
+                    extra_transaction.add('0x' + log.transaction_hash.hex())
 
-            if has_transaction_filter:
-                transactions = self.query_transactions_filter(start_block, end_block, transaction_filter)
+            extra_trx_size = len(extra_transaction)
+            if self.has_transaction_filter or extra_trx_size > 0:
+                transaction_filter = copy.deepcopy(self.transaction_filter)
+                transaction_filter['hash'].extend(list(extra_transaction))
+                transactions = self._query_transactions_filter(start_block, end_block, transaction_filter)
                 self.pg_datas[Transactions] = transactions
 
                 for transaction in transactions:
-                    filter_blocks.add(transaction['block_number'])
+                    filter_blocks.add(transaction.block_number)
+                    extra_transaction.add('0x' + transaction.hash.hex())
 
-            blocks = list(filter_blocks)
+                # if more transaction found, re-fetch logs
+                if extra_trx_size != len(extra_transaction):
+                    log_filter = copy.deepcopy(self.log_filter)
+                    log_filter['transaction_hash'].extend(list(extra_transaction))
+                    logs = self._query_logs_filter(start_block, end_block, log_filter)
+                    self.pg_datas[Logs] = logs
+
+            blocks = sorted(list(filter_blocks))
         else:
             blocks = list(range(start_block, end_block + 1))
 
@@ -112,56 +112,44 @@ class PGSourceJob(BaseSourceJob):
             for output_type in self.output_types:
                 table = domain_model_mapping[output_type.__name__]["table"]
                 if len(self.pg_datas[table]) == 0:
-                    self.pg_datas[table] = self.query_with_blocks(table, blocks)
+                    self.pg_datas[table] = self._query_with_blocks(table, blocks)
         finally:
             session.close()
 
     def _process(self, **kwargs):
-        self.build_dependency = {}
-        for output_type in self.output_types:
-            self.dataclass_build_dependence(output_type, Domain)
-
-        output_build_queue = self.calculate_build_queue()
-        while not output_build_queue.empty():
-            output_type = output_build_queue.get()
+        for output_type in self.build_order:
             table = domain_model_mapping[output_type.__name__]["table"]
-            domains = self.dataclass_build(self.pg_datas[table], output_type)
+            domains = self._dataclass_build(self.pg_datas[table], output_type)
             self._data_buff[output_type.type()] = domains
 
     def _export(self):
         pass
 
-    def query_with_blocks(self, table, blocks):
-        session = self._service.get_service_session()
+    def _query_with_blocks(self, table, blocks):
+        if len(blocks) == 0:
+            return []
 
+        session = self._service.get_service_session()
+        unnest_query = select(func.unnest(blocks).label('block_number')).subquery()
         try:
             if hasattr(table, "number"):
-                stmt = text(
-                    f"""
-                SELECT
-                    {table.__tablename__}.*
-                FROM {table.__tablename__}
-                JOIN unnest(:blocks) AS v(block_number) ON {table.__tablename__}.number = v.block_number
-                """
-                )
+                result = (session.query(table)
+                          .join(unnest_query, table.number == unnest_query.c.block_number)
+                          .order_by(*table.__query_order__)
+                          .all())
             else:
-                stmt = text(
-                    f"""
-                SELECT
-                    {table.__tablename__}.*
-                FROM {table.__tablename__}
-                JOIN unnest(:blocks) AS v(block_number) ON {table.__tablename__}.block_number = v.block_number
-                    """
-                )
+                result = (session.query(table)
+                          .join(unnest_query, table.block_number == unnest_query.c.block_number)
+                          .order_by(*table.__query_order__)
+                          .all())
 
-            result = session.execute(stmt, {"blocks": blocks}).fetchall()
         finally:
             session.close()
 
         return result
 
-    def query_logs_filter(self, start_block, end_block, log_filter):
-        query_filter = and_(Logs.block_number >= start_block, Logs.block_number <= end_block)
+    def _query_logs_filter(self, start_block, end_block, log_filter):
+        query_filter = None
 
         if len(log_filter["address"]) > 0:
             query_filter = or_(query_filter,
@@ -175,6 +163,15 @@ class PGSourceJob(BaseSourceJob):
                                    [bytes.fromhex(topic0[2:]) for topic0 in set(log_filter["topics"])]
                                ))
 
+        if len(log_filter["transaction_hash"]) > 0:
+            query_filter = or_(query_filter,
+                               Logs.transaction_hash.in_(
+                                   [bytes.fromhex(transaction_hash[2:])
+                                    for transaction_hash in set(log_filter["transaction_hash"])]
+                               ))
+
+        query_filter = and_(query_filter, Logs.block_number >= start_block, Logs.block_number <= end_block)
+
         session = self._service.get_service_session()
         try:
             logs = (session.query(Logs)
@@ -185,8 +182,8 @@ class PGSourceJob(BaseSourceJob):
             session.close()
         return logs
 
-    def query_transactions_filter(self, start_block, end_block, transaction_filter):
-        query_filter = and_(Transactions.block_number >= start_block, Transactions.block_number <= end_block)
+    def _query_transactions_filter(self, start_block, end_block, transaction_filter):
+        query_filter = None
 
         if len(transaction_filter["hash"]) > 0:
             query_filter = or_(query_filter,
@@ -209,6 +206,10 @@ class PGSourceJob(BaseSourceJob):
                                     for to_address in set(transaction_filter["to_address"])]
                                ))
 
+        query_filter = and_(query_filter,
+                            Transactions.block_number >= start_block,
+                            Transactions.block_number <= end_block)
+
         session = self._service.get_service_session()
         try:
             transactions = (session.query(Transactions)
@@ -219,7 +220,7 @@ class PGSourceJob(BaseSourceJob):
             session.close()
         return transactions
 
-    def dataclass_build(self, pg_datas, output_type):
+    def _dataclass_build(self, pg_datas, output_type):
 
         def build_block():
             blocks = [table_to_dataclass(data, Block) for data in pg_datas]
@@ -257,7 +258,7 @@ class PGSourceJob(BaseSourceJob):
 
         return domains
 
-    def dataclass_build_dependence(self, cls_type: Type[Domain], target_type):
+    def _dataclass_build_dependence(self, cls_type: Type[Domain], target_type):
         field_types = {f.name: f.type for f in cls_type.__dataclass_fields__.values()}
 
         for field, field_type in field_types.items():
@@ -266,9 +267,9 @@ class PGSourceJob(BaseSourceJob):
                 self.pre_build[cls_type].append(dependent_type)
                 self.post_build[dependent_type] = cls_type
                 if dependent_type not in self.output_types:
-                    self.dataclass_build_dependence(dependent_type, target_type)
+                    self._dataclass_build_dependence(dependent_type, target_type)
 
-    def calculate_build_queue(self):
+    def _calculate_build_queue(self):
         build_queue = Queue()
         un_build_outputs = copy.copy(self.output_types)
         while len(un_build_outputs) > 0:
@@ -284,7 +285,34 @@ class PGSourceJob(BaseSourceJob):
                                 if cls_type is Receipt:
                                     for post_type in self.pre_build[cls_type]:
                                         del self.post_build[post_type]
-        return build_queue
+
+        while not build_queue.empty():
+            self.build_order.append(build_queue.get())
+
+    def _extract_filter_params(self):
+        for filter in self._filters:
+            if isinstance(filter, TransactionFilterByLogs):
+                for filter_param in filter.get_eth_log_filters_params():
+                    self.log_filter["address"].extend(filter_param["address"])
+                    self.log_filter["topics"].extend(flatten(filter_param["topics"]))
+                self.has_logs_filter = True
+
+            elif isinstance(filter, TransactionFilterByTransactionInfo):
+                for spe in filter.specifications:
+                    params = spe.to_filter_params()
+                    if isinstance(spe, TransactionHashSpecification) and params:
+                        self.transaction_filter["hash"].extend(params["hashes"])
+                        self.log_filter["transaction_hash"].extend(params["hashes"])
+                        self.has_logs_filter = True
+                    elif isinstance(spe, FromAddressSpecification):
+                        self.transaction_filter["from_address"].append(params["from_address"])
+                    elif isinstance(spe, ToAddressSpecification):
+                        self.transaction_filter["to_address"].append(params["to_address"])
+                    else:
+                        raise ValueError(f"Unsupported transaction filter type: {type(filter)}")
+                self.has_transaction_filter = True
+            else:
+                raise ValueError(f"Unsupported filter type: {type(filter)}")
 
 
 def check_dependency(column_type, target_type) -> (bool, object):

@@ -232,6 +232,15 @@ def calculate_execution_time(func):
     envvar="AUTO_UPGRADE_DB",
     help="Whether to automatically run database migration scripts to update the database to the latest version.",
 )
+@click.option(
+    "--retry-from-record",
+    default=False,
+    show_default=True,
+    type=bool,
+    envvar="RETRY_FROM_RECORD",
+    help="With the default parameter, the program will always run from the -s parameter, "
+    "and when set to True, it will run from the record point between -s and -e",
+)
 @calculate_execution_time
 def load(
     provider_uri,
@@ -255,6 +264,7 @@ def load(
     sync_recorder="file:sync_record",
     cache="memory",
     auto_upgrade_db=True,
+    retry_from_record=False,
 ):
     configure_logging(log_file)
     configure_signals()
@@ -303,12 +313,14 @@ def load(
         config=config,
         required_output_types=output_types,
         cache=cache,
+        auto_reorg=False
     )
 
     controller = StreamController(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
+        retry_from_record=retry_from_record,
     )
 
     controller.action(
