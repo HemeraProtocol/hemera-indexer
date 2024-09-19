@@ -220,7 +220,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                 ).label('row_number')
             )
             .filter(
-                TokenPrice.timestamp <= price_date_limit)
+                TokenPrice.timestamp < price_date_limit)
             .filter(TokenPrice.symbol.in_(symbol_list))
             .subquery()
         )
