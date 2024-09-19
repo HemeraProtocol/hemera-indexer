@@ -7,6 +7,7 @@ from collections import defaultdict
 import eth_abi
 
 from indexer.domain.token_balance import TokenBalance
+from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
@@ -35,7 +36,7 @@ FEATURE_ID = FeatureType.MERCHANT_MOE_1155_LIQUIDITY.value
 
 
 class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
-    dependency_types = [TokenBalance]
+    dependency_types = [TokenBalance, Log]
     output_types = [
         MerchantMoeErc1155TokenHolding,
         MerchantMoeErc1155TokenCurrentHolding,
@@ -86,15 +87,22 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         if self._need_collected_list is None or len(self._need_collected_list) == 0:
             return
         token_balances = self._data_buff[TokenBalance.type()]
-        if token_balances is None or len(token_balances) == 0:
-            return
-        self._batch_work_executor.execute(
-            token_balances, self._collect_batch, total_items=len(token_balances), split_method=split_token_balances
-        )
+        if token_balances is not None and len(token_balances) > 0:
+            self._batch_work_executor.execute(
+                token_balances, self._collect_token_batch, total_items=len(token_balances),
+                split_method=split_token_balances
+            )
 
-        self._batch_work_executor.wait()
+            self._batch_work_executor.wait()
+        logs = self._data_buff[Log.type()]
+        if logs is not None and len(logs) > 0:
+            self._batch_work_executor.execute(
+                logs, self._collect_pool_batch, total_items=len(logs),
+                split_method=split_logs
+            )
+            self._batch_work_executor.wait()
 
-    def _collect_batch(self, token_balances) -> None:
+    def _collect_token_batch(self, token_balances) -> None:
         if token_balances is None or len(token_balances) == 0:
             return
         token_address = next(iter(token_balances))
@@ -154,12 +162,10 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         need_call_list = []
         current_token_holding = {}
         token_id_info_set = set()
-        blocks_set = set()
         for token_balance in infos:
             token_address = token_balance.token_address
             block_number = token_balance.block_number
             block_timestamp = token_balance.block_timestamp
-            blocks_set.add((token_address, block_number, block_timestamp))
             token_id = token_balance.token_id
             if (token_id, block_number) not in token_id_info_set:
                 token_id_info_set.add((token_id, block_number))
@@ -184,43 +190,6 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 )
         for data in current_token_holding.values():
             self._collect_item(MerchantMoeErc1155TokenCurrentHolding.type(), data)
-
-        pool_array = []
-        for token_address, block_number, block_timestamp in blocks_set:
-            pool_array.append(
-                {
-                    "block_number": block_number,
-                    "block_timestamp": block_timestamp,
-                    "token_address": token_address,
-                }
-            )
-        bin_step_array = batch_get_pool_bin_step(
-            self._web3, self._batch_web3_provider.make_request, pool_array, self._is_batch, constants.ABI_LIST
-        )
-
-        active_id_array = batch_get_pool_active_id(
-            self._web3, self._batch_web3_provider.make_request, bin_step_array, self._is_batch, constants.ABI_LIST
-        )
-        current_pool_data = None
-        for data in active_id_array:
-            entity = MerChantMoePoolRecord(
-                pool_address=data["token_address"],
-                active_id=data["getActiveId"],
-                bin_step=data["getBinStep"],
-                block_number=data["block_number"],
-                block_timestamp=data["block_timestamp"],
-            )
-            if current_pool_data is None or current_pool_data.block_number < entity.block_number:
-                current_pool_data = MerChantMoePoolCurrentStatu(
-                    pool_address=entity.pool_address,
-                    active_id=entity.active_id,
-                    bin_step=entity.bin_step,
-                    block_number=entity.block_number,
-                    block_timestamp=entity.block_timestamp,
-                )
-            self._collect_item(MerChantMoePoolRecord.type(), entity)
-        if current_pool_data:
-            self._collect_item(MerChantMoePoolCurrentStatu.type(), current_pool_data)
 
         total_supply_dtos = batch_get_total_supply(
             self._web3,
@@ -292,6 +261,61 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         for data in current_token_bin_dict.values():
             self._collect_item(MerChantMoeTokenCurrentBin.type(), data)
 
+    def _collect_pool_batch(self, log_dict) -> None:
+        if log_dict is None or len(log_dict) == 0:
+            return
+        token_address = next(iter(log_dict))
+        logs = log_dict[token_address]
+        if logs is None or len(logs) == 0:
+            return
+        blocks_set = set()
+        for log in logs:
+            token_address = log.address
+            if token_address not in self._exist_pool:
+                continue
+            block_number = log.block_number
+            block_timestamp = log.block_timestamp
+            blocks_set.add((token_address, block_number, block_timestamp))
+
+        pool_array = []
+        for token_address, block_number, block_timestamp in blocks_set:
+            pool_array.append(
+                {
+                    "block_number": block_number,
+                    "block_timestamp": block_timestamp,
+                    "token_address": token_address,
+                }
+            )
+        if pool_array is None or len(pool_array) == 0:
+            return
+        bin_step_array = batch_get_pool_bin_step(
+            self._web3, self._batch_web3_provider.make_request, pool_array, self._is_batch, constants.ABI_LIST
+        )
+
+        active_id_array = batch_get_pool_active_id(
+            self._web3, self._batch_web3_provider.make_request, bin_step_array, self._is_batch, constants.ABI_LIST
+        )
+        current_pool_data = None
+        for data in active_id_array:
+            entity = MerChantMoePoolRecord(
+                pool_address=data["token_address"],
+                active_id=data["getActiveId"],
+                bin_step=data["getBinStep"],
+                block_number=data["block_number"],
+                block_timestamp=data["block_timestamp"],
+            )
+            if current_pool_data is None or current_pool_data.block_number < entity.block_number:
+                current_pool_data = MerChantMoePoolCurrentStatu(
+                    pool_address=entity.pool_address,
+                    active_id=entity.active_id,
+                    bin_step=entity.bin_step,
+                    block_number=entity.block_number,
+                    block_timestamp=entity.block_timestamp,
+                )
+            self._collect_item(MerChantMoePoolRecord.type(), entity)
+        if current_pool_data:
+            self._collect_item(MerChantMoePoolCurrentStatu.type(), current_pool_data)
+
     def _process(self, **kwargs):
 
         self._data_buff[MerchantMoeErc1155TokenHolding.type()].sort(key=lambda x: x.block_number)
@@ -323,6 +347,15 @@ def split_token_balances(token_balances):
 
     for token_address, data in token_balance_dict.items():
         yield {token_address: data}
+
+
+def split_logs(logs):
+    log_dict = defaultdict(list)
+    for data in logs:
+        log_dict[data.address].append(data)
+
+    for address, data in log_dict.items():
+        yield {address: data}
 
 
 def batch_get_bin(web3, make_requests, requests, nft_address, is_batch, abi_list):
