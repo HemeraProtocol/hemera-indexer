@@ -172,7 +172,7 @@ class TokenFetcher:
                     return [UpdateERC1155TokenIdDetail(**common_args, token_supply=token_supply)]
         except Exception as e:
             exception_recorder.log(
-                block_number=token_info.block_number,
+                block_number=token_info["block_number"],
                 dataclass=to_snake_case("token_id_info"),
                 message_type="decode_token_id_info_fail",
                 message=str(e),
