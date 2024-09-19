@@ -235,7 +235,7 @@ class PGSourceJob(BaseSourceJob):
 
         def build_transaction():
             transactions = [table_to_dataclass(data, Transaction) for data in pg_datas]
-            self.domain_mapping[output_type] = {transactions.hash: transactions for transactions in transactions}
+            self.domain_mapping[output_type] = {transaction.hash: transaction for transaction in transactions}
             for transaction in transactions:
                 self.domain_mapping[Block][transaction.block_hash].transactions.append(transaction)
 
