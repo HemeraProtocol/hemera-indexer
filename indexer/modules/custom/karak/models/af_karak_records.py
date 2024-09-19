@@ -8,30 +8,24 @@ from common.models import HemeraModel, general_converter
 
 class AfKarakRecords(HemeraModel):
     __tablename__ = "af_karak_records"
-    pool_address = Column(BYTEA, primary_key=True)
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
-    position_token_address = Column(BYTEA)
-    transaction_from_address = Column(BYTEA)
-    sender = Column(BYTEA)
-    recipient = Column(BYTEA)
+    method = Column(VARCHAR)
+    event_name = Column(VARCHAR)
+    topic0 = Column(VARCHAR)
+    from_address = Column(BYTEA)
+    to_address = Column(BYTEA)
 
-    liquidity = Column(NUMERIC(100))
-    tick = Column(NUMERIC(100))
-    sqrt_price_x96 = Column(NUMERIC(100))
-    amount0 = Column(NUMERIC(100))
-    amount1 = Column(NUMERIC(100))
-
-    token0_address = Column(BYTEA)
-    token1_address = Column(BYTEA)
+    vault = Column(BYTEA)
+    amount = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("pool_address", "transaction_hash", "log_index"),)
+    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "log_index"),)
 
     @staticmethod
     def model_domain_mapping():
