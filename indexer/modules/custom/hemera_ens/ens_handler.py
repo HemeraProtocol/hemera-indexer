@@ -197,6 +197,42 @@ class EnsHandler:
                     method="setName",
                 )
             ]
+        elif method == "setNameForAddr":
+            d_tnx = self.decode_transaction(transaction)
+            ens_middle = AttrDict(dic)
+            ens_middle.log_index = -1
+            name = None
+            if d_tnx[1].get("name"):
+                name = d_tnx[1]["name"]
+            if not name or len(name) - 4 != name.find("."):
+                return []
+            address = None
+            if d_tnx[1].get("addr"):
+                address = d_tnx[1]["addr"]
+            if not address:
+                return []
+            ens_middle.reverse_name = name
+            ens_middle.node = namehash(name)
+            ens_middle.address = address.lower()
+            return [
+                ENSMiddleD(
+                    transaction_hash=ens_middle.transaction_hash,
+                    log_index=ens_middle.log_index,
+                    transaction_index=ens_middle.transaction_index,
+                    block_number=ens_middle.block_number,
+                    block_hash=ens_middle.block_hash,
+                    block_timestamp=ens_middle.block_timestamp,
+                    from_address=ens_middle.from_address,
+                    to_address=ens_middle.to_address,
+                    reverse_name=ens_middle.reverse_name,
+                    address=ens_middle.address,
+                    node=ens_middle.node,
+                    reverse_node=None,
+                    reverse_base_node=REVERSE_BASE_NODE,
+                    event_name=None,
+                    method="setNameForAddr",
+                )
+            ]
         res = []
         start = 0
         for idx, single_log in enumerate(logs):
@@ -282,7 +318,7 @@ class EnsHandler:
         node = record.get("node")
         if not node:
             raise Exception("pass")
-        if event_name == "NameChanged" or record["method"] == "setName":
+        if event_name == "NameChanged" or record["method"] == "setName" or record["method"] == "setNameForAddr":
             return ENSAddressD(
                 address=address,
                 reverse_node=record["reverse_node"],
