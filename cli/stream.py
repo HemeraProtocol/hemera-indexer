@@ -266,7 +266,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--auto-upgrade-db",
-    default=False,
+    default=True,
     show_default=True,
     type=bool,
     envvar="AUTO_UPGRADE_DB",
@@ -299,7 +299,7 @@ def stream(
     multicall=True,
     config_file=None,
     force_filter_mode=False,
-    auto_upgrade_db=False,
+    auto_upgrade_db=True,
 ):
     configure_logging(log_file)
     configure_signals()
