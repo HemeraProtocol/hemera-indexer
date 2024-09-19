@@ -300,7 +300,7 @@ def test_export_token_id_info_job_on_linea_mul():
         ERC721TokenIdDetail(
             token_address="0x6e84390dcc5195414ec91a8c56a5c91021b95704",
             token_id=110042221770367602542853534930234725702383442308140339620523913150618217206456,
-            token_uri=None,
+            token_uri="",
             block_number=8494071,
             block_timestamp=1724397109,
             token_uri_info=None,
