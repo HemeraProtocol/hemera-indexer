@@ -86,8 +86,12 @@ class DepositToL2Job(FilterTransactionDataJob):
         transactions = list(
             filter(
                 self._filter.get_or_specification().is_satisfied_by,
-                [transaction for block in self._data_buff[Block.type()] for transaction in block.transactions
-                 if transaction.receipt and transaction.receipt.status != 0],
+                [
+                    transaction
+                    for block in self._data_buff[Block.type()]
+                    for transaction in block.transactions
+                    if transaction.receipt and transaction.receipt.status != 0
+                ],
             )
         )
         deposit_tokens = parse_deposit_transaction_function(
@@ -163,10 +167,10 @@ class DepositToL2Job(FilterTransactionDataJob):
 
         deposit = (
             AddressTokenDeposit(
-                wallet_address='0x' + history_deposit.wallet_address.hex(),
+                wallet_address="0x" + history_deposit.wallet_address.hex(),
                 chain_id=history_deposit.chain_id,
-                contract_address='0x' + history_deposit.contract_address.hex(),
-                token_address='0x' + history_deposit.token_address.hex(),
+                contract_address="0x" + history_deposit.contract_address.hex(),
+                token_address="0x" + history_deposit.token_address.hex(),
                 value=int(history_deposit.value),
                 block_number=history_deposit.block_number,
                 block_timestamp=int(round(history_deposit.block_timestamp.timestamp())),

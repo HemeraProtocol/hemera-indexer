@@ -313,7 +313,7 @@ def load(
         config=config,
         required_output_types=output_types,
         cache=cache,
-        auto_reorg=False
+        auto_reorg=False,
     )
 
     controller = StreamController(

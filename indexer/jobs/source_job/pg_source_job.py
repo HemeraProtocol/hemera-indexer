@@ -7,7 +7,7 @@ from decimal import Decimal
 from queue import Queue
 from typing import List, Type, Union, get_args, get_origin
 
-from sqlalchemy import text, or_, and_, select, func
+from sqlalchemy import and_, func, or_, select
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models.logs import Logs
@@ -22,11 +22,12 @@ from indexer.jobs.base_job import BaseSourceJob
 from indexer.specification.specification import (
     AlwaysFalseSpecification,
     AlwaysTrueSpecification,
+    FromAddressSpecification,
+    ToAddressSpecification,
     TransactionFilterByLogs,
     TransactionFilterByTransactionInfo,
-    TransactionHashSpecification, FromAddressSpecification, ToAddressSpecification,
+    TransactionHashSpecification,
 )
-
 from indexer.utils.utils import flatten
 
 logger = logging.getLogger(__name__)
@@ -79,23 +80,23 @@ class PGSourceJob(BaseSourceJob):
 
                 for log in logs:
                     filter_blocks.add(log.block_number)
-                    extra_transaction.add('0x' + log.transaction_hash.hex())
+                    extra_transaction.add("0x" + log.transaction_hash.hex())
 
             extra_trx_size = len(extra_transaction)
             if self.has_transaction_filter or extra_trx_size > 0:
                 transaction_filter = copy.deepcopy(self.transaction_filter)
-                transaction_filter['hash'].extend(list(extra_transaction))
+                transaction_filter["hash"].extend(list(extra_transaction))
                 transactions = self._query_transactions_filter(start_block, end_block, transaction_filter)
                 self.pg_datas[Transactions] = transactions
 
                 for transaction in transactions:
                     filter_blocks.add(transaction.block_number)
-                    extra_transaction.add('0x' + transaction.hash.hex())
+                    extra_transaction.add("0x" + transaction.hash.hex())
 
                 # if more transaction found, re-fetch logs
                 if extra_trx_size != len(extra_transaction):
                     log_filter = copy.deepcopy(self.log_filter)
-                    log_filter['transaction_hash'].extend(list(extra_transaction))
+                    log_filter["transaction_hash"].extend(list(extra_transaction))
                     logs = self._query_logs_filter(start_block, end_block, log_filter)
                     self.pg_datas[Logs] = logs
 
@@ -130,18 +131,22 @@ class PGSourceJob(BaseSourceJob):
             return []
 
         session = self._service.get_service_session()
-        unnest_query = select(func.unnest(blocks).label('block_number')).subquery()
+        unnest_query = select(func.unnest(blocks).label("block_number")).subquery()
         try:
             if hasattr(table, "number"):
-                result = (session.query(table)
-                          .join(unnest_query, table.number == unnest_query.c.block_number)
-                          .order_by(*table.__query_order__)
-                          .all())
+                result = (
+                    session.query(table)
+                    .join(unnest_query, table.number == unnest_query.c.block_number)
+                    .order_by(*table.__query_order__)
+                    .all()
+                )
             else:
-                result = (session.query(table)
-                          .join(unnest_query, table.block_number == unnest_query.c.block_number)
-                          .order_by(*table.__query_order__)
-                          .all())
+                result = (
+                    session.query(table)
+                    .join(unnest_query, table.block_number == unnest_query.c.block_number)
+                    .order_by(*table.__query_order__)
+                    .all()
+                )
 
         finally:
             session.close()
@@ -152,32 +157,28 @@ class PGSourceJob(BaseSourceJob):
         query_filter = None
 
         if len(log_filter["address"]) > 0:
-            query_filter = or_(query_filter,
-                               Logs.address.in_(
-                                   [bytes.fromhex(address[2:]) for address in set(log_filter["address"])]
-                               ))
+            query_filter = or_(
+                query_filter, Logs.address.in_([bytes.fromhex(address[2:]) for address in set(log_filter["address"])])
+            )
 
         if len(log_filter["topics"]) > 0:
-            query_filter = or_(query_filter,
-                               Logs.topic0.in_(
-                                   [bytes.fromhex(topic0[2:]) for topic0 in set(log_filter["topics"])]
-                               ))
+            query_filter = or_(
+                query_filter, Logs.topic0.in_([bytes.fromhex(topic0[2:]) for topic0 in set(log_filter["topics"])])
+            )
 
         if len(log_filter["transaction_hash"]) > 0:
-            query_filter = or_(query_filter,
-                               Logs.transaction_hash.in_(
-                                   [bytes.fromhex(transaction_hash[2:])
-                                    for transaction_hash in set(log_filter["transaction_hash"])]
-                               ))
+            query_filter = or_(
+                query_filter,
+                Logs.transaction_hash.in_(
+                    [bytes.fromhex(transaction_hash[2:]) for transaction_hash in set(log_filter["transaction_hash"])]
+                ),
+            )
 
         query_filter = and_(query_filter, Logs.block_number >= start_block, Logs.block_number <= end_block)
 
         session = self._service.get_service_session()
         try:
-            logs = (session.query(Logs)
-                    .filter(query_filter)
-                    .order_by(*Logs.__query_order__)
-                    .all())
+            logs = session.query(Logs).filter(query_filter).order_by(*Logs.__query_order__).all()
         finally:
             session.close()
         return logs
@@ -186,36 +187,38 @@ class PGSourceJob(BaseSourceJob):
         query_filter = None
 
         if len(transaction_filter["hash"]) > 0:
-            query_filter = or_(query_filter,
-                               Transactions.hash.in_(
-                                   [bytes.fromhex(transaction_hash[2:])
-                                    for transaction_hash in set(transaction_filter["hash"])]
-                               ))
+            query_filter = or_(
+                query_filter,
+                Transactions.hash.in_(
+                    [bytes.fromhex(transaction_hash[2:]) for transaction_hash in set(transaction_filter["hash"])]
+                ),
+            )
 
         if len(transaction_filter["from_address"]) > 0:
-            query_filter = or_(query_filter,
-                               Transactions.from_address.in_(
-                                   [bytes.fromhex(from_address[2:])
-                                    for from_address in set(transaction_filter["from_address"])]
-                               ))
+            query_filter = or_(
+                query_filter,
+                Transactions.from_address.in_(
+                    [bytes.fromhex(from_address[2:]) for from_address in set(transaction_filter["from_address"])]
+                ),
+            )
 
         if len(transaction_filter["to_address"]) > 0:
-            query_filter = or_(query_filter,
-                               Transactions.to_address.in_(
-                                   [bytes.fromhex(to_address[2:])
-                                    for to_address in set(transaction_filter["to_address"])]
-                               ))
+            query_filter = or_(
+                query_filter,
+                Transactions.to_address.in_(
+                    [bytes.fromhex(to_address[2:]) for to_address in set(transaction_filter["to_address"])]
+                ),
+            )
 
-        query_filter = and_(query_filter,
-                            Transactions.block_number >= start_block,
-                            Transactions.block_number <= end_block)
+        query_filter = and_(
+            query_filter, Transactions.block_number >= start_block, Transactions.block_number <= end_block
+        )
 
         session = self._service.get_service_session()
         try:
-            transactions = (session.query(Transactions)
-                            .filter(query_filter)
-                            .order_by(*Transactions.__query_order__)
-                            .all())
+            transactions = (
+                session.query(Transactions).filter(query_filter).order_by(*Transactions.__query_order__).all()
+            )
         finally:
             session.close()
         return transactions
