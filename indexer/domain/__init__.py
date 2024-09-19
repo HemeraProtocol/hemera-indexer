@@ -102,9 +102,11 @@ def dict_to_dataclass(data: Dict[str, Any], cls):
             if origin is list:
                 # Handle lists
                 item_type = args[0]
-                init_values[field] = [
-                    (dict_to_dataclass(item, item_type) if isinstance(item, dict) else item) for item in data[field]
-                ]
+                init_values[field] = (
+                    [(dict_to_dataclass(item, item_type) if isinstance(item, dict) else item) for item in data[field]]
+                    if data[field]
+                    else []
+                )
             elif hasattr(field_type, "__dataclass_fields__"):
                 # Handle nested dataclass
                 init_values[field] = dict_to_dataclass(data[field], field_type)
