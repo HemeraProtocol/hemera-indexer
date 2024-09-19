@@ -52,7 +52,7 @@ CONTRACT_NAME_MAP = {
     "0x000000000000509081d6fcd3ee63e791ad1db763": "NOT Verified",
     "0xc71930b83cbabfeb35bedaaf2122e41595179b14": "NOT Verified",
     "0xb3f4598d27bc18f3a7e155dba5e31083c9e1ec3f": "NOT Verified",
-    "0xfc0a4a934410f34a9bb8b4f28bed6b960c943a7e": "NOT Verified"
+    "0xfc0a4a934410f34a9bb8b4f28bed6b960c943a7e": "NOT Verified",
 }
 
 
