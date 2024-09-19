@@ -118,6 +118,7 @@ class PGSourceJob(BaseSourceJob):
             session.close()
 
     def _process(self, **kwargs):
+        self.domain_mapping.clear()
         for output_type in self.build_order:
             table = domain_model_mapping[output_type.__name__]["table"]
             domains = self._dataclass_build(self.pg_datas[table], output_type)
