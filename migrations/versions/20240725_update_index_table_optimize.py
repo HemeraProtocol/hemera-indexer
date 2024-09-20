@@ -210,6 +210,12 @@ def upgrade() -> None:
         ["token_address", "to_address"],
         unique=False,
     )
+    op.drop_constraint("erc1155_token_transfers_pkey", "erc1155_token_transfers", type_="primary")
+    op.create_primary_key(
+        "erc1155_token_transfers_pkey",
+        "erc1155_token_transfers",
+        ["transaction_hash", "block_hash", "log_index", "token_id"],
+    )
     op.alter_column(
         "erc20_token_transfers",
         "block_hash",
@@ -670,6 +676,12 @@ def downgrade() -> None:
         "token_id",
         existing_type=sa.NUMERIC(precision=78, scale=0),
         nullable=True,
+    )
+    op.drop_constraint("erc1155_token_transfers_pkey", "erc1155_token_transfers", type_="primary")
+    op.create_primary_key(
+        "erc1155_token_transfers_pkey",
+        "erc1155_token_transfers",
+        ["transaction_hash", "log_index"],
     )
     op.drop_index("erc1155_detail_desc_address_id_index", table_name="erc1155_token_id_details")
     op.drop_constraint("erc1155_token_id_details_pkey", "erc1155_token_id_details", type_="primary")
