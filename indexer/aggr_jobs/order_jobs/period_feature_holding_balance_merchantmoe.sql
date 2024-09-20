@@ -6,8 +6,8 @@ where period_date >= '{start_date}'
 insert into period_feature_merchant_moe_token_bin_records(period_date, token_address, token_id, reserve0_bin, reserve1_bin)
 select date('{start_date}'), token_address, token_id, reserve0_bin, reserve1_bin
 from (select *, row_number() over (partition by token_address, token_id order by block_timestamp desc) as rn
-      from feature_merchant_moe_token_bin_records
-      where to_timestamp(block_timestamp) <= '{start_date}') t
+          from feature_merchant_moe_token_bin_records
+      where to_timestamp(block_timestamp) < '{end_date}') t
 where rn = 1
 ;
 
