@@ -91,8 +91,6 @@ class ReorgController(BaseController):
 
         logging.info(f"Reorging mission start from block No.{block_number} and ranges {remains} has been completed.")
 
-        return self.wake_up_next_job()
-
     def _do_fixing(self, fix_block, retry_errors=True):
         tries, tries_reset = 0, True
         while True:
@@ -191,6 +189,7 @@ class ReorgController(BaseController):
             )
         except Exception as e:
             logging.error(f"Wake up uncompleted job error: {e}.")
+            raise e
         finally:
             session.close()
 

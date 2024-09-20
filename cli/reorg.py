@@ -187,15 +187,18 @@ def reorg(
 
     job = None
     while True:
-        job = (
+        if job:
             controller.action(
                 job_id=job.job_id,
                 block_number=job.last_fixed_block_number - 1,
                 remains=job.remain_process,
             )
-            if job
-            else controller.action(block_number=block_number)
-        )
+        else:
+            controller.action(block_number=block_number)
 
-        if job is None:
+        job = controller.wake_up_next_job()
+        if job:
+            logging.info(f"Waking up uncompleted job: {job.job_id}.")
+        else:
+            logging.info("No more uncompleted jobs to wake-up, reorg process will terminate.")
             break
