@@ -37,17 +37,17 @@ def get_tokens_from_db(session):
 
 class ReorgScheduler:
     def __init__(
-        self,
-        batch_web3_provider,
-        batch_web3_debug_provider,
-        batch_size=100,
-        debug_batch_size=1,
-        max_workers=5,
-        config={},
-        item_exporters=[],
-        required_output_types=[],
-        cache="memory",
-        multicall=None,
+            self,
+            batch_web3_provider,
+            batch_web3_debug_provider,
+            batch_size=100,
+            debug_batch_size=1,
+            max_workers=5,
+            config={},
+            item_exporters=[],
+            required_output_types=[],
+            cache="memory",
+            multicall=None,
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -84,11 +84,11 @@ class ReorgScheduler:
         self.instantiate_jobs()
 
     @staticmethod
-    def get_data_buff(self):
+    def get_data_buff():
         return BaseJob._data_buff
 
     @staticmethod
-    def clear_data_buff(self):
+    def clear_data_buff():
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
@@ -159,9 +159,9 @@ class ReorgScheduler:
         self.jobs.append(export_reorg_job)
 
     def run_jobs(self, start_block, end_block):
+        self.clear_data_buff()
         for job in self.jobs:
             job.run(start_block=start_block, end_block=end_block)
-        # TODO: clean data buffer after all jobs are run
 
     def get_required_job_classes(self, output_types):
         required_job_classes = set()
