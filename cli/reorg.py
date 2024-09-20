@@ -185,4 +185,17 @@ def reorg(
         config=config,
     )
 
-    controller.action(block_number=block_number)
+    job = None
+    while True:
+        job = (
+            controller.action(
+                job_id=job.job_id,
+                block_number=job.last_fixed_block_number - 1,
+                remains=job.remain_process,
+            )
+            if job
+            else controller.action(block_number=block_number)
+        )
+
+        if job is None:
+            break
