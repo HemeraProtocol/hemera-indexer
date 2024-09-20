@@ -5,6 +5,7 @@ from typing import Optional
 from indexer.domain import FilterData, Domain
 
 
+@dataclass
 class KarakActionD(FilterData):
     transaction_hash: str
     log_index: int
@@ -30,7 +31,16 @@ class KarakActionD(FilterData):
 
 
 @dataclass
-class DepositD(FilterData):
+class KarakVaultTokenD(FilterData):
+    vault: Optional[str] = None
+    token: Optional[str] = None
+    name: Optional[str] = None
+    symbol: Optional[str] = None
+    asset_type: Optional[int] = None
+
+
+@dataclass
+class KarakDepositD(FilterData):
     position_token_address: str
     factory_address: str
     pool_address: str
@@ -43,10 +53,10 @@ class DepositD(FilterData):
 
 
 @dataclass
-class StatWithdrawD(FilterData):
+class KarakStatWithdrawD(FilterData):
     pass
 
 
 @dataclass
-class FinishWithDrawD(FilterData):
+class KarakFinishWithDrawD(FilterData):
     pass
