@@ -19,13 +19,16 @@ class PeriodFeatureHoldingBalanceUniswapV3(HemeraModel):
     token0_address = Column(BYTEA, nullable=False)
     token0_symbol = Column(String, nullable=False)
     token0_balance = Column(NUMERIC(100, 18))
+    token0_balance_upper = Column(NUMERIC(100, 18))
+    token0_balance_lower = Column(NUMERIC(100, 18))
 
     token1_address = Column(BYTEA, nullable=False)
     token1_symbol = Column(String, nullable=False)
     token1_balance = Column(NUMERIC(100, 18))
+    token1_balance_upper = Column(NUMERIC(100, 18))
+    token1_balance_lower = Column(NUMERIC(100, 18))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
-
 
 # could be replaced by partition in case of huge amount data
 Index(

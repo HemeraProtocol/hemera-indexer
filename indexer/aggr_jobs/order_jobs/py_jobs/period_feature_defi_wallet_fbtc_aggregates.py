@@ -15,6 +15,8 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_dodo imp
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_lendle import PeriodFeatureHoldingBalanceLendle
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_merchantmoe import \
     PeriodFeatureHoldingBalanceMerchantmoe
+from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_satlayer_fbtc import \
+    PeriodFeatureHoldingBalanceSatlayerFbtc
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_staked_fbtc_detail import \
     PeriodFeatureHoldingBalanceStakedFbtcDetail
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_v3 import \
@@ -347,18 +349,23 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                                                       'usd': total_usd}
         return results
 
-    def get_staked_json(self):
+    def get_filter_start_date_orm(self, orm_class):
         session = self.db_service.Session()
+        orm_list = session.query(orm_class).filter(
+            orm_class.period_date == self.start_date).all()
+        session.close()
+        return orm_list
 
-        fbtc_detail_list = session.query(PeriodFeatureHoldingBalanceStakedFbtcDetail).filter(
-            PeriodFeatureHoldingBalanceStakedFbtcDetail.period_date == self.start_date).all()
+    def get_staked_json(self):
+        orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceStakedFbtcDetail)
+        return self.get_token_data(orm_list)
 
-        return self.get_token_data(fbtc_detail_list)
+    def get_satlayer_json(self):
+        orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceSatlayerFbtc)
+        return self.get_token_data(orm_list)
 
     def get_lendle_json(self):
-        session = self.db_service.Session()
-        orm_list = session.query(PeriodFeatureHoldingBalanceLendle).filter(
-            PeriodFeatureHoldingBalanceLendle.period_date == self.start_date).all()
+        orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceLendle)
         return self.get_token_data(orm_list)
 
     @staticmethod
@@ -375,16 +382,22 @@ class PeriodFeatureDefiWalletFbtcAggregates:
                                                  'get_period_address_token_balances')
 
         staked = self.timed_call(self.get_staked_json, 'get_staked_json')
+
         uniswapv3 = self.timed_call(self.get_uniswap_v3_json, 'get_uniswap_v3_json')
         merchantmoe_json = self.timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
 
         dodo_json = self.timed_call(self.get_dodo_json, 'get_dodo_json')
-        get_lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
+        lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
 
         # period_date can be removed from the key
-        protocol_wallet_keys_list = list(
-            {key for d in [uniswapv3, staked, address_token_balances, merchantmoe_json, dodo_json, get_lendle_json] for
-             key in d.keys()})
+        protocols = [uniswapv3, staked, merchantmoe_json, dodo_json, lendle_json]
+        if self.chain_name == 'eth':
+            satlayer_json = self.timed_call(self.get_satlayer_json, 'get_satlayer_json')
+            protocols.append(satlayer_json)
+
+        protocols_with_address_balance = protocols + [address_token_balances]
+
+        protocol_wallet_keys_list = list({key for d in protocols_with_address_balance for key in d.keys()})
 
         result_orm_list = []
 
@@ -401,8 +414,6 @@ class PeriodFeatureDefiWalletFbtcAggregates:
             if address_token_balances_value:
                 wallet_holding_fbtc_balance += address_token_balances_value[0]
                 wallet_holding_fbtc_usd += address_token_balances_value[1]
-
-            protocols = [uniswapv3, staked, merchantmoe_json, dodo_json, get_lendle_json]
 
             for protocol in protocols:
                 protocol_value = protocol.get(key, '')
