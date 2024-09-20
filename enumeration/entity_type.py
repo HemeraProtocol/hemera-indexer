@@ -16,10 +16,7 @@ from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import (
-    Erc20CurrentTokenHolding,
-    Erc20TokenHolding,
-)
+from indexer.modules.custom.erc20_token_holding.domain.erc20_token_holding import ExportERC20TokenJobData
 from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
     MerchantMoeErc1155TokenCurrentHolding,
     MerchantMoeErc1155TokenCurrentSupply,
@@ -28,10 +25,10 @@ from indexer.modules.custom.merchant_moe.domain.erc1155_token_holding import (
 )
 from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
     MerChantMoePool,
+    MerChantMoePoolCurrentStatu,
+    MerChantMoePoolRecord,
     MerChantMoeTokenBin,
     MerChantMoeTokenCurrentBin,
-    MerChantMoePoolRecord,
-    MerChantMoePoolCurrentStatu
 )
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
     StakedFBTCCurrentStatus,
@@ -199,7 +196,8 @@ def generate_output_types(entity_types):
         yield TokenBalance
         yield CurrentTokenBalance
         yield Erc20TotalSupply
-        yield Erc20TokenHolding
+        yield ExportERC20TokenJobData
+
     if entity_types & EntityType.UNISWAP_V2:
         yield UniswapV2Pool
         yield UniswapV2PoolTotalSupply
@@ -253,9 +251,8 @@ def generate_output_types(entity_types):
         yield UniswapV3PoolCurrentPrice
         yield UniswapV3TokenCurrentStatus
         yield Log
-        yield Erc20TokenHolding
+        yield ExportERC20TokenJobData
         yield ERC20TokenTransfer
-        yield Erc20CurrentTokenHolding
         yield Erc20TotalSupply
         yield Erc20CurrentTotalSupply
         yield TransferredFBTCDetail
@@ -269,9 +266,8 @@ def generate_output_types(entity_types):
         yield TokenBalance
         yield CurrentTokenBalance
         yield Log
-        yield Erc20TokenHolding
         yield ERC20TokenTransfer
-        yield Erc20CurrentTokenHolding
+        yield ExportERC20TokenJobData
         yield Erc20TotalSupply
         yield Erc20CurrentTotalSupply
         yield TransferredFBTCDetail
@@ -295,9 +291,8 @@ def generate_output_types(entity_types):
         yield UniswapV3PoolCurrentPrice
         yield UniswapV3TokenCurrentStatus
         yield Log
-        yield Erc20TokenHolding
+        yield ExportERC20TokenJobData
         yield ERC20TokenTransfer
-        yield Erc20CurrentTokenHolding
         yield Erc20TotalSupply
         yield Erc20CurrentTotalSupply
         yield TransferredFBTCDetail
@@ -326,11 +321,8 @@ def generate_output_types(entity_types):
         yield TokenBalance
         yield CurrentTokenBalance
         yield Log
-        yield Erc20TokenHolding
         yield ERC20TokenTransfer
-        yield Erc20CurrentTokenHolding
-        # yield Erc20TotalSupply
-        # yield Erc20CurrentTotalSupply
+        yield ExportERC20TokenJobData
 
     if entity_types & EntityType.FBTC_TRANSFER:
         yield Token

@@ -72,6 +72,12 @@ class Domain(metaclass=DomainMeta):
 
 
 @dataclass
+class VoidData(Domain):
+    # This class represents void data, indicating the absence of actual data while still triggering job execution.
+    pass
+
+
+@dataclass
 class FilterData(Domain):
 
     @classmethod
