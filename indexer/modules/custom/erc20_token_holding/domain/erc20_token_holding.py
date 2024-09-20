@@ -1,22 +1,9 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from indexer.domain import Domain, FilterData
+from indexer.domain import Domain, FilterData, VoidData
 
 
 @dataclass
-class Erc20TokenHolding(FilterData):
-    token_address: str
-    wallet_address: str
-    balance: int
-    block_number: int
-    block_timestamp: int
-
-
-@dataclass
-class Erc20CurrentTokenHolding(Domain):
-    token_address: str
-    wallet_address: str
-    balance: int
-    block_number: int
-    block_timestamp: int
+class ExportERC20TokenJobData(VoidData):
+    pass
