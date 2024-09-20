@@ -9,7 +9,7 @@ from web3.types import ABIFunction
 
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
-from indexer.domain.block import Block
+from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transaction_function, token_parse_mapping
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
@@ -21,7 +21,7 @@ from indexer.utils.utils import distinct_collections_by_group
 
 
 class DepositToL2Job(FilterTransactionDataJob):
-    dependency_types = [Block]
+    dependency_types = [Transaction]
     output_types = [TokenDepositTransaction, AddressTokenDeposit]
     able_to_reorg = True
 
@@ -86,7 +86,11 @@ class DepositToL2Job(FilterTransactionDataJob):
         transactions = list(
             filter(
                 self._filter.get_or_specification().is_satisfied_by,
-                [transaction for block in self._data_buff[Block.type()] for transaction in block.transactions],
+                [
+                    transaction
+                    for transaction in self._data_buff[Transaction.type()]
+                    if transaction.receipt and transaction.receipt.status != 0
+                ],
             )
         )
         deposit_tokens = parse_deposit_transaction_function(
@@ -162,13 +166,13 @@ class DepositToL2Job(FilterTransactionDataJob):
 
         deposit = (
             AddressTokenDeposit(
-                wallet_address=history_deposit.wallet_address,
+                wallet_address="0x" + history_deposit.wallet_address.hex(),
                 chain_id=history_deposit.chain_id,
-                contract_address=history_deposit.contract_address,
-                token_address=history_deposit.token_address,
-                value=history_deposit.value,
+                contract_address="0x" + history_deposit.contract_address.hex(),
+                token_address="0x" + history_deposit.token_address.hex(),
+                value=int(history_deposit.value),
                 block_number=history_deposit.block_number,
-                block_timestamp=history_deposit.block_timestamp,
+                block_timestamp=int(round(history_deposit.block_timestamp.timestamp())),
             )
             if history_deposit
             else None
