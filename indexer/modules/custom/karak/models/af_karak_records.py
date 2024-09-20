@@ -1,4 +1,4 @@
-from sqlalchemy import Column, PrimaryKeyConstraint, func, text
+from sqlalchemy import Column, Numeric, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
@@ -16,8 +16,15 @@ class AfKarakRecords(HemeraModel):
     from_address = Column(BYTEA)
     to_address = Column(BYTEA)
 
+    token = Column(VARCHAR)
     vault = Column(BYTEA)
     amount = Column(NUMERIC(100))
+    balance = Column(NUMERIC(100))
+    staker = Column(VARCHAR)
+    operator = Column(VARCHAR)
+    withdrawer = Column(VARCHAR)
+    shares = Column(Numeric(100))
+    withdrawroot = Column(VARCHAR)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
@@ -29,15 +36,9 @@ class AfKarakRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "UniswapV3SwapEvent",
+                "domain": "KarakActionD",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            },
-            {
-                "domain": "AgniV3SwapEvent",
-                "conflict_do_update": True,
-                "update_strategy": None,
-                "converter": general_converter,
-            },
+            }
         ]

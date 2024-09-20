@@ -1,8 +1,7 @@
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Optional
 
-from indexer.domain import FilterData, Domain
+from indexer.domain import FilterData
 
 
 @dataclass
@@ -18,16 +17,15 @@ class KarakActionD(FilterData):
     from_address: Optional[str] = None
     to_address: Optional[str] = None
 
+    token: Optional[str] = None
     vault: Optional[str] = None
     amount: Optional[int] = None
-    minSharesOut: Optional[int] = None
-    shares: Optional[int] = None
-    withdrawer: Optional[str] = None
+    balance: Optional[int] = None
     staker: Optional[str] = None
-    delegatedTo: Optional[str] = None
-    nonce: Optional[int] = None
-    start: Optional[int] = None
-    request: Optional[str] = None
+    operator: Optional[str] = None
+    withdrawer: Optional[str] = None
+    shares: Optional[int] = None
+    withdrawroot: Optional[str] = None
 
 
 @dataclass
@@ -40,23 +38,19 @@ class KarakVaultTokenD(FilterData):
 
 
 @dataclass
-class KarakDepositD(FilterData):
-    position_token_address: str
-    factory_address: str
-    pool_address: str
-    token0_address: str
-    token1_address: str
-    fee: int
-    tick_spacing: int
-    block_number: int
-    block_timestamp: int
+class KarakAddressCurrentD(FilterData):
+    address: Optional[str] = None
+    vault: Optional[str] = None
+    deposit_amount: Optional[int] = None
+    start_withdraw_amount: Optional[int] = None
+    finish_withdraw_amount: Optional[int] = None
 
 
-@dataclass
-class KarakStatWithdrawD(FilterData):
-    pass
-
-
-@dataclass
-class KarakFinishWithDrawD(FilterData):
-    pass
+def karak_address_current_factory():
+    return KarakAddressCurrentD(
+        address=None,
+        vault=None,
+        deposit_amount=0,
+        start_withdraw_amount=0,
+        finish_withdraw_amount=0,
+    )

@@ -29,7 +29,7 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSNameRenewD,
     ENSRegisterD,
 )
-from indexer.modules.custom.karak.karak_domain import StatWithdrawD, FinishWithDrawD, DepositD
+from indexer.modules.custom.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
@@ -190,9 +190,9 @@ def generate_output_types(entity_types):
         yield OpenseaOrder
 
     if entity_types & EntityType.KARAK:
-        yield DepositD
-        yield StatWithdrawD
-        yield FinishWithDrawD
+        yield KarakActionD
+        yield KarakVaultTokenD
+        yield KarakAddressCurrentD
 
     if entity_types & EntityType.EIGEN_LAYER:
         yield EigenLayerActionD

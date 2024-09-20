@@ -4,7 +4,7 @@
 # @Author  will
 # @File  af_karak_vault_token.py
 # @Brief
-from sqlalchemy import Column, PrimaryKeyConstraint, func, text, VARCHAR, INT
+from sqlalchemy import INT, VARCHAR, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
@@ -13,7 +13,7 @@ from common.models import HemeraModel, general_converter
 class AfKarakVaultToken(HemeraModel):
     __tablename__ = "af_karak_vault_token"
 
-    vault = Column(BYTEA, primary_key=True, nullab=False)
+    vault = Column(BYTEA, primary_key=True, nullable=False)
     token = Column(BYTEA, primary_key=True, nullable=False)
     name = Column(VARCHAR)
     symbol = Column(VARCHAR)
