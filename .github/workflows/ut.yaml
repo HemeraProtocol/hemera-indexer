@@ -20,6 +20,7 @@ jobs:
           pip install poetry
           poetry update
           poetry install -v
+          pip install -e .
 
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=\$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
