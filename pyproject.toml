@@ -1,6 +1,6 @@
 [build-system]
 requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "hemera"
@@ -61,7 +61,6 @@ eth_typing = ">=2.2.0,<5"
 orjson = "3.10.7"
 mpire = "2.10.2"
 PyYAML = "6.0.2"
-poetry_dynamic_versioning = ">=1.2.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"

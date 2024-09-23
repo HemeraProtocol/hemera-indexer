@@ -769,20 +769,6 @@ wrapt = ">=1.10,<2"
 dev = ["PyTest", "PyTest-Cov", "bump2version (<1)", "sphinx (<2)", "tox"]
 
 [[package]]
-name = "dunamai"
-version = "1.22.0"
-description = "Dynamic version generation"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "dunamai-1.22.0-py3-none-any.whl", hash = "sha256:eab3894b31e145bd028a74b13491c57db01986a7510482c9b5fff3b4e53d77b7"},
-    {file = "dunamai-1.22.0.tar.gz", hash = "sha256:375a0b21309336f0d8b6bbaea3e038c36f462318c68795166e31f9873fdad676"},
-]
-
-[package.dependencies]
-packaging = ">=20.9"
-
-[[package]]
 name = "et-xmlfile"
 version = "1.1.0"
 description = "An implementation of lxml.xmlfile for the standard library"
@@ -2330,25 +2316,6 @@ dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
-name = "poetry-dynamic-versioning"
-version = "1.4.1"
-description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
-optional = false
-python-versions = "<4.0,>=3.7"
-files = [
-    {file = "poetry_dynamic_versioning-1.4.1-py3-none-any.whl", hash = "sha256:44866ccbf869849d32baed4fc5fadf97f786180d8efa1719c88bf17a471bd663"},
-    {file = "poetry_dynamic_versioning-1.4.1.tar.gz", hash = "sha256:21584d21ca405aa7d83d23d38372e3c11da664a8742995bdd517577e8676d0e1"},
-]
-
-[package.dependencies]
-dunamai = ">=1.21.0,<2.0.0"
-jinja2 = ">=2.11.1,<4"
-tomlkit = ">=0.4"
-
-[package.extras]
-plugin = ["poetry (>=1.2.0,<2.0.0)"]
-
-[[package]]
 name = "pottery"
 version = "3.0.0"
 description = "Redis for Humans."
@@ -3142,17 +3109,6 @@ files = [
 ]
 
 [[package]]
-name = "tomlkit"
-version = "0.13.2"
-description = "Style preserving TOML library"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "tomlkit-0.13.2-py3-none-any.whl", hash = "sha256:7a974427f6e119197f670fbbbeae7bef749a6c14e793db934baefc1b5f03efde"},
-    {file = "tomlkit-0.13.2.tar.gz", hash = "sha256:fff5fe59a87295b278abd31bec92c15d9bc4a06885ab12bcea52c71119392e79"},
-]
-
-[[package]]
 name = "toolz"
 version = "0.12.1"
 description = "List processing tools and functional utilities"
@@ -3575,4 +3531,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4"
-content-hash = "c6d2b4d641ecbe9fac79477c371e11635b10c70e6f6d74ea6ad271de6e04491a"
+content-hash = "f2dcda11486d921cb0d2da9d554e8171eea4fbfcdb8c371ecb2d5c718770b7bc"
