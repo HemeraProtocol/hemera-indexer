@@ -30,18 +30,17 @@ jobs:
         with:
           python-version: '3.9'
 
-      - name: Install dependencies
-        run: |
-          pip install --upgrade pip
-          pip install poetry
-          poetry update
-          poetry install -v
-
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=\$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
 
       - name: Verify PYTHONPATH
         run: echo $PYTHONPATH
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install poetry
+          poetry update
 
       - name: Init database
         run: |
