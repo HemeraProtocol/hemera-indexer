@@ -4,8 +4,9 @@ from datetime import datetime
 
 import click
 from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.triggers.cron import CronTrigger
 
-from indexer.schedule_jobs.aggregates_jobs import aggregates_yesterday_job
+from indexer.schedule_jobs.aggregates_jobs import aggregates_yesterday_job, aggregates_current_date_job
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -47,6 +48,9 @@ def schedule(chain_name: str, postgres_url: str, dblink_url: str) -> None:
     job_args = (chain_name, postgres_url, dblink_url)
     scheduler.add_job(aggregates_yesterday_job, 'cron', hour=hour, minute=minute, args=job_args)
 
+    current_crontab_time = "0 6,12,18 * * *"
+
+    trigger = CronTrigger.from_crontab(current_crontab_time)
+    scheduler.add_job(func=aggregates_current_date_job, trigger=trigger, args=job_args)
+
     scheduler.start()
-    # current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    # print(f'Job started {current_time}, schedule time is {hour}:{minute} daily')

@@ -17,6 +17,17 @@ def get_yesterday_date():
     return yesterday_str, today_str
 
 
+def get_current_date():
+    now = datetime.now()
+
+    tomorrow_date = now + timedelta(days=1)
+
+    today_str = now.strftime("%Y-%m-%d")
+    tomorrow_str = tomorrow_date.strftime("%Y-%m-%d")
+
+    return today_str, tomorrow_str
+
+
 class DateType(click.ParamType):
     name = "date"
 

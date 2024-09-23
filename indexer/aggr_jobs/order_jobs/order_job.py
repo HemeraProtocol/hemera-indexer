@@ -8,7 +8,6 @@ from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_fbtc_aggreg
 
 job_list = ['period_address_token_balances', 'period_feature_holding_balance_uniswap_v3.sql',
             'period_feature_staked_fbtc_detail_records.sql',
-            'period_feature_holding_balance_satlayer_fbtc.sql',
             'period_feature_holding_balance_staked_fbtc_detail.sql',
             # 'period_feature_erc1155_token_holdings.sql',
             'period_feature_erc1155_token_supply_records.sql', 'period_feature_holding_balance_merchantmoe.sql',
@@ -25,6 +24,9 @@ class AggrOrderJob(AggrBaseJob):
         self.db_service = config["db_service"]
         self.chain_name = config["chain_name"]
         self.version = config["version"]
+
+        if self.chain_name == 'eth':
+            job_list.append('period_feature_holding_balance_satlayer_fbtc.sql')
 
     def run(self, **kwargs):
         start_date_limit = kwargs["start_date"]
