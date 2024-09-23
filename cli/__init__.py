@@ -2,9 +2,9 @@ from pathlib import Path
 
 import click
 
-from cli import init_db
 from cli.aggregates import aggregates
 from cli.api import api
+from cli.init_db import init_db
 from cli.load import load
 from cli.reorg import reorg
 from cli.stream import stream
