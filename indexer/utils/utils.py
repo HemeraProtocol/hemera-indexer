@@ -1,5 +1,6 @@
 import importlib
 import itertools
+import logging
 import pkgutil
 import random
 import warnings
@@ -8,6 +9,7 @@ from typing import List, Union
 from common.utils.exception_control import RetriableError, decode_response_error
 from indexer.domain import Domain
 
+logger = logging.getLogger(__name__)
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 
@@ -67,6 +69,7 @@ def rpc_response_to_result(response):
             # synced node
             raise RetriableError(error_message)
         elif response.get("error") is not None:
+            logger.error("Error in response: %s", response)
             return decode_response_error(response.get("error"))
         else:
             return result
