@@ -1,4 +1,4 @@
-name: Python application test
+name: Python application unit test
 
 on: [pull_request]
 
@@ -16,8 +16,10 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install --upgrade pip
+          pip install poetry
+          poetry update
+          poetry install -v
 
       - name: Set PYTHONPATH
         run: echo "PYTHONPATH=\$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
@@ -25,9 +27,9 @@ jobs:
       - name: Verify PYTHONPATH
         run: echo $PYTHONPATH
 
-      - name: Test with pytest
+      - name: Unit Test with pytest
         env:
-          LINEA_PUBLIC_NODE_RPC_URL: ${{ vars.LINEA_PUBLIC_NODE_RPC_URL }}
+          LINEA_PUBLIC_NODE_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_RPC_URL }}'
         run: |
           export PYTHONPATH=$(pwd)
           make test indexer

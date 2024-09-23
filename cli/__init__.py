@@ -11,10 +11,11 @@ from indexer.utils.logging_utils import logging_basic_config
 
 logging_basic_config()
 
+from importlib import metadata
+
 
 def get_version():
-    version_file = Path(__file__).parent.parent / "VERSION"
-    return version_file.read_text().strip()
+    return metadata.version("hemera")
 
 
 @click.group()
