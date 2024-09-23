@@ -96,6 +96,18 @@ class ExportTokenBalancesJob(BaseExportJob):
         if TokenBalance.type() in self._data_buff:
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
+            token_balances = self._data_buff[TokenBalance.type()]
+            from itertools import groupby, reduce
+
+            grouped_data = {}
+            for key, group in groupby(token_balances, lambda x: x.block_number):
+                grouped_data[key] = list(group)
+
+            for key, value in grouped_data.items():
+                token_balance_of_block_number = reduce(lambda x, y: x or y, value)
+                if token_balance_of_block_number is None:
+                    raise Exception("Token balance of block number is None, {}".format(key))
+
             self._data_buff[CurrentTokenBalance.type()] = distinct_collections_by_group(
                 [
                     CurrentTokenBalance(

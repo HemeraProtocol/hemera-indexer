@@ -37,7 +37,7 @@ class AddressTokenBalances(HemeraModel):
         return [
             {
                 "domain": "TokenBalance",
-                "conflict_do_update": False,
+                "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": token_balances_general_converter,
             }
@@ -52,7 +52,4 @@ Index(
     desc(AddressTokenBalances.block_number),
 )
 
-Index(
-    "token_balance_address_timestamp_index",
-    AddressTokenBalances.block_timestamp
-)
+Index("token_balance_address_timestamp_index", AddressTokenBalances.block_timestamp)
