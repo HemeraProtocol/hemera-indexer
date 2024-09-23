@@ -1,12 +1,28 @@
-name: Python application unit test
+name: Hemera Indexer Continuous Integration
 
 on: [pull_request]
 
 jobs:
-  test:
-
+  build:
     runs-on: ubuntu-latest
-
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: hemera
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      LINEA_PUBLIC_NODE_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_RPC_URL }}'
+      POSTGRES_USER: hemera
+      POSTGRES_PASSWORD: password
+      POSTGRES_URL: postgres://hemera:password@localhost:5432/hemera
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
@@ -27,9 +43,12 @@ jobs:
       - name: Verify PYTHONPATH
         run: echo $PYTHONPATH
 
-      - name: Unit Test with pytest
-        env:
-          LINEA_PUBLIC_NODE_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_RPC_URL }}'
+      - name: Init database
         run: |
           export PYTHONPATH=$(pwd)
-          make test indexer
+          make init_db
+
+      - name: Pipeline Test with pytest
+        run: |
+          export PYTHONPATH=$(pwd)
+          make test pipeline
