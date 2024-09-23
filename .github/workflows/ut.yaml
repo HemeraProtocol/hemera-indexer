@@ -1,0 +1,35 @@
+name: Python application unit test
+
+on: [pull_request]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install poetry
+          poetry update
+          poetry install -v
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=\$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
+
+      - name: Verify PYTHONPATH
+        run: echo $PYTHONPATH
+
+      - name: Unit Test with pytest
+        env:
+          LINEA_PUBLIC_NODE_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_RPC_URL }}'
+        run: |
+          export PYTHONPATH=$(pwd)
+          make test indexer

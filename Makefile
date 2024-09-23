@@ -29,3 +29,7 @@ ifeq ($(PRE_COMMIT_INSTALLED),yes)
 else
 	@echo "Please install pre-commit in your local machine(pip install pre-commit or brew install pre-commit)"
 endif
+
+init_db:
+	@echo "Initializing database..."
+	python -m hemera.py init_db
