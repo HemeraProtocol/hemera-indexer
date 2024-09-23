@@ -10,12 +10,8 @@ from web3 import Web3
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.karak.karak_abi import (
-    FINISH_WITHDRAWAL_EVENT,
-    FINISH_WITHDRAWAL_EVENT_SIG,
-    START_WITHDRAWAL_EVENT,
-    START_WITHDRAWAL_EVENT_SIG,
-)
+from indexer.modules.custom.karak.karak_abi import FINISH_WITHDRAWAL_EVENT, START_WITHDRAWAL_EVENT
+from indexer.modules.custom.karak.karak_conf import CHAIN_CONTRACT
 from indexer.modules.custom.karak.karak_domain import (
     KarakActionD,
     KarakAddressCurrentD,
@@ -47,8 +43,10 @@ class ExportKarakJob(FilterTransactionDataJob):
 
         self._is_batch = kwargs["batch_size"] > 1
         self.db_service = kwargs["config"].get("db_service")
-        self.contract_address = "0xdac17f958d2ee523a2206206994597c13d831ec7"
-        self.token_vaults = dict()
+        self.chain_id = self._web3.eth.chain_id
+        self.karak_conf = CHAIN_CONTRACT[self.chain_id]
+        self.token_vault = dict()
+        self.vault_token = dict()
         self.init_vaults()
 
     def init_vaults(self):
@@ -61,19 +59,18 @@ class ExportKarakJob(FilterTransactionDataJob):
             result = query.all()
 
         for r in result:
-            self.token_vaults["0x" + r.token.hex()] = "0x" + r.vault.hex()
-        logging.info(f"init vaults with {len(self.token_vaults)} tokens")
+            self.token_vault["0x" + r.token.hex()] = "0x" + r.vault.hex()
+            self.vault_token["0x" + r.vault.hex()] = "0x" + r.token.hex()
+        logging.info(f"init vaults with {len(self.token_vault)} tokens")
 
     def get_filter(self):
         # deposit, startWithdraw, finishWithdraw
-        topics = [
-            "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
-            "0x6ee63f530864567ac8a1fcce5050111457154b213c6297ffc622603e8497f7b2",
-            "0x486508c3c40ef7985dcc1f7d43acb1e77e0059505d1f0e6064674ca655a0c82f",
-        ]
-        # newVault
-        topics.append("0x2cd7a531712f8899004c782d9607e0886d1dbc91bfac7be88dadf6750d9e1419")
+        topics = []
         addresses = []
+        for k, item in self.karak_conf.items():
+            topics.append(item["topic"])
+            addresses.append(item["address"])
+
         return [
             TransactionFilterByLogs(topics_filters=[TopicSpecification(topics=topics, addresses=addresses)]),
         ]
@@ -88,8 +85,8 @@ class ExportKarakJob(FilterTransactionDataJob):
             vault = None
             for log in logs:
                 if (
-                    log.topic0 == "0x2cd7a531712f8899004c782d9607e0886d1dbc91bfac7be88dadf6750d9e1419"
-                    and log.address == "0x54e44dbb92dba848ace27f44c0cb4268981ef1cc"
+                    log.topic0 == self.karak_conf["NEW_VAULT"]["topic"]
+                    and log.address == self.karak_conf["NEW_VAULT"]["address"]
                 ):
                     vault = extract_eth_address(log.topic1)
                     break
@@ -103,7 +100,8 @@ class ExportKarakJob(FilterTransactionDataJob):
                 symbol=dd[2],
                 asset_type=dd[3],
             )
-            self.token_vaults[kvt.token] = kvt.vault
+            self.token_vault[kvt.token] = kvt.vault
+            self.vault_token[kvt.vault] = kvt.token
             res.append(kvt)
         return res
 
@@ -118,10 +116,17 @@ class ExportKarakJob(FilterTransactionDataJob):
             logs = transaction.receipt.logs
             kad = None
             for log in logs:
-                if log.topic0 == "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7":
-                    df = self.decode_function(
-                        ["address", "uint256", "uint256"], bytes.fromhex(transaction.input[2:])[4:]
-                    )
+                if (
+                    log.topic0 == self.karak_conf["DEPOSIT"]["topic"]
+                    and log.address == self.karak_conf["DEPOSIT"]["address"]
+                ):
+                    # dl = decode_log(DEPOSIT_EVENT, log)
+                    if transaction.input.startswith("0x47e7ef24"):
+                        df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
+                    else:
+                        df = self.decode_function(
+                            ["address", "uint256", "uint256"], bytes.fromhex(transaction.input[2:])[4:]
+                        )
                     vault = df[0]
                     amount = df[1]
 
@@ -142,7 +147,10 @@ class ExportKarakJob(FilterTransactionDataJob):
                         staker=staker,
                     )
                     res.append(kad)
-                elif log.topic0 == "0x6ee63f530864567ac8a1fcce5050111457154b213c6297ffc622603e8497f7b2":
+                elif (
+                    log.topic0 == self.karak_conf["START_WITHDRAW"]["topic"]
+                    and log.address == self.karak_conf["START_WITHDRAW"]["address"]
+                ):
                     dl = decode_log(START_WITHDRAWAL_EVENT, log)
                     vault = dl.get("vault")
                     staker = dl.get("staker")
@@ -165,10 +173,14 @@ class ExportKarakJob(FilterTransactionDataJob):
                         operator=operator,
                         withdrawer=withdrawer,
                         shares=shares,
+                        amount=shares,
                     )
                     res.append(kad)
 
-                elif log.topic0 == "0x486508c3c40ef7985dcc1f7d43acb1e77e0059505d1f0e6064674ca655a0c82f":
+                elif (
+                    log.topic0 == self.karak_conf["FINISH_WITHDRAW"]["topic"]
+                    and log.address == self.karak_conf["FINISH_WITHDRAW"]["address"]
+                ):
                     dl = decode_log(FINISH_WITHDRAWAL_EVENT, log)
                     vault = dl.get("vault")
                     staker = dl.get("staker")
@@ -193,6 +205,7 @@ class ExportKarakJob(FilterTransactionDataJob):
                         withdrawer=withdrawer,
                         shares=shares,
                         withdrawroot=withdrawroot,
+                        amount=shares,
                     )
                     res.append(kad)
         for item in res:
@@ -230,8 +243,19 @@ class ExportKarakJob(FilterTransactionDataJob):
                 func.encode(AfKarakAddressCurrent.address, "hex").in_(addresses)
             )
             result = query.all()
+        lis = []
+        for rr in result:
+            lis.append(
+                KarakAddressCurrentD(
+                    address="0x" + rr.address.hex(),
+                    vault="0x" + rr.vault.hex(),
+                    deposit_amount=rr.deposit_amount,
+                    start_withdraw_amount=rr.start_withdraw_amount,
+                    finish_withdraw_amount=rr.finish_withdraw_amount,
+                )
+            )
 
-        return create_nested_dict(result)
+        return create_nested_dict(lis)
 
     def calculate_batch_result(self, karak_actions: List[KarakActionD]) -> Any:
         def nested_dict():
@@ -242,15 +266,15 @@ class ExportKarakJob(FilterTransactionDataJob):
             staker = action.staker
             vault = action.vault
             topic0 = action.topic0
-            if topic0 == "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7":
+            if topic0 == self.karak_conf["DEPOSIT"]["topic"]:
                 res_d[staker][vault].address = staker
                 res_d[staker][vault].vault = vault
                 res_d[staker][vault].deposit_amount += action.amount
-            elif topic0 == START_WITHDRAWAL_EVENT_SIG:
+            elif topic0 == self.karak_conf["START_WITHDRAW"]["topic"]:
                 res_d[staker][vault].address = staker
                 res_d[staker][vault].vault = vault
                 res_d[staker][vault].start_withdraw_amount += action.amount
-            elif topic0 == FINISH_WITHDRAWAL_EVENT_SIG:
+            elif topic0 == self.karak_conf["FINISH_WITHDRAW"]["topic"]:
                 res_d[staker][vault].address = staker
                 res_d[staker][vault].vault = vault
                 res_d[staker][vault].finish_withdraw_amount += action.amount

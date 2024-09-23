@@ -15,7 +15,7 @@ class AfKarakAddressCurrent(HemeraModel):
     __tablename__ = "af_karak_address_current"
     address = Column(BYTEA, primary_key=True)
 
-    vault = Column(BYTEA)
+    vault = Column(BYTEA, primary_key=True)
     deposit_amount = Column(NUMERIC(100))
     start_withdraw_amount = Column(NUMERIC(100))
     finish_withdraw_amount = Column(NUMERIC(100))
@@ -24,7 +24,7 @@ class AfKarakAddressCurrent(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("address"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "vault"),)
 
     @staticmethod
     def model_domain_mapping():

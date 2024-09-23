@@ -14,7 +14,7 @@ from indexer.utils.abi import event_log_abi_to_topic
 DEPOSIT_EVENT = cast(
     ABIEvent,
     json.loads(
-        """{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"balance","type":"uint256"}],"name":"Deposit","type":"event"}"""
+        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"by","type":"address"},{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"assets","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"shares","type":"uint256"}],"name":"Deposit","type":"event"}"""
     ),
 )
 DEPOSIT_EVENT_SIG = event_log_abi_to_topic(DEPOSIT_EVENT)
