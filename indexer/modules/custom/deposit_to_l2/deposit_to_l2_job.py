@@ -9,7 +9,7 @@ from web3.types import ABIFunction
 
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
-from indexer.domain.block import Block
+from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transaction_function, token_parse_mapping
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
@@ -21,7 +21,7 @@ from indexer.utils.utils import distinct_collections_by_group
 
 
 class DepositToL2Job(FilterTransactionDataJob):
-    dependency_types = [Block]
+    dependency_types = [Transaction]
     output_types = [TokenDepositTransaction, AddressTokenDeposit]
     able_to_reorg = True
 
@@ -88,8 +88,7 @@ class DepositToL2Job(FilterTransactionDataJob):
                 self._filter.get_or_specification().is_satisfied_by,
                 [
                     transaction
-                    for block in self._data_buff[Block.type()]
-                    for transaction in block.transactions
+                    for transaction in self._data_buff[Transaction.type()]
                     if transaction.receipt and transaction.receipt.status != 0
                 ],
             )

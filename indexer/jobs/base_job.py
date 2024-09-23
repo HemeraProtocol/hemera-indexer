@@ -8,6 +8,7 @@ from web3 import Web3
 from common.converter.pg_converter import domain_model_mapping
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import to_snake_case
+from indexer.domain import Domain
 from indexer.utils.reorg import should_reorg
 
 
@@ -150,7 +151,13 @@ class BaseJob(metaclass=BaseJobMeta):
             self._collect_domain(domain)
 
     def _get_domain(self, domain):
-        return self._data_buff[domain.type()]
+        return self._data_buff[domain.type()] if domain.type() in self._data_buff else []
+
+    def _get_domains(self, domains: list[Domain]):
+        res = []
+        for domain in domains:
+            res += self._data_buff[domain.type()]
+        return res
 
     def _process(self, **kwargs):
         pass

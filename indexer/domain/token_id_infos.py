@@ -28,7 +28,7 @@ class ERC721TokenIdChange(Domain):
 class ERC721TokenIdDetail(Domain):
     token_address: str
     token_id: int
-    token_uri: str
+    token_uri: Optional[str]
     block_number: int
     block_timestamp: int
     token_uri_info: Optional[str] = None

@@ -39,9 +39,9 @@ class ACIEnsCurrent(Resource):
             "first_register_time": None,
             "first_set_primary_time": None,
         }
-        if address:
+        try:
             address = bytes.fromhex(address[2:])
-        else:
+        except Exception:
             raise APIError("Invalid Address Format", code=400)
 
         dn = datetime.now()
@@ -57,7 +57,11 @@ class ACIEnsCurrent(Resource):
             .all()
         )
         all_721_ids = [r.token_id for r in all_721_owns]
-        all_owned = db.session.query(ENSRecord).filter(and_(ENSRecord.token_id.in_(all_721_ids))).all()
+        all_owned = (
+            db.session.query(ENSRecord)
+            .filter(and_(ENSRecord.token_id.in_(all_721_ids), ENSRecord.w_token_id.is_(None)))
+            .all()
+        )
         all_owned_map = {r.token_id: r for r in all_owned}
         for id in all_721_ids:
             r = all_owned_map.get(id)
@@ -93,9 +97,7 @@ class ACIEnsCurrent(Resource):
         res["ens_holdings_total"] = len(res["ens_holdings"])
         primary_address_row = db.session.query(ENSAddress).filter(ENSAddress.address == address).first()
         if primary_address_row:
-            primary_record = db.session.query(ENSRecord).filter(ENSRecord.name == primary_address_row.name).first()
-            if primary_record:
-                res["primary_name"] = primary_record.name
+            res["primary_name"] = primary_address_row.name
         else:
             res["primary_name"] = w3.ens.name(w3.to_checksum_address(w3.to_hex(address)))
 
@@ -143,9 +145,9 @@ class ACIEnsCurrent(Resource):
 @af_ens_namespace.route("/v1/aci/<address>/ens/detail")
 class ACIEnsDetail(Resource):
     def get(self, address):
-        if address:
+        try:
             address = bytes.fromhex(address[2:])
-        else:
+        except Exception:
             raise APIError("Invalid Address Format", code=400)
 
         events = []
@@ -190,11 +192,11 @@ class ACIEnsDetail(Resource):
 
         for r in all_rows:
             name = None
-            if hasattr(r, "node") and r.node:
+            if hasattr(r, "node") and r.node and r.node in node_name_map:
                 name = node_name_map[r.node]
-            elif hasattr(r, "token_id") and r.token_id:
+            elif hasattr(r, "token_id") and r.token_id and r.token_id in token_id_name_map:
                 name = token_id_name_map[r.token_id]
-            elif hasattr(r, "w_token_id") and r.w_token_id:
+            elif hasattr(r, "w_token_id") and r.w_token_id and r.w_token_id in token_id_name_map:
                 name = token_id_name_map[r.w_token_id]
             base = {
                 "block_number": r.block_number,

@@ -60,6 +60,7 @@ class TokenFetcher:
         self.batch_size = kwargs["batch_size"]
         self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
+        self._works = kwargs["max_workers"]
         if not self._is_multi_call:
             self.logger.info("multicall is disabled")
             self.net = None
@@ -150,7 +151,11 @@ class TokenFetcher:
         try:
 
             if token_info["is_get_token_uri"]:
-                token_uri = decode_string(value) if decode_flag else value
+                try:
+                    token_uri = decode_string(value) if decode_flag else value
+                except Exception as e:
+                    token_uri = None
+                    logging.error(f"decode token uri failed, token_info={token_info}, value={value}")
                 if token_info["token_type"] == "ERC721":
                     return [ERC721TokenIdDetail(**common_args, token_uri=token_uri)]
                 else:
@@ -167,7 +172,7 @@ class TokenFetcher:
                     return [UpdateERC1155TokenIdDetail(**common_args, token_supply=token_supply)]
         except Exception as e:
             exception_recorder.log(
-                block_number=token_info.block_number,
+                block_number=token_info["block_number"],
                 dataclass=to_snake_case("token_id_info"),
                 message_type="decode_token_id_info_fail",
                 message=str(e),
@@ -297,7 +302,7 @@ class TokenFetcher:
 
     @calculate_execution_time
     def fetch_result(self, chunks):
-        res = list(make_request_concurrent(self.make_request, chunks))
+        res = list(make_request_concurrent(self.make_request, chunks, self._works))
         return res
 
     @calculate_execution_time
