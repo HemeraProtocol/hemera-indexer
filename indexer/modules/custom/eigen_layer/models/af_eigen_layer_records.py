@@ -23,7 +23,6 @@ class AfEigenLayerRecords(HemeraModel):
     to_address = Column(BYTEA)
 
     token = Column(VARCHAR)
-    vault = Column(BYTEA)
     amount = Column(NUMERIC(100))
     balance = Column(NUMERIC(100))
     staker = Column(VARCHAR)
@@ -42,7 +41,7 @@ class AfEigenLayerRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "N",
+                "domain": "EigenLayerActionD",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

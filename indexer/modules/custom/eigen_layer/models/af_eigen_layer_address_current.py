@@ -14,7 +14,9 @@ class AfEigenLayerAddressCurrent(HemeraModel):
     __tablename__ = "af_eigen_layer_address_current"
     address = Column(BYTEA, primary_key=True)
 
-    strategies = Column(BYTEA, primary_key=True)
+    strategy = Column(BYTEA, primary_key=True)
+    token = Column(BYTEA, primary_key=True)
+
     deposit_amount = Column(NUMERIC(100))
     start_withdraw_amount = Column(NUMERIC(100))
     finish_withdraw_amount = Column(NUMERIC(100))
@@ -23,13 +25,13 @@ class AfEigenLayerAddressCurrent(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("address", "vault"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "strategy", "token"),)
 
     @staticmethod
     def model_domain_mapping():
         return [
             {
-                "domain": "",
+                "domain": "EigenLayerAddressCurrentD",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

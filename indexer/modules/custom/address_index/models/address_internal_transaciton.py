@@ -43,7 +43,7 @@ class AddressInternalTransactions(HemeraModel):
 
 
 Index(
-    "address_internal_transactions_address_block_timestamp_block_number_t_idx",
+    "address_internal_transactions_address_nt_t_idx",
     AddressInternalTransactions.address,
     desc(AddressInternalTransactions.block_timestamp),
     desc(AddressInternalTransactions.block_number),

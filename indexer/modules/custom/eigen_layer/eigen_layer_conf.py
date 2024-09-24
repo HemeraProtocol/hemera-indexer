@@ -11,16 +11,12 @@ CHAIN_CONTRACT = {
             "topic": "0x7cfff908a4b583f36430b25d75964c458d8ede8a99bd61be750e97ee1b2f3a96",
         },
         "START_WITHDRAW": {
-            "address": "0xafa904152e04abff56701223118be2832a4449e0",
-            "topic": "0x6ee63f530864567ac8a1fcce5050111457154b213c6297ffc622603e8497f7b2",
+            "address": "0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a",
+            "topic": "0x9009ab153e8014fbfb02f2217f5cde7aa7f9ad734ae85ca3ee3f4ca2fdd499f9",
         },
         "FINISH_WITHDRAW": {
-            "address": "0xafa904152e04abff56701223118be2832a4449e0",
-            "topic": "0x486508c3c40ef7985dcc1f7d43acb1e77e0059505d1f0e6064674ca655a0c82f",
-        },
-        "NEW_VAULT": {
-            "address": "0x54e44dbb92dba848ace27f44c0cb4268981ef1cc",
-            "topic": "0x2cd7a531712f8899004c782d9607e0886d1dbc91bfac7be88dadf6750d9e1419",
+            "address": "0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a",
+            "topic": "0xc97098c2f658800b4df29001527f7324bcdffcf6e8751a699ab920a1eced5b1d",
         },
     }
 }

@@ -9,23 +9,25 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from eth_abi import decode
-from eth_typing import Decodable
+from eth_typing import Decodable, HexStr
 from sqlalchemy import func
-from web3 import Web3
+from web3._utils.contracts import decode_transaction_data
 
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.karak.karak_abi import FINISH_WITHDRAWAL_EVENT, START_WITHDRAWAL_EVENT
-from indexer.modules.custom.karak.karak_conf import CHAIN_CONTRACT
-from indexer.modules.custom.karak.karak_domain import (
-    KarakActionD,
-    KarakAddressCurrentD,
-    KarakVaultTokenD,
-    karak_address_current_factory,
+from indexer.modules.custom.eigen_layer.eigen_layer_abi import (
+    DEPOSIT_EVENT,
+    FINISH_WITHDRAWAL_FUNCTION,
+    WITHDRAWAL_QUEUED_EVENT,
 )
-from indexer.modules.custom.karak.models.af_karak_address_current import AfKarakAddressCurrent
-from indexer.modules.custom.karak.models.af_karak_vault_token import AfKarakVaultToken
+from indexer.modules.custom.eigen_layer.eigen_layer_conf import CHAIN_CONTRACT
+from indexer.modules.custom.eigen_layer.eigen_layer_domain import (
+    EigenLayerActionD,
+    EigenLayerAddressCurrentD,
+    eigen_layer_address_current_factory,
+)
+from indexer.modules.custom.eigen_layer.models.af_eigen_layer_address_current import AfEigenLayerAddressCurrent
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 
@@ -33,9 +35,8 @@ logger = logging.getLogger(__name__)
 
 
 class ExportEigenLayerJob(FilterTransactionDataJob):
-    # transaction with its logs
     dependency_types = [Transaction]
-    output_types = [KarakActionD, KarakVaultTokenD, KarakAddressCurrentD]
+    output_types = [EigenLayerActionD, EigenLayerAddressCurrentD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -50,30 +51,15 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         self._is_batch = kwargs["batch_size"] > 1
         self.db_service = kwargs["config"].get("db_service")
         self.chain_id = self._web3.eth.chain_id
-        self.karak_conf = CHAIN_CONTRACT[self.chain_id]
+        self.eigen_layer_conf = CHAIN_CONTRACT[self.chain_id]
         self.token_vault = dict()
         self.vault_token = dict()
-        self.init_vaults()
-
-    def init_vaults(self):
-        # fetch from database
-        if not self.db_service:
-            return
-
-        with self.db_service.get_service_session() as session:
-            query = session.query(AfKarakVaultToken)
-            result = query.all()
-
-        for r in result:
-            self.token_vault["0x" + r.token.hex()] = "0x" + r.vault.hex()
-            self.vault_token["0x" + r.vault.hex()] = "0x" + r.token.hex()
-        logging.info(f"init vaults with {len(self.token_vault)} tokens")
 
     def get_filter(self):
         # deposit, startWithdraw, finishWithdraw
         topics = []
         addresses = []
-        for k, item in self.karak_conf.items():
+        for k, item in self.eigen_layer_conf.items():
             topics.append(item["topic"])
             addresses.append(item["address"])
 
@@ -81,41 +67,8 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
             TransactionFilterByLogs(topics_filters=[TopicSpecification(topics=topics, addresses=addresses)]),
         ]
 
-    def discover_vaults(self, transactions: List[Transaction]):
-        res = []
-        for transaction in transactions:
-            # deployVault
-            if not transaction.input.startswith("0xf0edf6aa"):
-                continue
-            logs = transaction.receipt.logs
-            vault = None
-            for log in logs:
-                if (
-                    log.topic0 == self.karak_conf["NEW_VAULT"]["topic"]
-                    and log.address == self.karak_conf["NEW_VAULT"]["address"]
-                ):
-                    vault = extract_eth_address(log.topic1)
-                    break
-            dd = self.decode_function(
-                ["address", "string", "string", "uint8"], bytes.fromhex(transaction.input[2:])[4:]
-            )
-            kvt = KarakVaultTokenD(
-                vault=vault,
-                token=dd[0],
-                name=dd[1],
-                symbol=dd[2],
-                asset_type=dd[3],
-            )
-            self.token_vault[kvt.token] = kvt.vault
-            self.vault_token[kvt.vault] = kvt.token
-            res.append(kvt)
-        return res
-
     def _collect(self, **kwargs):
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
-        new_vaults = self.discover_vaults(transactions)
-        if new_vaults:
-            self._collect_items(KarakVaultTokenD.type(), new_vaults)
         res = []
 
         for transaction in transactions:
@@ -123,95 +76,89 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
             kad = None
             for log in logs:
                 if (
-                    log.topic0 == self.karak_conf["DEPOSIT"]["topic"]
-                    and log.address == self.karak_conf["DEPOSIT"]["address"]
+                    log.topic0 == self.eigen_layer_conf["DEPOSIT"]["topic"]
+                    and log.address == self.eigen_layer_conf["DEPOSIT"]["address"]
                 ):
-                    # dl = decode_log(DEPOSIT_EVENT, log)
-                    if transaction.input.startswith("0x47e7ef24"):
-                        df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
-                    else:
-                        df = self.decode_function(
-                            ["address", "uint256", "uint256"], bytes.fromhex(transaction.input[2:])[4:]
-                        )
-                    vault = df[0]
-                    amount = df[1]
+                    dl = decode_log(DEPOSIT_EVENT, log)
+                    staker = dl.get("staker")
+                    token = dl.get("token")
+                    strategy = dl.get("strategy")
+                    shares = dl.get("shares")
 
-                    staker = transaction.from_address
-                    kad = KarakActionD(
+                    kad = EigenLayerActionD(
                         transaction_hash=transaction.hash,
                         log_index=log.log_index,
                         transaction_index=transaction.transaction_index,
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
                         method=transaction.input[0:10],
-                        event_name="deposit",
+                        event_name=DEPOSIT_EVENT["name"],
                         topic0=log.topic0,
                         from_address=transaction.from_address,
                         to_address=transaction.to_address,
-                        vault=vault,
-                        amount=amount,
+                        strategy=strategy,
+                        token=token,
+                        shares=shares,
                         staker=staker,
                     )
                     res.append(kad)
                 elif (
-                    log.topic0 == self.karak_conf["START_WITHDRAW"]["topic"]
-                    and log.address == self.karak_conf["START_WITHDRAW"]["address"]
+                    log.topic0 == self.eigen_layer_conf["START_WITHDRAW"]["topic"]
+                    and log.address == self.eigen_layer_conf["START_WITHDRAW"]["address"]
                 ):
-                    dl = decode_log(START_WITHDRAWAL_EVENT, log)
-                    vault = dl.get("vault")
-                    staker = dl.get("staker")
-                    operator = dl.get("operator")
-                    withdrawer = dl.get("withdrawer")
-                    shares = dl.get("shares")
-                    kad = KarakActionD(
+                    dl = decode_log(WITHDRAWAL_QUEUED_EVENT, log)
+                    withdrawal_struct = dl.get("withdrawal")
+
+                    staker = withdrawal_struct.get("staker")
+                    withdrawer = withdrawal_struct.get("withdrawer")
+                    shares = withdrawal_struct.get("shares")[0]
+                    strategy = withdrawal_struct.get("strategies")[0]
+                    kad = EigenLayerActionD(
                         transaction_hash=transaction.hash,
                         log_index=log.log_index,
                         transaction_index=transaction.transaction_index,
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
                         method=transaction.input[0:10],
-                        event_name="StartWithdrawal",
+                        event_name=WITHDRAWAL_QUEUED_EVENT["name"],
                         topic0=log.topic0,
                         from_address=transaction.from_address,
                         to_address=transaction.to_address,
-                        vault=vault,
+                        strategy=strategy,
                         staker=staker,
-                        operator=operator,
                         withdrawer=withdrawer,
                         shares=shares,
-                        amount=shares,
                     )
                     res.append(kad)
 
                 elif (
-                    log.topic0 == self.karak_conf["FINISH_WITHDRAW"]["topic"]
-                    and log.address == self.karak_conf["FINISH_WITHDRAW"]["address"]
+                    log.topic0 == self.eigen_layer_conf["FINISH_WITHDRAW"]["topic"]
+                    and log.address == self.eigen_layer_conf["FINISH_WITHDRAW"]["address"]
                 ):
-                    dl = decode_log(FINISH_WITHDRAWAL_EVENT, log)
-                    vault = dl.get("vault")
-                    staker = dl.get("staker")
-                    operator = dl.get("operator")
-                    withdrawer = dl.get("withdrawer")
-                    shares = dl.get("shares")
-                    withdrawroot = dl.get("withdrawRoot")
-                    kad = KarakActionD(
+                    df = decode_transaction_data(FINISH_WITHDRAWAL_FUNCTION, HexStr(transaction.input))
+                    withdrawal_struct = df.get("withdrawals")[0]
+
+                    staker = withdrawal_struct.get("staker")
+                    withdrawer = withdrawal_struct.get("withdrawer")
+                    strategy = withdrawal_struct.get("strategies")[0]
+                    shares = withdrawal_struct.get("shares")[0]
+                    token = df.get("tokens")[0]
+                    kad = EigenLayerActionD(
                         transaction_hash=transaction.hash,
                         log_index=log.log_index,
                         transaction_index=transaction.transaction_index,
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
                         method=transaction.input[0:10],
-                        event_name="FinishedWithdrawal",
+                        event_name=FINISH_WITHDRAWAL_FUNCTION["name"],
                         topic0=log.topic0,
                         from_address=transaction.from_address,
                         to_address=transaction.to_address,
-                        vault=vault,
                         staker=staker,
-                        operator=operator,
                         withdrawer=withdrawer,
                         shares=shares,
-                        withdrawroot=withdrawroot,
-                        amount=shares,
+                        strategy=strategy,
+                        token=token,
                     )
                     res.append(kad)
         for item in res:
@@ -245,16 +192,17 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         if not addresses:
             return {}
         with self.db_service.get_service_session() as session:
-            query = session.query(AfKarakAddressCurrent).filter(
-                func.encode(AfKarakAddressCurrent.address, "hex").in_(addresses)
+            query = session.query(AfEigenLayerAddressCurrent).filter(
+                func.encode(AfEigenLayerAddressCurrent.address, "hex").in_(addresses)
             )
             result = query.all()
         lis = []
         for rr in result:
             lis.append(
-                KarakAddressCurrentD(
+                EigenLayerAddressCurrentD(
                     address="0x" + rr.address.hex(),
-                    vault="0x" + rr.vault.hex(),
+                    strategy="0x" + rr.strategy.hex(),
+                    token="0x" + rr.token.hex(),
                     deposit_amount=rr.deposit_amount,
                     start_withdraw_amount=rr.start_withdraw_amount,
                     finish_withdraw_amount=rr.finish_withdraw_amount,
@@ -263,45 +211,35 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
 
         return create_nested_dict(lis)
 
-    def calculate_batch_result(self, karak_actions: List[KarakActionD]) -> Any:
+    def calculate_batch_result(self, eg_actions: List[EigenLayerActionD]) -> Any:
         def nested_dict():
-            return defaultdict(karak_address_current_factory)
+            return defaultdict(eigen_layer_address_current_factory)
 
         res_d = defaultdict(nested_dict)
-        for action in karak_actions:
+        for action in eg_actions:
             staker = action.staker
-            vault = action.vault
+            strategy = action.strategy
             topic0 = action.topic0
-            if topic0 == self.karak_conf["DEPOSIT"]["topic"]:
-                res_d[staker][vault].address = staker
-                res_d[staker][vault].vault = vault
-                res_d[staker][vault].deposit_amount += action.amount
-            elif topic0 == self.karak_conf["START_WITHDRAW"]["topic"]:
-                res_d[staker][vault].address = staker
-                res_d[staker][vault].vault = vault
-                res_d[staker][vault].start_withdraw_amount += action.amount
-            elif topic0 == self.karak_conf["FINISH_WITHDRAW"]["topic"]:
-                res_d[staker][vault].address = staker
-                res_d[staker][vault].vault = vault
-                res_d[staker][vault].finish_withdraw_amount += action.amount
+            if topic0 == self.eigen_layer_conf["DEPOSIT"]["topic"]:
+                res_d[staker][strategy].address = staker
+                res_d[staker][strategy].strategy = strategy
+                res_d[staker][strategy].deposit_amount += action.shares
+            elif topic0 == self.eigen_layer_conf["START_WITHDRAW"]["topic"]:
+                res_d[staker][strategy].address = staker
+                res_d[staker][strategy].strategy = strategy
+                res_d[staker][strategy].start_withdraw_amount += action.shares
+            elif topic0 == self.eigen_layer_conf["FINISH_WITHDRAW"]["topic"]:
+                res_d[staker][strategy].address = staker
+                res_d[staker][strategy].strategy = strategy
+                res_d[staker][strategy].finish_withdraw_amount += action.shares
         return res_d
 
 
-def create_nested_dict(data_list: List[KarakAddressCurrentD]) -> Dict[str, Dict[str, KarakAddressCurrentD]]:
+def create_nested_dict(data_list: List[EigenLayerAddressCurrentD]) -> Dict[str, Dict[str, EigenLayerAddressCurrentD]]:
     result = {}
     for item in data_list:
-        if item.address and item.vault:
+        if item.address and item.strategy:
             if item.address not in result:
                 result[item.address] = {}
-            result[item.address][item.vault] = item
+            result[item.address][item.strategy] = item
     return result
-
-
-def extract_eth_address(input_string):
-    hex_string = input_string.lower().replace("0x", "")
-
-    if len(hex_string) > 40:
-        hex_string = hex_string[-40:]
-
-    hex_string = hex_string.zfill(40)
-    return Web3.to_checksum_address(hex_string).lower()

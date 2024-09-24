@@ -18,29 +18,17 @@ class EigenLayerActionD(FilterData):
     to_address: Optional[str] = None
 
     token: Optional[str] = None
-    vault: Optional[str] = None
-    amount: Optional[int] = None
-    balance: Optional[int] = None
-    staker: Optional[str] = None
-    operator: Optional[str] = None
-    withdrawer: Optional[str] = None
+    strategy: Optional[str] = None
     shares: Optional[int] = None
-    withdrawroot: Optional[str] = None
-
-
-@dataclass
-class KarakVaultTokenD(FilterData):
-    vault: Optional[str] = None
-    token: Optional[str] = None
-    name: Optional[str] = None
-    symbol: Optional[str] = None
-    asset_type: Optional[int] = None
+    staker: Optional[str] = None
+    withdrawer: Optional[str] = None
 
 
 @dataclass
 class EigenLayerAddressCurrentD(FilterData):
     address: Optional[str] = None
-    vault: Optional[str] = None
+    strategy: Optional[str] = None
+    token: Optional[str] = None
     deposit_amount: Optional[int] = None
     start_withdraw_amount: Optional[int] = None
     finish_withdraw_amount: Optional[int] = None
@@ -49,7 +37,8 @@ class EigenLayerAddressCurrentD(FilterData):
 def eigen_layer_address_current_factory():
     return EigenLayerAddressCurrentD(
         address=None,
-        vault=None,
+        strategy=None,
+        token=None,
         deposit_amount=0,
         start_withdraw_amount=0,
         finish_withdraw_amount=0,
