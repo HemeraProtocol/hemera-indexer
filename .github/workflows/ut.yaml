@@ -29,6 +29,9 @@ jobs:
 
       - name: Unit Test with pytest
         env:
+          ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL: '${{ secrets.ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL }}'
+          ETHEREUM_PUBLIC_NODE_RPC_URL: '${{ secrets.ETHEREUM_PUBLIC_NODE_RPC_URL }}'
+          LINEA_PUBLIC_NODE_DEBUG_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_DEBUG_RPC_URL }}'
           LINEA_PUBLIC_NODE_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_RPC_URL }}'
         run: |
           export PYTHONPATH=$(pwd)

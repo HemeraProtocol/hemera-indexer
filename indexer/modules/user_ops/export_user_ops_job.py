@@ -7,7 +7,7 @@ from web3.types import ABIEvent, ABIFunction
 
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
-from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
+from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 from indexer.specification.specification import (
     ToAddressSpecification,

@@ -8,10 +8,10 @@ from redis.client import Redis
 from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
+from indexer.jobs import FilterTransactionDataJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_reorg_job import ExportReorgJob
-from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.utils.abi import bytes_to_hex_str
 
 import_submodules("indexer.modules")

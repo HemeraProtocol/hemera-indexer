@@ -16,11 +16,17 @@ from indexer.domain.token_transfer import (
     ERC721TokenTransfer,
     ERC1155TokenTransfer,
     TokenTransfer,
+    batch_transfer_event,
+    deposit_event,
     extract_transfer_from_log,
+    single_transfer_event,
+    transfer_event,
+    withdraw_event,
 )
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs.base_job import BaseExportJob
+from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
+from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import encode_abi
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
@@ -99,7 +105,7 @@ abi_mapping = {
 }
 
 
-class ExportTokensAndTransfersJob(BaseExportJob):
+class ExportTokensAndTransfersJob(FilterTransactionDataJob):
     output_transfer_types = [
         ERC20TokenTransfer,
         ERC721TokenTransfer,
@@ -121,17 +127,51 @@ class ExportTokensAndTransfersJob(BaseExportJob):
         )
 
         self._is_batch = kwargs["batch_size"] > 1
-        self._token_addresses = set()
-        self._token_transfers = []
+        self.config = self.user_defined_config.get(str(self._chain_id)) or {}
+        self.weth_address = self.config.get("weth_address")
+        self.filter_token_address = self.config.get("filter_token_address") or []
 
-    def _end(self):
-        super()._end()
-        self._token_addresses.clear()
-        self._token_transfers.clear()
+    def get_filter(self):
+        filters = []
+        filters.append(
+            TopicSpecification(
+                addresses=self.filter_token_address,
+                topics=[
+                    transfer_event.get_signature(),
+                    single_transfer_event.get_signature(),
+                    batch_transfer_event.get_signature(),
+                ],
+            )
+        )
+
+        if self.weth_address:
+            filters.append(
+                TopicSpecification(
+                    addresses=[self.weth_address],
+                    topics=[deposit_event.get_signature(), withdraw_event.get_signature()],
+                ),
+            )
+        return TransactionFilterByLogs(filters)
 
     def _collect(self, **kwargs):
+
+        filtered_logs = [
+            log
+            for log in self._data_buff[Log.type()]
+            if log.topic0
+            in [
+                transfer_event.get_signature(),
+                single_transfer_event.get_signature(),
+                batch_transfer_event.get_signature(),
+            ]
+            or (
+                log.topic0 in [deposit_event.get_signature(), withdraw_event.get_signature()]
+                and log.address == self.weth_address
+            )
+        ]
+
         self._batch_work_executor.execute(
-            self._data_buff[Log.type()],
+            filtered_logs,
             self._extract_batch,
             total_items=len(self._data_buff[Log.type()]),
         )
