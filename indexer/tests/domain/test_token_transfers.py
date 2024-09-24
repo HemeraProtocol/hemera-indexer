@@ -90,7 +90,7 @@ def test_erc20_token_withdraw():
 
     token_transfers = extract_transfer_from_log(log)
 
-    assert len(token_transfers) == 0
+    assert len(token_transfers) == 1
     token_transfer = token_transfers[0]
 
     assert token_transfer.transaction_hash == "0x01bf14796bb1c6ba3c5fdc599ddad343b04222e252e77d474aa617943bb3d69b"
