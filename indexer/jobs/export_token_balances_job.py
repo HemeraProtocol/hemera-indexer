@@ -1,5 +1,7 @@
 import logging
 from dataclasses import dataclass
+from functools import reduce
+from itertools import groupby
 from typing import List, Optional, Union
 
 from eth_utils import to_hex
@@ -97,14 +99,14 @@ class ExportTokenBalancesJob(BaseExportJob):
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
             token_balances = self._data_buff[TokenBalance.type()]
-            from itertools import groupby, reduce
 
             grouped_data = {}
             for key, group in groupby(token_balances, lambda x: x.block_number):
                 grouped_data[key] = list(group)
 
             for key, value in grouped_data.items():
-                token_balance_of_block_number = reduce(lambda x, y: x or y, value)
+                token_balance_list = [token_balance.balance for token_balance in value]
+                token_balance_of_block_number = reduce(lambda x, y: x or y, token_balance_list)
                 if token_balance_of_block_number is None:
                     raise Exception("Token balance of block number is None, {}".format(key))
 
