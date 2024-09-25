@@ -12,6 +12,7 @@ from sqlalchemy import and_, func, or_, select
 from common.converter.pg_converter import domain_model_mapping
 from common.models.logs import Logs
 from common.models.transactions import Transactions
+from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
 from indexer.domain import Domain, dict_to_dataclass
 from indexer.domain.block import Block
@@ -42,6 +43,8 @@ class PGSourceJob(BaseSourceJob):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._source_path = kwargs["config"].get("source_path", None)
+        self._service = PostgreSQLService(self._source_path) if self._source_path else None
         self.pre_build = defaultdict(list)
         self.post_build = defaultdict()
         self.domain_mapping = defaultdict(dict)

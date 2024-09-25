@@ -21,29 +21,33 @@ def session_scope(session):
 
 
 class PostgreSQLService(object):
-    instance = None
+    _jdbc_instance = {}
+    _jdbc_initialized = set()
 
-    def __new__(cls, *args, **kwargs):
-        if cls.instance is None:
-            cls.instance = super().__new__(cls)
-        return cls.instance
+    def __new__(cls, jdbc_url, *args, **kwargs):
+        if jdbc_url not in cls._jdbc_instance:
+            instance = super().__new__(cls)
+            cls._jdbc_instance[jdbc_url] = instance
+        return cls._jdbc_instance[jdbc_url]
 
     def __init__(self, jdbc_url, db_version="head", script_location="migrations", init_schema=False):
-        self.db_version = db_version
-        self.engine = create_engine(
-            jdbc_url,
-            pool_size=10,
-            max_overflow=10,
-            pool_timeout=30,
-            pool_recycle=60,
-            connect_args={"application_name": "hemera_indexer"},
-        )
-        self.jdbc_url = jdbc_url
-        self.connection_pool = pool.SimpleConnectionPool(1, 10, jdbc_url)
+        if jdbc_url not in self._jdbc_initialized:
+            self.db_version = db_version
+            self.engine = create_engine(
+                jdbc_url,
+                pool_size=10,
+                max_overflow=10,
+                pool_timeout=30,
+                pool_recycle=60,
+                connect_args={"application_name": "hemera_indexer"},
+            )
+            self.jdbc_url = jdbc_url
+            self.connection_pool = pool.SimpleConnectionPool(1, 10, jdbc_url)
 
-        self.Session = sessionmaker(bind=self.engine)
-        if init_schema:
-            self.init_schema(script_location)
+            self.Session = sessionmaker(bind=self.engine)
+            if init_schema:
+                self.init_schema(script_location)
+            self._jdbc_initialized.add(jdbc_url)
 
     def get_conn(self):
         return self.connection_pool.getconn()

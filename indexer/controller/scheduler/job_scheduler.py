@@ -44,7 +44,7 @@ def get_tokens_from_db(session):
 def get_source_job_type(source_path: str):
     if source_path.startswith("csvfile://"):
         return CSVSourceJob
-    elif source_path == "postgres":
+    elif source_path.startswith("postgresql://"):
         return PGSourceJob
     else:
         raise ValueError(f"Unknown source job type with source path: {source_path}")
@@ -61,6 +61,7 @@ class JobScheduler:
         config={},
         item_exporters=[ConsoleItemExporter()],
         required_output_types=[],
+        required_source_types=[],
         cache="memory",
         multicall=None,
         auto_reorg=True,
@@ -77,6 +78,7 @@ class JobScheduler:
         self.max_workers = max_workers
         self.config = config
         self.required_output_types = required_output_types
+        self.required_source_types = required_source_types
         self.load_from_source = config.get("source_path") if "source_path" in config else None
         self.jobs = []
         self.job_classes = []
@@ -134,6 +136,8 @@ class JobScheduler:
     def discover_and_register_job_classes(self):
         if self.load_from_source:
             source_job = get_source_job_type(source_path=self.load_from_source)
+            if source_job is PGSourceJob:
+                source_job.output_types = self.required_source_types
             all_subclasses = [source_job]
 
             source_output_types = set(source_job.output_types)
