@@ -22,7 +22,7 @@ jobs:
       LINEA_PUBLIC_NODE_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_RPC_URL }}'
       POSTGRES_USER: hemera
       POSTGRES_PASSWORD: password
-      POSTGRES_URL: postgres://hemera:password@localhost:5432/hemera
+      POSTGRES_URL: postgresql://hemera:password@localhost:5432/hemera
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
