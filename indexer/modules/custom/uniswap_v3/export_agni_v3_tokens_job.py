@@ -142,6 +142,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
         self._exist_token_ids.update(update_exist_tokens)
         for data in new_nft_info:
             self._collect_item(AgniV3Token.type(), data)
+            self._exist_token_ids[data.token_id] = data.pool_address
         token_result, current_statuses = parse_token_records(
             self._nft_address, self._exist_token_ids, owner_dict, token_infos, self._block_infos
         )
@@ -150,6 +151,25 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._collect_item(AgniV3TokenDetail.type(), data)
         for data in current_statuses:
             self._collect_item(AgniV3TokenCurrentStatus.type(), data)
+        for token_id, block_number in burn_token_ids:
+            self._collect_item(AgniV3TokenDetail.type(), AgniV3TokenDetail(
+                nft_address=self._nft_address,
+                pool_address=self._exist_token_ids.get(token_id, ""),
+                token_id=token_id,
+                wallet_address=constants.ZERO_ADDRESS,
+                liquidity=0,
+                block_number=block_number,
+                block_timestamp=self._block_infos[block_number]
+            ))
+            self._collect_item(AgniV3TokenCurrentStatus.type(), AgniV3TokenCurrentStatus(
+                nft_address=self._nft_address,
+                pool_address=self._exist_token_ids.get(token_id, ""),
+                token_id=token_id,
+                wallet_address=constants.ZERO_ADDRESS,
+                liquidity=0,
+                block_number=block_number,
+                block_timestamp=self._block_infos[block_number]
+            ))
         self._block_infos = {}
 
     def _process(self, **kwargs):
@@ -227,8 +247,8 @@ def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_t
                 "block_number": block_number,
             }
             need_collect_value_tokens.append(temp)
-            if token_id not in exist_token_ids:
-                want_pool_tokens.add((token_id, block_number))
+        if token_id not in exist_token_ids:
+            want_pool_tokens.add((token_id, block_number))
     return need_collect_value_tokens, want_pool_tokens
 
 
