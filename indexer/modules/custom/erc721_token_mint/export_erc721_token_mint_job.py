@@ -17,7 +17,7 @@ from indexer.specification.specification import TopicSpecification, TransactionF
 logger = logging.getLogger(__name__)
 
 # Constants
-TARGET_TOKEN_ADDRESS = ["0x10dde7d62819127deb817cde1174138af9bdb884"]
+TARGET_TOKEN_ADDRESS = ["0x144e8e2450d8660c6de415a56452b10187343ad6"]
 
 
 def _filter_mint_tokens(logs: List[Log]) -> List[TokenTransfer]:
