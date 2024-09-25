@@ -1,5 +1,4 @@
 import configparser
-import json
 import os
 from typing import List, cast
 
@@ -57,11 +56,11 @@ class DepositToL2Job(FilterTransactionDataJob):
         config.read(full_path)
 
         try:
-            self._deposit_contracts = json.loads(config.get("chain_deposit_info", "contract_info"))
-            self._clean_mode = config.get("cache_config", "clean_mode")
-            self._clean_limit_value = int(config.get("cache_config", "clean_limit_value"))
-        except (configparser.NoOptionError, configparser.NoSectionError) as e:
-            raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
+            self._deposit_contracts = self.user_defined_config["contract_info"]
+            self._clean_mode = self.user_defined_config["cache_config"].get("clean_mode", "blocks")
+            self._clean_limit_value = int(self.user_defined_config["cache_config"].get("clean_limit_value", "1000"))
+        except KeyError as e:
+            raise FastShutdownError(f"Missing required configuration: {str(e)}")
 
         for chain in self._deposit_contracts.keys():
             for contract_info in self._deposit_contracts[chain]:
@@ -206,4 +205,17 @@ def pre_aggregate_deposit_in_same_block(deposit_events: List[TokenDepositTransac
 
 
 if __name__ == "__main__":
+    config = {}
+    config_file = "config.yaml"
+    with open(config_file, "r") as f:
+        if config_file.endswith(".json"):
+            import json
+
+            config.update(json.load(f))
+        elif config_file.endswith(".yaml") or config_file.endswith(".yml"):
+            import yaml
+
+            config.update(yaml.safe_load(f))
+
+    print(config)
     pass

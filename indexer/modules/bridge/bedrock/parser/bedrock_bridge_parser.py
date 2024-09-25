@@ -15,13 +15,13 @@ from indexer.modules.bridge.bedrock.parser.function_parser import (
 from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_erc20 import FINALIZE_BRIDGE_ERC20_DECODER
 from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_erc721 import FINALIZE_BRIDGE_ERC721_DECODER
 from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_eth import FINALIZE_BRIDGE_ETH_DECODER
-from indexer.modules.bridge.bridge_utils import (
+from indexer.modules.bridge.signature import bytes_to_hex_str, decode_log, event_log_abi_to_topic
+from indexer.utils.bridge_utils import (
     deposit_event_to_op_bedrock_transaction,
     get_version_and_index_from_nonce,
-    unmarshal_deposit_version0,
-    unmarshal_deposit_version1,
+    un_marshal_transaction_deposited_event_version0,
+    un_marshal_transaction_deposited_event_version1,
 )
-from indexer.modules.bridge.signature import bytes_to_hex_str, decode_log, event_log_abi_to_topic
 
 bedrockBridgeParser = BedrockBridgeParser(
     [
@@ -156,9 +156,11 @@ def parse_transaction_deposited_event(transaction: Transaction, contract_address
             tx_origin = transaction_deposited["from"]
             tx_data = transaction_deposited["opaqueData"]
             if deposited_version == 1:
-                mint, value, eth_value, eth_tx_value, gas, is_creation, data = unmarshal_deposit_version1(tx_data)
+                mint, value, eth_value, eth_tx_value, gas, is_creation, data = (
+                    un_marshal_transaction_deposited_event_version1(tx_data)
+                )
             else:
-                mint, value, gas, is_creation, data = unmarshal_deposit_version0(tx_data)
+                mint, value, gas, is_creation, data = un_marshal_transaction_deposited_event_version0(tx_data)
             l2_transaction_hash = deposit_event_to_op_bedrock_transaction(log).hash()
             if data is None or len(data) == 0:
                 results.append(

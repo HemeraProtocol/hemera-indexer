@@ -28,3 +28,47 @@ opensea_job:
     fee_addresses:
       - "0x0000a26b00c1f0df003000390027140000faa719"
       - "0x5b3256965e7c3cf26e11fcaf296dfc8807c01073"
+
+deposit_to_l2_job:
+  contract_info:
+    10:
+      - contract: "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1"
+        ABIFunction:
+          - token: "eth"
+            json: { "inputs": [ { "internalType": "uint32","name": "_minGasLimit","type": "uint32" },{ "internalType": "bytes","name": "_extraData","type": "bytes" } ],"name": "depositETH","outputs": [ ],"stateMutability": "payable","type": "function" }
+          - token: "eth"
+            json: { "inputs": [ { "internalType": "address","name": "_to","type": "address" },{ "internalType": "uint32","name": "_minGasLimit","type": "uint32" },{ "internalType": "bytes","name": "_extraData","type": "bytes" } ],"name": "bridgeETHTo","outputs": [ ],"stateMutability": "payable","type": "function" }
+          - token: "_l1Token"
+            json: { "inputs": [ { "internalType": "address","name": "_l1Token","type": "address" },{ "internalType": "address","name": "_l2Token","type": "address" },{ "internalType": "address","name": "_to","type": "address" },{ "internalType": "uint256","name": "_amount","type": "uint256" },{ "internalType": "uint32","name": "_minGasLimit","type": "uint32" },{ "internalType": "bytes","name": "_extraData","type": "bytes" } ],"name": "depositERC20To","outputs": [ ],"stateMutability": "nonpayable","type": "function" }
+    8453:
+      - contract: "0x3154Cf16ccdb4C6d922629664174b904d80F2C35"
+        ABIFunction:
+          - token: "eth"
+            json: { "inputs": [ { "internalType": "uint32","name": "_minGasLimit","type": "uint32" },{ "internalType": "bytes","name": "_extraData","type": "bytes" } ],"name": "depositETH","outputs": [ ],"stateMutability": "payable","type": "function" }
+          - token: "eth"
+            json: { "inputs": [ { "internalType": "address","name": "_to","type": "address" },{ "internalType": "uint32","name": "_minGasLimit","type": "uint32" },{ "internalType": "bytes","name": "_extraData","type": "bytes" } ],"name": "bridgeETHTo","outputs": [ ],"stateMutability": "payable","type": "function" }
+    42161:
+      - contract: "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef"
+        ABIFunction:
+          - token: "_l1Token"
+            json: { "inputs": [ { "name": "_l1Token","type": "address","internalType": "address" },{ "name": "_to","type": "address","internalType": "address" },{ "name": "_amount","type": "uint256","internalType": "uint256" },{ "name": "_maxGas","type": "uint256","internalType": "uint256" },{ "name": "_gasPriceBid","type": "uint256","internalType": "uint256" },{ "name": "_data","type": "bytes","internalType": "bytes" } ],"name": "outboundTransfer","outputs": [ ],"payable": false,"stateMutability": "nonpayable","type": "function" }
+      - contract: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f"
+        ABIFunction:
+          - token: "eth"
+            method_id: "0x439370b1"
+    59144:
+      - contract: "0xd19d4B5d358258f05D7B411E21A1460D11B0876F"
+        ABIFunction:
+          - token: "eth"
+            json: { "inputs": [ { "internalType": "address","name": "_to","type": "address" },{ "internalType": "uint256","name": "_fee","type": "uint256" },{ "internalType": "bytes","name": "_calldata","type": "bytes" } ],"name": "sendMessage","outputs": [ ],"stateMutability": "payable","type": "function" }
+      - contract: "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319"
+        ABIFunction:
+          - token: "_l1Token"
+            json: { "inputs": [ { "internalType": "address","name": "_l1Token","type": "address" },{ "internalType": "uint256","name": "_amount","type": "uint256" },{ "internalType": "address","name": "_recipient","type": "address" } ],"name": "bridgeToken","outputs": [ ],"stateMutability": "payable","type": "function" }
+      - contract: "0x504A330327A089d8364C4ab3811Ee26976d388ce"
+        ABIFunction:
+          - token: "usdc"
+            json: { "inputs": [ { "internalType": "uint256","name": "_amount","type": "uint256" },{ "internalType": "address","name": "_to","type": "address" } ],"name": "depositTo","outputs": [ ],"stateMutability": "payable","type": "function" }
+  cache_config:
+    clean_mode: blocks
+    clean_limit_value: 1000

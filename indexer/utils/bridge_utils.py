@@ -99,7 +99,7 @@ def get_version_and_index_from_nonce(nonce: int) -> (int, int):
     return (version, index)
 
 
-def unmarshal_deposit_version1(
+def un_marshal_transaction_deposited_event_version1(
     opaque_data: bytes,
 ) -> Tuple[Optional[int], int, int, int, int, bool, bytes]:
     assert len(opaque_data) >= 32 + 32 + 32 + 32 + 8 + 1, f"Unexpected opaqueData length: {len(opaque_data)}"
@@ -137,7 +137,7 @@ def unmarshal_deposit_version1(
     return mint_option, value, eth_value, eth_tx_value, gas, is_creation, tx_data
 
 
-def unmarshal_deposit_version0(
+def un_marshal_transaction_deposited_event_version0(
     opaque_data: bytes,
 ) -> Tuple[Optional[int], int, int, bool, bytes]:
     assert len(opaque_data) >= 32 + 32 + 8 + 1, f"Unexpected opaqueData length: {len(opaque_data)}"
@@ -165,3 +165,7 @@ def unmarshal_deposit_version0(
     tx_data = opaque_data[offset:]
 
     return mint_option, value, gas, is_creation, tx_data
+
+
+def un_marshal_inbox_message_delivered_event(kind: int, data: bytes):
+    pass
