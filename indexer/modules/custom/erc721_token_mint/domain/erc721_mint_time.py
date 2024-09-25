@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 from indexer.domain import Domain, FilterData
+
 
 @dataclass
 class ERC721TokenMint(FilterData):
