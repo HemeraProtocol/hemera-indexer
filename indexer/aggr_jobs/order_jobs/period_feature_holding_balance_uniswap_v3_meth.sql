@@ -29,7 +29,7 @@ WITH pool_prices_table AS (SELECT d1.pool_address,
      upper_lower_table as (select *,
                                   -- upperSqrtPrice 
                                   CASE
-                                      WHEN token1_address = '0xcda86a272531e8640cd7f1a92c01839911b90bb0' THEN
+                                      WHEN token1_address = '\xcda86a272531e8640cd7f1a92c01839911b90bb0' THEN
                                           sqrt_price_x96 * (1 / POWER((1 + rate_limit), 0.5)) * 100000 / 100000 -- mETH: sqrtPriceDividedChangeRate
                                       ELSE
                                           sqrt_price_x96 * POWER((1 + rate_limit), 0.5) * 100000 / 100000 --  token: sqrtPriceChangeRate
@@ -37,7 +37,7 @@ WITH pool_prices_table AS (SELECT d1.pool_address,
 
                                   -- lowerSqrtPrice 
                                   CASE
-                                      WHEN token1_address = '0xcda86a272531e8640cd7f1a92c01839911b90bb0' THEN
+                                      WHEN token1_address = '\xcda86a272531e8640cd7f1a92c01839911b90bb0' THEN
                                           sqrt_price_x96 * (1 / POWER((1 - rate_limit), 0.5)) * 100000 / 100000 -- mETH: sqrtPriceDividedChangeRate
                                       ELSE
                                           sqrt_price_x96 * POWER((1 - rate_limit), 0.5) * 100000 / 100000 --  token: sqrtPriceChangeRate
