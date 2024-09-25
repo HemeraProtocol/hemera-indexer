@@ -52,4 +52,4 @@ jobs:
       - name: Pipeline Test with pytest
         run: |
           export PYTHONPATH=$(pwd)
-          make test pipeline
+          make test indexer
