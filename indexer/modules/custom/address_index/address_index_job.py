@@ -429,6 +429,18 @@ class AddressIndexerJob(ExtensionJob):
             group_by=["token_address", "token_id", "wallet_address"],
         )
 
+        self._data_buff[AddressNft1155Holder.type()] = distinct_collections_by_group(
+            [
+                AddressNft1155Holder(
+                    address=nft_owner.address,
+                    token_address=nft_owner.token_address,
+                    token_id=nft_owner.token_id,
+                    balance_of=nft_owner.balance_of,
+                )
+                for nft_owner in self._data_buff[AddressNft1155Holder.type()]
+            ],
+            group_by=["address", "token_address", "token_id", "balance_of"],
+        )
         transactions = self._get_domain(Transaction)
         self._collect_domains(list(transactions_to_address_transactions(transactions)))
 
