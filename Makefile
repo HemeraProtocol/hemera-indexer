@@ -20,6 +20,7 @@ test:
 		poetry run pytest -vv -m $(filter-out $@,$(MAKECMDGOALS)); \
 	fi
 
+
 PRE_COMMIT_INSTALLED := $(shell command -v pre-commit > /dev/null 2>&1 && echo yes || echo no)
 
 format:
