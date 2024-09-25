@@ -221,7 +221,7 @@ def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_t
     for item in seen:
         token_id = item[0]
         block_number = item[1]
-        if token_id not in burn_token_ids or burn_token_ids[token_id] < block_number:
+        if token_id not in burn_token_ids or burn_token_ids[token_id] > block_number:
             temp = {
                 "token_id": token_id,
                 "block_number": block_number,
