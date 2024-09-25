@@ -8,7 +8,7 @@ select nft_address,
        TO_TIMESTAMP(block_timestamp)::DATE as block_date,
        token_id,
        wallet_address,
-       pool_address,
+       COALESCE(pool_address, '')          as pool_address,
        liquidity
 from (select *, row_number() over (partition by nft_address, token_id order by block_timestamp desc) rn
       from feature_uniswap_v3_token_details
