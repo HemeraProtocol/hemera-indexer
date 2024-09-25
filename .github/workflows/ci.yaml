@@ -47,7 +47,7 @@ jobs:
       - name: Init database
         run: |
           export PYTHONPATH=$(pwd)
-          poetry run make init_db
+          make init_db
 
       - name: Pipeline Test with pytest
         run: |

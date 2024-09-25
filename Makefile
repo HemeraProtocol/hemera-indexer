@@ -32,4 +32,4 @@ endif
 
 init_db:
 	@echo "Initializing database..."
-	python -m hemera.py init_db
+	poetry run python -m hemera.py init_db
