@@ -151,7 +151,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._collect_item(AgniV3TokenDetail.type(), data)
         for data in current_statuses:
             self._collect_item(AgniV3TokenCurrentStatus.type(), data)
-        for token_id, block_number in burn_token_ids:
+        for token_id, block_number in burn_token_ids.items():
             self._collect_item(AgniV3TokenDetail.type(), AgniV3TokenDetail(
                 nft_address=self._nft_address,
                 pool_address=self._exist_token_ids.get(token_id, ""),
