@@ -145,6 +145,7 @@ class JobScheduler:
                 skip = False
                 for output_type in export_job.output_types:
                     if output_type in source_output_types:
+                        source_job.output_types = list(set(export_job.output_types + list(source_output_types)))
                         skip = True
                         break
                 if not skip:
