@@ -394,25 +394,44 @@ def table_to_dataclass(row_instance, cls):
     """
 
     dict_instance = {}
-    for column in row_instance.__table__.columns:
-        if column.name == "meta_data":
-            meta_data_json = getattr(row_instance, column.name)
-            if meta_data_json:
-                for key in meta_data_json:
-                    dict_instance[key] = meta_data_json[key]
-        else:
-            attr = getattr(row_instance, column.name)
-            if isinstance(attr, datetime):
-                dict_instance[column.name] = int(round(attr.timestamp()))
-            elif isinstance(attr, Decimal):
-                dict_instance[column.name] = float(attr)
-            elif isinstance(attr, bytes):
-                dict_instance[column.name] = "0x" + attr.hex()
+    if hasattr(row_instance, "__table__"):
+        for column in row_instance.__table__.columns:
+            if column.name == "meta_data":
+                meta_data_json = getattr(row_instance, column.name)
+                if meta_data_json:
+                    for key in meta_data_json:
+                        dict_instance[key] = meta_data_json[key]
             else:
-                dict_instance[column.name] = attr
+                attr = getattr(row_instance, column.name)
+                if isinstance(attr, datetime):
+                    dict_instance[column.name] = int(round(attr.timestamp()))
+                elif isinstance(attr, Decimal):
+                    dict_instance[column.name] = float(attr)
+                elif isinstance(attr, bytes):
+                    dict_instance[column.name] = "0x" + attr.hex()
+                else:
+                    dict_instance[column.name] = attr
+    else:
+        for column, value in row_instance._asdict().items():
+            dict_instance[column] = convert_value(value)
 
     domain = dict_to_dataclass(dict_instance, cls)
     if cls is Transaction:
         domain.fill_with_receipt(Receipt.from_pg(dict_instance))
 
     return domain
+
+
+def convert_value(value):
+    if isinstance(value, datetime):
+        return int(round(value.timestamp()))
+    elif isinstance(value, Decimal):
+        return float(value)
+    elif isinstance(value, bytes):
+        return "0x" + value.hex()
+    elif isinstance(value, list):
+        return [convert_value(v) for v in value]
+    elif isinstance(value, dict):
+        return {k: convert_value(v) for k, v in value.items()}
+    else:
+        return value
