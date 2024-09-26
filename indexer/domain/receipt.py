@@ -31,6 +31,7 @@ class Receipt(Domain):
             Log.from_rpc(log_dict, block_timestamp, block_hash, block_number)
             for log_dict in receipt_dict.get("logs", [])
         ]
+
         return Receipt(
             transaction_hash=receipt_dict["transactionHash"],
             transaction_index=to_int(hexstr=receipt_dict["transactionIndex"]),
@@ -39,7 +40,7 @@ class Receipt(Domain):
                 if receipt_dict.get("contractAddress")
                 else None
             ),
-            status=to_int(hexstr=receipt_dict["status"]),
+            status=to_int(hexstr=receipt_dict.get("status") or "0x1"),
             logs=logs,
             root=receipt_dict.get("root"),
             cumulative_gas_used=(
