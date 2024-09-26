@@ -211,7 +211,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--source-types",
-    default=None,
+    default="block,transaction,log",
     show_default=True,
     type=str,
     envvar="SOURCE_TYPES",
@@ -375,9 +375,7 @@ def stream(
     else:
         output_types = generate_dataclass_type_list_from_parameter(output_types, "output")
 
-    if source_types is None and source_path.startwith("postgresql://"):
-        source_types = "block,transaction,log"
-    if source_types:
+    if source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
 
     job_scheduler = JobScheduler(
