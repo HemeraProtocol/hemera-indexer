@@ -147,7 +147,7 @@ class PGSourceJob(BaseSourceJob):
         unnest_query = select(func.unnest(blocks).label("block_number")).subquery()
 
         try:
-            if hasattr(table, "number"):
+            if hasattr(table, "number") and hasattr(table, "timestamp"):
                 sub_table = (
                     select(table)
                     .filter(and_(table.timestamp >= start_timestamp, table.timestamp <= end_timestamp))
@@ -160,7 +160,7 @@ class PGSourceJob(BaseSourceJob):
                     .order_by(*table.__query_order__)
                     .all()
                 )
-            elif hasattr(table, "block_number"):
+            elif hasattr(table, "block_number") and hasattr(table, "block_timestamp"):
                 sub_table = (
                     select(table)
                     .filter(and_(table.block_timestamp >= start_timestamp, table.block_timestamp <= end_timestamp))
