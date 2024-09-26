@@ -10,6 +10,7 @@ from typing import List, Type, Union, get_args, get_origin
 from sqlalchemy import and_, func, or_, select
 
 from common.converter.pg_converter import domain_model_mapping
+from common.models.blocks import Blocks
 from common.models.logs import Logs
 from common.models.transactions import Transactions
 from common.services.postgresql_service import PostgreSQLService
@@ -56,7 +57,6 @@ class PGSourceJob(BaseSourceJob):
         if self._service is None:
             raise FastShutdownError("-pg or --postgres-url is required to run PGSourceJob")
 
-        self.build_dependency = {}
         for output_type in self.output_types:
             self._dataclass_build_dependence(output_type, Domain)
         self.build_order = []
@@ -72,13 +72,15 @@ class PGSourceJob(BaseSourceJob):
     def _collect(self, **kwargs):
         start_block = int(kwargs["start_block"])
         end_block = int(kwargs["end_block"])
+        start_timestamp = self._query_timestamp_with_block(start_block)
+        end_timestamp = self._query_timestamp_with_block(end_block)
 
         self.pg_datas.clear()
         if self._is_filter:
             filter_blocks = set()
             extra_transaction = set()
             if self.has_logs_filter:
-                logs = self._query_logs_filter(start_block, end_block, self.log_filter)
+                logs = self._query_logs_filter(start_block, end_block, start_timestamp, end_timestamp, self.log_filter)
                 self.pg_datas[Logs] = logs
 
                 for log in logs:
@@ -89,7 +91,9 @@ class PGSourceJob(BaseSourceJob):
             if self.has_transaction_filter or extra_trx_size > 0:
                 transaction_filter = copy.deepcopy(self.transaction_filter)
                 transaction_filter["hash"].extend(list(extra_transaction))
-                transactions = self._query_transactions_filter(start_block, end_block, transaction_filter)
+                transactions = self._query_transactions_filter(
+                    start_block, end_block, start_timestamp, end_timestamp, transaction_filter
+                )
                 self.pg_datas[Transactions] = transactions
 
                 for transaction in transactions:
@@ -100,25 +104,21 @@ class PGSourceJob(BaseSourceJob):
                 if extra_trx_size != len(extra_transaction):
                     log_filter = copy.deepcopy(self.log_filter)
                     log_filter["transaction_hash"].extend(list(extra_transaction))
-                    logs = self._query_logs_filter(start_block, end_block, log_filter)
+                    logs = self._query_logs_filter(start_block, end_block, start_timestamp, end_timestamp, log_filter)
                     self.pg_datas[Logs] = logs
 
             blocks = sorted(list(filter_blocks))
         else:
             blocks = list(range(start_block, end_block + 1))
 
-        self._collect_from_pg(blocks)
+        self._collect_from_pg(blocks, start_timestamp, end_timestamp)
 
-    def _collect_from_pg(self, blocks):
-        session = self._service.get_service_session()
+    def _collect_from_pg(self, blocks, start_timestamp, end_timestamp):
 
-        try:
-            for output_type in self.output_types:
-                table = domain_model_mapping[output_type.__name__]["table"]
-                if len(self.pg_datas[table]) == 0:
-                    self.pg_datas[table] = self._query_with_blocks(table, blocks)
-        finally:
-            session.close()
+        for output_type in self.output_types:
+            table = domain_model_mapping[output_type.__name__]["table"]
+            if len(self.pg_datas[table]) == 0:
+                self.pg_datas[table] = self._query_with_blocks(table, blocks, start_timestamp, end_timestamp)
 
     def _process(self, **kwargs):
         self.domain_mapping.clear()
@@ -130,34 +130,58 @@ class PGSourceJob(BaseSourceJob):
     def _export(self):
         pass
 
-    def _query_with_blocks(self, table, blocks):
+    def _query_timestamp_with_block(self, block_number):
+        session = self._service.get_service_session()
+        try:
+            timestamp = session.query(Blocks.timestamp).filter(Blocks.number == block_number).scalar()
+        finally:
+            session.close()
+
+        return timestamp
+
+    def _query_with_blocks(self, table, blocks, start_timestamp, end_timestamp):
         if len(blocks) == 0:
             return []
 
         session = self._service.get_service_session()
         unnest_query = select(func.unnest(blocks).label("block_number")).subquery()
+
         try:
             if hasattr(table, "number"):
+                sub_table = (
+                    select(table)
+                    .filter(and_(table.timestamp >= start_timestamp, table.timestamp <= end_timestamp))
+                    .subquery(table.__tablename__)
+                )
+
                 result = (
-                    session.query(table)
-                    .join(unnest_query, table.number == unnest_query.c.block_number)
+                    session.query(sub_table)
+                    .join(unnest_query, sub_table.c.number == unnest_query.c.block_number)
+                    .order_by(*table.__query_order__)
+                    .all()
+                )
+            elif hasattr(table, "block_number"):
+                sub_table = (
+                    select(table)
+                    .filter(and_(table.block_timestamp >= start_timestamp, table.block_timestamp <= end_timestamp))
+                    .subquery(table.__tablename__)
+                )
+
+                result = (
+                    session.query(sub_table)
+                    .join(unnest_query, sub_table.c.block_number == unnest_query.c.block_number)
                     .order_by(*table.__query_order__)
                     .all()
                 )
             else:
-                result = (
-                    session.query(table)
-                    .join(unnest_query, table.block_number == unnest_query.c.block_number)
-                    .order_by(*table.__query_order__)
-                    .all()
-                )
+                result = []
 
         finally:
             session.close()
 
         return result
 
-    def _query_logs_filter(self, start_block, end_block, log_filter):
+    def _query_logs_filter(self, start_block, end_block, start_timestamp, end_timestamp, log_filter):
         query_filter = None
 
         if len(log_filter["address"]) > 0:
@@ -178,7 +202,13 @@ class PGSourceJob(BaseSourceJob):
                 ),
             )
 
-        query_filter = and_(query_filter, Logs.block_number >= start_block, Logs.block_number <= end_block)
+        query_filter = and_(
+            Logs.block_number >= start_block,
+            Logs.block_number <= end_block,
+            Logs.block_timestamp >= start_timestamp,
+            Logs.block_timestamp <= end_timestamp,
+            query_filter,
+        )
 
         session = self._service.get_service_session()
         try:
@@ -187,7 +217,7 @@ class PGSourceJob(BaseSourceJob):
             session.close()
         return logs
 
-    def _query_transactions_filter(self, start_block, end_block, transaction_filter):
+    def _query_transactions_filter(self, start_block, end_block, start_timestamp, end_timestamp, transaction_filter):
         query_filter = None
 
         if len(transaction_filter["hash"]) > 0:
@@ -215,7 +245,11 @@ class PGSourceJob(BaseSourceJob):
             )
 
         query_filter = and_(
-            query_filter, Transactions.block_number >= start_block, Transactions.block_number <= end_block
+            Transactions.block_number >= start_block,
+            Transactions.block_number <= end_block,
+            Transactions.block_timestamp >= start_timestamp,
+            Transactions.block_timestamp <= end_timestamp,
+            query_filter,
         )
 
         session = self._service.get_service_session()
@@ -240,15 +274,17 @@ class PGSourceJob(BaseSourceJob):
         def build_transaction():
             transactions = [table_to_dataclass(data, Transaction) for data in pg_datas]
             self.domain_mapping[output_type] = {transaction.hash: transaction for transaction in transactions}
-            for transaction in transactions:
-                self.domain_mapping[Block][transaction.block_hash].transactions.append(transaction)
+            if Block in self.output_types:
+                for transaction in transactions:
+                    self.domain_mapping[Block][transaction.block_hash].transactions.append(transaction)
 
             return transactions
 
         def build_log():
             logs = [table_to_dataclass(data, Log) for data in pg_datas]
-            for log in logs:
-                self.domain_mapping[Transaction][log.transaction_hash].receipt.logs.append(log)
+            if Transaction in self.output_types:
+                for log in logs:
+                    self.domain_mapping[Transaction][log.transaction_hash].receipt.logs.append(log)
 
             return logs
 
