@@ -80,7 +80,9 @@ class PGSourceJob(BaseSourceJob):
             filter_blocks = set()
             extra_transaction = set()
             if self.has_logs_filter:
+                start_time = datetime.now()
                 logs = self._query_logs_filter(start_block, end_block, start_timestamp, end_timestamp, self.log_filter)
+                self.logger.info(f"First log filter finished. Took {datetime.now() - start_time}")
                 self.pg_datas[Logs] = logs
 
                 for log in logs:
@@ -91,9 +93,11 @@ class PGSourceJob(BaseSourceJob):
             if self.has_transaction_filter or extra_trx_size > 0:
                 transaction_filter = copy.deepcopy(self.transaction_filter)
                 transaction_filter["hash"].extend(list(extra_transaction))
+                start_time = datetime.now()
                 transactions = self._query_transactions_filter(
                     start_block, end_block, start_timestamp, end_timestamp, transaction_filter
                 )
+                self.logger.info(f"Transaction filter finished. Took {datetime.now() - start_time}")
                 self.pg_datas[Transactions] = transactions
 
                 for transaction in transactions:
@@ -104,7 +108,9 @@ class PGSourceJob(BaseSourceJob):
                 if extra_trx_size != len(extra_transaction):
                     log_filter = copy.deepcopy(self.log_filter)
                     log_filter["transaction_hash"].extend(list(extra_transaction))
+                    start_time = datetime.now()
                     logs = self._query_logs_filter(start_block, end_block, start_timestamp, end_timestamp, log_filter)
+                    self.logger.info(f"Second log filter finished. Took {datetime.now() - start_time}")
                     self.pg_datas[Logs] = logs
 
             blocks = sorted(list(filter_blocks))
@@ -118,7 +124,9 @@ class PGSourceJob(BaseSourceJob):
         for output_type in self.output_types:
             table = domain_model_mapping[output_type.__name__]["table"]
             if len(self.pg_datas[table]) == 0:
+                start_time = datetime.now()
                 self.pg_datas[table] = self._query_with_blocks(table, blocks, start_timestamp, end_timestamp)
+                self.logger.info(f"Read {table.__tablename__} from postgres finished. Took {datetime.now() - start_time}")
 
     def _process(self, **kwargs):
         self.domain_mapping.clear()
