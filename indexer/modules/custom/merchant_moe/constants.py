@@ -30,6 +30,20 @@ ABI_LIST = [
         "stateMutability": "view",
         "type": "function",
     },
+    {
+        "inputs": [],
+        "name": "getActiveId",
+        "outputs": [{"internalType": "uint24", "name": "activeId", "type": "uint24"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "getBinStep",
+        "outputs": [{"internalType": "uint24", "name": "binStep", "type": "uint16"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
 ]
 
 LIQUIDITY_LIST = [
@@ -39,4 +53,6 @@ LIQUIDITY_LIST = [
     "0xa32e146844d6144a22e94c586715a1317d58a8aa3581ec33d040113ddcb24350",
     # TransferBatch
     "0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb",
+    # Swap
+    "0xad7d6f97abf51ce18e17a38f4d70e975be9c0708474987bb3e26ad21bd93ca70",
 ]

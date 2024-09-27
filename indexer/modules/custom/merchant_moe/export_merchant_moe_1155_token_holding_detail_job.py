@@ -6,6 +6,7 @@ from collections import defaultdict
 
 import eth_abi
 
+from indexer.domain.log import Log
 from indexer.domain.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
@@ -16,6 +17,8 @@ from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
     MerchantMoeErc1155TokenCurrentSupply,
     MerchantMoeErc1155TokenSupply,
     MerChantMoePool,
+    MerChantMoePoolCurrentStatu,
+    MerChantMoePoolRecord,
     MerChantMoeTokenBin,
     MerChantMoeTokenCurrentBin,
 )
@@ -29,13 +32,15 @@ FEATURE_ID = FeatureType.MERCHANT_MOE_1155_LIQUIDITY.value
 
 
 class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
-    dependency_types = [TokenBalance]
+    dependency_types = [TokenBalance, Log]
     output_types = [
         MerchantMoeErc1155TokenSupply,
         MerchantMoeErc1155TokenCurrentSupply,
         MerChantMoeTokenBin,
         MerChantMoeTokenCurrentBin,
         MerChantMoePool,
+        MerChantMoePoolCurrentStatu,
+        MerChantMoePoolRecord,
     ]
     able_to_reorg = True
 
@@ -63,15 +68,23 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         if self._need_collected_list is None or len(self._need_collected_list) == 0:
             return
         token_balances = self._data_buff[TokenBalance.type()]
-        if token_balances is None or len(token_balances) == 0:
-            return
-        self._batch_work_executor.execute(
-            token_balances, self._collect_batch, total_items=len(token_balances), split_method=split_token_balances
-        )
+        if token_balances is not None and len(token_balances) > 0:
+            self._batch_work_executor.execute(
+                token_balances,
+                self._collect_token_batch,
+                total_items=len(token_balances),
+                split_method=split_token_balances,
+            )
 
-        self._batch_work_executor.wait()
+            self._batch_work_executor.wait()
+        logs = self._data_buff[Log.type()]
+        if logs is not None and len(logs) > 0:
+            self._batch_work_executor.execute(
+                logs, self._collect_pool_batch, total_items=len(logs), split_method=split_logs
+            )
+            self._batch_work_executor.wait()
 
-    def _collect_batch(self, token_balances) -> None:
+    def _collect_token_batch(self, token_balances) -> None:
         if token_balances is None or len(token_balances) == 0:
             return
         token_address = next(iter(token_balances))
@@ -208,12 +221,70 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         for data in current_token_bin_dict.values():
             self._collect_item(MerChantMoeTokenCurrentBin.type(), data)
 
+    def _collect_pool_batch(self, log_dict) -> None:
+        if log_dict is None or len(log_dict) == 0:
+            return
+        token_address = next(iter(log_dict))
+        logs = log_dict[token_address]
+        if logs is None or len(logs) == 0:
+            return
+        blocks_set = set()
+        for log in logs:
+            token_address = log.address
+            if token_address not in self._exist_pool:
+                continue
+            block_number = log.block_number
+            block_timestamp = log.block_timestamp
+            blocks_set.add((token_address, block_number, block_timestamp))
+
+        pool_array = []
+        for token_address, block_number, block_timestamp in blocks_set:
+            pool_array.append(
+                {
+                    "block_number": block_number,
+                    "block_timestamp": block_timestamp,
+                    "token_address": token_address,
+                }
+            )
+        if pool_array is None or len(pool_array) == 0:
+            return
+        bin_step_array = batch_get_pool_bin_step(
+            self._web3, self._batch_web3_provider.make_request, pool_array, self._is_batch, constants.ABI_LIST
+        )
+
+        active_id_array = batch_get_pool_active_id(
+            self._web3, self._batch_web3_provider.make_request, bin_step_array, self._is_batch, constants.ABI_LIST
+        )
+        current_pool_data = None
+        for data in active_id_array:
+            entity = MerChantMoePoolRecord(
+                pool_address=data["token_address"],
+                active_id=data["getActiveId"],
+                bin_step=data["getBinStep"],
+                block_number=data["block_number"],
+                block_timestamp=data["block_timestamp"],
+            )
+            if current_pool_data is None or current_pool_data.block_number < entity.block_number:
+                current_pool_data = MerChantMoePoolCurrentStatu(
+                    pool_address=entity.pool_address,
+                    active_id=entity.active_id,
+                    bin_step=entity.bin_step,
+                    block_number=entity.block_number,
+                    block_timestamp=entity.block_timestamp,
+                )
+            self._collect_item(MerChantMoePoolRecord.type(), entity)
+        if current_pool_data:
+            self._collect_item(MerChantMoePoolCurrentStatu.type(), current_pool_data)
+
     def _process(self, **kwargs):
 
         self._data_buff[MerchantMoeErc1155TokenSupply.type()].sort(key=lambda x: x.block_number)
         self._data_buff[MerChantMoeTokenBin.type()].sort(key=lambda x: x.block_number)
         self._data_buff[MerchantMoeErc1155TokenCurrentSupply.type()].sort(key=lambda x: x.block_number)
         self._data_buff[MerChantMoeTokenCurrentBin.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoePoolCurrentStatu.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoePoolRecord.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoePool.type()].sort(key=lambda x: x.block_number)
 
 
 def split_token_balances(token_balances):
@@ -223,6 +294,15 @@ def split_token_balances(token_balances):
 
     for token_address, data in token_balance_dict.items():
         yield {token_address: data}
+
+
+def split_logs(logs):
+    log_dict = defaultdict(list)
+    for data in logs:
+        log_dict[data.address].append(data)
+
+    for address, data in log_dict.items():
+        yield {address: data}
 
 
 def batch_get_bin(web3, make_requests, requests, nft_address, is_batch, abi_list):
@@ -278,6 +358,53 @@ def batch_get_total_supply(web3, make_requests, requests, nft_address, is_batch,
     output_types = [output["type"] for output in outputs]
 
     parameters = common_utils.build_one_input_one_output_method_data(web3, requests, nft_address, fn_name, abi_list)
+
+    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
+    if is_batch:
+        response = make_requests(params=json.dumps(token_name_rpc))
+    else:
+        response = [make_requests(params=json.dumps(token_name_rpc[0]))]
+
+    token_infos = []
+    for data in list(zip_rpc_response(parameters, response)):
+        result = rpc_response_to_result(data[1])
+        token = data[0]
+        value = result[2:] if result is not None else None
+        try:
+            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+            token[fn_name] = decoded_data[0]
+
+        except Exception as e:
+            logger.error(
+                f"Decoding token info failed. "
+                f"token: {token}. "
+                f"fn: {fn_name}. "
+                f"rpc response: {result}. "
+                f"exception: {e}"
+            )
+        token_infos.append(token)
+    return token_infos
+
+
+def batch_get_pool_bin_step(web3, make_requests, requests, is_batch, abi_list):
+    return batch_get_pool_int(web3, make_requests, requests, is_batch, abi_list, "getBinStep")
+
+
+def batch_get_pool_active_id(web3, make_requests, requests, is_batch, abi_list):
+    return batch_get_pool_int(web3, make_requests, requests, is_batch, abi_list, "getActiveId")
+
+
+def batch_get_pool_int(web3, make_requests, requests, is_batch, abi_list, fn_name):
+    if len(requests) == 0:
+        return []
+    function_abi = next(
+        (abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"),
+        None,
+    )
+    outputs = function_abi["outputs"]
+    output_types = [output["type"] for output in outputs]
+
+    parameters = common_utils.build_no_input_method_data(web3, requests, fn_name, abi_list, "token_address")
 
     token_name_rpc = list(generate_eth_call_json_rpc(parameters))
     if is_batch:
