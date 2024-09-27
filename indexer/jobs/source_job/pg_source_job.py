@@ -126,7 +126,9 @@ class PGSourceJob(BaseSourceJob):
             if len(self.pg_datas[table]) == 0:
                 start_time = datetime.now()
                 self.pg_datas[table] = self._query_with_blocks(table, blocks, start_timestamp, end_timestamp)
-                self.logger.info(f"Read {table.__tablename__} from postgres finished. Took {datetime.now() - start_time}")
+                self.logger.info(
+                    f"Read {table.__tablename__} from postgres finished. Took {datetime.now() - start_time}"
+                )
 
     def _process(self, **kwargs):
         self.domain_mapping.clear()
@@ -191,24 +193,19 @@ class PGSourceJob(BaseSourceJob):
         return result
 
     def _query_logs_filter(self, start_block, end_block, start_timestamp, end_timestamp, log_filter):
-        query_filter = False
+        address_filter = True
+        topic_filter = True
+        transaction_filter = False
 
         if len(log_filter["address"]) > 0:
-            query_filter = or_(
-                query_filter, Logs.address.in_([bytes.fromhex(address[2:]) for address in set(log_filter["address"])])
-            )
+            address_filter = Logs.address.in_([bytes.fromhex(address[2:]) for address in set(log_filter["address"])])
 
         if len(log_filter["topics"]) > 0:
-            query_filter = or_(
-                query_filter, Logs.topic0.in_([bytes.fromhex(topic0[2:]) for topic0 in set(log_filter["topics"])])
-            )
+            topic_filter = Logs.topic0.in_([bytes.fromhex(topic0[2:]) for topic0 in set(log_filter["topics"])])
 
         if len(log_filter["transaction_hash"]) > 0:
-            query_filter = or_(
-                query_filter,
-                Logs.transaction_hash.in_(
-                    [bytes.fromhex(transaction_hash[2:]) for transaction_hash in set(log_filter["transaction_hash"])]
-                ),
+            transaction_filter = Logs.transaction_hash.in_(
+                [bytes.fromhex(transaction_hash[2:]) for transaction_hash in set(log_filter["transaction_hash"])]
             )
 
         query_filter = and_(
@@ -216,7 +213,10 @@ class PGSourceJob(BaseSourceJob):
             Logs.block_number <= end_block,
             Logs.block_timestamp >= start_timestamp,
             Logs.block_timestamp <= end_timestamp,
-            query_filter,
+            or_(
+                and_(address_filter, topic_filter),
+                transaction_filter,
+            ),
         )
 
         session = self._service.get_service_session()
@@ -231,30 +231,23 @@ class PGSourceJob(BaseSourceJob):
         return logs
 
     def _query_transactions_filter(self, start_block, end_block, start_timestamp, end_timestamp, transaction_filter):
-        query_filter = False
+        hash_filter = False
+        from_filter = False
+        to_filter = False
 
         if len(transaction_filter["hash"]) > 0:
-            query_filter = or_(
-                query_filter,
-                Transactions.hash.in_(
-                    [bytes.fromhex(transaction_hash[2:]) for transaction_hash in set(transaction_filter["hash"])]
-                ),
+            hash_filter = Transactions.hash.in_(
+                [bytes.fromhex(transaction_hash[2:]) for transaction_hash in set(transaction_filter["hash"])]
             )
 
         if len(transaction_filter["from_address"]) > 0:
-            query_filter = or_(
-                query_filter,
-                Transactions.from_address.in_(
-                    [bytes.fromhex(from_address[2:]) for from_address in set(transaction_filter["from_address"])]
-                ),
+            from_filter = Transactions.from_address.in_(
+                [bytes.fromhex(from_address[2:]) for from_address in set(transaction_filter["from_address"])]
             )
 
         if len(transaction_filter["to_address"]) > 0:
-            query_filter = or_(
-                query_filter,
-                Transactions.to_address.in_(
-                    [bytes.fromhex(to_address[2:]) for to_address in set(transaction_filter["to_address"])]
-                ),
+            to_filter = Transactions.to_address.in_(
+                [bytes.fromhex(to_address[2:]) for to_address in set(transaction_filter["to_address"])]
             )
 
         query_filter = and_(
@@ -262,7 +255,7 @@ class PGSourceJob(BaseSourceJob):
             Transactions.block_number <= end_block,
             Transactions.block_timestamp >= start_timestamp,
             Transactions.block_timestamp <= end_timestamp,
-            query_filter,
+            or_(hash_filter, from_filter, to_filter),
         )
 
         session = self._service.get_service_session()
