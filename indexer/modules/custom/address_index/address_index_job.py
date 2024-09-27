@@ -1,11 +1,9 @@
-import json
 import logging
 from enum import Enum
 from itertools import groupby
 from typing import List, Union
 
-from eth_abi import abi
-
+from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.token_id_infos import UpdateERC721TokenIdDetail
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.transaction import Transaction
@@ -13,17 +11,24 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import ExtensionJob
 from indexer.jobs.export_token_balances_job import extract_token_parameters
 from indexer.jobs.export_token_id_infos_job import generate_token_id_info
+from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
+from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
 from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 from indexer.modules.custom.address_index.domain.address_nft_transfer import AddressNftTransfer
 from indexer.modules.custom.address_index.domain.address_token_holder import AddressTokenHolder
 from indexer.modules.custom.address_index.domain.address_token_transfer import AddressTokenTransfer
 from indexer.modules.custom.address_index.domain.address_transaction import AddressTransaction
 from indexer.modules.custom.address_index.domain.token_address_nft_inventory import TokenAddressNftInventory
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
 from indexer.utils.token_fetcher import TokenFetcher
-from indexer.utils.utils import ZERO_ADDRESS, rpc_response_to_result, zip_rpc_response
+from indexer.utils.utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
+
+
+class InternalTransactionType(Enum):
+    SELF_CALL = 0
+    SENDER = 1
+    RECEIVER = 2
 
 
 class AddressTransactionType(Enum):
@@ -54,6 +59,100 @@ class AddressNftTransferType(Enum):
 
     BURNER = 3
     MINTER = 4
+
+
+def create_address_internal_transaction(
+    internal_transaction: ContractInternalTransaction,
+    address: str,
+    txn_type: int,
+    related_address: str,
+    transaction_receipt_status: int,
+):
+    yield AddressInternalTransaction(
+        address=address,
+        trace_id=internal_transaction.trace_id,
+        block_number=internal_transaction.block_number,
+        transaction_index=internal_transaction.transaction_index,
+        transaction_hash=internal_transaction.transaction_hash,
+        block_timestamp=internal_transaction.block_timestamp,
+        block_hash=internal_transaction.block_hash,
+        error=internal_transaction.error,
+        status=int(internal_transaction.status or 0),
+        input_method=(internal_transaction.input or "")[2:10],
+        value=internal_transaction.value,
+        gas=internal_transaction.gas,
+        gas_used=internal_transaction.gas_used,
+        trace_type=internal_transaction.trace_type,
+        call_type=internal_transaction.call_type,
+        txn_type=txn_type,
+        related_address=related_address,
+        transaction_receipt_status=transaction_receipt_status,
+    )
+
+
+def create_address_contract_operation(
+    internal_transaction: ContractInternalTransaction,
+    address: str,
+    contract_address: str,
+    transaction_receipt_status: int,
+):
+    yield AddressContractOperation(
+        address=address,
+        trace_from_address=internal_transaction.from_address,
+        contract_address=contract_address,
+        trace_id=internal_transaction.trace_id,
+        block_number=internal_transaction.block_number,
+        transaction_index=internal_transaction.transaction_index,
+        transaction_hash=internal_transaction.transaction_hash,
+        block_timestamp=internal_transaction.block_timestamp,
+        block_hash=internal_transaction.block_hash,
+        error=internal_transaction.error,
+        status=int(internal_transaction.status or 0),
+        creation_code=internal_transaction.input,
+        deployed_code=internal_transaction.output,
+        gas=internal_transaction.gas,
+        gas_used=internal_transaction.gas_used,
+        trace_type=internal_transaction.trace_type,
+        call_type=internal_transaction.call_type,
+        transaction_receipt_status=transaction_receipt_status,
+    )
+
+
+def internal_transactions_to_address_internal_transactions(
+    internal_transactions: List[ContractInternalTransaction], transaction_dict: dict[str, Transaction]
+) -> list[Union[AddressInternalTransaction, AddressContractOperation]]:
+    for internal_transaction in internal_transactions:
+        if internal_transaction.from_address != internal_transaction.to_address:
+            yield from create_address_internal_transaction(
+                internal_transaction,
+                internal_transaction.from_address,
+                InternalTransactionType.SENDER.value,
+                internal_transaction.to_address,
+                transaction_dict[internal_transaction.transaction_hash].receipt.status,
+            )
+            if internal_transaction.is_contract_creation():
+                yield from create_address_contract_operation(
+                    internal_transaction,
+                    transaction_dict[internal_transaction.transaction_hash].from_address,
+                    internal_transaction.to_address,
+                    transaction_dict[internal_transaction.transaction_hash].receipt.status,
+                )
+            if internal_transaction.to_address is not None:
+                yield from create_address_internal_transaction(
+                    internal_transaction,
+                    internal_transaction.to_address,
+                    InternalTransactionType.RECEIVER.value,
+                    internal_transaction.from_address,
+                    transaction_dict[internal_transaction.transaction_hash].receipt.status,
+                )
+        else:
+            yield from create_address_internal_transaction(
+                internal_transaction,
+                internal_transaction.from_address,
+                InternalTransactionType.SELF_CALL.value,
+                internal_transaction.to_address,
+                transaction_dict[internal_transaction.transaction_hash].receipt.status,
+            )
 
 
 def create_address_transaction(transaction, address, txn_type, related_address, transaction_fee):
@@ -216,6 +315,8 @@ class AddressIndexerJob(ExtensionJob):
         AddressNftTransfer,
         AddressTokenHolder,
         AddressNft1155Holder,
+        AddressInternalTransaction,
+        AddressContractOperation,
     ]
 
     def __init__(self, **kwargs):
@@ -228,47 +329,7 @@ class AddressIndexerJob(ExtensionJob):
         self.token_fetcher = TokenFetcher(self._web3, kwargs)
         self._is_multi_call = kwargs["multicall"]
 
-    def _collect_all_token_transfers(self):
-        token_transfers = []
-        if ERC20TokenTransfer.type() in self._data_buff:
-            token_transfers += self._data_buff[ERC20TokenTransfer.type()]
-
-        if ERC721TokenTransfer.type() in self._data_buff:
-            token_transfers += self._data_buff[ERC721TokenTransfer.type()]
-
-        if ERC1155TokenTransfer.type() in self._data_buff:
-            token_transfers += self._data_buff[ERC1155TokenTransfer.type()]
-
-        return token_transfers
-
-    def _collect(self, **kwargs):
-        token_transfers = self._collect_all_token_transfers()
-
-        all_token_parameters = extract_token_parameters(token_transfers, "latest")
-        all_token_parameters.sort(key=lambda x: (x["address"], x["token_address"], x.get("token_id") or 0))
-        parameters = [
-            list(group)[-1]
-            for key, group in groupby(all_token_parameters, lambda x: (x["address"], x["token_address"], x["token_id"]))
-        ]
-
-        all_owner_parameters = generate_token_id_info(self._data_buff[ERC721TokenTransfer.type()], [], "latest")
-        all_owner_parameters.sort(key=lambda x: (x["address"], x["token_id"]))
-        owner_parameters = [
-            list(group)[-1] for key, group in groupby(all_owner_parameters, lambda x: (x["address"], x["token_id"]))
-        ]
-
-        if self._is_multi_call:
-            self._collect_balance_batch(parameters)
-            self._collect_owner_batch(owner_parameters)
-        else:
-            self._batch_work_executor.execute(parameters, self._collect_balance_batch, total_items=len(parameters))
-            self._batch_work_executor.wait()
-            self._batch_work_executor.execute(
-                owner_parameters, self._collect_owner_batch, total_items=len(owner_parameters)
-            )
-            self._batch_work_executor.wait()
-
-    def _collect_owner_batch(self, token_list):
+    def __collect_owner_batch(self, token_list):
         items = self.token_fetcher.fetch_token_ids_info(token_list)
         update_erc721_token_id_details = []
         for item in items:
@@ -290,7 +351,7 @@ class AddressIndexerJob(ExtensionJob):
                 )
             )
 
-    def _collect_balance_batch(self, parameters):
+    def __collect_balance_batch(self, parameters):
         token_balances = self.token_fetcher.fetch_token_balance(parameters)
         token_balances.sort(key=lambda x: (x["address"], x["token_address"]))
         for token_balance in token_balances:
@@ -312,9 +373,41 @@ class AddressIndexerJob(ExtensionJob):
                     )
                 )
 
+    def _collect(self, **kwargs):
+        # Get all token transfers
+        token_transfers = self._get_domains([ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer])
+
+        # Generate token transfer parameters
+        all_token_parameters = extract_token_parameters(token_transfers, "latest")
+        all_token_parameters.sort(key=lambda x: (x["address"], x["token_address"], x.get("token_id") or 0))
+        parameters = [
+            list(group)[-1]
+            for key, group in groupby(all_token_parameters, lambda x: (x["address"], x["token_address"], x["token_id"]))
+        ]
+
+        # Generate token owner parameters
+        all_owner_parameters = generate_token_id_info(self._data_buff[ERC721TokenTransfer.type()], [], "latest")
+        all_owner_parameters.sort(key=lambda x: (x["address"], x["token_id"]))
+        owner_parameters = [
+            list(group)[-1] for key, group in groupby(all_owner_parameters, lambda x: (x["address"], x["token_id"]))
+        ]
+
+        if self._is_multi_call:
+            self.__collect_balance_batch(parameters)
+            self.__collect_owner_batch(owner_parameters)
+        else:
+            self._batch_work_executor.execute(parameters, self.__collect_balance_batch, total_items=len(parameters))
+            self._batch_work_executor.wait()
+            self._batch_work_executor.execute(
+                owner_parameters, self.__collect_owner_batch, total_items=len(owner_parameters)
+            )
+            self._batch_work_executor.wait()
+
     def _process(self, **kwargs):
         transactions = self._get_domain(Transaction)
         self._collect_domains(list(transactions_to_address_transactions(transactions)))
+
+        transaction_dict = {transaction.hash: transaction for transaction in transactions}
 
         token_transfers = self._get_domain(ERC20TokenTransfer)
         self._collect_domains(list(erc20_transfers_to_address_token_transfers(token_transfers)))
@@ -325,68 +418,7 @@ class AddressIndexerJob(ExtensionJob):
         erc1155_transfers = self._get_domain(ERC1155TokenTransfer)
         self._collect_domains(list(nft_transfers_to_address_nft_transfers(erc1155_transfers)))
 
-
-def token_owner_rpc_requests(make_requests, tokens, is_batch):
-    for idx, token in enumerate(tokens):
-        token["request_id"] = idx
-
-    token_balance_rpc = list(generate_eth_call_json_rpc_without_block_number(tokens))
-
-    if is_batch:
-        response = make_requests(params=json.dumps(token_balance_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_balance_rpc[0]))]
-
-    token_owners = []
-    for data in list(zip_rpc_response(tokens, response)):
-        result = rpc_response_to_result(data[1])
-        wallet_address = None
-
-        try:
-            if result:
-                wallet_address = abi.decode(["address"], bytes.fromhex(result[2:]))[0]
-        except Exception as e:
-            logger.warning(f"Decoding token balance value failed. " f"rpc response: {result}. " f"exception: {e}. ")
-
-        token_owners.append(
-            {
-                "token_id": data[0]["token_id"],
-                "token_address": data[0]["token_address"].lower(),
-                "wallet_address": wallet_address,
-            }
+        internal_transactions = self._get_domain(ContractInternalTransaction)
+        self._collect_domains(
+            list(internal_transactions_to_address_internal_transactions(internal_transactions, transaction_dict))
         )
-
-    return token_owners
-
-
-def token_balances_rpc_requests(make_requests, tokens, is_batch):
-    for idx, token in enumerate(tokens):
-        token["request_id"] = idx
-
-    token_balance_rpc = list(generate_eth_call_json_rpc_without_block_number(tokens))
-
-    if is_batch:
-        response = make_requests(params=json.dumps(token_balance_rpc))
-    else:
-        response = [make_requests(params=json.dumps(token_balance_rpc[0]))]
-
-    token_balances = []
-    for data in list(zip_rpc_response(tokens, response)):
-        result = rpc_response_to_result(data[1])
-        balance = None
-
-        try:
-            if result:
-                balance = abi.decode(["uint256"], bytes.fromhex(result[2:]))[0]
-        except Exception as e:
-            logger.warning(f"Decoding token balance value failed. " f"rpc response: {result}. " f"exception: {e}. ")
-
-        token_balances.append(
-            {
-                "address": data[0]["address"].lower(),
-                "token_address": data[0]["token_address"].lower(),
-                "balance_of": balance,
-            }
-        )
-
-    return token_balances

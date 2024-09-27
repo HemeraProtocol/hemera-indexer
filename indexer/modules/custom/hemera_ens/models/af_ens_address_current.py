@@ -1,5 +1,5 @@
-from sqlalchemy import BIGINT, TIMESTAMP, Column, String, func
-from sqlalchemy.dialects.postgresql import BYTEA
+from sqlalchemy import Column, func
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
@@ -9,7 +9,7 @@ class ENSAddress(HemeraModel):
     __tablename__ = "af_ens_address_current"
 
     address = Column(BYTEA, primary_key=True)
-    name = Column(String)
+    name = Column(VARCHAR)
     reverse_node = Column(BYTEA)
     block_number = Column(BIGINT)
     create_time = Column(TIMESTAMP, server_default=func.now())

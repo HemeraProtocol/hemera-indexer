@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
@@ -19,7 +19,7 @@ class UniswapV3TokenDetails(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("position_token_address", "token_id", "block_timestamp", "block_number"),)
 
@@ -28,6 +28,12 @@ class UniswapV3TokenDetails(HemeraModel):
         return [
             {
                 "domain": "UniswapV3TokenDetail",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AgniV3TokenDetail",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

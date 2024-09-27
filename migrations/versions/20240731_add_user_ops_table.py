@@ -41,7 +41,7 @@ def upgrade() -> None:
         sa.Column("signature", postgresql.BYTEA(), nullable=True),
         sa.Column("transactions_hash", postgresql.BYTEA(), nullable=True),
         sa.Column("transactions_index", sa.INTEGER(), nullable=True),
-        sa.Column("block_number", sa.INTEGER(), nullable=True),
+        sa.Column("block_number", sa.BIGINT(), nullable=True),
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("bundler", sa.VARCHAR(length=42), nullable=True),
         sa.Column("start_log_index", sa.INTEGER(), nullable=True),

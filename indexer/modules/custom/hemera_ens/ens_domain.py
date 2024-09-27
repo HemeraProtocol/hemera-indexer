@@ -56,6 +56,7 @@ class ENSRegisterD(FilterData):
     node: Optional[str] = None
     token_id: Optional[str] = None
     w_token_id: Optional[str] = None
+    block_number: Optional[int] = None
 
 
 @dataclass
@@ -63,6 +64,7 @@ class ENSNameRenewD(FilterData):
 
     node: Optional[str] = None
     expires: Optional[datetime] = None
+    block_number: Optional[int] = None
 
 
 @dataclass
@@ -70,6 +72,7 @@ class ENSAddressChangeD(FilterData):
 
     node: Optional[str] = None
     address: Optional[str] = None
+    block_number: Optional[int] = None
 
 
 """for ens_address"""

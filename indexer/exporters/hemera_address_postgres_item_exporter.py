@@ -11,6 +11,8 @@ from common.services.hemera_postgresql_service import HemeraPostgreSQLService
 from indexer.domain.token import Token
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 from indexer.modules.custom.address_index.domain import *
+from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
+from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
 from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 
 logger = logging.getLogger(__name__)
@@ -27,6 +29,8 @@ class HemeraAddressPostgresItemExporter(BaseExporter):
         AddressTokenHolder,
         Token,
         TokenAddressNftInventory,
+        AddressContractOperation,
+        AddressInternalTransaction,
     ]
 
     def __init__(self, output, chain_id):

@@ -1,5 +1,8 @@
+import re
+
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+from sqlalchemy.sql.schema import SchemaItem
 
 from common.models import db, import_all_models
 
@@ -21,11 +24,61 @@ config = context.config
 # target_metadata = mymodel.Base.metadata
 target_metadata = db.metadata
 
-
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+IGNORE_DB_TABLE = ["transactions_multi", "hemera_address_transactions", "address_transactions_all", "chosen_address"]
+PARTITION_TABLES = [
+    "contract_internal_transactions",
+    "erc20_token_transfers",
+    "erc721_token_transfers",
+    "logs",
+    "traces",
+    "transactions",
+]
+
+
+def table_able_to_track(**kwargs) -> bool:
+    name = kwargs["name"]
+    reflected = kwargs["reflected"]
+    if reflected:
+        return not any(name.startswith(table) for table in IGNORE_DB_TABLE)
+    return True
+
+
+def do_not_track_partition_table(**kwargs) -> bool:
+    name = kwargs["name"]
+    reflected = kwargs["reflected"]
+    object_type = kwargs["object_type"]
+
+    if reflected and object_type == "table":
+        partition_patterns = [
+            re.compile(r"^(.+)_partition_\d{6}$"),
+            re.compile(r"^(.+)_(\d{4})_(\d{2})$"),
+            re.compile(r"^(.+)_p(\d{4})_(\d{2})$"),
+            re.compile(r"^(.+)_p(\d{1,2})$"),
+            re.compile(r"^(.+)_default$"),
+        ]
+        for pattern in partition_patterns:
+            match = pattern.match(name)
+
+            if match:
+                return False
+    return True
+
+
+tracking_list = [table_able_to_track, do_not_track_partition_table]
+
+
+def custom_table_tracking(
+    obj: SchemaItem, name: str, object_type: str, reflected: bool, compare_to: SchemaItem
+) -> bool:
+    for tracking in tracking_list:
+        if not tracking(obj=obj, name=name, object_type=object_type, reflected=reflected, compare_to=compare_to):
+            return False
+    return True
 
 
 def run_migrations_offline() -> None:
@@ -46,6 +99,7 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        include_object=custom_table_tracking,
     )
 
     with context.begin_transaction():
@@ -66,7 +120,11 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(connection=connection, target_metadata=target_metadata)
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+            include_object=custom_table_tracking,
+        )
 
         with context.begin_transaction():
             context.run_migrations()

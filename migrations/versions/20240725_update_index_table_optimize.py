@@ -32,7 +32,7 @@ def upgrade() -> None:
         sa.Column("block_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("address", "token_address", "token_id"),
     )
     op.create_index(
@@ -209,6 +209,12 @@ def upgrade() -> None:
         "erc1155_token_transfers",
         ["token_address", "to_address"],
         unique=False,
+    )
+    op.drop_constraint("erc1155_token_transfers_pkey", "erc1155_token_transfers", type_="primary")
+    op.create_primary_key(
+        "erc1155_token_transfers_pkey",
+        "erc1155_token_transfers",
+        ["transaction_hash", "block_hash", "log_index", "token_id"],
     )
     op.alter_column(
         "erc20_token_transfers",
@@ -671,6 +677,12 @@ def downgrade() -> None:
         existing_type=sa.NUMERIC(precision=78, scale=0),
         nullable=True,
     )
+    op.drop_constraint("erc1155_token_transfers_pkey", "erc1155_token_transfers", type_="primary")
+    op.create_primary_key(
+        "erc1155_token_transfers_pkey",
+        "erc1155_token_transfers",
+        ["transaction_hash", "log_index"],
+    )
     op.drop_index("erc1155_detail_desc_address_id_index", table_name="erc1155_token_id_details")
     op.drop_constraint("erc1155_token_id_details_pkey", "erc1155_token_id_details", type_="primary")
     op.alter_column("erc1155_token_id_details", "token_address", new_column_name="address")
@@ -765,7 +777,7 @@ def downgrade() -> None:
         ),
         sa.Column("create_time", postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), autoincrement=False, nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint(
             "token_address",
             "wallet_address",
@@ -804,7 +816,7 @@ def downgrade() -> None:
         ),
         sa.Column("create_time", postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), autoincrement=False, nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("token_address", "wallet_address", name="erc20_token_holders_pkey"),
     )
     op.create_index(
@@ -832,7 +844,7 @@ def downgrade() -> None:
         ),
         sa.Column("create_time", postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), autoincrement=False, nullable=True),
-        sa.Column("reorg", sa.BOOLEAN(), autoincrement=False, nullable=True),
+        sa.Column("reorg", sa.BOOLEAN(), nullable=True, server_default=sa.text("false")),
         sa.PrimaryKeyConstraint("token_address", "wallet_address", name="erc721_token_holders_pkey"),
     )
     op.create_index(

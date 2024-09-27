@@ -91,8 +91,6 @@ class ReorgController(BaseController):
 
         logging.info(f"Reorging mission start from block No.{block_number} and ranges {remains} has been completed.")
 
-        self.wake_up_next_job()
-
     def _do_fixing(self, fix_block, retry_errors=True):
         tries, tries_reset = 0, True
         while True:
@@ -191,19 +189,11 @@ class ReorgController(BaseController):
             )
         except Exception as e:
             logging.error(f"Wake up uncompleted job error: {e}.")
+            raise e
         finally:
             session.close()
 
-        if job:
-            try:
-                self.action(
-                    job_id=job.job_id,
-                    block_number=job.last_fixed_block_number - 1,
-                    remains=job.remain_process,
-                )
-            except Exception as e:
-                if job:
-                    logging.error(f"Catch exception while waking up job: {job.job_id}. error: {e}")
+        return job
 
     def check_block_been_synced(self, block_number):
         session = self.db_service.get_service_session()

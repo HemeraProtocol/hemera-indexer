@@ -84,11 +84,11 @@ class ReorgScheduler:
         self.instantiate_jobs()
 
     @staticmethod
-    def get_data_buff(self):
+    def get_data_buff():
         return BaseJob._data_buff
 
     @staticmethod
-    def clear_data_buff(self):
+    def clear_data_buff():
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
@@ -159,9 +159,9 @@ class ReorgScheduler:
         self.jobs.append(export_reorg_job)
 
     def run_jobs(self, start_block, end_block):
+        self.clear_data_buff()
         for job in self.jobs:
             job.run(start_block=start_block, end_block=end_block)
-        # TODO: clean data buffer after all jobs are run
 
     def get_required_job_classes(self, output_types):
         required_job_classes = set()

@@ -103,7 +103,7 @@ class RegisterExtractor(BaseExtractor):
             ens_middle.event_name = event_data["_event"]
             token_id = None
             w_token_id = None
-            for sl in prev_logs:
+            for sl in prev_logs[::-1]:
                 if (
                     sl["address"] == "0x57f1887a8bf19b14fc0df6fd9b2acc9af147ea85"
                     and (sl["topic2"]) == log["topic2"]
@@ -147,21 +147,21 @@ class RegisterExtractor(BaseExtractor):
             node = None
             label = None
             base_node = None
-            for log in prev_logs:
+            for sl in prev_logs[::-1]:
                 if (
-                    log["address"] == "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e"
-                    and log["topic0"] == RegisterExtractor.tp_register_with_token
+                    sl["address"] == "0x00000000000c2e074ec69a0dfb2997ba6c7d2e1e"
+                    and sl["topic0"] == RegisterExtractor.tp_register_with_token
                 ):
-                    base_node = log["topic1"]
-                    label = log["topic2"]
+                    base_node = sl["topic1"]
+                    label = sl["topic2"]
                     node = compute_node_label(base_node, label)
                     break
                 elif (
-                    log["address"] == "0x314159265dd8dbb310642f98f50c066173c1259b"
-                    and log["topic0"] == "0xce0457fe73731f824cc272376169235128c118b49d344817417c6d108d155e82"
+                    sl["address"] == "0x314159265dd8dbb310642f98f50c066173c1259b"
+                    and sl["topic0"] == "0xce0457fe73731f824cc272376169235128c118b49d344817417c6d108d155e82"
                 ):
-                    base_node = log["topic1"]
-                    label = log["topic2"]
+                    base_node = sl["topic1"]
+                    label = sl["topic2"]
                     node = compute_node_label(base_node, label)
                     break
             if not node:
@@ -189,6 +189,47 @@ class RegisterExtractor(BaseExtractor):
             )
         else:
             return None
+
+
+class AncientRegister(BaseExtractor):
+
+    def __init__(self):
+        self.address = "0x6090a6e47849629b7245dfa1ca21d94cd15878ef"
+        self.tp0 = "0x0f0c27adfd84b60b6f456b0e87cdccb1e5fb9603991588d87fa99f5b6b61e670"
+
+    def extract(self, address, tp0, log, ens_middle, contract_object_map, event_map, prev_logs=None) -> ENSMiddleD:
+        if tp0 == self.tp0:
+            event_data = decode_log(log, contract_object_map, event_map)
+            tmp = event_data["args"]
+            ens_middle.expires = convert_str_ts(tmp.get("expires", ""))
+
+            ens_middle.label = log["topic1"]
+            ens_middle.owner = extract_eth_address(log["topic2"])
+            ens_middle.base_node = BASE_NODE
+            ens_middle.node = compute_node_label(BASE_NODE, ens_middle.label)
+            ens_middle.event_name = event_data["_event"]
+            token_id = str(int(log["topic1"], 16))
+            return ENSMiddleD(
+                transaction_hash=ens_middle.transaction_hash,
+                log_index=ens_middle.log_index,
+                transaction_index=ens_middle.transaction_index,
+                block_number=ens_middle.block_number,
+                block_hash=ens_middle.block_hash,
+                block_timestamp=ens_middle.block_timestamp,
+                topic0=tp0,
+                from_address=ens_middle.from_address,
+                to_address=ens_middle.to_address,
+                expires=ens_middle.expires,
+                name=ens_middle.name,
+                label=ens_middle.label,
+                owner=ens_middle.owner,
+                base_node=ens_middle.base_node,
+                node=ens_middle.node,
+                event_name=ens_middle.event_name,
+                method=ens_middle.method,
+                token_id=token_id,
+                w_token_id=None,
+            )
 
 
 class NameRenewExtractor(BaseExtractor):
