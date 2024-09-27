@@ -13,12 +13,14 @@ from eth_typing import Decodable, HexStr
 from sqlalchemy import func
 from web3._utils.contracts import decode_transaction_data
 
+from common.utils.exception_control import FastShutdownError
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.eigen_layer.eigen_layer_abi import (
     DEPOSIT_EVENT,
     FINISH_WITHDRAWAL_FUNCTION,
+    WITHDRAWAL_COMPLETED_EVENT,
     WITHDRAWAL_QUEUED_EVENT,
 )
 from indexer.modules.custom.eigen_layer.eigen_layer_conf import CHAIN_CONTRACT
@@ -29,7 +31,7 @@ from indexer.modules.custom.eigen_layer.eigen_layer_domain import (
 )
 from indexer.modules.custom.eigen_layer.models.af_eigen_layer_address_current import AfEigenLayerAddressCurrent
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import decode_log
+from indexer.utils.abi import bytes_to_hex_str, decode_log
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +54,6 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         self.db_service = kwargs["config"].get("db_service")
         self.chain_id = self._web3.eth.chain_id
         self.eigen_layer_conf = CHAIN_CONTRACT[self.chain_id]
-        self.token_vault = dict()
-        self.vault_token = dict()
 
     def get_filter(self):
         # deposit, startWithdraw, finishWithdraw
@@ -91,7 +91,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                         transaction_index=transaction.transaction_index,
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
-                        method=transaction.input[0:10],
+                        method=transaction.get_method_id(),
                         event_name=DEPOSIT_EVENT["name"],
                         topic0=log.topic0,
                         from_address=transaction.from_address,
@@ -107,60 +107,79 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     and log.address == self.eigen_layer_conf["START_WITHDRAW"]["address"]
                 ):
                     dl = decode_log(WITHDRAWAL_QUEUED_EVENT, log)
+
+                    withdrawal_root = dl.get("withdrawalRoot")
                     withdrawal_struct = dl.get("withdrawal")
 
                     staker = withdrawal_struct.get("staker")
                     withdrawer = withdrawal_struct.get("withdrawer")
-                    shares = withdrawal_struct.get("shares")[0]
-                    strategy = withdrawal_struct.get("strategies")[0]
-                    kad = EigenLayerActionD(
-                        transaction_hash=transaction.hash,
-                        log_index=log.log_index,
-                        transaction_index=transaction.transaction_index,
-                        block_number=log.block_number,
-                        block_timestamp=log.block_timestamp,
-                        method=transaction.input[0:10],
-                        event_name=WITHDRAWAL_QUEUED_EVENT["name"],
-                        topic0=log.topic0,
-                        from_address=transaction.from_address,
-                        to_address=transaction.to_address,
-                        strategy=strategy,
-                        staker=staker,
-                        withdrawer=withdrawer,
-                        shares=shares,
-                    )
-                    res.append(kad)
+                    shares_lis = withdrawal_struct.get("shares")
+                    strategy_lis = withdrawal_struct.get("strategies")
+                    if len(shares_lis) != len(strategy_lis):
+                        raise FastShutdownError(f"eigen_layer_job error data tnx {transaction.hash}")
+                    for idx in range(len(strategy_lis)):
+                        strategy = strategy_lis[idx]
+                        shares = shares_lis[idx]
+                        kad = EigenLayerActionD(
+                            transaction_hash=transaction.hash,
+                            log_index=log.log_index,
+                            internal_idx=idx,
+                            transaction_index=transaction.transaction_index,
+                            block_number=log.block_number,
+                            block_timestamp=log.block_timestamp,
+                            method=transaction.get_method_id(),
+                            event_name=WITHDRAWAL_QUEUED_EVENT["name"],
+                            topic0=log.topic0,
+                            from_address=transaction.from_address,
+                            to_address=transaction.to_address,
+                            strategy=strategy,
+                            staker=staker,
+                            withdrawer=withdrawer,
+                            shares=shares,
+                            withdrawroot=withdrawal_root,
+                        )
+                        res.append(kad)
 
                 elif (
                     log.topic0 == self.eigen_layer_conf["FINISH_WITHDRAW"]["topic"]
                     and log.address == self.eigen_layer_conf["FINISH_WITHDRAW"]["address"]
                 ):
+                    dl = decode_log(WITHDRAWAL_COMPLETED_EVENT, log)
+                    withdrawal_root = dl.get("withdrawalRoot")
                     df = decode_transaction_data(FINISH_WITHDRAWAL_FUNCTION, HexStr(transaction.input))
-                    withdrawal_struct = df.get("withdrawals")[0]
-
-                    staker = withdrawal_struct.get("staker")
-                    withdrawer = withdrawal_struct.get("withdrawer")
-                    strategy = withdrawal_struct.get("strategies")[0]
-                    shares = withdrawal_struct.get("shares")[0]
-                    token = df.get("tokens")[0]
-                    kad = EigenLayerActionD(
-                        transaction_hash=transaction.hash,
-                        log_index=log.log_index,
-                        transaction_index=transaction.transaction_index,
-                        block_number=log.block_number,
-                        block_timestamp=log.block_timestamp,
-                        method=transaction.input[0:10],
-                        event_name=FINISH_WITHDRAWAL_FUNCTION["name"],
-                        topic0=log.topic0,
-                        from_address=transaction.from_address,
-                        to_address=transaction.to_address,
-                        staker=staker,
-                        withdrawer=withdrawer,
-                        shares=shares,
-                        strategy=strategy,
-                        token=token,
-                    )
-                    res.append(kad)
+                    withdrawal_struct_lis = df.get("withdrawals")
+                    base_multiplier = 1000000
+                    for outer_idx, withdrawal_struct in enumerate(withdrawal_struct_lis):
+                        staker = withdrawal_struct.get("staker")
+                        withdrawer = withdrawal_struct.get("withdrawer")
+                        strategy_lis = withdrawal_struct.get("strategies")
+                        shares_lis = withdrawal_struct.get("shares")
+                        if len(strategy_lis) != len(shares_lis):
+                            raise FastShutdownError(f"eigen_layer_job error data tnx {transaction.hash}")
+                        for idx in range(len(strategy_lis)):
+                            strategy = strategy_lis[idx]
+                            shares = shares_lis[idx]
+                            internal_idx = outer_idx * base_multiplier + idx
+                            kad = EigenLayerActionD(
+                                transaction_hash=transaction.hash,
+                                log_index=log.log_index,
+                                transaction_index=transaction.transaction_index,
+                                internal_idx=internal_idx,
+                                block_number=log.block_number,
+                                block_timestamp=log.block_timestamp,
+                                method=transaction.get_method_id(),
+                                event_name=FINISH_WITHDRAWAL_FUNCTION["name"],
+                                topic0=log.topic0,
+                                from_address=transaction.from_address,
+                                to_address=transaction.to_address,
+                                staker=staker,
+                                withdrawer=withdrawer,
+                                shares=shares,
+                                strategy=strategy,
+                                token=None,
+                                withdrawroot=withdrawal_root,
+                            )
+                            res.append(kad)
         for item in res:
             self._collect_item(item.type(), item)
         batch_result_dic = self.calculate_batch_result(res)
@@ -200,9 +219,9 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         for rr in result:
             lis.append(
                 EigenLayerAddressCurrentD(
-                    address="0x" + rr.address.hex(),
-                    strategy="0x" + rr.strategy.hex(),
-                    token="0x" + rr.token.hex(),
+                    address=bytes_to_hex_str(rr.address),
+                    strategy=bytes_to_hex_str(rr.strategy),
+                    token=bytes_to_hex_str(rr.token) if rr.token else None,
                     deposit_amount=rr.deposit_amount,
                     start_withdraw_amount=rr.start_withdraw_amount,
                     finish_withdraw_amount=rr.finish_withdraw_amount,
@@ -219,19 +238,25 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         for action in eg_actions:
             staker = action.staker
             strategy = action.strategy
+            token = action.token
             topic0 = action.topic0
             if topic0 == self.eigen_layer_conf["DEPOSIT"]["topic"]:
                 res_d[staker][strategy].address = staker
+                res_d[staker][strategy].token = token
                 res_d[staker][strategy].strategy = strategy
                 res_d[staker][strategy].deposit_amount += action.shares
             elif topic0 == self.eigen_layer_conf["START_WITHDRAW"]["topic"]:
                 res_d[staker][strategy].address = staker
+                res_d[staker][strategy].token = token
                 res_d[staker][strategy].strategy = strategy
                 res_d[staker][strategy].start_withdraw_amount += action.shares
             elif topic0 == self.eigen_layer_conf["FINISH_WITHDRAW"]["topic"]:
                 res_d[staker][strategy].address = staker
+                res_d[staker][strategy].token = token
                 res_d[staker][strategy].strategy = strategy
                 res_d[staker][strategy].finish_withdraw_amount += action.shares
+            else:
+                raise FastShutdownError(f"eigen_layer_job Unexpected topic {topic0}")
         return res_d
 
 

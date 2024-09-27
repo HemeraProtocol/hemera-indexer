@@ -9,6 +9,7 @@ class EigenLayerActionD(FilterData):
     transaction_hash: str
     log_index: int
     transaction_index: int
+    internal_idx: Optional[int] = 0
     block_number: Optional[int] = None
     block_timestamp: Optional[int] = None
     method: Optional[str] = None
@@ -22,6 +23,7 @@ class EigenLayerActionD(FilterData):
     shares: Optional[int] = None
     staker: Optional[str] = None
     withdrawer: Optional[str] = None
+    withdrawroot: Optional[str] = None
 
 
 @dataclass

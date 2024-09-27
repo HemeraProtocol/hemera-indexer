@@ -30,6 +30,15 @@ WITHDRAWAL_QUEUED_EVENT = cast(
 )
 WITHDRAWAL_QUEUED_EVENT_SIG = event_log_abi_to_topic(WITHDRAWAL_QUEUED_EVENT)
 
+WITHDRAWAL_COMPLETED_EVENT = cast(
+    ABIEvent,
+    json.loads(
+        """{"type":"event","name":"WithdrawalCompleted","inputs":[{"type":"bytes32","name":"withdrawalRoot","indexed":false}],"anonymous":false}
+    """
+    ),
+)
+WITHDRAWAL_COMPLETED_EVENT_SIG = event_log_abi_to_topic(WITHDRAWAL_COMPLETED_EVENT)
+
 
 FINISH_WITHDRAWAL_FUNCTION = cast(
     ABIFunction,

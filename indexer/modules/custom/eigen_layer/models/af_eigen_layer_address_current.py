@@ -15,7 +15,7 @@ class AfEigenLayerAddressCurrent(HemeraModel):
     address = Column(BYTEA, primary_key=True)
 
     strategy = Column(BYTEA, primary_key=True)
-    token = Column(BYTEA, primary_key=True)
+    token = Column(BYTEA)
 
     deposit_amount = Column(NUMERIC(100))
     start_withdraw_amount = Column(NUMERIC(100))
@@ -25,7 +25,7 @@ class AfEigenLayerAddressCurrent(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("address", "strategy", "token"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "strategy"),)
 
     @staticmethod
     def model_domain_mapping():

@@ -14,28 +14,36 @@ class AfEigenLayerRecords(HemeraModel):
     __tablename__ = "af_eigen_layer_records"
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
+    internal_idx = Column(INTEGER, primary_key=True)
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
     method = Column(VARCHAR)
     event_name = Column(VARCHAR)
-    topic0 = Column(VARCHAR)
+    topic0 = Column(BYTEA)
     from_address = Column(BYTEA)
     to_address = Column(BYTEA)
 
-    token = Column(VARCHAR)
+    token = Column(BYTEA)
     amount = Column(NUMERIC(100))
     balance = Column(NUMERIC(100))
-    staker = Column(VARCHAR)
-    operator = Column(VARCHAR)
-    withdrawer = Column(VARCHAR)
+    staker = Column(BYTEA)
+    operator = Column(BYTEA)
+    withdrawer = Column(BYTEA)
     shares = Column(Numeric(100))
-    withdrawroot = Column(VARCHAR)
+    withdrawroot = Column(BYTEA)
+    strategy = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "log_index"),)
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "transaction_hash",
+            "log_index",
+            "internal_idx",
+        ),
+    )
 
     @staticmethod
     def model_domain_mapping():
