@@ -125,6 +125,8 @@ class PGSourceJob(BaseSourceJob):
         for output_type in self.build_order:
             table = domain_model_mapping[output_type.__name__]["table"]
             domains = self._dataclass_build(self.pg_datas[table], output_type)
+            if hasattr(table, "__query_order__"):
+                domains.sort(key=lambda x: tuple(getattr(x, column.name) for column in table.__query_order__))
             self._data_buff[output_type.type()] = domains
 
     def _export(self):
@@ -168,9 +170,8 @@ class PGSourceJob(BaseSourceJob):
                 )
 
                 result = (
-                    session.query(sub_table)
-                    .join(unnest_query, sub_table.c.block_number == unnest_query.c.block_number)
-                    .order_by(*table.__query_order__)
+                    session.query(sub_table).join(unnest_query, sub_table.c.block_number == unnest_query.c.block_number)
+                    # .order_by(*table.__query_order__)
                     .all()
                 )
             else:
@@ -182,7 +183,7 @@ class PGSourceJob(BaseSourceJob):
         return result
 
     def _query_logs_filter(self, start_block, end_block, start_timestamp, end_timestamp, log_filter):
-        query_filter = None
+        query_filter = False
 
         if len(log_filter["address"]) > 0:
             query_filter = or_(
@@ -212,13 +213,17 @@ class PGSourceJob(BaseSourceJob):
 
         session = self._service.get_service_session()
         try:
-            logs = session.query(Logs).filter(query_filter).order_by(*Logs.__query_order__).all()
+            logs = (
+                session.query(Logs).filter(query_filter)
+                # .order_by(*Logs.__query_order__)
+                .all()
+            )
         finally:
             session.close()
         return logs
 
     def _query_transactions_filter(self, start_block, end_block, start_timestamp, end_timestamp, transaction_filter):
-        query_filter = None
+        query_filter = False
 
         if len(transaction_filter["hash"]) > 0:
             query_filter = or_(
@@ -255,7 +260,9 @@ class PGSourceJob(BaseSourceJob):
         session = self._service.get_service_session()
         try:
             transactions = (
-                session.query(Transactions).filter(query_filter).order_by(*Transactions.__query_order__).all()
+                session.query(Transactions).filter(query_filter)
+                # .order_by(*Transactions.__query_order__)
+                .all()
             )
         finally:
             session.close()
