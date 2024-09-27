@@ -202,7 +202,7 @@ def calculate_execution_time(func):
     "--source-path",
     default=None,
     show_default=True,
-    required=True,
+    required=False,
     type=str,
     envvar="SOURCE_PATH",
     help="The path to load the data."
@@ -375,7 +375,7 @@ def stream(
     else:
         output_types = generate_dataclass_type_list_from_parameter(output_types, "output")
 
-    if source_path.startswith("postgresql://"):
+    if source_path and source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
 
     job_scheduler = JobScheduler(
@@ -399,7 +399,7 @@ def stream(
         job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
         limit_reader=create_limit_reader(
-            source_path, ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True))
+            source_path, ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False))
         ),
         retry_from_record=retry_from_record,
         delay=delay,
