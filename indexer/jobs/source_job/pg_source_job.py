@@ -352,7 +352,7 @@ class PGSourceJob(BaseSourceJob):
 
                     if len(param_address) == 0:
                         is_log_address_clean = True
-                        self.log_filter['address'] = []
+                        self.log_filter["address"] = []
                     if not is_log_address_clean:
                         self.log_filter["address"].extend(param_address)
 
