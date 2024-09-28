@@ -341,11 +341,26 @@ class PGSourceJob(BaseSourceJob):
             self.build_order.append(build_queue.get())
 
     def _extract_filter_params(self):
+        is_log_address_clean = False
+        is_log_topics_clean = False
+
         for filter in self._filters:
             if isinstance(filter, TransactionFilterByLogs):
                 for filter_param in filter.get_eth_log_filters_params():
-                    self.log_filter["address"].extend(filter_param["address"])
-                    self.log_filter["topics"].extend(flatten(filter_param["topics"]))
+                    param_address = filter_param["address"]
+                    param_topics = flatten(filter_param["topics"])
+
+                    if len(param_address) == 0:
+                        is_log_address_clean = True
+                        self.log_filter['address'] = []
+                    if not is_log_address_clean:
+                        self.log_filter["address"].extend(param_address)
+
+                    if len(param_topics) == 0:
+                        is_log_topics_clean = True
+                        self.log_filter["topics"] = []
+                    if not is_log_topics_clean:
+                        self.log_filter["topics"].extend(param_topics)
                 self.has_logs_filter = True
 
             elif isinstance(filter, TransactionFilterByTransactionInfo):
@@ -364,6 +379,9 @@ class PGSourceJob(BaseSourceJob):
                 self.has_transaction_filter = True
             else:
                 raise ValueError(f"Unsupported filter type: {type(filter)}")
+
+        if is_log_address_clean and is_log_topics_clean and len(self.log_filter["transaction_hash"]) == 0:
+            self.has_logs_filter = False
 
 
 def check_dependency(column_type, target_type) -> (bool, object):
