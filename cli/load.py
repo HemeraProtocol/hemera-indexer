@@ -266,7 +266,7 @@ def load(
     auto_upgrade_db=True,
     retry_from_record=False,
 ):
-    configure_logging(log_file)
+    configure_logging(log_level=log_level, log_file=log_file)
     configure_signals()
     provider_uri = pick_random_provider_uri(provider_uri)
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
