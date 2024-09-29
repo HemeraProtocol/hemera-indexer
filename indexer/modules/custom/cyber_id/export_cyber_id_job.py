@@ -4,24 +4,28 @@ from typing import List
 
 from web3 import Web3
 
+from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.cyber_id.cyber_abi import abi_map
-from indexer.modules.custom.cyber_id.cyber_domain import CyberAddressD
-from indexer.modules.custom.cyber_id.utils import get_reverse_node
+from indexer.modules.custom.cyber_id.cyber_domain import CyberAddressD, CyberIDRegisterD, CyberAddressChangedD
+from indexer.modules.custom.cyber_id.utils import get_reverse_node, get_node
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
 
 CyberIdReverseRegistrarContractAddress = "0x79502da131357333d61c39b7411d01df54591961"
 CyberIdPublicResolverContractAddress = "0xfb2f304c1fcd6b053ee033c03293616d5121944b"
+CyberIdTokenContractAddress = "0xc137be6b59e824672aada673e55cf4d150669af8"
 NameChangedTopic = "0xb7d29e911041e8d9b843369e890bcb72c9388692ba48b65ac54e7214c4c348f7"
+RegisterTopic = "0xa50d98082663c2b716ab4f8b6b2a51fcaed7eae222cd3d74b19de4691ede728a"
+AddressChangedTopic = "0x65412581168e88a1e60c6459d7f44ae83ad0832e670826c05a4e2476b57af752"
 
 
 class ExportCyberIDJob(FilterTransactionDataJob):
     dependency_types = [Transaction]
-    output_types = [CyberAddressD]
+    output_types = [CyberAddressD, CyberIDRegisterD, CyberAddressChangedD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -53,7 +57,8 @@ class ExportCyberIDJob(FilterTransactionDataJob):
 
         return [
             TransactionFilterByLogs(
-                [TopicSpecification(addresses=[CyberIdPublicResolverContractAddress], topics=[NameChangedTopic])]
+                [TopicSpecification(addresses=[CyberIdPublicResolverContractAddress, CyberIdTokenContractAddress],
+                                    topics=[NameChangedTopic, RegisterTopic])]
             ),
         ]
 
@@ -80,14 +85,40 @@ class ExportCyberIDJob(FilterTransactionDataJob):
                         reverse_node=get_reverse_node(transaction.from_address),
                     )
                     self._collect_item(cyber_address.type(), cyber_address)
+        logs: List[Log] = self._data_buff.get(Log.type(), [])
+        for log in logs:
+            if log.address.lower() == CyberIdTokenContractAddress and log.topic0 == RegisterTopic:
+                decoded_data = self.w3.codec.decode(['string', 'uint256'], bytes.fromhex(log.data[2:]))
+                cid = decoded_data[0]
+                cyber_address = CyberIDRegisterD(
+                    label=cid,
+                    token_id=log.topic3,
+                    cost=int(decoded_data[1]),
+                    block_number=log.block_number,
+                    node=get_node(cid+".cyber"),
+                    registration=log.block_timestamp
+                )
+                self._collect_item(cyber_address.type(), cyber_address)
+            if log.address.lower() == CyberIdPublicResolverContractAddress and log.topic0 == AddressChangedTopic:
+                decoded_data = self.w3.codec.decode(['uint256', 'bytes'], bytes.fromhex(log.data[2:]))
+                address_change_d = CyberAddressChangedD(
+                    node=log.topic1,
+                    address='0x'+decoded_data[1].hex(),
+                    block_number=log.block_number
+                )
+                self._collect_item(address_change_d.type(), address_change_d)
 
     def _process(self, **kwargs):
         cyber_addresses = self._data_buff.get(CyberAddressD.type(), [])
-
         cyber_addresses.sort(key=lambda x: (x.address, x.block_number))
-
         self._data_buff[CyberAddressD.type()] = [
             list(group)[-1] for key, group in groupby(cyber_addresses, key=lambda x: x.address)
+        ]
+
+        address_changes = self._data_buff.get(CyberAddressChangedD.type(), [])
+        address_changes.sort(key=lambda x: (x.node, x.block_number))
+        self._data_buff[CyberAddressChangedD.type()] = [
+            list(group)[-1] for key, group in groupby(address_changes, key=lambda x: x.node)
         ]
 
     def decode_transaction(self, transaction):

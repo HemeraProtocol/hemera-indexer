@@ -1,13 +1,32 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
+
+from numpy.distutils.fcompiler import none
 
 from indexer.domain import FilterData
 
 
 @dataclass
 class CyberAddressD(FilterData):
+    address: str
+    reverse_node: str
+    name: str
+    block_number: int
 
-    address: Optional[str] = None
-    reverse_node: Optional[str] = None
-    name: Optional[str] = None
-    block_number: Optional[int] = None
+
+@dataclass
+class CyberIDRegisterD(FilterData):
+    label: str
+    token_id: int
+    node: str
+    cost: int
+    block_number: int
+    registration: datetime
+
+
+@dataclass
+class CyberAddressChangedD(FilterData):
+    node: str
+    address: str
+    block_number: int
