@@ -20,21 +20,8 @@ services:
     container_name: indexer
     environment:
       - AUTO_UPGRADE_DB=true
-      - ENTITY_TYPES=EXPLORER_BASE,EXPLORER_TOKEN
+      - ENTITY_TYPES=EXPLORER_BASE
       - SYNC_RECORDER=pg:main_recorder
-
-  hemera-trace-indexer:
-    <<: *common-settings
-    depends_on:
-      postgresql:
-        condition: service_healthy
-      hemera-main-indexer:
-        condition: service_started
-    container_name: indexer-trace
-    environment:
-      - AUTO_UPGRADE_DB=false
-      - ENTITY_TYPES=EXPLORER_TRACE
-      - SYNC_RECORDER=pg:trace_recorder
 
   hemera-uop-indexer:
     <<: *common-settings
