@@ -50,3 +50,4 @@ resource/hemera.ini
 sync_record
 alembic.ini
 !indexer/modules/custom/hemera_ens/abi/*.json
+!indexer/modules/custom/cyber_id/abi/*.json
