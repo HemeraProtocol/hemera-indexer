@@ -281,7 +281,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         return create_nested_dict(lis)
 
     def enrich_complete_withdraw(self, actions: List[EigenLayerActionD]):
-        roots = [action.withdrawroot for action in actions if action.event_name == WITHDRAWAL_QUEUED_EVENT["name"]]
+        roots = [action.withdrawroot for action in actions if action.event_name == WITHDRAWAL_COMPLETED_EVENT["name"]]
         ac_map = dict()
         with self.db_service.get_service_session() as session:
             query = session.query(AfEigenLayerRecords).filter(
@@ -290,14 +290,14 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
             )
             result = query.all()
             for rr in result:
-                ac_map[bytes_to_hex_str(rr.withdrawroot)] = rr
+                ac_map[rr.withdrawroot] = rr
         for action in actions:
-            if action.event_name == WITHDRAWAL_QUEUED_EVENT["name"]:
+            if action.event_name == WITHDRAWAL_COMPLETED_EVENT["name"]:
                 st = ac_map[action.withdrawroot]
                 action.shares = st.shares
-                action.strategy = st.strategy
-                action.token = st.token
-                action.staker = st.staker
+                action.strategy = bytes_to_hex_str(st.strategy) if st.strategy else None
+                action.token = bytes_to_hex_str(st.token) if st.token else None
+                action.staker = bytes_to_hex_str(st.staker) if st.staker else None
 
     def calculate_batch_result(self, eg_actions: List[EigenLayerActionD]) -> Any:
         def nested_dict():
