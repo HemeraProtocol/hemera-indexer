@@ -15,7 +15,5 @@ class CyberAddressName(Resource):
         addresses = request.args.get("address", "").split(",")
         addresses = [bytes.fromhex(address.lower()[2:]) for address in addresses]
         cyber_addresses = db.session.query(CyberAddress).filter(CyberAddress.address.in_(addresses)).all()
-        res = {}
-        for cyber_address in cyber_addresses:
-            res[cyber_address.address.hex()] = cyber_address.name
+        res = {cyber_address.address.hex(): cyber_address.name for cyber_address in cyber_addresses}
         return {"data": res}, 200
