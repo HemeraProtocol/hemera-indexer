@@ -146,7 +146,33 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                 ):
                     dl = decode_log(WITHDRAWAL_COMPLETED_EVENT, log)
                     withdrawal_root = dl.get("withdrawalRoot")
-                    df = decode_transaction_data(FINISH_WITHDRAWAL_FUNCTION, HexStr(transaction.input))
+                    try:
+                        df = decode_transaction_data(FINISH_WITHDRAWAL_FUNCTION, HexStr(transaction.input))
+                    except Exception as e:
+                        # when input is not able to decoded
+                        res.append(
+                            EigenLayerActionD(
+                                transaction_hash=transaction.hash,
+                                log_index=log.log_index,
+                                transaction_index=transaction.transaction_index,
+                                internal_idx=0,
+                                block_number=log.block_number,
+                                block_timestamp=log.block_timestamp,
+                                method=transaction.get_method_id(),
+                                event_name=WITHDRAWAL_COMPLETED_EVENT["name"],
+                                topic0=log.topic0,
+                                from_address=transaction.from_address,
+                                to_address=transaction.to_address,
+                                staker=None,
+                                withdrawer=None,
+                                shares=None,
+                                strategy=None,
+                                token=None,
+                                withdrawroot=withdrawal_root,
+                            )
+                        )
+
+                        df = {"withdrawals": []}
                     withdrawal_struct_lis = df.get("withdrawals")
                     base_multiplier = 1000000
                     for outer_idx, withdrawal_struct in enumerate(withdrawal_struct_lis):
