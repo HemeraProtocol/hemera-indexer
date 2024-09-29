@@ -1,3 +1,4 @@
+import json
 import logging
 
 import orjson
@@ -22,6 +23,16 @@ from indexer.utils.utils import rpc_response_batch_to_results
 logger = logging.getLogger(__name__)
 
 
+def flatten(lst):
+    result = []
+    for item in lst:
+        if isinstance(item, list):
+            result.extend(flatten(item))
+        else:
+            result.append(item)
+    return result
+
+
 # Exports blocks and block number <-> timestamp mapping
 class ExportBlocksJob(BaseExportJob):
     dependency_types = []
@@ -37,19 +48,19 @@ class ExportBlocksJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self._filters = kwargs.get("filters", [])
-        self._is_filter = all(output_type.is_filter_data() for output_type in self._required_output_types)
+        self._filters = flatten(kwargs.get("filters", []))
+        self._is_filter = kwargs.get("is_filter", False)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
+        self._reorg_jobs = kwargs.get("reorg_jobs", [])
 
     def _start(self, **kwargs):
-        if self.able_to_reorg and self._reorg:
-            if self._service is None:
-                raise FastShutdownError("PG Service is not set")
+        if self._service is None:
+            raise FastShutdownError("PG Service is not set")
 
-            reorg_block = int(kwargs["start_block"])
-            set_reorg_sign(reorg_block, self._service)
-            self._should_reorg_type.add(Block.type())
-            self._should_reorg = True
+        reorg_block = int(kwargs["start_block"])
+        set_reorg_sign(self._reorg_jobs, reorg_block, self._service)
+        self._should_reorg_type.add(Block.type())
+        self._should_reorg = True
 
     def _end(self):
         super()._end()
@@ -65,21 +76,22 @@ class ExportBlocksJob(BaseExportJob):
 
         is_only_log_filter = True
         filter_blocks = set()
+        if self._is_filter:
+            for filter in self._filters:
+                if isinstance(filter, TransactionFilterByLogs):
+                    for filter_param in filter.get_eth_log_filters_params():
+                        filter_param.update({"fromBlock": self._start_block, "toBlock": self._end_block})
+                        logs = self._web3.eth.get_logs(filter_param)
+                        filter_blocks.update(set([log["blockNumber"] for log in logs]))
+                        transaction_hashes = set([log["transactionHash"] for log in logs])
+                        transaction_hashes = [h.hex() for h in transaction_hashes]
+                        self._specification |= TransactionHashSpecification(transaction_hashes)
+                elif isinstance(filter, TransactionFilterByTransactionInfo):
+                    is_only_log_filter = False
+                    self._specification |= filter.get_or_specification()
+                else:
+                    raise ValueError(f"Unsupported filter type: {type(filter)}")
 
-        for filter in self._filters:
-            if isinstance(filter, TransactionFilterByLogs):
-                for filter_param in filter.get_eth_log_filters_params():
-                    filter_param.update({"fromBlock": self._start_block, "toBlock": self._end_block})
-                    logs = self._web3.eth.get_logs(filter_param)
-                    filter_blocks.update(set([log["blockNumber"] for log in logs]))
-                    transaction_hashes = set([log["transactionHash"] for log in logs])
-                    transaction_hashes = [h.hex() for h in transaction_hashes]
-                    self._specification |= TransactionHashSpecification(transaction_hashes)
-            elif isinstance(filter, TransactionFilterByTransactionInfo):
-                is_only_log_filter = False
-                self._specification |= filter.get_or_specification()
-            else:
-                raise ValueError(f"Unsupported filter type: {type(filter)}")
         if self._is_filter and is_only_log_filter:
             blocks = list(filter_blocks)
             total_items = len(blocks)

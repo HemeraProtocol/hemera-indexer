@@ -1,6 +1,5 @@
 import logging
 from typing import Any, Dict, Optional, Sequence, Tuple
-from urllib.parse import to_bytes
 
 import eth_abi
 from eth_abi.codec import ABICodec
@@ -13,6 +12,7 @@ from eth_utils import (
     hexstr_if_str,
     is_binary_address,
     text_if_str,
+    to_bytes,
     to_hex,
     to_text,
 )
@@ -48,6 +48,21 @@ def function_abi_to_4byte_selector_str(function_abi: ABIFunction) -> str:
     return "0x" + function_abi_to_4byte_selector(function_abi).hex()
 
 
+def get_types_from_abi_type_list(abi_type_list: Sequence[Dict[str, Any]]) -> Sequence[str]:
+    return [generate_type_str(abi_type) for abi_type in abi_type_list]
+
+
+def generate_type_str(component):
+    if component["type"] == "tuple[]":
+        tuple_types = tuple(map(lambda x: generate_type_str(x), component["components"]))
+        return "(" + ",".join(tuple_types) + ")[]"
+    elif component["type"] == "tuple":
+        tuple_types = tuple(map(lambda x: generate_type_str(x), component["components"]))
+        return "(" + ",".join(tuple_types) + ")"
+    else:
+        return component["type"]
+
+
 def decode_log(
     fn_abi: ABIEvent,
     log: Log,
@@ -61,10 +76,10 @@ def decode_log(
         data_types = exclude_indexed_event_inputs(fn_abi)
 
         abi_codec = ABICodec(eth_abi.registry.registry)
-        decode_indexed = abi_codec.decode([t["type"] for t in indexed_types], log.get_bytes_topics())
+        decode_indexed = abi_codec.decode(get_types_from_abi_type_list(indexed_types), log.get_bytes_topics())
         indexed = named_tree(indexed_types, decode_indexed)
 
-        decoded_data = abi_codec.decode([t["type"] for t in data_types], log.get_bytes_data())
+        decoded_data = abi_codec.decode(get_types_from_abi_type_list(data_types), log.get_bytes_data())
         data = named_tree(data_types, decoded_data)
     except Exception as e:
         logging.warning(f"Failed to decode log: {e}, log: {log}")

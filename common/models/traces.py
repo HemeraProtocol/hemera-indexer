@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Index, desc, func
+from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
@@ -31,7 +31,7 @@ class Traces(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
     @staticmethod
     def model_domain_mapping():

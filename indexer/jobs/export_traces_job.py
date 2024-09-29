@@ -164,7 +164,7 @@ class ExtractTraces:
 def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
     block_numbers = []
     for block in blocks:
-        block["number"] = hex(block["number"])
+        block["number"] = block["number"]
         block_numbers.append(block["number"])
     trace_block_rpc = list(generate_trace_block_by_number_json_rpc(block_numbers))
 
@@ -207,7 +207,7 @@ def traces_rpc_requests(make_requests, blocks: List[dict], is_batch):
                 trace_result["txHash"] = transactions[idx]["hash"]
 
         geth_trace = {
-            "block_number": to_int(hexstr=block_number),
+            "block_number": block_number,
             "block_hash": block["hash"],
             "block_timestamp": block["timestamp"],
             "transaction_traces": result,

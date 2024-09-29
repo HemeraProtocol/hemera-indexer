@@ -6,18 +6,17 @@ import re
 from datetime import datetime, timedelta
 
 from flask import current_app
-from sqlalchemy import text
 from sqlalchemy.sql import text
 from web3 import Web3
 
 from api.app.contract.contract_verify import get_abis_for_logs, get_names_from_method_or_topic_list
 from api.app.db_service.contracts import get_contracts_by_addresses
 from api.app.db_service.wallet_addresses import get_address_display_mapping
-from api.app.token.token_prices import get_token_price
+from api.app.utils.token_utils import get_token_price
 from common.models import db
 from common.models.transactions import Transactions
 from common.utils.config import get_config
-from common.utils.format_utils import format_coin_value, format_to_dict, row_to_dict
+from common.utils.format_utils import format_coin_value, format_to_dict
 from common.utils.web3_utils import decode_log_data
 
 app_config = get_config()
@@ -32,7 +31,6 @@ def get_count_by_address(table, chain, wallet_address=None):
 
 
 def get_total_row_count(table):
-
     estimate_transaction = db.session.execute(
         text(
             f"""
@@ -100,11 +98,12 @@ def format_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
     transaction_json["value"] = format_coin_value(int(transaction["value"]))
     transaction_json["value_dollar"] = "{0:.2f}".format(transaction["value"] * GAS_FEE_TOKEN_PRICE / 10**18)
 
-    transaction_json["gas_price_gwei"] = "{0:.6f}".format(transaction["gas_price"] / 10**9).rstrip("0").rstrip(".")
-    transaction_json["gas_price"] = "{0:.15f}".format(transaction["gas_price"] / 10**18).rstrip("0").rstrip(".")
+    gas_price = transaction["gas_price"] or 0
+    transaction_json["gas_price_gwei"] = "{0:.6f}".format(gas_price / 10**9).rstrip("0").rstrip(".")
+    transaction_json["gas_price"] = "{0:.15f}".format(gas_price / 10**18).rstrip("0").rstrip(".")
 
-    transaction_fee = transaction["gas_price"] * transaction["receipt_gas_used"]
-    total_transaction_fee = transaction["gas_price"] * transaction["receipt_gas_used"]
+    transaction_fee = gas_price * transaction["receipt_gas_used"]
+    total_transaction_fee = gas_price * transaction["receipt_gas_used"]
 
     if "receipt_l1_fee" in transaction_json and transaction_json["receipt_l1_fee"]:
         transaction_json["receipt_l1_fee"] = (
@@ -120,7 +119,7 @@ def format_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
         total_transaction_fee = transaction_fee + transaction["receipt_l1_fee"]
     transaction_json["transaction_fee"] = "{0:.15f}".format(transaction_fee / 10**18).rstrip("0").rstrip(".")
     transaction_json["transaction_fee_dollar"] = "{0:.2f}".format(
-        transaction["gas_price"] * GAS_FEE_TOKEN_PRICE * transaction["receipt_gas_used"] / 10**18
+        gas_price * GAS_FEE_TOKEN_PRICE * transaction["receipt_gas_used"] / 10**18
     )
 
     transaction_json["total_transaction_fee"] = (
@@ -147,7 +146,7 @@ def parse_transactions(transactions: list[Transactions]):
         bytea_address_list.append(transaction.to_address)
 
         transaction_json = format_to_dict(transaction)
-
+        transaction_json["method_id"] = "0x" + transaction_json["method_id"]
         transaction_json["method"] = transaction_json["method_id"]
         transaction_json["is_contract"] = False
         transaction_json["contract_name"] = None
@@ -162,7 +161,7 @@ def parse_transactions(transactions: list[Transactions]):
 
     # Find contract
     contracts = get_contracts_by_addresses(address_list=to_address_list, columns=["address"])
-    contract_list = set(map(lambda x: x.address, contracts))
+    contract_list = set(map(lambda x: "0x" + x.address.hex(), contracts))
 
     method_list = []
     for transaction_json in transaction_list:
@@ -364,12 +363,10 @@ def process_token_transfer(token_transfers, token_type):
             token_transfer_json["value"] = (
                 "{0:.18f}".format(token_transfer.value / 10 ** (token_transfer.decimals or 18)).rstrip("0").rstrip(".")
             )
-            token_transfer_json["token_logo_url"] = (
-                token_transfer.icon_url or f"/images/empty-token-{app_config.chain}.png"
-            )
+            token_transfer_json["token_logo_url"] = token_transfer.icon_url or None
         else:
             token_transfer_json["token_id"] = "{:f}".format(token_transfer.token_id)
-            token_transfer_json["token_logo_url"] = f"/images/empty-token-{app_config.chain}.png"
+            token_transfer_json["token_logo_url"] = None
             if token_type == "tokentxns-nft1155":
                 token_transfer_json["value"] = "{:f}".format(token_transfer.value)
 

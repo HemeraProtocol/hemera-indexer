@@ -1,7 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import INT, NUMERIC, SMALLINT, TEXT, Column, PrimaryKeyConstraint, func
-from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
+from sqlalchemy import Column, func
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, SMALLINT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
@@ -10,8 +10,8 @@ class AddressNftTransfers(HemeraModel):
     __tablename__ = "address_nft_transfers"
 
     address = Column(BYTEA, primary_key=True)
-    block_number = Column(INT, primary_key=True)
-    log_index = Column(INT, primary_key=True)
+    block_number = Column(INTEGER, primary_key=True)
+    log_index = Column(INTEGER, primary_key=True)
     transaction_hash = Column(BYTEA)
     block_timestamp = Column(TIMESTAMP, primary_key=True)
     block_hash = Column(BYTEA, primary_key=True)

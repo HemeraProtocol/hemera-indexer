@@ -1,10 +1,12 @@
 import logging
+import os
 import time
 
 import click
 from web3 import Web3
 
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.format_utils import to_snake_case
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.controller.stream_controller import StreamController
@@ -236,7 +238,7 @@ def calculate_execution_time(func):
     show_default=True,
     type=bool,
     help="if `multicall` is set to True, it will decrease the consume of rpc calls",
-    envvar="Multicall",
+    envvar="MULTI_CALL_ENABLE",
 )
 @click.option(
     "--auto-reorg",
@@ -245,6 +247,38 @@ def calculate_execution_time(func):
     type=bool,
     envvar="AUTO_REORG",
     help="Whether to detect reorg in data streams and automatically repair data.",
+)
+@click.option(
+    "--config-file",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="CONFIG_FILE",
+    help="The path to the configuration file, if provided, the configuration file will be used to load the configuration. Supported formats are json and yaml.",
+)
+@click.option(
+    "--force-filter-mode",
+    default=False,
+    show_default=True,
+    type=bool,
+    envvar="FORCE_FILTER_MODE",
+    help="Force the filter mode to be enabled, even if no filters job are provided.",
+)
+@click.option(
+    "--auto-upgrade-db",
+    default=True,
+    show_default=True,
+    type=bool,
+    envvar="AUTO_UPGRADE_DB",
+    help="Whether to automatically run database migration scripts to update the database to the latest version.",
+)
+@click.option(
+    "--log-level",
+    default="INFO",
+    show_default=True,
+    type=str,
+    envvar="LOG_LEVEL",
+    help="Set the logging output level.",
 )
 @calculate_execution_time
 def stream(
@@ -271,8 +305,12 @@ def stream(
     cache="memory",
     auto_reorg=True,
     multicall=True,
+    config_file=None,
+    force_filter_mode=False,
+    auto_upgrade_db=True,
+    log_level="INFO",
 ):
-    configure_logging(log_file)
+    configure_logging(log_level, log_file)
     configure_signals()
     provider_uri = pick_random_provider_uri(provider_uri)
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
@@ -289,27 +327,52 @@ def stream(
     }
 
     if postgres_url:
-        service = PostgreSQLService(postgres_url, db_version=db_version)
+        service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
         config["db_service"] = service
         exception_recorder.init_pg_service(service)
     else:
         logging.warning("No postgres url provided. Exception recorder will not be useful.")
 
+    if config_file:
+        file_based_config = {}
+        if not os.path.exists(config_file):
+            raise click.ClickException(f"Config file {config_file} not found")
+        with open(config_file, "r") as f:
+            if config_file.endswith(".json"):
+                import json
+
+                file_based_config = json.load(f)
+            elif config_file.endswith(".yaml") or config_file.endswith(".yml"):
+                import yaml
+
+                file_based_config = yaml.safe_load(f)
+            else:
+                raise click.ClickException(f"Config file {config_file} is not supported)")
+
+        if file_based_config.get("chain_id") != config["chain_id"]:
+            raise click.ClickException(
+                f"Config file {config_file} is not compatible with chain_id {config['chain_id']}"
+            )
+        else:
+            logging.info(f"Loading config from file: {config_file}, chain_id: {config['chain_id']}")
+            config.update(file_based_config)
+
     if output_types is None:
         entity_types = calculate_entity_value(entity_types)
-        output_types = list(generate_output_types(entity_types))
+        output_types = list(set(generate_output_types(entity_types)))
     else:
         domain_dict = Domain.get_all_domain_dict()
         parse_output_types = set()
 
         for output_type in output_types.split(","):
+            output_type = to_snake_case(output_type)
             if output_type not in domain_dict:
                 raise click.ClickException(f"Output type {output_type} is not supported")
             parse_output_types.add(domain_dict[output_type])
 
         if not output_types:
             raise click.ClickException("No output types provided")
-        output_types = list(parse_output_types)
+        output_types = list(set(parse_output_types))
 
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
@@ -323,6 +386,7 @@ def stream(
         cache=cache,
         auto_reorg=auto_reorg,
         multicall=multicall,
+        force_filter_mode=force_filter_mode,
     )
 
     controller = StreamController(

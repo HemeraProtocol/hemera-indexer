@@ -7,6 +7,9 @@ from web3 import Web3
 
 from common.converter.pg_converter import domain_model_mapping
 from common.utils.exception_control import FastShutdownError
+from common.utils.format_utils import to_snake_case
+from indexer.domain import Domain
+from indexer.domain.transaction import Transaction
 from indexer.utils.reorg import should_reorg
 
 
@@ -42,6 +45,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     tokens = None
 
+    is_filter = False
     dependency_types = []
     output_types = []
     able_to_reorg = False
@@ -67,25 +71,38 @@ class BaseJob(metaclass=BaseJobMeta):
         self.logger = logging.getLogger(self.__class__.__name__)
         self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
         self._reorg = kwargs["reorg"] if kwargs.get("reorg") else False
+
+        self._chain_id = kwargs.get("chain_id") or (self._web3.eth.chain_id if self._batch_web3_provider else None)
+
         self._should_reorg = False
         self._should_reorg_type = set()
         self._service = kwargs["config"].get("db_service", None)
 
+        job_name_snake = to_snake_case(self.job_name)
+        self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
+
     def run(self, **kwargs):
         try:
-            self._start(**kwargs)
+            if self.able_to_reorg and self._reorg:
+                start_time = datetime.now()
+                self.logger.info(f"Stage _start starting.")
+                self._start(**kwargs)
+                self.logger.info(f"Stage _start finished. Took {datetime.now() - start_time}")
 
             if not self._reorg or self._should_reorg:
                 start_time = datetime.now()
+                self.logger.info(f"Stage collect starting.")
                 self._collect(**kwargs)
                 self.logger.info(f"Stage collect finished. Took {datetime.now() - start_time}")
 
                 start_time = datetime.now()
+                self.logger.info(f"Stage process starting.")
                 self._process(**kwargs)
                 self.logger.info(f"Stage process finished. Took {datetime.now() - start_time}")
 
             if not self._reorg:
                 start_time = datetime.now()
+                self.logger.info(f"Stage export starting.")
                 self._export()
                 self.logger.info(f"Stage export finished. Took {datetime.now() - start_time}")
 
@@ -93,21 +110,21 @@ class BaseJob(metaclass=BaseJobMeta):
             self._end()
 
     def _start(self, **kwargs):
-        if self.able_to_reorg and self._reorg:
-            if self._service is None:
-                raise FastShutdownError("PG Service is not set")
 
-            reorg_block = int(kwargs["start_block"])
+        if self._service is None:
+            raise FastShutdownError("PG Service is not set")
 
-            output_table = {}
-            for domain in self.output_types:
-                output_table[domain_model_mapping[domain.__name__]["table"]] = domain.type()
-                # output_table.add(domain_model_mapping[domain.__name__]["table"])
+        reorg_block = int(kwargs["start_block"])
 
-            for table in output_table.keys():
-                if should_reorg(reorg_block, table, self._service):
-                    self._should_reorg_type.add(output_table[table])
-                    self._should_reorg = True
+        output_table = {}
+        for domain in self.output_types:
+            output_table[domain_model_mapping[domain.__name__]["table"]] = domain.type()
+            # output_table.add(domain_model_mapping[domain.__name__]["table"])
+
+        for table in output_table.keys():
+            if should_reorg(reorg_block, table, self._service):
+                self._should_reorg_type.add(output_table[table])
+                self._should_reorg = True
 
     def _end(self):
         if self._reorg:
@@ -138,7 +155,13 @@ class BaseJob(metaclass=BaseJobMeta):
             self._collect_domain(domain)
 
     def _get_domain(self, domain):
-        return self._data_buff[domain.type()]
+        return self._data_buff[domain.type()] if domain.type() in self._data_buff else []
+
+    def _get_domains(self, domains: list[Domain]):
+        res = []
+        for domain in domains:
+            res += self._data_buff[domain.type()]
+        return res
 
     def _process(self, **kwargs):
         pass
@@ -177,3 +200,15 @@ class BaseExportJob(BaseJob):
 
 class ExtensionJob(BaseJob):
     pass
+
+
+class FilterTransactionDataJob(ExtensionJob):
+    dependency_types = [Transaction]
+    output_types = []
+    is_filter = True
+
+    def get_filter(self):
+        raise NotImplementedError
+
+    def get_filter_transactions(self):
+        return list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))

@@ -1,7 +1,7 @@
 from typing import Type
 
 from sqlalchemy import Column, Index
-from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -15,21 +15,21 @@ class UserOperationResult(HemeraModel):
     nonce = Column(NUMERIC)
     status = Column(BOOLEAN)
     actual_gas_cost = Column(NUMERIC)
-    actual_gas_used = Column(INTEGER)
+    actual_gas_used = Column(NUMERIC)
 
     init_code = Column(BYTEA)
     call_data = Column(BYTEA)
-    call_gas_limit = Column(INTEGER)
-    verification_gas_limit = Column(INTEGER)
-    pre_verification_gas = Column(INTEGER)
-    max_fee_per_gas = Column(INTEGER)
-    max_priority_fee_per_gas = Column(INTEGER)
+    call_gas_limit = Column(NUMERIC)
+    verification_gas_limit = Column(NUMERIC)
+    pre_verification_gas = Column(NUMERIC)
+    max_fee_per_gas = Column(NUMERIC)
+    max_priority_fee_per_gas = Column(NUMERIC)
     paymaster_and_data = Column(BYTEA)
     signature = Column(BYTEA)
 
     transactions_hash = Column(BYTEA)
     transactions_index = Column(INTEGER)
-    block_number = Column(INTEGER)
+    block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
     bundler = Column(VARCHAR(42))
     start_log_index = Column(INTEGER)

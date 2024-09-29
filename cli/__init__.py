@@ -4,6 +4,7 @@ import click
 
 from cli.aggregates import aggregates
 from cli.api import api
+from cli.init_db import init_db
 from cli.load import load
 from cli.reorg import reorg
 from cli.stream import stream
@@ -11,10 +12,11 @@ from indexer.utils.logging_utils import logging_basic_config
 
 logging_basic_config()
 
+from importlib import metadata
+
 
 def get_version():
-    version_file = Path(__file__).parent.parent / "VERSION"
-    return version_file.read_text().strip()
+    return metadata.version("hemera")
 
 
 @click.group()
@@ -29,3 +31,4 @@ cli.add_command(load, "load")
 cli.add_command(api, "api")
 cli.add_command(aggregates, "aggregates")
 cli.add_command(reorg, "reorg")
+cli.add_command(init_db, "init_db")

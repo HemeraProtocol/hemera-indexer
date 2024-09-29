@@ -31,4 +31,5 @@ def test_export_job():
     )
 
     data_buff = job_scheduler.get_data_buff()
+    assert len(data_buff[ContractInternalTransaction.type()]) == 24
     job_scheduler.clear_data_buff()

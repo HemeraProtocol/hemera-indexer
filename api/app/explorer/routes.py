@@ -53,7 +53,7 @@ from api.app.db_service.transactions import (
 )
 from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
 from api.app.explorer import explorer_namespace
-from api.app.token.token_prices import get_token_price
+from api.app.utils.token_utils import get_token_price
 from api.app.utils.utils import (
     fill_address_display_to_transactions,
     fill_is_contract_to_transactions,
@@ -429,7 +429,7 @@ class ExplorerInternalTransactions(Resource):
 
 @explorer_namespace.route("/v1/explorer/transactions")
 class ExplorerTransactions(Resource):
-    @cache.cached(timeout=10, query_string=True)
+    @cache.cached(timeout=3, query_string=True)
     def get(self):
         page_index = int(flask.request.args.get("page", 1))
         page_size = int(flask.request.args.get("size", 25))
@@ -1073,17 +1073,33 @@ class ExplorerTokenTransfers(Resource):
         }, 200
 
 
+class CustomRequestParser(reqparse.RequestParser):
+    def add_argument(self, *args, **kwargs):
+        if "location" not in kwargs:
+            kwargs["location"] = "args"
+        return super(CustomRequestParser, self).add_argument(*args, **kwargs)
+
+
+blocks_parser = CustomRequestParser()
+
+blocks_parser.add_argument("page", type=int, default=1, help="Page number")
+blocks_parser.add_argument("size", type=int, default=25, help="Page size")
+blocks_parser.add_argument("state_batch", type=int, default=None, help="State batch filter")
+blocks_parser.add_argument("batch", type=int, default=None, help="Batch filter")
+
+
 @explorer_namespace.route("/v1/explorer/blocks")
 class ExplorerBlocks(Resource):
-    @cache.cached(timeout=10, query_string=True)
+    @cache.cached(timeout=3, query_string=True)
     def get(self):
-        page_index = int(flask.request.args.get("page", 1))
-        page_size = int(flask.request.args.get("size", 25))
+        args = blocks_parser.parse_args()
+        page_index = args.get("page")
+        page_size = args.get("size")
         if page_index <= 0 or page_size <= 0:
             raise APIError("Invalid page or size", code=400)
 
-        state_batch = flask.request.args.get("state_batch", None)
-        batch = flask.request.args.get("batch", None)
+        state_batch = args.get("state_batch")
+        batch = args.get("batch")
 
         block_list_columns = [
             "hash",
@@ -1099,6 +1115,7 @@ class ExplorerBlocks(Resource):
         ]
 
         if state_batch is None and batch is None:
+
             latest_block = get_last_block(columns=["number"])
 
             total_blocks = latest_block.number if latest_block else 0
@@ -1110,32 +1127,32 @@ class ExplorerBlocks(Resource):
             blocks = get_blocks_by_condition(
                 columns=block_list_columns, filter_condition=Blocks.number.between(start_block, end_block)
             )
-
-            block_list = [format_to_dict(block) for block in blocks]
-
-            return {
-                "data": block_list,
-                "total": total_blocks,
-                "page": page_index,
-                "size": page_size,
-            }, 200
-
-        filter_condition = True
-        total_blocks = 0
-        blocks = get_blocks_by_condition(
-            columns=block_list_columns,
-            filter_condition=filter_condition,
-            limit=page_size,
-            offset=(page_index - 1) * page_size,
-        )
-
-        block_list = []
-        for block in blocks:
-            block_list.append(as_dict(block))
-
-        if total_blocks == 0 and len(block_list) > 0:
-            latest_block = get_last_block(columns=["number", "timestamp"])
-            total_blocks = latest_block.number
+        else:
+            # TODO: Fix blocks filter by state_batch and batch
+            filter_condition = True
+            total_blocks = 0
+            blocks = get_blocks_by_condition(
+                columns=block_list_columns,
+                filter_condition=filter_condition,
+                limit=page_size,
+                offset=(page_index - 1) * page_size,
+            )
+            if total_blocks == 0 and len(blocks) > 0:
+                latest_block = get_last_block(columns=["number", "timestamp"])
+                total_blocks = latest_block.number
+        block_list = [
+            format_to_dict(block)
+            | {
+                "transaction_count": block.transactions_count,
+                "internal_transaction_count": (
+                    0 if block.internal_transactions_count is None else block.internal_transactions_count
+                ),
+                "internal_transactions_count": (
+                    0 if block.internal_transactions_count is None else block.internal_transactions_count
+                ),
+            }
+            for block in blocks
+        ]
 
         return {
             "data": block_list,
@@ -1162,7 +1179,9 @@ class ExplorerBlockDetail(Resource):
             # Added by indexer now
             # internal_transaction_count = get_internal_transactions_cnt_by_condition(
             #     filter_condition=ContractInternalTransactions.block_number == block.number)
-            block_json["internal_transaction_count"] = block.internal_transactions_count
+            block_json["internal_transaction_count"] = (
+                0 if block.internal_transactions_count is None else block.internal_transactions_count
+            )
 
             block_json["gas_fee_token_price"] = "{0:.2f}".format(
                 get_token_price(app_config.token_configuration.gas_fee_token, block.timestamp)
@@ -1172,6 +1191,7 @@ class ExplorerBlockDetail(Resource):
             earlier_block = get_block_by_number(block_number=earlier_block_number, columns=["number", "timestamp"])
 
             block_json["seconds_since_last_block"] = block.timestamp.timestamp() - earlier_block.timestamp.timestamp()
+            block_json["transaction_count"] = block.transactions_count
 
             latest_block = get_last_block(columns=["number"])
 
@@ -1212,6 +1232,10 @@ class ExplorerAddressProfile(Resource):
                 if contract.verified_implementation_contract
                 else None
             )
+            profile_json["bytecode"] = "0x" + contract.deployed_code.hex() if contract.deployed_code else None
+            profile_json["creation_code"] = "0x" + contract.creation_code.hex() if contract.creation_code else None
+            profile_json["deployed_code"] = "0x" + contract.deployed_code.hex() if contract.deployed_code else None
+
             deployed_code = contract.deployed_code or get_sha256_hash(get_code(address))
             addresses = get_similar_addresses(deployed_code)
             profile_json["similar_verified_addresses"] = [add for add in addresses if add != address]
@@ -1220,7 +1244,7 @@ class ExplorerAddressProfile(Resource):
 
             if token:
                 profile_json["is_token"] = True
-                profile_json["token_type"] = token.type  # ERC20/ERC721/ERC1155
+                profile_json["token_type"] = token.token_type  # ERC20/ERC721/ERC1155
                 profile_json["token_name"] = token.name or "Unknown Token"
                 profile_json["token_symbol"] = token.symbol or "UNKNOWN"
                 profile_json["token_logo_url"] = token.icon_url or None
@@ -1422,6 +1446,17 @@ class ExplorerAddressLogs(Resource):
         return {"total": len(logs), "data": log_list}, 200
 
 
+def token_type_convert(token_type):
+    if token_type == "ERC20":
+        return "tokentxns"
+    elif token_type == "ERC721":
+        return "tokentxns-nft"
+    elif token_type == "ERC1155":
+        return "tokentxns-nft1155"
+    else:
+        return None
+
+
 @explorer_namespace.route("/v1/explorer/token/<address>/profile")
 class ExplorerTokenProfile(Resource):
     @cache.cached(timeout=60, query_string=True)
@@ -1462,7 +1497,8 @@ class ExplorerTokenProfile(Resource):
             "total_supply": "{:f}".format(token.total_supply or 0),
             "total_holders": token.holder_count,
             "total_transfers": get_token_address_token_transfer_cnt(token.token_type, address),
-            "type": token.token_type,
+            "token_type": token.token_type,
+            "type": token_type_convert(token.token_type),
         }
         token_info.update(extra_token_info)
 

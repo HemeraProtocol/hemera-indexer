@@ -9,7 +9,7 @@ x-common-settings: &common-settings
   networks:
     - hemera
   volumes:
-    - ./output:/app/output
+    - hemera-output:/app/output
   depends_on:
     postgresql:
       condition: service_healthy
@@ -19,15 +19,30 @@ services:
     <<: *common-settings
     container_name: indexer
     environment:
+      - AUTO_UPGRADE_DB=true
       - ENTITY_TYPES=EXPLORER_BASE,EXPLORER_TOKEN
       - SYNC_RECORDER=pg:main_recorder
 
   hemera-trace-indexer:
     <<: *common-settings
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      hemera-main-indexer:
+        condition: service_started
     container_name: indexer-trace
     environment:
+      - AUTO_UPGRADE_DB=false
       - ENTITY_TYPES=EXPLORER_TRACE
       - SYNC_RECORDER=pg:trace_recorder
+
+  hemera-uop-indexer:
+    <<: *common-settings
+    container_name: indexer-uop
+    environment:
+      - ENTITY_TYPES=USER_OPS
+      - SYNC_RECORDER=pg:uop_recorder
+
 
   hemera-api:
     <<: *common-settings
@@ -51,7 +66,7 @@ services:
     networks:
       - hemera
     volumes:
-      - ./postgres:/var/lib/postgresql/data
+      - hemera-postgres:/var/lib/postgresql/data
 
   redis:
     image: redis:6
@@ -60,6 +75,10 @@ services:
       - 6379:6379
     networks:
       - hemera
+
+volumes:
+    hemera-postgres:
+    hemera-output:
 
 networks:
   hemera:

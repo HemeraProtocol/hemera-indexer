@@ -1,16 +1,15 @@
-from datetime import datetime
-
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
-from common.models import HemeraModel, general_converter
+from common.models import HemeraModel
+from common.models.token_balances import token_balances_general_converter
 
 
 class CurrentTokenBalances(HemeraModel):
     __tablename__ = "address_current_token_balances"
 
     address = Column(BYTEA, primary_key=True)
-    token_id = Column(NUMERIC(100), default=-1)
+    token_id = Column(NUMERIC(78), primary_key=True)
     token_type = Column(VARCHAR)
     token_address = Column(BYTEA, primary_key=True)
     balance = Column(NUMERIC(100))
@@ -20,9 +19,9 @@ class CurrentTokenBalances(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("address", "token_address"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "token_address", "token_id"),)
 
     @staticmethod
     def model_domain_mapping():
@@ -31,7 +30,7 @@ class CurrentTokenBalances(HemeraModel):
                 "domain": "CurrentTokenBalance",
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > address_current_token_balances.block_number",
-                "converter": general_converter,
+                "converter": token_balances_general_converter,
             }
         ]
 

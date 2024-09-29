@@ -29,6 +29,7 @@ from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.multicall_hemera import Call, Multicall, Network
+from indexer.utils.multicall_hemera.constants import GAS_LIMIT
 from indexer.utils.multicall_hemera.util import (
     calculate_execution_time,
     make_request_concurrent,
@@ -36,7 +37,7 @@ from indexer.utils.multicall_hemera.util import (
     rebatch_by_size,
 )
 from indexer.utils.provider import get_provider_from_uri
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.utils import format_block_id, rpc_response_to_result, zip_rpc_response
 
 BALANCE_OF_ERC20 = "balanceOf(address)(uint256)"
 BALANCE_OF_ERC1155 = "balanceOf(address,uint256)(uint256)"
@@ -59,6 +60,7 @@ class TokenFetcher:
         self.batch_size = kwargs["batch_size"]
         self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
+        self._works = kwargs["max_workers"]
         if not self._is_multi_call:
             self.logger.info("multicall is disabled")
             self.net = None
@@ -87,12 +89,13 @@ class TokenFetcher:
     def _prepare_token_ids_info_parameters(self, token_info_items):
         to_execute_batch_calls = []
         wrapped_calls = []
+        wrapped_calls_map = {}
         grouped_data = defaultdict(list)
         for row in token_info_items:
             row[self.fixed_k] = self.build_key(row, self.token_ids_infos_k_fields)
             grouped_data[row["block_number"]].append(row)
         for block_id, items in grouped_data.items():
-            if block_id < self.deploy_block_number or not self._is_multi_call:
+            if (isinstance(block_id, int) and block_id < self.deploy_block_number) or not self._is_multi_call:
                 to_execute_batch_calls.extend(items)
             else:
                 calls = []
@@ -133,9 +136,10 @@ class TokenFetcher:
                             )
 
                     if construct_call:
+                        wrapped_calls_map[construct_call.returns[0][0]] = row
                         calls.append(construct_call)
                 wrapped_calls.append(calls)
-        return wrapped_calls, to_execute_batch_calls
+        return wrapped_calls, wrapped_calls_map, to_execute_batch_calls
 
     def create_token_detail(self, token_info, value, decode_flag):
         common_args = {
@@ -147,7 +151,11 @@ class TokenFetcher:
         try:
 
             if token_info["is_get_token_uri"]:
-                token_uri = decode_string(value) if decode_flag else value
+                try:
+                    token_uri = decode_string(value) if decode_flag else value
+                except Exception as e:
+                    token_uri = None
+                    logging.error(f"decode token uri failed, token_info={token_info}, value={value}")
                 if token_info["token_type"] == "ERC721":
                     return [ERC721TokenIdDetail(**common_args, token_uri=token_uri)]
                 else:
@@ -164,7 +172,7 @@ class TokenFetcher:
                     return [UpdateERC1155TokenIdDetail(**common_args, token_supply=token_supply)]
         except Exception as e:
             exception_recorder.log(
-                block_number=token_info.block_number,
+                block_number=token_info["block_number"],
                 dataclass=to_snake_case("token_id_info"),
                 message_type="decode_token_id_info_fail",
                 message=str(e),
@@ -176,9 +184,9 @@ class TokenFetcher:
     def fetch_token_ids_info(self, token_info_items):
         # export token_ids_info
         self.logger.info(f"TokenFetcher fetch_token_ids_info size={len(token_info_items)}")
-        wrapped_calls, to_execute_batch_calls = self._prepare_token_ids_info_parameters(token_info_items)
-
-        return_data_map = {it[self.fixed_k]: it for it in token_info_items}
+        wrapped_calls, wrapped_calls_map, to_execute_batch_calls = self._prepare_token_ids_info_parameters(
+            token_info_items
+        )
 
         multicall_result = {}
         multicall_rpc = []
@@ -188,6 +196,7 @@ class TokenFetcher:
             for calls in wrapped_calls:
                 self.multi_call.calls = calls
                 self.multi_call.block_id = calls[0].block_id
+                self.multi_call.gas_limit = len(calls) * GAS_LIMIT
                 rpc_para = self.multi_call.to_rpc_param()
                 multicall_rpc.append(rpc_para)
 
@@ -198,9 +207,11 @@ class TokenFetcher:
             tmp = self.decode_result(wrapped_calls, res, chunks)
             multicall_result.update(tmp)
 
-        for k, v in multicall_result.items():
-            if v is None:
-                to_execute_batch_calls.append(return_data_map[k])
+            for k, v in wrapped_calls_map.items():
+                if k in multicall_result and multicall_result[k] is not None:
+                    pass
+                else:
+                    to_execute_batch_calls.append(v)
 
         raw_result = self.fetch_to_execute_batch_calls(self._token_ids_info_rpc_requests, to_execute_batch_calls)
 
@@ -229,7 +240,7 @@ class TokenFetcher:
                         "request_id": item["request_id"],
                         "param_to": item["address"],
                         "param_data": abi_selector_encode_and_decode_type(item),
-                        "param_number": hex(item["block_number"]),
+                        "param_number": format_block_id(item["block_number"]),
                     }
                     for item in token_info_items
                 ]
@@ -258,9 +269,9 @@ class TokenFetcher:
 
         to_execute_batch_calls = []
         wrapped_calls = []
-
+        wrapped_calls_map = {}
         for block_id, items in grouped_data.items():
-            if block_id < self.deploy_block_number or not self._is_multi_call:
+            if (isinstance(block_id, int) and block_id < self.deploy_block_number) or not self._is_multi_call:
                 to_execute_batch_calls.extend(items)
             else:
                 calls = []
@@ -283,14 +294,15 @@ class TokenFetcher:
                             block_id=block_id,
                         )
                     if construct_call:
+                        wrapped_calls_map[construct_call.returns[0][0]] = row
                         calls.append(construct_call)
                 wrapped_calls.append(calls)
 
-        return wrapped_calls, to_execute_batch_calls
+        return wrapped_calls, wrapped_calls_map, to_execute_batch_calls
 
     @calculate_execution_time
     def fetch_result(self, chunks):
-        res = list(make_request_concurrent(self.make_request, chunks))
+        res = list(make_request_concurrent(self.make_request, chunks, self._works))
         return res
 
     @calculate_execution_time
@@ -318,9 +330,7 @@ class TokenFetcher:
     @calculate_execution_time
     def fetch_token_balance(self, tokens):
         self.logger.info(f"TokenFetcher fetch_token_balance size={len(tokens)}")
-        wrapped_calls, to_execute_batch_calls = self._prepare_token_balance_parameters(tokens)
-
-        return_data_map = {it[self.fixed_k]: it for it in tokens}
+        wrapped_calls, wrapped_calls_map, to_execute_batch_calls = self._prepare_token_balance_parameters(tokens)
 
         multicall_result = {}
         multicall_rpc = self.construct_multicall_rpc(wrapped_calls)
@@ -330,9 +340,12 @@ class TokenFetcher:
         res = self.fetch_result(chunks)
         tmp = self.decode_result(wrapped_calls, res, chunks)
         multicall_result.update(tmp)
-        for k, v in multicall_result.items():
-            if v is None:
-                to_execute_batch_calls.append(return_data_map[k])
+
+        for k, v in wrapped_calls_map.items():
+            if k in multicall_result and multicall_result[k] is not None:
+                pass
+            else:
+                to_execute_batch_calls.append(v)
 
         tmp = self.fetch_to_execute_batch_calls(self._token_balances, to_execute_batch_calls)
         multicall_result.update(tmp)
@@ -345,7 +358,11 @@ class TokenFetcher:
             for calls in wrapped_calls:
                 multicall_rpc.append(
                     Multicall(
-                        calls, require_success=False, chain_id=self.chain_id, block_id=calls[0].block_id
+                        calls,
+                        require_success=False,
+                        chain_id=self.chain_id,
+                        block_id=calls[0].block_id,
+                        gas_limit=len(calls) * GAS_LIMIT,
                     ).to_rpc_param()
                 )
         return multicall_rpc

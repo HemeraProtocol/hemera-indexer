@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, func
+from sqlalchemy import Column, Computed, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSONB, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
@@ -34,7 +34,12 @@ class Contracts(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, default=False)
+    reorg = Column(BOOLEAN, server_default=text("false"))
+
+    deployed_code_hash = Column(
+        VARCHAR,
+        Computed("encode(digest('0x'||encode(deployed_code, 'hex'), 'sha256'), 'hex')"),
+    )
 
     @staticmethod
     def model_domain_mapping():

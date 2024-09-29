@@ -1,6 +1,6 @@
 from enumeration.entity_type import EntityType
 from indexer.domain.transaction import Transaction
-from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
+from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.arbitrum.arb_parser import *
 from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL2, ArbitrumL2ToL1TransactionOnL2
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs

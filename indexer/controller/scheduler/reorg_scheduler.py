@@ -8,10 +8,10 @@ from redis.client import Redis
 from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.module_loading import import_submodules
+from indexer.jobs import FilterTransactionDataJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_reorg_job import ExportReorgJob
-from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
 from indexer.utils.abi import bytes_to_hex_str
 
 import_submodules("indexer.modules")
@@ -84,11 +84,11 @@ class ReorgScheduler:
         self.instantiate_jobs()
 
     @staticmethod
-    def get_data_buff(self):
+    def get_data_buff():
         return BaseJob._data_buff
 
     @staticmethod
-    def clear_data_buff(self):
+    def clear_data_buff():
         BaseJob._data_buff.clear()
 
     def discover_and_register_job_classes(self):
@@ -140,6 +140,7 @@ class ReorgScheduler:
                 config=self.config,
                 filters=filters,
                 reorg=True,
+                reorg_jobs=self.job_classes,
                 multicall=self._is_multicall,
             )
             self.jobs.insert(0, export_blocks_job)
@@ -158,9 +159,9 @@ class ReorgScheduler:
         self.jobs.append(export_reorg_job)
 
     def run_jobs(self, start_block, end_block):
+        self.clear_data_buff()
         for job in self.jobs:
             job.run(start_block=start_block, end_block=end_block)
-        # TODO: clean data buffer after all jobs are run
 
     def get_required_job_classes(self, output_types):
         required_job_classes = set()

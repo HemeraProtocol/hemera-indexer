@@ -78,8 +78,8 @@ class ReorgController(BaseController):
             self.update_job_info(
                 job_id,
                 job_info={
-                    "last_fixed_block_number": block_number - offset,
-                    "remain_process": limit - offset - 1,
+                    "last_fixed_block_number": block_number - offset + 1,
+                    "remain_process": limit - offset,
                     "update_time": datetime.now(timezone.utc),
                     "job_status": "interrupt",
                 },
@@ -90,8 +90,6 @@ class ReorgController(BaseController):
         self.update_job_info(job_id, job_info={"job_status": "completed"})
 
         logging.info(f"Reorging mission start from block No.{block_number} and ranges {remains} has been completed.")
-
-        self.wake_up_next_job()
 
     def _do_fixing(self, fix_block, retry_errors=True):
         tries, tries_reset = 0, True
@@ -181,6 +179,7 @@ class ReorgController(BaseController):
 
     def wake_up_next_job(self):
         session = self.db_service.get_service_session()
+        job = None
         try:
             job = (
                 session.query(FixRecord)
@@ -188,15 +187,13 @@ class ReorgController(BaseController):
                 .order_by(FixRecord.create_time)
                 .first()
             )
-
-            if job:
-                self.action(
-                    job_id=job.job_id,
-                    block_number=job.last_fixed_block_number - 1,
-                    remains=job.remain_process,
-                )
+        except Exception as e:
+            logging.error(f"Wake up uncompleted job error: {e}.")
+            raise e
         finally:
             session.close()
+
+        return job
 
     def check_block_been_synced(self, block_number):
         session = self.db_service.get_service_session()

@@ -1,4 +1,5 @@
 import logging
+import os
 
 import click
 
@@ -97,7 +98,32 @@ exception_recorder = ExceptionRecorder()
     envvar="LOG_FILE",
     help="Log file",
 )
+@click.option(
+    "-m",
+    "--multicall",
+    default=False,
+    show_default=True,
+    type=bool,
+    help="if `multicall` is set to True, it will decrease the consume of rpc calls",
+    envvar="MULTI_CALL_ENABLE",
+)
 @click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE", help="Cache")
+@click.option(
+    "--auto-upgrade-db",
+    default=True,
+    show_default=True,
+    type=bool,
+    envvar="AUTO_UPGRADE_DB",
+    help="Whether to automatically run database migration scripts to update the database to the latest version.",
+)
+@click.option(
+    "--log-level",
+    default="INFO",
+    show_default=True,
+    type=str,
+    envvar="LOG_LEVEL",
+    help="Set the logging output level.",
+)
 def reorg(
     provider_uri,
     debug_provider_uri,
@@ -107,10 +133,14 @@ def reorg(
     batch_size,
     debug_batch_size,
     db_version="head",
+    multicall=True,
     log_file=None,
     cache=None,
+    config_file=None,
+    auto_upgrade_db=True,
+    log_level="INFO",
 ):
-    configure_logging(log_file)
+    configure_logging(log_level=log_level, log_file=log_file)
     configure_signals()
 
     provider_uri = pick_random_provider_uri(provider_uri)
@@ -120,12 +150,27 @@ def reorg(
 
     # build postgresql service
     if postgres_url:
-        service = PostgreSQLService(postgres_url, db_version=db_version)
+        service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
         config = {"db_service": service}
         exception_recorder.init_pg_service(service)
     else:
         logging.error("No postgres url provided. Exception recorder will not be useful.")
         exit(1)
+
+    if config_file:
+        if not os.path.exists(config_file):
+            raise click.ClickException(f"Config file {config_file} not found")
+        with open(config_file, "r") as f:
+            if config_file.endswith(".json"):
+                import json
+
+                config.update(json.load(f))
+            elif config_file.endswith(".yaml") or config_file.endswith(".yml"):
+                import yaml
+
+                config.update(yaml.safe_load(f))
+            else:
+                raise click.ClickException(f"Config file {config_file} is not supported)")
 
     entity_types = calculate_entity_value(",".join(ALL_ENTITY_COLLECTIONS))
     output_types = list(generate_output_types(entity_types))
@@ -139,6 +184,7 @@ def reorg(
         required_output_types=output_types,
         config=config,
         cache=cache,
+        multicall=multicall,
     )
 
     controller = ReorgController(
@@ -148,4 +194,20 @@ def reorg(
         config=config,
     )
 
-    controller.action(block_number=block_number)
+    job = None
+    while True:
+        if job:
+            controller.action(
+                job_id=job.job_id,
+                block_number=job.last_fixed_block_number - 1,
+                remains=job.remain_process,
+            )
+        else:
+            controller.action(block_number=block_number)
+
+        job = controller.wake_up_next_job()
+        if job:
+            logging.info(f"Waking up uncompleted job: {job.job_id}.")
+        else:
+            logging.info("No more uncompleted jobs to wake-up, reorg process will terminate.")
+            break

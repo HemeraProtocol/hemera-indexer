@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+from datetime import datetime
 
 import flask
 from flask import Flask, request
@@ -18,7 +19,6 @@ from common.utils.exception_control import APIError
 config = get_config()
 
 logging.basicConfig(level=logging.INFO)
-# logging.basicConfig()
 # logging.getLogger("sqlalchemy.pool").setLevel(logging.DEBUG)
 
 app = Flask(__name__)
@@ -109,9 +109,6 @@ def _build_cors_prelight_response():
 
 @app.before_request
 def hook():
-    if get_real_ip() in ["182.253.52.70", "37.27.101.162"]:
-        raise APIError("Forbidden", 403)
-
     if request.method == "OPTIONS":  # CORS preflight
         return _build_cors_prelight_response()
 

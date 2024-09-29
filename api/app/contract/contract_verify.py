@@ -22,6 +22,14 @@ COMMON_CONTRACT_VERIFY_URL = f"{VERIFY_HOST}/v1/contract_verify/async_verify"
 ABI_HOST = f"{VERIFY_HOST}/v1/contract_verify/method"
 
 
+def hex_string_to_bytes(hex_string):
+    if not hex_string:
+        return None
+    if hex_string.startswith("0x"):
+        return bytes.fromhex(hex_string[2:])
+    return bytes.fromhex(hex_string)
+
+
 def initial_chain_id():
     try:
         CHAIN_ID = config.chain_id
@@ -72,7 +80,7 @@ def validate_input(address, compiler_type, compiler_version):
 
 
 def get_contract_by_address(address: str):
-    contract = db.session().query(Contracts).filter_by(address=address).first()
+    contract = db.session().query(Contracts).filter_by(address=hex_string_to_bytes(address)).first()
     if not contract:
         raise APIError("The address is not a contract", code=400)
     return contract
@@ -296,7 +304,7 @@ def get_abis_for_logs(address_signed_prefix_list: List[Tuple[str, str, int]]):
 def get_abis_by_address_signed_prefix(address_signed_prefix_list: List[Tuple[str, str, int]]):
     result_list = []
     for address, signed_prefix, indexed_true_count in address_signed_prefix_list:
-        contract = db.session.get(Contracts, address)
+        contract = db.session.get(Contracts, hex_string_to_bytes(address))
         if not contract:
             continue
         deployed_code_hash = contract.deployed_code_hash
