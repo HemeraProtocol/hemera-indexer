@@ -1,5 +1,5 @@
 import logging
-from itertools import groupby 
+from itertools import groupby
 from typing import List
 
 from web3 import Web3
@@ -65,7 +65,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
                 if func_name == "setNameForAddr":
                     decoded_input = self.decode_transaction(transaction)
                     cyber_address = CyberAddressD(
-                        address=decoded_input[1].get("addr"),
+                        address=decoded_input[1].get("addr").lower(),
                         name=decoded_input[1].get("name"),
                         block_number=transaction.block_number,
                         reverse_node=get_reverse_node(decoded_input[1].get("addr")),
@@ -74,7 +74,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
                 if func_name == "setName":
                     decoded_input = self.decode_transaction(transaction)
                     cyber_address = CyberAddressD(
-                        address=transaction.from_address,
+                        address=transaction.from_address.lower(),
                         name=decoded_input[1].get("name"),
                         block_number=transaction.block_number,
                         reverse_node=get_reverse_node(transaction.from_address),
