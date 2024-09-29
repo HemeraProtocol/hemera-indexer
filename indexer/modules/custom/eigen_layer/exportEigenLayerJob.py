@@ -9,9 +9,8 @@ from collections import defaultdict
 from typing import Any, Dict, List
 
 from eth_abi import decode
-from eth_typing import Decodable, HexStr
+from eth_typing import Decodable
 from sqlalchemy import func
-from web3._utils.contracts import decode_transaction_data
 
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.transaction import Transaction
@@ -19,7 +18,6 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.eigen_layer.eigen_layer_abi import (
     DEPOSIT_EVENT,
-    FINISH_WITHDRAWAL_FUNCTION,
     WITHDRAWAL_COMPLETED_EVENT,
     WITHDRAWAL_QUEUED_EVENT,
 )
@@ -33,7 +31,6 @@ from indexer.modules.custom.eigen_layer.models.af_eigen_layer_address_current im
 from indexer.modules.custom.eigen_layer.models.af_eigen_layer_records import AfEigenLayerRecords
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import bytes_to_hex_str, decode_log
-from indexer.utils.utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +72,6 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
 
         for transaction in transactions:
             logs = transaction.receipt.logs
-            kad = None
             for log in logs:
                 if (
                     log.topic0 == self.eigen_layer_conf["DEPOSIT"]["topic"]
@@ -298,6 +294,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                 action.strategy = bytes_to_hex_str(st.strategy) if st.strategy else None
                 action.token = bytes_to_hex_str(st.token) if st.token else None
                 action.staker = bytes_to_hex_str(st.staker) if st.staker else None
+                action.withdrawer = bytes_to_hex_str(st.withdrawer) if st.withdrawer else None
 
     def calculate_batch_result(self, eg_actions: List[EigenLayerActionD]) -> Any:
         def nested_dict():
