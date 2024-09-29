@@ -309,10 +309,10 @@ def extract_transfer_from_log(log: Log) -> List[TokenTransfer]:
 
     if topic == transfer_event.get_signature():
         token_transfers = handle_transfer_event(log)
-    # elif topic == deposit_event.get_signature():
-    #    token_transfers = handle_deposit_event(log)
-    # elif topic == withdraw_event.get_signature():
-    #     token_transfers = handle_withdraw_event(log)
+    elif topic == deposit_event.get_signature():
+        token_transfers = handle_deposit_event(log)
+    elif topic == withdraw_event.get_signature():
+        token_transfers = handle_withdraw_event(log)
     elif topic == single_transfer_event.get_signature():
         token_transfers = handle_transfer_single_event(log)
     elif topic == batch_transfer_event.get_signature():

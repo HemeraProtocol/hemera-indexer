@@ -102,4 +102,7 @@ markers = [
     "indexer_jobs_user_ops: Tests related to the indexer jobs user ops",
     "indexer_address_index: Tests related to the indexer address index",
     "explorer_api: Test explorer related API",
+    "indexer_jobs_day_mining: Tests related to the indexer day mining",
+    "ens: Tests related to the indexer ENS",
+    "pipeline: Continuous Integration"
 ]

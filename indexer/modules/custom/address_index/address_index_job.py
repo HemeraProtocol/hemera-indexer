@@ -20,7 +20,7 @@ from indexer.modules.custom.address_index.domain.address_token_transfer import A
 from indexer.modules.custom.address_index.domain.address_transaction import AddressTransaction
 from indexer.modules.custom.address_index.domain.token_address_nft_inventory import TokenAddressNftInventory
 from indexer.utils.token_fetcher import TokenFetcher
-from indexer.utils.utils import ZERO_ADDRESS
+from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group
 
 logger = logging.getLogger(__name__)
 
@@ -404,6 +404,43 @@ class AddressIndexerJob(ExtensionJob):
             self._batch_work_executor.wait()
 
     def _process(self, **kwargs):
+        # Sort address holder
+        self._data_buff[AddressTokenHolder.type()] = distinct_collections_by_group(
+            [
+                AddressTokenHolder(
+                    address=token_balance.address,
+                    token_address=token_balance.token_address,
+                    balance_of=token_balance.balance_of,
+                )
+                for token_balance in self._data_buff[AddressTokenHolder.type()]
+            ],
+            group_by=["address", "token_address", "balance_of"],
+        )
+
+        self._data_buff[TokenAddressNftInventory.type()] = distinct_collections_by_group(
+            [
+                TokenAddressNftInventory(
+                    token_address=nft_owner.token_address,
+                    token_id=nft_owner.token_id,
+                    wallet_address=nft_owner.wallet_address,
+                )
+                for nft_owner in self._data_buff[TokenAddressNftInventory.type()]
+            ],
+            group_by=["token_address", "token_id", "wallet_address"],
+        )
+
+        self._data_buff[AddressNft1155Holder.type()] = distinct_collections_by_group(
+            [
+                AddressNft1155Holder(
+                    address=nft_owner.address,
+                    token_address=nft_owner.token_address,
+                    token_id=nft_owner.token_id,
+                    balance_of=nft_owner.balance_of,
+                )
+                for nft_owner in self._data_buff[AddressNft1155Holder.type()]
+            ],
+            group_by=["address", "token_address", "token_id", "balance_of"],
+        )
         transactions = self._get_domain(Transaction)
         self._collect_domains(list(transactions_to_address_transactions(transactions)))
 

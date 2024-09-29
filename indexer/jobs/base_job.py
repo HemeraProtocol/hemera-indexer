@@ -9,6 +9,7 @@ from common.converter.pg_converter import domain_model_mapping
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import to_snake_case
 from indexer.domain import Domain
+from indexer.domain.transaction import Transaction
 from indexer.utils.reorg import should_reorg
 
 
@@ -70,6 +71,9 @@ class BaseJob(metaclass=BaseJobMeta):
         self.logger = logging.getLogger(self.__class__.__name__)
         self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
         self._reorg = kwargs["reorg"] if kwargs.get("reorg") else False
+
+        self._chain_id = kwargs.get("chain_id") or (self._web3.eth.chain_id if self._batch_web3_provider else None)
+
         self._should_reorg = False
         self._should_reorg_type = set()
         self._service = kwargs["config"].get("db_service", None)
@@ -196,3 +200,15 @@ class BaseExportJob(BaseJob):
 
 class ExtensionJob(BaseJob):
     pass
+
+
+class FilterTransactionDataJob(ExtensionJob):
+    dependency_types = [Transaction]
+    output_types = []
+    is_filter = True
+
+    def get_filter(self):
+        raise NotImplementedError
+
+    def get_filter_transactions(self):
+        return list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
