@@ -32,6 +32,7 @@ from indexer.modules.custom.eigen_layer.eigen_layer_domain import (
 from indexer.modules.custom.eigen_layer.models.af_eigen_layer_address_current import AfEigenLayerAddressCurrent
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import bytes_to_hex_str, decode_log
+from indexer.utils.utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 
@@ -163,11 +164,11 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                                 topic0=log.topic0,
                                 from_address=transaction.from_address,
                                 to_address=transaction.to_address,
-                                staker=None,
-                                withdrawer=None,
-                                shares=None,
-                                strategy=None,
-                                token=None,
+                                staker=ZERO_ADDRESS,
+                                withdrawer=ZERO_ADDRESS,
+                                shares=0,
+                                strategy=ZERO_ADDRESS,
+                                token=ZERO_ADDRESS,
                                 withdrawroot=withdrawal_root,
                             )
                         )
