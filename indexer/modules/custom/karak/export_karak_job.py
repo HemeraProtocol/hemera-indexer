@@ -129,7 +129,8 @@ class ExportKarakJob(FilterTransactionDataJob):
                         )
                     vault = df[0]
                     amount = df[1]
-
+                    if not amount or not vault:
+                        continue
                     staker = transaction.from_address
                     kad = KarakActionD(
                         transaction_hash=transaction.hash,
