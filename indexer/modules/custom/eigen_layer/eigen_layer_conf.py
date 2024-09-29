@@ -14,6 +14,10 @@ CHAIN_CONTRACT = {
             "address": "0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a",
             "topic": "0x9009ab153e8014fbfb02f2217f5cde7aa7f9ad734ae85ca3ee3f4ca2fdd499f9",
         },
+        "START_WITHDRAW_2": {
+            "address": "0x858646372cc42e1a627fce94aa7a7033e7cf075a",
+            "topic": "0x32cf9fc97155f52860a59a99879a2e89c1e53f28126a9ab6a2ff29344299e674"
+        },
         "FINISH_WITHDRAW": {
             "address": "0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a",
             "topic": "0xc97098c2f658800b4df29001527f7324bcdffcf6e8751a699ab920a1eced5b1d",

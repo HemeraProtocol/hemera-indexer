@@ -19,7 +19,7 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.eigen_layer.eigen_layer_abi import (
     DEPOSIT_EVENT,
     WITHDRAWAL_COMPLETED_EVENT,
-    WITHDRAWAL_QUEUED_EVENT,
+    WITHDRAWAL_QUEUED_EVENT, WITHDRAWAL_QUEUED_EVENT_2, SHARE_WITHDRAW_QUEUED,
 )
 from indexer.modules.custom.eigen_layer.eigen_layer_conf import CHAIN_CONTRACT
 from indexer.modules.custom.eigen_layer.eigen_layer_domain import (
@@ -137,7 +137,41 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                             withdrawroot=withdrawal_root,
                         )
                         res.append(kad)
+                elif (log.topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["topic"] and log.address == self.eigen_layer_conf["START_WITHDRAW_2"]["address"]):
+                    dl = decode_log(WITHDRAWAL_QUEUED_EVENT_2, log)
 
+                    withdrawal_root = dl.get("withdrawalRoot")
+
+                    staker = dl.get("depositor")
+                    withdrawer = dl.get("withdrawer")
+                    nonce = dl.get("nonce")
+                    for lg in logs:
+                        if lg.topic0 == '0xcf1c2370141bbd0a6d971beb0e3a2455f24d6e773ddc20ccc1c4e32f3dd9f9f7':
+                            dl2 = decode_log(SHARE_WITHDRAW_QUEUED, lg)
+                            dl2_nonce = dl2.get("nonce")
+                            if dl2_nonce == nonce:
+                                shares = dl2.get("shares")
+                                strategy = dl2.get("strategy")
+
+                                kad = EigenLayerActionD(
+                                    transaction_hash=transaction.hash,
+                                    log_index=log.log_index,
+                                    internal_idx=0,
+                                    transaction_index=transaction.transaction_index,
+                                    block_number=log.block_number,
+                                    block_timestamp=log.block_timestamp,
+                                    method=transaction.get_method_id(),
+                                    event_name=WITHDRAWAL_QUEUED_EVENT_2["name"],
+                                    topic0=log.topic0,
+                                    from_address=transaction.from_address,
+                                    to_address=transaction.to_address,
+                                    strategy=strategy,
+                                    staker=staker,
+                                    withdrawer=withdrawer,
+                                    shares=shares,
+                                    withdrawroot=withdrawal_root,
+                                )
+                                res.append(kad)
                 elif (
                     log.topic0 == self.eigen_layer_conf["FINISH_WITHDRAW"]["topic"]
                     and log.address == self.eigen_layer_conf["FINISH_WITHDRAW"]["address"]
