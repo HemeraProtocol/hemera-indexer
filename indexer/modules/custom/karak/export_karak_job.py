@@ -10,7 +10,7 @@ from web3 import Web3
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.karak.karak_abi import FINISH_WITHDRAWAL_EVENT, START_WITHDRAWAL_EVENT
+from indexer.modules.custom.karak.karak_abi import FINISH_WITHDRAWAL_EVENT, START_WITHDRAWAL_EVENT, DEPOSIT_EVENT
 from indexer.modules.custom.karak.karak_conf import CHAIN_CONTRACT
 from indexer.modules.custom.karak.karak_domain import (
     KarakActionD,
@@ -120,7 +120,7 @@ class ExportKarakJob(FilterTransactionDataJob):
                     log.topic0 == self.karak_conf["DEPOSIT"]["topic"]
                     and log.address == self.karak_conf["DEPOSIT"]["address"]
                 ):
-                    # dl = decode_log(DEPOSIT_EVENT, log)
+                    dl = decode_log(DEPOSIT_EVENT, log)
                     if transaction.input.startswith("0x47e7ef24"):
                         df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
                     else:
