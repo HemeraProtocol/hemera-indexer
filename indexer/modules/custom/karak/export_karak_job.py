@@ -119,7 +119,7 @@ class ExportKarakJob(FilterTransactionDataJob):
                 if (
                     log.topic0 == self.karak_conf["DEPOSIT"]["topic"]
                     and log.address == self.karak_conf["DEPOSIT"]["address"]
-                ):
+                ) or (log.topic0 == self.karak_conf["DEPOSIT_2"]["topic"] and log.address == self.karak_conf["DEPOSIT_2"]["address"]):
                     dl = decode_log(DEPOSIT_EVENT, log)
                     if transaction.input.startswith("0x47e7ef24"):
                         df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
