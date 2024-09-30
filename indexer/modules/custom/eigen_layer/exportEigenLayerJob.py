@@ -206,66 +206,6 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                             withdrawroot=withdrawal_root,
                         )
                     )
-                    # try:
-                    #     df = decode_transaction_data(FINISH_WITHDRAWAL_FUNCTION, HexStr(transaction.input))
-                    # except Exception as e:
-                    #     # when input is not able to decoded
-                    #     res.append(
-                    #         EigenLayerActionD(
-                    #             transaction_hash=transaction.hash,
-                    #             log_index=log.log_index,
-                    #             transaction_index=transaction.transaction_index,
-                    #             internal_idx=0,
-                    #             block_number=log.block_number,
-                    #             block_timestamp=log.block_timestamp,
-                    #             method=transaction.get_method_id(),
-                    #             event_name=WITHDRAWAL_COMPLETED_EVENT["name"],
-                    #             topic0=log.topic0,
-                    #             from_address=transaction.from_address,
-                    #             to_address=transaction.to_address,
-                    #             staker=None,
-                    #             withdrawer=None,
-                    #             shares=None,
-                    #             strategy=None,
-                    #             token=None,
-                    #             withdrawroot=withdrawal_root,
-                    #         )
-                    #     )
-                    #
-                    #     df = {"withdrawals": []}
-                    # withdrawal_struct_lis = df.get("withdrawals")
-                    # base_multiplier = 1000000
-                    # for outer_idx, withdrawal_struct in enumerate(withdrawal_struct_lis):
-                    #     staker = withdrawal_struct.get("staker")
-                    #     withdrawer = withdrawal_struct.get("withdrawer")
-                    #     strategy_lis = withdrawal_struct.get("strategies")
-                    #     shares_lis = withdrawal_struct.get("shares")
-                    #     if len(strategy_lis) != len(shares_lis):
-                    #         raise FastShutdownError(f"eigen_layer_job error data tnx {transaction.hash}")
-                    #     for idx in range(len(strategy_lis)):
-                    #         strategy = strategy_lis[idx]
-                    #         shares = shares_lis[idx]
-                    #         internal_idx = outer_idx * base_multiplier + idx
-                    #         kad = EigenLayerActionD(
-                    #             transaction_hash=transaction.hash,
-                    #             log_index=log.log_index,
-                    #             transaction_index=transaction.transaction_index,
-                    #             internal_idx=internal_idx,
-                    #             block_number=log.block_number,
-                    #             block_timestamp=log.block_timestamp,
-                    #             method=transaction.get_method_id(),
-                    #             event_name=FINISH_WITHDRAWAL_FUNCTION["name"],
-                    #             topic0=log.topic0,
-                    #             from_address=transaction.from_address,
-                    #             to_address=transaction.to_address,
-                    #             staker=staker,
-                    #             withdrawer=withdrawer,
-                    #             shares=shares,
-                    #             strategy=strategy,
-                    #             token=None,
-                    #             withdrawroot=withdrawal_root,
-                    #         )
-                    #         res.append(kad)
         self.enrich_complete_withdraw(res)
         for item in res:
             self._collect_item(item.type(), item)
