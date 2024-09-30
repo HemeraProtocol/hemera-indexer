@@ -5,7 +5,6 @@ from typing import Any, Dict, List
 from eth_abi import decode
 from eth_typing import Decodable
 from sqlalchemy import func
-from web3 import Web3
 
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.transaction import Transaction
@@ -23,6 +22,7 @@ from indexer.modules.custom.karak.models.af_karak_address_current import AfKarak
 from indexer.modules.custom.karak.models.af_karak_vault_token import AfKarakVaultToken
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import bytes_to_hex_str, decode_log
+from indexer.utils.utils import extract_eth_address
 
 logger = logging.getLogger(__name__)
 
@@ -116,25 +116,11 @@ class ExportKarakJob(FilterTransactionDataJob):
 
         for transaction in transactions:
             logs = transaction.receipt.logs
-            kad = None
             for log in logs:
                 if log.topic0 == self.karak_conf["DEPOSIT"]["topic"] and log.address in self.vault_token:
-                    if transaction.input.startswith("0x47e7ef24"):
-                        df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
-                        vault = df[0]
-                        amount = df[1]
-                    elif transaction.input.startswith("0x47e7ef24"):
-                        df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
-                        vault = df[0]
-                        amount = df[1]
-                    else:
-                        dl = decode_log(DEPOSIT_EVENT, log)
-                        vault = log.address
-                        amount = dl.get("shares")
-
-                        # df = self.decode_function(
-                        #     ["address", "uint256", "uint256"], bytes.fromhex(transaction.input[2:])[4:]
-                        # )
+                    dl = decode_log(DEPOSIT_EVENT, log)
+                    vault = log.address
+                    amount = dl.get("shares")
 
                     if not amount or not vault:
                         raise FastShutdownError(f"karak job failed {transaction.hash}")
@@ -297,13 +283,3 @@ def create_nested_dict(data_list: List[KarakAddressCurrentD]) -> Dict[str, Dict[
                 result[item.address] = {}
             result[item.address][item.vault] = item
     return result
-
-
-def extract_eth_address(input_string):
-    hex_string = input_string.lower().replace("0x", "")
-
-    if len(hex_string) > 40:
-        hex_string = hex_string[-40:]
-
-    hex_string = hex_string.zfill(40)
-    return Web3.to_checksum_address(hex_string).lower()
