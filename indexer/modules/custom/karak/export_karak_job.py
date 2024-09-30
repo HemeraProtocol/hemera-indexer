@@ -7,10 +7,11 @@ from eth_typing import Decodable
 from sqlalchemy import func
 from web3 import Web3
 
+from common.utils.exception_control import FastShutdownError
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.karak.karak_abi import FINISH_WITHDRAWAL_EVENT, START_WITHDRAWAL_EVENT, DEPOSIT_EVENT
+from indexer.modules.custom.karak.karak_abi import DEPOSIT_EVENT, FINISH_WITHDRAWAL_EVENT, START_WITHDRAWAL_EVENT
 from indexer.modules.custom.karak.karak_conf import CHAIN_CONTRACT
 from indexer.modules.custom.karak.karak_domain import (
     KarakActionD,
@@ -21,7 +22,7 @@ from indexer.modules.custom.karak.karak_domain import (
 from indexer.modules.custom.karak.models.af_karak_address_current import AfKarakAddressCurrent
 from indexer.modules.custom.karak.models.af_karak_vault_token import AfKarakVaultToken
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import decode_log, bytes_to_hex_str
+from indexer.utils.abi import bytes_to_hex_str, decode_log
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ class ExportKarakJob(FilterTransactionDataJob):
     # transaction with its logs
     dependency_types = [Transaction]
     output_types = [KarakActionD, KarakVaultTokenD, KarakAddressCurrentD]
-    able_to_reorg = True
+    able_to_reorg = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -117,20 +118,26 @@ class ExportKarakJob(FilterTransactionDataJob):
             logs = transaction.receipt.logs
             kad = None
             for log in logs:
-                if (
-                    log.topic0 == self.karak_conf["DEPOSIT"]["topic"] and log.address in self.vault_token
-                ):
-                    dl = decode_log(DEPOSIT_EVENT, log)
+                if log.topic0 == self.karak_conf["DEPOSIT"]["topic"] and log.address in self.vault_token:
                     if transaction.input.startswith("0x47e7ef24"):
                         df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
+                        vault = df[0]
+                        amount = df[1]
+                    elif transaction.input.startswith("0x47e7ef24"):
+                        df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
+                        vault = df[0]
+                        amount = df[1]
                     else:
-                        df = self.decode_function(
-                            ["address", "uint256", "uint256"], bytes.fromhex(transaction.input[2:])[4:]
-                        )
-                    vault = df[0]
-                    amount = df[1]
+                        dl = decode_log(DEPOSIT_EVENT, log)
+                        vault = dl.get("vault")
+                        amount = dl.get("amount")
+
+                        # df = self.decode_function(
+                        #     ["address", "uint256", "uint256"], bytes.fromhex(transaction.input[2:])[4:]
+                        # )
+
                     if not amount or not vault:
-                        continue
+                        raise FastShutdownError(f"karak job failed {transaction.hash}")
                     staker = transaction.from_address
                     kad = KarakActionD(
                         transaction_hash=transaction.hash,

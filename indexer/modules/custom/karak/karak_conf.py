@@ -12,7 +12,7 @@ CHAIN_CONTRACT = {
         },
         "DEPOSIT_2": {
             "address": "0x1b4d88f5f38988bea334c79f48aa69beeefe2e1e",
-            "topic": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7"
+            "topic": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
         },
         "START_WITHDRAW": {
             "address": "0xafa904152e04abff56701223118be2832a4449e0",
