@@ -324,6 +324,8 @@ def stream(
     config = {
         "blocks_per_file": blocks_per_file,
         "chain_id": Web3(Web3.HTTPProvider(provider_uri)).eth.chain_id,
+        "start_block": start_block,
+        "end_block": end_block,
     }
 
     if postgres_url:

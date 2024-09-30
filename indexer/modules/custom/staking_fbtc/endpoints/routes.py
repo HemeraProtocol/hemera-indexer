@@ -31,7 +31,7 @@ class StakingWalletHolding(Resource):
         address_bytes = bytes.fromhex(wallet_address[2:])
         results = (
             db.session.query(
-                FeatureStakedFBTCDetailRecords.vault_address,
+                FeatureStakedFBTCDetailRecords.contract_address,
                 func.max(FeatureStakedFBTCDetailRecords.protocol_id).label("protocol_id"),
                 func.sum(FeatureStakedFBTCDetailRecords.amount).label("total_amount"),
             )
@@ -44,7 +44,7 @@ class StakingWalletHolding(Resource):
         erc20_infos = {}
         result = []
         for holding in results:
-            contract_address = "0x" + holding.vault_address.hex()
+            contract_address = "0x" + holding.contract_address.hex()
             total_amount = holding.total_amount
             protocol_id = holding.protocol_id
             token_amount = total_amount / (10**erc20_data.decimals)

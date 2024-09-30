@@ -38,7 +38,7 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
         self._load_config("config.ini", self._chain_id)
         self._service = kwargs["config"].get("db_service")
         self._current_holdings = utils.get_transferred_fbtc_status(
-            self._service, list(self._transferred_protocol_dict.keys()), int(kwargs["config"].get("start_block"))
+            self._service, list(self._transferred_protocol_dict.keys()), kwargs["config"].get("start_block")
         )
 
     def _load_config(self, filename, chain_id):
@@ -91,11 +91,10 @@ def process_token_transfers(
     current_status = defaultdict(
         lambda: defaultdict(
             lambda: TransferredFBTCCurrentStatus(
-                vault_address="",
+                contract_address="",
                 protocol_id="",
                 wallet_address="",
                 amount=0,
-                changed_amount=0,
                 block_number=0,
                 block_timestamp=0,
             )
@@ -134,22 +133,20 @@ def process_token_transfers(
                 new_amount = current_amount + change
 
                 current_status[address][wallet_address] = TransferredFBTCCurrentStatus(
-                    vault_address=address,
+                    contract_address=address,
                     protocol_id=protocol_id,
                     wallet_address=wallet_address,
                     amount=new_amount,
-                    changed_amount=change,
                     block_number=block_number,
                     block_timestamp=block_timestamp,
                 )
 
                 transferred_details.append(
                     TransferredFBTCDetail(
-                        vault_address=address,
+                        contract_address=address,
                         protocol_id=protocol_id,
                         wallet_address=wallet_address,
                         amount=new_amount,
-                        changed_amount=change,
                         block_number=block_number,
                         block_timestamp=block_timestamp,
                     )

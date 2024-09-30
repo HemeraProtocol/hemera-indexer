@@ -16,13 +16,13 @@ def get_current_status_generic(db_service, contract_list, block_number, status_c
     try:
         latest_blocks = (
             session.query(
-                FeatureStakedFBTCDetailRecords.vault_address,
+                FeatureStakedFBTCDetailRecords.contract_address,
                 FeatureStakedFBTCDetailRecords.wallet_address,
                 func.max(FeatureStakedFBTCDetailRecords.block_number).label("max_block_number"),
             )
-            .filter(FeatureStakedFBTCDetailRecords.vault_address.in_(bytea_address_list))
+            .filter(FeatureStakedFBTCDetailRecords.contract_address.in_(bytea_address_list))
             .filter(FeatureStakedFBTCDetailRecords.block_number < block_number)
-            .group_by(FeatureStakedFBTCDetailRecords.vault_address, FeatureStakedFBTCDetailRecords.wallet_address)
+            .group_by(FeatureStakedFBTCDetailRecords.contract_address, FeatureStakedFBTCDetailRecords.wallet_address)
             .subquery()
         )
 
@@ -31,7 +31,7 @@ def get_current_status_generic(db_service, contract_list, block_number, status_c
             .join(
                 latest_blocks,
                 and_(
-                    FeatureStakedFBTCDetailRecords.vault_address == latest_blocks.c.vault_address,
+                    FeatureStakedFBTCDetailRecords.contract_address == latest_blocks.c.contract_address,
                     FeatureStakedFBTCDetailRecords.wallet_address == latest_blocks.c.wallet_address,
                     FeatureStakedFBTCDetailRecords.block_number == latest_blocks.c.max_block_number,
                 ),
@@ -42,14 +42,14 @@ def get_current_status_generic(db_service, contract_list, block_number, status_c
         current_status_map = {}
         if result is not None:
             for item in result:
-                contract_address = "0x" + item.vault_address.hex()
+                contract_address = "0x" + item.contract_address.hex()
                 wallet_address = "0x" + item.wallet_address.hex()
 
                 if contract_address not in current_status_map:
                     current_status_map[contract_address] = {}
 
                 current_status_map[contract_address][wallet_address] = status_class(
-                    vault_address=contract_address,
+                    contract_address=contract_address,
                     protocol_id=item.protocol_id,
                     wallet_address=wallet_address,
                     amount=item.amount,
