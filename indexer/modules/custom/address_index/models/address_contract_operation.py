@@ -43,7 +43,7 @@ class AddressContractOperations(HemeraModel):
 
 
 Index(
-    "address_contract_operations_address_block_timestamp_block_number_t_idx",
+    "address_contract_operations_address_block_tn_t_idx",
     AddressContractOperations.address,
     desc(AddressContractOperations.block_timestamp),
     desc(AddressContractOperations.block_number),
