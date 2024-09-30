@@ -10,6 +10,10 @@ CHAIN_CONTRACT = {
             "address": "0x68754d29f2e97b837cb622ccff325adac27e9977",
             "topic": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
         },
+        "DEPOSIT_2": {
+            "address": "0x1b4d88f5f38988bea334c79f48aa69beeefe2e1e",
+            "topic": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7"
+        },
         "START_WITHDRAW": {
             "address": "0xafa904152e04abff56701223118be2832a4449e0",
             "topic": "0x6ee63f530864567ac8a1fcce5050111457154b213c6297ffc622603e8497f7b2",
