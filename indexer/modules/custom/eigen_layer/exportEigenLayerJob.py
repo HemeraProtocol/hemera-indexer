@@ -281,7 +281,6 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     self._collect_item(kad.type(), exists_kad)
                 else:
                     self._collect_item(kad.type(), kad)
-        print("ok")
 
     @staticmethod
     def decode_function(decode_types, output: Decodable) -> Any:
