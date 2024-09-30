@@ -150,6 +150,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     staker = dl.get("depositor")
                     withdrawer = dl.get("withdrawer")
                     nonce = dl.get("nonce")
+                    internal_idx = 0
                     for lg in logs:
                         if lg.topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["prev_topic"]:
                             dl2 = decode_log(SHARE_WITHDRAW_QUEUED, lg)
@@ -161,7 +162,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                                 kad = EigenLayerActionD(
                                     transaction_hash=transaction.hash,
                                     log_index=log.log_index,
-                                    internal_idx=0,
+                                    internal_idx=internal_idx,
                                     transaction_index=transaction.transaction_index,
                                     block_number=log.block_number,
                                     block_timestamp=log.block_timestamp,
@@ -176,6 +177,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                                     shares=shares,
                                     withdrawroot=withdrawal_root,
                                 )
+                                internal_idx += 1
                                 res.append(kad)
                 elif (
                     log.topic0 == self.eigen_layer_conf["FINISH_WITHDRAW"]["topic"]
@@ -279,6 +281,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     self._collect_item(kad.type(), exists_kad)
                 else:
                     self._collect_item(kad.type(), kad)
+        print("ok")
 
     @staticmethod
     def decode_function(decode_types, output: Decodable) -> Any:
