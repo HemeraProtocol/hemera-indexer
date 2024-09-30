@@ -129,8 +129,8 @@ class ExportKarakJob(FilterTransactionDataJob):
                         amount = df[1]
                     else:
                         dl = decode_log(DEPOSIT_EVENT, log)
-                        vault = dl.get("vault")
-                        amount = dl.get("amount")
+                        vault = log.address
+                        amount = dl.get("shares")
 
                         # df = self.decode_function(
                         #     ["address", "uint256", "uint256"], bytes.fromhex(transaction.input[2:])[4:]
