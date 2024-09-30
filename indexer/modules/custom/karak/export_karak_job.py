@@ -21,7 +21,7 @@ from indexer.modules.custom.karak.karak_domain import (
 from indexer.modules.custom.karak.models.af_karak_address_current import AfKarakAddressCurrent
 from indexer.modules.custom.karak.models.af_karak_vault_token import AfKarakVaultToken
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import decode_log
+from indexer.utils.abi import decode_log, bytes_to_hex_str
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +59,8 @@ class ExportKarakJob(FilterTransactionDataJob):
             result = query.all()
 
         for r in result:
-            self.token_vault["0x" + r.token.hex()] = "0x" + r.vault.hex()
-            self.vault_token["0x" + r.vault.hex()] = "0x" + r.token.hex()
+            self.token_vault[bytes_to_hex_str(r.token)] = bytes_to_hex_str(r.vault)
+            self.vault_token[bytes_to_hex_str(r.vault)] = bytes_to_hex_str(r.token)
         logging.info(f"init vaults with {len(self.token_vault)} tokens")
 
     def get_filter(self):
@@ -70,7 +70,8 @@ class ExportKarakJob(FilterTransactionDataJob):
         for k, item in self.karak_conf.items():
             topics.append(item["topic"])
             addresses.append(item["address"])
-
+        for ad in self.vault_token:
+            addresses.append(ad)
         return [
             TransactionFilterByLogs(topics_filters=[TopicSpecification(topics=topics, addresses=addresses)]),
         ]
@@ -117,9 +118,8 @@ class ExportKarakJob(FilterTransactionDataJob):
             kad = None
             for log in logs:
                 if (
-                    log.topic0 == self.karak_conf["DEPOSIT"]["topic"]
-                    and log.address == self.karak_conf["DEPOSIT"]["address"]
-                ) or (log.topic0 == self.karak_conf["DEPOSIT_2"]["topic"] and log.address == self.karak_conf["DEPOSIT_2"]["address"]):
+                    log.topic0 == self.karak_conf["DEPOSIT"]["topic"] and log.address in self.vault_token
+                ):
                     dl = decode_log(DEPOSIT_EVENT, log)
                     if transaction.input.startswith("0x47e7ef24"):
                         df = self.decode_function(["address", "uint256"], bytes.fromhex(transaction.input[2:])[4:])
