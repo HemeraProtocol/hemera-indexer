@@ -81,7 +81,7 @@ class ExportKarakJob(FilterTransactionDataJob):
         res = []
         for transaction in transactions:
             # deployVault
-            if not transaction.input.startswith("0xf0edf6aa"):
+            if not transaction.input.startswith(self.karak_conf["NEW_VAULT"]["starts_with"]):
                 continue
             logs = transaction.receipt.logs
             vault = None

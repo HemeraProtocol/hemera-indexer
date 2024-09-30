@@ -25,6 +25,7 @@ CHAIN_CONTRACT = {
         "NEW_VAULT": {
             "address": "0x54e44dbb92dba848ace27f44c0cb4268981ef1cc",
             "topic": "0x2cd7a531712f8899004c782d9607e0886d1dbc91bfac7be88dadf6750d9e1419",
+            "starts_with": "0xf0edf6aa"
         },
     }
 }
