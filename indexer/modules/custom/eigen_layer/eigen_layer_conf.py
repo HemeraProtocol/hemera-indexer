@@ -16,7 +16,8 @@ CHAIN_CONTRACT = {
         },
         "START_WITHDRAW_2": {
             "address": "0x858646372cc42e1a627fce94aa7a7033e7cf075a",
-            "topic": "0x32cf9fc97155f52860a59a99879a2e89c1e53f28126a9ab6a2ff29344299e674"
+            "topic": "0x32cf9fc97155f52860a59a99879a2e89c1e53f28126a9ab6a2ff29344299e674",
+            "prev_topic": "0xcf1c2370141bbd0a6d971beb0e3a2455f24d6e773ddc20ccc1c4e32f3dd9f9f7",
         },
         "FINISH_WITHDRAW": {
             "address": "0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a",

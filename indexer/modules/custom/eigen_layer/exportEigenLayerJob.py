@@ -18,8 +18,10 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.eigen_layer.eigen_layer_abi import (
     DEPOSIT_EVENT,
+    SHARE_WITHDRAW_QUEUED,
     WITHDRAWAL_COMPLETED_EVENT,
-    WITHDRAWAL_QUEUED_EVENT, WITHDRAWAL_QUEUED_EVENT_2, SHARE_WITHDRAW_QUEUED,
+    WITHDRAWAL_QUEUED_EVENT,
+    WITHDRAWAL_QUEUED_EVENT_2,
 )
 from indexer.modules.custom.eigen_layer.eigen_layer_conf import CHAIN_CONTRACT
 from indexer.modules.custom.eigen_layer.eigen_layer_domain import (
@@ -38,7 +40,7 @@ logger = logging.getLogger(__name__)
 class ExportEigenLayerJob(FilterTransactionDataJob):
     dependency_types = [Transaction]
     output_types = [EigenLayerActionD, EigenLayerAddressCurrentD]
-    able_to_reorg = True
+    able_to_reorg = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -137,7 +139,10 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                             withdrawroot=withdrawal_root,
                         )
                         res.append(kad)
-                elif (log.topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["topic"] and log.address == self.eigen_layer_conf["START_WITHDRAW_2"]["address"]):
+                elif (
+                    log.topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["topic"]
+                    and log.address == self.eigen_layer_conf["START_WITHDRAW_2"]["address"]
+                ):
                     dl = decode_log(WITHDRAWAL_QUEUED_EVENT_2, log)
 
                     withdrawal_root = dl.get("withdrawalRoot")
@@ -146,7 +151,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     withdrawer = dl.get("withdrawer")
                     nonce = dl.get("nonce")
                     for lg in logs:
-                        if lg.topic0 == '0xcf1c2370141bbd0a6d971beb0e3a2455f24d6e773ddc20ccc1c4e32f3dd9f9f7':
+                        if lg.topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["prev_topic"]:
                             dl2 = decode_log(SHARE_WITHDRAW_QUEUED, lg)
                             dl2_nonce = dl2.get("nonce")
                             if dl2_nonce == nonce:
@@ -345,7 +350,10 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                 res_d[staker][strategy].token = token
                 res_d[staker][strategy].strategy = strategy
                 res_d[staker][strategy].deposit_amount += action.shares
-            elif topic0 == self.eigen_layer_conf["START_WITHDRAW"]["topic"]:
+            elif (
+                topic0 == self.eigen_layer_conf["START_WITHDRAW"]["topic"]
+                or topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["topic"]
+            ):
                 res_d[staker][strategy].address = staker
                 res_d[staker][strategy].token = token
                 res_d[staker][strategy].strategy = strategy

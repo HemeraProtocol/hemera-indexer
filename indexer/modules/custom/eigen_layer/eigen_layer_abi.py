@@ -30,10 +30,20 @@ WITHDRAWAL_QUEUED_EVENT = cast(
 )
 WITHDRAWAL_QUEUED_EVENT_SIG = event_log_abi_to_topic(WITHDRAWAL_QUEUED_EVENT)
 
-WITHDRAWAL_QUEUED_EVENT_2 = cast(ABIEvent, json.loads("""{"type":"event","name":"WithdrawalQueued","inputs":[{"type":"address","name":"depositor","indexed":false},{"type":"uint96","name":"nonce","indexed":false},{"type":"address","name":"withdrawer","indexed":false},{"type":"address","name":"delegatedAddress","indexed":false},{"type":"bytes32","name":"withdrawalRoot","indexed":false}],"anonymous":false}
-"""))
+WITHDRAWAL_QUEUED_EVENT_2 = cast(
+    ABIEvent,
+    json.loads(
+        """{"type":"event","name":"WithdrawalQueued","inputs":[{"type":"address","name":"depositor","indexed":false},{"type":"uint96","name":"nonce","indexed":false},{"type":"address","name":"withdrawer","indexed":false},{"type":"address","name":"delegatedAddress","indexed":false},{"type":"bytes32","name":"withdrawalRoot","indexed":false}],"anonymous":false}
+"""
+    ),
+)
 
-SHARE_WITHDRAW_QUEUED = cast(ABIEvent, json.loads("""{"anonymous":false,"inputs":[{"indexed":false,"name":"depositor","type":"address"},{"indexed":false,"name":"nonce","type":"uint96"},{"indexed":false,"name":"strategy","type":"address"},{"indexed":false,"name":"shares","type":"uint256"}],"name":"ShareWithdrawalQueued","type":"event"}"""))
+SHARE_WITHDRAW_QUEUED = cast(
+    ABIEvent,
+    json.loads(
+        """{"anonymous":false,"inputs":[{"indexed":false,"name":"depositor","type":"address"},{"indexed":false,"name":"nonce","type":"uint96"},{"indexed":false,"name":"strategy","type":"address"},{"indexed":false,"name":"shares","type":"uint256"}],"name":"ShareWithdrawalQueued","type":"event"}"""
+    ),
+)
 
 WITHDRAWAL_COMPLETED_EVENT = cast(
     ABIEvent,
