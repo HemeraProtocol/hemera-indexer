@@ -15,6 +15,7 @@ from common.models.logs import Logs
 from common.models.transactions import Transactions
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
+from common.utils.format_utils import hex_to_bytes
 from indexer.domain import Domain, dict_to_dataclass
 from indexer.domain.block import Block
 from indexer.domain.log import Log
@@ -30,7 +31,7 @@ from indexer.specification.specification import (
     TransactionFilterByTransactionInfo,
     TransactionHashSpecification,
 )
-from indexer.utils.utils import flatten
+from indexer.utils.utils import distinct_collections_by_group, flatten
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +63,6 @@ class PGSourceJob(BaseSourceJob):
         self.build_order = []
         self._calculate_build_queue()
 
-        self.has_logs_filter = False
-        self.has_transaction_filter = False
-        self.log_filter = {"address": [], "topics": [], "transaction_hash": []}
-        self.transaction_filter = {"hash": [], "from_address": [], "to_address": []}
-        if self._is_filter:
-            self._extract_filter_params()
-
     def _collect(self, **kwargs):
         start_block = int(kwargs["start_block"])
         end_block = int(kwargs["end_block"])
@@ -78,40 +72,102 @@ class PGSourceJob(BaseSourceJob):
         self.pg_datas.clear()
         if self._is_filter:
             filter_blocks = set()
-            extra_transaction = set()
-            if self.has_logs_filter:
-                start_time = datetime.now()
-                logs = self._query_logs_filter(start_block, end_block, start_timestamp, end_timestamp, self.log_filter)
-                self.logger.info(f"First log filter finished. Took {datetime.now() - start_time}")
-                self.pg_datas[Logs] = logs
+            logs_transaction_hash = set()
+            transactions_hash = set()
+            for i, job_filter in enumerate(self._filters):
+                if isinstance(job_filter, TransactionFilterByLogs):
+                    log_filter = defaultdict(list)
+                    for filter_param in job_filter.get_eth_log_filters_params():
+                        param_address = filter_param["address"]
+                        param_topics = flatten(filter_param["topics"])
 
-                for log in logs:
-                    filter_blocks.add(log.block_number)
-                    extra_transaction.add("0x" + log.transaction_hash.hex())
+                        if len(param_address) > 0:
+                            log_filter["address"].extend(param_address)
 
-            extra_trx_size = len(extra_transaction)
-            if self.has_transaction_filter or extra_trx_size > 0:
-                transaction_filter = copy.deepcopy(self.transaction_filter)
-                transaction_filter["hash"].extend(list(extra_transaction))
+                        if len(param_topics) > 0:
+                            log_filter["topics"].extend(param_topics)
+
+                    start_time = datetime.now()
+                    logs = self._query_logs_filter(start_block, end_block, start_timestamp, end_timestamp, log_filter)
+                    self.logger.info(
+                        f"No.{i} filter: TransactionFilterByLogs finished. Took {datetime.now() - start_time}"
+                    )
+                    self.pg_datas[Logs].extend(logs)
+
+                    for log in logs:
+                        filter_blocks.add(log.block_number)
+                        logs_transaction_hash.add("0x" + log.transaction_hash.hex())
+
+                elif isinstance(job_filter, TransactionFilterByTransactionInfo):
+                    transaction_filter = defaultdict(list)
+                    for spe in job_filter.specifications:
+                        params = spe.to_filter_params()
+                        if isinstance(spe, TransactionHashSpecification) and params:
+                            transaction_filter["hash"].extend(params["hashes"])
+                            transactions_hash.add(params["hashes"])
+                        elif isinstance(spe, FromAddressSpecification):
+                            transaction_filter["from_address"].append(params["from_address"])
+                        elif isinstance(spe, ToAddressSpecification):
+                            transaction_filter["to_address"].append(params["to_address"])
+                        else:
+                            raise ValueError(f"Unsupported transaction filter type: {type(filter)}")
+
+                    start_time = datetime.now()
+                    transactions = self._query_transactions_filter(
+                        start_block, end_block, start_timestamp, end_timestamp, transaction_filter
+                    )
+                    self.logger.info(
+                        f"No.{i} filter: TransactionFilterByTransactionInfo finished. "
+                        f"Took {datetime.now() - start_time}"
+                    )
+
+                    self.pg_datas[Transactions].extend(transactions)
+                    for transaction in transactions:
+                        filter_blocks.add(transaction.block_number)
+                        transactions_hash.add("0x" + transaction.hash.hex())
+                else:
+                    raise ValueError(f"Unsupported filter type: {type(filter)}")
+
+            if len(logs_transaction_hash) > 0:
+                transaction_filter = {
+                    "hash": list(logs_transaction_hash),
+                    "from_address": [],
+                    "to_address": [],
+                }
                 start_time = datetime.now()
                 transactions = self._query_transactions_filter(
                     start_block, end_block, start_timestamp, end_timestamp, transaction_filter
                 )
-                self.logger.info(f"Transaction filter finished. Took {datetime.now() - start_time}")
-                self.pg_datas[Transactions] = transactions
+                self.logger.info(
+                    f"Supplement transactions from filtered log list finished. Took {datetime.now() - start_time}"
+                )
+                self.pg_datas[Transactions].extend(transactions)
 
                 for transaction in transactions:
                     filter_blocks.add(transaction.block_number)
-                    extra_transaction.add("0x" + transaction.hash.hex())
 
-                # if more transaction found, re-fetch logs
-                if extra_trx_size != len(extra_transaction):
-                    log_filter = copy.deepcopy(self.log_filter)
-                    log_filter["transaction_hash"].extend(list(extra_transaction))
-                    start_time = datetime.now()
-                    logs = self._query_logs_filter(start_block, end_block, start_timestamp, end_timestamp, log_filter)
-                    self.logger.info(f"Second log filter finished. Took {datetime.now() - start_time}")
-                    self.pg_datas[Logs] = logs
+            if len(transactions_hash) > 0:
+                log_filter = {
+                    "transaction_hash": list(transactions_hash),
+                    "address": [],
+                    "topics": [],
+                }
+                start_time = datetime.now()
+                logs = self._query_logs_filter(start_block, end_block, start_timestamp, end_timestamp, log_filter)
+                self.logger.info(
+                    f"Supplement logs from filtered transaction list finished. Took {datetime.now() - start_time}"
+                )
+                self.pg_datas[Logs].extend(logs)
+
+                for log in logs:
+                    filter_blocks.add(log.block_number)
+
+            self.pg_datas[Logs] = distinct_collections_by_group(
+                collections=self.pg_datas[Logs], group_by=["transaction_hash", "log_index"]
+            )
+            self.pg_datas[Transactions] = distinct_collections_by_group(
+                collections=self.pg_datas[Transactions], group_by=["hash"]
+            )
 
             blocks = sorted(list(filter_blocks))
         else:
@@ -193,80 +249,111 @@ class PGSourceJob(BaseSourceJob):
         return result
 
     def _query_logs_filter(self, start_block, end_block, start_timestamp, end_timestamp, log_filter):
-        address_filter = True
-        topic_filter = True
-        transaction_filter = False
-
-        if len(log_filter["address"]) > 0:
-            address_filter = Logs.address.in_([bytes.fromhex(address[2:]) for address in set(log_filter["address"])])
-
-        if len(log_filter["topics"]) > 0:
-            topic_filter = Logs.topic0.in_([bytes.fromhex(topic0[2:]) for topic0 in set(log_filter["topics"])])
-
-        if len(log_filter["transaction_hash"]) > 0:
-            transaction_filter = Logs.transaction_hash.in_(
-                [bytes.fromhex(transaction_hash[2:]) for transaction_hash in set(log_filter["transaction_hash"])]
-            )
-
-        query_filter = and_(
-            Logs.block_number >= start_block,
-            Logs.block_number <= end_block,
-            Logs.block_timestamp >= start_timestamp,
-            Logs.block_timestamp <= end_timestamp,
-            or_(
-                and_(address_filter, topic_filter),
-                transaction_filter,
-            ),
-        )
-
+        logs = []
+        conditions = True
         session = self._service.get_service_session()
+
         try:
-            logs = (
-                session.query(Logs).filter(query_filter)
-                # .order_by(*Logs.__query_order__)
-                .all()
-            )
+
+            if len(log_filter["address"]) > 0 and len(log_filter["topics"]) > 0:
+                conditions = and_(
+                    Logs.address.in_([hex_to_bytes(address) for address in set(log_filter["address"])]),
+                    Logs.topic0.in_([hex_to_bytes(topic0) for topic0 in set(log_filter["topics"])]),
+                )
+            elif len(log_filter["address"]) > 0:
+                conditions = Logs.address.in_([hex_to_bytes(address) for address in set(log_filter["address"])])
+            elif len(log_filter["topics"]) > 0:
+                conditions = Logs.topic0.in_([hex_to_bytes(topic0) for topic0 in set(log_filter["topics"])])
+
+            if len(log_filter["address"]) > 0 or len(log_filter["topics"]) > 0:
+                query_filter = and_(
+                    Logs.block_timestamp >= start_timestamp,
+                    Logs.block_timestamp <= end_timestamp,
+                    Logs.block_number >= start_block,
+                    Logs.block_number <= end_block,
+                    conditions,
+                )
+                logs.extend(session.query(Logs).filter(query_filter).all())
+
+            if len(log_filter["transaction_hash"]) > 0:
+                conditions = Logs.transaction_hash.in_(
+                    [hex_to_bytes(transaction_hash) for transaction_hash in set(log_filter["transaction_hash"])]
+                )
+
+                query_filter = and_(
+                    Logs.block_timestamp >= start_timestamp,
+                    Logs.block_timestamp <= end_timestamp,
+                    Logs.block_number >= start_block,
+                    Logs.block_number <= end_block,
+                    conditions,
+                )
+                logs.extend(session.query(Logs).filter(query_filter).all())
         finally:
             session.close()
+
         return logs
 
     def _query_transactions_filter(self, start_block, end_block, start_timestamp, end_timestamp, transaction_filter):
-        hash_filter = False
-        from_filter = False
-        to_filter = False
-
-        if len(transaction_filter["hash"]) > 0:
-            hash_filter = Transactions.hash.in_(
-                [bytes.fromhex(transaction_hash[2:]) for transaction_hash in set(transaction_filter["hash"])]
-            )
-
-        if len(transaction_filter["from_address"]) > 0:
-            from_filter = Transactions.from_address.in_(
-                [bytes.fromhex(from_address[2:]) for from_address in set(transaction_filter["from_address"])]
-            )
-
-        if len(transaction_filter["to_address"]) > 0:
-            to_filter = Transactions.to_address.in_(
-                [bytes.fromhex(to_address[2:]) for to_address in set(transaction_filter["to_address"])]
-            )
-
-        query_filter = and_(
-            Transactions.block_number >= start_block,
-            Transactions.block_number <= end_block,
-            Transactions.block_timestamp >= start_timestamp,
-            Transactions.block_timestamp <= end_timestamp,
-            or_(hash_filter, from_filter, to_filter),
-        )
-
+        transactions = []
         session = self._service.get_service_session()
+
         try:
-            transactions = (
-                session.query(Transactions).filter(query_filter)
-                # .order_by(*Transactions.__query_order__)
-                .all()
-            )
+
+            if len(transaction_filter["hash"]) > 0:
+                conditions = Transactions.hash.in_(
+                    [hex_to_bytes(transaction_hash) for transaction_hash in set(transaction_filter["hash"])]
+                )
+                query_filter = and_(
+                    Transactions.block_timestamp >= start_timestamp,
+                    Transactions.block_timestamp <= end_timestamp,
+                    Transactions.block_number >= start_block,
+                    Transactions.block_number <= end_block,
+                    conditions,
+                )
+                transactions.extend(session.query(Transactions).filter(query_filter).all())
+
+            if len(transaction_filter["from_address"]) > 0:
+                conditions = Transactions.from_address.in_(
+                    [hex_to_bytes(from_address) for from_address in set(transaction_filter["from_address"])]
+                )
+                query_filter = and_(
+                    Transactions.block_timestamp >= start_timestamp,
+                    Transactions.block_timestamp <= end_timestamp,
+                    Transactions.block_number >= start_block,
+                    Transactions.block_number <= end_block,
+                    conditions,
+                )
+                transactions.extend(session.query(Transactions).filter(query_filter).all())
+
+            if len(transaction_filter["to_address"]) > 0:
+                conditions = Transactions.to_address.in_(
+                    [hex_to_bytes(to_address) for to_address in set(transaction_filter["to_address"])]
+                )
+                query_filter = and_(
+                    Transactions.block_timestamp >= start_timestamp,
+                    Transactions.block_timestamp <= end_timestamp,
+                    Transactions.block_number >= start_block,
+                    Transactions.block_number <= end_block,
+                    conditions,
+                )
+                transactions.extend(session.query(Transactions).filter(query_filter).all())
+
+            if (
+                len(transaction_filter["hash"]) == 0
+                and len(transaction_filter["from_address"]) == 0
+                and len(transaction_filter["to_address"]) == 0
+            ):
+                query_filter = and_(
+                    Transactions.block_timestamp >= start_timestamp,
+                    Transactions.block_timestamp <= end_timestamp,
+                    Transactions.block_number >= start_block,
+                    Transactions.block_number <= end_block,
+                )
+                transactions.extend(session.query(Transactions).filter(query_filter).all())
+
         finally:
             session.close()
+
         return transactions
 
     def _dataclass_build(self, pg_datas, output_type):
@@ -339,49 +426,6 @@ class PGSourceJob(BaseSourceJob):
 
         while not build_queue.empty():
             self.build_order.append(build_queue.get())
-
-    def _extract_filter_params(self):
-        is_log_address_clean = False
-        is_log_topics_clean = False
-
-        for filter in self._filters:
-            if isinstance(filter, TransactionFilterByLogs):
-                for filter_param in filter.get_eth_log_filters_params():
-                    param_address = filter_param["address"]
-                    param_topics = flatten(filter_param["topics"])
-
-                    if len(param_address) == 0:
-                        is_log_address_clean = True
-                        self.log_filter["address"] = []
-                    if not is_log_address_clean:
-                        self.log_filter["address"].extend(param_address)
-
-                    if len(param_topics) == 0:
-                        is_log_topics_clean = True
-                        self.log_filter["topics"] = []
-                    if not is_log_topics_clean:
-                        self.log_filter["topics"].extend(param_topics)
-                self.has_logs_filter = True
-
-            elif isinstance(filter, TransactionFilterByTransactionInfo):
-                for spe in filter.specifications:
-                    params = spe.to_filter_params()
-                    if isinstance(spe, TransactionHashSpecification) and params:
-                        self.transaction_filter["hash"].extend(params["hashes"])
-                        self.log_filter["transaction_hash"].extend(params["hashes"])
-                        self.has_logs_filter = True
-                    elif isinstance(spe, FromAddressSpecification):
-                        self.transaction_filter["from_address"].append(params["from_address"])
-                    elif isinstance(spe, ToAddressSpecification):
-                        self.transaction_filter["to_address"].append(params["to_address"])
-                    else:
-                        raise ValueError(f"Unsupported transaction filter type: {type(filter)}")
-                self.has_transaction_filter = True
-            else:
-                raise ValueError(f"Unsupported filter type: {type(filter)}")
-
-        if is_log_address_clean and is_log_topics_clean and len(self.log_filter["transaction_hash"]) == 0:
-            self.has_logs_filter = False
 
 
 def check_dependency(column_type, target_type) -> (bool, object):

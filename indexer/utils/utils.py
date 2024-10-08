@@ -146,7 +146,7 @@ def merge_sort(sorted_col_a, sorted_col_b):
     return merged
 
 
-def distinct_collections_by_group(collections: List[Domain], group_by: List[str], max_key: Union[str, None] = None):
+def distinct_collections_by_group(collections: List[object], group_by: List[str], max_key: Union[str, None] = None):
     distinct = {}
     for item in collections:
         key = tuple(getattr(item, idx) for idx in group_by)
