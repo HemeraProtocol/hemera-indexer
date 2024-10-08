@@ -269,9 +269,9 @@ class PGSourceJob(BaseSourceJob):
                 query_filter = and_(
                     Logs.block_timestamp >= start_timestamp,
                     Logs.block_timestamp <= end_timestamp,
+                    conditions,
                     Logs.block_number >= start_block,
                     Logs.block_number <= end_block,
-                    conditions,
                 )
                 logs.extend(session.query(Logs).filter(query_filter).all())
 
@@ -283,9 +283,9 @@ class PGSourceJob(BaseSourceJob):
                 query_filter = and_(
                     Logs.block_timestamp >= start_timestamp,
                     Logs.block_timestamp <= end_timestamp,
+                    conditions,
                     Logs.block_number >= start_block,
                     Logs.block_number <= end_block,
-                    conditions,
                 )
                 logs.extend(session.query(Logs).filter(query_filter).all())
         finally:
@@ -306,9 +306,9 @@ class PGSourceJob(BaseSourceJob):
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
                     Transactions.block_timestamp <= end_timestamp,
+                    conditions,
                     Transactions.block_number >= start_block,
                     Transactions.block_number <= end_block,
-                    conditions,
                 )
                 transactions.extend(session.query(Transactions).filter(query_filter).all())
 
@@ -319,9 +319,9 @@ class PGSourceJob(BaseSourceJob):
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
                     Transactions.block_timestamp <= end_timestamp,
+                    conditions,
                     Transactions.block_number >= start_block,
                     Transactions.block_number <= end_block,
-                    conditions,
                 )
                 transactions.extend(session.query(Transactions).filter(query_filter).all())
 
@@ -332,9 +332,9 @@ class PGSourceJob(BaseSourceJob):
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
                     Transactions.block_timestamp <= end_timestamp,
+                    conditions,
                     Transactions.block_number >= start_block,
                     Transactions.block_number <= end_block,
-                    conditions,
                 )
                 transactions.extend(session.query(Transactions).filter(query_filter).all())
 
