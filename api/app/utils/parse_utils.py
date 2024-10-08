@@ -7,27 +7,27 @@ SUPPORT_BRIDGES = {
         "bridge_name": "Optimism Bridge",
         "bridge_logo": "https://storage.googleapis.com/socialscan-public-asset/bridge/optimism.png",
     },
-    "0x3154Cf16ccdb4C6d922629664174b904d80F2C35": {
+    "0x3154cf16ccdb4c6d922629664174b904d80f2c35": {
         "bridge_name": "Base Bridge",
         "bridge_logo": "https://www.base.org/_next/static/media/logoBlack.4dc25558.svg",
     },
-    "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef": {
+    "0x72ce9c846789fdb6fc1f34ac4ad25dd9ef7031ef": {
         "bridge_name": "Arbitrum One: L1 Gateway Router",
         "bridge_logo": "https://cryptologos.cc/logos/arbitrum-arb-logo.svg?v=035",
     },
-    "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f": {
+    "0x4dbd4fc535ac27206064b68ffcf827b0a60bab3f": {
         "bridge_name": "Arbitrum: Delayed Inbox",
         "bridge_logo": "https://cryptologos.cc/logos/arbitrum-arb-logo.svg?v=035",
     },
-    "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319": {
+    "0x051f1d88f0af5763fb888ec4378b4d8b29ea3319": {
         "bridge_name": "Linea: ERC20 Bridge",
         "bridge_logo": "https://images.seeklogo.com/logo-png/52/1/linea-logo-png_seeklogo-527155.png",
     },
-    "0x504A330327A089d8364C4ab3811Ee26976d388ce": {
+    "0x504a330327a089d8364c4ab3811ee26976d388ce": {
         "bridge_name": "Linea: USDC Bridge",
         "bridge_logo": "https://images.seeklogo.com/logo-png/52/1/linea-logo-png_seeklogo-527155.png",
     },
-    "0xd19d4B5d358258f05D7B411E21A1460D11B0876F": {
+    "0xd19d4b5d358258f05d7b411e21a1460d11b0876f": {
         "bridge_name": "Linea: L1 Message Service",
         "bridge_logo": "https://images.seeklogo.com/logo-png/52/1/linea-logo-png_seeklogo-527155.png",
     },
