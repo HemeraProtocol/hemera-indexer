@@ -6,6 +6,7 @@ from flask import request
 from flask_restx import Resource
 from sqlalchemy.sql import select, tuple_
 
+from api.app.address.features import register_feature
 from api.app.db_service.tokens import get_token_price_map_by_symbol_list
 from common.models import db
 from common.models.tokens import Tokens
@@ -32,60 +33,106 @@ NATIVE_COINS = {
 }
 
 
+@register_feature("uniswap_v3_trading", "value")
+def get_uniswap_v3_trading_value(address):
+    if isinstance(address, str):
+        address = bytes.fromhex(address[2:])
+    swaps = db.session.execute(
+        select(
+            UniswapV3PoolSwapRecords.transaction_hash,
+            UniswapV3PoolSwapRecords.token0_address,
+            UniswapV3PoolSwapRecords.token1_address,
+            UniswapV3PoolSwapRecords.amount0,
+            UniswapV3PoolSwapRecords.amount1,
+        )
+        .where(UniswapV3PoolSwapRecords.transaction_from_address == address)
+        .order_by(UniswapV3PoolSwapRecords.block_timestamp.desc())
+    ).all()
+
+    token_list = []
+    transaction_hash_list = []
+
+    for swap in swaps:
+        token_list.append(swap.token0_address)
+        token_list.append(swap.token1_address)
+        transaction_hash_list.append(swap.transaction_hash)
+
+    token_list = list(set(token_list))
+    transaction_hash_list = list(set(transaction_hash_list))
+
+    return {
+        "trade_count": len(transaction_hash_list),
+        "trade_asset_count": len(token_list),
+        "total_volume_usd": 0,
+        "average_value_usd": 0,
+    }
+
+
+@register_feature("uniswap_v3_trading", "events")
+def get_uniswap_v3_trading_events(address, limit=5, offset=0):
+    if isinstance(address, str):
+        address = bytes.fromhex(address[2:])
+
+    swaps = (
+        db.session.execute(
+            select(UniswapV3PoolSwapRecords)
+            .where(UniswapV3PoolSwapRecords.transaction_from_address == address)
+            .order_by(UniswapV3PoolSwapRecords.block_timestamp.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        .scalars()
+        .all()
+    )
+    swap_records = []
+    token_list = []
+    for swap in swaps:
+        token_list.append(swap.token0_address)
+        token_list.append(swap.token1_address)
+
+    tokens = db.session.execute(select(Tokens).where(Tokens.address.in_(list(set(token_list))))).scalars().all()
+
+    token_map = {token.address: token for token in tokens}
+
+    for swap in swaps:
+        token0 = token_map.get(swap.token0_address)
+        token1 = token_map.get(swap.token1_address)
+        swap_records.append(
+            {
+                "block_number": swap.block_number,
+                "block_timestamp": datetime.fromtimestamp(swap.block_timestamp).isoformat("T", "seconds"),
+                "transaction_hash": "0x" + swap.transaction_hash.hex(),
+                "pool_address": "0x" + swap.pool_address.hex(),
+                "amount0": "{0:.18f}".format(abs(swap.amount0) / 10**token0.decimals).rstrip("0").rstrip("."),
+                "amount1": "{0:.18f}".format(abs(swap.amount1) / 10**token1.decimals).rstrip("0").rstrip("."),
+                "token0_address": "0x" + swap.token0_address.hex(),
+                "token0_symbol": token0.symbol,
+                "token0_name": token0.name,
+                "token0_icon_url": token0.icon_url,
+                "token1_address": "0x" + swap.token1_address.hex(),
+                "token1_symbol": token1.symbol,
+                "token1_name": token1.name,
+                "token1_icon_url": token1.icon_url,
+                "action_type": get_swap_action_type(swap),
+            }
+        )
+
+    return {
+        "data": swap_records,
+        "total": len(swap_records),
+    }
+
+
 @uniswap_v3_namespace.route("/v1/aci/<address>/uniswap_v3_trading/swaps")
 class UniswapV3WalletTradingRecords(Resource):
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        page_index = int(request.args.get("page", 1))
+        page_size = int(request.args.get("size", PAGE_SIZE))
 
-        swaps = (
-            db.session.execute(
-                select(UniswapV3PoolSwapRecords)
-                .where(UniswapV3PoolSwapRecords.transaction_from_address == address_bytes)
-                .order_by(UniswapV3PoolSwapRecords.block_timestamp.desc())
-                .limit(PAGE_SIZE)
-            )
-            .scalars()
-            .all()
-        )
-        swap_records = []
-        token_list = []
-        for swap in swaps:
-            token_list.append(swap.token0_address)
-            token_list.append(swap.token1_address)
-
-        tokens = db.session.execute(select(Tokens).where(Tokens.address.in_(list(set(token_list))))).scalars().all()
-
-        token_map = {token.address: token for token in tokens}
-
-        for swap in swaps:
-            token0 = token_map.get(swap.token0_address)
-            token1 = token_map.get(swap.token1_address)
-            swap_records.append(
-                {
-                    "block_number": swap.block_number,
-                    "block_timestamp": datetime.fromtimestamp(swap.block_timestamp).isoformat("T", "seconds"),
-                    "transaction_hash": "0x" + swap.transaction_hash.hex(),
-                    "pool_address": "0x" + swap.pool_address.hex(),
-                    "amount0": "{0:.18f}".format(abs(swap.amount0) / 10**token0.decimals).rstrip("0").rstrip("."),
-                    "amount1": "{0:.18f}".format(abs(swap.amount1) / 10**token1.decimals).rstrip("0").rstrip("."),
-                    "token0_address": "0x" + swap.token0_address.hex(),
-                    "token0_symbol": token0.symbol,
-                    "token0_name": token0.name,
-                    "token0_icon_url": token0.icon_url,
-                    "token1_address": "0x" + swap.token1_address.hex(),
-                    "token1_symbol": token1.symbol,
-                    "token1_name": token1.name,
-                    "token1_icon_url": token1.icon_url,
-                    "action_type": get_swap_action_type(swap),
-                }
-            )
-
-        return {
-            "data": swap_records,
-            "total": len(swap_records),
-            "page": 1,
-            "szie": PAGE_SIZE,
+        return get_uniswap_v3_trading_events(address, page_size, (page_index - 1) * page_size) | {
+            "page": page_index,
+            "size": page_size,
         }
 
 
@@ -93,37 +140,7 @@ class UniswapV3WalletTradingRecords(Resource):
 class UniswapV3WalletTradingSummary(Resource):
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
-
-        swaps = db.session.execute(
-            select(
-                UniswapV3PoolSwapRecords.transaction_hash,
-                UniswapV3PoolSwapRecords.token0_address,
-                UniswapV3PoolSwapRecords.token1_address,
-                UniswapV3PoolSwapRecords.amount0,
-                UniswapV3PoolSwapRecords.amount1,
-            )
-            .where(UniswapV3PoolSwapRecords.transaction_from_address == address_bytes)
-            .order_by(UniswapV3PoolSwapRecords.block_timestamp.desc())
-        ).all()
-
-        token_list = []
-        transaction_hash_list = []
-
-        for swap in swaps:
-            token_list.append(swap.token0_address)
-            token_list.append(swap.token1_address)
-            transaction_hash_list.append(swap.transaction_hash)
-
-        token_list = list(set(token_list))
-        transaction_hash_list = list(set(transaction_hash_list))
-
-        return {
-            "trade_count": len(transaction_hash_list),
-            "trade_asset_count": len(token_list),
-            "total_volume_usd": 0,
-            "average_value_usd": 0,
-        }
+        return get_uniswap_v3_trading_value(address)
 
 
 @uniswap_v3_namespace.route("/v1/aci/<address>/uniswap_v3_liquidity/current_holding")
