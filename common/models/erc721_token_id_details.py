@@ -1,9 +1,19 @@
 from datetime import datetime
+from typing import Type
+from urllib import parse
 
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+
+
+def token_uri_format_converter(table: Type[HemeraModel], data, is_update=False):
+
+    if data.token_uri is not None:
+        data.token_uri = parse.quote_plus(data.token_uri)
+
+    return general_converter(table, data, is_update)
 
 
 class ERC721TokenIdDetails(HemeraModel):
@@ -31,7 +41,7 @@ class ERC721TokenIdDetails(HemeraModel):
                 "domain": "ERC721TokenIdDetail",
                 "conflict_do_update": False,
                 "update_strategy": None,
-                "converter": general_converter,
+                "converter": token_uri_format_converter,
             },
             {
                 "domain": "UpdateERC721TokenIdDetail",
