@@ -121,18 +121,23 @@ class ExportKarakJob(FilterTransactionDataJob):
                     dl = decode_log(DEPOSIT_EVENT, log)
                     vault = log.address
                     amount = dl.get("shares")
+                    by = dl.get("by")
+                    if not by:
+                        staker = transaction.from_address
+                    else:
+                        staker = by
+                    owner = dl.get("owner")
 
                     if not amount or not vault:
                         raise FastShutdownError(f"karak job failed {transaction.hash}")
-                    staker = transaction.from_address
                     kad = KarakActionD(
                         transaction_hash=transaction.hash,
                         log_index=log.log_index,
                         transaction_index=transaction.transaction_index,
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
-                        method=transaction.input[0:10],
-                        event_name="deposit",
+                        method=transaction.get_method_id(),
+                        event_name="Deposit",
                         topic0=log.topic0,
                         from_address=transaction.from_address,
                         to_address=transaction.to_address,
@@ -157,7 +162,7 @@ class ExportKarakJob(FilterTransactionDataJob):
                         transaction_index=transaction.transaction_index,
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
-                        method=transaction.input[0:10],
+                        method=transaction.get_method_id(),
                         event_name="StartWithdrawal",
                         topic0=log.topic0,
                         from_address=transaction.from_address,
@@ -188,7 +193,7 @@ class ExportKarakJob(FilterTransactionDataJob):
                         transaction_index=transaction.transaction_index,
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
-                        method=transaction.input[0:10],
+                        method=transaction.get_method_id(),
                         event_name="FinishedWithdrawal",
                         topic0=log.topic0,
                         from_address=transaction.from_address,
@@ -241,8 +246,8 @@ class ExportKarakJob(FilterTransactionDataJob):
         for rr in result:
             lis.append(
                 KarakAddressCurrentD(
-                    address="0x" + rr.address.hex(),
-                    vault="0x" + rr.vault.hex(),
+                    address=bytes_to_hex_str(rr.address),
+                    vault=bytes_to_hex_str(rr.vault),
                     deposit_amount=rr.deposit_amount,
                     start_withdraw_amount=rr.start_withdraw_amount,
                     finish_withdraw_amount=rr.finish_withdraw_amount,
