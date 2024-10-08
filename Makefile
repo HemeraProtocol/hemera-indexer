@@ -20,6 +20,7 @@ test:
 		poetry run pytest -vv -m $(filter-out $@,$(MAKECMDGOALS)); \
 	fi
 
+
 PRE_COMMIT_INSTALLED := $(shell command -v pre-commit > /dev/null 2>&1 && echo yes || echo no)
 
 format:
@@ -29,3 +30,7 @@ ifeq ($(PRE_COMMIT_INSTALLED),yes)
 else
 	@echo "Please install pre-commit in your local machine(pip install pre-commit or brew install pre-commit)"
 endif
+
+init_db:
+	@echo "Initializing database..."
+	poetry run python -m hemera.py init_db

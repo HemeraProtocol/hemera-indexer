@@ -2,7 +2,7 @@ import logging
 
 from enumeration.entity_type import EntityType
 from indexer.domain.transaction import Transaction
-from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
+from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
     BEDROCK_EVENT_ABI_SIGNATURE_MAPPING,
     parse_propose_l2_output,

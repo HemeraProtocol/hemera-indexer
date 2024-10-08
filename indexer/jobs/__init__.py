@@ -3,15 +3,16 @@ __all__ = [
     "PGSourceJob",
     "ExportBlocksJob",
     "ExportTransactionsAndLogsJob",
-    "FilterTransactionDataJob",
     "ExportTokensAndTransfersJob",
     "ExportTokenIdInfosJob",
     "ExportTokenBalancesJob",
     "ExportTracesJob",
     "ExportContractsJob",
     "ExportCoinBalancesJob",
+    "FilterTransactionDataJob",
 ]
 
+from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_coin_balances_job import ExportCoinBalancesJob
 from indexer.jobs.export_contracts_job import ExportContractsJob

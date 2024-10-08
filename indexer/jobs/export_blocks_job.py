@@ -66,21 +66,22 @@ class ExportBlocksJob(BaseExportJob):
 
         is_only_log_filter = True
         filter_blocks = set()
+        if self._is_filter:
+            for filter in self._filters:
+                if isinstance(filter, TransactionFilterByLogs):
+                    for filter_param in filter.get_eth_log_filters_params():
+                        filter_param.update({"fromBlock": self._start_block, "toBlock": self._end_block})
+                        logs = self._web3.eth.get_logs(filter_param)
+                        filter_blocks.update(set([log["blockNumber"] for log in logs]))
+                        transaction_hashes = set([log["transactionHash"] for log in logs])
+                        transaction_hashes = [h.hex() for h in transaction_hashes]
+                        self._specification |= TransactionHashSpecification(transaction_hashes)
+                elif isinstance(filter, TransactionFilterByTransactionInfo):
+                    is_only_log_filter = False
+                    self._specification |= filter.get_or_specification()
+                else:
+                    raise ValueError(f"Unsupported filter type: {type(filter)}")
 
-        for filter in self._filters:
-            if isinstance(filter, TransactionFilterByLogs):
-                for filter_param in filter.get_eth_log_filters_params():
-                    filter_param.update({"fromBlock": self._start_block, "toBlock": self._end_block})
-                    logs = self._web3.eth.get_logs(filter_param)
-                    filter_blocks.update(set([log["blockNumber"] for log in logs]))
-                    transaction_hashes = set([log["transactionHash"] for log in logs])
-                    transaction_hashes = [h.hex() for h in transaction_hashes]
-                    self._specification |= TransactionHashSpecification(transaction_hashes)
-            elif isinstance(filter, TransactionFilterByTransactionInfo):
-                is_only_log_filter = False
-                self._specification |= filter.get_or_specification()
-            else:
-                raise ValueError(f"Unsupported filter type: {type(filter)}")
         if self._is_filter and is_only_log_filter:
             blocks = list(filter_blocks)
             total_items = len(blocks)

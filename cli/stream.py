@@ -364,19 +364,28 @@ def stream(
         logging.warning("No postgres url provided. Exception recorder will not be useful.")
 
     if config_file:
+        file_based_config = {}
         if not os.path.exists(config_file):
             raise click.ClickException(f"Config file {config_file} not found")
         with open(config_file, "r") as f:
             if config_file.endswith(".json"):
                 import json
 
-                config.update(json.load(f))
+                file_based_config = json.load(f)
             elif config_file.endswith(".yaml") or config_file.endswith(".yml"):
                 import yaml
 
-                config.update(yaml.safe_load(f))
+                file_based_config = yaml.safe_load(f)
             else:
                 raise click.ClickException(f"Config file {config_file} is not supported)")
+
+        if file_based_config.get("chain_id") != config["chain_id"]:
+            raise click.ClickException(
+                f"Config file {config_file} is not compatible with chain_id {config['chain_id']}"
+            )
+        else:
+            logging.info(f"Loading config from file: {config_file}, chain_id: {config['chain_id']}")
+            config.update(file_based_config)
 
     if output_types is None:
         entity_types = calculate_entity_value(entity_types)
