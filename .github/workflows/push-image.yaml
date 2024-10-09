@@ -1,0 +1,85 @@
+name: Push image to AWS ECR
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      runPushAWS:
+        description: 'Run push image to aws (yes/no)'
+        required: true
+        default: 'false'
+      arch:
+        required: false
+        default: 'amd64'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set arch variable
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ARCH=${{ github.event.inputs.arch }}" >> $GITHUB_ENV
+          else
+            echo "ARCH=amd64" >> $GITHUB_ENV
+          fi
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.PROD_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Configure AWS CLI profile
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.PROD_AWS_ACCESS_KEY_ID }} --profile prod
+          aws configure set aws_secret_access_key ${{ secrets.PROD_AWS_SECRET_ACCESS_KEY }} --profile prod
+
+      - name: Build and Push to AWS ECR
+        if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/') || github.event.inputs.runPushAWS == 'yes'
+        env:
+          ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+          ECR_REPO: hemera-protocol
+        run: |
+          echo "Architecture: ${{ env.ARCH }}"
+          echo "Building and pushing to AWS ECR"
+
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            # It's a tag push, use the tag as is
+            TAG=${GITHUB_REF#refs/tags/}
+            # Remove 'v' prefix if present
+            TAG=${TAG#v}
+          else
+            # Use the original naming convention
+            VERSION=$(grep '^version = ' pyproject.toml | sed 's/^version = //;s/"//g')
+            if [[ $GITHUB_EVENT_NAME == "pull_request" ]]; then
+              # It's a pull request
+              BUILD=$(echo ${{ github.event.pull_request.head.sha }} | cut -c 1-7)
+            else
+              # It's a push to a branch (e.g., master)
+              BUILD=$(git rev-parse --short=7 HEAD)
+            fi
+            TAG=$VERSION-$BUILD-${{ env.ARCH }}
+          fi
+
+          echo "Tag: $TAG"
+
+          # Build the Docker image using make
+          make image TAG=$TAG ARCH=${{ env.ARCH }}
+
+          # Login to ECR
+          aws ecr get-login-password --region ${{ secrets.AWS_REGION }} --profile prod | docker login --username AWS --password-stdin $ECR_REGISTRY
+
+          # Tag the image for ECR
+          docker tag $ECR_REPO:$TAG $ECR_REGISTRY/$ECR_REPO:$TAG
+
+          # Push the image to ECR
+          docker push $ECR_REGISTRY/$ECR_REPO:$TAG
