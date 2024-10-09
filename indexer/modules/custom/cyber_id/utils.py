@@ -25,6 +25,3 @@ def get_node(name):
             assert isinstance(node, bytes)
             node = Web3().keccak(node + label_hash)
     return node.hex()
-
-
-print(label_to_hash("testsub").hex())
