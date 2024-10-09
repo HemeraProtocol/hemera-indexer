@@ -9,8 +9,8 @@ from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.cyber_id.cyber_abi import abi_map
-from indexer.modules.custom.cyber_id.cyber_domain import CyberAddressD, CyberIDRegisterD, CyberAddressChangedD
-from indexer.modules.custom.cyber_id.utils import get_reverse_node, get_node
+from indexer.modules.custom.cyber_id.cyber_domain import CyberAddressChangedD, CyberAddressD, CyberIDRegisterD
+from indexer.modules.custom.cyber_id.utils import get_node, get_reverse_node
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
@@ -57,8 +57,12 @@ class ExportCyberIDJob(FilterTransactionDataJob):
 
         return [
             TransactionFilterByLogs(
-                [TopicSpecification(addresses=[CyberIdPublicResolverContractAddress, CyberIdTokenContractAddress],
-                                    topics=[NameChangedTopic, RegisterTopic])]
+                [
+                    TopicSpecification(
+                        addresses=[CyberIdPublicResolverContractAddress, CyberIdTokenContractAddress],
+                        topics=[NameChangedTopic, RegisterTopic],
+                    )
+                ]
             ),
         ]
 
@@ -88,23 +92,21 @@ class ExportCyberIDJob(FilterTransactionDataJob):
         logs: List[Log] = self._data_buff.get(Log.type(), [])
         for log in logs:
             if log.address.lower() == CyberIdTokenContractAddress and log.topic0 == RegisterTopic:
-                decoded_data = self.w3.codec.decode(['string', 'uint256'], bytes.fromhex(log.data[2:]))
+                decoded_data = self.w3.codec.decode(["string", "uint256"], bytes.fromhex(log.data[2:]))
                 cid = decoded_data[0]
                 cyber_address = CyberIDRegisterD(
                     label=cid,
                     token_id=log.topic3,
                     cost=int(decoded_data[1]),
                     block_number=log.block_number,
-                    node=get_node(cid+".cyber"),
-                    registration=log.block_timestamp
+                    node=get_node(cid + ".cyber"),
+                    registration=log.block_timestamp,
                 )
                 self._collect_item(cyber_address.type(), cyber_address)
             if log.address.lower() == CyberIdPublicResolverContractAddress and log.topic0 == AddressChangedTopic:
-                decoded_data = self.w3.codec.decode(['uint256', 'bytes'], bytes.fromhex(log.data[2:]))
+                decoded_data = self.w3.codec.decode(["uint256", "bytes"], bytes.fromhex(log.data[2:]))
                 address_change_d = CyberAddressChangedD(
-                    node=log.topic1,
-                    address='0x'+decoded_data[1].hex(),
-                    block_number=log.block_number
+                    node=log.topic1, address="0x" + decoded_data[1].hex(), block_number=log.block_number
                 )
                 self._collect_item(address_change_d.type(), address_change_d)
 

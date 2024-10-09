@@ -1,6 +1,6 @@
 from ens.auto import ns
 from ens.constants import EMPTY_SHA3_BYTES
-from ens.utils import address_to_reverse_domain, normalize_name, normal_name_to_hash, is_empty_name, Web3
+from ens.utils import Web3, address_to_reverse_domain, is_empty_name, normal_name_to_hash, normalize_name
 from hexbytes import HexBytes
 
 
@@ -26,3 +26,5 @@ def get_node(name):
             node = Web3().keccak(node + label_hash)
     return node.hex()
 
+
+print(label_to_hash("testsub").hex())

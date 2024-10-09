@@ -1,5 +1,5 @@
 from sqlalchemy import Column, func
-from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, TIMESTAMP, VARCHAR,NUMERIC
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
@@ -56,5 +56,4 @@ class CyberIDRecord(HemeraModel):
                 "update_strategy": "EXCLUDED.block_number >= cyber_id_record.block_number",
                 "converter": ens_general_converter,
             },
-
         ]
