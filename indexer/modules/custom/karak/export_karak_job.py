@@ -10,7 +10,12 @@ from common.utils.exception_control import FastShutdownError
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.karak.karak_abi import DEPOSIT_EVENT, FINISH_WITHDRAWAL_EVENT, START_WITHDRAWAL_EVENT
+from indexer.modules.custom.karak.karak_abi import (
+    DEPOSIT_EVENT,
+    FINISH_WITHDRAWAL_EVENT,
+    START_WITHDRAWAL_EVENT,
+    TRANSFER_EVENT,
+)
 from indexer.modules.custom.karak.karak_conf import CHAIN_CONTRACT
 from indexer.modules.custom.karak.karak_domain import (
     KarakActionD,
@@ -69,8 +74,10 @@ class ExportKarakJob(FilterTransactionDataJob):
         topics = []
         addresses = []
         for k, item in self.karak_conf.items():
-            topics.append(item["topic"])
-            addresses.append(item["address"])
+            if item.get("topic"):
+                topics.append(item["topic"])
+            if item.get("address"):
+                addresses.append(item["address"])
         for ad in self.vault_token:
             addresses.append(ad)
         return [
@@ -137,13 +144,33 @@ class ExportKarakJob(FilterTransactionDataJob):
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
                         method=transaction.get_method_id(),
-                        event_name="Deposit",
+                        event_name=DEPOSIT_EVENT["name"],
                         topic0=log.topic0,
                         from_address=transaction.from_address,
                         to_address=transaction.to_address,
                         vault=vault,
                         amount=amount,
                         staker=staker,
+                    )
+                    res.append(kad)
+                elif log.topic0 == self.karak_conf["TRANSFER"]["topic"] and log.address in self.vault_token:
+                    dl = decode_log(TRANSFER_EVENT, log)
+                    _from = dl.get("from")
+                    _to = dl.get("to")
+                    value = dl.get("amount")
+                    kad = KarakActionD(
+                        transaction_hash=transaction.hash,
+                        log_index=log.log_index,
+                        transaction_index=transaction.transaction_index,
+                        block_number=log.block_number,
+                        block_timestamp=log.block_timestamp,
+                        method=transaction.get_method_id(),
+                        event_name=TRANSFER_EVENT["name"],
+                        topic0=log.topic0,
+                        from_address=_from,
+                        to_address=_to,
+                        vault=log.address,
+                        amount=value,
                     )
                     res.append(kad)
                 elif (
@@ -207,8 +234,7 @@ class ExportKarakJob(FilterTransactionDataJob):
                         amount=shares,
                     )
                     res.append(kad)
-        for item in res:
-            self._collect_item(item.type(), item)
+        self._collect_items(KarakActionD.type(), res)
         batch_result_dic = self.calculate_batch_result(res)
         exists_dic = self.get_existing_address_current(list(batch_result_dic.keys()))
         for address, outer_dic in batch_result_dic.items():
@@ -277,6 +303,15 @@ class ExportKarakJob(FilterTransactionDataJob):
                 res_d[staker][vault].address = staker
                 res_d[staker][vault].vault = vault
                 res_d[staker][vault].finish_withdraw_amount += action.amount
+            elif topic0 == self.karak_conf["TRANSFER"]["topic"]:
+                # out
+                res_d[action.from_address][vault].address = action.from_address
+                res_d[action.from_address][vault].vault = vault
+                res_d[action.from_address][vault].deposit_amount -= action.amount
+                # in
+                res_d[action.to_address][vault].address = action.to_address
+                res_d[action.to_address][vault].vault = vault
+                res_d[action.to_address][vault].deposit_amount += action.amount
         return res_d
 
 

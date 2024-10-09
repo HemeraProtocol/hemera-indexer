@@ -7,12 +7,12 @@
 CHAIN_CONTRACT = {
     1: {
         "DEPOSIT": {
-            "address": "0x68754d29f2e97b837cb622ccff325adac27e9977",
+            # address is all vaults
             "topic": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
         },
-        "DEPOSIT_2": {
-            "address": "0x1b4d88f5f38988bea334c79f48aa69beeefe2e1e",
-            "topic": "0xdcbc1c05240f31ff3ad067ef1ee35ce4997762752e3a095284754544f4c709d7",
+        "TRANSFER": {
+            # address is all vaults
+            "topic": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
         },
         "START_WITHDRAW": {
             "address": "0xafa904152e04abff56701223118be2832a4449e0",
@@ -25,7 +25,7 @@ CHAIN_CONTRACT = {
         "NEW_VAULT": {
             "address": "0x54e44dbb92dba848ace27f44c0cb4268981ef1cc",
             "topic": "0x2cd7a531712f8899004c782d9607e0886d1dbc91bfac7be88dadf6750d9e1419",
-            "starts_with": "0xf0edf6aa"
+            "starts_with": "0xf0edf6aa",
         },
     }
 }

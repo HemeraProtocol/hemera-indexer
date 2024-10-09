@@ -17,7 +17,6 @@ DEPOSIT_EVENT = cast(
         """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"by","type":"address"},{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":false,"internalType":"uint256","name":"assets","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"shares","type":"uint256"}],"name":"Deposit","type":"event"}"""
     ),
 )
-DEPOSIT_EVENT_SIG = event_log_abi_to_topic(DEPOSIT_EVENT)
 
 START_WITHDRAWAL_EVENT = cast(
     ABIEvent,
@@ -26,7 +25,6 @@ START_WITHDRAWAL_EVENT = cast(
 """
     ),
 )
-START_WITHDRAWAL_EVENT_SIG = event_log_abi_to_topic(START_WITHDRAWAL_EVENT)
 
 FINISH_WITHDRAWAL_EVENT = cast(
     ABIEvent,
@@ -35,4 +33,10 @@ FINISH_WITHDRAWAL_EVENT = cast(
 """
     ),
 )
-FINISH_WITHDRAWAL_EVENT_SIG = event_log_abi_to_topic(FINISH_WITHDRAWAL_EVENT)
+
+TRANSFER_EVENT = cast(
+    ABIEvent,
+    json.loads(
+        """{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Transfer","type":"event"}"""
+    ),
+)
