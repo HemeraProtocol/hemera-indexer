@@ -24,7 +24,7 @@ As of July 5, 2024, the initial open-source version of the Hemera Indexer offers
 - Logs
 - ERC20 / ERC721 / ERC1155 tokens
 - ERC20 / ERC721 / ERC1155 Token transfers
-- ERC20 / ERC721 / ERC1155 Token balance & holders
+- ERC20 / ERC721 / ERC1155 Token balance
 - Contracts
 - Traces / Internal transactions
 - L1 -> L2 Transactions
@@ -114,6 +114,7 @@ If you have trouble running the following commands, consider referring to
 the [official docker installation guide](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
 for the latest instructions.
 
+##### Ubuntu and Debian
 ```bash
 # Add Docker's official GPG key:
 sudo apt-get update
@@ -128,11 +129,29 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
-```
 
-```bash
 # Install docker and docker compose
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+docker compose version
+```
+
+##### RPM-based distros
+```bash
+sudo yum update -y
+sudo yum install docker -y
+sudo service docker start
+sudo systemctl enable docker
+sudo usermod -a -G docker ec2-user
+
+newgrp docker
+docker --version
+docker run hello-world
+
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+mkdir -p $DOCKER_CONFIG/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.29.6/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+docker compose version
 ```
 
 #### Run the Docker Compose
@@ -169,32 +188,37 @@ Attaching to hemera-api, indexer, indexer-trace, postgresql, redis
 
 ### Run From Source Code
 
-#### Install Python3 and Pip
+#### Install developer tools
 
 Skip this step if you already have both installed.
 
 ```bash
 sudo apt update
-sudo apt install python3
-sudo apt install python3-pip
+sudo apt install make
 ```
 
-#### Initiate Python VENV
+#### Run development
 
-Skip this step if you don't want to have a dedicated python venv for Hemera Indexer.
+To deploy your project, simply run:
 
 ```bash
-sudo apt install python3-venv
-python3 -m venv ./venv
+make development
 ```
 
-#### Install Pip Dependencies
+This command will:
+1. Create a Python virtual environment
+2. Activate the virtual environment
+3. Install necessary system packages
+4. Install Python dependencies
+
+After running this command, your environment will be set up and ready to use.
+
+Remember to activate the virtual environment (`source ./venv/bin/activate`) when you want to work on your project in the future.
 
 ```bash
 source ./venv/bin/activate
-sudo apt install libpq-dev
-pip install -e .
 ```
+
 
 #### Prepare Your PostgreSQL Instance
 
