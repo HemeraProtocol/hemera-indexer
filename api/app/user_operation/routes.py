@@ -5,12 +5,8 @@ from flask_restx import Resource
 
 from api.app.cache import cache
 from api.app.user_operation import user_operation_namespace
-from api.app.utils.utils import (
-    fill_address_display_to_transactions,
-    get_total_row_count,
-    parse_log_with_transaction_input_list,
-    process_token_transfer,
-)
+from api.app.utils.fill_info import fill_address_display_to_transactions, process_token_transfer
+from api.app.utils.parse_utils import parse_log_with_transaction_input_list
 from common.models import db
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
@@ -19,6 +15,7 @@ from common.models.logs import Logs
 from common.models.tokens import Tokens
 from common.models.transactions import Transactions
 from common.utils.config import get_config
+from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
 from common.utils.format_utils import format_value_for_json
 from indexer.modules.user_ops.models.user_operation_results import UserOperationResult

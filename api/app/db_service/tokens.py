@@ -1,12 +1,7 @@
 from sqlalchemy import and_, func, select
 
-from api.app.db_service.contracts import get_contracts_by_addresses
 from api.app.db_service.wallet_addresses import get_token_txn_cnt_by_address
-from api.app.utils.utils import (
-    fill_address_display_to_transactions,
-    fill_is_contract_to_transactions,
-    get_total_row_count,
-)
+from api.app.utils.fill_info import fill_address_display_to_transactions, fill_is_contract_to_transactions
 from common.models import db
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
@@ -15,7 +10,7 @@ from common.models.scheduled_metadata import ScheduledTokenCountMetadata, Schedu
 from common.models.token_prices import TokenPrices
 from common.models.tokens import Tokens
 from common.utils.config import get_config
-from common.utils.db_utils import build_entities
+from common.utils.db_utils import build_entities, get_total_row_count
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict
 

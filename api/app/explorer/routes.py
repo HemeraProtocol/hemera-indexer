@@ -14,7 +14,6 @@ from flask import Response
 from flask_restx import Resource, reqparse
 from sqlalchemy.sql import and_, cast, func, nullslast, or_
 from sqlalchemy.sql.sqltypes import VARCHAR, Numeric
-from web3 import Web3
 
 from api.app.cache import cache
 from api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
@@ -53,15 +52,14 @@ from api.app.db_service.transactions import (
 )
 from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
 from api.app.explorer import explorer_namespace
-from api.app.utils.token_utils import get_token_price
-from api.app.utils.utils import (
+from api.app.utils.fill_info import (
     fill_address_display_to_transactions,
     fill_is_contract_to_transactions,
-    get_total_row_count,
-    parse_log_with_transaction_input_list,
-    parse_transactions,
     process_token_transfer,
 )
+from api.app.utils.format_utils import format_coin_value_with_unit, format_dollar_value
+from api.app.utils.parse_utils import parse_log_with_transaction_input_list, parse_transactions
+from api.app.utils.token_utils import get_token_price
 from api.app.web3_utils import get_balance, get_code, get_gas_price
 from common.models import db
 from common.models.blocks import Blocks
@@ -81,14 +79,9 @@ from common.models.tokens import Tokens
 from common.models.traces import Traces
 from common.models.transactions import Transactions
 from common.utils.config import get_config
+from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
-from common.utils.format_utils import (
-    as_dict,
-    format_coin_value_with_unit,
-    format_dollar_value,
-    format_to_dict,
-    row_to_dict,
-)
+from common.utils.format_utils import format_to_dict, row_to_dict
 from common.utils.web3_utils import (
     decode_function,
     decode_log_data,
