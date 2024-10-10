@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 keywords = ["ethereum", "indexer", "explorer", "hemera"]
 packages = [
@@ -33,7 +34,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4"
-web3 = ">=6.8.0,<7"
+web3 = "6.20.3"
 eth-utils = ">=4.0.0"
 eth-abi = ">=5.0.1"
 python-dateutil = ">=2.8.0,<3"
@@ -43,7 +44,7 @@ requests = "*"
 sqlalchemy = "2.0.31"
 psycopg2-binary = "2.9.9"
 alembic = "*"
-pandas = "*"
+pandas = "2.0.0"
 Flask = "3.0.3"
 Flask-Caching = "2.3.0"
 Flask-Cors = "3.0.9"
@@ -79,7 +80,7 @@ hemera = "cli:cli"
 
 [tool.black]
 line-length = 120
-target-version = ["py38", "py39", "py310", "py311"]
+target-version = ["py38", "py39", "py310", "py311", "py312"]
 
 [tool.isort]
 profile = "black"

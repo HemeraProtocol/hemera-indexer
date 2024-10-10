@@ -23,7 +23,7 @@ image:
 	@echo "Build tag: $(TAG)"
 	@echo "Build flags: $(IMAGE_FLAGS)"
 	docker buildx build $(IMAGE_FLAGS) --network host -t hemera-protocol:$(TAG) . --no-cache
-	@echo "Built image hemera-protocol:$(VERSION)-$(BUILD)"
+	@echo "Built image hemera-protocol:$(TAG)"
 
 test:
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
@@ -45,41 +45,44 @@ init_db:
 	@echo "Initializing database..."
 	poetry run python -m hemera.py init_db
 
-.PHONY: development
-
 development:
 	@echo "Setting up development environment..."
-	@if ! command -v python3 &> /dev/null; then \
-		echo "Python 3 is not installed. Please install Python 3 and try again."; \
+	@bash -c 'set -euo pipefail; \
+	PYTHON_CMD=$$(command -v python3 || command -v python); \
+	if [ -z "$$PYTHON_CMD" ] || ! "$$PYTHON_CMD" --version 2>&1 | grep -q "Python 3"; then \
+		echo "Python 3 is not found. Please install Python 3 and try again."; \
 		exit 1; \
-	fi
-	@python_version=$$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))'); \
-	if ! echo "$$python_version" | grep -qE '^3\.(8|9|10|11)'; then \
+	fi; \
+	python_version=$$($$PYTHON_CMD -c "import sys; print(\"{}.{}\".format(sys.version_info.major, sys.version_info.minor))"); \
+	if ! echo "$$python_version" | grep -qE "^3\.(8|9|10|11)"; then \
 		echo "Python version $$python_version is not supported. Please use Python 3.8, 3.9, 3.10, or 3.11."; \
 		exit 1; \
-	fi
-	@if [ ! -d ".venv" ]; then \
+	fi; \
+	echo "Using Python: $$($$PYTHON_CMD --version)"; \
+	if [ ! -d ".venv" ]; then \
 		echo "Creating virtual environment..."; \
-		python3 -m venv .venv; \
-	fi
-	@echo "Activating virtual environment..."
-	@. .venv/bin/activate && \
-	if ! command -v pip &> /dev/null; then \
+		$$PYTHON_CMD -m venv .venv || { \
+			echo "Failed to create virtual environment. Installing venv..."; \
+			sudo apt-get update && sudo apt-get install -y python3-venv && $$PYTHON_CMD -m venv .venv; \
+		}; \
+	fi; \
+	echo "Activating virtual environment..."; \
+	. .venv/bin/activate; \
+	if ! pip --version &> /dev/null; then \
 		echo "Installing pip..."; \
 		curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py; \
-		python3 get-pip.py; \
+		$$PYTHON_CMD get-pip.py; \
 		rm get-pip.py; \
-	fi && \
-	if ! command -v poetry &> /dev/null; then \
+	fi; \
+	if ! poetry --version &> /dev/null; then \
 		echo "Installing Poetry..."; \
 		pip install poetry; \
 	else \
 		echo "Poetry is already installed."; \
-	fi && \
-	echo "Installing project dependencies..." && \
-	poetry install -v && \
-	echo "Development environment setup complete." && \
-	echo "" && \
-	echo "To activate the virtual environment, run:" && \
-	echo "source .venv/bin/activate"
-
+	fi; \
+	echo "Installing project dependencies..."; \
+	poetry install -v; \
+	echo "Development environment setup complete."; \
+	echo ""; \
+	echo "To activate the virtual environment, run:"; \
+	echo "source .venv/bin/activate"'
