@@ -129,7 +129,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--retry-from-record",
-    default=False,
+    default=True,
     show_default=True,
     type=bool,
     envvar="RETRY_FROM_RECORD",
