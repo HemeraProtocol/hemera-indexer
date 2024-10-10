@@ -7,7 +7,7 @@ from decimal import Decimal
 from queue import Queue
 from typing import List, Type, Union, get_args, get_origin
 
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, select
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models.blocks import Blocks
@@ -472,15 +472,8 @@ def table_to_dataclass(row_instance, cls):
                     for key in meta_data_json:
                         dict_instance[key] = meta_data_json[key]
             else:
-                attr = getattr(row_instance, column.name)
-                if isinstance(attr, datetime):
-                    dict_instance[column.name] = int(round(attr.timestamp()))
-                elif isinstance(attr, Decimal):
-                    dict_instance[column.name] = float(attr)
-                elif isinstance(attr, bytes):
-                    dict_instance[column.name] = "0x" + attr.hex()
-                else:
-                    dict_instance[column.name] = attr
+                value = getattr(row_instance, column.name)
+                dict_instance[column.name] = convert_value(value)
     else:
         for column, value in row_instance._asdict().items():
             dict_instance[column] = convert_value(value)
