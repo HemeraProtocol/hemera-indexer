@@ -44,5 +44,13 @@ class JobListGenerator(object):
                 "period_feature_holding_balance_lendle.sql",
                 "period_feature_defi_wallet_fbtc_aggregates.py",
             ]
+        elif self.job_name == "EXPLORE_2":
+            job_list = [
+                "test.sql",
+                "explorer_1_update_address_txn_stats.sql",
+                "explorer_2_update_address_token_transfer_stats.sql",
+                "explorer_3_addresses.sql",
+                "explorer_4_agg_address_stats.sql",
+            ]
 
         return job_list
