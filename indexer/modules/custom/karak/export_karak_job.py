@@ -74,9 +74,9 @@ class ExportKarakJob(FilterTransactionDataJob):
         topics = []
         addresses = []
         for k, item in self.karak_conf.items():
-            if item.get("topic"):
+            if isinstance(item, dict) and item.get("topic"):
                 topics.append(item["topic"])
-            if item.get("address"):
+            if isinstance(item, dict) and item.get("address"):
                 addresses.append(item["address"])
         for ad in self.vault_token:
             addresses.append(ad)
@@ -157,6 +157,8 @@ class ExportKarakJob(FilterTransactionDataJob):
                     dl = decode_log(TRANSFER_EVENT, log)
                     _from = dl.get("from")
                     _to = dl.get("to")
+                    if _from == self.karak_conf["VAULT_SUPERVISOR"] or _to == self.karak_conf["VAULT_SUPERVISOR"]:
+                        continue
                     value = dl.get("amount")
                     kad = KarakActionD(
                         transaction_hash=transaction.hash,
