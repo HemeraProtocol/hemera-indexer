@@ -1,0 +1,31 @@
+name: Python application test
+
+on: [pull_request]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Set PYTHONPATH
+        run: echo "PYTHONPATH=\$PYTHONPATH:$(pwd)" >> $GITHUB_ENV
+
+      - name: Verify PYTHONPATH
+        run: echo $PYTHONPATH
+
+      - name: Test with pytest
+        run: |
+          export PYTHONPATH=$(pwd)
+          make test indexer

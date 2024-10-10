@@ -1,0 +1,27 @@
+version: '3.8'
+
+x-common-settings: &common-settings
+  build: ../
+  env_file:
+    - hemera-indexer.env
+  command: [ "stream" ]
+  networks:
+    - hemera
+  volumes:
+    - ./output:/app/output
+
+services:
+  hemera-schedule-story:
+    <<: *common-settings
+    image: hemera-indexer-schdule:story
+    container_name: hemera-schedule-story
+    command: [ "schedule" ]
+
+  hemera-daily-story:
+    <<: *common-settings
+    image: hemera-indexer-daily:story
+    container_name: hemera-daily-story
+    command: [ "aggregates" ]
+
+networks:
+  hemera:
