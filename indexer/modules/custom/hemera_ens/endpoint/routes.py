@@ -1,5 +1,7 @@
 import decimal
+from copy import deepcopy
 from datetime import date, datetime
+from typing import Any, Dict, Optional
 
 import flask
 from flask_restx import Resource
@@ -28,7 +30,7 @@ PAGE_SIZE = 10
 
 
 @register_feature("ens", "value")
-def get_ens_current(address):
+def get_ens_current(address) -> Optional[Dict[str, Any]]:
     if isinstance(address, str):
         address = bytes.fromhex(address[2:])
 
@@ -36,10 +38,12 @@ def get_ens_current(address):
         "primary_name": None,
         "resolve_to_names": [],
         "ens_holdings": [],
-        "ens_holdings_total": None,
+        "ens_holdings_total": 0,
         "first_register_time": None,
         "first_set_primary_time": None,
+        "resolve_to_names_total": 0,
     }
+    origin_res = deepcopy(res)
 
     dn = datetime.now()
     # current_address holds 721 & 1155 tokens
@@ -130,11 +134,11 @@ def get_ens_current(address):
     if first_set_name:
         res["first_set_primary_time"] = datetime_to_string(first_set_name.block_timestamp)
 
-    return res
+    return res if res != origin_res else None
 
 
 @register_feature("ens", "events")
-def get_ens_events(address, limit=5, offset=0):
+def get_ens_events(address, limit=5, offset=0) -> Optional[Dict[str, Any]]:
     if isinstance(address, str):
         address = bytes.fromhex(address[2:])
     events = []
@@ -197,6 +201,9 @@ def get_ens_events(address, limit=5, offset=0):
         base.update(extras)
         events.append(base)
 
+    if len(events) == 0:
+        return None
+
     return {"data": events, "total": len(events)}
 
 
@@ -222,7 +229,10 @@ class ACIEnsDetail(Resource):
         page_size = int(flask.request.args.get("size", PAGE_SIZE))
         limit = page_size
         offset = (page_index - 1) * page_size
-        return get_ens_events(address, limit, offset) | {"page": page_index, "size": page_size}
+        return get_ens_events(address, limit, offset) or {"data": [], "total": 0} | {
+            "page": page_index,
+            "size": page_size,
+        }
 
 
 def merge_ens_middle(records):

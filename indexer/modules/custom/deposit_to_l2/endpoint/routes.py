@@ -1,4 +1,5 @@
 from time import time
+from typing import Any, Dict, Optional
 
 import flask
 from flask_restx import Resource
@@ -30,8 +31,10 @@ app_config = get_config()
 
 
 @register_feature("deposit_to_l2", "value")
-def get_deposit_to_l2_value(address):
+def get_deposit_to_l2_value(address) -> Optional[Dict[str, Any]]:
     deposit_count = get_transactions_cnt_by_wallet(address)
+    if deposit_count is None or deposit_count == 0:
+        return None
 
     chains = get_deposit_chain_list(address)
     chain_list = [chain_id_name_mapping[row_to_dict(chain)["chain_id"]] for chain in chains]
@@ -63,7 +66,9 @@ def get_deposit_to_l2_value(address):
 
 
 @register_feature("deposit_to_l2", "events")
-def get_deposit_to_l2_events(address, limit=5, offset=0, chain=None, contract=None, token=None, block=None):
+def get_deposit_to_l2_events(
+    address, limit=5, offset=0, chain=None, contract=None, token=None, block=None
+) -> Optional[Dict[str, Any]]:
     if address:
         address = address.lower()
         bytes_address = bytes.fromhex(address[2:])
@@ -111,11 +116,15 @@ def get_deposit_to_l2_events(address, limit=5, offset=0, chain=None, contract=No
             "block_number",
             "block_timestamp",
         ],
+        limit=limit,
+        offset=offset,
     )
 
     total_records = get_transactions_cnt_by_condition(filter_condition=filter_condition)
     transaction_list = parse_deposit_transactions(transactions)
 
+    if total_records == 0:
+        return None
     return {"data": transaction_list, "total": total_records}
 
 
@@ -143,7 +152,7 @@ class ACIDepositToL2Transactions(Resource):
             contract=contract,
             token=token,
             block=block,
-        ) | {
+        ) or {"data": [], "total": 0} | {
             "page": page_index,
             "size": page_size,
         }

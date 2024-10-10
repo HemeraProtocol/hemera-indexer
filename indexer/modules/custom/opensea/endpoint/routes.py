@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 
 from flask import request
 from flask_restx import Resource
@@ -28,7 +28,7 @@ PAGE_SIZE = 10
 
 
 @register_feature("opensea", "value")
-def get_opensea_profile(address: Union[str, bytes]) -> dict:
+def get_opensea_profile(address: Union[str, bytes]) -> Optional[Dict[str, Any]]:
     """
     Fetch and combine OpenSea profile data from both the profile table and recent transactions.
     """
@@ -36,7 +36,7 @@ def get_opensea_profile(address: Union[str, bytes]) -> dict:
 
     profile = db.session.query(AddressOpenseaProfile).filter_by(address=address_bytes).first()
     if not profile:
-        return {}
+        return None
 
     profile_data = as_dict(profile)
 
@@ -51,7 +51,7 @@ def get_opensea_profile(address: Union[str, bytes]) -> dict:
 
 
 @register_feature("opensea", "events")
-def get_opensea_events(address: Union[str, bytes], limit=5, offest=0) -> dict:
+def get_opensea_events(address: Union[str, bytes], limit=5, offest=0) -> Optional[Dict[str, Any]]:
     opensea_transactions = get_opensea_transactions_by_address(
         address,
         limit=limit,
@@ -59,6 +59,8 @@ def get_opensea_events(address: Union[str, bytes], limit=5, offest=0) -> dict:
     )
     total_count = get_opensea_address_order_cnt(address)
     transaction_list = parse_opensea_order_transactions(opensea_transactions)
+    if total_count == 0:
+        return None
 
     return {
         "data": transaction_list,
@@ -336,7 +338,7 @@ class ACIOpenseaTransactions(Resource):
         page_index = int(request.args.get("page", 1))
         page_size = int(request.args.get("size", PAGE_SIZE))
 
-        return get_opensea_events(address, page_size, (page_index - 1) * page_size) | {
+        return get_opensea_events(address, page_size, (page_index - 1) * page_size) or {"data": [], "total": 0} | {
             "page": page_index,
             "size": page_size,
         }

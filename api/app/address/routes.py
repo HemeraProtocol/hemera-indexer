@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Union
+from typing import Any, Dict, Optional, Union
 
 import flask
 from flask import request
@@ -90,27 +90,36 @@ class ACIProfiles(Resource):
 
 
 @register_feature("contract_deployer", "value")
-def get_contract_deployer_profile(address):
-    return {
-        "deployed_countract_count": get_address_deploy_contract_count(address),
-        "first_deployed_time": get_address_first_deploy_contract_time(address),
-    }
+def get_contract_deployer_profile(address) -> Optional[Dict[str, Any]]:
+    address_deploy_contract_count = get_address_deploy_contract_count(address)
+    address_first_deploy_contract_time = get_address_first_deploy_contract_time(address)
+    return (
+        {
+            "deployed_countract_count": address_deploy_contract_count,
+            "first_deployed_time": address_first_deploy_contract_time,
+        }
+        if address_deploy_contract_count != 0
+        else None
+    )
 
 
 @register_feature("contract_deployer", "events")
-def get_contract_deployed_events(address, limit=5, offset=0):
+def get_contract_deployed_events(address, limit=5, offset=0) -> Optional[Dict[str, Any]]:
+    count = get_address_deploy_contract_count(address)
+    if count == 0:
+        return None
     events = get_address_contract_operations(address, limit=limit, offset=offset)
     res = []
     for event in events:
         res.append(format_to_dict(event))
-    return {"data": res, "limit": limit, "offset": offset}
+    return {"data": res, "total": count}
 
 
 @address_features_namespace.route("/v1/aci/<address>/contract_deployer/profile")
 class ACIContractDeployerProfile(Resource):
     def get(self, address):
         address = address.lower()
-        return get_contract_deployer_profile(address)
+        return get_contract_deployer_profile(address) or {"deployed_countract_count": 0, "first_deployed_time": None}
 
 
 @address_features_namespace.route("/v1/aci/<address>/contract_deployer/events")
@@ -121,7 +130,11 @@ class ACIContractDeployerEvents(Resource):
         page_size = int(flask.request.args.get("size", PAGE_SIZE))
         limit = page_size
         offset = (page_index - 1) * page_size
-        return get_contract_deployed_events(address, limit=limit, offset=offset)
+
+        return (get_contract_deployed_events(address, limit=limit, offset=offset) or {"data": [], "total": 0}) | {
+            "size": page_size,
+            "page": page_index,
+        }
 
 
 @address_features_namespace.route("/v1/aci/<address>/all_features")
@@ -238,16 +251,16 @@ class ACIAllFeatures(Resource):
             )
 
         feature_data_list = [
-            {
-                "id": feature_id,
-                **{
+            {"id": feature_id, **subcategory_dict}
+            for feature_id in feature_list
+            if (
+                subcategory_dict := {
                     subcategory: feature_result[feature_id][subcategory]
                     for subcategory in feature_registry.features[feature_id]
-                },
-            }
-            for feature_id in feature_list
+                    if feature_result[feature_id][subcategory] is not None
+                }
+            )
         ]
-
         combined_result = {
             "address": address,
             "features": feature_data_list,

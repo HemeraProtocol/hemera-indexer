@@ -1,6 +1,7 @@
 import math
 from datetime import datetime
 from time import time
+from typing import Any, Dict, Optional
 
 from flask import request
 from flask_restx import Resource
@@ -34,7 +35,7 @@ NATIVE_COINS = {
 
 
 @register_feature("uniswap_v3_trading", "value")
-def get_uniswap_v3_trading_value(address):
+def get_uniswap_v3_trading_value(address) -> Optional[Dict[str, Any]]:
     if isinstance(address, str):
         address = bytes.fromhex(address[2:])
     swaps = db.session.execute(
@@ -59,7 +60,8 @@ def get_uniswap_v3_trading_value(address):
 
     token_list = list(set(token_list))
     transaction_hash_list = list(set(transaction_hash_list))
-
+    if len(transaction_hash_list) == 0 or len(token_list) == 0:
+        return None
     return {
         "trade_count": len(transaction_hash_list),
         "trade_asset_count": len(token_list),
@@ -69,9 +71,14 @@ def get_uniswap_v3_trading_value(address):
 
 
 @register_feature("uniswap_v3_trading", "events")
-def get_uniswap_v3_trading_events(address, limit=5, offset=0):
+def get_uniswap_v3_trading_events(address, limit=5, offset=0) -> Optional[Dict[str, Any]]:
     if isinstance(address, str):
         address = bytes.fromhex(address[2:])
+    total_count = UniswapV3PoolSwapRecords.query.where(
+        UniswapV3PoolSwapRecords.transaction_from_address == address
+    ).count()
+    if total_count == 0:
+        return None
 
     swaps = (
         db.session.execute(
@@ -119,7 +126,7 @@ def get_uniswap_v3_trading_events(address, limit=5, offset=0):
 
     return {
         "data": swap_records,
-        "total": len(swap_records),
+        "total": total_count,
     }
 
 
@@ -130,7 +137,9 @@ class UniswapV3WalletTradingRecords(Resource):
         page_index = int(request.args.get("page", 1))
         page_size = int(request.args.get("size", PAGE_SIZE))
 
-        return get_uniswap_v3_trading_events(address, page_size, (page_index - 1) * page_size) | {
+        return (
+            get_uniswap_v3_trading_events(address, page_size, (page_index - 1) * page_size) or {"data": [], "total": 0}
+        ) | {
             "page": page_index,
             "size": page_size,
         }
@@ -140,7 +149,250 @@ class UniswapV3WalletTradingRecords(Resource):
 class UniswapV3WalletTradingSummary(Resource):
     def get(self, address):
         address = address.lower()
-        return get_uniswap_v3_trading_value(address)
+        return get_uniswap_v3_trading_value(address) or {
+            "trade_count": 0,
+            "trade_asset_count": 0,
+            "total_volume_usd": 0,
+            "average_value_usd": 0,
+        }
+
+
+@register_feature("uniswap_v3_liquidity", "value")
+def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
+    address = address.lower()
+    address_bytes = bytes.fromhex(address[2:])
+
+    # Get all LP holdings
+    holdings = (
+        db.session.query(UniswapV3TokenCurrentStatus)
+        .filter(UniswapV3TokenCurrentStatus.wallet_address == address_bytes)
+        .filter(UniswapV3TokenCurrentStatus.liquidity > 0)
+        .all()
+    )
+
+    # Get Pool Price
+    unique_pool_addresses = {holding.pool_address for holding in holdings}
+    pool_prices = (
+        db.session.query(UniswapV3PoolCurrentPrices)
+        .filter(UniswapV3PoolCurrentPrices.pool_address.in_(unique_pool_addresses))
+        .all()
+    )
+    pool_price_map = {}
+    for data in pool_prices:
+        pool_address = "0x" + data.pool_address.hex()
+        pool_price_map[pool_address] = data.sqrt_price_x96
+
+    # Get token id info
+    token_id_list = [(holding.position_token_address, holding.token_id) for holding in holdings]
+    tokenIds = (
+        db.session.query(UniswapV3Tokens)
+        .filter(tuple_(UniswapV3Tokens.position_token_address, UniswapV3Tokens.token_id).in_(token_id_list))
+        .all()
+    )
+    token_id_infos = {}
+    for token in tokenIds:
+        position_token_address = "0x" + token.position_token_address.hex()
+        token_id = token.token_id
+        key = (position_token_address, token_id)
+        token_id_infos[key] = token
+
+    # Get Token info
+    erc20_tokens = set()
+    pool_infos = {}
+    pools = db.session.query(UniswapV3Pools).filter(UniswapV3Pools.pool_address.in_(unique_pool_addresses)).all()
+    for data in pools:
+        pool_address = "0x" + data.pool_address.hex()
+        pool_infos[pool_address] = data
+        erc20_tokens.add(data.token0_address)
+        erc20_tokens.add(data.token1_address)
+
+    erc20_datas = db.session.query(Tokens).filter(Tokens.address.in_(erc20_tokens)).all()
+    erc20_infos = {}
+    token_symbol_list = []
+    for data in erc20_datas:
+        erc20_infos["0x" + data.address.hex()] = data
+        token_symbol_list.append(data.symbol)
+
+    # Get Token Price
+    token_price_map = get_token_price_map_by_symbol_list(list(set(token_symbol_list)))
+
+    result = []
+    total_value_usd = 0
+    for holding in holdings:
+        position_token_address = "0x" + holding.position_token_address.hex()
+        token_id = holding.token_id
+        pool_address = "0x" + holding.pool_address.hex()
+        sqrt_price = pool_price_map[pool_address]
+        token_id_info = token_id_infos[(position_token_address, token_id)]
+        pool_info = pool_infos[pool_address]
+        token0_address = "0x" + pool_info.token0_address.hex()
+        token1_address = "0x" + pool_info.token1_address.hex()
+        if token0_address in erc20_infos:
+            token0_info = erc20_infos[token0_address]
+        else:
+            token0_info = Tokens(symbol="None", decimals=18)
+        if token1_address in erc20_infos:
+            token1_info = erc20_infos[token1_address]
+        else:
+            token1_info = Tokens(symbol="None", decimals=18)
+        amount0_str, amount1_str = get_token_amounts(
+            holding.liquidity,
+            sqrt_price,
+            token_id_info.tick_lower,
+            token_id_info.tick_upper,
+            token0_info.decimals,
+            token1_info.decimals,
+        )
+        token0_value_usd = float(amount0_str) * float(token_price_map.get(token0_info.symbol, 0))
+        token1_value_usd = float(amount1_str) * float(token_price_map.get(token1_info.symbol, 0))
+        total_value_usd += token0_value_usd
+        total_value_usd += token1_value_usd
+        result.append(
+            {
+                "pool_address": pool_address,
+                "position_token_address": position_token_address,
+                "token_id": str(token_id),
+                "block_timestamp": datetime.fromtimestamp(holding.block_timestamp).isoformat("T", "seconds"),
+                "token0": {
+                    "token0_symbol": token0_info.symbol,
+                    "token0_icon_url": token0_info.icon_url,
+                    "token0_balance": amount0_str,
+                    "token0_value_usd": token0_value_usd,
+                },
+                "token1": {
+                    "token1_symbol": token1_info.symbol,
+                    "token1_icon_url": token1_info.icon_url,
+                    "token1_balance": amount1_str,
+                    "token1_value_usd": token1_value_usd,
+                },
+            }
+        )
+    if len(result) == 0:
+        return None
+
+    return {
+        "pool_count": len(unique_pool_addresses),
+        "total_value_usd": total_value_usd,
+    }
+
+
+@register_feature("uniswap_v3_liquidity", "events")
+def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
+    address = address.lower()
+    address_bytes = bytes.fromhex(address[2:])
+
+    # Get all LP holdings
+    holdings = (
+        db.session.query(UniswapV3TokenCurrentStatus)
+        .filter(UniswapV3TokenCurrentStatus.wallet_address == address_bytes)
+        .filter(UniswapV3TokenCurrentStatus.liquidity > 0)
+        .all()
+    )
+
+    # Get Pool Price
+    unique_pool_addresses = {holding.pool_address for holding in holdings}
+    pool_prices = (
+        db.session.query(UniswapV3PoolCurrentPrices)
+        .filter(UniswapV3PoolCurrentPrices.pool_address.in_(unique_pool_addresses))
+        .all()
+    )
+    pool_price_map = {}
+    for data in pool_prices:
+        pool_address = "0x" + data.pool_address.hex()
+        pool_price_map[pool_address] = data.sqrt_price_x96
+
+    # Get token id info
+    token_id_list = [(holding.position_token_address, holding.token_id) for holding in holdings]
+    tokenIds = (
+        db.session.query(UniswapV3Tokens)
+        .filter(tuple_(UniswapV3Tokens.position_token_address, UniswapV3Tokens.token_id).in_(token_id_list))
+        .all()
+    )
+    token_id_infos = {}
+    for token in tokenIds:
+        position_token_address = "0x" + token.position_token_address.hex()
+        token_id = token.token_id
+        key = (position_token_address, token_id)
+        token_id_infos[key] = token
+
+    # Get Token info
+    erc20_tokens = set()
+    pool_infos = {}
+    pools = db.session.query(UniswapV3Pools).filter(UniswapV3Pools.pool_address.in_(unique_pool_addresses)).all()
+    for data in pools:
+        pool_address = "0x" + data.pool_address.hex()
+        pool_infos[pool_address] = data
+        erc20_tokens.add(data.token0_address)
+        erc20_tokens.add(data.token1_address)
+
+    erc20_datas = db.session.query(Tokens).filter(Tokens.address.in_(erc20_tokens)).all()
+    erc20_infos = {}
+    token_symbol_list = []
+    for data in erc20_datas:
+        erc20_infos["0x" + data.address.hex()] = data
+        token_symbol_list.append(data.symbol)
+
+    # Get Token Price
+    token_price_map = get_token_price_map_by_symbol_list(list(set(token_symbol_list)))
+
+    result = []
+    total_value_usd = 0
+    for holding in holdings:
+        position_token_address = "0x" + holding.position_token_address.hex()
+        token_id = holding.token_id
+        pool_address = "0x" + holding.pool_address.hex()
+        sqrt_price = pool_price_map[pool_address]
+        token_id_info = token_id_infos[(position_token_address, token_id)]
+        pool_info = pool_infos[pool_address]
+        token0_address = "0x" + pool_info.token0_address.hex()
+        token1_address = "0x" + pool_info.token1_address.hex()
+        if token0_address in erc20_infos:
+            token0_info = erc20_infos[token0_address]
+        else:
+            token0_info = Tokens(symbol="None", decimals=18)
+        if token1_address in erc20_infos:
+            token1_info = erc20_infos[token1_address]
+        else:
+            token1_info = Tokens(symbol="None", decimals=18)
+        amount0_str, amount1_str = get_token_amounts(
+            holding.liquidity,
+            sqrt_price,
+            token_id_info.tick_lower,
+            token_id_info.tick_upper,
+            token0_info.decimals,
+            token1_info.decimals,
+        )
+        token0_value_usd = float(amount0_str) * float(token_price_map.get(token0_info.symbol, 0))
+        token1_value_usd = float(amount1_str) * float(token_price_map.get(token1_info.symbol, 0))
+        total_value_usd += token0_value_usd
+        total_value_usd += token1_value_usd
+        result.append(
+            {
+                "pool_address": pool_address,
+                "position_token_address": position_token_address,
+                "token_id": str(token_id),
+                "block_timestamp": datetime.fromtimestamp(holding.block_timestamp).isoformat("T", "seconds"),
+                "token0": {
+                    "token0_symbol": token0_info.symbol,
+                    "token0_icon_url": token0_info.icon_url,
+                    "token0_balance": amount0_str,
+                    "token0_value_usd": token0_value_usd,
+                },
+                "token1": {
+                    "token1_symbol": token1_info.symbol,
+                    "token1_icon_url": token1_info.icon_url,
+                    "token1_balance": amount1_str,
+                    "token1_value_usd": token1_value_usd,
+                },
+            }
+        )
+    if len(result) == 0:
+        return None
+
+    return {
+        "data": result,
+        "total": len(result),
+    }
 
 
 @uniswap_v3_namespace.route("/v1/aci/<address>/uniswap_v3_liquidity/current_holding")
