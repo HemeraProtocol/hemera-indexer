@@ -3,12 +3,14 @@ import os
 import signal
 import sys
 from fileinput import filename
+from logging.handlers import TimedRotatingFileHandler
 
 
 def logging_basic_config(log_level=logging.INFO, log_file=None):
     format = "%(asctime)s - %(name)s [%(levelname)s] - %(message)s"
     if filename is not None:
-        logging.basicConfig(level=log_level, format=format, filename=log_file)
+        handler = TimedRotatingFileHandler(filename=log_file, when="h", interval=2, backupCount=12)
+        logging.basicConfig(level=log_level, format=format, handlers=[handler])
     else:
         logging.basicConfig(level=log_level, format=format)
 
