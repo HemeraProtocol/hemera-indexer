@@ -25,7 +25,7 @@ from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distinct_collections_by_group
 
 logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.UNISWAP_V3_TOKENS.value
@@ -169,6 +169,10 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 block_number=block_number,
                 block_timestamp=self._block_infos[block_number]
             ))
+
+        self._data_buff[UniswapV3TokenCurrentStatus.type()] = distinct_collections_by_group(
+            self._data_buff[UniswapV3TokenCurrentStatus.type()], ['nft_address', 'token_id'], 'block_number')
+
         self._block_infos = {}
 
     def _process(self, **kwargs):
@@ -222,7 +226,6 @@ def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, b
                 block_timestamp=block_info[max_block_number],
             )
         )
-
     return token_result, current_statuses
 
 
