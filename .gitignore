@@ -1,0 +1,52 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# JetBrains IDE
+.idea/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# dotenv
+.env
+
+# virtualenv
+.venv
+venv/
+ENV/
+
+# Output Data Files
+*.json
+*.csv
+docker-compose/hemera-indexer.env
+docker-compose/data/
+docker-compose/output/
+docker-compose/postgres/
+
+# Local Config
+resource/hemera.ini
+sync_record
+alembic.ini
+!indexer/modules/custom/hemera_ens/abi/*.json
