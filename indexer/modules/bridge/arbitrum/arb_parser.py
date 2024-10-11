@@ -23,7 +23,7 @@ from indexer.modules.bridge.domain.arbitrum import (
     TicketCreatedData,
     TransactionToken,
 )
-from indexer.modules.bridge.signature import decode_log, event_log_abi_to_topic, function_abi_to_4byte_selector_str
+from indexer.utils.abi import decode_log, event_log_abi_to_topic, function_abi_to_4byte_selector_str
 
 MESSAGE_DELIVERED_EVENT = cast(
     ABIEvent,

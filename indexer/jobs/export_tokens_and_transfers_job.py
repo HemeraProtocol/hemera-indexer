@@ -25,12 +25,11 @@ from indexer.domain.token_transfer import (
 )
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
-from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import encode_abi
+from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()

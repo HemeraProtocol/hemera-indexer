@@ -5,18 +5,18 @@ from typing import List, Optional, Union
 from eth_utils import to_hex
 from hexbytes import HexBytes
 
+from common.utils.web3_utils import ZERO_ADDRESS
 from indexer.domain import dict_to_dataclass
 from indexer.domain.current_token_balance import CurrentTokenBalance
 from indexer.domain.token_balance import TokenBalance
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
-from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
-from indexer.utils.abi import pad_address, uint256_to_bytes
+from indexer.utils.abi import function_abi_to_4byte_selector_str, pad_address, uint256_to_bytes
+from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.multicall_hemera.util import calculate_execution_time
 from indexer.utils.token_fetcher import TokenFetcher
-from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()

@@ -16,9 +16,9 @@ from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.parameter_utils import check_file_exporter_parameter
 from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.rpc_utils import pick_random_provider_uri
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
-from indexer.utils.utils import pick_random_provider_uri
 
 exception_recorder = ExceptionRecorder()
 

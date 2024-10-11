@@ -1,7 +1,5 @@
-import configparser
 import json
 import logging
-import os
 from collections import defaultdict
 
 import eth_abi
@@ -25,7 +23,7 @@ from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.MERCHANT_MOE_1155_LIQUIDITY.value
@@ -443,7 +441,7 @@ def get_exist_pools(db_service):
         history_pools = set()
         if result is not None:
             for item in result:
-                history_pools.add("0x" + item.position_token_address.hex())
+                history_pools.add(bytes_to_hex_str(item.position_token_address))
     except Exception as e:
         print(e)
         raise e

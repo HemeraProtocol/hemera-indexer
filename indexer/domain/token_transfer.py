@@ -3,11 +3,11 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
+from common.utils.web3_utils import ZERO_ADDRESS
 from enumeration.token_type import TokenType
 from indexer.domain import Domain
 from indexer.domain.log import Log
 from indexer.utils.abi import Event
-from indexer.utils.utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 
