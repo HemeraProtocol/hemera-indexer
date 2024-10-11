@@ -60,7 +60,7 @@ from api.app.utils.fill_info import (
 from api.app.utils.format_utils import format_coin_value_with_unit, format_dollar_value
 from api.app.utils.parse_utils import parse_log_with_transaction_input_list, parse_transactions
 from api.app.utils.token_utils import get_token_price
-from api.app.web3_utils import get_balance, get_code, get_gas_price
+from api.app.utils.web3_utils import get_balance, get_code, get_gas_price
 from common.models import db
 from common.models.blocks import Blocks
 from common.models.contract_internal_transactions import ContractInternalTransactions

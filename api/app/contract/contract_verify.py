@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 import requests
 
-from api.app.web3_utils import get_code, get_storage_at, w3
+from api.app.utils.web3_utils import get_code, get_storage_at, w3
 from common.models import db
 from common.models.contracts import Contracts
 from common.utils.config import get_config
