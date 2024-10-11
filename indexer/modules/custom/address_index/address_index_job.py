@@ -174,7 +174,9 @@ def create_address_transaction(transaction, address, txn_type, related_address, 
 
 def transactions_to_address_transactions(transactions: List[Transaction]):
     for transaction in transactions:
-        transaction_fee = transaction.receipt.gas_used * transaction.gas_price + (transaction.receipt.l1_fee or 0)
+        transaction_fee = (transaction.receipt.gas_used or 0) * (transaction.gas_price or 0) + (
+            transaction.receipt.l1_fee or 0
+        )
         assert transaction.from_address is not None
         assert transaction.to_address is not None or transaction.receipt.contract_address is not None
 
