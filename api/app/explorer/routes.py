@@ -75,6 +75,7 @@ from common.models.daily_transactions_aggregates import DailyTransactionsAggrega
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
+from common.models.scheduled_metadata import ScheduledWalletCountMetadata
 from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.models.token_balances import AddressTokenBalances
 from common.models.tokens import Tokens
@@ -1349,7 +1350,30 @@ class ExplorerAddressTransactions(Resource):
         if len(transactions) < PAGE_SIZE:
             total_count = len(transactions)
         else:
-            total_count = get_address_transaction_cnt(address)
+            last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
+            recently_txn_count = (
+                db.session.query(Transactions.hash)
+                .filter(
+                    and_(
+                        (Transactions.block_timestamp >= last_timestamp.date() if last_timestamp is not None else True),
+                        or_(
+                            Transactions.from_address == address,
+                            Transactions.to_address == address,
+                        ),
+                    )
+                )
+                .count()
+            )
+            result = (
+                db.session.query(StatisticsWalletAddresses)
+                .with_entities(StatisticsWalletAddresses.txn_cnt)
+                .filter(StatisticsWalletAddresses.address == address)
+                .first()
+            )
+            past_txn_count = 0 if not result else result[0]
+            total_count = past_txn_count + recently_txn_count
+
+            # total_count = get_address_transaction_cnt(address)
 
         transaction_list = parse_transactions(transactions)
 

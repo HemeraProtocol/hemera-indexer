@@ -5,7 +5,7 @@ from common.models import HemeraModel
 
 
 class StatisticsWalletAddresses(HemeraModel):
-    __tablename__ = 'wallet_addresses'
+    __tablename__ = "wallet_addresses"
     address = Column(BYTEA, primary_key=True)
     txn_in_cnt = Column(INTEGER, default=0)
     txn_out_cnt = Column(INTEGER, default=0)
