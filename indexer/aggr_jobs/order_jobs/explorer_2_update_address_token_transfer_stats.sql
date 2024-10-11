@@ -4,7 +4,7 @@ WITH erc20_in AS (
         DATE(block_timestamp) AS block_date,
         COUNT(1) AS cnt
     FROM erc20_token_transfers
-    WHERE DATE(block_timestamp) = DATE '{{ ds }}'
+    WHERE DATE(block_timestamp) = DATE '{start_date}'
     GROUP BY to_address, DATE(block_timestamp)
 )
 
@@ -27,7 +27,7 @@ WITH erc20_out AS (
         DATE(block_timestamp) AS block_date,
         COUNT(1) AS cnt
     FROM erc20_token_transfers
-    WHERE DATE(block_timestamp) = DATE '{{ ds }}'
+    WHERE DATE(block_timestamp) = DATE '{start_date}'
     GROUP BY from_address, DATE(block_timestamp)
 )
 
@@ -50,7 +50,7 @@ WITH erc721_in AS (
         DATE(block_timestamp) AS block_date,
         COUNT(1) AS cnt
     FROM erc721_token_transfers
-    WHERE DATE(block_timestamp) = DATE '{{ ds }}'
+    WHERE DATE(block_timestamp) = DATE '{start_date}'
     GROUP BY to_address, DATE(block_timestamp)
 )
 
@@ -73,7 +73,7 @@ WITH erc721_out AS (
         DATE(block_timestamp) AS block_date,
         COUNT(1) AS cnt
     FROM erc721_token_transfers
-    WHERE DATE(block_timestamp) = DATE '{{ ds }}'
+    WHERE DATE(block_timestamp) = DATE '{start_date}'
     GROUP BY from_address, DATE(block_timestamp)
 )
 
@@ -95,7 +95,7 @@ WITH erc1155_in AS (
         DATE(block_timestamp) AS block_date,
         COUNT(1) AS cnt
     FROM erc1155_token_transfers
-    WHERE DATE(block_timestamp) = DATE '{{ ds }}'
+    WHERE DATE(block_timestamp) = DATE '{start_date}'
     GROUP BY to_address, DATE(block_timestamp)
 )
 
@@ -117,7 +117,7 @@ WITH erc1155_out AS (
         DATE(block_timestamp) AS block_date,
         COUNT(1) AS cnt
     FROM erc1155_token_transfers
-    WHERE DATE(block_timestamp) = DATE '{{ ds }}'
+    WHERE DATE(block_timestamp) = DATE '{start_date}'
     GROUP BY from_address, DATE(block_timestamp)
 )
 

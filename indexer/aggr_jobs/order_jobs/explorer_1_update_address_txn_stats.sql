@@ -7,7 +7,7 @@ WITH out_txn AS (
         SUM(value) AS txn_out_value,
         SUM(CASE WHEN receipt_status = 0 THEN 1 ELSE 0 END) AS txn_out_error_cnt
     FROM transactions
-    WHERE block_timestamp >= '{{ ds }}' AND block_timestamp < '{{ ds }}'::DATE + INTERVAL '1 DAY'
+    WHERE block_timestamp >= '{start_date}' AND block_timestamp < '{start_date}'::DATE + INTERVAL '1 DAY'
       and from_address is not null
     GROUP BY from_address, DATE(block_timestamp)
 )
@@ -37,7 +37,7 @@ WITH in_txn AS (
         SUM(value) AS txn_in_value,
         SUM(CASE WHEN receipt_status = 0 THEN 1 ELSE 0 END) AS txn_in_error_cnt
     FROM transactions
-    WHERE block_timestamp >= '{{ ds }}' AND block_timestamp < '{{ ds }}'::DATE + INTERVAL '1 DAY'
+    WHERE block_timestamp >= '{start_date}' AND block_timestamp < '{start_date}'::DATE + INTERVAL '1 DAY'
       and to_address is not null
     GROUP BY to_address, DATE(block_timestamp)
 )
@@ -67,7 +67,7 @@ WITH self_txn AS (
         COUNT(DISTINCT hash) AS txn_self_cnt,
         SUM(CASE WHEN receipt_status = 0 THEN 1 ELSE 0 END) AS txn_self_error_cnt
     FROM transactions
-    WHERE block_timestamp >= '{{ ds }}' AND block_timestamp < '{{ ds }}'::DATE + INTERVAL '1 DAY'
+    WHERE block_timestamp >= '{start_date}' AND block_timestamp < '{start_date}'::DATE + INTERVAL '1 DAY'
       and from_address = to_address and from_address is not null
     GROUP BY from_address, DATE(block_timestamp)
 )
