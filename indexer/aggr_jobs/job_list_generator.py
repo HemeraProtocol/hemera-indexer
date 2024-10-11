@@ -51,6 +51,7 @@ class JobListGenerator(object):
                 "explorer_2_update_address_token_transfer_stats.sql",
                 "explorer_3_addresses.sql",
                 "explorer_4_agg_address_stats.sql",
+                "explorer_5_update_schedule_metadata.sql"
             ]
 
         return job_list
