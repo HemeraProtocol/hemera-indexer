@@ -75,7 +75,8 @@ from common.models.daily_transactions_aggregates import DailyTransactionsAggrega
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
-from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
+from common.models.scheduled_metadata import ScheduledWalletCountMetadata
+from common.models.statistics_wallet_addresses import WalletAddresses
 from common.models.token_balances import AddressTokenBalances
 from common.models.tokens import Tokens
 from common.models.traces import Traces
@@ -1349,7 +1350,30 @@ class ExplorerAddressTransactions(Resource):
         if len(transactions) < PAGE_SIZE:
             total_count = len(transactions)
         else:
-            total_count = get_address_transaction_cnt(address)
+            last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
+            recently_txn_count = (
+                db.session.query(Transactions.hash)
+                .filter(
+                    and_(
+                        (Transactions.block_timestamp >= last_timestamp.date() if last_timestamp is not None else True),
+                        or_(
+                            Transactions.from_address == address,
+                            Transactions.to_address == address,
+                        ),
+                    )
+                )
+                .count()
+            )
+            result = (
+                db.session.query(WalletAddresses)
+                .with_entities(WalletAddresses.txn_cnt)
+                .filter(WalletAddresses.address == address)
+                .first()
+            )
+            past_txn_count = 0 if not result else result[0]
+            total_count = past_txn_count + recently_txn_count
+
+            # total_count = get_address_transaction_cnt(address)
 
         transaction_list = parse_transactions(transactions)
 
@@ -1624,18 +1648,18 @@ class ExplorerStatisticsContractData(Resource):
         "transactions_received": lambda session, limit: session.query(
             Transactions.to_address.label("address"),
             func.count().label("transaction_count"),
-            StatisticsWalletAddresses.tag,
+            WalletAddresses.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.to_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            WalletAddresses,
+            cast("0x" + func.encode(Transactions.to_address, "hex"), VARCHAR) == WalletAddresses.address,
             isouter=True,
         )
         .filter(
             Transactions.block_timestamp > datetime.now() - timedelta(days=1),
             Transactions.to_address.in_(session.query(Contracts.address)),
         )
-        .group_by(Transactions.to_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.to_address, WalletAddresses.tag)
         .order_by(func.count().desc())
         .limit(limit)
         .all(),
@@ -1670,30 +1694,30 @@ class ExplorerStatisticsAddressData(Resource):
         "gas_used": lambda session, limit: session.query(
             Transactions.from_address.label("address"),
             func.sum(Transactions.receipt_gas_used).label("gas_used"),
-            StatisticsWalletAddresses.tag,
+            WalletAddresses.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            WalletAddresses,
+            cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == WalletAddresses.address,
             isouter=True,
         )
         .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
-        .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.from_address, WalletAddresses.tag)
         .order_by(func.sum(Transactions.receipt_gas_used).desc())
         .limit(limit)
         .all(),
         "transactions_sent": lambda session, limit: session.query(
             Transactions.from_address.label("address"),
             func.count().label("transaction_count"),
-            StatisticsWalletAddresses.tag,
+            WalletAddresses.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            WalletAddresses,
+            cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == WalletAddresses.address,
             isouter=True,
         )
         .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
-        .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.from_address, WalletAddresses.tag)
         .order_by(func.count().desc())
         .limit(limit)
         .all(),
