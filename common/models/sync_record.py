@@ -1,5 +1,5 @@
-from sqlalchemy import Column, PrimaryKeyConstraint
-from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, TIMESTAMP, VARCHAR
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import BIGINT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
 

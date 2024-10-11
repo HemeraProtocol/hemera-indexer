@@ -2,8 +2,6 @@ import logging
 import os
 from configparser import ConfigParser
 
-from sqlalchemy.engine import make_url
-
 from api.app.config import AppConfig
 
 _config_instance = None

@@ -1,5 +1,3 @@
-from sqlalchemy import func
-
 from common.models import db
 from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
 from common.utils.db_utils import build_entities
