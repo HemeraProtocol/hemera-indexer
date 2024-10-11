@@ -1,13 +1,13 @@
 from api.app.db_service.contracts import get_contracts_by_addresses
 from api.app.db_service.wallet_addresses import get_address_display_mapping
-from common.utils.format_utils import format_to_dict
+from common.utils.format_utils import format_to_dict, hex_str_to_bytes
 
 
 def fill_address_display_to_logs(log_list, all_address_list=None):
     if not all_address_list:
         all_address_list = []
     for log in log_list:
-        all_address_list.append(bytes.fromhex(log["address"][2:]))
+        all_address_list.append(hex_str_to_bytes(log["address"]))
 
     address_map = get_address_display_mapping(all_address_list)
     for log in log_list:
@@ -19,8 +19,8 @@ def fill_is_contract_to_transactions(transaction_list: list[dict], bytea_address
     if not bytea_address_list:
         bytea_address_list = []
         for transaction in transaction_list:
-            bytea_address_list.append(bytes.fromhex(transaction["from_address"][2:]))
-            bytea_address_list.append(bytes.fromhex(transaction["to_address"][2:]))
+            bytea_address_list.append(hex_str_to_bytes(transaction["from_address"]))
+            bytea_address_list.append(hex_str_to_bytes(transaction["to_address"]))
 
     contracts = get_contracts_by_addresses(address_list=bytea_address_list, columns=["address"])
     contract_list = set(map(lambda x: x.address, contracts))
@@ -36,8 +36,8 @@ def fill_address_display_to_transactions(transaction_list: list[dict], bytea_add
     if not bytea_address_list:
         bytea_address_list = []
         for transaction in transaction_list:
-            bytea_address_list.append(bytes.fromhex(transaction["from_address"][2:]))
-            bytea_address_list.append(bytes.fromhex(transaction["to_address"][2:]))
+            bytea_address_list.append(hex_str_to_bytes(transaction["from_address"]))
+            bytea_address_list.append(hex_str_to_bytes(transaction["to_address"]))
 
     address_map = get_address_display_mapping(bytea_address_list)
 

@@ -13,6 +13,7 @@ from eth_typing import Decodable
 from sqlalchemy import func
 
 from common.utils.exception_control import FastShutdownError
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
@@ -32,7 +33,7 @@ from indexer.modules.custom.eigen_layer.eigen_layer_domain import (
 from indexer.modules.custom.eigen_layer.models.af_eigen_layer_address_current import AfEigenLayerAddressCurrent
 from indexer.modules.custom.eigen_layer.models.af_eigen_layer_records import AfEigenLayerRecords
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import bytes_to_hex_str, decode_log
+from indexer.utils.abi import decode_log
 
 logger = logging.getLogger(__name__)
 

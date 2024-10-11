@@ -1,17 +1,16 @@
 from datetime import date, datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Union
 
 from flask import request
 from flask_restx import Resource
-from sqlalchemy import and_, case, desc, func
+from sqlalchemy import and_, desc, func
 
 from api.app.cache import cache
 from common.models import db
 from common.models.token_hourly_price import TokenHourlyPrices
 from common.models.tokens import Tokens
-from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict, format_to_dict
+from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, hex_str_to_bytes
 from indexer.modules.custom.opensea.endpoint import opensea_namespace
 from indexer.modules.custom.opensea.models.address_opensea_profile import AddressOpenseaProfile
 from indexer.modules.custom.opensea.models.address_opensea_transaction import AddressOpenseaTransactions
@@ -31,7 +30,7 @@ def get_opensea_profile(address: Union[str, bytes]) -> dict:
     """
     Fetch and combine OpenSea profile data from both the profile table and recent transactions.
     """
-    address_bytes = bytes.fromhex(address[2:]) if isinstance(address, str) else address
+    address_bytes = hex_str_to_bytes(address) if isinstance(address, str) else address
 
     profile = db.session.query(AddressOpenseaProfile).filter_by(address=address_bytes).first()
     if not profile:
@@ -95,7 +94,7 @@ def get_recent_opensea_transactions(address: bytes, timestamp: datetime) -> Dict
 
 def get_opensea_order_count_by_address(address: Union[str, bytes]):
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     result = (
         db.session.query(AddressOpenseaProfile)
         .with_entities(AddressOpenseaProfile.opensea_order_count)
@@ -107,7 +106,7 @@ def get_opensea_order_count_by_address(address: Union[str, bytes]):
 
 def get_opensea_address_order_cnt(address: Union[str, bytes]):
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
     recently_txn_count = (
         db.session.query(AddressOpenseaTransactions.address)
@@ -183,9 +182,9 @@ def parse_item(item: Dict[str, Any], token_info: Dict[str, Any], timestamp: date
 
 
 def fetch_token_info(token_addresses: List[str]) -> Dict[str, Any]:
-    byte_addresses = [bytes.fromhex(addr[2:]) for addr in token_addresses]
+    byte_addresses = [hex_str_to_bytes(addr) for addr in token_addresses]
     token_infos = db.session.query(Tokens).filter(Tokens.address.in_(byte_addresses)).all()
-    return {"0x" + token.address.hex(): as_dict(token) for token in token_infos}
+    return {bytes_to_hex_str(token.address): as_dict(token) for token in token_infos}
 
 
 def parse_opensea_order(order: OpenseaOrders, token_info: Dict[str, Any]) -> Dict[str, Any]:
@@ -256,11 +255,13 @@ def parse_opensea_order_transactions(transactions: List[AddressOpenseaTransactio
     token_info = fetch_token_info(list(token_addresses))
     order_dict = {}
     for order in orders:
-        order_dict["0x" + order.order_hash.hex()] = parse_opensea_order(order, token_info)
+        order_dict[bytes_to_hex_str(order.order_hash)] = parse_opensea_order(order, token_info)
 
     parsed_transactions = []
     for transaction in transactions:
-        transaction_dict = format_to_dict(as_dict(transaction) | order_dict.get("0x" + transaction.order_hash.hex()))
+        transaction_dict = format_to_dict(
+            as_dict(transaction) | order_dict.get(bytes_to_hex_str(transaction.order_hash))
+        )
 
         parsed_transactions.append(format_opensea_transaction(transaction_dict))
 
@@ -269,7 +270,7 @@ def parse_opensea_order_transactions(transactions: List[AddressOpenseaTransactio
 
 def get_opensea_transactions_by_address(address, limit=1, offset=0):
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     transactions = (
         db.session.query(AddressOpenseaTransactions)
         .order_by(
@@ -286,7 +287,7 @@ def get_opensea_transactions_by_address(address, limit=1, offset=0):
 
 def get_latest_opensea_transaction_by_address(address: Union[str, bytes]):
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     last_opensea_transaction = (
         db.session()
         .query(AddressOpenseaTransactions)
@@ -297,7 +298,7 @@ def get_latest_opensea_transaction_by_address(address: Union[str, bytes]):
     if not last_opensea_transaction:
         return {}
     return {
-        "latest_transaction_hash": "0x" + last_opensea_transaction.transaction_hash.hex(),
+        "latest_transaction_hash": bytes_to_hex_str(last_opensea_transaction.transaction_hash),
         "latest_block_timestamp": last_opensea_transaction.block_timestamp.astimezone().isoformat("T", "seconds"),
     }
 

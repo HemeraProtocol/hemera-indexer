@@ -1,10 +1,10 @@
-from datetime import datetime
 from typing import Type
 
 from sqlalchemy import Column, Computed, Index, asc, desc, func, text
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain.transaction import Transaction
 
 
@@ -92,7 +92,7 @@ def converter(table: Type[HemeraModel], data: Transaction, is_update=False):
     converted_data = general_converter(table, data, is_update)
     receipt = data.receipt
 
-    converted_data["receipt_root"] = bytes.fromhex(receipt.root[2:]) if receipt and receipt.root else None
+    converted_data["receipt_root"] = hex_str_to_bytes(receipt.root) if receipt and receipt.root else None
     converted_data["receipt_status"] = receipt.status if receipt else None
     converted_data["receipt_gas_used"] = receipt.gas_used if receipt else None
     converted_data["receipt_cumulative_gas_used"] = receipt.cumulative_gas_used if receipt else None
@@ -104,7 +104,7 @@ def converter(table: Type[HemeraModel], data: Transaction, is_update=False):
     converted_data["receipt_blob_gas_used"] = receipt.blob_gas_used if receipt else None
     converted_data["receipt_blob_gas_price"] = receipt.blob_gas_price if receipt else None
     converted_data["receipt_contract_address"] = (
-        bytes.fromhex(receipt.contract_address[2:]) if receipt and receipt.contract_address else None
+        hex_str_to_bytes(receipt.contract_address) if receipt and receipt.contract_address else None
     )
 
     return converted_data

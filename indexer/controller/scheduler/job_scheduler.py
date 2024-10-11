@@ -7,6 +7,7 @@ from redis.client import Redis
 
 from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
+from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -14,7 +15,6 @@ from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
-from indexer.utils.abi import bytes_to_hex_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 
 import_submodules("indexer.modules")

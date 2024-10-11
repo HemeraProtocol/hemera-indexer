@@ -6,6 +6,7 @@ from psycopg2._json import Json
 from sqlalchemy import NUMERIC
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSON, JSONB, TIMESTAMP
 
+from common.utils.format_utils import hex_str_to_bytes
 from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 from indexer.domain import Domain
 
@@ -45,7 +46,7 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
             column_type = get_column_type(table, key)
             if isinstance(column_type, BYTEA) and not isinstance(getattr(data, key), bytes):
                 if isinstance(getattr(data, key), str):
-                    converted_data[key] = bytes.fromhex(getattr(data, key)[2:]) if getattr(data, key) else None
+                    converted_data[key] = hex_str_to_bytes(getattr(data, key)) if getattr(data, key) else None
                 elif isinstance(getattr(data, key), int):
                     converted_data[key] = getattr(data, key).to_bytes(32, byteorder="big")
                 else:
@@ -53,7 +54,7 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
             elif isinstance(column_type, TIMESTAMP):
                 converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
             elif isinstance(column_type, ARRAY) and isinstance(column_type.item_type, BYTEA):
-                converted_data[key] = [bytes.fromhex(address[2:]) for address in getattr(data, key)]
+                converted_data[key] = [hex_str_to_bytes(address) for address in getattr(data, key)]
             elif isinstance(column_type, JSONB) or isinstance(column_type, JSON) and getattr(data, key) is not None:
                 converted_data[key] = Json(getattr(data, key))
             elif isinstance(column_type, NUMERIC) and isinstance(getattr(data, key), str):

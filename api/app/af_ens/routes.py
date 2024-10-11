@@ -1,6 +1,4 @@
-import decimal
 from datetime import date, datetime
-from time import time
 
 from flask_restx import Resource
 from flask_restx.namespace import Namespace
@@ -15,6 +13,7 @@ from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.modules.custom.hemera_ens.models.af_ens_address_current import ENSAddress
 from indexer.modules.custom.hemera_ens.models.af_ens_event import ENSMiddle
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ENSRecord
@@ -23,7 +22,6 @@ app_config = get_config()
 
 w3 = Web3(Web3.HTTPProvider("https://ethereum-rpc.publicnode.com"))
 af_ens_namespace = Namespace("User Operation Namespace", path="/", description="ENS feature")
-
 
 PAGE_SIZE = 10
 
@@ -40,7 +38,7 @@ class ACIEnsCurrent(Resource):
             "first_set_primary_time": None,
         }
         try:
-            address = bytes.fromhex(address[2:])
+            address = hex_str_to_bytes(address)
         except Exception:
             raise APIError("Invalid Address Format", code=400)
 
@@ -146,7 +144,7 @@ class ACIEnsCurrent(Resource):
 class ACIEnsDetail(Resource):
     def get(self, address):
         try:
-            address = bytes.fromhex(address[2:])
+            address = hex_str_to_bytes(address)
         except Exception:
             raise APIError("Invalid Address Format", code=400)
 
@@ -201,7 +199,7 @@ class ACIEnsDetail(Resource):
             base = {
                 "block_number": r.block_number,
                 "block_timestamp": datetime_to_string(r.block_timestamp),
-                "transaction_hash": "0x" + r.transaction_hash.hex(),
+                "transaction_hash": bytes_to_hex_str(r.transaction_hash),
                 "name": name,
             }
 
@@ -250,8 +248,8 @@ def get_action_type(record):
     if isinstance(record, ERC721TokenTransfers) or isinstance(record, ERC1155TokenTransfers):
         return {
             "action_type": OperationType.TRANSFER.value,
-            "from": "0x" + record.from_address.hex(),
-            "to": "0x" + record.to_address.hex(),
+            "from": bytes_to_hex_str(record.from_address),
+            "to": bytes_to_hex_str(record.to_address),
             "token_id": int(record.token_id),
         }
     if record.method == "setName" or record.event_name == "NameChanged":
@@ -261,7 +259,7 @@ def get_action_type(record):
     if record.event_name == "NameRenewed":
         return {"action_type": OperationType.RENEW.value, "expires": datetime_to_string(record.expires)}
     if record.event_name == "AddressChanged":
-        return {"action_type": OperationType.SET_RESOLVED_ADDRESS.value, "address": "0x" + record.address.hex()}
+        return {"action_type": OperationType.SET_RESOLVED_ADDRESS.value, "address": bytes_to_hex_str(record.address)}
     raise ValueError("Unknown operation type")
 
 
@@ -274,18 +272,3 @@ def datetime_to_string(dt, format="%Y-%m-%d %H:%M:%S"):
         return None
     else:
         raise ValueError(f"Unsupported type for dt: {type(dt)}. Expected datetime or date.")
-
-
-def model_to_dict(instance):
-    res = {}
-    for c in instance.__table__.columns:
-        v = getattr(instance, c.name)
-        if isinstance(v, datetime):
-            res[c.name] = v.isoformat()
-        elif isinstance(v, bytes):
-            res[c.name] = "0x" + v.hex()
-        elif isinstance(v, decimal.Decimal):
-            res[c.name] = str(v)
-        else:
-            res[c.name] = v
-    return res

@@ -81,7 +81,7 @@ from common.models.transactions import Transactions
 from common.utils.config import get_config
 from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
-from common.utils.format_utils import format_to_dict, row_to_dict
+from common.utils.format_utils import bytes_to_hex_str, format_to_dict, hex_str_to_bytes, row_to_dict
 from common.utils.web3_utils import (
     decode_function,
     decode_log_data,
@@ -247,7 +247,7 @@ class ExplorerSearch(Resource):
             if block is not None:
                 search_result.append(
                     {
-                        "block_hash": "0x" + block.hash.hex(),
+                        "block_hash": bytes_to_hex_str(block.hash),
                         "block_number": block.number,
                         "type": "block",
                     }
@@ -259,7 +259,7 @@ class ExplorerSearch(Resource):
             if contract:
                 search_result.append(
                     {
-                        "wallet_address": "0x" + contract.address.hex(),
+                        "wallet_address": bytes_to_hex_str(contract.address),
                         "type": "address",
                     }
                 )
@@ -269,7 +269,7 @@ class ExplorerSearch(Resource):
                 if wallet:
                     search_result.append(
                         {
-                            "wallet_address": "0x" + wallet.address.hex(),
+                            "wallet_address": bytes_to_hex_str(wallet.address),
                             "type": "address",
                         }
                     )
@@ -279,7 +279,7 @@ class ExplorerSearch(Resource):
                     if wallet:
                         search_result.append(
                             {
-                                "wallet_address": "0x" + wallet.address.hex(),
+                                "wallet_address": bytes_to_hex_str(wallet.address),
                                 "type": "address",
                             }
                         )
@@ -291,7 +291,7 @@ class ExplorerSearch(Resource):
             if transaction:
                 search_result.append(
                     {
-                        "transaction_hash": "0x" + transaction.hash.hex(),
+                        "transaction_hash": bytes_to_hex_str(transaction.hash),
                         "type": "transaction",
                     }
                 )
@@ -301,7 +301,7 @@ class ExplorerSearch(Resource):
                 if block:
                     search_result.append(
                         {
-                            "block_hash": "0x" + block.hash.hex(),
+                            "block_hash": bytes_to_hex_str(block.hash),
                             "block_number": block.number,
                             "type": "block",
                         }
@@ -326,7 +326,7 @@ class ExplorerSearch(Resource):
                     {
                         "token_name": token.name,
                         "token_symbol": token.symbol,
-                        "token_address": "0x" + token.address.hex(),
+                        "token_address": bytes_to_hex_str(token.address),
                         "token_logo_url": token.icon_url,
                         "type": "token",
                     }
@@ -355,7 +355,7 @@ class ExplorerInternalTransactions(Resource):
 
         filter_condition = True
         if address:
-            address = bytes.fromhex(address.lower()[2:])
+            address = hex_str_to_bytes(address.lower())
             filter_condition = or_(
                 ContractInternalTransactions.from_address == address,
                 ContractInternalTransactions.to_address == address,
@@ -459,7 +459,7 @@ class ExplorerTransactions(Resource):
                 total_records = chain_block.transactions_count
                 filter_condition = Transactions.block_number == block
             else:
-                bytea_block_hash = bytes.fromhex(block[2:])
+                bytea_block_hash = hex_str_to_bytes(block)
                 chain_block = get_block_by_hash(hash=block)
                 if not chain_block:
                     raise APIError("Block not exist", code=400)
@@ -468,7 +468,7 @@ class ExplorerTransactions(Resource):
 
         elif address:
             address_str = address.lower()
-            address_bytes = bytes.fromhex(address_str[2:])
+            address_bytes = hex_str_to_bytes(address_str)
             filter_condition = or_(
                 Transactions.from_address == address_bytes,
                 Transactions.to_address == address_bytes,
@@ -538,7 +538,7 @@ class ExplorerTransactionDetail(Resource):
     @cache.cached(timeout=60, query_string=True)
     def get(self, hash):
         hash = hash.lower()
-        bytes_hash = bytes.fromhex(hash[2:])
+        bytes_hash = hex_str_to_bytes(hash)
         transaction = get_transaction_by_hash(hash=hash)
         if transaction:
             transaction_json = parse_transactions([transaction])[0]
@@ -675,9 +675,9 @@ class ExplorerTransactionInternalTransactions(Resource):
                     from_address = obj.get("from_address")
                     to_address = obj.get("to_address")
                     if to_address:
-                        addresses_set.add(bytes.fromhex(to_address[2:]))
+                        addresses_set.add(hex_str_to_bytes(to_address))
                     if from_address:
-                        addresses_set.add(bytes.fromhex(from_address[2:]))
+                        addresses_set.add(hex_str_to_bytes(from_address))
                     input = obj.get("input")
                     if to_address and input and len(input) > 10:
                         function_signature_contracts_set.add((to_address, input[:10]))
@@ -789,8 +789,8 @@ class ExplorerTransactionInternalTransactions(Resource):
             trace = get_debug_trace_transaction(
                 [
                     {
-                        "from_address": "0x" + trace.from_address.hex(),
-                        "to_address": "0x" + trace.to_address.hex(),
+                        "from_address": bytes_to_hex_str(trace.from_address),
+                        "to_address": bytes_to_hex_str(trace.to_address),
                         "value": (
                             "{0:.18f}".format(trace.value / 10**18).rstrip("0").rstrip(".")
                             if trace.value is not None and trace.value != 0
@@ -801,8 +801,8 @@ class ExplorerTransactionInternalTransactions(Resource):
                         "gas": (int(trace.gas) if trace.gas is not None else None),
                         "gasUsed": (int(trace.gas_used) if trace.gas_used is not None else None),
                         "gas_used": (int(trace.gas_used) if trace.gas_used is not None else None),
-                        "input": ("0x" + trace.input.hex() if trace.input is not None else None),
-                        "output": ("0x" + trace.output.hex() if trace.output is not None else None),
+                        "input": (bytes_to_hex_str(trace.input) if trace.input is not None else None),
+                        "output": (bytes_to_hex_str(trace.output) if trace.output is not None else None),
                         "trace_address": str(trace.trace_address).replace("[", "{").replace("]", "}"),
                         "subtraces": trace.subtraces,
                         "error": trace.error,
@@ -878,7 +878,7 @@ class ExplorerTokens(Resource):
 
             token_list = [
                 {
-                    "address": "0x" + x.address.hex(),
+                    "address": bytes_to_hex_str(x.address),
                     "name": x.name,
                     "symbol": x.symbol,
                     "logo": x.icon_url,
@@ -936,7 +936,7 @@ class ExplorerTokens(Resource):
 
             token_list = [
                 {
-                    "address": "0x" + x.address.hex(),
+                    "address": bytes_to_hex_str(x.address),
                     "name": x.name,
                     "symbol": x.symbol,
                     "total_supply": (int(x.total_supply) if x.total_supply is not None else None),
@@ -979,7 +979,7 @@ class ExplorerTokens(Resource):
 
             token_list = [
                 {
-                    "address": "0x" + x.address.hex(),
+                    "address": bytes_to_hex_str(x.address),
                     "name": x.name,
                     "symbol": x.symbol,
                     "total_supply": (int(x.total_supply) if x.total_supply is not None else None),
@@ -1025,7 +1025,7 @@ class ExplorerTokenTransfers(Resource):
         filter_condition = True
         if address:
             str_address = address.lower()
-            bytea_address = bytes.fromhex(str_address[2:])
+            bytea_address = hex_str_to_bytes(str_address)
             if type in ["tokentxns", "erc20"]:
                 filter_condition = or_(
                     ERC20TokenTransfers.from_address == bytea_address,
@@ -1044,7 +1044,7 @@ class ExplorerTokenTransfers(Resource):
             total_count = get_address_token_transfer_cnt(type, filter_condition, bytea_address)
         elif token_address:
             str_token_address = token_address.lower()
-            bytea_token_address = bytes.fromhex(token_address.lower()[2:])
+            bytea_token_address = hex_str_to_bytes(token_address.lower())
             if type in ["tokentxns", "erc20"]:
                 filter_condition = ERC20TokenTransfers.token_address == bytea_token_address
             elif type in ["tokentxns-nft", "erc721"]:
@@ -1213,21 +1213,21 @@ class ExplorerAddressProfile(Resource):
         contract = get_contract_by_address(address)
         if contract:
             profile_json["is_contract"] = True
-            profile_json["contract_creator"] = "0x" + contract.contract_creator.hex()
-            profile_json["transaction_hash"] = "0x" + contract.transaction_hash.hex()
+            profile_json["contract_creator"] = bytes_to_hex_str(contract.contract_creator)
+            profile_json["transaction_hash"] = bytes_to_hex_str(contract.transaction_hash)
             profile_json["is_verified"] = contract.is_verified
             profile_json["is_proxy"] = contract.is_proxy
             profile_json["implementation_contract"] = (
-                "0x" + contract.implementation_contract.hex() if contract.implementation_contract else None
+                bytes_to_hex_str(contract.implementation_contract) if contract.implementation_contract else None
             )
             profile_json["verified_implementation_contract"] = (
-                "0x" + contract.verified_implementation_contract.hex()
+                bytes_to_hex_str(contract.verified_implementation_contract)
                 if contract.verified_implementation_contract
                 else None
             )
-            profile_json["bytecode"] = "0x" + contract.deployed_code.hex() if contract.deployed_code else None
-            profile_json["creation_code"] = "0x" + contract.creation_code.hex() if contract.creation_code else None
-            profile_json["deployed_code"] = "0x" + contract.deployed_code.hex() if contract.deployed_code else None
+            profile_json["bytecode"] = bytes_to_hex_str(contract.deployed_code) if contract.deployed_code else None
+            profile_json["creation_code"] = bytes_to_hex_str(contract.creation_code) if contract.creation_code else None
+            profile_json["deployed_code"] = bytes_to_hex_str(contract.deployed_code) if contract.deployed_code else None
 
             deployed_code = contract.deployed_code or get_sha256_hash(get_code(address))
             addresses = get_similar_addresses(deployed_code)
@@ -1252,7 +1252,7 @@ class ExplorerAddressTokenHoldingsV2(Resource):
     @cache.cached(timeout=360, query_string=True)
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
         subquery = (
             db.session.query(
                 AddressTokenBalances.token_address,
@@ -1301,7 +1301,7 @@ class ExplorerAddressTokenHoldingsV2(Resource):
         for token_holder in result:
             token_holder_list.append(
                 {
-                    "token_address": "0x" + token_holder.token_address.hex(),
+                    "token_address": bytes_to_hex_str(token_holder.token_address),
                     "balance": "{0:.6f}".format((token_holder.balance / 10 ** (token_holder.decimals or 0)))
                     .rstrip("0")
                     .rstrip("."),
@@ -1328,7 +1328,7 @@ class ExplorerAddressTransactions(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
 
         transactions = get_transactions_by_condition(
             columns=TRANSACTION_LIST_COLUMNS,
@@ -1357,7 +1357,7 @@ class ExplorerAddressTokenTransfers(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
         address = address.lower()
-        bytea_address = bytes.fromhex(address[2:])
+        bytea_address = hex_str_to_bytes(address)
         type = flask.request.args.get("type", "").lower()
 
         if type in ["tokentxns", "erc20"]:
@@ -1394,7 +1394,7 @@ class ExplorerAddressInternalTransactions(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
         filter_condition = or_(
             ContractInternalTransactions.from_address == address_bytes,
             ContractInternalTransactions.to_address == address_bytes,
@@ -1481,7 +1481,7 @@ class ExplorerTokenProfile(Resource):
         token_info = {
             "token_name": token.name,
             "token_checksum_address": to_checksum_address(token.address),
-            "token_address": "0x" + token.address.hex(),
+            "token_address": bytes_to_hex_str(token.address),
             "token_symbol": token.symbol,
             "token_logo_url": token.icon_url,
             "token_urls": token.urls,
@@ -1503,7 +1503,7 @@ class ExplorerTokenTokenTransfers(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
 
         token = get_token_by_address(address)
         if not token:
@@ -1569,7 +1569,7 @@ class ExplorerTokenTopHolders(Resource):
             #    token_holder_json["token_id"] = int(token_holder.token_id)
             if token.token_type == "ERC20":
                 decimals = token.decimals
-            token_holder_json["wallet_address"] = "0x" + token_holder.address.hex()
+            token_holder_json["wallet_address"] = bytes_to_hex_str(token_holder.address)
             token_holder_json["balance"] = "{0:.6f}".format((token_holder.balance / 10 ** (decimals)) or 0)
             token_holder_list.append(token_holder_json)
 
@@ -1707,7 +1707,7 @@ class ExplorerStatisticsAddressData(Resource):
 
         result = self.statistics_sql_mapping[statistics_arg](db.session, limit)
 
-        unique_addresses = ["0x" + row.address.hex() for row in result]
+        unique_addresses = [bytes_to_hex_str(row.address) for row in result]
         ens_mapping = get_ens_mapping(unique_addresses)
         address_list = []
         for row in result:
@@ -1904,7 +1904,7 @@ class ExplorerExportTransactions(Resource):
         if not address or is_eth_address(address) is False:
             raise APIError("Error Wallet Address", code=400)
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
 
         start_block_number, end_block_number = get_block_number_range()
 
@@ -1943,12 +1943,12 @@ class ExplorerExportTransactions(Resource):
             {
                 "blockNumber": str(transaction.block_number),
                 "timeStamp": transaction.block_timestamp.strftime("%s"),
-                "hash": "0x" + transaction.hash.hex(),
+                "hash": bytes_to_hex_str(transaction.hash),
                 "nonce": str(transaction.nonce),
-                "blockHash": "0x" + transaction.block_hash.hex(),
+                "blockHash": bytes_to_hex_str(transaction.block_hash),
                 "transactionIndex": str(transaction.transaction_index),
-                "from": "0x" + transaction.from_address.hex(),
-                "to": "0x" + transaction.to_address.hex(),
+                "from": bytes_to_hex_str(transaction.from_address),
+                "to": bytes_to_hex_str(transaction.to_address),
                 "value": str(transaction.value),
                 "gas": str(transaction.gas),
                 "gasPrice": str(transaction.gas_price),
@@ -1957,7 +1957,7 @@ class ExplorerExportTransactions(Resource):
                 "contractAddress": transaction.receipt_contract_address,
                 "cumulativeGasUsed": str(transaction.receipt_cumulative_gas_used),
                 "gasUsed": str(transaction.receipt_gas_used),
-                "methodId": "0x" + transaction.input.hex()[0:10],
+                "methodId": bytes_to_hex_str(transaction.input)[0:10],
             }
             for transaction in transactions
         ]
@@ -1974,7 +1974,7 @@ class ExplorerExportInternalTransactions(Resource):
         if not address or is_eth_address(address) is False:
             raise APIError("Error Wallet Address", code=400)
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
 
         start_block_number, end_block_number = get_block_number_range()
 
@@ -2007,12 +2007,12 @@ class ExplorerExportInternalTransactions(Resource):
             {
                 "blockNumber": str(internal_transaction.block_number),
                 "timeStamp": internal_transaction.block_timestamp.strftime("%s"),
-                "hash": "0x" + internal_transaction.transaction_hash.hex(),
-                "from": "0x" + internal_transaction.from_address.hex(),
-                "to": "0x" + internal_transaction.to_address.hex(),
+                "hash": bytes_to_hex_str(internal_transaction.transaction_hash),
+                "from": bytes_to_hex_str(internal_transaction.from_address),
+                "to": bytes_to_hex_str(internal_transaction.to_address),
                 "value": str(internal_transaction.value),
                 "contractAddress": (
-                    "0x" + internal_transaction.to_address.hex()
+                    bytes_to_hex_str(internal_transaction.to_address)
                     if internal_transaction.trace_type in ["create", "create2"]
                     else ""
                 ),
@@ -2056,12 +2056,12 @@ def token_transfers(contract_address, address, start_block_number, end_block_num
     condition = True
     if contract_address:
         contract_address = contract_address.lower()
-        contract_address_bytes = bytes.fromhex(contract_address[2:])
+        contract_address_bytes = hex_str_to_bytes(contract_address)
 
         condition = and_(condition, TokenTransferTable.token_address == contract_address_bytes)
     if address:
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
 
         condition = and_(
             condition,
@@ -2117,12 +2117,12 @@ def token_transfers(contract_address, address, start_block_number, end_block_num
         transfer_data = {
             "blockNumber": str(transfer.block_number),
             "timeStamp": transfer.block_timestamp.strftime("%s"),
-            "hash": "0x" + transfer.transaction_hash.hex(),
+            "hash": bytes_to_hex_str(transfer.transaction_hash),
             "nonce": str(nonce),
-            "blockHash": "0x" + transfer.block_hash.hex(),
-            "contractAddress": "0x" + transfer.token_address.hex(),
-            "from": "0x" + transfer.from_address.hex(),
-            "to": "0x" + transfer.to_address.hex(),
+            "blockHash": bytes_to_hex_str(transfer.block_hash),
+            "contractAddress": bytes_to_hex_str(transfer.token_address),
+            "from": bytes_to_hex_str(transfer.from_address),
+            "to": bytes_to_hex_str(transfer.to_address),
             "tokenName": token_dict.get(transfer.token_address).name,
             "tokenSymbol": token_dict.get(transfer.token_address).symbol,
             "transactionIndex": str(transaction_index),

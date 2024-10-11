@@ -1,6 +1,7 @@
 from collections import defaultdict
 
 from common.models.contracts import Contracts
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.contract import Contract
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -58,13 +59,13 @@ class ExportAllFeatureDayMiningActivenessJob(ExtensionJob):
         result = {}
         for row in current_activeness_list:
             row.value["interacted_addresses"] = set(row.value["interacted_addresses"])
-            result["0x" + row.address.hex()] = row.value
+            result[bytes_to_hex_str(row.address)] = row.value
         return result
 
     def get_contract_addresses_from_pg(self):
         session = self._service[0].get_service_session()
         contracts = session.query(Contracts).all()
-        result = ["0x" + row.address.hex() for row in contracts]
+        result = [bytes_to_hex_str(row.address) for row in contracts]
         return result
 
     def _process(self, **kwargs):

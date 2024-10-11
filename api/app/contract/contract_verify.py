@@ -8,6 +8,7 @@ from common.models import db
 from common.models.contracts import Contracts
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 
 config = get_config()
 
@@ -20,14 +21,6 @@ VERIFY_TIMEOUT = 30
 CONTRACT_VERIFY_URL = f"{VERIFY_HOST}/v1/contract_verify/sync_verify"
 COMMON_CONTRACT_VERIFY_URL = f"{VERIFY_HOST}/v1/contract_verify/async_verify"
 ABI_HOST = f"{VERIFY_HOST}/v1/contract_verify/method"
-
-
-def hex_string_to_bytes(hex_string):
-    if not hex_string:
-        return None
-    if hex_string.startswith("0x"):
-        return bytes.fromhex(hex_string[2:])
-    return bytes.fromhex(hex_string)
 
 
 def initial_chain_id():
@@ -80,7 +73,7 @@ def validate_input(address, compiler_type, compiler_version):
 
 
 def get_contract_by_address(address: str):
-    contract = db.session().query(Contracts).filter_by(address=hex_string_to_bytes(address)).first()
+    contract = db.session().query(Contracts).filter_by(address=hex_str_to_bytes(address)).first()
     if not contract:
         raise APIError("The address is not a contract", code=400)
     return contract
@@ -95,9 +88,9 @@ def get_creation_or_deployed_code(contract: Contracts):
     creation_code = None
     deployed_code = None
     if contract.creation_code:
-        creation_code = "0x" + contract.creation_code.hex()
+        creation_code = bytes_to_hex_str(contract.creation_code)
     if contract.deployed_code:
-        deployed_code = "0x" + contract.deployed_code.hex()
+        deployed_code = bytes_to_hex_str(contract.deployed_code)
 
     if not creation_code:
         creation_code = contract.bytecode
@@ -304,7 +297,7 @@ def get_abis_for_logs(address_signed_prefix_list: List[Tuple[str, str, int]]):
 def get_abis_by_address_signed_prefix(address_signed_prefix_list: List[Tuple[str, str, int]]):
     result_list = []
     for address, signed_prefix, indexed_true_count in address_signed_prefix_list:
-        contract = db.session.get(Contracts, hex_string_to_bytes(address))
+        contract = db.session.get(Contracts, hex_str_to_bytes(address))
         if not contract:
             continue
         deployed_code_hash = contract.deployed_code_hash

@@ -1,5 +1,3 @@
-from time import time
-
 import flask
 from flask_restx import Resource
 
@@ -17,7 +15,7 @@ from api.app.deposit_to_l2 import token_deposit_namespace
 from api.app.utils.parse_utils import parse_deposit_assets, parse_deposit_transactions
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
-from common.utils.format_utils import row_to_dict
+from common.utils.format_utils import hex_str_to_bytes, row_to_dict
 from common.utils.web3_utils import SUPPORT_CHAINS, chain_id_name_mapping
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
 
@@ -57,7 +55,7 @@ class ACIDepositToL2Transactions(Resource):
 
         if address:
             address = address.lower()
-            bytes_address = bytes.fromhex(address[2:])
+            bytes_address = hex_str_to_bytes(address)
             filter_condition = AFTokenDepositsTransactions.wallet_address == bytes_address
 
         elif chain:
@@ -75,12 +73,12 @@ class ACIDepositToL2Transactions(Resource):
 
         elif contract:
             contract = contract.lower()
-            bytes_contract = bytes.fromhex(contract[2:])
+            bytes_contract = hex_str_to_bytes(contract)
             filter_condition = AFTokenDepositsTransactions.contract == bytes_contract
 
         elif token:
             token = token.lower()
-            bytes_token = bytes.fromhex(token[2:])
+            bytes_token = hex_str_to_bytes(token)
             filter_condition = AFTokenDepositsTransactions.token == bytes_token
 
         elif block:

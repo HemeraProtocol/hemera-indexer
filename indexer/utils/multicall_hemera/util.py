@@ -8,11 +8,11 @@ import logging
 import os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional, Union
 
 import orjson
 from mpire import WorkerPool
 
+from common.utils.format_utils import hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.signature import _get_signature
 
@@ -111,7 +111,7 @@ sig = _get_signature("tryBlockAndAggregate(bool,(address,bytes)[])(uint256,uint2
 
 def process_response(calls, result):
     logger.debug(f"{__name__}, calls {len(calls)}")
-    block_id, _, outputs = sig.decode_data(bytes.fromhex(result[2:]))
+    block_id, _, outputs = sig.decode_data(hex_str_to_bytes(result))
     res = {}
     for call, (success, output) in zip(calls, outputs):
         res.update(Call.decode_output(output, call.signature, call.returns, success))

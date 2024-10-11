@@ -13,7 +13,7 @@ from api.app.utils.format_utils import format_transaction
 from api.app.utils.token_utils import get_token_price
 from common.models.transactions import Transactions
 from common.utils.config import get_config
-from common.utils.format_utils import format_to_dict, row_to_dict
+from common.utils.format_utils import bytes_to_hex_str, format_to_dict, row_to_dict
 from common.utils.web3_utils import chain_id_name_mapping, decode_log_data
 
 app_config = get_config()
@@ -104,7 +104,7 @@ def parse_transactions(transactions: list[Transactions]):
 
     # Find contract
     contracts = get_contracts_by_addresses(address_list=to_address_list, columns=["address"])
-    contract_list = set(map(lambda x: "0x" + x.address.hex(), contracts))
+    contract_list = set(map(lambda x: bytes_to_hex_str(x.address), contracts))
 
     method_list = []
     for transaction_json in transaction_list:
@@ -155,7 +155,7 @@ def parse_log_with_transaction_input_list(log_with_transaction_input_list):
             count_non_none(topic) for topic in [log_json["topic1"], log_json["topic2"], log_json["topic3"]]
         )
         contract_topic_list.append((log_json["address"], log_json["topic0"], indexed_true_count))
-        log_input = "0x" + log.input.hex()
+        log_input = bytes_to_hex_str(log.input)
 
         if log_input and len(log_input) >= 10:
             transaction_method = log_input[0:10]

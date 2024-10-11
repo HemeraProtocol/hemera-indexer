@@ -9,6 +9,7 @@ from common.models.daily_transactions_aggregates import DailyTransactionsAggrega
 from common.models.scheduled_metadata import ScheduledWalletCountMetadata
 from common.models.transactions import Transactions
 from common.utils.db_utils import build_entities
+from common.utils.format_utils import hex_str_to_bytes
 
 
 def get_last_transaction():
@@ -22,7 +23,7 @@ def get_last_transaction():
 
 
 def get_transaction_by_hash(hash: str, columns="*"):
-    bytes_hash = bytes.fromhex(hash[2:])
+    bytes_hash = hex_str_to_bytes(hash)
     entities = build_entities(Transactions, columns)
 
     results = db.session.query(Transactions).with_entities(*entities).filter(Transactions.hash == bytes_hash).first()
@@ -31,7 +32,7 @@ def get_transaction_by_hash(hash: str, columns="*"):
 
 
 def get_transactions_by_from_address(address, columns="*"):
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     entities = build_entities(Transactions, columns)
 
     results = (
@@ -45,7 +46,7 @@ def get_transactions_by_from_address(address, columns="*"):
 
 
 def get_transactions_by_to_address(address, columns="*", limit=1):
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     entities = build_entities(Transactions, columns)
 
     results = (
@@ -63,7 +64,7 @@ def get_tps_latest_10min(timestamp):
 
 def get_address_transaction_cnt(address: str):
     last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     recently_txn_count = (
         db.session.query(Transactions.hash)
         .filter(

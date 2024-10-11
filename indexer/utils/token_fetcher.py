@@ -6,7 +6,6 @@
 # @Brief use the `multicall` contract to fetch data
 
 import logging
-import os
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict
@@ -15,7 +14,7 @@ from typing import Dict, List, Tuple, Union
 import orjson
 from eth_abi import abi
 
-from common.utils.format_utils import to_snake_case
+from common.utils.format_utils import format_block_id, hex_str_to_bytes, to_snake_case
 from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
 from indexer.domain.token_id_infos import (
@@ -37,7 +36,7 @@ from indexer.utils.multicall_hemera.util import (
     rebatch_by_size,
 )
 from indexer.utils.provider import get_provider_from_uri
-from indexer.utils.utils import format_block_id, rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 BALANCE_OF_ERC20 = "balanceOf(address)(uint256)"
 BALANCE_OF_ERC1155 = "balanceOf(address,uint256)(uint256)"
@@ -406,7 +405,7 @@ class TokenFetcher:
 
             try:
                 if result:
-                    balance = abi.decode(["uint256"], bytes.fromhex(result[2:]))[0]
+                    balance = abi.decode(["uint256"], hex_str_to_bytes(result))[0]
                     result_dic[data[0][self.fixed_k]] = balance
 
             except Exception as e:

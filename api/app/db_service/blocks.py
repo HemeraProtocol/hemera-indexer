@@ -1,6 +1,7 @@
 from common.models import db
 from common.models.blocks import Blocks
 from common.utils.db_utils import build_entities
+from common.utils.format_utils import hex_str_to_bytes
 
 
 def get_last_block(columns="*"):
@@ -20,7 +21,7 @@ def get_block_by_number(block_number: int, columns="*"):
 
 
 def get_block_by_hash(hash: str, columns="*"):
-    bytes_hash = bytes.fromhex(hash[2:])
+    bytes_hash = hex_str_to_bytes(hash)
     entities = build_entities(Blocks, columns)
 
     results = db.session.query(Blocks).with_entities(*entities).filter(Blocks.hash == bytes_hash).first()

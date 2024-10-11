@@ -9,6 +9,7 @@ from dataclasses import fields
 import eth_abi
 from web3 import Web3
 
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
@@ -27,7 +28,7 @@ from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import Un
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
@@ -301,19 +302,19 @@ def get_exist_pools(db_service, position_token_address):
     try:
         result = (
             session.query(UniswapV3Pools)
-            .filter(UniswapV3Pools.position_token_address == bytes.fromhex(position_token_address[2:]))
+            .filter(UniswapV3Pools.position_token_address == hex_str_to_bytes(position_token_address))
             .all()
         )
         history_pools = {}
         if result is not None:
             for item in result:
-                pool_key = "0x" + item.pool_address.hex()
+                pool_key = bytes_to_hex_str(item.pool_address)
                 history_pools[pool_key] = AgniV3Pool(
                     pool_address=pool_key,
-                    position_token_address="0x" + item.position_token_address.hex(),
-                    factory_address="0x" + item.factory_address.hex(),
-                    token0_address="0x" + item.token0_address.hex(),
-                    token1_address="0x" + item.token1_address.hex(),
+                    position_token_address=bytes_to_hex_str(item.position_token_address),
+                    factory_address=bytes_to_hex_str(item.factory_address),
+                    token0_address=bytes_to_hex_str(item.token0_address),
+                    token1_address=bytes_to_hex_str(item.token1_address),
                     fee=item.fee,
                     tick_spacing=item.tick_spacing,
                     block_number=item.block_number,
@@ -336,7 +337,7 @@ def get_exist_token_ids(db_service, position_token_address):
         result = (
             session.query(UniswapV3Tokens.token_id, UniswapV3Tokens.pool_address)
             .filter(
-                UniswapV3Tokens.position_token_address == bytes.fromhex(position_token_address[2:]),
+                UniswapV3Tokens.position_token_address == hex_str_to_bytes(position_token_address),
             )
             .all()
         )
@@ -344,7 +345,7 @@ def get_exist_token_ids(db_service, position_token_address):
         if result is not None:
             for item in result:
                 token_id = item.token_id
-                history_token[token_id] = "0x" + item.pool_address.hex()
+                history_token[token_id] = bytes_to_hex_str(item.pool_address)
     except Exception as e:
         raise e
     finally:

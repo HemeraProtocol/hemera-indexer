@@ -8,6 +8,7 @@ from sqlalchemy.dialects.postgresql import insert
 from common.models.blocks import Blocks
 from common.models.fix_record import FixRecord
 from common.utils.exception_control import HemeraBaseException
+from common.utils.format_utils import hex_str_to_bytes
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.utils.exception_recorder import ExceptionRecorder
@@ -214,7 +215,7 @@ class ReorgController(BaseController):
                 .filter(
                     and_(
                         Blocks.number == block_number,
-                        Blocks.hash == bytes.fromhex(block_hash[2:]),
+                        Blocks.hash == hex_str_to_bytes(block_hash),
                         Blocks.reorg == False,
                     )
                 )

@@ -1,10 +1,10 @@
 import json
 from dataclasses import dataclass
-from enum import Enum
 from typing import Dict, List, cast
 
 from web3.types import ABIEvent
 
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.transaction import Transaction
 from indexer.utils.abi import decode_log, event_log_abi_to_topic
 
@@ -53,7 +53,7 @@ def parse_opensea_transaction_order_fulfilled_event(
 
             results.append(
                 OpenseaLog(
-                    orderHash="0x" + opensea_transaction["orderHash"].hex(),
+                    orderHash=bytes_to_hex_str(opensea_transaction["orderHash"]),
                     offerer=opensea_transaction["offerer"],
                     zone=opensea_transaction["zone"],
                     recipient=opensea_transaction["recipient"],

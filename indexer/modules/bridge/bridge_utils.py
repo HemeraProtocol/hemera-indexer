@@ -5,6 +5,7 @@ from rlp import Serializable
 from rlp.sedes import big_endian_int, binary, boolean
 from web3 import Web3 as w3
 
+from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain.log import Log
 
 
@@ -82,7 +83,7 @@ def deposit_event_to_op_bedrock_transaction(event: Log):
     data = bytes.fromhex(opaque_data[146:])
 
     return OpBedrockDepositTx(
-        source_hash=bytes.fromhex(source_hash.hex()[2:]),
+        source_hash=hex_str_to_bytes(source_hash.hex()),
         from_address=bytes.fromhex(from_stripped),
         to_address=bytes.fromhex(to_stripped),
         mint=msg_value,

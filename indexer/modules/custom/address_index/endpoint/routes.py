@@ -5,7 +5,7 @@ from sqlalchemy import and_, func
 
 from api.app.address.models import ScheduledMetadata
 from common.models import db
-from common.utils.format_utils import as_dict, format_to_dict
+from common.utils.format_utils import as_dict, format_to_dict, hex_str_to_bytes
 from indexer.modules.custom.address_index.models.address_contract_operation import AddressContractOperations
 from indexer.modules.custom.address_index.models.address_index_daily_stats import AddressIndexDailyStats
 
@@ -14,7 +14,7 @@ PAGE_SIZE = 10
 
 def get_address_first_deploy_contract_time(address: Union[str, bytes]) -> datetime:
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     first_deploy_contract = (
         db.session.query(AddressContractOperations.block_timestamp)
         .filter(
@@ -45,7 +45,7 @@ def get_address_hist_deploy_contract_count(
 
 def get_address_deploy_contract_count_before_date(address: Union[str, bytes], start_time: datetime = None) -> int:
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     if start_time:
         count = (
             db.session.query(AddressContractOperations)
@@ -63,7 +63,7 @@ def get_address_deploy_contract_count_before_date(address: Union[str, bytes], st
 
 def get_address_contract_operations(address: Union[str, bytes], limit=5, offset=0) -> list[dict]:
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     transactions = (
         db.session.query(AddressContractOperations)
         .order_by(
@@ -157,7 +157,7 @@ def get_address_hist_stats(
     address: Union[str, bytes], attr: Union[str, List[str]], start_time: datetime = None, end_time: datetime = None
 ):
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
 
     if isinstance(attr, str):
         attr = [attr]

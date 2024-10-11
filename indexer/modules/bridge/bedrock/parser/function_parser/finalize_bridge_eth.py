@@ -9,7 +9,7 @@ from indexer.modules.bridge.bedrock.parser.function_parser import (
     BridgeRemoteFunctionCallInfo,
     RemoteFunctionCallDecoder,
 )
-from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
+from indexer.utils.abi import function_abi_to_4byte_selector_str
 
 FINALIZE_BRIDGE_ETH = cast(
     ABIFunction,
@@ -51,7 +51,7 @@ FINALIZE_BRIDGE_ETH = cast(
 def decode_function(input_data: bytes) -> BridgeRemoteFunctionCallInfo:
     assert len(input_data) >= 4
     print(function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ETH))
-    assert function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ETH) == "0x" + input_data[:4].hex().lower()
+    assert function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ETH) == bytes_to_hex_str(input_data[:4]).lower()
 
     function_info = decode_transaction_data(FINALIZE_BRIDGE_ETH, input_data.hex())
     if function_info is None:

@@ -9,6 +9,7 @@ from web3.types import ABIFunction
 
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transaction_function, token_parse_mapping
@@ -17,7 +18,7 @@ from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction impor
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
 from indexer.specification.specification import ToAddressSpecification, TransactionFilterByTransactionInfo
 from indexer.utils.abi import function_abi_to_4byte_selector_str
-from indexer.utils.utils import distinct_collections_by_group
+from indexer.utils.collection_utils import distinct_collections_by_group
 
 
 class DepositToL2Job(FilterTransactionDataJob):
@@ -154,9 +155,9 @@ class DepositToL2Job(FilterTransactionDataJob):
                 session.query(AFTokenDepositsCurrent)
                 .filter(
                     and_(
-                        AFTokenDepositsCurrent.wallet_address == bytes.fromhex(wallet_address[2:]),
+                        AFTokenDepositsCurrent.wallet_address == hex_str_to_bytes(wallet_address),
                         AFTokenDepositsCurrent.chain_id == chain_id,
-                        AFTokenDepositsCurrent.token_address == bytes.fromhex(token_address[2:]),
+                        AFTokenDepositsCurrent.token_address == hex_str_to_bytes(token_address),
                     )
                 )
                 .first()
@@ -166,10 +167,10 @@ class DepositToL2Job(FilterTransactionDataJob):
 
         deposit = (
             AddressTokenDeposit(
-                wallet_address="0x" + history_deposit.wallet_address.hex(),
+                wallet_address=bytes_to_hex_str(history_deposit.wallet_address),
                 chain_id=history_deposit.chain_id,
-                contract_address="0x" + history_deposit.contract_address.hex(),
-                token_address="0x" + history_deposit.token_address.hex(),
+                contract_address=bytes_to_hex_str(history_deposit.contract_address),
+                token_address=bytes_to_hex_str(history_deposit.token_address),
                 value=int(history_deposit.value),
                 block_number=history_deposit.block_number,
                 block_timestamp=int(round(history_deposit.block_timestamp.timestamp())),
