@@ -13,6 +13,10 @@ from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.middleware import geth_poa_middleware
 from web3.types import ABIFunction
 
+from common.utils.format_utils import bytes_to_hex_str
+
+ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+
 SUPPORT_CHAINS = {
     "ethereum": {
         "display_name": "Ethereum",
@@ -341,16 +345,16 @@ def decode_log_data(types, data_str):
     encoded_abi = []
     decoded_abi_real = []
     for index in range(len(types)):
-        encoded_abi.append("0x" + abi.encode(types[index : index + 1], decoded_abi[index : index + 1]).hex())
+        encoded_abi.append(bytes_to_hex_str(abi.encode(types[index : index + 1], decoded_abi[index : index + 1])))
 
         if types[index].startswith("byte"):
             if type(decoded_abi[index]) is tuple:
                 encode_tuple = []
                 for element in decoded_abi[index]:
-                    encode_tuple.append("0x" + element.hex())
+                    encode_tuple.append(bytes_to_hex_str(element))
                 decoded_abi_real.append(encode_tuple)
             else:
-                decoded_abi_real.append("0x" + decoded_abi[index].hex())
+                decoded_abi_real.append(bytes_to_hex_str(decoded_abi[index]))
         else:
             decoded_abi_real.append(str(decoded_abi[index]))
 

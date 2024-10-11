@@ -29,23 +29,20 @@ from web3._utils.abi import (
 from web3._utils.normalizers import implicitly_identity, parse_basic_type_str
 from web3.types import ABIEvent, ABIFunction
 
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.log import Log
 
 codec = ABICodec(build_strict_registry())
 import eth_abi.registry
 
 
-def bytes_to_hex_str(b: bytes) -> str:
-    return "0x" + b.hex()
-
-
 def event_log_abi_to_topic(event_abi: ABIEvent) -> str:
-    return "0x" + event_abi_to_log_topic(event_abi).hex()
+    return bytes_to_hex_str(event_abi_to_log_topic(event_abi))
 
 
 def function_abi_to_4byte_selector_str(function_abi: ABIFunction) -> str:
     # return 10 hex string
-    return "0x" + function_abi_to_4byte_selector(function_abi).hex()
+    return bytes_to_hex_str(function_abi_to_4byte_selector(function_abi))
 
 
 def get_types_from_abi_type_list(abi_type_list: Sequence[Dict[str, Any]]) -> Sequence[str]:

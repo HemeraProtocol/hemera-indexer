@@ -1,6 +1,42 @@
 import re
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional, Union
+
+
+def bytes_to_hex_str(b: bytes) -> str:
+    return "0x" + b.hex()
+
+
+def hex_str_to_bytes(h: str) -> bytes:
+    if not h:
+        return None
+    if h.startswith("0x"):
+        return bytes.fromhex(h[2:])
+    return bytes.fromhex(h)
+
+
+def to_int_or_none(val):
+    if isinstance(val, int):
+        return val
+    if val is None or val == "":
+        return None
+    try:
+        return int(val)
+    except ValueError:
+        return None
+
+
+def to_float_or_none(val):
+    if isinstance(val, float):
+        return val
+    if val is None or val == "":
+        return None
+    try:
+        return float(val)
+    except ValueError:
+        print("can't cast %s to float" % val)
+        return val
 
 
 def to_snake_case(name: str) -> str:
@@ -24,7 +60,7 @@ def as_dict(self):
             elif isinstance(attr, Decimal):
                 json_data[c.name] = float(attr)
             elif isinstance(attr, bytes):
-                json_data[c.name] = "0x" + attr.hex()
+                json_data[c.name] = bytes_to_hex_str(attr)
             else:
                 json_data[c.name] = attr
     return json_data
@@ -32,6 +68,10 @@ def as_dict(self):
 
 def row_to_dict(row):
     return {key: format_value_for_json(value) for key, value in row._asdict().items()}
+
+
+def format_block_id(block_id: Union[Optional[int], str]) -> str:
+    return hex(block_id) if block_id and isinstance(block_id, int) else block_id
 
 
 def format_to_dict(row):
@@ -51,7 +91,7 @@ def format_value_for_json(value):
     elif isinstance(value, Decimal):
         return float(value)
     elif isinstance(value, bytes):
-        return "0x" + value.hex()
+        return bytes_to_hex_str(value)
     elif isinstance(value, list):
         return [format_value_for_json(v) for v in value]
     elif isinstance(value, dict):
