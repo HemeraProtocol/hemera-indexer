@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Optional
 
+from eth_abi import abi
 from web3 import Web3
 
 from api.app.cache import app_config, cache
