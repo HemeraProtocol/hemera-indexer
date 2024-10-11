@@ -1357,8 +1357,8 @@ class ExplorerAddressTransactions(Resource):
                     and_(
                         (Transactions.block_timestamp >= last_timestamp.date() if last_timestamp is not None else True),
                         or_(
-                            Transactions.from_address == address,
-                            Transactions.to_address == address,
+                            Transactions.from_address == address_bytes,
+                            Transactions.to_address == address_bytes,
                         ),
                     )
                 )
@@ -1367,7 +1367,7 @@ class ExplorerAddressTransactions(Resource):
             result = (
                 db.session.query(StatisticsWalletAddresses)
                 .with_entities(StatisticsWalletAddresses.txn_cnt)
-                .filter(StatisticsWalletAddresses.address == address)
+                .filter(StatisticsWalletAddresses.address == address_bytes)
                 .first()
             )
             past_txn_count = 0 if not result else result[0]
