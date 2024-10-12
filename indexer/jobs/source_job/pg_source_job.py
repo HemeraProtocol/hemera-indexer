@@ -96,7 +96,7 @@ class PGSourceJob(BaseSourceJob):
 
                     for log in logs:
                         filter_blocks.add(log.block_number)
-                        logs_transaction_hash.add("0x" + log.transaction_hash.hex())
+                        logs_transaction_hash.add(bytes_to_hex_str(log.transaction_hash))
 
                 elif isinstance(job_filter, TransactionFilterByTransactionInfo):
                     transaction_filter = defaultdict(list)
@@ -124,7 +124,7 @@ class PGSourceJob(BaseSourceJob):
                     self.pg_datas[Transactions].extend(transactions)
                     for transaction in transactions:
                         filter_blocks.add(transaction.block_number)
-                        transactions_hash.add("0x" + transaction.hash.hex())
+                        transactions_hash.add(bytes_to_hex_str(transaction.hash))
                 else:
                     raise ValueError(f"Unsupported filter type: {type(filter)}")
 
@@ -491,7 +491,7 @@ def convert_value(value):
     elif isinstance(value, Decimal):
         return float(value)
     elif isinstance(value, bytes):
-        return "0x" + value.hex()
+        return bytes_to_hex_str(value)
     elif isinstance(value, list):
         return [convert_value(v) for v in value]
     elif isinstance(value, dict):

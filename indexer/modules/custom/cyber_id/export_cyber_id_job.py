@@ -106,7 +106,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
             if log.address.lower() == CyberIdPublicResolverContractAddress and log.topic0 == AddressChangedTopic:
                 decoded_data = self.w3.codec.decode(["uint256", "bytes"], bytes.fromhex(log.data[2:]))
                 address_change_d = CyberAddressChangedD(
-                    node=log.topic1, address="0x" + decoded_data[1].hex(), block_number=log.block_number
+                    node=log.topic1, address=bytes_to_hex_str(decoded_data[1]), block_number=log.block_number
                 )
                 self._collect_item(address_change_d.type(), address_change_d)
 
