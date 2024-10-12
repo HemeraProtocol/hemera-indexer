@@ -147,14 +147,14 @@ class OpenseaJob(FilterTransactionDataJob):
             consideration = calculate_total_amount(opensea_log.consideration)
             fee = calculate_fee_amount(opensea_log.consideration, opensea_log.fee_addresses)
 
-            opensea_transaciton_type = get_opensea_transaction_type(opensea_log.offer, opensea_log.consideration)
+            opensea_transaction_type = get_opensea_transaction_type(opensea_log.offer, opensea_log.consideration)
             if opensea_log.offerer == opensea_log.recipient:
                 continue
             yield AddressOpenseaTransaction(
                 address=opensea_log.offerer,
                 related_address=opensea_log.recipient,
                 is_offer=True,
-                transaction_type=opensea_transaciton_type.value,
+                transaction_type=opensea_transaction_type.value,
                 order_hash=opensea_log.orderHash,
                 zone=opensea_log.zone,
                 offer=offer,
@@ -172,9 +172,9 @@ class OpenseaJob(FilterTransactionDataJob):
                 related_address=opensea_log.offerer,
                 is_offer=False,
                 transaction_type=(
-                    1 - opensea_transaciton_type.value
-                    if opensea_transaciton_type.value <= 1
-                    else opensea_transaciton_type.value
+                    1 - opensea_transaction_type.value
+                    if opensea_transaction_type.value <= 1
+                    else opensea_transaction_type.value
                 ),
                 order_hash=opensea_log.orderHash,
                 zone=opensea_log.zone,

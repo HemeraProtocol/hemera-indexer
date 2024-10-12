@@ -17,11 +17,21 @@ from common.utils.exception_control import APIError
 
 config = get_config()
 
-logging.basicConfig(level=logging.INFO)
+import logging
+import os
+
 # logging.getLogger("sqlalchemy.pool").setLevel(logging.DEBUG)
 
 app = Flask(__name__)
+# Get the log level from the environment variable, default to WARNING if not set
+log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
 
+# Convert the string log level to the corresponding numeric value
+numeric_level = getattr(logging, log_level, None)
+if not isinstance(numeric_level, int):
+    raise ValueError("Invalid log level: %s" % log_level)
+
+app.logger.setLevel(numeric_level)
 # Init database
 app.config["SQLALCHEMY_DATABASE_URI"] = config.db_read_sql_alchemy_database_config.get_sql_alchemy_uri()
 app.config["SQLALCHEMY_BINDS"] = {
