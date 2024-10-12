@@ -9,8 +9,6 @@ from typing import cast
 
 from web3.types import ABIEvent
 
-from indexer.utils.abi import event_log_abi_to_topic
-
 DEPOSIT_EVENT = cast(
     ABIEvent,
     json.loads(

@@ -1,7 +1,5 @@
-from datetime import datetime
-
 from sqlalchemy import Column, Index, desc, func
-from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, INTEGER, NUMERIC, SMALLINT, TEXT, TIMESTAMP
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 

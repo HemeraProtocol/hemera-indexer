@@ -21,7 +21,7 @@ from indexer.domain.token_transfer import (
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
+from indexer.utils.abi import encode_abi
 from indexer.utils.abi_setting import (
     DECIMALS_ABI_FUNCTION,
     NAME_ABI_FUNCTION,

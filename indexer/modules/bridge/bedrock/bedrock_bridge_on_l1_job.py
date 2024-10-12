@@ -1,6 +1,5 @@
 import logging
 
-from enumeration.entity_type import EntityType
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
@@ -10,11 +9,7 @@ from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
     parse_transaction_deposited_event,
 )
 from indexer.modules.bridge.domain.op_bedrock import *
-from indexer.specification.specification import (
-    TopicSpecification,
-    TransactionFilterByLogs,
-    TransactionFilterByTransactionInfo,
-)
+from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
 

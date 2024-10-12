@@ -1,6 +1,6 @@
 from ens.auto import ns
 from ens.constants import EMPTY_SHA3_BYTES
-from ens.utils import Web3, address_to_reverse_domain, is_empty_name, normal_name_to_hash, normalize_name
+from ens.utils import Web3, address_to_reverse_domain, is_empty_name
 from hexbytes import HexBytes
 
 

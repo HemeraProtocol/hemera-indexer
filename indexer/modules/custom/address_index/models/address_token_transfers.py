@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, SMALLINT, TIMESTAMP
 

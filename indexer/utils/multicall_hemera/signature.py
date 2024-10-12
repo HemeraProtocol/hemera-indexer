@@ -4,7 +4,6 @@ from typing import Any, List, Optional, Tuple
 from eth_abi import decode, encode
 from eth_typing.abi import Decodable, TypeStr
 from eth_utils import function_signature_to_4byte_selector
-from hexbytes import HexBytes
 
 from indexer.utils.abi import pad_address, uint256_to_bytes
 

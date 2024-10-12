@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from indexer.domain import Domain, FilterData
+from indexer.domain import FilterData
 
 
 @dataclass

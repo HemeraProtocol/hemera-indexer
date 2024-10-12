@@ -1,8 +1,6 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import logging
-
 import flask
 from flask import Flask, request
 from flask_cors import CORS

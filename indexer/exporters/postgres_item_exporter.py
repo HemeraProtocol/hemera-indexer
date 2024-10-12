@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 from typing import Type
 
-import sqlalchemy
 from dateutil.tz import tzlocal
 from psycopg2.extras import execute_values
 
