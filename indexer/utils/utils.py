@@ -146,7 +146,7 @@ def merge_sort(sorted_col_a, sorted_col_b):
     return merged
 
 
-def distinct_collections_by_group(collections: List[Domain], group_by: List[str], max_key: Union[str, None] = None):
+def distinct_collections_by_group(collections: List[object], group_by: List[str], max_key: Union[str, None] = None):
     distinct = {}
     for item in collections:
         key = tuple(getattr(item, idx) for idx in group_by)
@@ -162,3 +162,13 @@ def distinct_collections_by_group(collections: List[Domain], group_by: List[str]
 
 def format_block_id(block_id: Union[Optional[int], str]) -> str:
     return hex(block_id) if block_id and isinstance(block_id, int) else block_id
+
+
+def flatten(lst):
+    result = []
+    for item in lst:
+        if isinstance(item, list):
+            result.extend(flatten(item))
+        else:
+            result.append(item)
+    return result
