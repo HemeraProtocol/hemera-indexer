@@ -15,6 +15,7 @@ from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail impor
     TransferredFBTCCurrentStatus,
     TransferredFBTCDetail,
 )
+from indexer.modules.custom.staking_fbtc.utils import get_current_holdings
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
@@ -39,9 +40,9 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("config.ini", self._chain_id)
         self._service = kwargs["config"].get("db_service")
-        self._current_holdings = utils.get_transferred_fbtc_status(
-            self._service, list(self._transferred_protocol_dict.keys()), int(kwargs["config"].get("start_block"))
-        )
+        # self._current_holdings = utils.get_transferred_fbtc_status(
+        #     self._service, list(self._transferred_protocol_dict.keys()), int(kwargs["config"].get("start_block"))
+        # )
 
     def _load_config(self, filename, chain_id):
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -67,15 +68,16 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
     def _collect(self, **kwargs):
         token_transfers = self._data_buff[ERC20TokenTransfer.type()]
 
-        transferred_details, current_status_list, updated_current_holdings = process_token_transfers(
-            token_transfers, self._current_holdings, self._transferred_protocol_dict, self._fbtc_address
+        current_holdings = get_current_holdings(self._service, kwargs["start_block"])
+
+        transferred_details, current_status_list, _ = process_token_transfers(
+            token_transfers, current_holdings, self._transferred_protocol_dict, self._fbtc_address
         )
 
         for data in transferred_details:
             self._collect_item(TransferredFBTCDetail.type(), data)
         for data in current_status_list:
             self._collect_item(TransferredFBTCCurrentStatus.type(), data)
-        self._current_holdings = updated_current_holdings
 
     def _process(self, **kwargs):
         self._data_buff[TransferredFBTCDetail.type()].sort(key=lambda x: x.block_number)
@@ -83,10 +85,10 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
 
 
 def process_token_transfers(
-    token_transfers: List[ERC20TokenTransfer],
-    current_holdings: Dict[str, Dict[str, TransferredFBTCCurrentStatus]],
-    transferred_protocol_dict: Dict[str, str],
-    fbtc_address: str,
+        token_transfers: List[ERC20TokenTransfer],
+        current_holdings: Dict[str, Dict[str, TransferredFBTCCurrentStatus]],
+        transferred_protocol_dict: Dict[str, str],
+        fbtc_address: str,
 ) -> Tuple[
     List[TransferredFBTCDetail], List[TransferredFBTCCurrentStatus], Dict[str, Dict[str, TransferredFBTCCurrentStatus]]
 ]:
@@ -98,9 +100,6 @@ def process_token_transfers(
             )
         )
     )
-    for contract_address, wallet_dict in current_holdings.items():
-        for wallet_address, status in wallet_dict.items():
-            current_status[contract_address][wallet_address] = status
 
     # Group transfers by contract address and then by block number
     transfers_by_address = defaultdict(lambda: defaultdict(list))
@@ -132,7 +131,7 @@ def process_token_transfers(
 
             # Apply accumulated changes and create TransferredFBTCDetail
             for wallet_address, change in block_changes.items():
-                current_amount = current_status[address][wallet_address].amount
+                current_amount = current_holdings[address][wallet_address]
                 new_amount = current_amount + change
 
                 current_status[address][wallet_address] = TransferredFBTCCurrentStatus(
@@ -159,10 +158,10 @@ def process_token_transfers(
     current_status_list = [status for address_dict in current_status.values() for status in address_dict.values()]
 
     # Update current_holdings with the latest status
-    updated_current_holdings = {}
-    for contract_address, wallet_dict in current_status.items():
-        updated_current_holdings[contract_address] = {}
-        for wallet_address, status in wallet_dict.items():
-            updated_current_holdings[contract_address][wallet_address] = status
+    # updated_current_holdings = {}
+    # for contract_address, wallet_dict in current_status.items():
+    #     updated_current_holdings[contract_address] = {}
+    #     for wallet_address, status in wallet_dict.items():
+    #         updated_current_holdings[contract_address][wallet_address] = status
 
-    return transferred_details, current_status_list, updated_current_holdings
+    return transferred_details, current_status_list, {}

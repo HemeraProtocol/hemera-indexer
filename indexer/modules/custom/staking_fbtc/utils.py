@@ -1,4 +1,6 @@
-from sqlalchemy import and_, func
+from collections import defaultdict
+
+from sqlalchemy import and_, func, text
 
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
     StakedFBTCCurrentStatus,
@@ -74,3 +76,23 @@ def get_staked_fbtc_status(db_service, staked_contract_list, block_number):
 # Usage for TransferredFBTCCurrentStatus
 def get_transferred_fbtc_status(db_service, transferred_contract_list, block_number):
     return get_current_status_generic(db_service, transferred_contract_list, block_number, TransferredFBTCCurrentStatus)
+
+
+def get_current_holdings(db_service, block_number):
+    session = db_service.get_service_session()
+    sql = f"""
+        select * from (select *, row_number() over (partition by wallet_address, contract_address order by block_number desc) rn
+               from feature_staked_fbtc_detail_records
+               where block_number < {block_number}) t where rn = 1
+        """
+    result = session.execute(text(sql))
+
+    current_holdings = defaultdict(lambda: defaultdict(int))
+
+    for record in result:
+        contract_address = '0x' + record.contract_address.hex()
+        wallet_address = '0x' + record.wallet_address.hex()
+        current_holdings[contract_address][wallet_address] = record.amount
+    session.close()
+
+    return current_holdings

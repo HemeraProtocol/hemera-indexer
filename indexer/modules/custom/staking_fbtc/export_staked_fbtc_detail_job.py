@@ -16,6 +16,7 @@ from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail impor
     StakedFBTCCurrentStatus,
     StakedFBTCDetail,
 )
+from indexer.modules.custom.staking_fbtc.utils import get_current_holdings
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import decode_log
 
@@ -41,9 +42,9 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._load_config("config.ini", self._chain_id)
         self._service = kwargs["config"].get("db_service")
-        self._current_holdings = utils.get_staked_fbtc_status(
-            self._service, list(self.staked_abi_dict.keys()), int(kwargs["config"].get("start_block"))
-        )
+        # self._current_holdings = utils.get_staked_fbtc_status(
+        #     self._service, list(self.staked_abi_dict.keys()), int(kwargs["config"].get("start_block"))
+        # )
 
     def _load_config(self, filename, chain_id):
         base_path = os.path.dirname(os.path.abspath(__file__))
@@ -75,14 +76,15 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
 
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
-        staked_details, current_status_list, current_holdings = collect_detail(
-            logs, self._current_holdings, self.staked_abi_dict, self.staked_protocol_dict
+        current_holdings = get_current_holdings(self._service, kwargs["start_block"])
+
+        staked_details, current_status_list = collect_detail(
+            logs, current_holdings, self.staked_abi_dict, self.staked_protocol_dict
         )
         for data in staked_details:
             self._collect_item(StakedFBTCDetail.type(), data)
         for data in current_status_list:
             self._collect_item(StakedFBTCCurrentStatus.type(), data)
-        self._current_holdings = current_holdings
 
     def _process(self, **kwargs):
         self._data_buff[StakedFBTCDetail.type()].sort(key=lambda x: x.block_number)
@@ -90,11 +92,11 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
 
 
 def collect_detail(
-    logs: List[Log],
-    current_holdings: Dict[str, Dict[str, StakedFBTCCurrentStatus]],
-    staked_abi_dict: Dict[str, Any],
-    staked_protocol_dict: Dict[str, str],
-) -> Tuple[List[StakedFBTCDetail], List[StakedFBTCCurrentStatus], Dict[str, Dict[str, StakedFBTCCurrentStatus]]]:
+        logs: List[Log],
+        current_holdings,
+        staked_abi_dict: Dict[str, Any],
+        staked_protocol_dict: Dict[str, str],
+) -> Tuple[List[StakedFBTCDetail], List[StakedFBTCCurrentStatus]]:
     current_status = defaultdict(
         lambda: defaultdict(
             lambda: StakedFBTCCurrentStatus(
@@ -102,9 +104,6 @@ def collect_detail(
             )
         )
     )
-    for contract_address, wallet_dict in current_holdings.items():
-        for wallet_address, status in wallet_dict.items():
-            current_status[contract_address][wallet_address] = status
 
     logs_by_address = defaultdict(lambda: defaultdict(list))
     for log in logs:
@@ -128,7 +127,7 @@ def collect_detail(
                 block_changes[wallet_address] += amount
 
             for wallet_address, change in block_changes.items():
-                current_amount = current_status[address][wallet_address].amount
+                current_amount = current_holdings[address][wallet_address]
                 new_amount = current_amount + change
 
                 current_status[address][wallet_address] = StakedFBTCCurrentStatus(
@@ -153,10 +152,4 @@ def collect_detail(
 
     current_status_list = [status for address_dict in current_status.values() for status in address_dict.values()]
 
-    updated_current_holdings = {}
-    for contract_address, wallet_dict in current_status.items():
-        updated_current_holdings[contract_address] = {}
-        for wallet_address, status in wallet_dict.items():
-            updated_current_holdings[contract_address][wallet_address] = status
-
-    return staked_details, current_status_list, updated_current_holdings
+    return staked_details, current_status_list
