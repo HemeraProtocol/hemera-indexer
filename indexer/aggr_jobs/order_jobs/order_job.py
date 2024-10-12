@@ -28,7 +28,8 @@ class AggrOrderJob(AggrBaseJob):
         self.version = config["version"]
 
         if self.chain_name == 'eth':
-            job_list.append('period_feature_holding_balance_satlayer_fbtc.sql')
+            if 'period_feature_holding_balance_satlayer_fbtc.sql' not in job_list:
+                job_list.append('period_feature_holding_balance_satlayer_fbtc.sql')
 
         elif self.chain_name == 'mantle':
             job_list.append('period_feature_holding_balance_uniswap_v3_meth.sql')
