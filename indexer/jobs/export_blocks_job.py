@@ -15,10 +15,10 @@ from indexer.specification.specification import (
     TransactionFilterByTransactionInfo,
     TransactionHashSpecification,
 )
+from indexer.utils.collection_utils import flatten
 from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rpc
 from indexer.utils.reorg import set_reorg_sign
 from indexer.utils.rpc_utils import rpc_response_batch_to_results
-from indexer.utils.collection_utils import flatten
 
 logger = logging.getLogger(__name__)
 
