@@ -1,7 +1,5 @@
-import logging
 from typing import Any, Dict, Optional, Sequence, Tuple
 
-import eth_abi
 from eth_abi.codec import ABICodec
 from eth_abi.grammar import BasicType
 from eth_typing import ChecksumAddress, HexStr, TypeStr
@@ -18,22 +16,13 @@ from eth_utils import (
 )
 from hexbytes import HexBytes
 from web3 import Web3
-from web3._utils.abi import (
-    build_strict_registry,
-    exclude_indexed_event_inputs,
-    get_abi_input_types,
-    get_indexed_event_inputs,
-    map_abi_data,
-    named_tree,
-)
+from web3._utils.abi import build_strict_registry, get_abi_input_types, map_abi_data
 from web3._utils.normalizers import implicitly_identity, parse_basic_type_str
 from web3.types import ABIEvent, ABIFunction
 
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain.log import Log
 
 codec = ABICodec(build_strict_registry())
-import eth_abi.registry
 
 
 def event_log_abi_to_topic(event_abi: ABIEvent) -> str:
@@ -58,42 +47,6 @@ def generate_type_str(component):
         return "(" + ",".join(tuple_types) + ")"
     else:
         return component["type"]
-
-
-def decode_log(
-    fn_abi: ABIEvent,
-    log: Log,
-) -> Optional[Dict[str, Any]]:
-    try:
-        indexed_types = get_indexed_event_inputs(fn_abi)
-        for indexed_type in indexed_types:
-            if indexed_type["type"] == "string":
-                indexed_type["type"] = "bytes32"
-
-        data_types = exclude_indexed_event_inputs(fn_abi)
-
-        abi_codec = ABICodec(eth_abi.registry.registry)
-        decode_indexed = abi_codec.decode(get_types_from_abi_type_list(indexed_types), log.get_bytes_topics())
-        indexed = named_tree(indexed_types, decode_indexed)
-
-        decoded_data = abi_codec.decode(get_types_from_abi_type_list(data_types), log.get_bytes_data())
-        data = named_tree(data_types, decoded_data)
-    except Exception as e:
-        logging.warning(f"Failed to decode log: {e}, log: {log}")
-        return None
-
-    return {**indexed, **data}
-
-
-def decode_log_ignore_indexed(
-    fn_abi: ABIEvent,
-    log: Log,
-) -> Optional[Dict[str, Any]]:
-    data_types = get_indexed_event_inputs(fn_abi) + exclude_indexed_event_inputs(fn_abi)
-    abi_codec = ABICodec(eth_abi.registry.registry)
-    decoded_data = abi_codec.decode([t["type"] for t in data_types], log.get_topic_with_data())
-    data = named_tree(data_types, decoded_data)
-    return data
 
 
 @implicitly_identity
@@ -145,21 +98,6 @@ def encode_abi(
         return to_hex(HexBytes(data) + encoded_arguments)
     else:
         return encode_hex(encoded_arguments)
-
-
-class Event:
-    def __init__(self, event_abi: ABIEvent):
-        self._event_abi = event_abi
-        self._signature = event_log_abi_to_topic(event_abi)
-
-    def get_signature(self) -> str:
-        return self._signature
-
-    def decode_log(self, log: Log) -> Optional[Dict[str, Any]]:
-        return decode_log(self._event_abi, log)
-
-    def decode_log_ignore_indexed(self, log: Log) -> Optional[Dict[str, Any]]:
-        return decode_log_ignore_indexed(self._event_abi, log)
 
 
 def uint256_to_bytes(value: int) -> bytes:

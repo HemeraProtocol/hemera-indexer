@@ -7,7 +7,7 @@ from common.utils.web3_utils import ZERO_ADDRESS
 from enumeration.token_type import TokenType
 from indexer.domain import Domain
 from indexer.domain.log import Log
-from indexer.utils.abi import Event
+from indexer.utils.decode_utils import Event
 
 logger = logging.getLogger(__name__)
 

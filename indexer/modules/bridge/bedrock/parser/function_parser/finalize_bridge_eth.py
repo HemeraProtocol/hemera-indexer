@@ -4,6 +4,7 @@ from typing import cast
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIFunction
 
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.modules.bridge.bedrock.parser.function_parser import (
     BedRockFunctionCallType,
     BridgeRemoteFunctionCallInfo,
