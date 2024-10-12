@@ -30,69 +30,17 @@ from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.abi_setting import (
+    NAME_ABI_FUNCTION,
+    SYMBOL_ABI_FUNCTION,
+    DECIMALS_ABI_FUNCTION,
+    TOTAL_SUPPLY_ABI_FUNCTION,
+    OWNER_OF_ABI_FUNCTION,
+    TOKEN_URI_ABI_FUNCTION
+)
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
-
-NAME_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [],
-    "name": "name",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-SYMBOL_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-DECIMALS_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [{"name": "", "type": "uint8"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-TOTAL_SUPPLY_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [],
-    "name": "totalSupply",
-    "outputs": [{"name": "", "type": "uint256"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-OWNER_OF_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "tokenId", "type": "uint256"}],
-    "name": "ownerOf",
-    "outputs": [{"name": "owner", "type": "address"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-TOKEN_URI_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "tokenId", "type": "uint256"}],
-    "name": "tokenURI",
-    "outputs": [{"name": "uri", "type": "address"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
 
 abi_mapping = {
     "name": NAME_ABI_FUNCTION,
@@ -157,15 +105,15 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
             log
             for log in self._data_buff[Log.type()]
             if log.topic0
-            in [
-                transfer_event.get_signature(),
-                single_transfer_event.get_signature(),
-                batch_transfer_event.get_signature(),
-            ]
-            or (
-                log.topic0 in [deposit_event.get_signature(), withdraw_event.get_signature()]
-                and log.address == self.weth_address
-            )
+               in [
+                   transfer_event.get_signature(),
+                   single_transfer_event.get_signature(),
+                   batch_transfer_event.get_signature(),
+               ]
+               or (
+                       log.topic0 in [deposit_event.get_signature(), withdraw_event.get_signature()]
+                       and log.address == self.weth_address
+               )
         ]
 
         self._batch_work_executor.execute(
@@ -273,11 +221,11 @@ def build_rpc_method_data(tokens, fn, arguments=None):
             }
         )
         token["param_data"] = encode_abi(
-            NAME_ABI_FUNCTION,
+            NAME_ABI_FUNCTION.get_abi(),
             arguments,
-            function_abi_to_4byte_selector_str(NAME_ABI_FUNCTION),
+            NAME_ABI_FUNCTION.get_signature()
         )
-        token["data_type"] = NAME_ABI_FUNCTION["outputs"][0]["type"]
+        token["data_type"] = NAME_ABI_FUNCTION.get_outputs_type()[0]
 
     return tokens
 
