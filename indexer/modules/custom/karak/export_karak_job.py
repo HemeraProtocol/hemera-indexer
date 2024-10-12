@@ -7,9 +7,11 @@ from eth_typing import Decodable
 from sqlalchemy import func
 
 from common.utils.exception_control import FastShutdownError
+from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
+from indexer.modules.custom.hemera_ens.extractors import extract_eth_address
 from indexer.modules.custom.karak.karak_abi import DEPOSIT_EVENT, FINISH_WITHDRAWAL_EVENT, START_WITHDRAWAL_EVENT
 from indexer.modules.custom.karak.karak_conf import CHAIN_CONTRACT
 from indexer.modules.custom.karak.karak_domain import (
@@ -21,8 +23,8 @@ from indexer.modules.custom.karak.karak_domain import (
 from indexer.modules.custom.karak.models.af_karak_address_current import AfKarakAddressCurrent
 from indexer.modules.custom.karak.models.af_karak_vault_token import AfKarakVaultToken
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import bytes_to_hex_str, decode_log
-from indexer.utils.utils import extract_eth_address
+from indexer.utils.abi import bytes_to_hex_str
+from indexer.utils.decode_utils import decode_log
 
 logger = logging.getLogger(__name__)
 
@@ -94,9 +96,7 @@ class ExportKarakJob(FilterTransactionDataJob):
                 ):
                     vault = extract_eth_address(log.topic1)
                     break
-            dd = self.decode_function(
-                ["address", "string", "string", "uint8"], bytes.fromhex(transaction.input[2:])[4:]
-            )
+            dd = self.decode_function(["address", "string", "string", "uint8"], hex_str_to_bytes(transaction.input)[4:])
             kvt = KarakVaultTokenD(
                 vault=vault,
                 token=dd[0],
