@@ -15,7 +15,7 @@ from common.models.logs import Logs
 from common.models.transactions import Transactions
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import hex_to_bytes
+from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain import Domain, dict_to_dataclass
 from indexer.domain.block import Block
 from indexer.domain.log import Log
@@ -31,7 +31,7 @@ from indexer.specification.specification import (
     TransactionFilterByTransactionInfo,
     TransactionHashSpecification,
 )
-from indexer.utils.utils import distinct_collections_by_group, flatten
+from indexer.utils.collection_utils import distinct_collections_by_group, flatten
 
 logger = logging.getLogger(__name__)
 
