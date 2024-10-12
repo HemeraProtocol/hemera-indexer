@@ -7,7 +7,13 @@ from common.utils.web3_utils import ZERO_ADDRESS
 from enumeration.token_type import TokenType
 from indexer.domain import Domain
 from indexer.domain.log import Log
-from indexer.utils.abi_setting import deposit_event, single_transfer_event, transfer_event, withdraw_event
+from indexer.utils.abi_setting import (
+    batch_transfer_event,
+    deposit_event,
+    single_transfer_event,
+    transfer_event,
+    withdraw_event,
+)
 
 logger = logging.getLogger(__name__)
 
