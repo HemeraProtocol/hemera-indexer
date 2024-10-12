@@ -93,8 +93,8 @@ def get_ens_current(address) -> Optional[Dict[str, Any]]:
     primary_address_row = db.session.query(ENSAddress).filter(ENSAddress.address == address).first()
     if primary_address_row:
         res["primary_name"] = primary_address_row.name
-    else:
-        res["primary_name"] = w3.ens.name(w3.to_checksum_address(w3.to_hex(address)))
+    # else:
+    #    res["primary_name"] = w3.ens.name(w3.to_checksum_address(w3.to_hex(address)))
 
     be_resolved_ens = db.session.query(ENSRecord).filter(and_(ENSRecord.address == address)).all()
     res["resolve_to_names"] = [
