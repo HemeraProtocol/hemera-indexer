@@ -127,8 +127,8 @@ def collect_detail(
                 block_changes[wallet_address] += amount
 
             for wallet_address, change in block_changes.items():
-                current_amount = current_holdings[address][wallet_address]
-                new_amount = current_amount + change
+                new_amount = current_holdings[address][wallet_address] + change
+                current_holdings[address][wallet_address] = new_amount
 
                 current_status[address][wallet_address] = StakedFBTCCurrentStatus(
                     contract_address=address,

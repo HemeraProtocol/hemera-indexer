@@ -131,8 +131,8 @@ def process_token_transfers(
 
             # Apply accumulated changes and create TransferredFBTCDetail
             for wallet_address, change in block_changes.items():
-                current_amount = current_holdings[address][wallet_address]
-                new_amount = current_amount + change
+                new_amount = current_holdings[address][wallet_address] + change
+                current_holdings[address][wallet_address] = new_amount
 
                 current_status[address][wallet_address] = TransferredFBTCCurrentStatus(
                     contract_address=address,
