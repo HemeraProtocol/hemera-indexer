@@ -100,3 +100,7 @@ def format_coin_value_with_unit(value: int, native_token: str) -> str:
         return str(value) + " WEI"
     else:
         return "{0:.15f}".format(value / 10**18).rstrip("0").rstrip(".") + " " + native_token
+
+
+def hex_to_bytes(hex_value: str) -> bytes:
+    return bytes.fromhex(hex_value[2:])

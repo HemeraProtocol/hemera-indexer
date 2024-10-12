@@ -18,19 +18,9 @@ from indexer.specification.specification import (
 )
 from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rpc
 from indexer.utils.reorg import set_reorg_sign
-from indexer.utils.utils import rpc_response_batch_to_results
+from indexer.utils.utils import flatten, rpc_response_batch_to_results
 
 logger = logging.getLogger(__name__)
-
-
-def flatten(lst):
-    result = []
-    for item in lst:
-        if isinstance(item, list):
-            result.extend(flatten(item))
-        else:
-            result.append(item)
-    return result
 
 
 # Exports blocks and block number <-> timestamp mapping
