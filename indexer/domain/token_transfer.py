@@ -7,76 +7,9 @@ from common.utils.web3_utils import ZERO_ADDRESS
 from enumeration.token_type import TokenType
 from indexer.domain import Domain
 from indexer.domain.log import Log
-from indexer.utils.decode_utils import Event
+from indexer.utils.abi_setting import deposit_event, single_transfer_event, transfer_event, withdraw_event
 
 logger = logging.getLogger(__name__)
-
-deposit_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "dst", "type": "address"},
-            {"indexed": False, "name": "wad", "type": "uint256"},
-        ],
-        "name": "Deposit",
-        "type": "event",
-    }
-)
-
-withdraw_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "src", "type": "address"},
-            {"indexed": False, "name": "wad", "type": "uint256"},
-        ],
-        "name": "Withdrawal",
-        "type": "event",
-    }
-)
-
-transfer_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "from", "type": "address"},
-            {"indexed": True, "name": "to", "type": "address"},
-            {"indexed": False, "name": "value", "type": "uint256"},
-        ],
-        "name": "Transfer",
-        "type": "event",
-    }
-)
-
-single_transfer_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "operator", "type": "address"},
-            {"indexed": True, "name": "from", "type": "address"},
-            {"indexed": True, "name": "to", "type": "address"},
-            {"indexed": False, "name": "id", "type": "uint256"},
-            {"indexed": False, "name": "value", "type": "uint256"},
-        ],
-        "name": "TransferSingle",
-        "type": "event",
-    }
-)
-
-batch_transfer_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "operator", "type": "address"},
-            {"indexed": True, "name": "from", "type": "address"},
-            {"indexed": True, "name": "to", "type": "address"},
-            {"indexed": False, "name": "ids", "type": "uint256[]"},
-            {"indexed": False, "name": "values", "type": "uint256[]"},
-        ],
-        "name": "TransferBatch",
-        "type": "event",
-    }
-)
 
 
 @dataclass

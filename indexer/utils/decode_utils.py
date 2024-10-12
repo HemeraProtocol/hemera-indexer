@@ -7,7 +7,7 @@ Project : hemera_indexer
 """
 import json
 import logging
-from typing import Any, Dict, Optional, List, Union, Sequence
+from typing import Any, Dict, List, Optional, Union
 
 import eth_abi
 from eth_abi.codec import ABICodec
@@ -15,7 +15,7 @@ from web3._utils.abi import exclude_indexed_event_inputs, get_indexed_event_inpu
 from web3.types import ABIEvent, ABIFunction
 
 from indexer.domain.log import Log
-from indexer.utils.abi import event_log_abi_to_topic, get_types_from_abi_type_list, function_abi_to_4byte_selector_str
+from indexer.utils.abi import event_log_abi_to_topic, function_abi_to_4byte_selector_str, get_types_from_abi_type_list
 
 
 class Event:
@@ -34,8 +34,8 @@ class Event:
 
 
 def decode_log_ignore_indexed(
-        fn_abi: ABIEvent,
-        log: Log,
+    fn_abi: ABIEvent,
+    log: Log,
 ) -> Optional[Dict[str, Any]]:
     data_types = get_indexed_event_inputs(fn_abi) + exclude_indexed_event_inputs(fn_abi)
     abi_codec = ABICodec(eth_abi.registry.registry)
@@ -45,8 +45,8 @@ def decode_log_ignore_indexed(
 
 
 def decode_log(
-        fn_abi: ABIEvent,
-        log: Log,
+    fn_abi: ABIEvent,
+    log: Log,
 ) -> Optional[Dict[str, Any]]:
     try:
         indexed_types = get_indexed_event_inputs(fn_abi)

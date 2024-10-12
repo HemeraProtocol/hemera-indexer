@@ -11,7 +11,8 @@ from indexer.domain.contract import Contract, extract_contract_from_trace
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
-from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
+from indexer.utils.abi import encode_abi
+from indexer.utils.abi_setting import NAME_ABI_FUNCTION
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
@@ -83,9 +84,7 @@ def build_contracts(traces: List[Trace]):
             contract["param_to"] = contract["address"]
 
             try:
-                contract["param_data"] = encode_abi(
-                    CONTRACT_NAME_ABI, [], function_abi_to_4byte_selector_str(CONTRACT_NAME_ABI)
-                )
+                contract["param_data"] = encode_abi(NAME_ABI_FUNCTION.get_abi(), [], NAME_ABI_FUNCTION.get_signature())
             except Exception as e:
                 logger.warning(
                     f"Encoding contract api parameter failed. "

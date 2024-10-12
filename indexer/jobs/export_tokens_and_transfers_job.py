@@ -16,28 +16,28 @@ from indexer.domain.token_transfer import (
     ERC721TokenTransfer,
     ERC1155TokenTransfer,
     TokenTransfer,
-    batch_transfer_event,
-    deposit_event,
     extract_transfer_from_log,
-    single_transfer_event,
-    transfer_event,
-    withdraw_event,
 )
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
+from indexer.utils.abi_setting import (
+    DECIMALS_ABI_FUNCTION,
+    NAME_ABI_FUNCTION,
+    OWNER_OF_ABI_FUNCTION,
+    SYMBOL_ABI_FUNCTION,
+    TOKEN_URI_ABI_FUNCTION,
+    TOTAL_SUPPLY_ABI_FUNCTION,
+    batch_transfer_event,
+    deposit_event,
+    single_transfer_event,
+    transfer_event,
+    withdraw_event,
+)
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
-from indexer.utils.abi_setting import (
-    NAME_ABI_FUNCTION,
-    SYMBOL_ABI_FUNCTION,
-    DECIMALS_ABI_FUNCTION,
-    TOTAL_SUPPLY_ABI_FUNCTION,
-    OWNER_OF_ABI_FUNCTION,
-    TOKEN_URI_ABI_FUNCTION
-)
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
@@ -105,15 +105,15 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
             log
             for log in self._data_buff[Log.type()]
             if log.topic0
-               in [
-                   transfer_event.get_signature(),
-                   single_transfer_event.get_signature(),
-                   batch_transfer_event.get_signature(),
-               ]
-               or (
-                       log.topic0 in [deposit_event.get_signature(), withdraw_event.get_signature()]
-                       and log.address == self.weth_address
-               )
+            in [
+                transfer_event.get_signature(),
+                single_transfer_event.get_signature(),
+                batch_transfer_event.get_signature(),
+            ]
+            or (
+                log.topic0 in [deposit_event.get_signature(), withdraw_event.get_signature()]
+                and log.address == self.weth_address
+            )
         ]
 
         self._batch_work_executor.execute(
@@ -220,11 +220,7 @@ def build_rpc_method_data(tokens, fn, arguments=None):
                 "request_id": index,
             }
         )
-        token["param_data"] = encode_abi(
-            NAME_ABI_FUNCTION.get_abi(),
-            arguments,
-            NAME_ABI_FUNCTION.get_signature()
-        )
+        token["param_data"] = encode_abi(NAME_ABI_FUNCTION.get_abi(), arguments, NAME_ABI_FUNCTION.get_signature())
         token["data_type"] = NAME_ABI_FUNCTION.get_outputs_type()[0]
 
     return tokens

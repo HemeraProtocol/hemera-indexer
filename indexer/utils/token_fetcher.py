@@ -24,7 +24,13 @@ from indexer.domain.token_id_infos import (
     UpdateERC721TokenIdDetail,
     UpdateERC1155TokenIdDetail,
 )
-from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
+from indexer.utils.abi import encode_abi
+from indexer.utils.abi_setting import (
+    OWNER_OF_ABI_FUNCTION,
+    TOKEN_URI_ABI_FUNCTION,
+    TOTAL_SUPPLY_ABI_FUNCTION,
+    URI_ABI_FUNCTION,
+)
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.multicall_hemera import Call, Multicall, Network
@@ -440,76 +446,29 @@ def abi_selector_encode_and_decode_type(token_id_info):
     if token_id_info["token_type"] == TokenType.ERC721.value:
         if token_id_info["is_get_token_uri"]:
             return encode_abi(
-                ERC721_TOKEN_URI_ABI_FUNCTION,
+                TOKEN_URI_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                erc721_uri_sig_prefix,
+                TOKEN_URI_ABI_FUNCTION.get_signature(),
             )
         else:
             return encode_abi(
-                ERC721_OWNER_OF_ABI_FUNCTION,
+                OWNER_OF_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                erc721_owner_of_sig_prefix,
+                OWNER_OF_ABI_FUNCTION.get_signature(),
             )
     elif token_id_info["token_type"] == TokenType.ERC1155.value:
         if token_id_info["is_get_token_uri"]:
             return encode_abi(
-                ERC1155_TOKEN_URI_ABI_FUNCTION,
+                URI_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                erc1155_token_uri_sig_prefix,
+                URI_ABI_FUNCTION.get_signature(),
             )
         else:
             return encode_abi(
-                ERC1155_TOTAL_SUPPLY_ABI_FUNCTION,
+                TOTAL_SUPPLY_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                erc1155_token_supply_sig_prefix,
+                TOTAL_SUPPLY_ABI_FUNCTION.get_signature(),
             )
-
-
-ERC721_TOKEN_URI_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "id", "type": "uint256"}],
-    "name": "tokenURI",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-ERC721_OWNER_OF_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "id", "type": "uint256"}],
-    "name": "ownerOf",
-    "outputs": [{"name": "", "type": "address"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-ERC1155_TOKEN_URI_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "id", "type": "uint256"}],
-    "name": "uri",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-ERC1155_TOTAL_SUPPLY_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "id", "type": "uint256"}],
-    "name": "totalSupply",
-    "outputs": [{"name": "", "type": "uint256"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-erc721_uri_sig_prefix = function_abi_to_4byte_selector_str(ERC721_TOKEN_URI_ABI_FUNCTION)
-erc721_owner_of_sig_prefix = function_abi_to_4byte_selector_str(ERC721_OWNER_OF_ABI_FUNCTION)
-
-erc1155_token_uri_sig_prefix = function_abi_to_4byte_selector_str(ERC1155_TOKEN_URI_ABI_FUNCTION)
-erc1155_token_supply_sig_prefix = function_abi_to_4byte_selector_str(ERC1155_TOTAL_SUPPLY_ABI_FUNCTION)
 
 
 def dict_to_tuple(d):

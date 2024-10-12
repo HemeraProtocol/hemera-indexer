@@ -15,7 +15,7 @@ from common.models.logs import Logs
 from common.models.transactions import Transactions
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import hex_str_to_bytes
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain import Domain, dict_to_dataclass
 from indexer.domain.block import Block
 from indexer.domain.log import Log
@@ -277,7 +277,7 @@ class PGSourceJob(BaseSourceJob):
 
             if len(log_filter["transaction_hash"]) > 0:
                 conditions = Logs.transaction_hash.in_(
-                    [hex_to_bytes(transaction_hash) for transaction_hash in set(log_filter["transaction_hash"])]
+                    [hex_str_to_bytes(transaction_hash) for transaction_hash in set(log_filter["transaction_hash"])]
                 )
 
                 query_filter = and_(
@@ -327,7 +327,7 @@ class PGSourceJob(BaseSourceJob):
 
             if len(transaction_filter["to_address"]) > 0:
                 conditions = Transactions.to_address.in_(
-                    [hex_to_bytes(to_address) for to_address in set(transaction_filter["to_address"])]
+                    [hex_str_to_bytes(to_address) for to_address in set(transaction_filter["to_address"])]
                 )
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
