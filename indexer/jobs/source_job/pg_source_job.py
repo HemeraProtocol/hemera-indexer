@@ -257,13 +257,13 @@ class PGSourceJob(BaseSourceJob):
 
             if len(log_filter["address"]) > 0 and len(log_filter["topics"]) > 0:
                 conditions = and_(
-                    Logs.address.in_([hex_to_bytes(address) for address in set(log_filter["address"])]),
-                    Logs.topic0.in_([hex_to_bytes(topic0) for topic0 in set(log_filter["topics"])]),
+                    Logs.address.in_([hex_str_to_bytes(address) for address in set(log_filter["address"])]),
+                    Logs.topic0.in_([hex_str_to_bytes(topic0) for topic0 in set(log_filter["topics"])]),
                 )
             elif len(log_filter["address"]) > 0:
-                conditions = Logs.address.in_([hex_to_bytes(address) for address in set(log_filter["address"])])
+                conditions = Logs.address.in_([hex_str_to_bytes(address) for address in set(log_filter["address"])])
             elif len(log_filter["topics"]) > 0:
-                conditions = Logs.topic0.in_([hex_to_bytes(topic0) for topic0 in set(log_filter["topics"])])
+                conditions = Logs.topic0.in_([hex_str_to_bytes(topic0) for topic0 in set(log_filter["topics"])])
 
             if len(log_filter["address"]) > 0 or len(log_filter["topics"]) > 0:
                 query_filter = and_(
@@ -301,7 +301,7 @@ class PGSourceJob(BaseSourceJob):
 
             if len(transaction_filter["hash"]) > 0:
                 conditions = Transactions.hash.in_(
-                    [hex_to_bytes(transaction_hash) for transaction_hash in set(transaction_filter["hash"])]
+                    [hex_str_to_bytes(transaction_hash) for transaction_hash in set(transaction_filter["hash"])]
                 )
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
@@ -314,7 +314,7 @@ class PGSourceJob(BaseSourceJob):
 
             if len(transaction_filter["from_address"]) > 0:
                 conditions = Transactions.from_address.in_(
-                    [hex_to_bytes(from_address) for from_address in set(transaction_filter["from_address"])]
+                    [hex_str_to_bytes(from_address) for from_address in set(transaction_filter["from_address"])]
                 )
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
