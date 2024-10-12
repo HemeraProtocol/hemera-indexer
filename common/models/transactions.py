@@ -53,6 +53,8 @@ class Transactions(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
+    __query_order__ = [block_number, transaction_index]
+
     @staticmethod
     def model_domain_mapping():
         return [

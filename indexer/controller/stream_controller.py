@@ -2,12 +2,13 @@ import logging
 import os
 import time
 
-from common.utils.exception_control import HemeraBaseException
+from common.utils.exception_control import FastShutdownError, HemeraBaseException
 from common.utils.file_utils import delete_file, write_to_file
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.utils.exception_recorder import ExceptionRecorder
+from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
 
 exception_recorder = ExceptionRecorder()
@@ -20,6 +21,7 @@ class StreamController(BaseController):
         batch_web3_provider,
         sync_recorder: BaseRecorder,
         job_scheduler: JobScheduler,
+        limit_reader: LimitReader,
         max_retries=5,
         retry_from_record=False,
         delay=0,
@@ -28,9 +30,10 @@ class StreamController(BaseController):
         self.sync_recorder = sync_recorder
         self.web3 = build_web3(batch_web3_provider)
         self.job_scheduler = job_scheduler
+        self.limit_reader = limit_reader
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
-        self.delay = 0
+        self.delay = delay
 
     def action(
         self,
@@ -72,7 +75,12 @@ class StreamController(BaseController):
 
             try:
                 tries_reset = True
-                current_block = self._get_current_block_number()
+                current_block = self.limit_reader.get_current_block_number()
+                if current_block is None:
+                    raise FastShutdownError(
+                        "Can't get current limit block number from limit reader."
+                        "If you're using PGLimitReader, please confirm blocks table has one record at least."
+                    )
 
                 target_block = self._calculate_target_block(current_block, last_synced_block, end_block, steps)
                 synced_blocks = max(target_block - last_synced_block, 0)

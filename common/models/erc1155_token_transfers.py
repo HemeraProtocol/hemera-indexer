@@ -24,6 +24,7 @@ class ERC1155TokenTransfers(HemeraModel):
     reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("transaction_hash", "block_hash", "log_index", "token_id"),)
+    __query_order__ = [block_number, log_index]
 
     @staticmethod
     def model_domain_mapping():

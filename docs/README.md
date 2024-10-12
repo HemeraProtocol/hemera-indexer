@@ -101,11 +101,6 @@ or
 git clone git@github.com:HemeraProtocol/hemera-indexer.git
 ```
 
-### Run Hemera Indexer
-
-We recommend running from docker containers using the provided `docker-compose.yaml` .
-If you prefer running from source code, please check out [Run From Source Code](#run-from-source-code).
-
 ### Run In Docker
 
 #### Install Docker & Docker Compose
@@ -114,6 +109,7 @@ If you have trouble running the following commands, consider referring to
 the [official docker installation guide](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
 for the latest instructions.
 
+##### Ubuntu and Debian
 ```bash
 # Add Docker's official GPG key:
 sudo apt-get update
@@ -128,11 +124,29 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
-```
 
-```bash
 # Install docker and docker compose
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+docker compose version
+```
+
+##### RPM-based distros
+```bash
+sudo yum update -y
+sudo yum install docker -y
+sudo service docker start
+sudo systemctl enable docker
+sudo usermod -a -G docker ec2-user
+
+newgrp docker
+docker --version
+docker run hello-world
+
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+mkdir -p $DOCKER_CONFIG/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.29.6/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+docker compose version
 ```
 
 #### Run the Docker Compose
@@ -158,61 +172,48 @@ sudo docker compose up
 You should be able to see similar logs from your console that indicate Hemera Indexer is running properly.
 
 ```
-[+] Running 2/0
- ✔ Container postgresql  Created                                                                                                                0.0s
- ✔ Container hemera      Created                                                                                                                0.0s
-Attaching to hemera, postgresql
-postgresql  |
-postgresql  | PostgreSQL Database directory appears to contain a database; Skipping initialization
-postgresql  |
-postgresql  | 2024-06-24 08:18:48.547 UTC [1] LOG:  starting PostgreSQL 15.7 (Debian 15.7-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
-postgresql  | 2024-06-24 08:18:48.548 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-postgresql  | 2024-06-24 08:18:48.549 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-postgresql  | 2024-06-24 08:18:48.554 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-postgresql  | 2024-06-24 08:18:48.564 UTC [27] LOG:  database system was shut down at 2024-06-24 06:44:23 UTC
-postgresql  | 2024-06-24 08:18:48.575 UTC [1] LOG:  database system is ready to accept connections
-hemera      | 2024-06-24 08:18:54,953 - root [INFO] - Using provider https://eth.llamarpc.com
-hemera      | 2024-06-24 08:18:54,953 - root [INFO] - Using debug provider https://eth.llamarpc.com
-hemera      | 2024-06-24 08:18:55,229 - alembic.runtime.migration [INFO] - Context impl PostgresqlImpl.
-hemera      | 2024-06-24 08:18:55,230 - alembic.runtime.migration [INFO] - Will assume transactional DDL.
-hemera      | 2024-06-24 08:18:55,278 - alembic.runtime.migration [INFO] - Context impl PostgresqlImpl.
-hemera      | 2024-06-24 08:18:55,278 - alembic.runtime.migration [INFO] - Will assume transactional DDL.
-hemera      | 2024-06-24 08:18:56,169 - root [INFO] - Current block 20160303, target block 20137200, last synced block 20137199, blocks to sync 1
-hemera      | 2024-06-24 08:18:56,170 - ProgressLogger [INFO] - Started work. Items to process: 1.
-hemera      | 2024-06-24 08:18:57,505 - ProgressLogger [INFO] - 1 items processed. Progress is 100%.
-hemera      | 2024-06-24 08:18:57,506 - ProgressLogger [INFO] - Finished work. Total items processed: 1. Took 0:00:01.336310.
-hemera      | 2024-06-24 08:18:57,529 - exporters.postgres_item_exporter [INFO] - Exporting items to table block_ts_mapper, blocks end, Item count: 2, Took 0:00:00.022562
-hemera      | 2024-06-24 08:18:57,530 - ProgressLogger [INFO] - Started work.
+[+] Running 5/0
+ ✔ Container redis                         Created     0.0s
+ ✔ Container postgresql                    Created     0.0s
+ ✔ Container indexer                       Created     0.0s
+ ✔ Container indexer-trace                 Created     0.0s
+ ✔ Container hemera-api                    Created     0.0s
+Attaching to hemera-api, indexer, indexer-trace, postgresql, redis
 ```
 
 ### Run From Source Code
 
-#### Install Python3 and Pip
+#### Install developer tools
 
 Skip this step if you already have both installed.
 
 ```bash
 sudo apt update
-sudo apt install python3
-sudo apt install python3-pip
+sudo apt install make
 ```
 
-#### Initiate Python VENV
+#### Run development
 
-Skip this step if you don't want to have a dedicated python venv for Hemera Indexer.
+To deploy your project, simply run:
 
 ```bash
-sudo apt install python3-venv
-python3 -m venv ./venv
+make development
 ```
 
-#### Install Pip Dependencies
+This command will:
+1. Create a Python virtual environment
+2. Activate the virtual environment
+3. Install necessary system packages
+4. Install Python dependencies
+
+After running this command, your environment will be set up and ready to use.
+
+Remember to activate the virtual environment (`source ./venv/bin/activate`) when you want to work on your project in the future.
 
 ```bash
 source ./venv/bin/activate
-sudo apt install libpq-dev
-pip install -e .
 ```
+
 
 #### Prepare Your PostgreSQL Instance
 

@@ -6,15 +6,18 @@ import click
 from web3 import Web3
 
 from common.services.postgresql_service import PostgreSQLService
-from common.utils.format_utils import to_snake_case
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.controller.stream_controller import StreamController
-from indexer.domain import Domain
 from indexer.exporters.item_exporter import create_item_exporters
 from indexer.utils.exception_recorder import ExceptionRecorder
+from indexer.utils.limit_reader import create_limit_reader
 from indexer.utils.logging_utils import configure_logging, configure_signals
-from indexer.utils.parameter_utils import check_file_exporter_parameter
+from indexer.utils.parameter_utils import (
+    check_file_exporter_parameter,
+    check_source_load_parameter,
+    generate_dataclass_type_list_from_parameter,
+)
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.rpc_utils import pick_random_provider_uri
 from indexer.utils.sync_recorder import create_recorder
@@ -129,7 +132,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--retry-from-record",
-    default=False,
+    default=True,
     show_default=True,
     type=bool,
     envvar="RETRY_FROM_RECORD",
@@ -194,6 +197,28 @@ def calculate_execution_time(func):
     type=int,
     envvar="DELAY",
     help="The limit number of blocks which delays from the network current block number.",
+)
+@click.option(
+    "--source-path",
+    default=None,
+    show_default=True,
+    required=False,
+    type=str,
+    envvar="SOURCE_PATH",
+    help="The path to load the data."
+    "Load from local csv file e.g. csvfile://your-file-direction; "
+    "or local json file e.g. jsonfile://your-file-direction; ",
+)
+@click.option(
+    "--source-types",
+    default="block,transaction,log",
+    show_default=True,
+    type=str,
+    envvar="SOURCE_TYPES",
+    help="The list of types to read from source, corresponding to more detailed data models. "
+    "Examples include: block, transaction, log, "
+    "token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, "
+    "trace, contract, coin_balance.",
 )
 @click.option(
     "--log-file",
@@ -291,6 +316,7 @@ def stream(
     end_block,
     entity_types,
     output_types,
+    source_types,
     blocks_per_file,
     delay=0,
     period_seconds=10,
@@ -300,10 +326,11 @@ def stream(
     max_workers=5,
     log_file=None,
     pid_file=None,
+    source_path=None,
     sync_recorder="file:sync_record",
     retry_from_record=False,
     cache="memory",
-    auto_reorg=True,
+    auto_reorg=False,
     multicall=True,
     config_file=None,
     force_filter_mode=False,
@@ -318,11 +345,14 @@ def stream(
     logging.info("Using debug provider " + debug_provider_uri)
 
     # parameter logic checking
+    if source_path:
+        check_source_load_parameter(source_path, start_block, end_block, auto_reorg)
     check_file_exporter_parameter(output, block_batch_size, blocks_per_file)
 
     # build config
     config = {
         "blocks_per_file": blocks_per_file,
+        "source_path": source_path,
         "chain_id": Web3(Web3.HTTPProvider(provider_uri)).eth.chain_id,
     }
 
@@ -361,18 +391,10 @@ def stream(
         entity_types = calculate_entity_value(entity_types)
         output_types = list(set(generate_output_types(entity_types)))
     else:
-        domain_dict = Domain.get_all_domain_dict()
-        parse_output_types = set()
+        output_types = generate_dataclass_type_list_from_parameter(output_types, "output")
 
-        for output_type in output_types.split(","):
-            output_type = to_snake_case(output_type)
-            if output_type not in domain_dict:
-                raise click.ClickException(f"Output type {output_type} is not supported")
-            parse_output_types.add(domain_dict[output_type])
-
-        if not output_types:
-            raise click.ClickException("No output types provided")
-        output_types = list(set(parse_output_types))
+    if source_path and source_path.startswith("postgresql://"):
+        source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
 
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
@@ -383,6 +405,7 @@ def stream(
         max_workers=max_workers,
         config=config,
         required_output_types=output_types,
+        required_source_types=source_types,
         cache=cache,
         auto_reorg=auto_reorg,
         multicall=multicall,
@@ -393,6 +416,9 @@ def stream(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
+        limit_reader=create_limit_reader(
+            source_path, ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False))
+        ),
         retry_from_record=retry_from_record,
         delay=delay,
     )

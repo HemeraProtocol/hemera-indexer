@@ -61,6 +61,12 @@ class FromAddressSpecification(Specification):
     def is_satisfied_by(self, item: Transaction):
         return item.from_address == self.address
 
+    def to_filter_params(self):
+        params = None
+        if self.address:
+            params = {"from_address": self.address}
+        return params
+
 
 class ToAddressSpecification(Specification):
     def __init__(self, address):
@@ -68,6 +74,12 @@ class ToAddressSpecification(Specification):
 
     def is_satisfied_by(self, item: Transaction):
         return item.to_address == self.address
+
+    def to_filter_params(self):
+        params = None
+        if self.address:
+            params = {"to_address": self.address}
+        return params
 
 
 class FuncSignSpecification(Specification):
@@ -109,6 +121,12 @@ class TransactionHashSpecification(Specification):
 
     def is_satisfied_by(self, item: Transaction):
         return item.hash in self.hashes
+
+    def to_filter_params(self):
+        params = None
+        if self.hashes:
+            params = {"hashes": self.hashes}
+        return params
 
 
 class TransactionFilterByLogs:

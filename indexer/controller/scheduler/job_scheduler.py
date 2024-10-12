@@ -15,6 +15,7 @@ from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
+from indexer.jobs.source_job.pg_source_job import PGSourceJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 
 import_submodules("indexer.modules")
@@ -42,6 +43,10 @@ def get_tokens_from_db(session):
 def get_source_job_type(source_path: str):
     if source_path.startswith("csvfile://"):
         return CSVSourceJob
+    elif source_path.startswith("postgresql://"):
+        return PGSourceJob
+    else:
+        raise ValueError(f"Unknown source job type with source path: {source_path}")
 
 
 class JobScheduler:
@@ -55,6 +60,7 @@ class JobScheduler:
         config={},
         item_exporters=[ConsoleItemExporter()],
         required_output_types=[],
+        required_source_types=[],
         cache="memory",
         multicall=None,
         auto_reorg=True,
@@ -71,6 +77,7 @@ class JobScheduler:
         self.max_workers = max_workers
         self.config = config
         self.required_output_types = required_output_types
+        self.required_source_types = required_source_types
         self.load_from_source = config.get("source_path") if "source_path" in config else None
         self.jobs = []
         self.job_classes = []
@@ -128,7 +135,21 @@ class JobScheduler:
     def discover_and_register_job_classes(self):
         if self.load_from_source:
             source_job = get_source_job_type(source_path=self.load_from_source)
+            if source_job is PGSourceJob:
+                source_job.output_types = self.required_source_types
             all_subclasses = [source_job]
+
+            source_output_types = set(source_job.output_types)
+            for export_job in BaseExportJob.discover_jobs():
+                skip = False
+                for output_type in export_job.output_types:
+                    if output_type in source_output_types:
+                        source_job.output_types = list(set(export_job.output_types + list(source_output_types)))
+                        skip = True
+                        break
+                if not skip:
+                    all_subclasses.append(export_job)
+
         else:
             all_subclasses = BaseExportJob.discover_jobs()
 
@@ -146,7 +167,7 @@ class JobScheduler:
     def instantiate_jobs(self):
         filters = []
         for job_class in self.resolved_job_classes:
-            if job_class is ExportBlocksJob:
+            if job_class is ExportBlocksJob or job_class is PGSourceJob:
                 continue
             job = job_class(
                 required_output_types=self.required_output_types,
@@ -179,6 +200,21 @@ class JobScheduler:
                 filters=filters,
             )
             self.jobs.insert(0, export_blocks_job)
+        else:
+            pg_source_job = PGSourceJob(
+                required_output_types=self.required_output_types,
+                batch_web3_provider=self.batch_web3_provider,
+                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                item_exporters=self.item_exporters,
+                batch_size=self.batch_size,
+                multicall=self._is_multicall,
+                debug_batch_size=self.debug_batch_size,
+                max_workers=self.max_workers,
+                config=self.config,
+                is_filter=self.is_pipeline_filter,
+                filters=filters,
+            )
+            self.jobs.insert(0, pg_source_job)
 
         if self.auto_reorg:
             check_job = CheckBlockConsensusJob(

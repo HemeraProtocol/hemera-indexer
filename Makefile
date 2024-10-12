@@ -1,17 +1,29 @@
-VERSION := $(shell poetry version -s)
+ARCH=amd64
+VERSION := $(shell grep '^version = ' pyproject.toml | sed 's/^version = //;s/"//g')
 BUILD := `git rev-parse --short=7 HEAD`
-SERVICES =
-.PHONY: all build image test
+
+TAG := $(VERSION)-$(BUILD)-$(ARCH)
+
+
+PRE_COMMIT_INSTALLED := $(shell command -v pre-commit > /dev/null 2>&1 && echo yes || echo no)
+VENV_DIR := .venv
+POETRY_INSTALLED := $(shell command -v poetry > /dev/null 2>&1 && echo yes || echo no)
+
+IMAGE_FLAGS := $(IMAGE_FLAGS) --platform linux/$(ARCH)
 
 RED=\033[31m
 GREEN=\033[32m
 YELLOW=\033[33m
 RESET=\033[0m
 
-image:
 
-	docker build $(IMAGE_FLAGS) --network host -t hemera-protocol:$(VERSION)-$(BUILD) . --no-cache
-	echo "Built image hemera-protocol:$(VERSION)-$(BUILD)"
+.PHONY: format init_db development image test
+
+image:
+	@echo "Build tag: $(TAG)"
+	@echo "Build flags: $(IMAGE_FLAGS)"
+	docker buildx build $(IMAGE_FLAGS) --network host -t hemera-protocol:$(TAG) . --no-cache
+	@echo "Built image hemera-protocol:$(TAG)"
 
 test:
 	@if [ "$(filter-out $@,$(MAKECMDGOALS))" = "" ]; then \
@@ -20,8 +32,6 @@ test:
 		poetry run pytest -vv -m $(filter-out $@,$(MAKECMDGOALS)); \
 	fi
 
-
-PRE_COMMIT_INSTALLED := $(shell command -v pre-commit > /dev/null 2>&1 && echo yes || echo no)
 
 format:
 ifeq ($(PRE_COMMIT_INSTALLED),yes)
@@ -34,3 +44,45 @@ endif
 init_db:
 	@echo "Initializing database..."
 	poetry run python -m hemera.py init_db
+
+development:
+	@echo "Setting up development environment..."
+	@bash -c 'set -euo pipefail; \
+	PYTHON_CMD=$$(command -v python3 || command -v python); \
+	if [ -z "$$PYTHON_CMD" ] || ! "$$PYTHON_CMD" --version 2>&1 | grep -q "Python 3"; then \
+		echo "Python 3 is not found. Please install Python 3 and try again."; \
+		exit 1; \
+	fi; \
+	python_version=$$($$PYTHON_CMD -c "import sys; print(\"{}.{}\".format(sys.version_info.major, sys.version_info.minor))"); \
+	if ! echo "$$python_version" | grep -qE "^3\.(8|9|10|11)"; then \
+		echo "Python version $$python_version is not supported. Please use Python 3.8, 3.9, 3.10, or 3.11."; \
+		exit 1; \
+	fi; \
+	echo "Using Python: $$($$PYTHON_CMD --version)"; \
+	if [ ! -d ".venv" ]; then \
+		echo "Creating virtual environment..."; \
+		$$PYTHON_CMD -m venv .venv || { \
+			echo "Failed to create virtual environment. Installing venv..."; \
+			sudo apt-get update && sudo apt-get install -y python3-venv && $$PYTHON_CMD -m venv .venv; \
+		}; \
+	fi; \
+	echo "Activating virtual environment..."; \
+	. .venv/bin/activate; \
+	if ! pip --version &> /dev/null; then \
+		echo "Installing pip..."; \
+		curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py; \
+		$$PYTHON_CMD get-pip.py; \
+		rm get-pip.py; \
+	fi; \
+	if ! poetry --version &> /dev/null; then \
+		echo "Installing Poetry..."; \
+		pip install poetry; \
+	else \
+		echo "Poetry is already installed."; \
+	fi; \
+	echo "Installing project dependencies..."; \
+	poetry install -v; \
+	echo "Development environment setup complete."; \
+	echo ""; \
+	echo "To activate the virtual environment, run:"; \
+	echo "source .venv/bin/activate"'
