@@ -5,7 +5,6 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
-
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
@@ -76,10 +75,10 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
 
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
-        current_holdings = get_current_holdings(self._service, kwargs["start_block"])
+        current_holdings_paras = (self._service, kwargs["start_block"])
 
         staked_details, current_status_list = collect_detail(
-            logs, current_holdings, self.staked_abi_dict, self.staked_protocol_dict
+            logs, current_holdings_paras, self.staked_abi_dict, self.staked_protocol_dict
         )
         for data in staked_details:
             self._collect_item(StakedFBTCDetail.type(), data)
@@ -93,7 +92,7 @@ class ExportLockedFBTCDetailJob(FilterTransactionDataJob):
 
 def collect_detail(
         logs: List[Log],
-        current_holdings,
+        current_holdings_paras,
         staked_abi_dict: Dict[str, Any],
         staked_protocol_dict: Dict[str, str],
 ) -> Tuple[List[StakedFBTCDetail], List[StakedFBTCCurrentStatus]]:
@@ -111,6 +110,9 @@ def collect_detail(
             logs_by_address[log.address][log.block_number].append(log)
 
     staked_details = []
+
+    if logs_by_address:
+        current_holdings = get_current_holdings(current_holdings_paras[0], current_holdings_paras[1])
 
     for address, blocks in logs_by_address.items():
         protocol_id = staked_protocol_dict[address]

@@ -68,10 +68,10 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
     def _collect(self, **kwargs):
         token_transfers = self._data_buff[ERC20TokenTransfer.type()]
 
-        current_holdings = get_current_holdings(self._service, kwargs["start_block"])
+        current_holdings_paras = (self._service, kwargs["start_block"])
 
         transferred_details, current_status_list, _ = process_token_transfers(
-            token_transfers, current_holdings, self._transferred_protocol_dict, self._fbtc_address
+            token_transfers, current_holdings_paras, self._transferred_protocol_dict, self._fbtc_address
         )
 
         for data in transferred_details:
@@ -86,7 +86,7 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
 
 def process_token_transfers(
         token_transfers: List[ERC20TokenTransfer],
-        current_holdings: Dict[str, Dict[str, TransferredFBTCCurrentStatus]],
+        current_holdings_paras,
         transferred_protocol_dict: Dict[str, str],
         fbtc_address: str,
 ) -> Tuple[
@@ -111,6 +111,9 @@ def process_token_transfers(
                 transfers_by_address[transfer.to_address][transfer.block_number].append(transfer)
 
     transferred_details = []
+
+    if transfers_by_address:
+        current_holdings = get_current_holdings(current_holdings_paras[0], current_holdings_paras[1])
 
     # Process transfers for each contract address
     for address, blocks in transfers_by_address.items():
