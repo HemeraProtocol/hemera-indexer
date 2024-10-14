@@ -159,3 +159,30 @@ URI_ABI_FUNCTION = Function(
         "type": "function",
     }
 )
+
+BALANCE_OF_ABI_FUNCTION = Function(
+    {
+        "constant": True,
+        "inputs": [{"name": "_owner", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "balance", "type": "uint256"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
+BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION = Function(
+    {
+        "constant": True,
+        "inputs": [
+            {"name": "account", "type": "address"},
+            {"name": "id", "type": "uint256"},
+        ],
+        "name": "balanceOf",
+        "outputs": [{"name": "balance", "type": "uint256"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
+)

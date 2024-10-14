@@ -19,15 +19,6 @@ from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
-CONTRACT_NAME_ABI = {
-    "constant": True,
-    "inputs": [],
-    "name": "name",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
 
 
 # Exports contracts
@@ -75,10 +66,10 @@ def build_contracts(traces: List[Trace]):
     contracts = []
     for trace in traces:
         if (
-            trace.trace_type in ["create", "create2"]
-            and trace.to_address is not None
-            and len(trace.to_address) > 0
-            and trace.status == 1
+                trace.trace_type in ["create", "create2"]
+                and trace.to_address is not None
+                and len(trace.to_address) > 0
+                and trace.status == 1
         ):
             contract = extract_contract_from_trace(trace)
             contract["param_to"] = contract["address"]

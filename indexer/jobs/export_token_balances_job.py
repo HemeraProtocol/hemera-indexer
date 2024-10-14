@@ -12,7 +12,8 @@ from indexer.domain.token_balance import TokenBalance
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
-from indexer.utils.abi import function_abi_to_4byte_selector_str, pad_address, uint256_to_bytes
+from indexer.utils.abi import pad_address, uint256_to_bytes
+from indexer.utils.abi_setting import BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION, BALANCE_OF_ABI_FUNCTION
 from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.multicall_hemera.util import calculate_execution_time
@@ -20,32 +21,6 @@ from indexer.utils.token_fetcher import TokenFetcher
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
-
-BALANCE_OF_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "_owner", "type": "address"}],
-    "name": "balanceOf",
-    "outputs": [{"name": "balance", "type": "uint256"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [
-        {"name": "account", "type": "address"},
-        {"name": "id", "type": "uint256"},
-    ],
-    "name": "balanceOf",
-    "outputs": [{"name": "balance", "type": "uint256"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-balance_of_sig_prefix = function_abi_to_4byte_selector_str(BALANCE_OF_ABI_FUNCTION)
-balance_of_token_id_sig_prefix = function_abi_to_4byte_selector_str(BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION)
 
 
 @dataclass(frozen=True)
@@ -131,16 +106,16 @@ class ExportTokenBalancesJob(BaseExportJob):
 def encode_balance_abi_parameter(address, token_type, token_id):
     if token_type == "ERC1155":
         encoded_arguments = HexBytes(pad_address(address) + uint256_to_bytes(token_id))
-        return to_hex(HexBytes(balance_of_token_id_sig_prefix) + encoded_arguments)
+        return to_hex(HexBytes(BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION.get_signature()) + encoded_arguments)
     else:
         encoded_arguments = HexBytes(pad_address(address))
-        return to_hex(HexBytes(balance_of_sig_prefix) + encoded_arguments)
+        return to_hex(HexBytes(BALANCE_OF_ABI_FUNCTION.get_signature()) + encoded_arguments)
 
 
 @calculate_execution_time
 def extract_token_parameters(
-    token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]],
-    block_number: Union[Optional[int], str] = None,
+        token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]],
+        block_number: Union[Optional[int], str] = None,
 ):
     origin_parameters = set()
     token_parameters = []
