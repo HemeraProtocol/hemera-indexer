@@ -101,11 +101,6 @@ or
 git clone git@github.com:HemeraProtocol/hemera-indexer.git
 ```
 
-### Run Hemera Indexer
-
-We recommend running from docker containers using the provided `docker-compose.yaml` .
-If you prefer running from source code, please check out [Run From Source Code](#run-from-source-code).
-
 ### Run In Docker
 
 #### Install Docker & Docker Compose
@@ -114,6 +109,7 @@ If you have trouble running the following commands, consider referring to
 the [official docker installation guide](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository)
 for the latest instructions.
 
+##### Ubuntu and Debian
 ```bash
 # Add Docker's official GPG key:
 sudo apt-get update
@@ -128,11 +124,29 @@ echo \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
-```
 
-```bash
 # Install docker and docker compose
 sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+docker compose version
+```
+
+##### RPM-based distros
+```bash
+sudo yum update -y
+sudo yum install docker -y
+sudo service docker start
+sudo systemctl enable docker
+sudo usermod -a -G docker ec2-user
+
+newgrp docker
+docker --version
+docker run hello-world
+
+DOCKER_CONFIG=${DOCKER_CONFIG:-$HOME/.docker}
+mkdir -p $DOCKER_CONFIG/cli-plugins
+curl -SL https://github.com/docker/compose/releases/download/v2.29.6/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+docker compose version
 ```
 
 #### Run the Docker Compose
@@ -158,61 +172,48 @@ sudo docker compose up
 You should be able to see similar logs from your console that indicate Hemera Indexer is running properly.
 
 ```
-[+] Running 2/0
- ✔ Container postgresql  Created                                                                                                                0.0s
- ✔ Container hemera      Created                                                                                                                0.0s
-Attaching to hemera, postgresql
-postgresql  |
-postgresql  | PostgreSQL Database directory appears to contain a database; Skipping initialization
-postgresql  |
-postgresql  | 2024-06-24 08:18:48.547 UTC [1] LOG:  starting PostgreSQL 15.7 (Debian 15.7-1.pgdg120+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
-postgresql  | 2024-06-24 08:18:48.548 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-postgresql  | 2024-06-24 08:18:48.549 UTC [1] LOG:  listening on IPv6 address "::", port 5432
-postgresql  | 2024-06-24 08:18:48.554 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-postgresql  | 2024-06-24 08:18:48.564 UTC [27] LOG:  database system was shut down at 2024-06-24 06:44:23 UTC
-postgresql  | 2024-06-24 08:18:48.575 UTC [1] LOG:  database system is ready to accept connections
-hemera      | 2024-06-24 08:18:54,953 - root [INFO] - Using provider https://eth.llamarpc.com
-hemera      | 2024-06-24 08:18:54,953 - root [INFO] - Using debug provider https://eth.llamarpc.com
-hemera      | 2024-06-24 08:18:55,229 - alembic.runtime.migration [INFO] - Context impl PostgresqlImpl.
-hemera      | 2024-06-24 08:18:55,230 - alembic.runtime.migration [INFO] - Will assume transactional DDL.
-hemera      | 2024-06-24 08:18:55,278 - alembic.runtime.migration [INFO] - Context impl PostgresqlImpl.
-hemera      | 2024-06-24 08:18:55,278 - alembic.runtime.migration [INFO] - Will assume transactional DDL.
-hemera      | 2024-06-24 08:18:56,169 - root [INFO] - Current block 20160303, target block 20137200, last synced block 20137199, blocks to sync 1
-hemera      | 2024-06-24 08:18:56,170 - ProgressLogger [INFO] - Started work. Items to process: 1.
-hemera      | 2024-06-24 08:18:57,505 - ProgressLogger [INFO] - 1 items processed. Progress is 100%.
-hemera      | 2024-06-24 08:18:57,506 - ProgressLogger [INFO] - Finished work. Total items processed: 1. Took 0:00:01.336310.
-hemera      | 2024-06-24 08:18:57,529 - exporters.postgres_item_exporter [INFO] - Exporting items to table block_ts_mapper, blocks end, Item count: 2, Took 0:00:00.022562
-hemera      | 2024-06-24 08:18:57,530 - ProgressLogger [INFO] - Started work.
+[+] Running 5/0
+ ✔ Container redis                         Created     0.0s
+ ✔ Container postgresql                    Created     0.0s
+ ✔ Container indexer                       Created     0.0s
+ ✔ Container indexer-trace                 Created     0.0s
+ ✔ Container hemera-api                    Created     0.0s
+Attaching to hemera-api, indexer, indexer-trace, postgresql, redis
 ```
 
 ### Run From Source Code
 
-#### Install Python3 and Pip
+#### Install developer tools
 
 Skip this step if you already have both installed.
 
 ```bash
 sudo apt update
-sudo apt install python3
-sudo apt install python3-pip
+sudo apt install make
 ```
 
-#### Initiate Python VENV
+#### Run development
 
-Skip this step if you don't want to have a dedicated python venv for Hemera Indexer.
+To deploy your project, simply run:
 
 ```bash
-sudo apt install python3-venv
-python3 -m venv ./venv
+make development
 ```
 
-#### Install Pip Dependencies
+This command will:
+1. Create a Python virtual environment
+2. Activate the virtual environment
+3. Install necessary system packages
+4. Install Python dependencies
+
+After running this command, your environment will be set up and ready to use.
+
+Remember to activate the virtual environment (`source ./venv/bin/activate`) when you want to work on your project in the future.
 
 ```bash
 source ./venv/bin/activate
-sudo apt install libpq-dev
-pip install -e .
 ```
+
 
 #### Prepare Your PostgreSQL Instance
 
@@ -226,7 +227,7 @@ Follow the instructions about how to set up a PostgreSQL database here: [Setup P
 
 Configure the `OUTPUT` or `--output` parameter according to your PostgreSQL role information. Check out [Configure Hemera Indexer](#output-or---output) for details.
 
-E.g. `postgresql+psycopg2://${YOUR_USER}:${YOUR_PASSWORD}@${YOUR_HOST}:5432/${YOUR_DATABASE}`.
+E.g. `postgresql://${YOUR_USER}:${YOUR_PASSWORD}@${YOUR_HOST}:5432/${YOUR_DATABASE}`.
 
 #### Run
 
@@ -234,15 +235,14 @@ Please check out [Configure Hemera Indexer](#configure-hemera-indexer) on how to
 
 ```bash
 python hemera.py stream \
-    --provider-uri https://eth.llamarpc.com \
-    --debug-provider-uri https://eth.llamarpc.com \
-    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
-    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --provider-uri https://ethereum.publicnode.com \
+    --postgres-url postgresql://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
     --start-block 20000001 \
     --end-block 20010000 \
     # alternatively you can spin up a separate process for traces, as it takes more time
     # --entity-types trace,contract,coin_balance
-    --entity-types block,transaction,log,token,token_transfer \
+    --entity-types EXPLORER_BASE \
     --block-batch-size 200 \
     --batch-size 200 \
     --max-workers 32
@@ -302,19 +302,18 @@ E.g., If you specify the `OUTPUT` or `--output` parameter as below
 ```bash
 # Command line parameter
 python hemera.py stream \
-    --provider-uri https://eth.llamarpc.com \
-    --debug-provider-uri https://eth.llamarpc.com \
-    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
-    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --provider-uri https://ethereum.publicnode.com \
+    --postgres-url postgresql://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
     --start-block 20000001 \
     --end-block 20010000 \
-    --entity-types block,transaction,log,token,token_transfer \
+    --entity-types EXPLORER_BASE \
     --block-batch-size 200 \
     --batch-size 200 \
     --max-workers 32
 
 # Or using environment variable
-export OUTPUT = postgresql+psycopg2://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
+export OUTPUT = postgresql://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
 ```
 
 You will be able to find those results in the `output` folder of your current location.
@@ -348,7 +347,19 @@ The URI of the web3 debug rpc provider, e.g. `file://$HOME/Library/Ethereum/geth
 #### `POSTGRES_URL` or `--postgres-url`
 
 [**Required**]
-The PostgreSQL connection URL that the Hemera Indexer used to maintain its state. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
+The PostgreSQL connection URL that the Hemera Indexer used to maintain its state. e.g. `postgresql://user:password@127.0.0.1:5432/postgres`.
+
+
+#### `ENTITY_TYPES` or `--entity-types` or `-E`
+
+[**Default**: `EXPLORER_BASE`]
+The list of entity types to export. e.g. `EXPLORER_BASE`, `EXPLORER_TOKEN`, `EXPLORER_TRACE`.
+
+#### `OUTPUT_TYPES` or `--output-types` or `-O`
+
+The list of output types to export, corresponding to more detailed data models. Specifying this option will prioritize these settings over the entity types specified in -E. Available options include: Block, Transaction, Log, Token, AddressTokenBalance, etc.
+
+You may spawn up multiple Hemera Indexer processes, each of them specifying different output types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
 
 #### `OUTPUT` or `--output`
 
@@ -360,31 +371,10 @@ The file location will be relative to your current location if you run from sour
 
 e.g.
 
-- `postgresql+psycopg2://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
+- `postgresql://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
 - `jsonfile://output/json`: Json files will be exported to folder `output/json`
 - `csvfile://output/csv`: Csv files will be exported to folder `output/csv`
 - `console,jsonfile://output/json,csvfile://output/csv`: Multiple destinations are supported.
-
-#### `ENTITY_TYPES` or `--entity-types`
-
-[**Default**: `BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER`]
-Hemera Indexer will export those entity types to your database and files(if `OUTPUT` is specified).
-Full list of available entity types:
-
-- `block`
-- `transaction`
-- `log`
-- `token`
-- `token_transfer`
-- `trace`
-- `contract`
-- `coin_balance`
-- `token_balance`
-- `token_ids`
-
-If you didn't specify this parameter, the default entity types will be BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER.
-
-You may spawn up multiple Hemera Indexer processes, each of them indexing different entity types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
 
 #### `DB_VERSION` or `--db-version`
 

@@ -42,6 +42,8 @@ class Blocks(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
+    __query_order__ = [number]
+
     @staticmethod
     def model_domain_mapping():
         return [

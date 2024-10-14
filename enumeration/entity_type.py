@@ -21,6 +21,7 @@ from indexer.modules.custom.all_features_value_record import AllFeatureValueReco
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
+from indexer.modules.custom.eigen_layer.eigen_layer_domain import EigenLayerActionD, EigenLayerAddressCurrentD
 from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSAddressChangeD,
     ENSAddressD,
@@ -28,6 +29,7 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSNameRenewD,
     ENSRegisterD,
 )
+from indexer.modules.custom.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
@@ -64,6 +66,10 @@ class EntityType(IntFlag):
     OPEN_SEA = 1 << 9
 
     ENS = 1 << 10
+
+    KARAK = 1 << 11
+
+    EIGEN_LAYER = 1 << 13
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -182,3 +188,12 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.OPEN_SEA:
         yield AddressOpenseaTransaction
         yield OpenseaOrder
+
+    if entity_types & EntityType.KARAK:
+        yield KarakActionD
+        yield KarakVaultTokenD
+        yield KarakAddressCurrentD
+
+    if entity_types & EntityType.EIGEN_LAYER:
+        yield EigenLayerActionD
+        yield EigenLayerAddressCurrentD

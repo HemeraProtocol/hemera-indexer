@@ -66,3 +66,6 @@ class Transaction(Domain):
         self.receipt = receipt
         if self.to_address is None:
             self.to_address = self.receipt.contract_address
+
+    def get_method_id(self):
+        return self.input[0:10] if self.input and len(self.input) > 10 else None
