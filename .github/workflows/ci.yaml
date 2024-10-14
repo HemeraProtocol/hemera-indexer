@@ -23,6 +23,8 @@ jobs:
       ETHEREUM_PUBLIC_NODE_RPC_URL: '${{ secrets.ETHEREUM_PUBLIC_NODE_RPC_URL }}'
       LINEA_PUBLIC_NODE_DEBUG_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_DEBUG_RPC_URL }}'
       LINEA_PUBLIC_NODE_RPC_URL: '${{ secrets.LINEA_PUBLIC_NODE_RPC_URL }}'
+      MANTLE_PUBLIC_NODE_RPC_URL: '${{ secrets.MANTLE_PUBLIC_NODE_RPC_URL }}'
+      MANTLE_PUBLIC_NODE_DEBUG_RPC_URL: '${{ secrets.MANTLE_PUBLIC_NODE_DEBUG_RPC_URL }}'
       POSTGRES_USER: hemera
       POSTGRES_PASSWORD: password
       POSTGRES_URL: postgresql://hemera:password@localhost:5432/hemera
