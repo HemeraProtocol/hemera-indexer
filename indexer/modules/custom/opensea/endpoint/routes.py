@@ -8,8 +8,8 @@ from sqlalchemy import and_, desc, func
 
 from api.app.address.features import register_feature
 from api.app.cache import cache
+from api.app.utils.token_utils import get_token_price
 from common.models import db
-from common.models.token_hourly_price import TokenHourlyPrices
 from common.models.tokens import Tokens
 from common.utils.format_utils import as_dict, format_to_dict
 from indexer.modules.custom.opensea.endpoint import opensea_namespace
@@ -85,14 +85,14 @@ def get_recent_opensea_transactions(address: bytes, timestamp: datetime) -> Dict
         # Count distinct transaction hashes
         base_query = base_query.add_columns(
             func.count(func.distinct(AddressOpenseaTransactions.transaction_hash))
-            .filter(AddressOpenseaTransactions.transaction_type == tx_type.value)
-            .label(f"{tx_name}_txn_count")
+                .filter(AddressOpenseaTransactions.transaction_type == tx_type.value)
+                .label(f"{tx_name}_txn_count")
         )
         # Count opensa transactions
         base_query = base_query.add_columns(
             func.count()
-            .filter(AddressOpenseaTransactions.transaction_type == tx_type.value)
-            .label(f"{tx_name}_opensea_order_count")
+                .filter(AddressOpenseaTransactions.transaction_type == tx_type.value)
+                .label(f"{tx_name}_opensea_order_count")
         )
 
     # Apply filters and group by
@@ -117,9 +117,9 @@ def get_opensea_order_count_by_address(address: Union[str, bytes]):
         address = bytes.fromhex(address[2:])
     result = (
         db.session.query(AddressOpenseaProfile)
-        .with_entities(AddressOpenseaProfile.opensea_order_count)
-        .filter(AddressOpenseaProfile.address == address)
-        .first()
+            .with_entities(AddressOpenseaProfile.opensea_order_count)
+            .filter(AddressOpenseaProfile.address == address)
+            .first()
     )
     return result
 
@@ -130,7 +130,7 @@ def get_opensea_address_order_cnt(address: Union[str, bytes]):
     last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
     recently_txn_count = (
         db.session.query(AddressOpenseaTransactions.address)
-        .filter(
+            .filter(
             and_(
                 AddressOpenseaTransactions.address == address,
                 (
@@ -140,7 +140,7 @@ def get_opensea_address_order_cnt(address: Union[str, bytes]):
                 ),
             ),
         )
-        .count()
+            .count()
     )
     result = get_opensea_order_count_by_address(address)
     past_txn_count = 0 if not result else result[0]
@@ -154,32 +154,15 @@ def get_token_price_symbol(token_address: str) -> str:
         return "ETH"
     mapping = (
         db.session.query(OpenseaCryptoTokenMapping)
-        .filter(OpenseaCryptoTokenMapping.address_var == token_address)
-        .first()
+            .filter(OpenseaCryptoTokenMapping.address_var == token_address)
+            .first()
     )
     return mapping.price_symbol if mapping and mapping.price_symbol else "ETH"
 
 
-@cache.memoize(timeout=86400)
-def get_token_daily_price(token_symbol: str, day: date) -> float:
-    end_of_day = datetime.combine(day, datetime.max.time())
-    price_record = (
-        db.session.query(TokenHourlyPrices)
-        .filter(TokenHourlyPrices.symbol == token_symbol)
-        .filter(TokenHourlyPrices.timestamp <= end_of_day)
-        .order_by(desc(TokenHourlyPrices.timestamp))
-        .first()
-    )
-    return float(price_record.price) if price_record else 0
-
-
-def get_token_price(token_address: str, timestamp: datetime) -> float:
-    price_symbol = get_token_price_symbol(token_address)
-    return get_token_daily_price(price_symbol, timestamp.date())
-
-
 def calculate_usd_value(amount: float, token_address: str, timestamp: datetime) -> float:
-    price = get_token_price(token_address, timestamp)
+    price_symbol = get_token_price_symbol(token_address)
+    price = get_token_price(price_symbol, timestamp.date())
     return amount * price
 
 
@@ -235,7 +218,7 @@ def format_opensea_transaction(transaction: Dict[str, Any]) -> Dict[str, Any]:
 
     # Calculate volume and determine items
     if (not transaction["is_offer"] and transaction["transaction_type"] == 0) or (
-        transaction["is_offer"] and transaction["transaction_type"] == 1
+            transaction["is_offer"] and transaction["transaction_type"] == 1
     ):  # Buy transaction
         volume = sum(item.get("usd_value", 0) for item in transaction["consideration"])
         items = transaction["offer"]
@@ -291,14 +274,14 @@ def get_opensea_transactions_by_address(address, limit=1, offset=0):
         address = bytes.fromhex(address[2:])
     transactions = (
         db.session.query(AddressOpenseaTransactions)
-        .order_by(
+            .order_by(
             AddressOpenseaTransactions.block_number.desc(),
             AddressOpenseaTransactions.log_index.desc(),
         )
-        .filter(AddressOpenseaTransactions.address == address)
-        .limit(limit)
-        .offset(offset)
-        .all()
+            .filter(AddressOpenseaTransactions.address == address)
+            .limit(limit)
+            .offset(offset)
+            .all()
     )
     return transactions
 
@@ -308,10 +291,10 @@ def get_latest_opensea_transaction_by_address(address: Union[str, bytes]):
         address = bytes.fromhex(address[2:])
     last_opensea_transaction = (
         db.session()
-        .query(AddressOpenseaTransactions)
-        .filter_by(address=address)
-        .order_by(desc(AddressOpenseaTransactions.block_number), desc(AddressOpenseaTransactions.log_index))
-        .first()
+            .query(AddressOpenseaTransactions)
+            .filter_by(address=address)
+            .order_by(desc(AddressOpenseaTransactions.block_number), desc(AddressOpenseaTransactions.log_index))
+            .first()
     )
     if not last_opensea_transaction:
         return {}

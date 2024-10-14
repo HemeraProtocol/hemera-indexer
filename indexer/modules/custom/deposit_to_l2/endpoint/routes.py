@@ -14,8 +14,8 @@ from api.app.db_service.af_token_deposit import (
     get_transactions_cnt_by_wallet,
 )
 from api.app.db_service.blocks import get_block_by_hash
-from api.app.db_service.tokens import get_token_price_map_by_symbol_list
 from api.app.utils.parse_utils import parse_deposit_assets, parse_deposit_transactions
+from api.app.utils.token_utils import get_token_price_map_by_symbol_list
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
 from common.utils.format_utils import row_to_dict

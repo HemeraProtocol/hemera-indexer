@@ -1,30 +1,28 @@
-from decimal import Decimal
+import os
+import requests
 
 from api.app.cache import cache
-from common.models import db
-from common.models.token_hourly_price import TokenHourlyPrices
-from common.models.token_prices import TokenPrices
+from decimal import Decimal
+
+base_price_url = os.getenv('BASE_PRICE_HOST', default="https://api.socialscan.io/w3w-price")
 
 
 @cache.memoize(300)
 def get_token_price(symbol, date=None) -> Decimal:
+    params = {'symbol': symbol}
     if date:
-        token_price = (
-            db.session.query(TokenHourlyPrices)
-            .filter(
-                TokenHourlyPrices.symbol == symbol,
-                TokenHourlyPrices.timestamp <= date,
-            )
-            .order_by(TokenHourlyPrices.timestamp.desc())
-            .first()
-        )
-    else:
-        token_price = (
-            db.session.query(TokenPrices)
-            .filter(TokenPrices.symbol == symbol)
-            .order_by(TokenPrices.timestamp.desc())
-            .first()
-        )
-    if token_price:
-        return token_price.price
-    return Decimal(0.0)
+        params['date'] = date.isoformat()
+
+    response = requests.get(base_price_url, params=params)
+    response.raise_for_status()
+    data = response.json()
+    return Decimal(data['price'])
+
+
+def get_token_price_map_by_symbol_list(token_symbol_list):
+    token_price_map = {}
+    for symbol in token_symbol_list:
+        token_price = get_token_price(symbol)
+        if token_price:
+            token_price_map[symbol] = token_price.price
+    return token_price_map
