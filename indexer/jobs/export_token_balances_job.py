@@ -13,7 +13,7 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.abi import pad_address, uint256_to_bytes
-from indexer.utils.abi_setting import BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION, BALANCE_OF_ABI_FUNCTION
+from indexer.utils.abi_setting import BALANCE_OF_ABI_FUNCTION, BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION
 from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.multicall_hemera.util import calculate_execution_time
@@ -114,8 +114,8 @@ def encode_balance_abi_parameter(address, token_type, token_id):
 
 @calculate_execution_time
 def extract_token_parameters(
-        token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]],
-        block_number: Union[Optional[int], str] = None,
+    token_transfers: List[Union[ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]],
+    block_number: Union[Optional[int], str] = None,
 ):
     origin_parameters = set()
     token_parameters = []

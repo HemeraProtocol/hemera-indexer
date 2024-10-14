@@ -4,19 +4,16 @@ from eth_abi.codec import ABICodec
 from eth_abi.grammar import BasicType
 from eth_typing import ChecksumAddress, HexStr, TypeStr
 from eth_utils import (
-    encode_hex,
     event_abi_to_log_topic,
     function_abi_to_4byte_selector,
     hexstr_if_str,
     is_binary_address,
     text_if_str,
     to_bytes,
-    to_hex,
     to_text,
 )
-from hexbytes import HexBytes
 from web3 import Web3
-from web3._utils.abi import build_strict_registry, get_abi_input_types, map_abi_data
+from web3._utils.abi import build_strict_registry
 from web3._utils.normalizers import implicitly_identity, parse_basic_type_str
 from web3.types import ABIEvent, ABIFunction
 
@@ -70,34 +67,6 @@ def abi_address_to_hex(type_str: TypeStr, data: Any) -> Optional[Tuple[TypeStr, 
         if is_binary_address(data):
             return type_str, Web3.to_checksum_address(data)
     return None
-
-
-def encode_abi(
-    abi: ABIFunction,
-    arguments: Sequence[Any],
-    data: str = None,
-) -> HexStr:
-    argument_types = get_abi_input_types(abi)
-
-    normalizers = [
-        abi_address_to_hex,
-        abi_bytes_to_bytes,
-        abi_string_to_text,
-    ]
-
-    normalized_arguments = map_abi_data(
-        normalizers,
-        argument_types,
-        arguments,
-    )
-    encoded_arguments = codec.encode(
-        argument_types,
-        normalized_arguments,
-    )
-    if data:
-        return to_hex(HexBytes(data) + encoded_arguments)
-    else:
-        return encode_hex(encoded_arguments)
 
 
 def uint256_to_bytes(value: int) -> bytes:

@@ -12,7 +12,6 @@ from dataclasses import asdict
 from typing import Dict, List, Tuple, Union
 
 import orjson
-from eth_abi import abi
 
 from common.utils.format_utils import format_block_id, hex_str_to_bytes, to_snake_case
 from enumeration.record_level import RecordLevel
@@ -24,7 +23,7 @@ from indexer.domain.token_id_infos import (
     UpdateERC721TokenIdDetail,
     UpdateERC1155TokenIdDetail,
 )
-from indexer.utils.abi import encode_abi
+from indexer.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import (
     OWNER_OF_ABI_FUNCTION,
     TOKEN_URI_ABI_FUNCTION,
@@ -411,7 +410,7 @@ class TokenFetcher:
 
             try:
                 if result:
-                    balance = abi.decode(["uint256"], hex_str_to_bytes(result))[0]
+                    balance = decode_data(["uint256"], hex_str_to_bytes(result))[0]
                     result_dic[data[0][self.fixed_k]] = balance
 
             except Exception as e:
@@ -445,26 +444,26 @@ class TokenFetcher:
 def abi_selector_encode_and_decode_type(token_id_info):
     if token_id_info["token_type"] == TokenType.ERC721.value:
         if token_id_info["is_get_token_uri"]:
-            return encode_abi(
+            return encode_data(
                 TOKEN_URI_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
                 TOKEN_URI_ABI_FUNCTION.get_signature(),
             )
         else:
-            return encode_abi(
+            return encode_data(
                 OWNER_OF_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
                 OWNER_OF_ABI_FUNCTION.get_signature(),
             )
     elif token_id_info["token_type"] == TokenType.ERC1155.value:
         if token_id_info["is_get_token_uri"]:
-            return encode_abi(
+            return encode_data(
                 URI_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
                 URI_ABI_FUNCTION.get_signature(),
             )
         else:
-            return encode_abi(
+            return encode_data(
                 TOTAL_SUPPLY_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
                 TOTAL_SUPPLY_ABI_FUNCTION.get_signature(),
@@ -476,12 +475,12 @@ def dict_to_tuple(d):
 
 
 def decode_string(value):
-    return abi.decode(["string"], bytes.fromhex(value))[0].replace("\u0000", "")
+    return decode_data(["string"], bytes.fromhex(value))[0].replace("\u0000", "")
 
 
 def decode_address(value):
-    return abi.decode(["address"], bytes.fromhex(value))[0]
+    return decode_data(["address"], bytes.fromhex(value))[0]
 
 
 def decode_uint256(value):
-    return abi.decode(["uint256"], bytes.fromhex(value))[0]
+    return decode_data(["uint256"], bytes.fromhex(value))[0]

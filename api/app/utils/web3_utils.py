@@ -5,6 +5,7 @@ from eth_abi import abi
 from web3 import Web3
 
 from api.app.cache import app_config, cache
+from indexer.utils.abi_code_utils import decode_data
 
 w3 = Web3(Web3.HTTPProvider(app_config.rpc))
 
@@ -45,7 +46,7 @@ def get_storage_at(contract_address, location):
     try:
         contract_address = w3.to_checksum_address(contract_address)
         data = w3.eth.get_storage_at(contract_address, location)
-        return abi.decode(["address"], data)[0]
+        return decode_data(["address"], data)[0]
     except Exception as e:
         print(e)
         return None

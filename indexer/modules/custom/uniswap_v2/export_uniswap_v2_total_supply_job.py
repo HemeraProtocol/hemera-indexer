@@ -19,7 +19,7 @@ from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import UniswapV
 from indexer.modules.custom.uniswap_v2.models.feature_uniswap_v2_pools import UniswapV2Pools
 from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.decode_utils import decode_log
+from indexer.utils.abi_code_utils import decode_log
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 

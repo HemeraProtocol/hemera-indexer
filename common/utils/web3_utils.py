@@ -13,7 +13,8 @@ from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.middleware import geth_poa_middleware
 from web3.types import ABIFunction
 
-from common.utils.format_utils import bytes_to_hex_str
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from indexer.utils.abi_code_utils import decode_data
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -329,8 +330,8 @@ def decode_function(function_abi_json, data_str, output_str):
 
     if output_str is not None and len(output_str) > 0:
         types = get_abi_output_types(cast(ABIFunction, function_abi_json))
-        data = bytes.fromhex(output_str)
-        value = abi.decode(types, data)
+        data = hex_str_to_bytes(output_str)
+        value = decode_data(types, data)
         output = named_tree(function_abi_json["outputs"], value)
         output = convert_dict(convert_bytes_to_hex(output))
     else:
@@ -339,8 +340,8 @@ def decode_function(function_abi_json, data_str, output_str):
 
 
 def decode_log_data(types, data_str):
-    data_hex_str = bytes.fromhex(data_str)
-    decoded_abi = abi.decode(types, data_hex_str)
+    data_hex_str = hex_str_to_bytes(data_str)
+    decoded_abi = decode_data(types, data_hex_str)
 
     encoded_abi = []
     decoded_abi_real = []

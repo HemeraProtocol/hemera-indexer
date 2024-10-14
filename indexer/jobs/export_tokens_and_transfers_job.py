@@ -3,7 +3,6 @@ from dataclasses import asdict
 from typing import Dict, List
 
 import orjson
-from eth_abi import abi
 
 from common.utils.format_utils import to_snake_case
 from enumeration.record_level import RecordLevel
@@ -21,7 +20,7 @@ from indexer.domain.token_transfer import (
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import encode_abi
+from indexer.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import (
     DECIMALS_ABI_FUNCTION,
     NAME_ABI_FUNCTION,
@@ -220,7 +219,7 @@ def build_rpc_method_data(tokens, fn, arguments=None):
                 "request_id": index,
             }
         )
-        token["param_data"] = encode_abi(NAME_ABI_FUNCTION.get_abi(), arguments, NAME_ABI_FUNCTION.get_signature())
+        token["param_data"] = encode_data(NAME_ABI_FUNCTION.get_abi(), arguments, NAME_ABI_FUNCTION.get_signature())
         token["data_type"] = NAME_ABI_FUNCTION.get_outputs_type()[0]
 
     return tokens
@@ -241,7 +240,7 @@ def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            token["total_supply"] = abi.decode(["uint256"], bytes.fromhex(value))[0]
+            token["total_supply"] = decode_data(["uint256"], bytes.fromhex(value))[0]
         except Exception as e:
             logger.warning(
                 f"Decoding token {fn_name} failed. " f"token: {token}. " f"rpc response: {result}. " f"exception: {e}"
@@ -282,7 +281,7 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
             value = result[2:] if result is not None else None
             key = to_snake_case(fn_name)
             try:
-                token[key] = abi.decode([token["data_type"]], bytes.fromhex(value))[0]
+                token[key] = decode_data([token["data_type"]], bytes.fromhex(value))[0]
                 if token["data_type"] == "string":
                     token[key] = token[fn_name].replace("\u0000", "")
             except Exception as e:

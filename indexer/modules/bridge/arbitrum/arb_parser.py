@@ -24,7 +24,7 @@ from indexer.modules.bridge.domain.arbitrum import (
     TransactionToken,
 )
 from indexer.utils.abi import event_log_abi_to_topic, function_abi_to_4byte_selector_str
-from indexer.utils.decode_utils import decode_log
+from indexer.utils.abi_code_utils import decode_log
 
 MESSAGE_DELIVERED_EVENT = cast(
     ABIEvent,

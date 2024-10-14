@@ -2,8 +2,6 @@ import json
 import logging
 from typing import List
 
-from eth_abi import abi
-
 from common.utils.exception_control import HemeraBaseException
 from enumeration.record_level import RecordLevel
 from indexer.domain.block import Block
@@ -11,7 +9,7 @@ from indexer.domain.contract import Contract, extract_contract_from_trace
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
-from indexer.utils.abi import encode_abi
+from indexer.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import NAME_ABI_FUNCTION
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -66,16 +64,16 @@ def build_contracts(traces: List[Trace]):
     contracts = []
     for trace in traces:
         if (
-                trace.trace_type in ["create", "create2"]
-                and trace.to_address is not None
-                and len(trace.to_address) > 0
-                and trace.status == 1
+            trace.trace_type in ["create", "create2"]
+            and trace.to_address is not None
+            and len(trace.to_address) > 0
+            and trace.status == 1
         ):
             contract = extract_contract_from_trace(trace)
             contract["param_to"] = contract["address"]
 
             try:
-                contract["param_data"] = encode_abi(NAME_ABI_FUNCTION.get_abi(), [], NAME_ABI_FUNCTION.get_signature())
+                contract["param_data"] = encode_data(NAME_ABI_FUNCTION.get_abi(), [], NAME_ABI_FUNCTION.get_signature())
             except Exception as e:
                 logger.warning(
                     f"Encoding contract api parameter failed. "
@@ -126,7 +124,7 @@ def contract_info_rpc_requests(make_requests, contracts, is_batch):
         info = result[2:] if result is not None else None
 
         try:
-            contract["name"] = abi.decode(["string"], bytes.fromhex(info))[0].replace("\u0000", "")
+            contract["name"] = decode_data(["string"], bytes.fromhex(info))[0].replace("\u0000", "")
         except Exception as e:
             logger.warning(
                 f"Decoding contract name failed. "

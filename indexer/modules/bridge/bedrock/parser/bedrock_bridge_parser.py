@@ -23,7 +23,7 @@ from indexer.modules.bridge.bridge_utils import (
     unmarshal_deposit_version1,
 )
 from indexer.utils.abi import event_log_abi_to_topic
-from indexer.utils.decode_utils import decode_log
+from indexer.utils.abi_code_utils import decode_log
 
 bedrockBridgeParser = BedrockBridgeParser(
     [
