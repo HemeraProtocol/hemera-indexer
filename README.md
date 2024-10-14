@@ -17,7 +17,9 @@ As of July 5, 2024, the initial open-source version of the Hemera Indexer offers
 
 ## Features Offered
 
-##### Export the following entities
+#### Exportable Entities
+
+The system can export the following entities:
 
 - Blocks
 - Transactions
@@ -33,13 +35,80 @@ As of July 5, 2024, the initial open-source version of the Hemera Indexer offers
 - DA Transactions
 - User Operations
 
-##### Into the following formats
+#### Supported Export Formats
+
+The data can be exported into the following formats:
 
 - Postgresql SQL
 - JSONL
 - CSV
 
-##### Additional features
+#### Output Types and Entity Types Explanation
+
+##### Entity Types
+
+Entity Types are high-level categories that group related data models. They are defined in the `EntityType` enum and can be combined using bitwise operations.
+
+##### Key Points:
+- Specified using the `-E` or `--entity-types` option
+- Examples: EXPLORER_BASE, EXPLORER_TOKEN, EXPLORER_TRACE, etc.
+- Multiple types can be combined using commas
+
+##### Output Types
+
+Output Types correspond to more detailed data models and are typically associated with specific Entity Types.
+
+##### Key Points:
+- Specified using the `-O` or `--output-types` option
+- Examples: Block, Transaction, Log, Token, AddressTokenBalance, etc.
+- Takes precedence over Entity Types if specified
+- Directly corresponds to data class names in the code (Domain)
+
+##### Relationship between Entity Types and Output Types
+
+1. Entity Types are used to generate a set of Output Types:
+    - The `generate_output_types` function maps Entity Types to their corresponding Output Types.
+    - Each Entity Type yields a set of related data classes (Output Types).
+
+2. When specifying Output Types directly:
+    - It overrides the Entity Type selection.
+    - Allows for more granular control over the exported data.
+
+#### Output Types and Data Classes
+
+It's important to note that when using the `--output-types` option, you should specify the names that directly correspond to the data class names in the code. For example:
+
+```
+--output-types Block,Transaction,Log,Token,ERC20TokenTransfer
+```
+
+These names should match exactly with the data class definitions in your codebase. The Output Types are essentially the same as the data class names, allowing for precise selection of the data models you wish to export.
+
+#### Usage Examples
+
+1. Using Entity Types:
+   ```
+   --entity-types EXPLORER_BASE,EXPLORER_TOKEN
+   ```
+   This will generate Output Types including Block, Transaction, Log, Token, ERC20TokenTransfer, etc.
+
+2. Using Output Types:
+   ```
+   --output-types Block,Transaction,Token
+   ```
+   This will only generate the specified Output Types, regardless of Entity Types.
+
+#### Note
+
+When developing or using this system, consider the following:
+- Entity Types provide a broader, category-based selection of data.
+- Output Types offer more precise control over the exact data models to be exported.
+- The choice between using Entity Types or Output Types depends on the specific requirements of the data export task.
+
+
+These names should match exactly with the data class definitions in your codebase. The Output Types are essentially the same as the data class names, allowing for precise selection of the data models you wish to export.
+
+#### Additional features
 
 - Ability to select arbitrary block ranges for more flexible data indexing
 - Option to choose any entities for targeted data extraction
@@ -232,7 +301,7 @@ Follow the instructions about how to set up a PostgreSQL database here: [Setup P
 
 Configure the `OUTPUT` or `--output` parameter according to your PostgreSQL role information. Check out [Configure Hemera Indexer](#output-or---output) for details.
 
-E.g. `postgresql+psycopg2://${YOUR_USER}:${YOUR_PASSWORD}@${YOUR_HOST}:5432/${YOUR_DATABASE}`.
+E.g. `postgresql://${YOUR_USER}:${YOUR_PASSWORD}@${YOUR_HOST}:5432/${YOUR_DATABASE}`.
 
 #### Run
 
@@ -240,15 +309,14 @@ Please check out [Configure Hemera Indexer](#configure-hemera-indexer) on how to
 
 ```bash
 python hemera.py stream \
-    --provider-uri https://eth.llamarpc.com \
-    --debug-provider-uri https://eth.llamarpc.com \
-    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
-    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --provider-uri https://ethereum.publicnode.com \
+    --postgres-url postgresql://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
     --start-block 20000001 \
     --end-block 20010000 \
     # alternatively you can spin up a separate process for traces, as it takes more time
     # --entity-types trace,contract,coin_balance
-    --entity-types block,transaction,log,token,token_transfer \
+    --entity-types EXPLORER_BASE \
     --block-batch-size 200 \
     --batch-size 200 \
     --max-workers 32
@@ -308,19 +376,18 @@ E.g., If you specify the `OUTPUT` or `--output` parameter as below
 ```bash
 # Command line parameter
 python hemera.py stream \
-    --provider-uri https://eth.llamarpc.com \
-    --debug-provider-uri https://eth.llamarpc.com \
-    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
-    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --provider-uri https://ethereum.publicnode.com \
+    --postgres-url postgresql://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
     --start-block 20000001 \
     --end-block 20010000 \
-    --entity-types block,transaction,log,token,token_transfer \
+    --entity-types EXPLORER_BASE \
     --block-batch-size 200 \
     --batch-size 200 \
     --max-workers 32
 
 # Or using environment variable
-export OUTPUT = postgresql+psycopg2://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
+export OUTPUT = postgresql://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
 ```
 
 You will be able to find those results in the `output` folder of your current location.
@@ -367,7 +434,7 @@ The URI of the web3 debug rpc provider, e.g. `file://$HOME/Library/Ethereum/geth
 #### `POSTGRES_URL` or `--postgres-url` or `-pg`
 
 [**Required**]
-The PostgreSQL connection URL that the Hemera Indexer used to maintain its state. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
+The PostgreSQL connection URL that the Hemera Indexer used to maintain its state. e.g. `postgresql://user:password@127.0.0.1:5432/postgres`.
 
 #### `OUTPUT` or `--output` or `-o`
 
@@ -379,19 +446,19 @@ The file location will be relative to your current location if you run from sour
 
 e.g.
 
-- `postgresql+psycopg2://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
+- `postgresql://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
 - `jsonfile://output/json`: Json files will be exported to folder `output/json`
 - `csvfile://output/csv`: Csv files will be exported to folder `output/csv`
 - `console,jsonfile://output/json,csvfile://output/csv`: Multiple destinations are supported.
 
 #### `ENTITY_TYPES` or `--entity-types` or `-E`
 
-[**Default**: `EXPLORER_BASE,EXPLORER_TOKEN`]
+[**Default**: `EXPLORER_BASE`]
 The list of entity types to export. e.g. `EXPLORER_BASE`, `EXPLORER_TOKEN`, `EXPLORER_TRACE`.
 
 #### `OUTPUT_TYPES` or `--output-types` or `-O`
 
-The list of output types to export, corresponding to more detailed data models. Specifying this option will prioritize these settings over the entity types specified in -E. Available options include: block, transaction, log, token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, trace, contract, coin_balance.
+The list of output types to export, corresponding to more detailed data models. Specifying this option will prioritize these settings over the entity types specified in -E. Available options include: Block, Transaction, Log, Token, AddressTokenBalance, etc.
 
 You may spawn up multiple Hemera Indexer processes, each of them specifying different output types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
 
