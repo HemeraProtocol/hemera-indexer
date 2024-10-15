@@ -5,7 +5,7 @@ import pytest
 from web3.types import ABIEvent
 
 from indexer.domain.log import Log
-from indexer.utils.abi_code_utils import decode_log
+from common.utils.abi_code_utils import decode_log
 
 
 @pytest.mark.indexer

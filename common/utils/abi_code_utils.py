@@ -6,10 +6,11 @@ Author  : xuzh
 Project : hemera_indexer
 """
 import logging
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import eth_abi
 from ens.utils import get_abi_output_types
+from eth_abi import abi
 from eth_abi.codec import ABICodec
 from eth_typing import HexStr
 from eth_utils import encode_hex, to_hex
@@ -21,10 +22,12 @@ from web3._utils.abi import (
     map_abi_data,
     named_tree,
 )
+from web3._utils.contracts import decode_transaction_data
+from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.types import ABIEvent, ABIFunction
 
-from common.utils.format_utils import hex_str_to_bytes
-from indexer.domain.log import Log
+from common.utils.format_utils import hex_str_to_bytes, bytes_to_hex_str, convert_dict, convert_bytes_to_hex
+
 from indexer.utils.abi import (
     abi_address_to_hex,
     abi_bytes_to_bytes,
@@ -46,17 +49,21 @@ class Event:
     def get_signature(self) -> str:
         return self._signature
 
-    def decode_log(self, log: Log) -> Optional[Dict[str, Any]]:
+    def decode_log(self, log) -> Optional[Dict[str, Any]]:
         return decode_log(self._event_abi, log)
 
-    def decode_log_ignore_indexed(self, log: Log) -> Optional[Dict[str, Any]]:
+    def decode_log_ignore_indexed(self, log) -> Optional[Dict[str, Any]]:
         return decode_log_ignore_indexed(self._event_abi, log)
 
 
 def decode_log_ignore_indexed(
     fn_abi: ABIEvent,
-    log: Log,
+    log,
 ) -> Optional[Dict[str, Any]]:
+    from indexer.domain.log import Log
+    if not isinstance(log, Log):
+        raise ValueError(f"log: {log} is not a Log instance")
+
     data_types = get_indexed_event_inputs(fn_abi) + exclude_indexed_event_inputs(fn_abi)
     decoded_data = decode_data([t["type"] for t in data_types], log.get_topic_with_data())
     data = named_tree(data_types, decoded_data)
@@ -65,8 +72,12 @@ def decode_log_ignore_indexed(
 
 def decode_log(
     fn_abi: ABIEvent,
-    log: Log,
+    log,
 ) -> Optional[Dict[str, Any]]:
+    from indexer.domain.log import Log
+    if not isinstance(log, Log):
+        raise ValueError(f"log: {log} is not a Log instance")
+
     try:
         indexed_types = get_indexed_event_inputs(fn_abi)
         for indexed_type in indexed_types:
@@ -164,3 +175,48 @@ def encode_data(
         return to_hex(HexBytes(data) + encoded_arguments)
     else:
         return encode_hex(encoded_arguments)
+
+
+def decode_log_data(types, data_str):
+    data_hex_str = hex_str_to_bytes(data_str)
+    decoded_abi = decode_data(types, data_hex_str)
+
+    encoded_abi = []
+    decoded_abi_real = []
+    for index in range(len(types)):
+        encoded_abi.append(bytes_to_hex_str(abi.encode(types[index: index + 1], decoded_abi[index: index + 1])))
+
+        if types[index].startswith("byte"):
+            if type(decoded_abi[index]) is tuple:
+                encode_tuple = []
+                for element in decoded_abi[index]:
+                    encode_tuple.append(bytes_to_hex_str(element))
+                decoded_abi_real.append(encode_tuple)
+            else:
+                decoded_abi_real.append(bytes_to_hex_str(decoded_abi[index]))
+        else:
+            decoded_abi_real.append(str(decoded_abi[index]))
+
+    return decoded_abi_real, encoded_abi
+
+
+def decode_function(function_abi_json, data_str, output_str):
+    if data_str is not None and len(data_str) > 0:
+        input = decode_transaction_data(
+            cast(ABIFunction, function_abi_json),
+            data_str,
+            normalizers=BASE_RETURN_NORMALIZERS,
+        )
+        input = convert_dict(convert_bytes_to_hex(input))
+    else:
+        input = []
+
+    if output_str is not None and len(output_str) > 0:
+        types = get_abi_output_types(cast(ABIFunction, function_abi_json))
+        data = hex_str_to_bytes(output_str)
+        value = decode_data(types, data)
+        output = named_tree(function_abi_json["outputs"], value)
+        output = convert_dict(convert_bytes_to_hex(output))
+    else:
+        output = []
+    return input, output

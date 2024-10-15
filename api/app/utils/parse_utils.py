@@ -14,7 +14,8 @@ from api.app.utils.token_utils import get_token_price
 from common.models.transactions import Transactions
 from common.utils.config import get_config
 from common.utils.format_utils import bytes_to_hex_str, format_to_dict, row_to_dict
-from common.utils.web3_utils import chain_id_name_mapping, decode_log_data
+from common.utils.web3_utils import chain_id_name_mapping
+from common.utils.abi_code_utils import decode_log_data
 
 app_config = get_config()
 

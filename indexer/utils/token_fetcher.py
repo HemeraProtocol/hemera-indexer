@@ -23,7 +23,7 @@ from indexer.domain.token_id_infos import (
     UpdateERC721TokenIdDetail,
     UpdateERC1155TokenIdDetail,
 )
-from indexer.utils.abi_code_utils import decode_data, encode_data
+from common.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import (
     ERC721_OWNER_OF_FUNCTION,
     ERC721_TOKEN_URI_FUNCTION,

@@ -83,13 +83,12 @@ from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
 from common.utils.format_utils import bytes_to_hex_str, format_to_dict, hex_str_to_bytes, row_to_dict
 from common.utils.web3_utils import (
-    decode_function,
-    decode_log_data,
     get_debug_trace_transaction,
     is_eth_address,
     is_eth_transaction_hash,
     to_checksum_address,
 )
+from common.utils.abi_code_utils import decode_log_data, decode_function
 
 PAGE_SIZE = 25
 MAX_TRANSACTION = 500000

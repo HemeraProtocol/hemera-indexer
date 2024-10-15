@@ -1,20 +1,10 @@
 import base64
 import json
 import re
-from typing import cast
 
 import requests
-from ens.utils import get_abi_output_types
-from eth_abi import abi
 from web3 import Web3
-from web3._utils.abi import named_tree
-from web3._utils.contracts import decode_transaction_data
-from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.middleware import geth_poa_middleware
-from web3.types import ABIFunction
-
-from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.utils.abi_code_utils import decode_data
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -101,104 +91,6 @@ SUPPORT_CHAINS = {
 
 chain_id_name_mapping = {SUPPORT_CHAINS[chain_name]["chain_id"]: chain_name for chain_name in SUPPORT_CHAINS.keys()}
 
-ERC20_ABI = """
-  [{
-    "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
-    "name": "balanceOf",
-    "outputs": [{"internalType": "uint256", "name": "balance", "type": "uint256"}],
-    "stateMutability": "view",
-    "type": "function"
-  }]
-"""
-
-ERC721_ABI = [
-    {
-        "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
-        "name": "balanceOf",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function",
-        "constant": True,
-    },
-    {
-        "inputs": [],
-        "name": "name",
-        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": True,
-    },
-    {
-        "inputs": [{"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
-        "name": "ownerOf",
-        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function",
-        "constant": True,
-    },
-    {
-        "inputs": [],
-        "name": "symbol",
-        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": True,
-    },
-    {
-        "inputs": [],
-        "name": "totalSupply",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": True,
-    },
-    {
-        "inputs": [{"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
-        "name": "tokenURI",
-        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-        "stateMutability": "view",
-        "type": "function",
-    },
-]
-
-ERC1155_ABI = [
-    {
-        "inputs": [
-            {"internalType": "address", "name": "account", "type": "address"},
-            {"internalType": "uint256", "name": "id", "type": "uint256"},
-        ],
-        "name": "balanceOf",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": True,
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address[]",
-                "name": "accounts",
-                "type": "address[]",
-            },
-            {"internalType": "uint256[]", "name": "ids", "type": "uint256[]"},
-        ],
-        "name": "balanceOfBatch",
-        "outputs": [{"internalType": "uint256[]", "name": "", "type": "uint256[]"}],
-        "stateMutability": "view",
-        "type": "function",
-        "constant": True,
-    },
-    {
-        "inputs": [{"internalType": "uint256", "name": "id", "type": "uint256"}],
-        "name": "uri",
-        "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-        "stateMutability": "view",
-        "type": "function",
-    },
-]
-
 
 def build_web3(provider):
     w3 = Web3(provider)
@@ -213,7 +105,8 @@ def verify_0_address(address):
 def get_debug_trace_transaction(traces):
     def prune_delegates(trace):
         while (
-            trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0]["call_type"] == "delegatecall"
+                trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0][
+            "call_type"] == "delegatecall"
         ):
             trace = trace["calls"][0]
         if trace.get("calls"):
@@ -270,96 +163,6 @@ def generate_type_str(component):
         return "(" + ",".join(tuple_types) + ")"
     else:
         return component["type"]
-
-
-def convert_dict(input_item):
-    if isinstance(input_item, dict):
-        result = []
-        for key, value in input_item.items():
-            entry = {"name": key, "value": None, "type": None}
-            if isinstance(value, (list, tuple, set)):
-                entry["type"] = "list"
-                entry["value"] = convert_dict(value)
-            elif isinstance(value, dict):
-                entry["type"] = "list"
-                entry["value"] = convert_dict(value)
-            elif isinstance(value, str):
-                entry["type"] = "string"
-                entry["value"] = value
-            elif isinstance(value, int):
-                entry["type"] = "int"
-                entry["value"] = value
-            else:
-                entry["type"] = "unknown"
-                entry["value"] = value
-
-            result.append(entry)
-        return result
-
-    elif isinstance(input_item, (list, tuple, set)):
-        return [convert_dict(item) for item in input_item]
-
-    return input_item
-
-
-def convert_bytes_to_hex(item):
-    if isinstance(item, dict):
-        return {key: convert_bytes_to_hex(value) for key, value in item.items()}
-    elif isinstance(item, list):
-        return [convert_bytes_to_hex(element) for element in item]
-    elif isinstance(item, tuple):
-        return tuple(convert_bytes_to_hex(element) for element in item)
-    elif isinstance(item, set):
-        return {convert_bytes_to_hex(element) for element in item}
-    elif isinstance(item, bytes):
-        return item.hex()
-    else:
-        return item
-
-
-def decode_function(function_abi_json, data_str, output_str):
-    if data_str is not None and len(data_str) > 0:
-        input = decode_transaction_data(
-            cast(ABIFunction, function_abi_json),
-            data_str,
-            normalizers=BASE_RETURN_NORMALIZERS,
-        )
-        input = convert_dict(convert_bytes_to_hex(input))
-    else:
-        input = []
-
-    if output_str is not None and len(output_str) > 0:
-        types = get_abi_output_types(cast(ABIFunction, function_abi_json))
-        data = hex_str_to_bytes(output_str)
-        value = decode_data(types, data)
-        output = named_tree(function_abi_json["outputs"], value)
-        output = convert_dict(convert_bytes_to_hex(output))
-    else:
-        output = []
-    return input, output
-
-
-def decode_log_data(types, data_str):
-    data_hex_str = hex_str_to_bytes(data_str)
-    decoded_abi = decode_data(types, data_hex_str)
-
-    encoded_abi = []
-    decoded_abi_real = []
-    for index in range(len(types)):
-        encoded_abi.append(bytes_to_hex_str(abi.encode(types[index : index + 1], decoded_abi[index : index + 1])))
-
-        if types[index].startswith("byte"):
-            if type(decoded_abi[index]) is tuple:
-                encode_tuple = []
-                for element in decoded_abi[index]:
-                    encode_tuple.append(bytes_to_hex_str(element))
-                decoded_abi_real.append(encode_tuple)
-            else:
-                decoded_abi_real.append(bytes_to_hex_str(decoded_abi[index]))
-        else:
-            decoded_abi_real.append(str(decoded_abi[index]))
-
-    return decoded_abi_real, encoded_abi
 
 
 def is_eth_address(address):

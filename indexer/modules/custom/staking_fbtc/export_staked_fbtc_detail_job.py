@@ -15,7 +15,7 @@ from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail impor
     StakedFBTCDetail,
 )
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi_code_utils import decode_log
+from common.utils.abi_code_utils import decode_log
 
 logger = logging.getLogger(__name__)
 

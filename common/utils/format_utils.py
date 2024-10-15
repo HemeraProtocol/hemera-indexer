@@ -98,3 +98,48 @@ def format_value_for_json(value):
         return {k: format_value_for_json(v) for k, v in value.items()}
     else:
         return value
+
+
+def convert_dict(input_item):
+    if isinstance(input_item, dict):
+        result = []
+        for key, value in input_item.items():
+            entry = {"name": key, "value": None, "type": None}
+            if isinstance(value, (list, tuple, set)):
+                entry["type"] = "list"
+                entry["value"] = convert_dict(value)
+            elif isinstance(value, dict):
+                entry["type"] = "list"
+                entry["value"] = convert_dict(value)
+            elif isinstance(value, str):
+                entry["type"] = "string"
+                entry["value"] = value
+            elif isinstance(value, int):
+                entry["type"] = "int"
+                entry["value"] = value
+            else:
+                entry["type"] = "unknown"
+                entry["value"] = value
+
+            result.append(entry)
+        return result
+
+    elif isinstance(input_item, (list, tuple, set)):
+        return [convert_dict(item) for item in input_item]
+
+    return input_item
+
+
+def convert_bytes_to_hex(item):
+    if isinstance(item, dict):
+        return {key: convert_bytes_to_hex(value) for key, value in item.items()}
+    elif isinstance(item, list):
+        return [convert_bytes_to_hex(element) for element in item]
+    elif isinstance(item, tuple):
+        return tuple(convert_bytes_to_hex(element) for element in item)
+    elif isinstance(item, set):
+        return {convert_bytes_to_hex(element) for element in item}
+    elif isinstance(item, bytes):
+        return item.hex()
+    else:
+        return item

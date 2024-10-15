@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 from eth_utils import to_int, to_normalized_address
-from hexbytes import HexBytes
 
 from indexer.domain import Domain
 

@@ -5,7 +5,7 @@ Time    : 2024/10/12 下午2:10
 Author  : xuzh
 Project : hemera_indexer
 """
-from indexer.utils.abi_code_utils import Event, Function
+from common.utils.abi_code_utils import Event, Function
 
 # log event
 WETH_DEPOSIT_EVENT = Event(

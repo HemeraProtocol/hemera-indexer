@@ -24,7 +24,7 @@ from indexer.modules.custom.karak.models.af_karak_address_current import AfKarak
 from indexer.modules.custom.karak.models.af_karak_vault_token import AfKarakVaultToken
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import bytes_to_hex_str
-from indexer.utils.abi_code_utils import decode_log
+from common.utils.abi_code_utils import decode_log
 
 logger = logging.getLogger(__name__)
 

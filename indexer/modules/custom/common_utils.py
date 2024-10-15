@@ -8,7 +8,7 @@ from web3.types import ABIFunction
 
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.utils.abi import function_abi_to_4byte_selector_str
-from indexer.utils.abi_code_utils import encode_data
+from common.utils.abi_code_utils import encode_data
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 

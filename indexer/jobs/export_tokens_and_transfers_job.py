@@ -20,7 +20,7 @@ from indexer.domain.token_transfer import (
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi_code_utils import decode_data, encode_data
+from common.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import (
     ERC20_TRANSFER_EVENT,
     ERC721_OWNER_OF_FUNCTION,

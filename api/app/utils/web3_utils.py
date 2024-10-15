@@ -1,11 +1,10 @@
 from decimal import Decimal
 from typing import Optional
 
-from eth_abi import abi
 from web3 import Web3
 
 from api.app.cache import app_config, cache
-from indexer.utils.abi_code_utils import decode_data
+from common.utils.abi_code_utils import decode_data
 
 w3 = Web3(Web3.HTTPProvider(app_config.rpc))
 
