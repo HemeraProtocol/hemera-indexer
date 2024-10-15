@@ -45,6 +45,9 @@ class Event:
         self._event_abi = event_abi
         self._signature = event_log_abi_to_topic(event_abi)
 
+    def get_abi(self) -> ABIEvent:
+        return self._event_abi
+
     def get_signature(self) -> str:
         return self._signature
 
@@ -120,7 +123,8 @@ class Function:
 
     def decode_data(self, data: str) -> Optional[Dict[str, Any]]:
         try:
-            decoded = decode_data(self._inputs_type, hex_str_to_bytes(data))
+            decoded = decode_data(self._inputs_type, hex_str_to_bytes(data)[4:])
+            decoded = named_tree(self._function_abi["inputs"], decoded)
             return decoded
         except Exception as e:
             logging.warning(f"Failed to decode transaction input data: {e}, input data: {data}")
@@ -133,7 +137,8 @@ def decode_transaction_data(
 ) -> Optional[Dict[str, Any]]:
     try:
         types = get_abi_input_types(fn_abi)
-        decoded = decode_data(types, hex_str_to_bytes(data))
+        decoded = decode_data(types, hex_str_to_bytes(data[4:]))
+        decoded = named_tree(fn_abi["inputs"], decoded)
         return decoded
     except Exception as e:
         logging.warning(f"Failed to decode transaction input data: {e}, input data: {data}")
@@ -144,7 +149,13 @@ def decode_data(decode_type: Union[Sequence[str], List[str], str], data: bytes) 
     if isinstance(decode_type, str):
         data = abi_codec.decode([decode_type], data)
     elif isinstance(decode_type, list):
-        data = abi_codec.decode(decode_type, data)
+        for tpe in decode_type:
+            if not isinstance(tpe, str):
+                raise ValueError(f"Invalid decode_type: {decode_type} is not a List[str]")
+        try:
+            data = abi_codec.decode(decode_type, data)
+        except Exception as e:
+            print(f"Failed to decode data: {e}")
     else:
         raise ValueError(f"Invalid decode_type: {decode_type}, it should be str or list[str]")
     return data
