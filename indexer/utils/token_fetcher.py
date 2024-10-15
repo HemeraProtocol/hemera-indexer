@@ -13,6 +13,7 @@ from typing import Dict, List, Tuple, Union
 
 import orjson
 
+from common.utils.abi_code_utils import decode_data, encode_data
 from common.utils.format_utils import format_block_id, hex_str_to_bytes, to_snake_case
 from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
@@ -23,7 +24,6 @@ from indexer.domain.token_id_infos import (
     UpdateERC721TokenIdDetail,
     UpdateERC1155TokenIdDetail,
 )
-from common.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import (
     ERC721_OWNER_OF_FUNCTION,
     ERC721_TOKEN_URI_FUNCTION,

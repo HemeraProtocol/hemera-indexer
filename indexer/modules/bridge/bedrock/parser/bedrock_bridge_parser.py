@@ -6,6 +6,7 @@ from web3._utils.contracts import decode_transaction_data
 from web3.auto import w3
 from web3.types import ABIEvent, ABIFunction
 
+from common.utils.abi_code_utils import decode_log
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.transaction import Transaction
 from indexer.modules.bridge.bedrock.parser.function_parser import (
@@ -23,7 +24,6 @@ from indexer.modules.bridge.bridge_utils import (
     unmarshal_deposit_version1,
 )
 from indexer.utils.abi import event_log_abi_to_topic
-from common.utils.abi_code_utils import decode_log
 
 bedrockBridgeParser = BedrockBridgeParser(
     [

@@ -4,8 +4,8 @@ from typing import cast
 import pytest
 from web3.types import ABIEvent
 
-from indexer.domain.log import Log
 from common.utils.abi_code_utils import decode_log
+from indexer.domain.log import Log
 
 
 @pytest.mark.indexer

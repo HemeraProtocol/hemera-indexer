@@ -78,6 +78,7 @@ from common.models.token_balances import AddressTokenBalances
 from common.models.tokens import Tokens
 from common.models.traces import Traces
 from common.models.transactions import Transactions
+from common.utils.abi_code_utils import decode_function, decode_log_data
 from common.utils.config import get_config
 from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
@@ -88,7 +89,6 @@ from common.utils.web3_utils import (
     is_eth_transaction_hash,
     to_checksum_address,
 )
-from common.utils.abi_code_utils import decode_log_data, decode_function
 
 PAGE_SIZE = 25
 MAX_TRANSACTION = 500000

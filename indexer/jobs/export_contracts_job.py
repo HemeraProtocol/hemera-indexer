@@ -2,6 +2,7 @@ import json
 import logging
 from typing import List
 
+from common.utils.abi_code_utils import decode_data, encode_data
 from common.utils.exception_control import HemeraBaseException
 from enumeration.record_level import RecordLevel
 from indexer.domain.block import Block
@@ -9,7 +10,6 @@ from indexer.domain.contract import Contract, extract_contract_from_trace
 from indexer.domain.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
-from common.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import TOKEN_NAME_FUNCTION
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc

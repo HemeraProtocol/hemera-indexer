@@ -2,6 +2,7 @@ import json
 import logging
 from collections import defaultdict
 
+from common.utils.abi_code_utils import decode_data
 from indexer.domain.log import Log
 from indexer.domain.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -20,7 +21,6 @@ from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
 )
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from common.utils.abi_code_utils import decode_data
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 

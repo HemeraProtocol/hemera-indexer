@@ -13,6 +13,7 @@ from web3 import Web3
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIEvent, ABIFunction
 
+from common.utils.abi_code_utils import decode_log
 from indexer.modules.bridge.arbitrum.arb_network import Network
 from indexer.modules.bridge.domain.arbitrum import (
     ArbitrumStateBatchConfirmed,
@@ -24,7 +25,6 @@ from indexer.modules.bridge.domain.arbitrum import (
     TransactionToken,
 )
 from indexer.utils.abi import event_log_abi_to_topic, function_abi_to_4byte_selector_str
-from common.utils.abi_code_utils import decode_log
 
 MESSAGE_DELIVERED_EVENT = cast(
     ABIEvent,

@@ -26,8 +26,7 @@ from web3._utils.contracts import decode_transaction_data
 from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.types import ABIEvent, ABIFunction
 
-from common.utils.format_utils import hex_str_to_bytes, bytes_to_hex_str, convert_dict, convert_bytes_to_hex
-
+from common.utils.format_utils import bytes_to_hex_str, convert_bytes_to_hex, convert_dict, hex_str_to_bytes
 from indexer.utils.abi import (
     abi_address_to_hex,
     abi_bytes_to_bytes,
@@ -61,6 +60,7 @@ def decode_log_ignore_indexed(
     log,
 ) -> Optional[Dict[str, Any]]:
     from indexer.domain.log import Log
+
     if not isinstance(log, Log):
         raise ValueError(f"log: {log} is not a Log instance")
 
@@ -75,6 +75,7 @@ def decode_log(
     log,
 ) -> Optional[Dict[str, Any]]:
     from indexer.domain.log import Log
+
     if not isinstance(log, Log):
         raise ValueError(f"log: {log} is not a Log instance")
 
@@ -184,7 +185,7 @@ def decode_log_data(types, data_str):
     encoded_abi = []
     decoded_abi_real = []
     for index in range(len(types)):
-        encoded_abi.append(bytes_to_hex_str(abi.encode(types[index: index + 1], decoded_abi[index: index + 1])))
+        encoded_abi.append(bytes_to_hex_str(abi.encode(types[index : index + 1], decoded_abi[index : index + 1])))
 
         if types[index].startswith("byte"):
             if type(decoded_abi[index]) is tuple:

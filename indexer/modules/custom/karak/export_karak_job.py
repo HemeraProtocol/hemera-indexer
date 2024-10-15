@@ -6,6 +6,7 @@ from eth_abi import decode
 from eth_typing import Decodable
 from sqlalchemy import func
 
+from common.utils.abi_code_utils import decode_log
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain.transaction import Transaction
@@ -24,7 +25,6 @@ from indexer.modules.custom.karak.models.af_karak_address_current import AfKarak
 from indexer.modules.custom.karak.models.af_karak_vault_token import AfKarakVaultToken
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi import bytes_to_hex_str
-from common.utils.abi_code_utils import decode_log
 
 logger = logging.getLogger(__name__)
 

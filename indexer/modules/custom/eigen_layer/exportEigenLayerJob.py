@@ -12,6 +12,7 @@ from eth_abi import decode
 from eth_typing import Decodable
 from sqlalchemy import func
 
+from common.utils.abi_code_utils import decode_log
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.transaction import Transaction
@@ -33,7 +34,6 @@ from indexer.modules.custom.eigen_layer.eigen_layer_domain import (
 from indexer.modules.custom.eigen_layer.models.af_eigen_layer_address_current import AfEigenLayerAddressCurrent
 from indexer.modules.custom.eigen_layer.models.af_eigen_layer_records import AfEigenLayerRecords
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from common.utils.abi_code_utils import decode_log
 
 logger = logging.getLogger(__name__)
 
