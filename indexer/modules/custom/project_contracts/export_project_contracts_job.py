@@ -36,7 +36,11 @@ class ExportProjectContractsJob(ExtensionJob):
         self.trace_type_prefix = 'create'
         self.project_deployers = defaultdict(list)
         self.project_map = dict()
-
+        self.current_project_id = None
+        self.current_deployer = None
+        self.transaction_map = dict()
+        self.trace_map = dict()
+        self.contract_map = dict()
         self.read_configured_projects()
 
     def _collect(self, **kwargs):
@@ -50,6 +54,7 @@ class ExportProjectContractsJob(ExtensionJob):
         res = []
         for project_id, deployers in self.project_deployers.items():
             project = self.project_map[project_id]
+            self.current_project_id = project_id
             for deployer in deployers:
                 tmp = []
                 tmp.extend(self.list_pool_by_transaction_from(deployer, contracts, transactions))
@@ -104,7 +109,17 @@ class ExportProjectContractsJob(ExtensionJob):
           AND t.status = 1;
         """
         transaction_hash_set = set([tnx.hash for tnx in transactions if tnx.from_address == from_address and tnx.to_address == to_address])
-        res = [tra.to_address for tra in filtered_trace_lis if tra.transaction_hash in transaction_hash_set]
+        res = [ProjectContractD(
+            address=tra.to_address,
+            project_id=self.current_project_id,
+            chain_id=self.chain_id,
+            deployer=self.current_deployer,
+            transaction_from_address=self.transaction_map[tra.transaction_hash].from_address,
+            trace_creator=tra.trace_creator,
+            block_number=self.transaction_map[tra.transaction_hash].block_number,
+            block_timestamp=self.transaction_map[tra.transaction_hash].block_timestamp,
+            transaction_hash=tra.transaction_hash
+        ) for tra in filtered_trace_lis if tra.transaction_hash in transaction_hash_set]
         return res
 
     def list_created_pool_by_transaction_from(self, project_id, from_address, filtered_trace_lis, transactions, project_contracts) -> List[ProjectContractD]:
@@ -120,7 +135,17 @@ class ExportProjectContractsJob(ExtensionJob):
         """
         transaction_hash_set = [tra.hash for tra in transactions if tra.from_address == from_address]
         filtered_trace_lis = [tra for tra in filtered_trace_lis if tra.transaction_hash in transaction_hash_set]
-        res = [tra.to_address for tra in filtered_trace_lis]
+        res = [ProjectContractD(
+            address=tra.to_address,
+            project_id=self.current_project_id,
+            chain_id=self.chain_id,
+            deployer=self.current_deployer,
+            transaction_from_address=self.transaction_map[tra.transaction_hash].from_address,
+            trace_creator=tra.trace_creator,
+            block_number=self.transaction_map[tra.transaction_hash].block_number,
+            block_timestamp=self.transaction_map[tra.transaction_hash].block_timestamp,
+            transaction_hash=tra.transaction_hash
+        ) for tra in filtered_trace_lis]
         return res
 
     def get_transaction_to_hash(self, address, transactions):
@@ -144,7 +169,17 @@ class ExportProjectContractsJob(ExtensionJob):
         filtered_transactions = set([tra.hash for tra in transactions if tra.from_address == address and tra.receipt])
         for contract in contracts:
             if contract.transaction_hash in filtered_transactions:
-                res.append(contract.address)
+                res.append(ProjectContractD(
+                        address=contract.address,
+                        project_id=self.current_project_id,
+                        chain_id=self.chain_id,
+                        deployer=self.current_deployer,
+                        transaction_from_address=self.transaction_map[contract.transaction_hash].from_address,
+                        trace_creator=None,
+                        block_number=self.transaction_map[contract.transaction_hash].block_number,
+                        block_timestamp=self.transaction_map[contract.transaction_hash].block_timestamp,
+                        transaction_hash=contract.transaction_hash
+        ))
         return res
 
     def list_pool_by_trace_hash(self, tnx_hash_lis, filtered_trace):
@@ -161,12 +196,13 @@ class ExportProjectContractsJob(ExtensionJob):
         res = [tra.to_address for tra in trace_lis]
         return res
 
-    def get_trace_from(self, froms: List[str], ans: List[str], project_id: str, contracts: List[Contract], transactions: List[Transaction], filtered_trace_lis):
+    def get_trace_from(self, froms: List[ProjectContractD], ans: List[str], project_id: str, contracts: List[Contract], transactions: List[Transaction], filtered_trace_lis):
         if not froms:
             return
         next_list = []
         count = 0
         for from_address in froms:
+            from_address = from_address.address
             count += 1
             string_list = self.list_pool_by_transaction_from(from_address, contracts, transactions)
 
