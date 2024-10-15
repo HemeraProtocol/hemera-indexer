@@ -174,7 +174,7 @@ def extract_eth_address(input_string):
 
     hex_string = hex_string.zfill(40)
     return Web3.to_checksum_address(hex_string).lower()
- 
+
 
 def flatten(lst):
     result = []

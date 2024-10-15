@@ -128,11 +128,11 @@ class ExplorerHealthCheck(Resource):
     def get(self):
         block = get_last_block(columns=["number", "timestamp"])
         return {
-                   "latest_block_number": block.number,
-                   "latest_block_timestamp": block.timestamp.isoformat(),
-                   "engine_pool_status": db.engine.pool.status(),
-                   "status": "OK",
-               }, 200
+            "latest_block_number": block.number,
+            "latest_block_timestamp": block.timestamp.isoformat(),
+            "engine_pool_status": db.engine.pool.status(),
+            "status": "OK",
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/stats")
@@ -156,7 +156,7 @@ class ExplorerMainStats(Resource):
 
         # Handle 0
         avg_block_time = (latest_block.timestamp.timestamp() - earlier_block.timestamp.timestamp()) / (
-                (latest_block_number - earlier_block_number) or 1
+            (latest_block_number - earlier_block_number) or 1
         )
 
         # Get transaction tps
@@ -193,35 +193,34 @@ class ExplorerMainStats(Resource):
             )
 
         return {
-                   "total_transactions": transaction_count,
-                   "transaction_tps": round(transaction_tps, 2),
-                   "latest_batch": latest_batch_number,
-                   "latest_block": latest_block_number,
-                   "avg_block_time": avg_block_time,
-                   "eth_price": format_dollar_value(ETH_PRICE),
-                   "eth_price_btc": "{0:.5f}".format(ETH_PRICE / (BTC_PRICE or 1)),
-                   "eth_price_diff": "{0:.4f}".format((ETH_PRICE - ETH_PRICE_PRIVIOUS) / (ETH_PRICE_PRIVIOUS or 1)),
-                   "native_token_price": format_dollar_value(NATIVE_TOKEN_PRICE),
-                   "native_token_price_eth": "{0:.5f}".format(NATIVE_TOKEN_PRICE / (ETH_PRICE or 1)),
-                   "native_token_price_diff": (
-                       "{0:.4f}".format(
-                           (NATIVE_TOKEN_PRICE - NATIVE_TOKEN_PRICE_PRIVIOUS) / (NATIVE_TOKEN_PRICE_PRIVIOUS or 1)
-                       )
-                       if NATIVE_TOKEN_PRICE_PRIVIOUS != 0
-                       else 0
-                   ),
-                   "dashboard_token_price_eth": "{0:.5f}".format(DASHBOARD_TOKEN_PRICE / (ETH_PRICE or 1)),
-                   "dashboard_token_price": format_dollar_value(DASHBOARD_TOKEN_PRICE),
-                   "dashboard_token_price_diff": (
-                       "{0:.4f}".format(
-                           (DASHBOARD_TOKEN_PRICE - DASHBOARD_TOKEN_PRICE_PRIVIOUS) / (
-                                       DASHBOARD_TOKEN_PRICE_PRIVIOUS or 1)
-                       )
-                       if DASHBOARD_TOKEN_PRICE_PRIVIOUS != 0
-                       else 0
-                   ),
-                   "gas_fee": "{0:1f}".format(get_gas_price() / 10 ** 9).rstrip("0").rstrip(".") + " Gwei",
-               }, 200
+            "total_transactions": transaction_count,
+            "transaction_tps": round(transaction_tps, 2),
+            "latest_batch": latest_batch_number,
+            "latest_block": latest_block_number,
+            "avg_block_time": avg_block_time,
+            "eth_price": format_dollar_value(ETH_PRICE),
+            "eth_price_btc": "{0:.5f}".format(ETH_PRICE / (BTC_PRICE or 1)),
+            "eth_price_diff": "{0:.4f}".format((ETH_PRICE - ETH_PRICE_PRIVIOUS) / (ETH_PRICE_PRIVIOUS or 1)),
+            "native_token_price": format_dollar_value(NATIVE_TOKEN_PRICE),
+            "native_token_price_eth": "{0:.5f}".format(NATIVE_TOKEN_PRICE / (ETH_PRICE or 1)),
+            "native_token_price_diff": (
+                "{0:.4f}".format(
+                    (NATIVE_TOKEN_PRICE - NATIVE_TOKEN_PRICE_PRIVIOUS) / (NATIVE_TOKEN_PRICE_PRIVIOUS or 1)
+                )
+                if NATIVE_TOKEN_PRICE_PRIVIOUS != 0
+                else 0
+            ),
+            "dashboard_token_price_eth": "{0:.5f}".format(DASHBOARD_TOKEN_PRICE / (ETH_PRICE or 1)),
+            "dashboard_token_price": format_dollar_value(DASHBOARD_TOKEN_PRICE),
+            "dashboard_token_price_diff": (
+                "{0:.4f}".format(
+                    (DASHBOARD_TOKEN_PRICE - DASHBOARD_TOKEN_PRICE_PRIVIOUS) / (DASHBOARD_TOKEN_PRICE_PRIVIOUS or 1)
+                )
+                if DASHBOARD_TOKEN_PRICE_PRIVIOUS != 0
+                else 0
+            ),
+            "gas_fee": "{0:1f}".format(get_gas_price() / 10**9).rstrip("0").rstrip(".") + " Gwei",
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/charts/transactions_per_day")
@@ -235,9 +234,9 @@ class ExplorerChartsTransactionsPerDay(Resource):
             date_list.append({"value": item.date.isoformat(), "count": item.cnt})
 
         return {
-                   "title": "Daily Transactions Chart",
-                   "data": date_list,
-               }, 200
+            "title": "Daily Transactions Chart",
+            "data": date_list,
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/search")
@@ -420,12 +419,12 @@ class ExplorerInternalTransactions(Resource):
         fill_address_display_to_transactions(transaction_list, bytea_address_list)
 
         return {
-                   "data": transaction_list,
-                   "total": total_records,
-                   "max_display": min(total_records, MAX_INTERNAL_TRANSACTION),
-                   "page": page_index,
-                   "size": page_size,
-               }, 200
+            "data": transaction_list,
+            "total": total_records,
+            "max_display": min(total_records, MAX_INTERNAL_TRANSACTION),
+            "page": page_index,
+            "size": page_size,
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/transactions")
@@ -508,15 +507,15 @@ class ExplorerTransactions(Resource):
         transaction_list = parse_transactions(transactions)
 
         return {
-                   "data": transaction_list,
-                   "total": total_records,
-                   "max_display": min(
-                       (MAX_TRANSACTION_WITH_CONDITION if has_filter else MAX_TRANSACTION),
-                       total_records,
-                   ),
-                   "page": page_index,
-                   "size": page_size,
-               }, 200
+            "data": transaction_list,
+            "total": total_records,
+            "max_display": min(
+                (MAX_TRANSACTION_WITH_CONDITION if has_filter else MAX_TRANSACTION),
+                total_records,
+            ),
+            "page": page_index,
+            "size": page_size,
+        }, 200
 
 
 # {
@@ -636,9 +635,9 @@ class ExplorerTransactionTokenTransfers(Resource):
         fill_address_display_to_transactions(token_transfer_list)
 
         return {
-                   "total": len(token_transfer_list),
-                   "data": token_transfer_list,
-               }, 200
+            "total": len(token_transfer_list),
+            "data": token_transfer_list,
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/transaction/<hash>/internal_transactions")
@@ -800,7 +799,7 @@ class ExplorerTransactionInternalTransactions(Resource):
                         "from_address": "0x" + trace.from_address.hex(),
                         "to_address": "0x" + trace.to_address.hex(),
                         "value": (
-                            "{0:.18f}".format(trace.value / 10 ** 18).rstrip("0").rstrip(".")
+                            "{0:.18f}".format(trace.value / 10**18).rstrip("0").rstrip(".")
                             if trace.value is not None and trace.value != 0
                             else None
                         ),
@@ -1000,11 +999,11 @@ class ExplorerTokens(Resource):
             raise APIError("Invalid type", code=400)
 
         return {
-                   "page": page_index,
-                   "size": page_size,
-                   "total": total_records,
-                   "data": token_list,
-               }, 200
+            "page": page_index,
+            "size": page_size,
+            "total": total_records,
+            "data": token_list,
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/token_transfers")
@@ -1066,12 +1065,12 @@ class ExplorerTokenTransfers(Resource):
         token_transfers, _ = get_raw_token_transfers(type, filter_condition, page_index, page_size, is_count=False)
         token_transfer_list = parse_token_transfers(token_transfers, type)
         return {
-                   "page": page_index,
-                   "size": page_size,
-                   "total": total_count,
-                   "max_display": MAX_TOKEN_TRANSFER,
-                   "data": token_transfer_list,
-               }, 200
+            "page": page_index,
+            "size": page_size,
+            "total": total_count,
+            "max_display": MAX_TOKEN_TRANSFER,
+            "data": token_transfer_list,
+        }, 200
 
 
 class CustomRequestParser(reqparse.RequestParser):
@@ -1156,11 +1155,11 @@ class ExplorerBlocks(Resource):
         ]
 
         return {
-                   "data": block_list,
-                   "total": total_blocks,
-                   "page": page_index,
-                   "size": page_size,
-               }, 200
+            "data": block_list,
+            "total": total_blocks,
+            "page": page_index,
+            "size": page_size,
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/block/<number_or_hash>")
@@ -1211,9 +1210,9 @@ class ExplorerAddressProfile(Resource):
 
         native_token_balance = get_balance(address)
         profile_json = {
-            "balance": "{0:.18f}".format(native_token_balance / 10 ** 18).rstrip("0").rstrip("."),
+            "balance": "{0:.18f}".format(native_token_balance / 10**18).rstrip("0").rstrip("."),
             "native_token_price": "{0:.2f}".format(NATIVE_TOKEN_PRICE),
-            "balance_dollar": "{0:.2f}".format(native_token_balance * Decimal(NATIVE_TOKEN_PRICE) / 10 ** 18),
+            "balance_dollar": "{0:.2f}".format(native_token_balance * Decimal(NATIVE_TOKEN_PRICE) / 10**18),
             "is_contract": False,
             "is_token": False,
         }
@@ -1268,7 +1267,7 @@ class ExplorerAddressTokenHoldingsV2(Resource):
                 AddressTokenBalances.token_id,
                 AddressTokenBalances.token_type,
                 func.row_number()
-                    .over(
+                .over(
                     partition_by=(
                         AddressTokenBalances.token_address,
                         AddressTokenBalances.token_id,
@@ -1278,10 +1277,10 @@ class ExplorerAddressTokenHoldingsV2(Resource):
                         AddressTokenBalances.block_number.desc(),
                     ],
                 )
-                    .label("rn"),
+                .label("rn"),
             )
-                .filter(AddressTokenBalances.address == address_bytes)
-                .subquery()
+            .filter(AddressTokenBalances.address == address_bytes)
+            .subquery()
         )
 
         # Left join with other token tables
@@ -1297,13 +1296,13 @@ class ExplorerAddressTokenHoldingsV2(Resource):
                 func.coalesce(Tokens.icon_url, Tokens.icon_url, Tokens.icon_url).label("logo"),
                 Tokens.decimals.label("decimals"),
             )
-                .outerjoin(
+            .outerjoin(
                 Tokens,
                 subquery.c.token_address == Tokens.address,
             )
-                .filter(subquery.c.rn == 1, subquery.c.balance > 0)
-                .order_by(subquery.c.token_type)
-                .all()
+            .filter(subquery.c.rn == 1, subquery.c.balance > 0)
+            .order_by(subquery.c.token_type)
+            .all()
         )
         token_holder_list = []
         for token_holder in result:
@@ -1311,8 +1310,8 @@ class ExplorerAddressTokenHoldingsV2(Resource):
                 {
                     "token_address": "0x" + token_holder.token_address.hex(),
                     "balance": "{0:.6f}".format((token_holder.balance / 10 ** (token_holder.decimals or 0)))
-                        .rstrip("0")
-                        .rstrip("."),
+                    .rstrip("0")
+                    .rstrip("."),
                     "token_id": (int(token_holder.token_id) if token_holder.token_id else None),
                     "token_name": token_holder.name or "Unknown Token",
                     "token_symbol": token_holder.symbol or "UNKNOWN",
@@ -1355,9 +1354,9 @@ class ExplorerAddressTransactions(Resource):
         transaction_list = parse_transactions(transactions)
 
         return {
-                   "data": transaction_list,
-                   "total": total_count,
-               }, 200
+            "data": transaction_list,
+            "total": total_count,
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/address/<address>/token_transfers")
@@ -1391,10 +1390,10 @@ class ExplorerAddressTokenTransfers(Resource):
         token_transfer_list = parse_token_transfers(token_transfers, type)
 
         return {
-                   "total": total_count,
-                   "data": token_transfer_list,
-                   "type": type,
-               }, 200
+            "total": total_count,
+            "data": token_transfer_list,
+            "type": type,
+        }, 200
 
 
 @explorer_namespace.route("/v1/explorer/address/<address>/internal_transactions")
@@ -1475,9 +1474,9 @@ class ExplorerTokenProfile(Resource):
                 "token_price": token.price,
                 "token_previous_price": token.previous_price,
                 "decimals": float(token.decimals),
-                "total_supply": "{0:.6f}".format(token.total_supply / (10 ** token.decimals) or 0)
-                    .rstrip("0")
-                    .rstrip("."),
+                "total_supply": "{0:.6f}".format(token.total_supply / (10**token.decimals) or 0)
+                .rstrip("0")
+                .rstrip("."),
                 "token_market_cap": token.market_cap,
                 "token_on_chain_market_cap": token.on_chain_market_cap,
                 "previous_price": token.previous_price,
@@ -1534,10 +1533,10 @@ class ExplorerTokenTokenTransfers(Resource):
 
         token_transfer_list = parse_token_transfers(token_transfers, token.token_type)
         return {
-                   "total": total_count,
-                   "data": token_transfer_list,
-                   "type": token.token_type,
-               }, 200
+            "total": total_count,
+            "data": token_transfer_list,
+            "type": token.token_type,
+        }, 200
 
 
 @explorer_namespace.route("/v2/explorer/token/<token_address>/top_holders")
@@ -1627,19 +1626,19 @@ class ExplorerStatisticsContractData(Resource):
             func.count().label("transaction_count"),
             StatisticsWalletAddresses.tag,
         )
-            .join(
+        .join(
             StatisticsWalletAddresses,
             cast("0x" + func.encode(Transactions.to_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
             isouter=True,
         )
-            .filter(
+        .filter(
             Transactions.block_timestamp > datetime.now() - timedelta(days=1),
             Transactions.to_address.in_(session.query(Contracts.address)),
         )
-            .group_by(Transactions.to_address, StatisticsWalletAddresses.tag)
-            .order_by(func.count().desc())
-            .limit(limit)
-            .all(),
+        .group_by(Transactions.to_address, StatisticsWalletAddresses.tag)
+        .order_by(func.count().desc())
+        .limit(limit)
+        .all(),
     }
 
     @cache.cached(timeout=600, query_string=True)
@@ -1673,31 +1672,31 @@ class ExplorerStatisticsAddressData(Resource):
             func.sum(Transactions.receipt_gas_used).label("gas_used"),
             StatisticsWalletAddresses.tag,
         )
-            .join(
+        .join(
             StatisticsWalletAddresses,
             cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
             isouter=True,
         )
-            .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
-            .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
-            .order_by(func.sum(Transactions.receipt_gas_used).desc())
-            .limit(limit)
-            .all(),
+        .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
+        .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
+        .order_by(func.sum(Transactions.receipt_gas_used).desc())
+        .limit(limit)
+        .all(),
         "transactions_sent": lambda session, limit: session.query(
             Transactions.from_address.label("address"),
             func.count().label("transaction_count"),
             StatisticsWalletAddresses.tag,
         )
-            .join(
+        .join(
             StatisticsWalletAddresses,
             cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
             isouter=True,
         )
-            .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
-            .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
-            .order_by(func.count().desc())
-            .limit(limit)
-            .all(),
+        .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
+        .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
+        .order_by(func.count().desc())
+        .limit(limit)
+        .all(),
     }
 
     @cache.cached(timeout=600, query_string=True)
@@ -2089,11 +2088,11 @@ def token_transfers(contract_address, address, start_block_number, end_block_num
                 TokenTransferTable.block_number <= end_block_number,
             )
         )
-            .join(
+        .join(
             Transactions,
             TokenTransferTable.transaction_hash == Transactions.hash,
         )
-            .add_columns(
+        .add_columns(
             Transactions.nonce,
             Transactions.gas,
             Transactions.gas_price,
@@ -2102,8 +2101,8 @@ def token_transfers(contract_address, address, start_block_number, end_block_num
             Transactions.transaction_index,
             Transactions.input,
         )
-            .order_by(TokenTransferTable.block_number.asc())
-            .limit(5000)
+        .order_by(TokenTransferTable.block_number.asc())
+        .limit(5000)
     )
 
     token_addresses = set([transfer.token_address for transfer, _, _, _, _, _, _, _ in transfers])
@@ -2113,14 +2112,14 @@ def token_transfers(contract_address, address, start_block_number, end_block_num
 
     result = []
     for (
-            transfer,
-            nonce,
-            gas,
-            gas_price,
-            receipt_gas_used,
-            receipt_cumulative_gas_used,
-            transaction_index,
-            input,
+        transfer,
+        nonce,
+        gas,
+        gas_price,
+        receipt_gas_used,
+        receipt_cumulative_gas_used,
+        transaction_index,
+        input,
     ) in transfers:
         transfer_data = {
             "blockNumber": str(transfer.block_number),
