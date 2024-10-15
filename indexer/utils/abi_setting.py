@@ -124,6 +124,30 @@ TOTAL_SUPPLY_ABI_FUNCTION = Function(
     }
 )
 
+TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION = Function(
+    {
+        "constant": True,
+        "inputs": [{"name": "id", "type": "uint256"}],
+        "name": "totalSupply",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
+TOKEN_SUPPLY_ABI_FUNCTION = Function(
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "tokenSupply",
+        "outputs": [{"name": "", "type": "uint256"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
 OWNER_OF_ABI_FUNCTION = Function(
     {
         "constant": True,

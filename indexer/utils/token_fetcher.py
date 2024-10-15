@@ -27,7 +27,7 @@ from indexer.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import (
     OWNER_OF_ABI_FUNCTION,
     TOKEN_URI_ABI_FUNCTION,
-    TOTAL_SUPPLY_ABI_FUNCTION,
+    TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION,
     URI_ABI_FUNCTION,
 )
 from indexer.utils.exception_recorder import ExceptionRecorder
@@ -464,9 +464,9 @@ def abi_selector_encode_and_decode_type(token_id_info):
             )
         else:
             return encode_data(
-                TOTAL_SUPPLY_ABI_FUNCTION.get_abi(),
+                TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                TOTAL_SUPPLY_ABI_FUNCTION.get_signature(),
+                TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION.get_signature(),
             )
 
 
