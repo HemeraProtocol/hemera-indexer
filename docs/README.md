@@ -227,7 +227,7 @@ Follow the instructions about how to set up a PostgreSQL database here: [Setup P
 
 Configure the `OUTPUT` or `--output` parameter according to your PostgreSQL role information. Check out [Configure Hemera Indexer](#output-or---output) for details.
 
-E.g. `postgresql+psycopg2://${YOUR_USER}:${YOUR_PASSWORD}@${YOUR_HOST}:5432/${YOUR_DATABASE}`.
+E.g. `postgresql://${YOUR_USER}:${YOUR_PASSWORD}@${YOUR_HOST}:5432/${YOUR_DATABASE}`.
 
 #### Run
 
@@ -235,15 +235,14 @@ Please check out [Configure Hemera Indexer](#configure-hemera-indexer) on how to
 
 ```bash
 python hemera.py stream \
-    --provider-uri https://eth.llamarpc.com \
-    --debug-provider-uri https://eth.llamarpc.com \
-    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
-    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --provider-uri https://ethereum.publicnode.com \
+    --postgres-url postgresql://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
     --start-block 20000001 \
     --end-block 20010000 \
     # alternatively you can spin up a separate process for traces, as it takes more time
     # --entity-types trace,contract,coin_balance
-    --entity-types block,transaction,log,token,token_transfer \
+    --entity-types EXPLORER_BASE \
     --block-batch-size 200 \
     --batch-size 200 \
     --max-workers 32
@@ -303,19 +302,18 @@ E.g., If you specify the `OUTPUT` or `--output` parameter as below
 ```bash
 # Command line parameter
 python hemera.py stream \
-    --provider-uri https://eth.llamarpc.com \
-    --debug-provider-uri https://eth.llamarpc.com \
-    --postgres-url postgresql+psycopg2://devuser:devpassword@localhost:5432/hemera_indexer \
-    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql+psycopg2://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
+    --provider-uri https://ethereum.publicnode.com \
+    --postgres-url postgresql://devuser:devpassword@localhost:5432/hemera_indexer \
+    --output jsonfile://output/eth_blocks_20000001_20010000/json,csvfile://output/hemera_indexer/csv,postgresql://devuser:devpassword@localhost:5432/eth_blocks_20000001_20010000 \
     --start-block 20000001 \
     --end-block 20010000 \
-    --entity-types block,transaction,log,token,token_transfer \
+    --entity-types EXPLORER_BASE \
     --block-batch-size 200 \
     --batch-size 200 \
     --max-workers 32
 
 # Or using environment variable
-export OUTPUT = postgresql+psycopg2://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
+export OUTPUT = postgresql://user:password@localhost:5432/hemera_indexer,jsonfile://output/json, csvfile://output/csv
 ```
 
 You will be able to find those results in the `output` folder of your current location.
@@ -349,7 +347,19 @@ The URI of the web3 debug rpc provider, e.g. `file://$HOME/Library/Ethereum/geth
 #### `POSTGRES_URL` or `--postgres-url`
 
 [**Required**]
-The PostgreSQL connection URL that the Hemera Indexer used to maintain its state. e.g. `postgresql+psycopg2://user:password@127.0.0.1:5432/postgres`.
+The PostgreSQL connection URL that the Hemera Indexer used to maintain its state. e.g. `postgresql://user:password@127.0.0.1:5432/postgres`.
+
+
+#### `ENTITY_TYPES` or `--entity-types` or `-E`
+
+[**Default**: `EXPLORER_BASE`]
+The list of entity types to export. e.g. `EXPLORER_BASE`, `EXPLORER_TOKEN`, `EXPLORER_TRACE`.
+
+#### `OUTPUT_TYPES` or `--output-types` or `-O`
+
+The list of output types to export, corresponding to more detailed data models. Specifying this option will prioritize these settings over the entity types specified in -E. Available options include: Block, Transaction, Log, Token, AddressTokenBalance, etc.
+
+You may spawn up multiple Hemera Indexer processes, each of them specifying different output types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
 
 #### `OUTPUT` or `--output`
 
@@ -361,31 +371,10 @@ The file location will be relative to your current location if you run from sour
 
 e.g.
 
-- `postgresql+psycopg2://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
+- `postgresql://user:password@localhost:5432/hemera_indexer`: Output will be exported to your postgres.
 - `jsonfile://output/json`: Json files will be exported to folder `output/json`
 - `csvfile://output/csv`: Csv files will be exported to folder `output/csv`
 - `console,jsonfile://output/json,csvfile://output/csv`: Multiple destinations are supported.
-
-#### `ENTITY_TYPES` or `--entity-types`
-
-[**Default**: `BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER`]
-Hemera Indexer will export those entity types to your database and files(if `OUTPUT` is specified).
-Full list of available entity types:
-
-- `block`
-- `transaction`
-- `log`
-- `token`
-- `token_transfer`
-- `trace`
-- `contract`
-- `coin_balance`
-- `token_balance`
-- `token_ids`
-
-If you didn't specify this parameter, the default entity types will be BLOCK,TRANSACTION,LOG,TOKEN,TOKEN_TRANSFER.
-
-You may spawn up multiple Hemera Indexer processes, each of them indexing different entity types to accelerate the indexing process. For example, indexing `trace` data may take much longer than other entities, you may want to run a separate process to index `trace` data. Checkout `docker-compose/docker-compose.yaml` for examples.
 
 #### `DB_VERSION` or `--db-version`
 
