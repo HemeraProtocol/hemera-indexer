@@ -22,17 +22,17 @@ from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import (
-    DECIMALS_ABI_FUNCTION,
-    NAME_ABI_FUNCTION,
-    OWNER_OF_ABI_FUNCTION,
-    SYMBOL_ABI_FUNCTION,
-    TOKEN_URI_ABI_FUNCTION,
-    TOTAL_SUPPLY_ABI_FUNCTION,
-    batch_transfer_event,
-    deposit_event,
-    single_transfer_event,
-    transfer_event,
-    withdraw_event,
+    ERC20_TRANSFER_EVENT,
+    ERC721_OWNER_OF_FUNCTION,
+    ERC721_TOKEN_URI_FUNCTION,
+    ERC1155_BATCH_TRANSFER_EVENT,
+    ERC1155_SINGLE_TRANSFER_EVENT,
+    TOKEN_DECIMALS_FUNCTION,
+    TOKEN_NAME_FUNCTION,
+    TOKEN_SYMBOL_FUNCTION,
+    TOKEN_TOTAL_SUPPLY_FUNCTION,
+    WETH_DEPOSIT_EVENT,
+    WETH_WITHDRAW_EVENT,
 )
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
@@ -42,12 +42,12 @@ logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
 
 abi_mapping = {
-    "name": NAME_ABI_FUNCTION,
-    "symbol": SYMBOL_ABI_FUNCTION,
-    "decimals": DECIMALS_ABI_FUNCTION,
-    "totalSupply": TOTAL_SUPPLY_ABI_FUNCTION,
-    "ownerOf": OWNER_OF_ABI_FUNCTION,
-    "tokenURI": TOKEN_URI_ABI_FUNCTION,
+    "name": TOKEN_NAME_FUNCTION,
+    "symbol": TOKEN_SYMBOL_FUNCTION,
+    "decimals": TOKEN_DECIMALS_FUNCTION,
+    "totalSupply": TOKEN_TOTAL_SUPPLY_FUNCTION,
+    "ownerOf": ERC721_OWNER_OF_FUNCTION,
+    "tokenURI": ERC721_TOKEN_URI_FUNCTION,
 }
 
 
@@ -82,9 +82,9 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
             TopicSpecification(
                 addresses=self.filter_token_address,
                 topics=[
-                    transfer_event.get_signature(),
-                    single_transfer_event.get_signature(),
-                    batch_transfer_event.get_signature(),
+                    ERC20_TRANSFER_EVENT.get_signature(),
+                    ERC1155_SINGLE_TRANSFER_EVENT.get_signature(),
+                    ERC1155_BATCH_TRANSFER_EVENT.get_signature(),
                 ],
             )
         )
@@ -93,7 +93,7 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
             filters.append(
                 TopicSpecification(
                     addresses=[self.weth_address],
-                    topics=[deposit_event.get_signature(), withdraw_event.get_signature()],
+                    topics=[WETH_DEPOSIT_EVENT.get_signature(), WETH_WITHDRAW_EVENT.get_signature()],
                 ),
             )
         return TransactionFilterByLogs(filters)
@@ -105,12 +105,12 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
             for log in self._data_buff[Log.type()]
             if log.topic0
             in [
-                transfer_event.get_signature(),
-                single_transfer_event.get_signature(),
-                batch_transfer_event.get_signature(),
+                ERC20_TRANSFER_EVENT.get_signature(),
+                ERC1155_SINGLE_TRANSFER_EVENT.get_signature(),
+                ERC1155_BATCH_TRANSFER_EVENT.get_signature(),
             ]
             or (
-                log.topic0 in [deposit_event.get_signature(), withdraw_event.get_signature()]
+                log.topic0 in [WETH_DEPOSIT_EVENT.get_signature(), WETH_WITHDRAW_EVENT.get_signature()]
                 and log.address == self.weth_address
             )
         ]

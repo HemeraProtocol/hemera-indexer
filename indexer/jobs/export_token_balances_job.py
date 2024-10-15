@@ -13,7 +13,7 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.abi import pad_address, uint256_to_bytes
-from indexer.utils.abi_setting import BALANCE_OF_ABI_FUNCTION, BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION
+from indexer.utils.abi_setting import ERC20_BALANCE_OF_FUNCTION, ERC1155_TOKEN_ID_BALANCE_OF_FUNCTION
 from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.multicall_hemera.util import calculate_execution_time
@@ -106,10 +106,10 @@ class ExportTokenBalancesJob(BaseExportJob):
 def encode_balance_abi_parameter(address, token_type, token_id):
     if token_type == "ERC1155":
         encoded_arguments = HexBytes(pad_address(address) + uint256_to_bytes(token_id))
-        return to_hex(HexBytes(BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION.get_signature()) + encoded_arguments)
+        return to_hex(HexBytes(ERC1155_TOKEN_ID_BALANCE_OF_FUNCTION.get_signature()) + encoded_arguments)
     else:
         encoded_arguments = HexBytes(pad_address(address))
-        return to_hex(HexBytes(BALANCE_OF_ABI_FUNCTION.get_signature()) + encoded_arguments)
+        return to_hex(HexBytes(ERC20_BALANCE_OF_FUNCTION.get_signature()) + encoded_arguments)
 
 
 @calculate_execution_time

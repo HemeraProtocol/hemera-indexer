@@ -25,10 +25,10 @@ from indexer.domain.token_id_infos import (
 )
 from indexer.utils.abi_code_utils import decode_data, encode_data
 from indexer.utils.abi_setting import (
-    OWNER_OF_ABI_FUNCTION,
-    TOKEN_URI_ABI_FUNCTION,
-    TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION,
-    URI_ABI_FUNCTION,
+    ERC721_OWNER_OF_FUNCTION,
+    ERC721_TOKEN_URI_FUNCTION,
+    ERC1155_MULTIPLE_TOKEN_URI_FUNCTION,
+    TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION,
 )
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
@@ -445,28 +445,28 @@ def abi_selector_encode_and_decode_type(token_id_info):
     if token_id_info["token_type"] == TokenType.ERC721.value:
         if token_id_info["is_get_token_uri"]:
             return encode_data(
-                TOKEN_URI_ABI_FUNCTION.get_abi(),
+                ERC721_TOKEN_URI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                TOKEN_URI_ABI_FUNCTION.get_signature(),
+                ERC721_TOKEN_URI_FUNCTION.get_signature(),
             )
         else:
             return encode_data(
-                OWNER_OF_ABI_FUNCTION.get_abi(),
+                ERC721_OWNER_OF_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                OWNER_OF_ABI_FUNCTION.get_signature(),
+                ERC721_OWNER_OF_FUNCTION.get_signature(),
             )
     elif token_id_info["token_type"] == TokenType.ERC1155.value:
         if token_id_info["is_get_token_uri"]:
             return encode_data(
-                URI_ABI_FUNCTION.get_abi(),
+                ERC1155_MULTIPLE_TOKEN_URI_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                URI_ABI_FUNCTION.get_signature(),
+                ERC1155_MULTIPLE_TOKEN_URI_FUNCTION.get_signature(),
             )
         else:
             return encode_data(
-                TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION.get_abi(),
+                TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION.get_abi(),
                 [token_id_info["token_id"]],
-                TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION.get_signature(),
+                TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION.get_signature(),
             )
 
 

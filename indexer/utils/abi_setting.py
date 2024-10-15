@@ -8,7 +8,7 @@ Project : hemera_indexer
 from indexer.utils.abi_code_utils import Event, Function
 
 # log event
-deposit_event = Event(
+WETH_DEPOSIT_EVENT = Event(
     {
         "anonymous": False,
         "inputs": [
@@ -20,7 +20,7 @@ deposit_event = Event(
     }
 )
 
-withdraw_event = Event(
+WETH_WITHDRAW_EVENT = Event(
     {
         "anonymous": False,
         "inputs": [
@@ -32,7 +32,7 @@ withdraw_event = Event(
     }
 )
 
-transfer_event = Event(
+ERC20_TRANSFER_EVENT = Event(
     {
         "anonymous": False,
         "inputs": [
@@ -45,7 +45,9 @@ transfer_event = Event(
     }
 )
 
-single_transfer_event = Event(
+ERC721_TRANSFER_EVENT = ERC20_TRANSFER_EVENT
+
+ERC1155_SINGLE_TRANSFER_EVENT = Event(
     {
         "anonymous": False,
         "inputs": [
@@ -60,7 +62,7 @@ single_transfer_event = Event(
     }
 )
 
-batch_transfer_event = Event(
+ERC1155_BATCH_TRANSFER_EVENT = Event(
     {
         "anonymous": False,
         "inputs": [
@@ -76,7 +78,7 @@ batch_transfer_event = Event(
 )
 
 # ABI function
-NAME_ABI_FUNCTION = Function(
+TOKEN_NAME_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [],
@@ -88,7 +90,7 @@ NAME_ABI_FUNCTION = Function(
     }
 )
 
-SYMBOL_ABI_FUNCTION = Function(
+TOKEN_SYMBOL_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [],
@@ -100,7 +102,7 @@ SYMBOL_ABI_FUNCTION = Function(
     }
 )
 
-DECIMALS_ABI_FUNCTION = Function(
+TOKEN_DECIMALS_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [],
@@ -112,7 +114,7 @@ DECIMALS_ABI_FUNCTION = Function(
     }
 )
 
-TOTAL_SUPPLY_ABI_FUNCTION = Function(
+TOKEN_TOTAL_SUPPLY_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [],
@@ -124,7 +126,7 @@ TOTAL_SUPPLY_ABI_FUNCTION = Function(
     }
 )
 
-TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION = Function(
+TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [{"name": "id", "type": "uint256"}],
@@ -136,19 +138,7 @@ TOTAL_SUPPLY_WITH_ID_ABI_FUNCTION = Function(
     }
 )
 
-TOKEN_SUPPLY_ABI_FUNCTION = Function(
-    {
-        "constant": True,
-        "inputs": [],
-        "name": "tokenSupply",
-        "outputs": [{"name": "", "type": "uint256"}],
-        "payable": False,
-        "stateMutability": "view",
-        "type": "function",
-    }
-)
-
-OWNER_OF_ABI_FUNCTION = Function(
+ERC721_OWNER_OF_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [{"name": "tokenId", "type": "uint256"}],
@@ -160,7 +150,7 @@ OWNER_OF_ABI_FUNCTION = Function(
     }
 )
 
-TOKEN_URI_ABI_FUNCTION = Function(
+ERC721_TOKEN_URI_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [{"name": "tokenId", "type": "uint256"}],
@@ -172,7 +162,7 @@ TOKEN_URI_ABI_FUNCTION = Function(
     }
 )
 
-URI_ABI_FUNCTION = Function(
+ERC1155_MULTIPLE_TOKEN_URI_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [{"name": "tokenId", "type": "uint256"}],
@@ -184,7 +174,7 @@ URI_ABI_FUNCTION = Function(
     }
 )
 
-BALANCE_OF_ABI_FUNCTION = Function(
+ERC20_BALANCE_OF_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [{"name": "_owner", "type": "address"}],
@@ -196,7 +186,7 @@ BALANCE_OF_ABI_FUNCTION = Function(
     }
 )
 
-BALANCE_OF_WITH_TOKEN_ID_ABI_FUNCTION = Function(
+ERC1155_TOKEN_ID_BALANCE_OF_FUNCTION = Function(
     {
         "constant": True,
         "inputs": [
