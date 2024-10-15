@@ -21,10 +21,14 @@ def get_token_price(symbol, date=None) -> Decimal:
     if date:
         params['date'] = date.isoformat()
 
-    response = requests.get(base_price_url, params=params, headers={"Authorization": price_auth})
-    response.raise_for_status()
-    data = response.json()
-    return Decimal(data['price'])
+    try:
+        response = requests.get(base_price_url, params=params, headers={"Authorization": price_auth})
+        response.raise_for_status()
+        data = response.json()
+        return Decimal(data['price'])
+    except Exception as e:
+        logger.error(f"Error fetching token price: {e}")
+        return Decimal(0.0)
 
 
 def get_token_price_map_by_symbol_list(token_symbol_list):
