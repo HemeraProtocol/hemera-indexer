@@ -8,10 +8,9 @@ from flask_restx import Resource
 from sqlalchemy.sql import select, tuple_
 
 from api.app.address.features import register_feature
-from api.app.db_service.tokens import get_token_price_map_by_symbol_list
+from api.app.utils.token_utils import get_token_price_map_by_symbol_list
 from common.models import db
 from common.models.tokens import Tokens
-from common.utils.exception_control import APIError
 from indexer.modules.custom.uniswap_v3.endpoints import uniswap_v3_namespace
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_liquidity_records import UniswapV3TokenLiquidityRecords
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pool_current_prices import UniswapV3PoolCurrentPrices

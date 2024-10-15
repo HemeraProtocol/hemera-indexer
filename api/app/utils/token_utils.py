@@ -1,30 +1,41 @@
+import logging
+import os
 from decimal import Decimal
 
+import requests
+
 from api.app.cache import cache
-from common.models import db
-from common.models.token_hourly_price import TokenHourlyPrices
-from common.models.token_prices import TokenPrices
+
+logger = logging.getLogger(__name__)
+
+base_price_url = os.getenv("BASE_PRICE_HOST", default="https://api.socialscan.io/price-test/v1/token/price")
+price_auth = os.getenv("PRICE_AUTHENTICATION", "")
+if not price_auth:
+    logger.warning("PRICE_AUTHENTICATION is not set, price will not be fetched")
 
 
 @cache.memoize(300)
 def get_token_price(symbol, date=None) -> Decimal:
+    if not price_auth:
+        return Decimal(0.0)
+    params = {"symbol": symbol}
     if date:
-        token_price = (
-            db.session.query(TokenHourlyPrices)
-            .filter(
-                TokenHourlyPrices.symbol == symbol,
-                TokenHourlyPrices.timestamp <= date,
-            )
-            .order_by(TokenHourlyPrices.timestamp.desc())
-            .first()
-        )
-    else:
-        token_price = (
-            db.session.query(TokenPrices)
-            .filter(TokenPrices.symbol == symbol)
-            .order_by(TokenPrices.timestamp.desc())
-            .first()
-        )
-    if token_price:
-        return token_price.price
-    return Decimal(0.0)
+        params["date"] = date.isoformat()
+
+    try:
+        response = requests.get(base_price_url, params=params, headers={"Authorization": price_auth})
+        response.raise_for_status()
+        data = response.json()
+        return Decimal(data["price"])
+    except Exception as e:
+        logger.error(f"Error fetching token price: {e}")
+        return Decimal(0.0)
+
+
+def get_token_price_map_by_symbol_list(token_symbol_list):
+    token_price_map = {}
+    for symbol in token_symbol_list:
+        token_price = get_token_price(symbol)
+        if token_price:
+            token_price_map[symbol] = token_price.price
+    return token_price_map

@@ -8,8 +8,8 @@ from sqlalchemy import and_, desc, func
 
 from api.app.address.features import register_feature
 from api.app.cache import cache
+from api.app.utils.token_utils import get_token_price
 from common.models import db
-from common.models.token_hourly_price import TokenHourlyPrices
 from common.models.tokens import Tokens
 from common.utils.format_utils import as_dict, format_to_dict
 from indexer.modules.custom.opensea.endpoint import opensea_namespace
@@ -160,26 +160,10 @@ def get_token_price_symbol(token_address: str) -> str:
     return mapping.price_symbol if mapping and mapping.price_symbol else "ETH"
 
 
-@cache.memoize(timeout=86400)
-def get_token_daily_price(token_symbol: str, day: date) -> float:
-    end_of_day = datetime.combine(day, datetime.max.time())
-    price_record = (
-        db.session.query(TokenHourlyPrices)
-        .filter(TokenHourlyPrices.symbol == token_symbol)
-        .filter(TokenHourlyPrices.timestamp <= end_of_day)
-        .order_by(desc(TokenHourlyPrices.timestamp))
-        .first()
-    )
-    return float(price_record.price) if price_record else 0
-
-
-def get_token_price(token_address: str, timestamp: datetime) -> float:
-    price_symbol = get_token_price_symbol(token_address)
-    return get_token_daily_price(price_symbol, timestamp.date())
-
-
 def calculate_usd_value(amount: float, token_address: str, timestamp: datetime) -> float:
-    price = get_token_price(token_address, timestamp)
+    end_of_day = datetime.combine(timestamp.date(), datetime.max.time())
+    price_symbol = get_token_price_symbol(token_address)
+    price = get_token_price(price_symbol, end_of_day)
     return amount * price
 
 
