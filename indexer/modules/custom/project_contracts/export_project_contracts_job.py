@@ -2,27 +2,21 @@ import logging
 from collections import defaultdict
 from typing import List
 
-from sqlalchemy import select, join, and_
-
-from common.models.contracts import Contracts
-from common.models.traces import Traces
-from common.models.transactions import Transactions
-from common.utils.exception_control import FastShutdownError
+from indexer.domain.block import Block
 from indexer.domain.contract import Contract
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs import FilterTransactionDataJob
+from indexer.jobs.base_job import ExtensionJob, FilterTransactionDataJob
 from indexer.modules.custom.project_contracts.domain.project_contract_domain import ProjectContractD
 from indexer.modules.custom.project_contracts.models.projects import AfProjects
-from indexer.modules.custom.project_contracts.models.project_contract import AfProjectContracts
+from indexer.utils.abi import bytes_to_hex_str
 
 logger = logging.getLogger(__name__)
 
 
-class ExportProjectContractsJob(FilterTransactionDataJob):
-    # transaction with its logs
-    dependency_types = [Transaction, Trace, Contract]
+class ExportProjectContractsJob(ExtensionJob):
+    dependency_types = [Block, Transaction, Trace, Contract]
     output_types = [ProjectContractD]
     able_to_reorg = False
 
@@ -39,25 +33,39 @@ class ExportProjectContractsJob(FilterTransactionDataJob):
         self.db_service = kwargs["config"].get("db_service")
         self.chain_id = self._web3.eth.chain_id
         self.common_factory = '0x4e59b44847b379578588920ca78fbf26c0b4956c'
+        self.trace_type_prefix = 'create'
         self.project_deployers = defaultdict(list)
         self.project_map = dict()
 
-        self.env_check()
         self.read_configured_projects()
 
     def _collect(self, **kwargs):
+        transactions = self._data_buff[Transaction.type()]
+        transaction_map = {tnx.hash: tnx for tnx in transactions}
+        traces = self._data_buff[Trace.type()]
+        filtered_trace = [trace for trace in traces if
+                          trace.trace_type.startswith(self.trace_type_prefix) and trace.status == 1]
+        contracts = self._data_buff[Contract.type()]
+
         res = []
         for project_id, deployers in self.project_deployers.items():
             project = self.project_map[project_id]
             for deployer in deployers:
+                tmp = []
+                tmp.extend(self.list_pool_by_transaction_from(deployer, contracts, transactions))
+
                 froms, ans = [deployer], []
-                self.get_trace_from(froms, ans, project_id)
-                lis = self.list_created_pool_by_tx_from_and_to(deployer, self.common_factory)
-                # 这些地址呢，就是通过factory创建的
+
+                self.get_trace_from(froms, ans, project_id, contracts, transactions, filtered_trace)
+
+                # this address is created by factory
+                lis = self.list_created_pool_by_tx_from_and_to(deployer, self.common_factory, transactions, filtered_trace)
                 ans.extend(lis)
-                self.get_trace_from(lis, ans, project_id)
+
+                self.get_trace_from(lis, ans, project_id, contracts, transactions, filtered_trace)
                 if project.address_type == 1:
                     ans.append(project.deployer)
+                ans = list(set(ans))
                 for s in ans:
                     res.append(ProjectContractD(
                         project_id=project_id,
@@ -72,17 +80,12 @@ class ExportProjectContractsJob(FilterTransactionDataJob):
                     ))
         self._collect_items(ProjectContractD.type(), res)
 
-    def env_check(self):
-        # this job is strongly depended on database
-        if not self.db_service:
-            raise FastShutdownError("ExportProjectContractsJob need db_service, while its not available now")
-
     def read_configured_projects(self):
         with self.db_service.get_service_session() as session:
             query = session.query(AfProjects)
             result = query.all()
         for project in result:
-            self.project_deployers[project.project_id].append(project.deployer)
+            self.project_deployers[project.project_id].append(bytes_to_hex_str(project.deployer))
             self.project_map[project.project_id] = project
 
     def fetch_result(self, query):
@@ -90,94 +93,91 @@ class ExportProjectContractsJob(FilterTransactionDataJob):
             result = session.execute(query)
         return result
 
-    def list_created_pool_by_tx_from_and_to(self, from_address, to_address):
-        query = (
-            select(Traces.to_address)
-            .select_from(
-                join(Traces, Transactions, Traces.transaction_hash == Transactions.hash)
-            )
-            .where(
-                and_(
-                    Transactions.from_address == from_address,
-                    Transactions.to_address == to_address,
-                    Traces.trace_type.like('create%'),
-                    Traces.status == 1
-                )
-            )
-        )
-        return self.fetch_result(query)
+    def list_created_pool_by_tx_from_and_to(self, from_address, to_address, transactions, filtered_trace_lis) -> List[ProjectContractD]:
+        """
+        SELECT t.to_address
+        FROM traces t
+                 JOIN transactions tr ON t.transaction_hash = tr.hash
+        WHERE tr.from_address = #{fromAddress}
+          AND tr.to_address = #{toAddress}
+          AND t.trace_type LIKE 'create%'
+          AND t.status = 1;
+        """
+        transaction_hash_set = set([tnx.hash for tnx in transactions if tnx.from_address == from_address and tnx.to_address == to_address])
+        res = [tra.to_address for tra in filtered_trace_lis if tra.transaction_hash in transaction_hash_set]
+        return res
 
-    def list_created_pool_by_transaction_from(self, project_id, from_address):
-        query = (
-            select(Traces.to_address)
-            .select_from(
-                join(Traces, Transactions, Traces.transaction_hash == Transactions.hash)
-                .outerjoin(AfProjectContracts,
-                           and_(
-                               Transactions.to_address == AfProjects.contract_address,
-                               AfProjectContracts.protocol_id != project_id
-                           ))
-            )
-            .where(
-                and_(
-                    Transactions.from_address == from_address,
-                    AfProjectContracts.contract_address == None,
-                    Traces.trace_type.like('create%'),
-                    Traces.status == 1
-                )
-            )
-        )
-        return self.fetch_result(query)
+    def list_created_pool_by_transaction_from(self, project_id, from_address, filtered_trace_lis, transactions, project_contracts) -> List[ProjectContractD]:
+        """
+        SELECT t.to_address
+        FROM traces t
+        JOIN transactions tr ON t.transaction_hash = tr.hash
+        LEFT JOIN protocol_contracts pc ON tr.to_address = pc.contract_address AND pc.protocol_id != #{protocolId}
+        WHERE tr.from_address = #{address}
+          AND pc.contract_address IS NULL
+          AND t.trace_type LIKE 'create%'
+          AND t.status = 1;
+        """
+        transaction_hash_set = [tra.hash for tra in transactions if tra.from_address == from_address]
+        filtered_trace_lis = [tra for tra in filtered_trace_lis if tra.transaction_hash in transaction_hash_set]
+        res = [tra.to_address for tra in filtered_trace_lis]
+        return res
 
-    def get_transaction_to_hash(self, address):
-        with self.db_service.get_service_session() as session:
-            result = session.query(Transaction).with_entities(Transaction.hash).filter(Transaction.to_address == address).all()
-        return result
+    def get_transaction_to_hash(self, address, transactions):
+        """
+        SELECT hash
+        FROM transactions
+        WHERE to_address = #{address}
+        """
+        transactions = [tra for tra in transactions if tra.to_address == address]
+        res = list(set([tra.hash for tra in transactions]))
+        return res
 
-    def list_pool_by_transaction_from(self, address):
-        query = (
-            select(Contracts.address)
-            .select_from(
-                join(Contracts, Transactions, Contracts.transaction_hash == Transactions.hash)
-            )
-            .where(
-                (Transactions.from_address == address) &
-                (Transactions.receipt_status == 1)
-            )
-        )
-        return self.fetch_result(query)
+    def list_pool_by_transaction_from(self, address, contracts: List[Contract], transactions: List[Transaction]) -> List[ProjectContractD]:
+        """
+        SELECT t.address
+        FROM contracts t JOIN transactions tr ON t.transaction_hash = tr.hash
+        WHERE tr.from_address = #{address}
+          AND tr.receipt_status = 1;
+        """
+        res = []
+        filtered_transactions = set([tra.hash for tra in transactions if tra.from_address == address and tra.receipt])
+        for contract in contracts:
+            if contract.transaction_hash in filtered_transactions:
+                res.append(contract.address)
+        return res
 
+    def list_pool_by_trace_hash(self, tnx_hash_lis, filtered_trace):
+        """
+        SELECT to_address
+        FROM traces WHERE
+        transaction_hash IN
+        <foreach item="item" collection="list" open="(" separator="," close=")">
+            #{item}
+        </foreach>
+        AND trace_type LIKE 'create%' AND status = 1;
+        """
+        trace_lis = [tra for tra in filtered_trace if tra.transaction_hash in tnx_hash_lis]
+        res = [tra.to_address for tra in trace_lis]
+        return res
 
-    def list_pool_by_trace_hash(self, transaction_hash_list):
-        with self.db_service.get_service_session() as session:
-            result = session.query(Trace).with_entities(Trace.to_address).filter((Trace.transaction_hash.in_(transaction_hash_list))).all()
-        return result
-
-    def get_trace_from(self, froms: List[str], ans: List[str], project_id: str):
+    def get_trace_from(self, froms: List[str], ans: List[str], project_id: str, contracts: List[Contract], transactions: List[Transaction], filtered_trace_lis):
         if not froms:
             return
         next_list = []
         count = 0
         for from_address in froms:
             count += 1
-            string_list = self.list_pool_by_transaction_from(from_address)
+            string_list = self.list_pool_by_transaction_from(from_address, contracts, transactions)
 
             if string_list:
                 ans.extend(string_list)
                 next_list.extend(string_list)
 
-            transaction_from = self.list_created_pool_by_transaction_from(from_address, project_id)
+            transaction_from = self.list_created_pool_by_transaction_from(project_id, from_address, filtered_trace_lis, transactions, None)
             if transaction_from:
                 ans.extend(transaction_from)
                 next_list.extend(transaction_from)
 
-            if from_address == "0x56ad28ad449c7ceb805d92023aea986f8aae820f":
-                transaction_to_hash = self.get_transaction_to_hash(from_address)
-                if transaction_to_hash:
-                    trace_hash = self.list_pool_by_trace_hash(transaction_to_hash)
-                    if trace_hash:
-                        ans.extend(trace_hash)
-                        next_list.extend(trace_hash)
-
         if next_list:
-            self.get_trace_from(next_list, ans, project_id)
+            self.get_trace_from(next_list, ans, project_id, contracts, transactions, filtered_trace_lis)

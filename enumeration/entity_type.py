@@ -32,6 +32,7 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
 from indexer.modules.custom.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
+from indexer.modules.custom.project_contracts.domain.project_contract_domain import ProjectContractD
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     UniswapV3Pool,
     UniswapV3PoolCurrentPrice,
@@ -68,6 +69,8 @@ class EntityType(IntFlag):
     ENS = 1 << 10
 
     KARAK = 1 << 11
+
+    PROJECT_CONTRACT = 1 << 12
 
     EIGEN_LAYER = 1 << 13
 
@@ -197,3 +200,6 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.EIGEN_LAYER:
         yield EigenLayerActionD
         yield EigenLayerAddressCurrentD
+
+    if entity_types & EntityType.PROJECT_CONTRACT:
+        yield ProjectContractD
