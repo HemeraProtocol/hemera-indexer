@@ -4,6 +4,7 @@ from typing import cast
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIFunction
 
+from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.modules.bridge.bedrock.parser.function_parser import (
     BedRockFunctionCallType,
@@ -50,9 +51,11 @@ FINALIZE_BRIDGE_ETH = cast(
 
 
 def decode_function(input_data: bytes) -> BridgeRemoteFunctionCallInfo:
-    assert len(input_data) >= 4
+    if len(input_data) < 4:
+        raise FastShutdownError(f"Input data is too short, only got {len(input_data)} bytes.")
     print(function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ETH))
-    assert function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ETH) == bytes_to_hex_str(input_data[:4]).lower()
+    if function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ETH) != bytes_to_hex_str(input_data[:4]).lower():
+        raise FastShutdownError("Input data is not compare to FINALIZE_BRIDGE_ETH ABI.")
 
     function_info = decode_transaction_data(FINALIZE_BRIDGE_ETH, input_data.hex())
     if function_info is None:
