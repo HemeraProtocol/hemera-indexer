@@ -1,7 +1,5 @@
-from datetime import datetime
-
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERIC, TIMESTAMP
+from sqlalchemy import Column, func
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, JSONB, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 

@@ -1,5 +1,4 @@
 import os
-import re
 from configparser import ConfigParser
 from dataclasses import dataclass, field
 from enum import Enum, auto

@@ -1,6 +1,42 @@
 import re
 from datetime import datetime
 from decimal import Decimal
+from typing import Optional, Union
+
+
+def bytes_to_hex_str(b: bytes) -> str:
+    return "0x" + b.hex()
+
+
+def hex_str_to_bytes(h: str) -> bytes:
+    if not h:
+        return None
+    if h.startswith("0x"):
+        return bytes.fromhex(h[2:])
+    return bytes.fromhex(h)
+
+
+def to_int_or_none(val):
+    if isinstance(val, int):
+        return val
+    if val is None or val == "":
+        return None
+    try:
+        return int(val)
+    except ValueError:
+        return None
+
+
+def to_float_or_none(val):
+    if isinstance(val, float):
+        return val
+    if val is None or val == "":
+        return None
+    try:
+        return float(val)
+    except ValueError:
+        print("can't cast %s to float" % val)
+        return val
 
 
 def to_snake_case(name: str) -> str:
@@ -24,7 +60,7 @@ def as_dict(self):
             elif isinstance(attr, Decimal):
                 json_data[c.name] = float(attr)
             elif isinstance(attr, bytes):
-                json_data[c.name] = "0x" + attr.hex()
+                json_data[c.name] = bytes_to_hex_str(attr)
             else:
                 json_data[c.name] = attr
     return json_data
@@ -32,6 +68,10 @@ def as_dict(self):
 
 def row_to_dict(row):
     return {key: format_value_for_json(value) for key, value in row._asdict().items()}
+
+
+def format_block_id(block_id: Union[Optional[int], str]) -> str:
+    return hex(block_id) if block_id and isinstance(block_id, int) else block_id
 
 
 def format_to_dict(row):
@@ -51,7 +91,7 @@ def format_value_for_json(value):
     elif isinstance(value, Decimal):
         return float(value)
     elif isinstance(value, bytes):
-        return "0x" + value.hex()
+        return bytes_to_hex_str(value)
     elif isinstance(value, list):
         return [format_value_for_json(v) for v in value]
     elif isinstance(value, dict):
@@ -60,47 +100,46 @@ def format_value_for_json(value):
         return value
 
 
-def format_dollar_value(value: float) -> str:
-    """ """
-    if value > 1:
-        return "{0:.2f}".format(value)
-    return "{0:.6}".format(value)
+def convert_dict(input_item):
+    if isinstance(input_item, dict):
+        result = []
+        for key, value in input_item.items():
+            entry = {"name": key, "value": None, "type": None}
+            if isinstance(value, (list, tuple, set)):
+                entry["type"] = "list"
+                entry["value"] = convert_dict(value)
+            elif isinstance(value, dict):
+                entry["type"] = "list"
+                entry["value"] = convert_dict(value)
+            elif isinstance(value, str):
+                entry["type"] = "string"
+                entry["value"] = value
+            elif isinstance(value, int):
+                entry["type"] = "int"
+                entry["value"] = value
+            else:
+                entry["type"] = "unknown"
+                entry["value"] = value
+
+            result.append(entry)
+        return result
+
+    elif isinstance(input_item, (list, tuple, set)):
+        return [convert_dict(item) for item in input_item]
+
+    return input_item
 
 
-def format_coin_value(value: int, decimal: int = 18) -> str:
-    """
-    Formats a given integer value into a string that represents a token value.
-    Parameters:
-        value (int): The value to be formatted
-
-    Returns:
-        str: The formatted token value as a string.
-    """
-    if value < 1000:
-        return str(value)
+def convert_bytes_to_hex(item):
+    if isinstance(item, dict):
+        return {key: convert_bytes_to_hex(value) for key, value in item.items()}
+    elif isinstance(item, list):
+        return [convert_bytes_to_hex(element) for element in item]
+    elif isinstance(item, tuple):
+        return tuple(convert_bytes_to_hex(element) for element in item)
+    elif isinstance(item, set):
+        return {convert_bytes_to_hex(element) for element in item}
+    elif isinstance(item, bytes):
+        return item.hex()
     else:
-        return "{0:.15f}".format(value / 10**18).rstrip("0").rstrip(".")
-
-
-def format_coin_value_with_unit(value: int, native_token: str) -> str:
-    """
-    Formats a given integer value into a string that represents a token value with the appropriate unit.
-    For values below 1000, it returns the value in WEI.
-    For higher values, it converts the value to a floating-point representation in the native token unit,
-    stripping unnecessary zeros.
-
-    Parameters:
-        value (int): The value to be formatted, typically representing a token amount in WEI.
-        native_token (str):
-
-    Returns:
-        str: The formatted token value as a string with the appropriate unit.
-    """
-    if value < 1000:
-        return str(value) + " WEI"
-    else:
-        return "{0:.15f}".format(value / 10**18).rstrip("0").rstrip(".") + " " + native_token
-
-
-def hex_to_bytes(hex_value: str) -> bytes:
-    return bytes.fromhex(hex_value[2:])
+        return item

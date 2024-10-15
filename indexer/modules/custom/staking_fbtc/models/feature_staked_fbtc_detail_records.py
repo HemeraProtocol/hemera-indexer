@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 

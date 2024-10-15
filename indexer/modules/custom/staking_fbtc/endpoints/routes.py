@@ -1,23 +1,9 @@
-import binascii
-import math
-import re
-from datetime import datetime, timedelta
-from decimal import Decimal, getcontext
-from operator import or_
-
-from flask import request
 from flask_restx import Resource
-from sqlalchemy import and_, asc, desc, func
+from sqlalchemy import func
 
-from api.app import explorer
-from api.app.cache import cache
-from api.app.explorer import explorer_namespace
 from common.models import db
-from common.models import db as postgres_db
 from common.models.tokens import Tokens
-from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict, format_to_dict, format_value_for_json, row_to_dict
-from common.utils.web3_utils import is_eth_address
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.modules.custom.staking_fbtc.endpoints import staking_namespace
 from indexer.modules.custom.staking_fbtc.models.feature_staked_fbtc_detail_records import FeatureStakedFBTCDetailRecords
 
@@ -28,7 +14,7 @@ FBTC_ADDRESS = "0xc96de26018a54d51c097160568752c4e3bd6c364"
 class StakingWalletHolding(Resource):
     def get(self, wallet_address):
         wallet_address = wallet_address.lower()
-        address_bytes = bytes.fromhex(wallet_address[2:])
+        address_bytes = hex_str_to_bytes(wallet_address)
         results = (
             db.session.query(
                 FeatureStakedFBTCDetailRecords.vault_address,
@@ -40,11 +26,11 @@ class StakingWalletHolding(Resource):
             .all()
         )
 
-        erc20_data = db.session.query(Tokens).filter(Tokens.address == bytes.fromhex(FBTC_ADDRESS[2:])).first()
+        erc20_data = db.session.query(Tokens).filter(Tokens.address == hex_str_to_bytes(FBTC_ADDRESS)).first()
         erc20_infos = {}
         result = []
         for holding in results:
-            contract_address = "0x" + holding.vault_address.hex()
+            contract_address = bytes_to_hex_str(holding.vault_address)
             total_amount = holding.total_amount
             protocol_id = holding.protocol_id
             token_amount = total_amount / (10**erc20_data.decimals)

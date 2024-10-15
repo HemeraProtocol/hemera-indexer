@@ -1,11 +1,8 @@
-import configparser
 import json
 import logging
-import os
 from collections import defaultdict
 
-import eth_abi
-
+from common.utils.abi_code_utils import decode_data
 from indexer.domain.log import Log
 from indexer.domain.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -25,7 +22,7 @@ from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.MERCHANT_MOE_1155_LIQUIDITY.value
@@ -330,7 +327,7 @@ def batch_get_bin(web3, make_requests, requests, nft_address, is_batch, abi_list
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+            decoded_data = decode_data(output_types, bytes.fromhex(value))
             token["reserve0_bin"] = decoded_data[0]
             token["reserve1_bin"] = decoded_data[1]
 
@@ -371,7 +368,7 @@ def batch_get_total_supply(web3, make_requests, requests, nft_address, is_batch,
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+            decoded_data = decode_data(output_types, bytes.fromhex(value))
             token[fn_name] = decoded_data[0]
 
         except Exception as e:
@@ -418,7 +415,7 @@ def batch_get_pool_int(web3, make_requests, requests, is_batch, abi_list, fn_nam
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
+            decoded_data = decode_data(output_types, bytes.fromhex(value))
             token[fn_name] = decoded_data[0]
 
         except Exception as e:
@@ -443,7 +440,7 @@ def get_exist_pools(db_service):
         history_pools = set()
         if result is not None:
             for item in result:
-                history_pools.add("0x" + item.position_token_address.hex())
+                history_pools.add(bytes_to_hex_str(item.position_token_address))
     except Exception as e:
         print(e)
         raise e

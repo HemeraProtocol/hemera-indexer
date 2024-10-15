@@ -1,7 +1,8 @@
-from sqlalchemy import BIGINT, INT, JSON, NUMERIC, TEXT, TIMESTAMP, BigInteger, Column, DateTime, Integer, String, func
+from sqlalchemy import BIGINT, INT, JSON, NUMERIC, TIMESTAMP, BigInteger, Column, DateTime, Integer, func
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import declarative_base
 
+from common.utils.format_utils import hex_str_to_bytes
 from indexer.modules.bridge.arbitrum.arb_parser import (
     ArbitrumStateBatchConfirmed,
     ArbitrumStateBatchCreated,
@@ -175,7 +176,7 @@ def convert_bridge_column(dict):
         elif value is None:
             pg_dict[key] = None
         elif isinstance(value, str) and value.startswith("0x"):
-            pg_dict[key] = bytes.fromhex(value[2:])
+            pg_dict[key] = hex_str_to_bytes(value)
         elif key.endswith("_timestamp"):
             pg_dict[key] = (func.to_timestamp(value),)
         else:

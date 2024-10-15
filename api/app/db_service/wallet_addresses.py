@@ -1,5 +1,3 @@
-import binascii
-
 from api.app.cache import cache
 from api.app.contract.contract_verify import get_contract_names
 from api.app.ens.ens import ENSClient
@@ -8,7 +6,7 @@ from common.models.contracts import Contracts
 from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.models.tokens import Tokens
 from common.utils.config import get_config
-from common.utils.db_utils import build_entities
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 
 app_config = get_config()
 
@@ -43,7 +41,7 @@ def get_token_txn_cnt_by_address(token_type, bytes_address: bytes):
 
 
 def get_txn_cnt_by_address(address: str):
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     result = (
         db.session.query(StatisticsWalletAddresses)
         .with_entities(StatisticsWalletAddresses.txn_cnt)
@@ -60,7 +58,7 @@ def get_address_display_mapping(bytea_address_list: list[bytes]):
 
     # filter not valid address
     bytea_address_list = [address for address in bytea_address_list if address]
-    str_address_list = ["0x" + address.hex() for address in bytea_address_list]
+    str_address_list = [bytes_to_hex_str(address) for address in bytea_address_list]
 
     # str -> str
     address_map = {}
@@ -80,7 +78,7 @@ def get_address_display_mapping(bytea_address_list: list[bytes]):
         proxy_mapping[address.address] = address.verified_implementation_contract
 
     # Get name for all the potential contracts, including proxy implementations
-    str_contract_list = str_address_list + ["0x" + address.hex() for address in proxy_mapping.values()]
+    str_contract_list = str_address_list + [bytes_to_hex_str(address) for address in proxy_mapping.values()]
     contract_addresses = get_contract_names(str_contract_list)
 
     # update address to contract name mapping
@@ -88,8 +86,8 @@ def get_address_display_mapping(bytea_address_list: list[bytes]):
 
     # If an implementation address has name, overwrite the proxy contract
     for proxy_address, implementation_address in proxy_mapping.items():
-        str_proxy_address = "0x" + proxy_address.hex()
-        str_implementation_address = "0x" + implementation_address.hex()
+        str_proxy_address = bytes_to_hex_str(proxy_address)
+        str_implementation_address = bytes_to_hex_str(implementation_address)
         if str_implementation_address in address_map:
             address_map[str_proxy_address] = address_map[str_implementation_address]
 
@@ -102,7 +100,7 @@ def get_address_display_mapping(bytea_address_list: list[bytes]):
         .all()
     )
     for address in addresses:
-        str_address = "0x" + address.address.hex()
+        str_address = bytes_to_hex_str(address.address)
         address_map[str_address] = "{}: {} Token".format(address.name, address.symbol)
 
     # ENS
@@ -122,7 +120,7 @@ def get_address_display_mapping(bytea_address_list: list[bytes]):
     )
 
     for address in addresses:
-        str_address = "0x" + address.address.hex()
+        str_address = bytes_to_hex_str(address.address)
         address_map[str_address] = address.tag
 
     return address_map

@@ -1,6 +1,6 @@
 import logging
 
-from enumeration.entity_type import EntityType
+from common.utils.exception_control import FastShutdownError
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
@@ -29,9 +29,8 @@ class BedrockBridgeOnL2Job(FilterTransactionDataJob):
         self._l2_to_l1_message_passer = config.get("l2_to_l1_message_passer")
         self._l2_cross_domain_messenger = config.get("l2_cross_domain_messenger")
 
-        assert (
-            self._l2_to_l1_message_passer and self._l2_cross_domain_messenger
-        ), "Both l2_to_l1_message_passer and l2_cross_domain_messenger must be provided."
+        if self._l2_to_l1_message_passer is None or self._l2_cross_domain_messenger is None:
+            raise FastShutdownError("Both l2_to_l1_message_passer and l2_cross_domain_messenger must be provided.")
 
     def get_filter(self):
         topics = [

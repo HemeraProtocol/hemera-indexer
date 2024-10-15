@@ -13,6 +13,8 @@ from indexer.utils.sync_recorder import BaseRecorder
 
 exception_recorder = ExceptionRecorder()
 
+logger = logging.getLogger(__name__)
+
 
 class StreamController(BaseController):
 
@@ -46,14 +48,14 @@ class StreamController(BaseController):
     ):
         try:
             if pid_file is not None:
-                logging.info("Creating pid file {}".format(pid_file))
+                logger.info("Creating pid file {}".format(pid_file))
                 write_to_file(pid_file, str(os.getpid()))
 
             self._do_stream(start_block, end_block, block_batch_size, retry_errors, period_seconds)
 
         finally:
             if pid_file is not None:
-                logging.info("Deleting pid file {}".format(pid_file))
+                logger.info("Deleting pid file {}".format(pid_file))
                 delete_file(pid_file)
 
     def _shutdown(self):
@@ -85,7 +87,7 @@ class StreamController(BaseController):
                 target_block = self._calculate_target_block(current_block, last_synced_block, end_block, steps)
                 synced_blocks = max(target_block - last_synced_block, 0)
 
-                logging.info(
+                logger.info(
                     "Current block {}, target block {}, last synced block {}, blocks to sync {}".format(
                         current_block, target_block, last_synced_block, synced_blocks
                     )
@@ -95,45 +97,45 @@ class StreamController(BaseController):
                     # ETL program's main logic
                     self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
 
-                    logging.info("Writing last synced block {}".format(target_block))
+                    logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
                     last_synced_block = target_block
 
             except HemeraBaseException as e:
-                logging.exception(f"An rpc response exception occurred while syncing block data. error: {e}")
+                logger.error(f"An rpc response exception occurred while syncing block data. error: {e}")
                 if e.crashable:
-                    logging.exception("Mission will crash immediately.")
+                    logger.error("Mission will crash immediately.")
                     raise e
 
                 if e.retriable:
                     tries += 1
                     tries_reset = False
                     if tries >= self.max_retries:
-                        logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                        logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                         raise e
                     else:
-                        logging.info(f"No: {tries} retry is about to start.")
+                        logger.info(f"No: {tries} retry is about to start.")
                 else:
-                    logging.exception("Mission will not retry, and exit immediately.")
+                    logger.error("Mission will not retry, and exit immediately.")
                     raise e
 
             except Exception as e:
-                logging.exception("An exception occurred while syncing block data.")
+                logger.error("An exception occurred while syncing block data.")
                 tries += 1
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
-                    logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                    logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     exception_recorder.force_to_flush()
                     raise e
 
                 else:
-                    logging.info(f"No: {tries} retry is about to start.")
+                    logger.info(f"No: {tries} retry is about to start.")
             finally:
                 if tries_reset:
                     tries = 0
 
             if synced_blocks <= 0:
-                logging.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
+                logger.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
                 time.sleep(period_seconds)
 
     def _get_current_block_number(self):

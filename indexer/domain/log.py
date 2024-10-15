@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 from eth_utils import to_int, to_normalized_address
-from hexbytes import HexBytes
 
 from indexer.domain import Domain
 
@@ -40,7 +39,7 @@ class Log(Domain):
             topic3=topics[3] if len(topics) > 3 else None,
         )
 
-    def get_bytes_topics(self) -> HexBytes:
+    def get_bytes_topics(self) -> bytes:
         topics = ""
         for i in range(4):
             topic = getattr(self, f"topic{i}")
@@ -48,13 +47,13 @@ class Log(Domain):
                 if topic.startswith("0x"):
                     topic = topic[2:]
                 topics += topic
-        return HexBytes(bytearray.fromhex(topics))
+        return bytearray.fromhex(topics)
 
-    def get_bytes_data(self) -> HexBytes:
+    def get_bytes_data(self) -> bytes:
         data = self.data
         if data.startswith("0x"):
             data = self.data[2:]
-        return HexBytes(bytearray.fromhex(data))
+        return bytearray.fromhex(data)
 
-    def get_topic_with_data(self) -> HexBytes:
+    def get_topic_with_data(self) -> bytes:
         return self.get_bytes_topics() + self.get_bytes_data()

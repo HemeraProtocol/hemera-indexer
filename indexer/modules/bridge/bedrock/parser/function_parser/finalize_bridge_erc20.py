@@ -4,12 +4,13 @@ from typing import cast
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIFunction
 
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.modules.bridge.bedrock.parser.function_parser import (
     BedRockFunctionCallType,
     BridgeRemoteFunctionCallInfo,
     RemoteFunctionCallDecoder,
 )
-from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
+from indexer.utils.abi import function_abi_to_4byte_selector_str
 
 FINALIZE_BRIDGE_ERC20 = cast(
     ABIFunction,
@@ -61,7 +62,7 @@ FINALIZE_BRIDGE_ERC20 = cast(
 def decode_function(input_data: bytes) -> BridgeRemoteFunctionCallInfo:
     assert len(input_data) >= 4
     print(function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ERC20))
-    assert function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ERC20) == "0x" + input_data[:4].hex().lower()
+    assert function_abi_to_4byte_selector_str(FINALIZE_BRIDGE_ERC20) == bytes_to_hex_str(input_data[:4]).lower()
 
     function_info = decode_transaction_data(FINALIZE_BRIDGE_ERC20, input_data.hex())
     if function_info is None:

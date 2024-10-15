@@ -8,6 +8,8 @@
 import rlp
 from web3 import Web3
 
+from common.utils.format_utils import hex_str_to_bytes
+
 
 def convert_int_bytes(value, length):
     if isinstance(value, bytes):
@@ -34,17 +36,17 @@ def calculate_submit_retryable_id(
     fields = [
         l2_chain_id,
         convert_int_bytes(message_number, 32),
-        bytes.fromhex(from_address[2:]),
+        hex_str_to_bytes(from_address),
         l1_base_fee,
         l1_value,
         max_fee_per_gas,
         gas_limit,
-        bytes.fromhex(r_dest_address[2:]),
+        hex_str_to_bytes(r_dest_address),
         l2_call_value,
-        bytes.fromhex(call_value_refund_address[2:]),
+        hex_str_to_bytes(call_value_refund_address),
         max_submission_fee,
-        bytes.fromhex(excess_fee_refund_address[2:]),
-        bytes.fromhex(data[2:]),
+        hex_str_to_bytes(excess_fee_refund_address),
+        hex_str_to_bytes(data),
     ]
     encoded_data = rlp.encode(fields)
     mm = b"\x69" + encoded_data
@@ -55,8 +57,8 @@ def calculate_deposit_tx_id(l2_chain_id, message_number, from_address, to_addres
     fields = [
         l2_chain_id,
         convert_int_bytes(message_number, 32),
-        bytes.fromhex(from_address[2:]),
-        bytes.fromhex(to_address[2:]),
+        hex_str_to_bytes(from_address),
+        hex_str_to_bytes(to_address),
         value,
     ]
 

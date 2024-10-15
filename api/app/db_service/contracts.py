@@ -1,10 +1,11 @@
 from common.models import db
 from common.models.contracts import Contracts
 from common.utils.db_utils import build_entities
+from common.utils.format_utils import hex_str_to_bytes
 
 
 def get_contract_by_address(address: str, columns="*"):
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     entities = build_entities(Contracts, columns)
 
     contract = db.session.query(Contracts).with_entities(*entities).filter(Contracts.address == bytes_address).first()

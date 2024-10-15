@@ -1,12 +1,7 @@
 from sqlalchemy import and_, func, select
 
-from api.app.db_service.contracts import get_contracts_by_addresses
 from api.app.db_service.wallet_addresses import get_token_txn_cnt_by_address
-from api.app.utils.utils import (
-    fill_address_display_to_transactions,
-    fill_is_contract_to_transactions,
-    get_total_row_count,
-)
+from api.app.utils.fill_info import fill_address_display_to_transactions, fill_is_contract_to_transactions
 from common.models import db
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
@@ -15,9 +10,9 @@ from common.models.scheduled_metadata import ScheduledTokenCountMetadata, Schedu
 from common.models.token_prices import TokenPrices
 from common.models.tokens import Tokens
 from common.utils.config import get_config
-from common.utils.db_utils import build_entities
+from common.utils.db_utils import build_entities, get_total_row_count
 from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict
+from common.utils.format_utils import as_dict, hex_str_to_bytes
 
 app_config = get_config()
 
@@ -64,7 +59,7 @@ def get_address_token_transfer_cnt(token_type, condition, address):
 
 def get_token_address_token_transfer_cnt(token_type: str, address: str):
     # Get count last update timestamp
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     last_timestamp = db.session.query(func.max(ScheduledTokenCountMetadata.last_data_timestamp)).scalar()
 
     # Get historical count
@@ -209,7 +204,7 @@ def parse_token_transfers(token_transfers, type=None):
 
 
 def get_token_by_address(address: str, columns="*"):
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     entities = build_entities(Tokens, columns)
 
     tokens = db.session.query(Tokens).with_entities(*entities).filter(Tokens.address == bytes_address).first()
@@ -247,7 +242,7 @@ def get_tokens_by_condition(columns="*", filter_condition=None, order=None, limi
 
 
 def get_token_transfers_with_token_by_hash(hash, model, transfer_columns="*", token_columns="*"):
-    hash = bytes.fromhex(hash.lower()[2:])
+    hash = hex_str_to_bytes(hash.lower())
 
     transfer_entities = build_entities(model, transfer_columns)
     token_entities = build_entities(Tokens, token_columns)
@@ -268,7 +263,7 @@ def get_token_transfers_with_token_by_hash(hash, model, transfer_columns="*", to
 
 
 def get_token_holders(token_address: str, model, columns="*", limit=None, offset=None):
-    bytes_token_address = bytes.fromhex(token_address[2:])
+    bytes_token_address = hex_str_to_bytes(token_address)
     entities = build_entities(model, columns)
 
     statement = (
@@ -293,7 +288,7 @@ def get_token_holders(token_address: str, model, columns="*", limit=None, offset
 
 
 def get_token_holders_cnt(token_address: str, model, columns="*"):
-    bytes_token_address = bytes.fromhex(token_address[2:])
+    bytes_token_address = hex_str_to_bytes(token_address)
     entities = build_entities(model, columns)
 
     holders_count = (

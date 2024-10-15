@@ -5,6 +5,7 @@ import os
 from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
+from common.utils.abi_code_utils import decode_log
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
@@ -15,7 +16,6 @@ from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail impor
     StakedFBTCDetail,
 )
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import decode_log
 
 logger = logging.getLogger(__name__)
 

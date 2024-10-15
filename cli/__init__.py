@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import click
 
 from cli.aggregates import aggregates

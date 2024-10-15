@@ -1,4 +1,3 @@
-import logging
 import time
 from typing import Any, Dict, Optional, Union
 
@@ -14,7 +13,7 @@ from api.app.cache import cache
 from api.app.main import app
 from common.models import db
 from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict, format_to_dict
+from common.utils.format_utils import as_dict, format_to_dict, hex_str_to_bytes
 from indexer.modules.custom.address_index.endpoint.routes import (
     get_address_contract_operations,
     get_address_deploy_contract_count,
@@ -50,7 +49,7 @@ def get_address_profile(address: Union[str, bytes]) -> dict:
     """
     Fetch and combine address profile data from both the base profile and recent transactions.
     """
-    address_bytes = bytes.fromhex(address[2:]) if isinstance(address, str) else address
+    address_bytes = hex_str_to_bytes(address) if isinstance(address, str) else address
 
     # Fetch the base profile
     base_profile = db.session.query(AddressBaseProfile).filter_by(address=address_bytes).first()

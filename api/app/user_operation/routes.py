@@ -5,12 +5,8 @@ from flask_restx import Resource
 
 from api.app.cache import cache
 from api.app.user_operation import user_operation_namespace
-from api.app.utils.utils import (
-    fill_address_display_to_transactions,
-    get_total_row_count,
-    parse_log_with_transaction_input_list,
-    process_token_transfer,
-)
+from api.app.utils.fill_info import fill_address_display_to_transactions, process_token_transfer
+from api.app.utils.parse_utils import parse_log_with_transaction_input_list
 from common.models import db
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
@@ -19,8 +15,9 @@ from common.models.logs import Logs
 from common.models.tokens import Tokens
 from common.models.transactions import Transactions
 from common.utils.config import get_config
+from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
-from common.utils.format_utils import format_value_for_json
+from common.utils.format_utils import format_value_for_json, hex_str_to_bytes
 from indexer.modules.user_ops.models.user_operation_results import UserOperationResult
 
 PAGE_SIZE = 25
@@ -108,7 +105,7 @@ class ExplorerUserOperationDetails(Resource):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", hash):
             raise APIError("Invalid user operation hash", code=400)
 
-        bytes_hash = bytes.fromhex(hash[2:])
+        bytes_hash = hex_str_to_bytes(hash)
 
         user_operation_result = db.session.query(UserOperationResult).get(bytes_hash)
         if not user_operation_result:
@@ -159,7 +156,7 @@ class ExplorerUserOperationTokenTransfers(Resource):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", hash):
             raise APIError("Invalid user operation hash", code=400)
 
-        bytes_hash = bytes.fromhex(hash[2:])
+        bytes_hash = hex_str_to_bytes(hash)
 
         user_operation_result = (
             db.session.query(UserOperationResult)
@@ -247,7 +244,7 @@ class ExplorerUserOperationLogs(Resource):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", hash):
             raise APIError("Invalid user operation hash", code=400)
 
-        bytes_hash = bytes.fromhex(hash[2:])
+        bytes_hash = hex_str_to_bytes(hash)
 
         user_operation_result = (
             db.session.query(UserOperationResult)
@@ -282,7 +279,7 @@ class ExplorerUserOperationRaw(Resource):
     def get(self, hash):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", hash):
             raise APIError("Invalid user operation hash", code=400)
-        bytes_hash = bytes.fromhex(hash[2:])
+        bytes_hash = hex_str_to_bytes(hash)
 
         user_operation_result = db.session.query(UserOperationResult).get(bytes_hash)
         if not user_operation_result:
@@ -311,7 +308,7 @@ class ExplorerTransactionOperation(Resource):
         if not re.match(r"^0x[a-fA-F0-9]{64}$", txn_hash):
             raise APIError("Invalid user operation hash", code=400)
 
-        bytes_hash = bytes.fromhex(txn_hash[2:])
+        bytes_hash = hex_str_to_bytes(txn_hash)
 
         user_operation_result = db.session.query(UserOperationResult).filter_by(transactions_hash=bytes_hash)
         if not user_operation_result:

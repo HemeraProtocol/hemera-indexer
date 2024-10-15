@@ -3,8 +3,8 @@ from dataclasses import asdict
 from typing import Dict, List
 
 import orjson
-from eth_abi import abi
 
+from common.utils.abi_code_utils import decode_data, encode_data
 from common.utils.format_utils import to_snake_case
 from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
@@ -16,92 +16,38 @@ from indexer.domain.token_transfer import (
     ERC721TokenTransfer,
     ERC1155TokenTransfer,
     TokenTransfer,
-    batch_transfer_event,
-    deposit_event,
     extract_transfer_from_log,
-    single_transfer_event,
-    transfer_event,
-    withdraw_event,
 )
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
-from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import encode_abi
+from indexer.utils.abi_setting import (
+    ERC20_TRANSFER_EVENT,
+    ERC721_OWNER_OF_FUNCTION,
+    ERC721_TOKEN_URI_FUNCTION,
+    ERC1155_BATCH_TRANSFER_EVENT,
+    ERC1155_SINGLE_TRANSFER_EVENT,
+    TOKEN_DECIMALS_FUNCTION,
+    TOKEN_NAME_FUNCTION,
+    TOKEN_SYMBOL_FUNCTION,
+    TOKEN_TOTAL_SUPPLY_FUNCTION,
+    WETH_DEPOSIT_EVENT,
+    WETH_WITHDRAW_EVENT,
+)
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc_without_block_number
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
 
-NAME_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [],
-    "name": "name",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-SYMBOL_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [],
-    "name": "symbol",
-    "outputs": [{"name": "", "type": "string"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-DECIMALS_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [],
-    "name": "decimals",
-    "outputs": [{"name": "", "type": "uint8"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-TOTAL_SUPPLY_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [],
-    "name": "totalSupply",
-    "outputs": [{"name": "", "type": "uint256"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-OWNER_OF_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "tokenId", "type": "uint256"}],
-    "name": "ownerOf",
-    "outputs": [{"name": "owner", "type": "address"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
-TOKEN_URI_ABI_FUNCTION = {
-    "constant": True,
-    "inputs": [{"name": "tokenId", "type": "uint256"}],
-    "name": "tokenURI",
-    "outputs": [{"name": "uri", "type": "address"}],
-    "payable": False,
-    "stateMutability": "view",
-    "type": "function",
-}
-
 abi_mapping = {
-    "name": NAME_ABI_FUNCTION,
-    "symbol": SYMBOL_ABI_FUNCTION,
-    "decimals": DECIMALS_ABI_FUNCTION,
-    "totalSupply": TOTAL_SUPPLY_ABI_FUNCTION,
-    "ownerOf": OWNER_OF_ABI_FUNCTION,
-    "tokenURI": TOKEN_URI_ABI_FUNCTION,
+    "name": TOKEN_NAME_FUNCTION,
+    "symbol": TOKEN_SYMBOL_FUNCTION,
+    "decimals": TOKEN_DECIMALS_FUNCTION,
+    "totalSupply": TOKEN_TOTAL_SUPPLY_FUNCTION,
+    "ownerOf": ERC721_OWNER_OF_FUNCTION,
+    "tokenURI": ERC721_TOKEN_URI_FUNCTION,
 }
 
 
@@ -136,9 +82,9 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
             TopicSpecification(
                 addresses=self.filter_token_address,
                 topics=[
-                    transfer_event.get_signature(),
-                    single_transfer_event.get_signature(),
-                    batch_transfer_event.get_signature(),
+                    ERC20_TRANSFER_EVENT.get_signature(),
+                    ERC1155_SINGLE_TRANSFER_EVENT.get_signature(),
+                    ERC1155_BATCH_TRANSFER_EVENT.get_signature(),
                 ],
             )
         )
@@ -147,7 +93,7 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
             filters.append(
                 TopicSpecification(
                     addresses=[self.weth_address],
-                    topics=[deposit_event.get_signature(), withdraw_event.get_signature()],
+                    topics=[WETH_DEPOSIT_EVENT.get_signature(), WETH_WITHDRAW_EVENT.get_signature()],
                 ),
             )
         return TransactionFilterByLogs(filters)
@@ -159,12 +105,12 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
             for log in self._data_buff[Log.type()]
             if log.topic0
             in [
-                transfer_event.get_signature(),
-                single_transfer_event.get_signature(),
-                batch_transfer_event.get_signature(),
+                ERC20_TRANSFER_EVENT.get_signature(),
+                ERC1155_SINGLE_TRANSFER_EVENT.get_signature(),
+                ERC1155_BATCH_TRANSFER_EVENT.get_signature(),
             ]
             or (
-                log.topic0 in [deposit_event.get_signature(), withdraw_event.get_signature()]
+                log.topic0 in [WETH_DEPOSIT_EVENT.get_signature(), WETH_WITHDRAW_EVENT.get_signature()]
                 and log.address == self.weth_address
             )
         ]
@@ -273,12 +219,8 @@ def build_rpc_method_data(tokens, fn, arguments=None):
                 "request_id": index,
             }
         )
-        token["param_data"] = encode_abi(
-            NAME_ABI_FUNCTION,
-            arguments,
-            function_abi_to_4byte_selector_str(NAME_ABI_FUNCTION),
-        )
-        token["data_type"] = NAME_ABI_FUNCTION["outputs"][0]["type"]
+        token["param_data"] = encode_data(NAME_ABI_FUNCTION.get_abi(), arguments, NAME_ABI_FUNCTION.get_signature())
+        token["data_type"] = NAME_ABI_FUNCTION.get_outputs_type()[0]
 
     return tokens
 
@@ -298,7 +240,7 @@ def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            token["total_supply"] = abi.decode(["uint256"], bytes.fromhex(value))[0]
+            token["total_supply"] = decode_data(["uint256"], bytes.fromhex(value))[0]
         except Exception as e:
             logger.warning(
                 f"Decoding token {fn_name} failed. " f"token: {token}. " f"rpc response: {result}. " f"exception: {e}"
@@ -339,7 +281,7 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
             value = result[2:] if result is not None else None
             key = to_snake_case(fn_name)
             try:
-                token[key] = abi.decode([token["data_type"]], bytes.fromhex(value))[0]
+                token[key] = decode_data([token["data_type"]], bytes.fromhex(value))[0]
                 if token["data_type"] == "string":
                     token[key] = token[fn_name].replace("\u0000", "")
             except Exception as e:

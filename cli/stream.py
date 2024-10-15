@@ -19,9 +19,9 @@ from indexer.utils.parameter_utils import (
     generate_dataclass_type_list_from_parameter,
 )
 from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.rpc_utils import pick_random_provider_uri
 from indexer.utils.sync_recorder import create_recorder
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
-from indexer.utils.utils import pick_random_provider_uri
 
 exception_recorder = ExceptionRecorder()
 
@@ -341,8 +341,8 @@ def stream(
     configure_signals()
     provider_uri = pick_random_provider_uri(provider_uri)
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
-    logging.info("Using provider " + provider_uri)
-    logging.info("Using debug provider " + debug_provider_uri)
+    logging.getLogger("ROOT").info("Using provider " + provider_uri)
+    logging.getLogger("ROOT").info("Using debug provider " + debug_provider_uri)
 
     # parameter logic checking
     if source_path:
@@ -361,7 +361,7 @@ def stream(
         config["db_service"] = service
         exception_recorder.init_pg_service(service)
     else:
-        logging.warning("No postgres url provided. Exception recorder will not be useful.")
+        logging.getLogger("ROOT").warning("No postgres url provided. Exception recorder will not be useful.")
 
     if config_file:
         file_based_config = {}
@@ -384,7 +384,7 @@ def stream(
                 f"Config file {config_file} is not compatible with chain_id {config['chain_id']}"
             )
         else:
-            logging.info(f"Loading config from file: {config_file}, chain_id: {config['chain_id']}")
+            logging.getLogger("ROOT").info(f"Loading config from file: {config_file}, chain_id: {config['chain_id']}")
             config.update(file_based_config)
 
     if output_types is None:

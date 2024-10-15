@@ -1,9 +1,7 @@
-from datetime import datetime
-
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERIC, TIMESTAMP, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, JSONB, NUMERIC, TIMESTAMP
 
-from common.models import HemeraModel, db, general_converter
+from common.models import HemeraModel, general_converter
 
 
 class AllFeatureValueRecords(HemeraModel):

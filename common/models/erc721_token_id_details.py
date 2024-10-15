@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Type
 from urllib import parse
 

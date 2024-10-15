@@ -6,8 +6,8 @@ from eth_typing import Address, ChecksumAddress, HexAddress
 from eth_typing.abi import Decodable
 from eth_utils import to_checksum_address
 
+from common.utils.format_utils import bytes_to_hex_str, format_block_id
 from indexer.utils.multicall_hemera.signature import Signature, _get_signature
-from indexer.utils.utils import format_block_id
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class Call:
 
     def to_rpc_param(self):
         args = prep_args(self.target, self.signature, self.args, self.block_id, self.gas_limit)
-        args[0]["data"] = "0x" + (args[0]["data"]).hex()
+        args[0]["data"] = bytes_to_hex_str(args[0]["data"])
         return {
             "jsonrpc": "2.0",
             "method": "eth_call",

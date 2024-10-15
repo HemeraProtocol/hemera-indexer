@@ -11,8 +11,8 @@ from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.rpc_utils import pick_random_provider_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
-from indexer.utils.utils import pick_random_provider_uri
 
 exception_recorder = ExceptionRecorder()
 

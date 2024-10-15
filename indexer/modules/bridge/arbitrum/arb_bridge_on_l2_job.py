@@ -1,4 +1,3 @@
-from enumeration.entity_type import EntityType
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.arbitrum.arb_parser import *

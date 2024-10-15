@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, PrimaryKeyConstraint, func
+from sqlalchemy import Column, Integer
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP
 
 from common.models import HemeraModel

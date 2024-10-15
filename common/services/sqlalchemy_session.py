@@ -3,7 +3,6 @@
 
 from functools import partial
 
-from flask import current_app
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import orm
 

@@ -31,5 +31,6 @@ class AtomicCounter:
         next(self._counter)
 
     def increment(self, increment=1):
-        assert increment > 0
+        if increment <= 0:
+            raise ValueError("increment must be greater than zero")
         return [next(self._counter) for _ in range(0, increment)][-1]

@@ -8,6 +8,7 @@ import logging
 
 from web3 import Web3
 
+from common.utils.format_utils import hex_str_to_bytes
 from indexer.modules.custom.hemera_ens.ens_conf import BASE_NODE, REVERSE_BASE_NODE
 from indexer.modules.custom.hemera_ens.ens_domain import ENSMiddleD
 from indexer.modules.custom.hemera_ens.ens_hash import compute_node_label, namehash
@@ -24,11 +25,11 @@ def decode_log(lg, contract_object_map, event_map):
     if not matched_event:
         return None
     try:
-        topics = [bytes.fromhex(lg.get("topic" + str(i))[2:]) for i in range(4) if lg.get("topic" + str(i))]
+        topics = [hex_str_to_bytes(lg.get("topic" + str(i))) for i in range(4) if lg.get("topic" + str(i))]
         wlg = {
             "address": lg.get("address"),
             "topics": topics,
-            "data": bytes.fromhex(lg.get("data")[2:]),
+            "data": hex_str_to_bytes(lg.get("data")),
             "blockNumber": lg.get("block_number"),
             "transactionHash": lg.get("transaction_hash"),
             "transactionIndex": lg.get("transaction_index"),

@@ -1,15 +1,12 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import logging
-from datetime import datetime
-
 import flask
 from flask import Flask, request
 from flask_cors import CORS
 
 from api.app.cache import cache, redis_db
-from api.app.limiter import get_real_ip, limiter
+from api.app.limiter import limiter
 from common.models import db
 from common.utils.config import get_config
 from common.utils.exception_control import APIError

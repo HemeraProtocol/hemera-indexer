@@ -1,8 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
-
-from numpy.distutils.fcompiler import none
 
 from indexer.domain import FilterData
 

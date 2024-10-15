@@ -7,7 +7,7 @@ from requests.exceptions import Timeout as RequestsTimeout
 from requests.exceptions import TooManyRedirects
 from web3._utils.threads import Timeout as Web3Timeout
 
-from common.utils.exception_control import RetriableError
+from common.utils.exception_control import FastShutdownError, RetriableError
 from indexer.executors.bounded_executor import BoundedExecutor
 from indexer.utils.progress_logger import ProgressLogger
 
@@ -107,14 +107,16 @@ class BatchWorkExecutor:
     def wait(self):
         futures.wait(self._futures)
         self._check_completed_futures()
-        assert len(self._futures) == 0
+        if len(self._futures) != 0:
+            raise FastShutdownError("Futures failed to complete successfully.")
 
         self.progress_logger.finish()
 
     def shutdown(self):
         self.executor.shutdown(wait=10)
         self._check_completed_futures()
-        assert len(self._futures) == 0
+        if len(self._futures) != 0:
+            raise FastShutdownError("Futures failed to complete successfully.")
 
         self.progress_logger.finish()
 

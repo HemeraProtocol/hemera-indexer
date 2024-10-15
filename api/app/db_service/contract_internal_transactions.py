@@ -1,10 +1,11 @@
 from common.models import db
 from common.models.contract_internal_transactions import ContractInternalTransactions
 from common.utils.db_utils import build_entities
+from common.utils.format_utils import hex_str_to_bytes
 
 
 def get_internal_transactions_by_transaction_hash(transaction_hash, columns="*"):
-    transaction_hash = bytes.fromhex(transaction_hash.lower()[2:])
+    transaction_hash = hex_str_to_bytes(transaction_hash.lower())
     entities = build_entities(ContractInternalTransactions, columns)
 
     transactions = (

@@ -4,6 +4,7 @@ from typing import List
 
 from web3 import Web3
 
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -92,7 +93,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
         logs: List[Log] = self._data_buff.get(Log.type(), [])
         for log in logs:
             if log.address.lower() == CyberIdTokenContractAddress and log.topic0 == RegisterTopic:
-                decoded_data = self.w3.codec.decode(["string", "uint256"], bytes.fromhex(log.data[2:]))
+                decoded_data = self.w3.codec.decode(["string", "uint256"], hex_str_to_bytes(log.data))
                 cid = decoded_data[0]
                 cyber_address = CyberIDRegisterD(
                     label=cid,
@@ -104,9 +105,9 @@ class ExportCyberIDJob(FilterTransactionDataJob):
                 )
                 self._collect_item(cyber_address.type(), cyber_address)
             if log.address.lower() == CyberIdPublicResolverContractAddress and log.topic0 == AddressChangedTopic:
-                decoded_data = self.w3.codec.decode(["uint256", "bytes"], bytes.fromhex(log.data[2:]))
+                decoded_data = self.w3.codec.decode(["uint256", "bytes"], hex_str_to_bytes(log.data))
                 address_change_d = CyberAddressChangedD(
-                    node=log.topic1, address="0x" + decoded_data[1].hex(), block_number=log.block_number
+                    node=log.topic1, address=bytes_to_hex_str(decoded_data[1]), block_number=log.block_number
                 )
                 self._collect_item(address_change_d.type(), address_change_d)
 

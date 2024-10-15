@@ -6,10 +6,11 @@ import eth_abi
 from web3 import Web3
 from web3.types import ABIFunction
 
+from common.utils.abi_code_utils import encode_data
 from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.utils.abi import encode_abi, function_abi_to_4byte_selector_str
+from indexer.utils.abi import function_abi_to_4byte_selector_str
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_ke
         token.update(token_data)
         try:
             # Encode the ABI for the specific token_id
-            token["param_data"] = encode_abi(
+            token["param_data"] = encode_data(
                 abi_function,
                 arguments,
                 function_abi_to_4byte_selector_str(abi_function),

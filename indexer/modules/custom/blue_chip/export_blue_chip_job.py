@@ -1,10 +1,7 @@
-import configparser
-import json
 import logging
-import os
-import threading
 from collections import defaultdict
 
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.block_ts_mapper import BlockTsMapper
 from indexer.domain.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -114,7 +111,7 @@ class ExportBlueChipHoldersJob(FilterTransactionDataJob):
             history_dict = {}
             if result is not None:
                 for item in result:
-                    wallet_address = "0x" + item.wallet_address.hex()
+                    wallet_address = bytes_to_hex_str(item.wallet_address)
                     history_dict[wallet_address] = item.hold_detail
 
         except Exception as e:
