@@ -161,7 +161,7 @@ def get_token_price_symbol(token_address: str) -> str:
 
 
 def calculate_usd_value(amount: float, token_address: str, timestamp: datetime) -> float:
-    end_of_day = datetime.combine(datetime.date(), datetime.max.time())
+    end_of_day = datetime.combine(timestamp.date(), datetime.max.time())
     price_symbol = get_token_price_symbol(token_address)
     price = get_token_price(price_symbol, end_of_day)
     return amount * price
