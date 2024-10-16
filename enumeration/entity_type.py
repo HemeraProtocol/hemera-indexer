@@ -13,6 +13,7 @@ from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
+from indexer.modules.custom.a_demo.domain.sample_domain import ATransferD, SampleAddressCurrentD
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
 from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
@@ -64,6 +65,8 @@ class EntityType(IntFlag):
     OPEN_SEA = 1 << 9
 
     ENS = 1 << 10
+
+    SAMPLE = 1 << 11
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -182,3 +185,7 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.OPEN_SEA:
         yield AddressOpenseaTransaction
         yield OpenseaOrder
+
+    if entity_types & EntityType.SAMPLE:
+        yield ATransferD
+        yield SampleAddressCurrentD
