@@ -8,15 +8,12 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from eth_abi import decode
-from eth_typing import Decodable
 from sqlalchemy import func
 
 from common.utils.abi_code_utils import decode_log
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.transaction import Transaction
-from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.eigen_layer.abi.abi import (
     DEPOSIT_EVENT,
@@ -45,13 +42,6 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._batch_work_executor = BatchWorkExecutor(
-            kwargs["batch_size"],
-            kwargs["max_workers"],
-            job_name=self.__class__.__name__,
-        )
-
-        self._is_batch = kwargs["batch_size"] > 1
         self.db_service = kwargs["config"].get("db_service")
         self.chain_id = self._chain_id
         self.eigen_layer_conf = self.user_defined_config
@@ -221,14 +211,6 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     self._collect_item(kad.type(), exists_kad)
                 else:
                     self._collect_item(kad.type(), kad)
-
-    @staticmethod
-    def decode_function(decode_types, output: Decodable) -> Any:
-        try:
-            return decode(decode_types, output)
-        except Exception as e:
-            logger.error(e)
-            return [None] * len(decode_types)
 
     def get_existing_address_current(self, addresses):
         if not self.db_service:
