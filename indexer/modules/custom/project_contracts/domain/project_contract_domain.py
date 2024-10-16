@@ -21,5 +21,5 @@ class ProjectContractD(FilterData):
     transaction_from_address: Optional[str] = None
     trace_creator: Optional[str] = None
     block_number: Optional[int] = None
-    block_timestamp: Optional[str] = None
+    block_timestamp: Optional[int] = None
     transaction_hash: Optional[str] = None

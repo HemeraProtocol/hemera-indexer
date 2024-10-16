@@ -4,8 +4,8 @@
 # @Author  will
 # @File  project_contract.py
 # @Brief
-from sqlalchemy import VARCHAR, Column, BIGINT, INT, TIMESTAMP, BOOLEAN, text, func, PrimaryKeyConstraint
-from sqlalchemy.dialects.postgresql import BYTEA
+from sqlalchemy import VARCHAR, Column, BIGINT, INT, BOOLEAN, text, func, PrimaryKeyConstraint
+from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
