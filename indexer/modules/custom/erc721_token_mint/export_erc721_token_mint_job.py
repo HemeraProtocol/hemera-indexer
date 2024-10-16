@@ -1,22 +1,20 @@
 import logging
 from typing import List
 
-from indexer.jobs.base_job import FilterTransactionDataJob
+from common.utils.web3_utils import ZERO_ADDRESS
 
 # Dependency dataclass
 from indexer.domain.log import Log
 from indexer.domain.token_transfer import TokenTransfer, extract_transfer_from_log
 from indexer.domain.transaction import Transaction
-
-# Utility
-from indexer.utils.abi_setting import ERC721_TRANSFER_EVENT
-from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
+from indexer.jobs.base_job import FilterTransactionDataJob
 
 # Custom dataclass
 from indexer.modules.custom.erc721_token_mint.domain.erc721_mint_time import ERC721TokenMint
+from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
-
-from common.utils.web3_utils import ZERO_ADDRESS
+# Utility
+from indexer.utils.abi_setting import ERC721_TRANSFER_EVENT
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +41,9 @@ class ExportERC721MintTimeJob(FilterTransactionDataJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    
     def get_filter(self):
         topic_filter_list = [
-            TopicSpecification(
-                addresses=TARGET_TOKEN_ADDRESS, 
-                topics=[ERC721_TRANSFER_EVENT.get_signature()]
-            )
+            TopicSpecification(addresses=TARGET_TOKEN_ADDRESS, topics=[ERC721_TRANSFER_EVENT.get_signature()])
         ]
 
         return TransactionFilterByLogs(topic_filter_list)
