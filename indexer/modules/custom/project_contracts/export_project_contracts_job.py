@@ -1,6 +1,5 @@
 import logging
 from collections import defaultdict
-from typing import List
 
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
@@ -13,7 +12,7 @@ from indexer.utils.abi import bytes_to_hex_str
 logger = logging.getLogger(__name__)
 
 
-TRACE_TYPE_PREFIX = 'create'
+TRACE_TYPE_PREFIX = "create"
 
 
 class ExportProjectContractsJob(ExtensionJob):
@@ -47,11 +46,33 @@ class ExportProjectContractsJob(ExtensionJob):
             trace for trace in traces if trace.trace_type.startswith(TRACE_TYPE_PREFIX) and trace.status == 1
         ]
 
+        all_contracts = []
+        for a_trace in filtered_trace_list:
+            create_transaction = transaction_map[a_trace.transaction_hash]
+            all_contracts.append(
+                ProjectContractD(
+                    address=a_trace.to_address,
+                    project_id=None,
+                    chain_id=self.chain_id,
+                    deployer=None,
+                    transaction_from_address=create_transaction.from_address,
+                    trace_creator=a_trace.from_address,
+                    block_number=create_transaction.block_number,
+                    block_timestamp=create_transaction.block_timestamp,
+                    transaction_hash=create_transaction.hash,
+                )
+            )
         res = []
-        for project_id, deployers in self.project_deployers.items():
-            for deployer in deployers:
-                res.extend(self.direct_create_contracts(project_id, deployer, filtered_trace_list, transactions, transaction_map))
-                res.extend(self.contract_create_contracts(project_id, deployer, filtered_trace_list, transaction_map))
+        for project_contract in all_contracts:
+            for project_id, deployers in self.project_deployers.items():
+                if self.direct_create_contracts(project_contract, set(deployers), transaction_map):
+                    project_contract.project_id = project_id
+                    res.append(project_contract)
+
+                    break
+                if self.contract_create_contracts(project_contract, project_id, transaction_map):
+                    res.append(project_contract)
+                    break
         self._collect_items(ProjectContractD.type(), res)
         # merge new contracts into exists
         for pc in res:
@@ -71,50 +92,19 @@ class ExportProjectContractsJob(ExtensionJob):
         for project_contract in result:
             self.project_contracts[project_contract.project_id].add(bytes_to_hex_str(project_contract.address))
 
-    def direct_create_contracts(
-        self, project_id, deployer, filtered_trace_list: List[Trace], transactions: List[Transaction], transaction_map
-    ):
+    def direct_create_contracts(self, project_contract: ProjectContractD, deployers: set, transaction_map) -> bool:
+        create_transaction = transaction_map[project_contract.transaction_hash]
+        if create_transaction.from_address in deployers:
+            project_contract.deployer = create_transaction.from_address
+            return True
+        return False
 
-        filtered_transactions_hash_set = set([tn.hash for tn in transactions if tn.from_address == deployer])
-        res = []
-        for a_trace in filtered_trace_list:
-            if a_trace.transaction_hash in filtered_transactions_hash_set:
-                create_transaction = transaction_map[a_trace.transaction_hash]
-                res.append(
-                    ProjectContractD(
-                        address=create_transaction.to_address,
-                        project_id=project_id,
-                        chain_id=self.chain_id,
-                        deployer=deployer,
-                        transaction_from_address=create_transaction.from_address,
-                        trace_creator=a_trace.from_address,
-                        block_number=create_transaction.block_number,
-                        block_timestamp=create_transaction.block_timestamp,
-                        transaction_hash=create_transaction.hash,
-                    )
-                )
-        return res
+    def contract_create_contracts(self, project_contract: ProjectContractD, project_id, transaction_map) -> bool:
+        create_transaction = transaction_map.get(project_contract.transaction_hash)
+        if not create_transaction:
+            return False
+        if create_transaction.to_address in self.project_contracts[project_id]:
+            project_contract.project_id = project_id
 
-    def contract_create_contracts(self, project_id, deployer, filtered_trace_list: List[Trace], transaction_map):
-        res = []
-
-        for a_trace in filtered_trace_list:
-            create_transaction = transaction_map.get(a_trace.transaction_hash)
-            if not create_transaction:
-                # transaction failed
-                continue
-            if create_transaction.to_address in self.project_contracts[project_id]:
-                res.append(
-                    ProjectContractD(
-                        address=a_trace.to_address,
-                        project_id=project_id,
-                        chain_id=self.chain_id,
-                        deployer=deployer,
-                        transaction_from_address=create_transaction.from_address,
-                        trace_creator=a_trace.from_address,
-                        block_number=create_transaction.block_number,
-                        block_timestamp=create_transaction.block_timestamp,
-                        transaction_hash=create_transaction.hash,
-                    )
-                )
-        return res
+            return True
+        return False
