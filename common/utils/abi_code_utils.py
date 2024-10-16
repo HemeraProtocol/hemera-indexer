@@ -399,7 +399,7 @@ def encode_data(
 def decode_log_data(types: List[str], data_str: str) -> Tuple[List[Union[str, List[str]]], List[str]]:
     """
     Decodes log data based on the provided types and returns both decoded and encoded versions.
-    CopyThis function takes a list of ABI types and a data string, decodes the data, and then
+    This function takes a list of ABI types and a data string, decodes the data, and then
     re-encodes each element. It handles special cases for byte types.
 
     :param types: A list of ABI type strings representing the structure of the data.
@@ -450,7 +450,7 @@ def decode_log_data(types: List[str], data_str: str) -> Tuple[List[Union[str, Li
 def decode_function(abi_function: Function, data_str: str, output_str: str):
     """
     Decodes both the input and output data of a function call using the provided ABI function.
-    CopyThis function handles the decoding of both input data (function arguments) and output data
+    This function handles the decoding of both input data (function arguments) and output data
     (function return values) for a given function call. It can process cases where either input
     or output data (or both) are provided.
 
@@ -481,8 +481,6 @@ def decode_function(abi_function: Function, data_str: str, output_str: str):
       - The result is converted to use hexadecimal strings for byte values.
     - If either input or output data is not provided or empty, an empty list is returned
       for that part.
-    - This function uses several utility functions (e.g., convert_dict, convert_bytes_to_hex)
-      which should be defined elsewhere in the codebase.
 
     This function is particularly useful for analyzing and debugging smart contract function
     calls, allowing easy interpretation of both the input arguments and return values.
