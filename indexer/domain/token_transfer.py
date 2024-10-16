@@ -78,7 +78,7 @@ batch_transfer_event = Event(
     }
 )
 
-register_event = Event(
+ip_register_event = Event(
     {
         "anonymous": False,
         "inputs": [
@@ -338,7 +338,7 @@ class ERC1155TokenTransfer(Domain):
     block_timestamp: int
 
 @dataclass
-class StoryIpRegister(Domain):
+class StoryIpRegistered(Domain):
     transaction_hash: str
     log_index: int
     ip_account: str
@@ -555,8 +555,8 @@ def handle_transfer_batch_event(log: Log) -> List[TokenTransfer]:
 
     return token_transfers
 
-def handle_register_event(log: Log) -> List[StoryIpRegister]:
-    decode_data = register_event.decode_log_ignore_indexed(log)
+def handle_ip_register_event(log: Log) -> List[StoryIpRegistered]:
+    decode_data = ip_register_event.decode_log_ignore_indexed(log)
 
     account = decode_data.get("account").lower()
     #imp_address = decode_data.get("implementation").lower()
@@ -567,7 +567,7 @@ def handle_register_event(log: Log) -> List[StoryIpRegister]:
     token_type = "STORY"
 
     return [
-        StoryIpRegister(
+        StoryIpRegistered(
             transaction_hash=log.transaction_hash,
             log_index=log.log_index,
             ip_account=account,
@@ -717,12 +717,12 @@ def extract_transfer_from_log(log: Log) -> List[TokenTransfer]:
 
     return token_transfers
 
-def extract_ip_register(log: Log) -> List[StoryIpRegister]:
+def extract_ip_register(log: Log) -> List[StoryIpRegistered]:
     story_data = []
     topic = log.topic0
 
-    if topic == register_event.get_signature():
-        story_data = handle_register_event(log)
+    if topic == ip_register_event.get_signature():
+        story_data = handle_ip_register_event(log)
 
     return story_data
 

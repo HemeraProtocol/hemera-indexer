@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERIC, TIMESTAMP, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERIC, TIMESTAMP, VARCHAR, ARRAY, INTEGER
 
 from common.models import HemeraModel, general_converter
 
@@ -11,9 +11,9 @@ class StoryDerivativeRegister(HemeraModel):
 
     caller = Column(BYTEA, primary_key=True)
     child_ip_id = Column(BYTEA, primary_key=True)
-    license_token_ids = Column(ARRAY(INT))
+    license_token_ids = Column(ARRAY(INTEGER))
     parent_ip_ids = Column(ARRAY(BYTEA))
-    license_terms_id = Column(ARRAY(INT))
+    license_terms_id = Column(ARRAY(INTEGER))
 
     license_template = Column(BYTEA)
     block_number = Column(BIGINT)

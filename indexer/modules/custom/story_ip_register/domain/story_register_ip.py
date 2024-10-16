@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from indexer.domain import Domain, FilterData
 
 @dataclass
-class ERC721TokenMint(FilterData):
+class StoryIpRegister(FilterData):
     ip_account: str
     nft_contract: str
     nft_id: int

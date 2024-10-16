@@ -6,8 +6,8 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERI
 from common.models import HemeraModel, general_converter
 
 
-class ERC721TokenMint(HemeraModel):
-    __tablename__ = "erc721_token_mint"
+class StoryIpRegister(HemeraModel):
+    __tablename__ = "story_ip_register"
 
     ip_account = Column(BYTEA, primary_key=True)
     nft_contract = Column(BYTEA, primary_key=True)
@@ -26,7 +26,7 @@ class ERC721TokenMint(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ERC721TokenMint",
+                "domain": "StoryIpRegister",
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -35,7 +35,7 @@ class ERC721TokenMint(HemeraModel):
 
 
 Index(
-    "erc721_token_mint_address_id_index",
-    ERC721TokenMint.ip_account,
-    ERC721TokenMint.nft_id,
+    "story_ip_id_index",
+    StoryIpRegister.ip_account,
+    StoryIpRegister.nft_id,
 )
