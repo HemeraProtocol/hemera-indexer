@@ -42,6 +42,11 @@ class ExportProjectContractsJob(ExtensionJob):
 
     def _collect(self, **kwargs):
         transactions = self._data_buff[Transaction.type()]
+        transactions = [
+            a_transaction
+            for a_transaction in transactions
+            if a_transaction.receipt and a_transaction.receipt.status == 1
+        ]
         traces = self._data_buff[Trace.type()]
 
         self.transaction_map = {tnx.hash: tnx for tnx in transactions}
@@ -74,7 +79,9 @@ class ExportProjectContractsJob(ExtensionJob):
         for project_contract in result:
             self.project_contracts[project_contract.project_id].add(bytes_to_hex_str(project_contract.address))
 
-    def direct_create_contracts(self, project_id, deployer, filtered_trace_list: List[Trace], transactions: List[Transaction]):
+    def direct_create_contracts(
+        self, project_id, deployer, filtered_trace_list: List[Trace], transactions: List[Transaction]
+    ):
 
         filtered_transactions_hash_set = set([tn.hash for tn in transactions if tn.from_address == deployer])
         res = []
@@ -100,7 +107,10 @@ class ExportProjectContractsJob(ExtensionJob):
         res = []
 
         for a_trace in filtered_trace_list:
-            create_transaction = self.transaction_map[a_trace.transaction_hash]
+            create_transaction = self.transaction_map.get(a_trace.transaction_hash)
+            if not create_transaction:
+                # transaction failed
+                continue
             if create_transaction.to_address in self.project_contracts[project_id]:
                 res.append(
                     ProjectContractD(
