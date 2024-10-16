@@ -57,9 +57,11 @@ class DepositToL2Job(FilterTransactionDataJob):
             self._clean_mode = self.user_defined_config["cache_config"].get("clean_mode", "blocks")
             self._clean_limit_value = int(self.user_defined_config["cache_config"].get("clean_limit_value", 1000))
         except Exception as e:
-            message = ("Missing required configuration in config file. "
-                       "The possible reason are either that the configuration file is not specified by --config-file "
-                       "or the configuration for deposit_to_l2_job is missing.")
+            message = (
+                "Missing required configuration in config file. "
+                "The possible reason are either that the configuration file is not specified by --config-file "
+                "or the configuration for deposit_to_l2_job is missing."
+            )
             logging.error(message)
             raise FastShutdownError(message)
 
@@ -146,7 +148,7 @@ class DepositToL2Job(FilterTransactionDataJob):
             )
 
     def check_history_deposit_from_db(
-            self, wallet_address: str, chain_id: int, token_address: str
+        self, wallet_address: str, chain_id: int, token_address: str
     ) -> AddressTokenDeposit:
         session = self._service.get_service_session()
         try:
