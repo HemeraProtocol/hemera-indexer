@@ -1,14 +1,22 @@
 import logging
 from typing import List
 
+from indexer.jobs.base_job import FilterTransactionDataJob
+
+# Dependency dataclass
 from indexer.domain.log import Log
-from indexer.domain.token_transfer import TokenTransfer, extract_transfer_from_log, transfer_event
+from indexer.domain.token_transfer import TokenTransfer, extract_transfer_from_log
 from indexer.domain.transaction import Transaction
-from indexer.jobs.filter_transaction_data_job import FilterTransactionDataJob
-from indexer.modules.custom.erc721_token_mint.domain.erc721_mint_time import ERC721TokenMint
+
+# Utility
+from indexer.utils.abi_setting import ERC721_TRANSFER_EVENT
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.multicall_hemera.util import calculate_execution_time
-from indexer.utils.utils import ZERO_ADDRESS
+
+# Custom dataclass
+from indexer.modules.custom.erc721_token_mint.domain.erc721_mint_time import ERC721TokenMint
+
+
+from common.utils.web3_utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +43,23 @@ class ExportERC721MintTimeJob(FilterTransactionDataJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    @calculate_execution_time
-    def _collect(self, **kwargs):
-        logs = self._data_buff[Log.type()]
-        mint_tokens = _filter_mint_tokens(logs)
+    
+    def get_filter(self):
+        topic_filter_list = [
+            TopicSpecification(
+                addresses=TARGET_TOKEN_ADDRESS, 
+                topics=[ERC721_TRANSFER_EVENT.get_signature()]
+            )
+        ]
 
+        return TransactionFilterByLogs(topic_filter_list)
+
+    def _collect(self, **kwargs):
+        # Get filter log from
+        logs = self._data_buff[Log.type()]
+
+        # Core logic of UDF
+        mint_tokens = _filter_mint_tokens(logs)
         erc721_mint_infos = [
             ERC721TokenMint(
                 token_address=token.token_address,
@@ -50,14 +70,10 @@ class ExportERC721MintTimeJob(FilterTransactionDataJob):
             )
             for token in mint_tokens
         ]
+
+        # This is one of the functions that convert dataclass into models and export
+        # The other functions can be found in indexer/jobs/base_job.py
         self._collect_domains(erc721_mint_infos)
 
     def _process(self, **kwargs):
         pass
-
-    def get_filter(self):
-        topic_filter_list = [
-            TopicSpecification(addresses=TARGET_TOKEN_ADDRESS, topics=[transfer_event.get_signature()])
-        ]
-
-        return TransactionFilterByLogs(topic_filter_list)
