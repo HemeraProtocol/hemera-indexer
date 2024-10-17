@@ -93,7 +93,9 @@ class ExportProjectContractsJob(ExtensionJob):
             self.project_contracts[project_contract.project_id].add(bytes_to_hex_str(project_contract.address))
 
     def direct_create_contracts(self, project_contract: ProjectContractD, deployers: set, transaction_map) -> bool:
-        create_transaction = transaction_map[project_contract.transaction_hash]
+        create_transaction = transaction_map.get(project_contract.transaction_hash)
+        if not create_transaction:
+            return False
         if create_transaction.from_address in deployers:
             project_contract.deployer = create_transaction.from_address
             return True
