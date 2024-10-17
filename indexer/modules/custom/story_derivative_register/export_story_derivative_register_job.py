@@ -4,10 +4,10 @@ from typing import List
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.jobs.base_job import FilterTransactionDataJob
-from indexer.modules.custom.story_derivative_register.domain.story_register_derivative import StoryDerivativeRegister
+from indexer.modules.custom.story_derivative_register.domains.story_register_derivative import StoryDerivativeRegister
 from indexer.utils.multicall_hemera.util import calculate_execution_time
 from indexer.utils.utils import ZERO_ADDRESS
-from indexer.domain.token_transfer import (
+from indexer.modules.custom.story_derivative_register.domains.register_derivative_abi import (
     StoryDerivativeRegistered,
     extract_derivative_registered,
     derivative_registered_event,
@@ -17,20 +17,17 @@ from indexer.specification.specification import TopicSpecification, TransactionF
 logger = logging.getLogger(__name__)
 
 # Constants
-TARGET_TOKEN_ADDRESS = ["0xf49da534215DA7b48E57A41d41dac25C912FCC60"]
+TARGET_TOKEN_ADDRESS = ["0xd81fd78f557b457b4350cB95D20b547bFEb4D857"]
 
 
-def _filter_mint_tokens(logs: List[Log]) -> List[StoryDerivativeRegistered]:
-    token_transfers = []
+def _filter_derivative_register(logs: List[Log]) -> List[StoryDerivativeRegistered]:
+    story_data = []
     for log in logs:
-        token_transfers += extract_derivative_registered(log)
-    # return [transfer for transfer in token_transfers if
-    #         transfer.from_address == ZERO_ADDRESS and transfer.token_type == "ERC721"]
-    print(token_transfers)
-    return token_transfers
+        story_data += extract_derivative_registered(log)
+    return story_data
 
 
-class ExportStoryLicenseRegisterJob(FilterTransactionDataJob):
+class ExportStoryDerivativeRegisterJob(FilterTransactionDataJob):
     dependency_types = [Transaction]
     output_types = [StoryDerivativeRegister]
     able_to_reorg = True
@@ -41,9 +38,9 @@ class ExportStoryLicenseRegisterJob(FilterTransactionDataJob):
     @calculate_execution_time
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
-        mint_tokens = _filter_mint_tokens(logs)
+        derivative_register = _filter_derivative_register(logs)
 
-        erc721_mint_infos = [
+        story_derivative_registered = [
             StoryDerivativeRegister(
                 transaction_hash=StoryDerivativeRegistered.transaction_hash,
                 caller=StoryDerivativeRegistered.caller,
@@ -55,10 +52,9 @@ class ExportStoryLicenseRegisterJob(FilterTransactionDataJob):
                 license_terms_ids=StoryDerivativeRegistered.license_terms_ids,
                 block_number=StoryDerivativeRegistered.block_number,
                 block_timestamp = StoryDerivativeRegistered.block_timestamp
-            ) for StoryDerivativeRegistered in mint_tokens
+            ) for StoryDerivativeRegistered in derivative_register
         ]
-        print(erc721_mint_infos)
-        self._collect_domains(erc721_mint_infos)
+        self._collect_domains(story_derivative_registered)
 
     def _process(self, **kwargs):
         pass
