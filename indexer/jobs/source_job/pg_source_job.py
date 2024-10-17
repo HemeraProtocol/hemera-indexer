@@ -193,10 +193,11 @@ class PGSourceJob(BaseSourceJob):
             domains = self._dataclass_build(self.pg_datas[table], output_type)
             if hasattr(table, "__query_order__"):
                 domains.sort(key=lambda x: tuple(getattr(x, column.name) for column in table.__query_order__))
-            self._data_buff[output_type.type()] = domains
+            self.output_collection[output_type.type()] = domains
 
     def _export(self):
-        pass
+        for output_type in self.output_types:
+            self._data_buff[output_type.type()] = self.output_collection[output_type.type()]
 
     def _query_timestamp_with_block(self, block_number):
         session = self._service.get_service_session()
@@ -223,10 +224,7 @@ class PGSourceJob(BaseSourceJob):
                 )
 
                 result = (
-                    session.query(sub_table)
-                    .join(unnest_query, sub_table.c.number == unnest_query.c.block_number)
-                    .order_by(*table.__query_order__)
-                    .all()
+                    session.query(sub_table).join(unnest_query, sub_table.c.number == unnest_query.c.block_number).all()
                 )
             elif hasattr(table, "block_number") and hasattr(table, "block_timestamp"):
                 sub_table = (
@@ -236,8 +234,8 @@ class PGSourceJob(BaseSourceJob):
                 )
 
                 result = (
-                    session.query(sub_table).join(unnest_query, sub_table.c.block_number == unnest_query.c.block_number)
-                    # .order_by(*table.__query_order__)
+                    session.query(sub_table)
+                    .join(unnest_query, sub_table.c.block_number == unnest_query.c.block_number)
                     .all()
                 )
             else:

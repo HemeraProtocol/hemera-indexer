@@ -33,7 +33,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
 
     def _collect(self, **kwargs):
 
-        transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
+        transactions: List[Transaction] = self.dependency_collection.get(Transaction.type(), [])
         self._batch_work_executor.execute(transactions, self._collect_batch, total_items=len(transactions))
         self._batch_work_executor.wait()
 
@@ -59,7 +59,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
                 self._collect_item(Log.type(), log)
 
     def _process(self, **kwargs):
-        self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
+        self.dependency_collection[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
 
 def receipt_rpc_requests(make_request, transaction_hashes, is_batch):
