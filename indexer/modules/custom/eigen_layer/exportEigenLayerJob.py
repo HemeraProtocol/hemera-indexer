@@ -15,7 +15,7 @@ from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.eigen_layer.abi.abi import (
+from indexer.modules.custom.eigen_layer.abi import (
     DEPOSIT_EVENT,
     SHARE_WITHDRAW_QUEUED,
     WITHDRAWAL_COMPLETED_EVENT,
