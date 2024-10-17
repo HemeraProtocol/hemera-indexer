@@ -76,8 +76,13 @@ def handle_license_event(log: Log) -> List[LicensePILRegister]:
     license_template = decode_data.get("licenseTemplate")
     license_terms = decode_data.get("licenseTerms")
     license_str = bytes_to_hex_str(license_terms)
-    a = int(license_str[1282:1346])
-    byte_sep = bytes.fromhex(license_str[1346:1346+2*a])
+    # if license_str[1282:1346] == None :
+    #     byte_sep = ""
+    # else:
+    #     a = int(license_str[1282:1346],16)
+    #     byte_sep = bytes.fromhex(license_str[1346:1346+2*a])
+    # print(license_str)
+    # print((license_str[1282:1346]))
 
     token_type = "STORY"
 
@@ -104,7 +109,8 @@ def handle_license_event(log: Log) -> List[LicensePILRegister]:
             derivatives_reciprocal= bool(int(license_str[898:962])),
             derivative_rev_ceiling= int(license_str[962:1026],16),
             currency= "0x" + license_str[1050:1090],
-            uri= byte_sep.decode('utf-8'),
+            # uri= byte_sep.decode('utf-8'),
+            uri="",
 
             token_type=token_type,
             block_number=log.block_number,
