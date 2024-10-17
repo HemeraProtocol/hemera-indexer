@@ -4,10 +4,10 @@ from typing import List
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.jobs.base_job import FilterTransactionDataJob
-from indexer.modules.custom.story_license_token_mint.domain.story_token_mint import StoryLicenseTokenMint
+from indexer.modules.custom.story_license_token_mint.domains.story_token_mint import StoryLicenseTokenMint
 from indexer.utils.multicall_hemera.util import calculate_execution_time
 from indexer.utils.utils import ZERO_ADDRESS
-from indexer.domain.token_transfer import (
+from indexer.modules.custom.story_license_token_mint.domains.token_transfer import (
     StoryLicenseTokenMinted,
     extract_license_token_mint,
     license_token_mint_event,
