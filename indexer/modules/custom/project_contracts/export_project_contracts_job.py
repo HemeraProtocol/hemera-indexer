@@ -1,7 +1,8 @@
 import logging
 from collections import defaultdict
+from typing import List
 
-from indexer.domain.trace import Trace
+from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.transaction import Transaction
 from indexer.jobs.base_job import ExtensionJob
 from indexer.modules.custom.project_contracts.domain.project_contract_domain import ProjectContractD
@@ -16,7 +17,7 @@ TRACE_TYPE_PREFIX = "create"
 
 
 class ExportProjectContractsJob(ExtensionJob):
-    dependency_types = [Transaction, Trace]
+    dependency_types = [Transaction, ContractInternalTransaction]
     output_types = [ProjectContractD]
     able_to_reorg = False
 
@@ -39,15 +40,11 @@ class ExportProjectContractsJob(ExtensionJob):
             for a_transaction in transactions
             if a_transaction.receipt and a_transaction.receipt.status == 1
         ]
-        traces = self._data_buff[Trace.type()]
+        contract_internal_transactions: List[ContractInternalTransaction] = self._data_buff[ContractInternalTransaction.type()]
 
         transaction_map = {tnx.hash: tnx for tnx in transactions}
-        filtered_trace_list = [
-            trace for trace in traces if trace.trace_type.startswith(TRACE_TYPE_PREFIX) and trace.status == 1
-        ]
-
         all_contracts = []
-        for a_trace in filtered_trace_list:
+        for a_trace in contract_internal_transactions:
             create_transaction = transaction_map.get(a_trace.transaction_hash)
             if not create_transaction:
                 continue
