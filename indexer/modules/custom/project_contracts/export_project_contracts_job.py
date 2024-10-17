@@ -48,7 +48,9 @@ class ExportProjectContractsJob(ExtensionJob):
 
         all_contracts = []
         for a_trace in filtered_trace_list:
-            create_transaction = transaction_map[a_trace.transaction_hash]
+            create_transaction = transaction_map.get(a_trace.transaction_hash)
+            if not create_transaction:
+                continue
             all_contracts.append(
                 ProjectContractD(
                     address=a_trace.to_address,
