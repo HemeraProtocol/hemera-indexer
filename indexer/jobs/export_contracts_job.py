@@ -36,7 +36,7 @@ class ExportContractsJob(BaseExportJob):
         self._is_batch = kwargs["batch_size"] > 1
 
     def _collect(self, **kwargs):
-        contracts = build_contracts(self._data_buff[Trace.type()])
+        contracts = build_contracts(self.dependency_collection[Trace.type()])
 
         self._batch_work_executor.execute(contracts, self._collect_batch, total_items=len(contracts))
         self._batch_work_executor.wait()
@@ -51,13 +51,13 @@ class ExportContractsJob(BaseExportJob):
         transaction_mapping = {
             transaction.hash: transaction.from_address
             for transaction in [
-                transaction for block in self._data_buff[Block.type()] for transaction in block.transactions
+                transaction for block in self.dependency_collection[Block.type()] for transaction in block.transactions
             ]
         }
-        for contract in self._data_buff[Contract.type()]:
+        for contract in self.output_collection[Contract.type()]:
             contract.fill_transaction_from_address(transaction_mapping[contract.transaction_hash])
 
-        self._data_buff[Contract.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.address))
+        self.output_collection[Contract.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.address))
 
 
 def build_contracts(traces: List[Trace]):

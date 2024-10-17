@@ -138,7 +138,8 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def get_dependency_collection(self):
         self.dependency_collection.clear()
-        return self._get_domains(self.dependency_types)
+        for dependency_type in self.dependency_types:
+            self.dependency_collection[dependency_type.type()] = self._get_domain(dependency_type)
 
     def _collect(self, **kwargs):
         pass

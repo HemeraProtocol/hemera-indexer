@@ -68,37 +68,38 @@ class ExportTokenBalancesJob(BaseExportJob):
         self._collect_items(TokenBalance.type(), results)
 
     def _process(self, **kwargs):
-        if TokenBalance.type() in self._data_buff:
-            self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
-
-            self._data_buff[CurrentTokenBalance.type()] = distinct_collections_by_group(
-                [
-                    CurrentTokenBalance(
-                        address=token_balance.address,
-                        token_id=token_balance.token_id,
-                        token_type=token_balance.token_type,
-                        token_address=token_balance.token_address,
-                        balance=token_balance.balance,
-                        block_number=token_balance.block_number,
-                        block_timestamp=token_balance.block_timestamp,
-                    )
-                    for token_balance in self._data_buff[TokenBalance.type()]
-                ],
-                group_by=["token_address", "address", "token_id"],
-                max_key="block_number",
+        if TokenBalance.type() in self.output_collection:
+            self.output_collection[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
+            self._update_domains(
+                distinct_collections_by_group(
+                    [
+                        CurrentTokenBalance(
+                            address=token_balance.address,
+                            token_id=token_balance.token_id,
+                            token_type=token_balance.token_type,
+                            token_address=token_balance.token_address,
+                            balance=token_balance.balance,
+                            block_number=token_balance.block_number,
+                            block_timestamp=token_balance.block_timestamp,
+                        )
+                        for token_balance in self.output_collection[TokenBalance.type()]
+                    ],
+                    group_by=["token_address", "address", "token_id"],
+                    max_key="block_number",
+                )
             )
 
     @calculate_execution_time
     def _collect_all_token_transfers(self):
         token_transfers = []
-        if ERC20TokenTransfer.type() in self._data_buff:
-            token_transfers += self._data_buff[ERC20TokenTransfer.type()]
+        if ERC20TokenTransfer.type() in self.dependency_collection:
+            token_transfers += self.dependency_collection[ERC20TokenTransfer.type()]
 
-        if ERC721TokenTransfer.type() in self._data_buff:
-            token_transfers += self._data_buff[ERC721TokenTransfer.type()]
+        if ERC721TokenTransfer.type() in self.dependency_collection:
+            token_transfers += self.dependency_collection[ERC721TokenTransfer.type()]
 
-        if ERC1155TokenTransfer.type() in self._data_buff:
-            token_transfers += self._data_buff[ERC1155TokenTransfer.type()]
+        if ERC1155TokenTransfer.type() in self.dependency_collection:
+            token_transfers += self.dependency_collection[ERC1155TokenTransfer.type()]
 
         return token_transfers
 

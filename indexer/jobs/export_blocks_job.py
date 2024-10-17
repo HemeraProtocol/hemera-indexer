@@ -99,11 +99,11 @@ class ExportBlocksJob(BaseExportJob):
                     self._collect_item(Transaction.type(), transaction_entity)
 
     def _process(self, **kwargs):
-        self._data_buff[Block.type()].sort(key=lambda x: x.number)
-        self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
+        self.output_collection[Block.type()].sort(key=lambda x: x.number)
+        self.output_collection[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
 
         ts_dict = {}
-        for block in self._data_buff[Block.type()]:
+        for block in self.output_collection[Block.type()]:
             timestamp = block.timestamp // 3600 * 3600
             block_number = block.number
 
