@@ -2,6 +2,7 @@ import logging
 import threading
 from collections import defaultdict
 from datetime import datetime
+from typing import List
 
 from web3 import Web3
 
@@ -80,6 +81,8 @@ class BaseJob(metaclass=BaseJobMeta):
 
         job_name_snake = to_snake_case(self.job_name)
         self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
+        self.dependency_collection = defaultdict(list)
+        self.output_collection = defaultdict(list)
 
     def run(self, **kwargs):
         try:
@@ -90,6 +93,7 @@ class BaseJob(metaclass=BaseJobMeta):
                 self.logger.info(f"Stage _start finished. Took {datetime.now() - start_time}")
 
             if not self._reorg or self._should_reorg:
+                self.get_dependency_collection()
                 start_time = datetime.now()
                 self.logger.info(f"Stage collect starting.")
                 self._collect(**kwargs)
@@ -132,27 +136,35 @@ class BaseJob(metaclass=BaseJobMeta):
                 if output.type() not in self._should_reorg_type and output.type() in self._data_buff.keys():
                     self._data_buff.pop(output.type())
 
+    def get_dependency_collection(self):
+        self.dependency_collection.clear()
+        return self._get_domains(self.dependency_types)
+
     def _collect(self, **kwargs):
         pass
 
     def _collect_batch(self, iterator):
         pass
 
-    def _collect_item(self, key, data):
+    def _collect_item(self, key: str, data: Domain):
         with self.locks[key]:
-            self._data_buff[key].append(data)
+            self.output_collection[key].append(data)
 
-    def _collect_items(self, key, data_list):
+    def _collect_items(self, key, data_list: List[Domain]):
         with self.locks[key]:
-            self._data_buff[key].extend(data_list)
+            self.output_collection[key].extend(data_list)
 
-    def _collect_domain(self, domain):
+    def _collect_domain(self, domain: Domain):
         with self.locks[domain.type()]:
-            self._data_buff[domain.type()].append(domain)
+            self.output_collection[domain.type()].append(domain)
 
-    def _collect_domains(self, domains):
+    def _collect_domains(self, domains: List[Domain]):
         for domain in domains:
             self._collect_domain(domain)
+
+    def _update_domains(self, domains: List[Domain]):
+        key = domains[0].type()
+        self.output_collection[key] = domains
 
     def _get_domain(self, domain):
         return self._data_buff[domain.type()] if domain.type() in self._data_buff else []
@@ -166,20 +178,13 @@ class BaseJob(metaclass=BaseJobMeta):
     def _process(self, **kwargs):
         pass
 
-    def _extract_from_buff(self, keys=None):
-        items = []
-        for key in keys:
-            with self.locks[key]:
-                items.extend(self._data_buff[key])
-
-        return items
-
     def _export(self):
         items = []
 
         for output_type in self.output_types:
+            self._data_buff[output_type.type()] = self.output_collection[output_type.type()]
             if output_type in self._required_output_types:
-                items.extend(self._extract_from_buff([output_type.type()]))
+                items.extend(self.output_collection[output_type.type()])
 
         for item_exporter in self._item_exporters:
             item_exporter.open()
