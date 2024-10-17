@@ -5,6 +5,7 @@ import os
 from collections import defaultdict
 
 import eth_abi
+from eth_abi.codec import ABICodec
 
 from indexer.domain.token_balance import TokenBalance
 from indexer.domain.log import Log
@@ -29,7 +30,7 @@ from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distinct_collections_by_group
 
 logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.MERCHANT_MOE_1155_LIQUIDITY.value
@@ -63,6 +64,9 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         self._exist_pool = get_exist_pools(self._service)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
+        self.abi_codec = ABICodec(eth_abi.registry.registry)
+        self.swap_types = ['uint24', 'bytes32', 'bytes32', 'uint24', 'bytes32', 'bytes32']
+        self.swap_topic0 = '0xad7d6f97abf51ce18e17a38f4d70e975be9c0708474987bb3e26ad21bd93ca70'
 
     def get_filter(self):
         return TransactionFilterByLogs(
@@ -83,6 +87,60 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
+    @staticmethod
+    def str_to_bytes(data: str) -> bytes:
+        return bytes.fromhex(data[2:])
+
+    def _get_swap_token_ids_bin_info(self):
+        logs = self._data_buff['log']
+
+        grouped_requests = defaultdict(list)
+
+        for log in logs:
+            if log.topic0 == self.swap_topic0:
+                data = self.abi_codec.decode(self.swap_types, self.str_to_bytes(log.data))
+                grouped_requests[log.address].append({
+                    "block_number": log.block_number,
+                    "block_timestamp": log.block_timestamp,
+                    "token_id": data[0],
+                })
+
+        results = []
+        current_results = []
+
+        for address, group in grouped_requests.items():
+            total_bin_dtos = batch_get_bin(
+                self._web3,
+                self._batch_web3_provider.make_request,
+                group,
+                address,
+                self._is_batch,
+                constants.ABI_LIST,
+            )
+
+            for bin_dto in total_bin_dtos:
+                mcmt = MerChantMoeTokenBin(
+                    token_address=address,
+                    token_id=bin_dto['token_id'],
+                    reserve0_bin=bin_dto['reserve0_bin'],
+                    reserve1_bin=bin_dto['reserve1_bin'],
+                    block_number=bin_dto['block_number'],
+                    block_timestamp=bin_dto['block_timestamp']
+                )
+
+                current_mcmt = MerChantMoeTokenCurrentBin(
+                    token_address=address,
+                    token_id=bin_dto['token_id'],
+                    reserve0_bin=bin_dto['reserve0_bin'],
+                    reserve1_bin=bin_dto['reserve1_bin'],
+                    block_number=bin_dto['block_number'],
+                    block_timestamp=bin_dto['block_timestamp']
+                )
+                results.append(mcmt)
+                current_results.append(current_mcmt)
+
+        return results, current_results
+
     def _collect(self, **kwargs):
         if self._need_collected_list is None or len(self._need_collected_list) == 0:
             return
@@ -101,6 +159,18 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 split_method=split_logs
             )
             self._batch_work_executor.wait()
+
+        total_bin_dtos_from_logs, total_current_bin_dtos_from_logs = self._get_swap_token_ids_bin_info()
+
+        total_bin_dtos_from_nfts = self._data_buff['mer_chant_moe_token_bin']
+        total_current_bin_dtos_from_nfts = self._data_buff['mer_chant_moe_token_current_bin']
+
+        self._data_buff['mer_chant_moe_token_bin'] = distinct_collections_by_group(
+            total_bin_dtos_from_logs + total_bin_dtos_from_nfts, ['token_address', 'token_id', 'block_number'])
+
+        self._data_buff['mer_chant_moe_token_current_bin'] = distinct_collections_by_group(
+            total_current_bin_dtos_from_logs + total_current_bin_dtos_from_nfts, ['token_address', 'token_id'],
+            max_key='block_number')
 
     def _collect_token_batch(self, token_balances) -> None:
         if token_balances is None or len(token_balances) == 0:
@@ -207,6 +277,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             self._is_batch,
             constants.ABI_LIST,
         )
+
         current_total_supply_dict = {}
         current_token_bin_dict = {}
         for data in total_bin_dtos:
@@ -362,6 +433,7 @@ def batch_get_bin(web3, make_requests, requests, nft_address, is_batch, abi_list
     fn_name = "getBin"
     if len(requests) == 0:
         return []
+
     function_abi = next(
         (abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"),
         None,
