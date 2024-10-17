@@ -4,10 +4,10 @@ from typing import List
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.jobs.base_job import FilterTransactionDataJob
-from indexer.modules.custom.story_ip_register.domain.story_register_ip import StoryIpRegister
+from indexer.modules.custom.story_ip_register.domains.story_register_ip import StoryIpRegister
 from indexer.utils.multicall_hemera.util import calculate_execution_time
 from indexer.utils.utils import ZERO_ADDRESS
-from indexer.domain.token_transfer import (
+from indexer.modules.custom.story_ip_register.domains.ip_register_abi import (
     StoryIpRegistered,
     extract_ip_register,
     ip_register_event,
@@ -19,14 +19,11 @@ logger = logging.getLogger(__name__)
 # Constants
 TARGET_TOKEN_ADDRESS = ["0x1a9d0d28a0422F26D31Be72Edc6f13ea4371E11B"]
 
-def _filter_mint_tokens(logs: List[Log]) -> List[StoryIpRegistered]:
-    token_transfers = []
+def _filter_ip_register(logs: List[Log]) -> List[StoryIpRegistered]:
+    story_data = []
     for log in logs:
-        token_transfers += extract_ip_register(log)
-    # return [transfer for transfer in token_transfers if
-    #         transfer.from_address == ZERO_ADDRESS and transfer.token_type == "ERC721"]
-    # print(token_transfers)
-    return token_transfers
+        story_data += extract_ip_register(log)
+    return story_data
 
 
 class ExportStoryIpRegisterJob(FilterTransactionDataJob):
@@ -40,9 +37,9 @@ class ExportStoryIpRegisterJob(FilterTransactionDataJob):
     @calculate_execution_time
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
-        mint_tokens = _filter_mint_tokens(logs)
+        ip_register = _filter_ip_register(logs)
 
-        erc721_mint_infos = [
+        story_ip_registers = [
             StoryIpRegister(
                 ip_account=StoryIpRegistered.ip_account,
                 nft_contract=StoryIpRegistered.token_contract,
@@ -50,10 +47,9 @@ class ExportStoryIpRegisterJob(FilterTransactionDataJob):
                 chain_id=StoryIpRegistered.chain_id,
                 block_number=StoryIpRegistered.block_number,
                 transaction_hash=StoryIpRegistered.transaction_hash
-            ) for StoryIpRegistered in mint_tokens
+            ) for StoryIpRegistered in ip_register
         ]
-        print(erc721_mint_infos)
-        self._collect_domains(erc721_mint_infos)
+        self._collect_domains(story_ip_registers)
 
     def _process(self, **kwargs):
         pass

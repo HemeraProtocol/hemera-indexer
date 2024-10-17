@@ -4,10 +4,10 @@ from typing import List
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.jobs.base_job import FilterTransactionDataJob
-from indexer.modules.custom.story_license_register.domain.story_register_license import StoryLicenseRegister
+from indexer.modules.custom.story_license_register.domains.story_register_license import StoryLicenseRegister
 from indexer.utils.multicall_hemera.util import calculate_execution_time
 from indexer.utils.utils import ZERO_ADDRESS
-from indexer.domain.token_transfer import (
+from indexer.modules.custom.story_license_register.domains.license_register_abi import (
     LicensePILRegister,
     extract_license_register,
     license_event,
@@ -17,17 +17,14 @@ from indexer.specification.specification import TopicSpecification, TransactionF
 logger = logging.getLogger(__name__)
 
 # Constants
-TARGET_TOKEN_ADDRESS = ["0x8BB1ADE72E21090Fc891e1d4b88AC5E57b27cB31"]
+TARGET_TOKEN_ADDRESS = ["0x0752f61E59fD2D39193a74610F1bd9a6Ade2E3f9"]
 
 
-def _filter_mint_tokens(logs: List[Log]) -> List[LicensePILRegister]:
-    token_transfers = []
+def _filter_license_register(logs: List[Log]) -> List[LicensePILRegister]:
+    story_data = []
     for log in logs:
-        token_transfers += extract_license_register(log)
-    # return [transfer for transfer in token_transfers if
-    #         transfer.from_address == ZERO_ADDRESS and transfer.token_type == "ERC721"]
-    print(token_transfers)
-    return token_transfers
+        story_data += extract_license_register(log)
+    return story_data
 
 
 class ExportStoryLicenseRegisterJob(FilterTransactionDataJob):
@@ -41,9 +38,9 @@ class ExportStoryLicenseRegisterJob(FilterTransactionDataJob):
     @calculate_execution_time
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
-        mint_tokens = _filter_mint_tokens(logs)
+        license_register = _filter_license_register(logs)
 
-        erc721_mint_infos = [
+        story_license_register = [
             StoryLicenseRegister(
                 license_terms_id=LicensePILRegister.license_terms_id,
                 license_template=LicensePILRegister.license_template,
@@ -66,14 +63,12 @@ class ExportStoryLicenseRegisterJob(FilterTransactionDataJob):
                 uri=LicensePILRegister.uri,
                 block_number=LicensePILRegister.block_number,
                 transaction_hash=LicensePILRegister.transaction_hash
-            ) for LicensePILRegister in mint_tokens
+            ) for LicensePILRegister in license_register
         ]
-        print(erc721_mint_infos)
-        self._collect_domains(erc721_mint_infos)
+        self._collect_domains(story_license_register)
 
     def _process(self, **kwargs):
         pass
-        print(self._data_buff[StoryLicenseRegister.type()])
 
     def get_filter(self):
         topic_filter_list = [
