@@ -40,8 +40,10 @@ class ExportProjectContractsJob(ExtensionJob):
             for a_transaction in transactions
             if a_transaction.receipt and a_transaction.receipt.status == 1
         ]
-        contract_internal_transactions: List[ContractInternalTransaction] = self._data_buff[ContractInternalTransaction.type()]
-
+        contract_internal_transactions: List[ContractInternalTransaction] = self._data_buff[
+            ContractInternalTransaction.type()
+        ]
+        contract_internal_transactions = [cit for cit in contract_internal_transactions if cit.is_contract_creation()]
         transaction_map = {tnx.hash: tnx for tnx in transactions}
         all_contracts = []
         for a_trace in contract_internal_transactions:
