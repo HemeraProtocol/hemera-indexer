@@ -10,7 +10,7 @@ from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.cyber_id.cyber_abi import abi_map
-from indexer.modules.custom.cyber_id.cyber_domain import CyberAddressChangedD, CyberAddressD, CyberIDRegisterD
+from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberAddressChangedD, CyberAddressD, CyberIDRegisterD
 from indexer.modules.custom.cyber_id.utils import get_node, get_reverse_node
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
@@ -68,6 +68,9 @@ class ExportCyberIDJob(FilterTransactionDataJob):
         ]
 
     def _collect(self, **kwargs):
+        pass
+
+    def _process(self, **kwargs):
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
         for transaction in transactions:
             if transaction.to_address.lower() == CyberIdReverseRegistrarContractAddress:
@@ -111,7 +114,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
                 )
                 self._collect_item(address_change_d.type(), address_change_d)
 
-    def _process(self, **kwargs):
+        # sort and deduplicate cyber addresses to avoid duplicate records
         cyber_addresses = self._data_buff.get(CyberAddressD.type(), [])
         cyber_addresses.sort(key=lambda x: (x.address, x.block_number))
         self._data_buff[CyberAddressD.type()] = [
