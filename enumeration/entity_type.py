@@ -21,7 +21,7 @@ from indexer.modules.custom.all_features_value_record import AllFeatureValueReco
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
-from indexer.modules.custom.eigen_layer.eigen_layer_domain import EigenLayerActionD, EigenLayerAddressCurrentD
+from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import EigenLayerActionD, EigenLayerAddressCurrentD
 from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSAddressChangeD,
     ENSAddressD,
