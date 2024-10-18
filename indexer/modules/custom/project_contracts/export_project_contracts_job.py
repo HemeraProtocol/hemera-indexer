@@ -13,9 +13,6 @@ from indexer.utils.abi import bytes_to_hex_str
 logger = logging.getLogger(__name__)
 
 
-TRACE_TYPE_PREFIX = "create"
-
-
 class ExportProjectContractsJob(ExtensionJob):
     dependency_types = [Transaction, ContractInternalTransaction]
     output_types = [ProjectContractD]
