@@ -32,8 +32,10 @@ class AggrOrderJob(AggrBaseJob):
                 job_list.append('period_feature_holding_balance_satlayer_fbtc.sql')
 
         elif self.chain_name == 'mantle':
-            job_list.append('period_feature_holding_balance_uniswap_v3_meth.sql')
-            job_list.append('period_feature_holding_balance_merchantmoe_meth.sql')
+            if 'period_feature_holding_balance_uniswap_v3_meth.sql' not in job_list:
+                job_list.append('period_feature_holding_balance_uniswap_v3_meth.sql')
+            if 'period_feature_holding_balance_merchantmoe_meth.sql' not in job_list:
+                job_list.append('period_feature_holding_balance_merchantmoe_meth.sql')
 
     def run(self, **kwargs):
         start_date_limit = kwargs["start_date"]
