@@ -2,7 +2,7 @@ from typing import List
 
 from common.utils.abi_code_utils import Function
 from indexer.domain.transaction import Transaction
-from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
+from indexer.modules.custom.deposit_to_l2.domains.token_deposit_transaction import TokenDepositTransaction
 
 ETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 USDC_ADDRESS = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
