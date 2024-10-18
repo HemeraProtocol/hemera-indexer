@@ -4,8 +4,8 @@
 # @Author  will
 # @File  af_eigen_layer_address_current.py
 # @Brief
-from sqlalchemy import Column, PrimaryKeyConstraint, func, text
-from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
@@ -27,7 +27,6 @@ class AfEigenLayerAddressCurrent(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("address", "strategy"),)
 

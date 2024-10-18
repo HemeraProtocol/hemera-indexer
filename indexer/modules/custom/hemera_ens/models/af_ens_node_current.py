@@ -2,8 +2,8 @@ from datetime import datetime, timezone
 from typing import Type
 
 from psycopg2._json import Json
-from sqlalchemy import BIGINT, Column, Index
-from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSONB, NUMERIC, TIMESTAMP, VARCHAR
+from sqlalchemy import Column, Index
+from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BYTEA, JSONB, NUMERIC, TIMESTAMP, VARCHAR
 from sqlalchemy.sql import func
 
 from common.models import HemeraModel, get_column_type
