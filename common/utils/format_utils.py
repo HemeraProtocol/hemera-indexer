@@ -2,6 +2,8 @@ import re
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy import Integer, Numeric
+
 
 def to_snake_case(name: str) -> str:
     """Convert a CamelCase name to snake_case."""
@@ -22,7 +24,17 @@ def as_dict(self):
             if isinstance(attr, datetime):
                 json_data[c.name] = attr.astimezone().isoformat("T", "seconds")
             elif isinstance(attr, Decimal):
-                json_data[c.name] = float(attr)
+                if isinstance(c.type, (Numeric, Integer)):
+                    if c.type.scale == 0 or (isinstance(c.type, Numeric) and c.type.scale is None):
+                        # Additional check to ensure the value is actually an integer
+                        if attr.as_tuple().exponent >= 0:
+                            json_data[c.name] = int(attr)
+                        else:
+                            json_data[c.name] = float(attr)
+                    else:
+                        json_data[c.name] = float(attr)
+                else:
+                    json_data[c.name] = float(attr)
             elif isinstance(attr, bytes):
                 json_data[c.name] = "0x" + attr.hex()
             else:
@@ -67,19 +79,10 @@ def format_dollar_value(value: float) -> str:
     return "{0:.6}".format(value)
 
 
-def format_coin_value(value: int, decimal: int = 18) -> str:
-    """
-    Formats a given integer value into a string that represents a token value.
-    Parameters:
-        value (int): The value to be formatted
-
-    Returns:
-        str: The formatted token value as a string.
-    """
-    if value < 1000:
-        return str(value)
-    else:
-        return "{0:.15f}".format(value / 10**18).rstrip("0").rstrip(".")
+def format_coin_value(value: int) -> str:
+    if value is None:
+        return ""
+    return "{0:.15f}".format(value / 10**18).rstrip("0").rstrip(".")
 
 
 def format_coin_value_with_unit(value: int, native_token: str) -> str:
