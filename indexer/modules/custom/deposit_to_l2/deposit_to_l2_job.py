@@ -1,12 +1,11 @@
 import configparser
-import json
-import os
-from typing import List, cast
+import logging
+from typing import List
 
 from eth_utils import to_normalized_address
 from sqlalchemy import and_
-from web3.types import ABIFunction
 
+from common.utils.abi_code_utils import Function
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
@@ -17,8 +16,9 @@ from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import Ad
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
 from indexer.specification.specification import ToAddressSpecification, TransactionFilterByTransactionInfo
-from indexer.utils.abi import function_abi_to_4byte_selector_str
 from indexer.utils.collection_utils import distinct_collections_by_group
+
+logger = logging.getLogger(__name__)
 
 
 class DepositToL2Job(FilterTransactionDataJob):
@@ -35,7 +35,7 @@ class DepositToL2Job(FilterTransactionDataJob):
         self._sig_function_mapping = {}
         self._sig_parse_mapping = {}
 
-        self._load_config("config.ini")
+        self._load_config()
 
         if self._service is None:
             raise FastShutdownError("-pg or --postgres-url is required to run DepositToL2Job")
@@ -51,18 +51,19 @@ class DepositToL2Job(FilterTransactionDataJob):
             *[ToAddressSpecification(address=contract) for contract in self._contracts]
         )
 
-    def _load_config(self, filename):
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(base_path, filename)
-        config = configparser.ConfigParser()
-        config.read(full_path)
-
+    def _load_config(self):
         try:
-            self._deposit_contracts = json.loads(config.get("chain_deposit_info", "contract_info"))
-            self._clean_mode = config.get("cache_config", "clean_mode")
-            self._clean_limit_value = int(config.get("cache_config", "clean_limit_value"))
-        except (configparser.NoOptionError, configparser.NoSectionError) as e:
-            raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
+            self._deposit_contracts = self.user_defined_config["contract_info"]
+            self._clean_mode = self.user_defined_config["cache_config"].get("clean_mode", "blocks")
+            self._clean_limit_value = int(self.user_defined_config["cache_config"].get("clean_limit_value", 1000))
+        except Exception as e:
+            message = (
+                "Missing required configuration in config file. "
+                "The possible reason are either that the configuration file is not specified by --config-file "
+                "or the configuration for deposit_to_l2_job is missing."
+            )
+            logging.error(message)
+            raise FastShutdownError(message)
 
         for chain in self._deposit_contracts.keys():
             for contract_info in self._deposit_contracts[chain]:
@@ -72,8 +73,8 @@ class DepositToL2Job(FilterTransactionDataJob):
                 for function in contract_info["ABIFunction"]:
                     abi_function = None
                     if "json" in function:
-                        abi_function = cast(ABIFunction, function["json"])
-                        sig = function_abi_to_4byte_selector_str(abi_function)
+                        abi_function = Function(function["json"])
+                        sig = abi_function.get_signature()
                     else:
                         sig = function["method_id"]
 
