@@ -32,6 +32,48 @@ def test_export_job():
     )
 
     data_buff = job_scheduler.get_data_buff()
+    assert len(data_buff.keys()) == 10
+
+    assert "token" in data_buff.keys()
+    assert len(data_buff["token"]) == 7
+    token = data_buff["token"][2]
+    assert token.address == "0xc5cb997016c9a3ac91cbe306e59b048a812c056f"
+    assert token.decimals == 0
+    assert token.total_supply == 4641010509
+
+    assert "update_token" in data_buff.keys()
+    assert len(data_buff["update_token"]) == 4
+    update_token = data_buff["update_token"][1]
+    update_token.address = "0x176211869ca2b568f2a7d4ee941e073a821ee1ff"
+    update_token.total_supply = 28705661218277
+
+    assert "erc20_token_transfer" in data_buff.keys()
+    assert len(data_buff["erc20_token_transfer"]) == 9
+    erc20_token_transfer = data_buff["erc20_token_transfer"][7]
+    assert erc20_token_transfer.transaction_hash == "0x4d585ebfdd93037667bdb9ef19a757e6d50d56c33049f17d50304af91ff2df63"
+    assert erc20_token_transfer.log_index == 77
+    assert erc20_token_transfer.value == 196003266
+
+    assert "erc721_token_transfer" in data_buff.keys()
+    assert len(data_buff["erc721_token_transfer"]) == 8
+    erc721_token_transfer = data_buff["erc721_token_transfer"][6]
+    assert (
+        erc721_token_transfer.transaction_hash == "0xd32fb19c93c27d1c55384d3dd2ed87c5cb594e00634c9e5d83ed4540625feb78"
+    )
+    assert erc721_token_transfer.log_index == 66
+    assert erc721_token_transfer.token_id == 4583234
+
+    assert "erc1155_token_transfer" in data_buff.keys()
+    assert len(data_buff["erc1155_token_transfer"]) == 3
+    erc1155_token_transfer = data_buff["erc1155_token_transfer"][1]
+    assert (
+        erc1155_token_transfer.transaction_hash == "0x4faa9c58bd864ff7e09a011f9319eba3c12e52f37691ee538ba14f57ef079860"
+    )
+    assert erc1155_token_transfer.log_index == 35
+    assert (
+        erc1155_token_transfer.token_id == 50411206725691109941676758658949651974631268551207578819994085010046423484406
+    )
+
     job_scheduler.clear_data_buff()
 
 
