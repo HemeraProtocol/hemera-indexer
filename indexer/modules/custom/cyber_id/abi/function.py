@@ -2,7 +2,7 @@ from web3.types import ABIFunction
 
 from common.utils.abi_code_utils import Function
 from indexer.domain.transaction import Transaction
-from indexer.modules.custom.cyber_id.constants.constans import *
+from indexer.modules.custom.cyber_id.constants.constants import *
 from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberAddressD
 from indexer.modules.custom.cyber_id.utils import get_reverse_node
 

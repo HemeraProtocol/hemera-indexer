@@ -11,7 +11,7 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.cyber_id.abi.event import AddressChangedEvent, RegisterEvent, CyberEvent
 from indexer.modules.custom.cyber_id.abi.function import SetNameFunction, SetNameForAddrFunction
 from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberAddressChangedD, CyberAddressD, CyberIDRegisterD
-from indexer.modules.custom.cyber_id.constants.constans import *
+from indexer.modules.custom.cyber_id.constants.constants import *
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
