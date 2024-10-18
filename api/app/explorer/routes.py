@@ -78,7 +78,7 @@ from common.models.token_balances import AddressTokenBalances
 from common.models.tokens import Tokens
 from common.models.traces import Traces
 from common.models.transactions import Transactions
-from common.utils.abi_code_utils import decode_function, decode_log_data
+from common.utils.abi_code_utils import Function, decode_function, decode_log_data
 from common.utils.config import get_config
 from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
@@ -719,17 +719,14 @@ class ExplorerTransactionInternalTransactions(Resource):
                         contract_function_abi = abi_map.get((obj.get("to_address"), input[:10]))
                         decode_failed = True
                         if contract_function_abi:
-                            function_abi = contract_function_abi.get("function_abi")
-                            function_abi_json = json.loads(function_abi)
+                            abi_function = Function(json.loads(contract_function_abi.get("function_abi")))
                             function_name = f"{contract_function_abi.get('function_name')}"
                             try:
-                                function_input, function_output = decode_function(
-                                    function_abi_json, input[2:], output[2:]
-                                )
+                                function_input, function_output = decode_function(abi_function, input[2:], output[2:])
                                 decode_failed = False
                             except Exception as e:
                                 logging.error(
-                                    f'Error decoding function: {str(e)}, to_address: {obj.get("to_address")}, tx_hash: {hash}, contract_function_abi: {function_abi}'
+                                    f'Error decoding function: {str(e)}, to_address: {obj.get("to_address")}, tx_hash: {hash}, contract_function_abi: {abi_function.get_abi()}'
                                 )
 
                         if decode_failed and obj.get("to_address") and len(input) >= 10:
