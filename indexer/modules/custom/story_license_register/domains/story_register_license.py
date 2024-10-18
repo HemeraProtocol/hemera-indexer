@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 from indexer.domain import Domain, FilterData
+
 
 @dataclass
 class StoryLicenseRegister(FilterData):
@@ -22,5 +24,6 @@ class StoryLicenseRegister(FilterData):
     derivative_rev_ceiling: int
     currency: str
     uri: str
+    contract_address: str
     block_number: int
     transaction_hash: str

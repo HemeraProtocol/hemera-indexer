@@ -54,6 +54,7 @@ class StoryLicenseTermsAttach(Domain):
     ip_id: str
     license_template: str
     license_terms_id: int
+    contract_address: str
     block_number: int
     block_timestamp: int
 
@@ -74,6 +75,7 @@ def handle_license_attach_event(log: Log) -> List[StoryLicenseTermsAttach]:
             ip_id=ip_id,
             license_template=license_template,
             license_terms_id=license_terms_id,
+			contract_address=log.address,
             block_number=log.block_number,
             block_timestamp=log.block_timestamp,
         )

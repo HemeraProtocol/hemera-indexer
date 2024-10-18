@@ -14,6 +14,7 @@ class StoryLicenseAttach(HemeraModel):
     license_template = Column(BYTEA, primary_key=True)
     license_terms_id = Column(BIGINT)
     block_number = Column(BIGINT)
+    contract_address = Column(BYTEA)
     transaction_hash = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, server_default=func.now())

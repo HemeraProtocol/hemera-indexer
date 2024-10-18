@@ -1,5 +1,7 @@
 from dataclasses import dataclass
+
 from indexer.domain import Domain, FilterData
+
 
 @dataclass
 class StoryIpRegister(FilterData):
@@ -8,4 +10,5 @@ class StoryIpRegister(FilterData):
     nft_id: int
     chain_id: int
     block_number: int
+    contract_address: str
     transaction_hash: str

@@ -1,12 +1,12 @@
 import logging
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import List, Optional, Union, Sequence,Tuple,Any
-from indexer.utils.abi import bytes_to_hex_str
+from typing import Any, List, Optional, Sequence, Tuple, Union
+
 from enumeration.token_type import TokenType
 from indexer.domain import Domain
 from indexer.domain.log import Log
-from indexer.utils.abi import Event
+from indexer.utils.abi import Event, bytes_to_hex_str
 from indexer.utils.utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
@@ -78,6 +78,7 @@ batch_transfer_event = Event(
     }
 )
 
+
 @dataclass
 class TokenTransfer(Domain):
     transaction_hash: str
@@ -146,6 +147,8 @@ class ERC721TokenTransfer(Domain):
     block_number: int
     block_hash: str
     block_timestamp: int
+
+
 @dataclass
 class ERC1155TokenTransfer(Domain):
     transaction_hash: str
@@ -159,6 +162,7 @@ class ERC1155TokenTransfer(Domain):
     block_number: int
     block_hash: str
     block_timestamp: int
+
 
 def handle_deposit_event(log: Log) -> List[TokenTransfer]:
     decode_data = deposit_event.decode_log(log)
@@ -297,6 +301,7 @@ def handle_transfer_batch_event(log: Log) -> List[TokenTransfer]:
         token_transfers.append(transfer)
 
     return token_transfers
+
 
 def extract_transfer_from_log(log: Log) -> List[TokenTransfer]:
     token_transfers = []

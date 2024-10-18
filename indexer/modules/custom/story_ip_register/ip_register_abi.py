@@ -34,8 +34,7 @@ class StoryIpRegistered(Domain):
     chain_id: int
     token_contract: str
     token_id: int
-    token_type: str
-    token_address: str
+    contract_address: str
     block_number: int
     block_hash: str
     block_timestamp: int
@@ -50,8 +49,6 @@ def handle_ip_register_event(log: Log) -> List[StoryIpRegistered]:
     token_contract = decode_data.get("tokenContract").lower()
     token_id = decode_data.get("tokenId")
 
-    token_type = "STORY"
-
     return [
         StoryIpRegistered(
             transaction_hash=log.transaction_hash,
@@ -60,8 +57,7 @@ def handle_ip_register_event(log: Log) -> List[StoryIpRegistered]:
             chain_id=chain_id,
             token_contract=token_contract,
             token_id=token_id,
-            token_type=token_type,
-            token_address=log.address,
+            contract_address=log.address,
             block_number=log.block_number,
             block_hash=log.block_hash,
             block_timestamp=log.block_timestamp,

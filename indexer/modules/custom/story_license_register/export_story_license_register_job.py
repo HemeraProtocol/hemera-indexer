@@ -5,19 +5,19 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.modules.custom.story_license_register.domains.story_register_license import StoryLicenseRegister
-from indexer.utils.multicall_hemera.util import calculate_execution_time
-from indexer.utils.utils import ZERO_ADDRESS
-from indexer.modules.custom.story_license_register.domains.license_register_abi import (
+from indexer.modules.custom.story_license_register.license_register_abi import (
     LicensePILRegister,
     extract_license_register,
     license_event,
 )
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
+from indexer.utils.multicall_hemera.util import calculate_execution_time
+from indexer.utils.utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 
 # Constants
-TARGET_TOKEN_ADDRESS = ["0x0752f61E59fD2D39193a74610F1bd9a6Ade2E3f9"]
+TARGET_TOKEN_ADDRESS = ["0x0752f61E59fD2D39193a74610F1bd9a6Ade2E3f9","0x8BB1ADE72E21090Fc891e1d4b88AC5E57b27cB31"]
 
 
 def _filter_license_register(logs: List[Log]) -> List[LicensePILRegister]:
@@ -61,9 +61,11 @@ class ExportStoryLicenseRegisterJob(FilterTransactionDataJob):
                 derivative_rev_ceiling=LicensePILRegister.derivative_rev_ceiling,
                 currency=LicensePILRegister.currency,
                 uri=LicensePILRegister.uri,
+                contract_address = LicensePILRegister.contract_address,
                 block_number=LicensePILRegister.block_number,
-                transaction_hash=LicensePILRegister.transaction_hash
-            ) for LicensePILRegister in license_register
+                transaction_hash=LicensePILRegister.transaction_hash,
+            )
+            for LicensePILRegister in license_register
         ]
         self._collect_domains(story_license_register)
 
@@ -71,10 +73,6 @@ class ExportStoryLicenseRegisterJob(FilterTransactionDataJob):
         pass
 
     def get_filter(self):
-        topic_filter_list = [
-            TopicSpecification(
-                addresses=TARGET_TOKEN_ADDRESS, topics=[license_event.get_signature()]
-            )
-        ]
+        topic_filter_list = [TopicSpecification(addresses=TARGET_TOKEN_ADDRESS, topics=[license_event.get_signature()])]
 
         return TransactionFilterByLogs(topic_filter_list)

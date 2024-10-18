@@ -15,7 +15,7 @@ class StoryLicenseTokenMint(HemeraModel):
     license_terms_id = Column(BIGINT)
     amount = Column(BIGINT)
     receiver = Column(BYTEA, primary_key=True)
-    start_license_token_id =  Column(NUMERIC(100), primary_key=True)
+    start_license_token_id = Column(NUMERIC(100), primary_key=True)
     block_number = Column(BIGINT)
     transaction_hash = Column(BYTEA)
 

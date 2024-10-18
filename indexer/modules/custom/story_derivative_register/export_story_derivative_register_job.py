@@ -7,7 +7,7 @@ from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.modules.custom.story_derivative_register.domains.story_register_derivative import StoryDerivativeRegister
 from indexer.utils.multicall_hemera.util import calculate_execution_time
 from indexer.utils.utils import ZERO_ADDRESS
-from indexer.modules.custom.story_derivative_register.domains.register_derivative_abi import (
+from indexer.modules.custom.story_derivative_register.register_derivative_abi import (
     StoryDerivativeRegistered,
     extract_derivative_registered,
     derivative_registered_event,
@@ -17,7 +17,7 @@ from indexer.specification.specification import TopicSpecification, TransactionF
 logger = logging.getLogger(__name__)
 
 # Constants
-TARGET_TOKEN_ADDRESS = ["0xd81fd78f557b457b4350cB95D20b547bFEb4D857"]
+TARGET_TOKEN_ADDRESS = ["0xd81fd78f557b457b4350cB95D20b547bFEb4D857","0xf49da534215DA7b48E57A41d41dac25C912FCC60"]
 
 
 def _filter_derivative_register(logs: List[Log]) -> List[StoryDerivativeRegistered]:
@@ -42,7 +42,6 @@ class ExportStoryDerivativeRegisterJob(FilterTransactionDataJob):
 
         story_derivative_registered = [
             StoryDerivativeRegister(
-                transaction_hash=StoryDerivativeRegistered.transaction_hash,
                 caller=StoryDerivativeRegistered.caller,
                 log_index = StoryDerivativeRegistered.log_index,
                 child_ip_id=StoryDerivativeRegistered.child_ip_id,
@@ -50,6 +49,8 @@ class ExportStoryDerivativeRegisterJob(FilterTransactionDataJob):
                 parent_ip_ids=StoryDerivativeRegistered.parent_ip_ids,
                 license_template = StoryDerivativeRegistered.license_template,
                 license_terms_ids=StoryDerivativeRegistered.license_terms_ids,
+                contract_address = StoryDerivativeRegistered.contract_address,
+                transaction_hash=StoryDerivativeRegistered.transaction_hash,
                 block_number=StoryDerivativeRegistered.block_number,
                 block_timestamp = StoryDerivativeRegistered.block_timestamp
             ) for StoryDerivativeRegistered in derivative_register

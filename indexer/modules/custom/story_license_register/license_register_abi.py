@@ -62,7 +62,7 @@ class LicensePILRegister(Domain):
     derivative_rev_ceiling: int
     currency: str
     uri: str
-    token_type: str
+    contract_address: str
     block_number: int
     block_hash: str
     block_timestamp: int
@@ -83,8 +83,6 @@ def handle_license_event(log: Log) -> List[LicensePILRegister]:
     #     byte_sep = bytes.fromhex(license_str[1346:1346+2*a])
     # print(license_str)
     # print((license_str[1282:1346]))
-
-    token_type = "STORY"
 
     return [
         LicensePILRegister(
@@ -112,7 +110,7 @@ def handle_license_event(log: Log) -> List[LicensePILRegister]:
             # uri= byte_sep.decode('utf-8'),
             uri="",
 
-            token_type=token_type,
+            contract_address=log.address,
             block_number=log.block_number,
             block_hash=log.block_hash,
             block_timestamp=log.block_timestamp,

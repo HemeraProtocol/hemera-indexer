@@ -28,6 +28,7 @@ class StoryLicenseRegister(HemeraModel):
     derivative_rev_ceiling = Column(NUMERIC(100), primary_key=True)
     currency = Column(BYTEA, primary_key=True)
     uri = Column(VARCHAR, primary_key=True)
+    contract_address = Column(BYTEA)
     block_number = Column(BIGINT)
     transaction_hash = Column(BYTEA)
 

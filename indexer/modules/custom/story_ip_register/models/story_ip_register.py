@@ -14,6 +14,7 @@ class StoryIpRegister(HemeraModel):
     nft_id = Column(NUMERIC(100), primary_key=True)
     chain_id = Column(BIGINT)
     block_number = Column(BIGINT)
+    contract_address = Column(BYTEA)
     transaction_hash = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, server_default=func.now())

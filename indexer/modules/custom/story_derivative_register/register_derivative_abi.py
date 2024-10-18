@@ -68,6 +68,7 @@ class StoryDerivativeRegistered(Domain):
     parent_ip_ids: List[str]
     license_terms_ids : List[int]
     license_template: str
+    contract_address: str
     block_number: int
     block_timestamp: int
 
@@ -90,6 +91,7 @@ def handle_derivative_registered_event(log: Log) -> List[StoryDerivativeRegister
             parent_ip_ids=parent_ip_ids,
             license_terms_ids = license_terms_ids,
             license_template = license_template,
+			contract_address = log.address,
             block_number=log.block_number,
             block_timestamp=log.block_timestamp,
         )
