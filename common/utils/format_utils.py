@@ -3,6 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional, Union
 
+from sqlalchemy import Integer, Numeric
 
 def bytes_to_hex_str(b: bytes) -> str:
     """
@@ -113,7 +114,17 @@ def as_dict(self):
             if isinstance(attr, datetime):
                 json_data[c.name] = attr.astimezone().isoformat("T", "seconds")
             elif isinstance(attr, Decimal):
-                json_data[c.name] = float(attr)
+                if isinstance(c.type, (Numeric, Integer)):
+                    if c.type.scale == 0 or (isinstance(c.type, Numeric) and c.type.scale is None):
+                        # Additional check to ensure the value is actually an integer
+                        if attr.as_tuple().exponent >= 0:
+                            json_data[c.name] = int(attr)
+                        else:
+                            json_data[c.name] = float(attr)
+                    else:
+                        json_data[c.name] = float(attr)
+                else:
+                    json_data[c.name] = float(attr)
             elif isinstance(attr, bytes):
                 json_data[c.name] = bytes_to_hex_str(attr)
             else:
