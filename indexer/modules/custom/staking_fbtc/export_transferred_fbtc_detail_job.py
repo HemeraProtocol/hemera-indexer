@@ -54,6 +54,8 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
             self._fbtc_address = config.get(str(chain_id), "FBTC_ADDRESS").lower()
             transferred_protocol_dict_str = config.get(str(chain_id), "TRANSFERRED_CONTRACTS_DICT")
             self._transferred_protocol_dict = ast.literal_eval(transferred_protocol_dict_str)
+            self._staked_address_list = config.get(str(chain_id), "STAKED_BTC_ADDRESS").split(',')
+            pass
 
         except (configparser.NoOptionError, configparser.NoSectionError) as e:
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
@@ -61,7 +63,7 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
     def get_filter(self):
         return TransactionFilterByLogs(
             [
-                TopicSpecification(addresses=[self._fbtc_address]),
+                TopicSpecification(addresses=[self._fbtc_address] + self._staked_address_list),
             ]
         )
 
