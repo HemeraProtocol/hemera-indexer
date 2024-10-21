@@ -5,12 +5,12 @@ from typing import List
 from eth_utils import to_normalized_address
 from sqlalchemy import and_
 
-from common.utils.abi_code_utils import Function
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
+from indexer.modules.custom.deposit_to_l2.abi.function import function_mapping
 from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transaction_function, token_parse_mapping
 from indexer.modules.custom.deposit_to_l2.domains.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domains.token_deposit_transaction import TokenDepositTransaction
@@ -72,8 +72,8 @@ class DepositToL2Job(FilterTransactionDataJob):
                 self._contract_chain_mapping[contract_address] = int(chain)
                 for function in contract_info["ABIFunction"]:
                     abi_function = None
-                    if "json" in function:
-                        abi_function = Function(function["json"])
+                    if "abi" in function:
+                        abi_function = function_mapping[function["abi"]]
                         sig = abi_function.get_signature()
                     else:
                         sig = function["method_id"]
