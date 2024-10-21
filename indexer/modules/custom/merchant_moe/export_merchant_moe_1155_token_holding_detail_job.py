@@ -2,7 +2,10 @@ import json
 import logging
 from collections import defaultdict
 
+import eth_abi
+
 from common.utils.abi_code_utils import decode_data
+from common.utils.format_utils import hex_str_to_bytes, bytes_to_hex_str
 from indexer.domain.log import Log
 from indexer.domain.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -10,9 +13,13 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.merchant_moe import constants
-from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
+from indexer.modules.custom.merchant_moe.domains.erc1155_token_holding import (
+    MerchantMoeErc1155TokenCurrentHolding,
     MerchantMoeErc1155TokenCurrentSupply,
+    MerchantMoeErc1155TokenHolding,
     MerchantMoeErc1155TokenSupply,
+)
+from indexer.modules.custom.merchant_moe.domains.merchant_moe import (
     MerChantMoePool,
     MerChantMoePoolCurrentStatu,
     MerChantMoePoolRecord,
@@ -21,16 +28,20 @@ from indexer.modules.custom.merchant_moe.domain.merchant_moe import (
 )
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
+from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import zip_rpc_response, rpc_response_to_result
 
 logger = logging.getLogger(__name__)
 FEATURE_ID = FeatureType.MERCHANT_MOE_1155_LIQUIDITY.value
+SWAP_LOG_TYPES = ['uint24', 'bytes32', 'bytes32', 'uint24', 'bytes32', 'bytes32']
 
 
 class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
     dependency_types = [TokenBalance, Log]
     output_types = [
+        MerchantMoeErc1155TokenHolding,
+        MerchantMoeErc1155TokenCurrentHolding,
         MerchantMoeErc1155TokenSupply,
         MerchantMoeErc1155TokenCurrentSupply,
         MerChantMoeTokenBin,
@@ -49,10 +60,15 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
-        self._need_collected_list = constants.LIQUIDITY_LIST
+        self._chain_id = common_utils.get_chain_id(self._web3)
         self._exist_pool = get_exist_pools(self._service)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
+
+        config = kwargs['config']['export_merchant_moe_1155_token_holding_detail_job']
+        address_list_str = config['liquidity_list']
+        self._need_collected_list = [address.strip() for address in address_list_str.split(",") if address.strip()]
+        self.swap_topic0 = config['swap_topic0']
 
     def get_filter(self):
         return TransactionFilterByLogs(
@@ -61,25 +77,46 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             ]
         )
 
-    def _collect(self, **kwargs):
+    def _process(self, **kwargs):
         if self._need_collected_list is None or len(self._need_collected_list) == 0:
             return
         token_balances = self._data_buff[TokenBalance.type()]
         if token_balances is not None and len(token_balances) > 0:
             self._batch_work_executor.execute(
-                token_balances,
-                self._collect_token_batch,
-                total_items=len(token_balances),
-                split_method=split_token_balances,
+                token_balances, self._collect_token_batch, total_items=len(token_balances),
+                split_method=split_token_balances
             )
 
             self._batch_work_executor.wait()
         logs = self._data_buff[Log.type()]
         if logs is not None and len(logs) > 0:
             self._batch_work_executor.execute(
-                logs, self._collect_pool_batch, total_items=len(logs), split_method=split_logs
+                logs, self._collect_pool_batch, total_items=len(logs),
+                split_method=split_logs
             )
             self._batch_work_executor.wait()
+
+        total_bin_dtos_from_logs, total_current_bin_dtos_from_logs = self._get_swap_token_ids_bin_info()
+
+        total_bin_dtos_from_nfts = self._data_buff['mer_chant_moe_token_bin']
+        total_current_bin_dtos_from_nfts = self._data_buff['mer_chant_moe_token_current_bin']
+
+        self._data_buff['mer_chant_moe_token_bin'] = distinct_collections_by_group(
+            total_bin_dtos_from_logs + total_bin_dtos_from_nfts, ['position_token_address', 'token_id', 'block_number'])
+
+        self._data_buff['mer_chant_moe_token_current_bin'] = distinct_collections_by_group(
+            total_current_bin_dtos_from_logs + total_current_bin_dtos_from_nfts, ['position_token_address', 'token_id'],
+            max_key='block_number')
+
+        self._data_buff[MerchantMoeErc1155TokenHolding.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerchantMoeErc1155TokenSupply.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoeTokenBin.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerchantMoeErc1155TokenCurrentSupply.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoeTokenCurrentBin.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerchantMoeErc1155TokenCurrentHolding.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoePoolCurrentStatu.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoePoolRecord.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[MerChantMoePool.type()].sort(key=lambda x: x.block_number)
 
     def _collect_token_batch(self, token_balances) -> None:
         if token_balances is None or len(token_balances) == 0:
@@ -90,7 +127,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             return
         # check the token_address is in merchant_moe
         if token_address not in self._exist_pool:
-            if infos[0].token_id is None or infos[0].token_id < 0 or infos[0].token_type != "ERC1155":
+            if infos[0].token_id is None or infos[0].token_id < 0:
                 return
             requests = [
                 {
@@ -139,6 +176,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             )
 
         need_call_list = []
+        current_token_holding = {}
         token_id_info_set = set()
         for token_balance in infos:
             token_address = token_balance.token_address
@@ -154,7 +192,23 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                         "token_id": token_id,
                     }
                 )
-        total_supply_dtos = batch_get_total_supply(
+            self._collect_item(MerchantMoeErc1155TokenHolding.type(), parse_balance_to_holding(token_balance))
+
+            key = token_id
+            if key not in current_token_holding or block_number > current_token_holding[key].block_number:
+                current_token_holding[key] = MerchantMoeErc1155TokenCurrentHolding(
+                    position_token_address=token_balance.token_address,
+                    wallet_address=token_balance.address,
+                    token_id=token_id,
+                    balance=token_balance.balance,
+                    block_number=block_number,
+                    block_timestamp=block_timestamp,
+                )
+        for data in current_token_holding.values():
+            self._collect_item(MerchantMoeErc1155TokenCurrentHolding.type(), data)
+
+        # get total_supply
+        batch_get_total_supply(
             self._web3,
             self._batch_web3_provider.make_request,
             need_call_list,
@@ -170,6 +224,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             self._is_batch,
             constants.ABI_LIST,
         )
+
         current_total_supply_dict = {}
         current_token_bin_dict = {}
         for data in total_bin_dtos:
@@ -179,9 +234,11 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             total_supply = data["totalSupply"]
             reserve0_bin = data["reserve0_bin"]
             reserve1_bin = data["reserve1_bin"]
-            common_data = {
+            common_token_data = {
                 "position_token_address": token_address,
                 "token_id": token_id,
+            }
+            common_block_data = {
                 "block_number": block_number,
                 "block_timestamp": block_timestamp,
             }
@@ -189,26 +246,30 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             key = token_id
             if key not in current_total_supply_dict or block_number > current_total_supply_dict[key].block_number:
                 current_total_supply_dict[key] = MerchantMoeErc1155TokenCurrentSupply(
-                    **common_data,
+                    **common_token_data,
+                    **common_block_data,
                     total_supply=total_supply,
                 )
             if key not in current_token_bin_dict or block_number > current_token_bin_dict[key].block_number:
                 current_token_bin_dict[key] = MerChantMoeTokenCurrentBin(
-                    **common_data,
+                    **common_token_data,
+                    **common_block_data,
                     reserve0_bin=reserve0_bin,
                     reserve1_bin=reserve1_bin,
                 )
             self._collect_item(
                 MerchantMoeErc1155TokenSupply.type(),
                 MerchantMoeErc1155TokenSupply(
-                    **common_data,
+                    **common_token_data,
+                    **common_block_data,
                     total_supply=total_supply,
                 ),
             )
             self._collect_item(
                 MerChantMoeTokenBin.type(),
                 MerChantMoeTokenBin(
-                    **common_data,
+                    **common_token_data,
+                    **common_block_data,
                     reserve0_bin=reserve0_bin,
                     reserve1_bin=reserve1_bin,
                 ),
@@ -273,15 +334,64 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         if current_pool_data:
             self._collect_item(MerChantMoePoolCurrentStatu.type(), current_pool_data)
 
-    def _process(self, **kwargs):
+    def _get_swap_token_ids_bin_info(self):
+        logs = self._data_buff['log']
+        grouped_requests = defaultdict(list)
+        for log in logs:
+            if log.topic0 == self.swap_topic0:
+                data = decode_data(SWAP_LOG_TYPES, hex_str_to_bytes(log.data))
+                grouped_requests[log.address].append({
+                    "block_number": log.block_number,
+                    "block_timestamp": log.block_timestamp,
+                    "token_id": data[0],
+                })
 
-        self._data_buff[MerchantMoeErc1155TokenSupply.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[MerChantMoeTokenBin.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[MerchantMoeErc1155TokenCurrentSupply.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[MerChantMoeTokenCurrentBin.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[MerChantMoePoolCurrentStatu.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[MerChantMoePoolRecord.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[MerChantMoePool.type()].sort(key=lambda x: x.block_number)
+        results = []
+        current_results = []
+
+        for address, group in grouped_requests.items():
+            total_bin_dtos = batch_get_bin(
+                self._web3,
+                self._batch_web3_provider.make_request,
+                group,
+                address,
+                self._is_batch,
+                constants.ABI_LIST,
+            )
+
+            for bin_dto in total_bin_dtos:
+                mcmt = MerChantMoeTokenBin(
+                    position_token_address=address,
+                    token_id=bin_dto['token_id'],
+                    reserve0_bin=bin_dto['reserve0_bin'],
+                    reserve1_bin=bin_dto['reserve1_bin'],
+                    block_number=bin_dto['block_number'],
+                    block_timestamp=bin_dto['block_timestamp']
+                )
+
+                current_mcmt = MerChantMoeTokenCurrentBin(
+                    position_token_address=address,
+                    token_id=bin_dto['token_id'],
+                    reserve0_bin=bin_dto['reserve0_bin'],
+                    reserve1_bin=bin_dto['reserve1_bin'],
+                    block_number=bin_dto['block_number'],
+                    block_timestamp=bin_dto['block_timestamp']
+                )
+                results.append(mcmt)
+                current_results.append(current_mcmt)
+
+        return results, current_results
+
+
+def parse_balance_to_holding(token_balance: TokenBalance):
+    return MerchantMoeErc1155TokenHolding(
+        position_token_address=token_balance.token_address,
+        wallet_address=token_balance.address,
+        token_id=token_balance.token_id,
+        balance=token_balance.balance,
+        block_number=token_balance.block_number,
+        block_timestamp=token_balance.block_timestamp,
+    )
 
 
 def split_token_balances(token_balances):
@@ -327,7 +437,7 @@ def batch_get_bin(web3, make_requests, requests, nft_address, is_batch, abi_list
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            decoded_data = decode_data(output_types, bytes.fromhex(value))
+            decoded_data = decode_data(output_types, hex_str_to_bytes(value))
             token["reserve0_bin"] = decoded_data[0]
             token["reserve1_bin"] = decoded_data[1]
 
@@ -368,7 +478,7 @@ def batch_get_total_supply(web3, make_requests, requests, nft_address, is_batch,
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            decoded_data = decode_data(output_types, bytes.fromhex(value))
+            decoded_data = decode_data(output_types, hex_str_to_bytes(value))
             token[fn_name] = decoded_data[0]
 
         except Exception as e:
@@ -415,7 +525,7 @@ def batch_get_pool_int(web3, make_requests, requests, is_batch, abi_list, fn_nam
         token = data[0]
         value = result[2:] if result is not None else None
         try:
-            decoded_data = decode_data(output_types, bytes.fromhex(value))
+            decoded_data = decode_data(output_types, hex_str_to_bytes(value))
             token[fn_name] = decoded_data[0]
 
         except Exception as e:
