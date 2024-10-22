@@ -4,8 +4,8 @@
 # @Author  will
 # @File  project_contract.py
 # @Brief
-from sqlalchemy import BIGINT, BOOLEAN, INT, VARCHAR, Column, PrimaryKeyConstraint, func, text
-from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
+from sqlalchemy import Column, PrimaryKeyConstraint, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -13,7 +13,7 @@ from common.models import HemeraModel, general_converter
 class AfProjectContracts(HemeraModel):
     __tablename__ = "af_project_contracts"
     project_id = Column(VARCHAR)
-    chain_id = Column(INT)
+    chain_id = Column(INTEGER)
     address = Column(BYTEA, primary_key=True)
     deployer = Column(BYTEA)
 
