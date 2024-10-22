@@ -16,20 +16,20 @@ class CyberFunction(Function):
 
 class SetNameForAddressCyberFunction(CyberFunction):
     def __init__(self):
-        super().__init__({
-            "inputs": [
-                {"internalType": "address", "name": "addr", "type": "address"},
-                {"internalType": "address", "name": "owner", "type": "address"},
-                {"internalType": "address", "name": "resolver", "type": "address"},
-                {"internalType": "string", "name": "name", "type": "string"}
-            ],
-            "name": "setNameForAddr",
-            "outputs": [
-                {"internalType": "bytes32", "name": "", "type": "bytes32"}
-            ],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        })
+        super().__init__(
+            {
+                "inputs": [
+                    {"internalType": "address", "name": "addr", "type": "address"},
+                    {"internalType": "address", "name": "owner", "type": "address"},
+                    {"internalType": "address", "name": "resolver", "type": "address"},
+                    {"internalType": "string", "name": "name", "type": "string"},
+                ],
+                "name": "setNameForAddr",
+                "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}],
+                "stateMutability": "nonpayable",
+                "type": "function",
+            }
+        )
 
     def process(self, transaction: Transaction, **kwargs):
         if transaction.to_address.lower() != kwargs.get("cyber_id_reverse_registrar_contract_address"):
@@ -46,15 +46,15 @@ class SetNameForAddressCyberFunction(CyberFunction):
 
 class SetNameCyberFunction(CyberFunction):
     def __init__(self):
-        super().__init__({
-            "inputs": [
-                {"internalType": "string", "name": "name", "type": "string"}
-            ],
-            "name": "setName",
-            "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        })
+        super().__init__(
+            {
+                "inputs": [{"internalType": "string", "name": "name", "type": "string"}],
+                "name": "setName",
+                "outputs": [{"internalType": "bytes32", "name": "", "type": "bytes32"}],
+                "stateMutability": "nonpayable",
+                "type": "function",
+            }
+        )
 
     def process(self, transaction: Transaction, **kwargs):
         if transaction.to_address.lower() != kwargs.get("cyber_id_reverse_registrar_contract_address"):

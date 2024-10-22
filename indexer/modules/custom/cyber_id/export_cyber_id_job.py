@@ -6,8 +6,8 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.cyber_id.abi.event import AddressChangedEvent, RegisterEvent, CyberEvent, NameChangedEvent
-from indexer.modules.custom.cyber_id.abi.function import SetNameFunction, SetNameForAddrFunction, CyberFunction
+from indexer.modules.custom.cyber_id.abi.event import AddressChangedEvent, CyberEvent, NameChangedEvent, RegisterEvent
+from indexer.modules.custom.cyber_id.abi.function import CyberFunction, SetNameForAddrFunction, SetNameFunction
 from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberAddressChangedD, CyberAddressD, CyberIDRegisterD
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
@@ -32,7 +32,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
         self.contract_object_map = {}
         self.functions = {
             SetNameFunction.get_signature(): SetNameFunction,
-            SetNameForAddrFunction.get_signature(): SetNameForAddrFunction
+            SetNameForAddrFunction.get_signature(): SetNameForAddrFunction,
         }
         self.events = {
             RegisterEvent.get_signature(): RegisterEvent,
@@ -44,8 +44,10 @@ class ExportCyberIDJob(FilterTransactionDataJob):
             TransactionFilterByLogs(
                 [
                     TopicSpecification(
-                        addresses=[self.user_defined_config["cyber_id_public_resolver_contract_address"],
-                                   self.user_defined_config["cyber_id_token_contract_address"]],
+                        addresses=[
+                            self.user_defined_config["cyber_id_public_resolver_contract_address"],
+                            self.user_defined_config["cyber_id_token_contract_address"],
+                        ],
                         topics=[NameChangedEvent.get_signature(), RegisterEvent.get_signature()],
                     )
                 ]
