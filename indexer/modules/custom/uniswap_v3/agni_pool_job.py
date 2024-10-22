@@ -6,26 +6,40 @@ from collections import defaultdict
 
 import eth_abi
 
+from common.utils.abi_code_utils import decode_log
 from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
-from indexer.modules.custom.feature_type import FeatureType
-from indexer.modules.custom.uniswap_v3.constants import AGNI_ABI
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+from indexer.modules.custom.uniswap_v3.agni_abi import POSITIONS_FUNCTION, GET_POOL_FUNCTION, SLOT0_FUNCTION, \
+    POOL_CREATED_EVENT, SWAP_EVENT, OWNER_OF_FUNCTION, FACTORY_FUNCTION, FEE_FUNCTION, TOKEN0_FUNCTION, TOKEN1_FUNCTION, \
+    TICK_SPACING_FUNCTION, INCREASE_LIQUIDITY_EVENT, BURN_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT, \
+    MINT_EVENT
+
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     AgniV3Pool,
     AgniV3PoolCurrentPrice,
     AgniV3PoolPrice,
 )
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.abi import decode_log
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
-FEATURE_ID = FeatureType.AGNI_V3_POOLS.value
+
+FUNCTION_EVENT_LIST = [POSITIONS_FUNCTION, GET_POOL_FUNCTION, SLOT0_FUNCTION, POOL_CREATED_EVENT, SWAP_EVENT,
+                       OWNER_OF_FUNCTION, FACTORY_FUNCTION, FEE_FUNCTION, TOKEN0_FUNCTION, TOKEN1_FUNCTION,
+                       TICK_SPACING_FUNCTION, INCREASE_LIQUIDITY_EVENT, BURN_EVENT, UPDATE_LIQUIDITY_EVENT,
+                       DECREASE_LIQUIDITY_EVENT, MINT_EVENT]
+AGNI_ABI = [fe.get_abi() for fe in FUNCTION_EVENT_LIST]
+
+liquidity_event_list = [INCREASE_LIQUIDITY_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT]
+LIQUIDITY_EVENT_TOPIC0_LIST = [e.get_signature() for e in liquidity_event_list]
+
+nft_event_list = [MINT_EVENT, BURN_EVENT]
+NFT_EVENT_TOPIC0_LIST = [e.get_signature() for e in nft_event_list]
 
 
 class ExportAgniV3PoolJob(FilterTransactionDataJob):
@@ -42,47 +56,30 @@ class ExportAgniV3PoolJob(FilterTransactionDataJob):
         )
         self._is_batch = kwargs["batch_size"] > 1
         self._service = kwargs["config"].get("db_service")
-        self._chain_id = common_utils.get_chain_id(self._web3)
-        self._load_config("agni_config.ini", self._chain_id)
         self._abi_list = AGNI_ABI
-        self._exist_pools = get_exist_pools(self._service, self._nft_address)
         self._batch_size = kwargs["batch_size"]
+
+        config = kwargs["config"]['agni_pool_job']
+        self._position_token_address = config.get("position_token_address").lower()
+        self._factory_address = config.get("factory_address").lower()
+        self._create_pool_topic0 = POOL_CREATED_EVENT.get_signature()
+        self._pool_swap_topic0 = SWAP_EVENT.get_signature()
+
+        self._exist_pools = get_exist_pools(self._service, self._position_token_address)
         self._max_worker = kwargs["max_workers"]
 
     def get_filter(self):
-        liquidity_topic_keys = list(self._liquidity_topic0_dict.keys())
-        liquidity_topic_keys.append(self._pool_swap_topic0)
-        liquidity_topic_keys.append(self._create_pool_topic0)
-        liquidity_topic_keys = liquidity_topic_keys + self._liquidity_nft_topic0_list
+        liquidity_topic0_list = LIQUIDITY_EVENT_TOPIC0_LIST + NFT_EVENT_TOPIC0_LIST
+        liquidity_topic0_list.append(self._pool_swap_topic0)
+        liquidity_topic0_list.append(self._create_pool_topic0)
+
         return TransactionFilterByLogs(
             [
-                TopicSpecification(topics=liquidity_topic_keys),
+                TopicSpecification(topics=liquidity_topic0_list),
             ]
         )
 
-    def _load_config(self, filename, chain_id):
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(base_path, filename)
-        config = configparser.ConfigParser()
-        config.read(full_path)
-        chain_id_str = str(chain_id)
-        try:
-            chain_config = config[chain_id_str]
-        except KeyError:
-            return
-        try:
-            self._nft_address = chain_config.get("nft_address").lower()
-            self._factory_address = chain_config.get("factory_address").lower()
-            self._create_pool_topic0 = chain_config.get("create_pool_topic0").lower()
-            self._pool_swap_topic0 = chain_config.get("pool_swap_topic0").lower()
-            self._liquidity_topic0_dict = json.loads(chain_config.get("liquidity_topic0_dict", "{}"))
-            topic0_list_str = chain_config.get("liquidity_nft_topic0_list")
-            self._liquidity_nft_topic0_list = [address.strip() for address in topic0_list_str.split(",") if address.strip()]
-
-        except (configparser.NoOptionError, configparser.NoSectionError) as e:
-            raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
-
-    def _collect(self, **kwargs):
+    def _process(self, **kwargs):
         logs = self._data_buff[Log.type()]
         grouped_logs = defaultdict(list)
         for log in logs:
@@ -96,12 +93,12 @@ class ExportAgniV3PoolJob(FilterTransactionDataJob):
 
         # first collect pool info
         need_add_in_exists_pools = update_exist_pools(
-            self._nft_address,
+            self._position_token_address,
             self._factory_address,
             self._exist_pools,
             self._create_pool_topic0,
             self._pool_swap_topic0,
-            list(self._liquidity_topic0_dict.keys()),
+            LIQUIDITY_EVENT_TOPIC0_LIST,
             max_log_index_records,
             self._abi_list,
             self._web3,
@@ -120,6 +117,10 @@ class ExportAgniV3PoolJob(FilterTransactionDataJob):
         )
         self._batch_work_executor.wait()
 
+        self._data_buff[AgniV3Pool.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AgniV3PoolPrice.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AgniV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
+
     def _collect_batch(self, logs_dict):
         if not logs_dict:
             return
@@ -127,8 +128,8 @@ class ExportAgniV3PoolJob(FilterTransactionDataJob):
         token_address = next(iter(logs_dict))
         logs = logs_dict[token_address]
         block_info = {log.block_number: log.block_timestamp for log in logs}
-        liquidity_keys_list = list(self._liquidity_topic0_dict.keys())
-        liquidity_list = self._liquidity_nft_topic0_list + liquidity_keys_list
+        liquidity_keys_list = LIQUIDITY_EVENT_TOPIC0_LIST
+        liquidity_list = NFT_EVENT_TOPIC0_LIST + liquidity_keys_list
 
         pool_prices = collect_pool_prices(
             self._pool_swap_topic0,
@@ -158,11 +159,6 @@ class ExportAgniV3PoolJob(FilterTransactionDataJob):
         if current_price:
             self._collect_item(AgniV3PoolCurrentPrice.type(), current_price)
 
-    def _process(self, **kwargs):
-        self._data_buff[AgniV3Pool.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[AgniV3PoolPrice.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[AgniV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
-
 
 def format_pool_item(new_pools):
     result = []
@@ -191,14 +187,16 @@ def format_value_records(exist_pools, factory_address, pool_prices, block_info):
     return prices
 
 
-def get_exist_pools(db_service, nft_address):
+def get_exist_pools(db_service, position_token_address):
     if not db_service:
         return {}
 
     session = db_service.get_service_session()
     try:
         result = (
-            session.query(UniswapV3Pools).filter(UniswapV3Pools.nft_address == bytes.fromhex(nft_address[2:])).all()
+            session.query(UniswapV3Pools)
+            .filter(UniswapV3Pools.position_token_address == bytes.fromhex(position_token_address[2:]))
+            .all()
         )
         history_pools = {}
         if result is not None:
@@ -206,7 +204,7 @@ def get_exist_pools(db_service, nft_address):
                 pool_key = "0x" + item.pool_address.hex()
                 history_pools[pool_key] = {
                     "pool_address": pool_key,
-                    "nft_address": "0x" + item.nft_address.hex(),
+                    "position_token_address": "0x" + item.position_token_address.hex(),
                     "token0_address": "0x" + item.token0_address.hex(),
                     "token1_address": "0x" + item.token1_address.hex(),
                     "fee": item.fee,
@@ -224,19 +222,19 @@ def get_exist_pools(db_service, nft_address):
 
 
 def update_exist_pools(
-    nft_address,
-    factory_address,
-    exist_pools,
-    create_topic0,
-    swap_topic0,
-    liquidity_topic0_list,
-    logs,
-    abi_list,
-    web3,
-    make_requests,
-    is_batch,
-    batch_size,
-    max_worker,
+        position_token_address,
+        factory_address,
+        exist_pools,
+        create_topic0,
+        swap_topic0,
+        liquidity_topic0_list,
+        logs,
+        abi_list,
+        web3,
+        make_requests,
+        is_batch,
+        batch_size,
+        max_worker,
 ):
     need_add = {}
     swap_pools = []
@@ -250,7 +248,7 @@ def update_exist_pools(
             pool_address = decoded_data["pool"]
 
             new_pool = {
-                "nft_address": nft_address,
+                "position_token_address": position_token_address,
                 "token0_address": decoded_data["token0"],
                 "token1_address": decoded_data["token1"],
                 "fee": decoded_data["fee"],
@@ -263,23 +261,31 @@ def update_exist_pools(
             # if the address created by factory_address ,collect it
             swap_pools.append({"address": address, "block_number": log.block_number})
     swap_new_pools = collect_swap_new_pools(
-        nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+        position_token_address,
+        factory_address,
+        swap_pools,
+        abi_list,
+        web3,
+        make_requests,
+        is_batch,
+        batch_size,
+        max_worker,
     )
     need_add.update(swap_new_pools)
     return need_add
 
 
 def collect_pool_prices(
-    target0_topic0,
-    target1_topic0_list,
-    exist_pools,
-    logs,
-    web3,
-    make_requests,
-    is_batch,
-    abi_list,
-    batch_size,
-    max_workers,
+        target0_topic0,
+        target1_topic0_list,
+        exist_pools,
+        logs,
+        web3,
+        make_requests,
+        is_batch,
+        abi_list,
+        batch_size,
+        max_workers,
 ):
     pool_block_set = set()
     for log in logs:
@@ -309,7 +315,8 @@ def collect_pool_prices(
 
 
 def collect_swap_new_pools(
-    nft_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
+        position_token_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size,
+        max_worker
 ):
     factory_infos = common_utils.simple_get_rpc_requests(
         web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
@@ -341,7 +348,7 @@ def collect_swap_new_pools(
         pool_address = data["address"]
         if "token0" in data and "token1" in data and "tickSpacing" in data:
             new_pool = {
-                "nft_address": nft_address,
+                "position_token_address": position_token_address,
                 "token0_address": data["token0"],
                 "token1_address": data["token1"],
                 # "fee": data["fee"],
