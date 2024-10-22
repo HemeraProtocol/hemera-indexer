@@ -1,0 +1,1 @@
+INSERT INTO scheduled_wallet_count_metadata (dag_id, execution_date, last_data_timestamp) VALUES ('{dag_id}', '{execution_date}', '{last_data_timestamp}');
