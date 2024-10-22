@@ -48,9 +48,27 @@ class AaveV2LendingRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV2LendingPoolReserveFactorCurrent",
+                "domain": "AaveV2DepositD",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > af_aave_v2_change_factor_current.block_number",
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AaveV2WithdrawD",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AaveV2BorrowD",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AaveV2RepayD",
+                "conflict_do_update": True,
+                "update_strategy": None,
                 "converter": general_converter,
             },
         ]
