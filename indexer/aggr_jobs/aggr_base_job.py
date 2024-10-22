@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class AggrBaseJob:
@@ -16,8 +16,30 @@ class AggrBaseJob:
 
         with open(file_path, "r") as f:
             sql_template = f.read()
-        sql = sql_template.format(start_date=start_date, end_date=end_date)
+        if file_name == "explorer_5_update_schedule_metadata.sql":
+            now = datetime.now()
+            tomorrow = now + timedelta(days=0)
+            tomorrow_midnight = tomorrow.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            sql = sql_template.format_map(
+                {
+                    "dag_id": "update_wallet_address_stats",
+                    "execution_date": now.strftime("%Y-%m-%d %H:%M:%S"),
+                    "last_data_timestamp": tomorrow_midnight.strftime("%Y-%m-%d %H:%M:%S"),
+                }
+            )
+        else:
+            sql = sql_template.format(
+                start_date=start_date, end_date=end_date, start_date_previous=self.get_previous(start_date)
+            )
         return sql
+
+    @staticmethod
+    def get_previous(date_str):
+        date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+        previous_day = date_obj - timedelta(days=1)
+        previous_day_str = previous_day.strftime("%Y-%m-%d")
+        return previous_day_str
 
     @staticmethod
     def generate_date_pairs(start_date, end_date):
