@@ -1,0 +1,5 @@
+chain_id: 7560
+export_cyber_id_job:
+    cyber_id_reverse_registrar_contract_address: "0x79502da131357333d61c39b7411d01df54591961"
+    cyber_id_public_resolver_contract_address: "0xfb2f304c1fcd6b053ee033c03293616d5121944b"
+    cyber_id_token_contract_address: "0xc137be6b59e824672aada673e55cf4d150669af8"
