@@ -8,7 +8,7 @@ from common.models import HemeraModel, general_converter
 
 class AaveV2LendingPools(HemeraModel):
     __tablename__ = "af_aave_v2_lending_pools"
-    asset_address = Column(BYTEA, primary_key=True)
+    reverse = Column(BYTEA, primary_key=True)
     a_token_address = Column(BYTEA)
     stable_debt_token_address = Column(BYTEA)
     variable_debt_token_address = Column(BYTEA)
@@ -20,7 +20,7 @@ class AaveV2LendingPools(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("asset_address"),)
+    __table_args__ = (PrimaryKeyConstraint("reverse"),)
 
     @staticmethod
     def model_domain_mapping():
