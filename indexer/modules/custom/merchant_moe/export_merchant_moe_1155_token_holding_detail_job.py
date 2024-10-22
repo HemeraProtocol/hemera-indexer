@@ -80,7 +80,6 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         )
 
         self._is_batch = kwargs["batch_size"] > 1
-        self._chain_id = common_utils.get_chain_id(self._web3)
         self._exist_pool = get_exist_pools(self._service)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
