@@ -81,7 +81,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
         function: CyberFunction = self.functions.get(transaction.input[0:10])
         if not function:
             return
-        datas = function.process(transaction, self.user_defined_config)
+        datas = function.process(transaction, **self.user_defined_config)
         if not datas:
             return
         for data in datas:
@@ -91,7 +91,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
         event: CyberEvent = self.events.get(log.topic0)
         if not event:
             return
-        datas = event.process(log, self.user_defined_config)
+        datas = event.process(log, **self.user_defined_config)
         if not datas:
             return
         for data in datas:
