@@ -386,12 +386,14 @@ def stream(
         else:
             logging.getLogger("ROOT").info(f"Loading config from file: {config_file}, chain_id: {config['chain_id']}")
             config.update(file_based_config)
-
-    if output_types is None:
+    output_types_by_entity_type = []
+    if entity_types is not None:
         entity_types = calculate_entity_value(entity_types)
-        output_types = list(set(generate_output_types(entity_types)))
-    else:
-        output_types = generate_dataclass_type_list_from_parameter(output_types, "output")
+        output_types_by_entity_type = list(set(generate_output_types(entity_types)))
+
+    output_types = list(
+        set(generate_dataclass_type_list_from_parameter(output_types, "output") + output_types_by_entity_type)
+    )
 
     if source_path and source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
