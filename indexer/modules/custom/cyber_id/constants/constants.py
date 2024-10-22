@@ -1,6 +1,0 @@
-CyberIdReverseRegistrarContractAddress = "0x79502da131357333d61c39b7411d01df54591961"
-CyberIdPublicResolverContractAddress = "0xfb2f304c1fcd6b053ee033c03293616d5121944b"
-CyberIdTokenContractAddress = "0xc137be6b59e824672aada673e55cf4d150669af8"
-NameChangedTopic = "0xb7d29e911041e8d9b843369e890bcb72c9388692ba48b65ac54e7214c4c348f7"
-RegisterTopic = "0xa50d98082663c2b716ab4f8b6b2a51fcaed7eae222cd3d74b19de4691ede728a"
-AddressChangedTopic = "0x65412581168e88a1e60c6459d7f44ae83ad0832e670826c05a4e2476b57af752"

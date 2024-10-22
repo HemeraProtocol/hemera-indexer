@@ -3,7 +3,6 @@ from web3.types import ABIEvent
 from common.utils.abi_code_utils import Event
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.log import Log
-from indexer.modules.custom.cyber_id.constants.constants import *
 from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberIDRegisterD, CyberAddressChangedD
 from indexer.modules.custom.cyber_id.utils import get_node
 
@@ -12,7 +11,7 @@ class CyberEvent(Event):
     def __init__(self, event_abi: ABIEvent):
         super().__init__(event_abi)
 
-    def process(self, log: Log):
+    def process(self, log: Log, **kwargs):
         pass
 
 
@@ -31,8 +30,8 @@ class RegisterCyberEvent(CyberEvent):
             "type": "event"
         })
 
-    def process(self, log: Log):
-        if log.address.lower() != CyberIdTokenContractAddress:
+    def process(self, log: Log, **kwargs):
+        if log.address.lower() != kwargs.get("cyber_id_token_contract_address"):
             return None
         decode_data = self.decode_log(log)
         return [CyberIDRegisterD(
@@ -58,8 +57,8 @@ class AddressChangedCyberEvent(CyberEvent):
             "type": "event"
         })
 
-    def process(self, log: Log):
-        if log.address.lower() != CyberIdPublicResolverContractAddress:
+    def process(self, log: Log, **kwargs):
+        if log.address.lower() != kwargs.get("cyber_id_public_resolver_contract_address"):
             return None
         decode_data = self.decode_log(log)
         return [CyberAddressChangedD(
@@ -69,5 +68,22 @@ class AddressChangedCyberEvent(CyberEvent):
         )]
 
 
+class NameChangedCyberEvent(CyberEvent):
+    def __init__(self):
+        super().__init__({
+            "anonymous": False,
+            "inputs": [
+                {"indexed": True, "internalType": "bytes32", "name": "node", "type": "bytes32"},
+                {"indexed": False, "internalType": "string", "name": "name", "type": "string"}
+            ],
+            "name": "NameChanged",
+            "type": "event"
+        })
+
+    def process(self, log: Log, **kwargs):
+        return []
+
+
 RegisterEvent = RegisterCyberEvent()
 AddressChangedEvent = AddressChangedCyberEvent()
+NameChangedEvent = NameChangedCyberEvent()

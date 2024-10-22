@@ -2,16 +2,13 @@ import logging
 from itertools import groupby
 from typing import List
 
-
-from common.utils.abi_code_utils import Function
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.cyber_id.abi.event import AddressChangedEvent, RegisterEvent, CyberEvent
-from indexer.modules.custom.cyber_id.abi.function import SetNameFunction, SetNameForAddrFunction
+from indexer.modules.custom.cyber_id.abi.event import AddressChangedEvent, RegisterEvent, CyberEvent, NameChangedEvent
+from indexer.modules.custom.cyber_id.abi.function import SetNameFunction, SetNameForAddrFunction, CyberFunction
 from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberAddressChangedD, CyberAddressD, CyberIDRegisterD
-from indexer.modules.custom.cyber_id.constants.constants import *
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
@@ -47,8 +44,9 @@ class ExportCyberIDJob(FilterTransactionDataJob):
             TransactionFilterByLogs(
                 [
                     TopicSpecification(
-                        addresses=[CyberIdPublicResolverContractAddress, CyberIdTokenContractAddress],
-                        topics=[NameChangedTopic, RegisterTopic],
+                        addresses=[self.user_defined_config["cyber_id_public_resolver_contract_address"],
+                                   self.user_defined_config["cyber_id_token_contract_address"]],
+                        topics=[NameChangedEvent.get_signature(), RegisterEvent.get_signature()],
                     )
                 ]
             ),
@@ -80,10 +78,10 @@ class ExportCyberIDJob(FilterTransactionDataJob):
         ]
 
     def _process_transaction(self, transaction: Transaction):
-        function: Function = self.functions.get(transaction.input[0:10])
+        function: CyberFunction = self.functions.get(transaction.input[0:10])
         if not function:
             return
-        datas = function.process(transaction)
+        datas = function.process(transaction, self.user_defined_config)
         if not datas:
             return
         for data in datas:
@@ -93,7 +91,7 @@ class ExportCyberIDJob(FilterTransactionDataJob):
         event: CyberEvent = self.events.get(log.topic0)
         if not event:
             return
-        datas = event.process(log)
+        datas = event.process(log, self.user_defined_config)
         if not datas:
             return
         for data in datas:

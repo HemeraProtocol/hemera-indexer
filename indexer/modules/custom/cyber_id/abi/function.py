@@ -2,7 +2,6 @@ from web3.types import ABIFunction
 
 from common.utils.abi_code_utils import Function
 from indexer.domain.transaction import Transaction
-from indexer.modules.custom.cyber_id.constants.constants import *
 from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberAddressD
 from indexer.modules.custom.cyber_id.utils import get_reverse_node
 
@@ -11,7 +10,7 @@ class CyberFunction(Function):
     def __init__(self, function_abi: ABIFunction):
         super().__init__(function_abi)
 
-    def process(self, transaction: Transaction):
+    def process(self, transaction: Transaction, **kwargs):
         pass
 
 
@@ -32,8 +31,8 @@ class SetNameForAddressCyberFunction(CyberFunction):
             "type": "function"
         })
 
-    def process(self, transaction: Transaction):
-        if transaction.to_address.lower() != CyberIdReverseRegistrarContractAddress:
+    def process(self, transaction: Transaction, **kwargs):
+        if transaction.to_address.lower() != kwargs.get("cyber_id_reverse_registrar_contract_address"):
             return None
         decoded_input = self.decode_data(transaction.input)
         cyber_address = CyberAddressD(
@@ -57,8 +56,8 @@ class SetNameCyberFunction(CyberFunction):
             "type": "function"
         })
 
-    def process(self, transaction: Transaction):
-        if transaction.to_address.lower() != CyberIdReverseRegistrarContractAddress:
+    def process(self, transaction: Transaction, **kwargs):
+        if transaction.to_address.lower() != kwargs.get("cyber_id_reverse_registrar_contract_address"):
             return None
         decoded_input = self.decode_data(transaction.input)
         cyber_address = CyberAddressD(
