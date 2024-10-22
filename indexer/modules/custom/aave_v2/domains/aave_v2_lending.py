@@ -44,7 +44,7 @@ class AaveV2LendingPoolReserveFactorRecord(FilterData):
 @dataclass
 class AaveV2DepositD(FilterData):
     reserve: Optional[str] = None
-    onBehalfOf: Optional[str] = None
+    on_behalf_of: Optional[str] = None
     referral: Optional[int] = None
     user: Optional[str] = None
     amount: Optional[int] = None
