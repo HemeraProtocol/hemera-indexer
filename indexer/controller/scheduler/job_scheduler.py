@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 from collections import defaultdict, deque
 from typing import List, Set, Type
@@ -8,13 +10,14 @@ from redis.client import Redis
 from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.format_utils import bytes_to_hex_str
+from common.utils.integrity_checker import RuntimeCodeSignature
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
+from indexer.jobs.source_job.csv_source_job import CSVSourceJob
 from indexer.jobs.source_job.pg_source_job import PGSourceJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 
@@ -107,6 +110,7 @@ class JobScheduler:
                     self.logger.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
                     BaseJob.init_token_cache(token_dict_from_db)
         self.instantiate_jobs()
+        self.runtime_signature = RuntimeCodeSignature().calculate_signature(__name__)
         self.logger.info("Export output types: %s", required_output_types)
 
     def get_required_job_classes(self, output_types) -> (List[Type[BaseJob]], bool):
@@ -243,10 +247,23 @@ class JobScheduler:
                 exception_recorder.log(
                     block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
                 )
+
+            report_info = []
+            for dataclass in self.required_output_types:
+                base_info = {
+                    "dataClass": dataclass.type(),
+                    "codeHash": dataclass.get_code_hash(),
+                    "count": len(self.get_data_buff()[dataclass.type()]),
+                }
+                data_hash = hashlib.sha256(json.dumps(base_info, sort_keys=True).encode()).hexdigest()
+                base_info["dataHash"] = data_hash
+                report_info.append(base_info)
         except Exception as e:
             raise e
         finally:
             exception_recorder.force_to_flush()
+
+        return report_info
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []

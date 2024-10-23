@@ -23,7 +23,7 @@ class DomainMeta(type):
         salt = hashlib.sha1(cls.__name__.encode("utf-8")).hexdigest()
         hash_value = hashlib.sha256(f"{cls.__name__}{salt[cut:cut + 10]}".encode("utf-8")).hexdigest()
 
-        code = hash_value[cut:cut + 8]
+        code = hash_value[cut : cut + 8]
 
         if code in mcs._used_hash:
             existing_domain = mcs._hash_mapping[code]
@@ -44,7 +44,7 @@ class DomainMeta(type):
         if name == "Domain":
             return new_cls
 
-        manual_hash = attrs.get('__manual_hash__')
+        manual_hash = attrs.get("__manual_hash__")
 
         if manual_hash:
             if manual_hash in mcs._used_hash:
@@ -63,7 +63,7 @@ class DomainMeta(type):
             code = mcs._generate_code(new_cls)
 
         mcs._used_hash.add(code)
-        mcs._hash_mapping[code] = f'{new_cls.__module__}.{name}'
+        mcs._hash_mapping[code] = f"{new_cls.__module__}.{name}"
         setattr(new_cls, "_auto_hash", code)
 
         return new_cls
@@ -86,15 +86,6 @@ class DomainMeta(type):
             elif hasattr(subclass, "type") and subclass.type() in subclasses_dict:
                 raise TypeError(f"Type {subclass} has name conflict with type {subclasses_dict[subclass.type()]}!")
         return subclasses_dict
-
-
-def generate_domain_code_hash(domain_name: str) -> str:
-    cut = len(domain_name) % 32 // 2
-    salt = hashlib.sha1(domain_name.encode("utf-8")).hexdigest()
-    hash_value = hashlib.sha256(f"{domain_name}{salt[cut:cut + 10]}".encode("utf-8")).hexdigest()
-
-    code = hash_value[cut:cut + 8]
-    return code
 
 
 @dataclass

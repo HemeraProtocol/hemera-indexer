@@ -9,6 +9,7 @@ from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
+from indexer.utils.record_report import RecordReporter
 from indexer.utils.sync_recorder import BaseRecorder
 
 exception_recorder = ExceptionRecorder()
@@ -27,6 +28,7 @@ class StreamController(BaseController):
         max_retries=5,
         retry_from_record=False,
         delay=0,
+        record_reporter=None,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
@@ -36,6 +38,13 @@ class StreamController(BaseController):
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
         self.delay = delay
+        self.chain_id = self._get_current_chain_id()
+        self.record_reporter: RecordReporter = record_reporter
+        if self.record_reporter is None:
+            logger.warning(
+                "RecordReporter not initialized, indexed records will not be reported to contract. "
+                "The possible reason is that --report-private-key or --report-from-address are not set."
+            )
 
     def action(
         self,
@@ -95,10 +104,11 @@ class StreamController(BaseController):
 
                 if synced_blocks != 0:
                     # ETL program's main logic
-                    self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
-
+                    report_info = self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
+                    if self.record_reporter:
+                        self.record_reporter.report(self.chain_id, last_synced_block + 1, target_block, report_info)
                     last_synced_block = target_block
 
             except HemeraBaseException as e:
@@ -140,6 +150,9 @@ class StreamController(BaseController):
 
     def _get_current_block_number(self):
         return int(self.web3.eth.block_number)
+
+    def _get_current_chain_id(self):
+        return self.web3.eth.chain_id
 
     def _calculate_target_block(self, current_block, last_synced_block, end_block, steps):
         target_block = min(current_block - self.delay, last_synced_block + steps)

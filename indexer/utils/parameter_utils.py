@@ -7,6 +7,7 @@ import click
 from common.utils.format_utils import to_snake_case
 from indexer.domain import Domain
 from indexer.exporters.item_exporter import ItemExporterType, check_exporter_in_chosen
+from indexer.utils.record_report import RecordReporter
 
 
 def extract_path_from_parameter(cli_path: str) -> str:
@@ -76,3 +77,10 @@ def generate_dataclass_type_list_from_parameter(require_types: str, generate_typ
     types = list(set(parse_output_types))
 
     return types
+
+
+def create_record_report_from_parameter(private_key, from_address):
+    if private_key is None or from_address is None:
+        return None
+
+    return RecordReporter(private_key, from_address)

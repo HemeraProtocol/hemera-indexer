@@ -200,3 +200,28 @@ ERC1155_TOKEN_ID_BALANCE_OF_FUNCTION = Function(
         "type": "function",
     }
 )
+
+SUBMIT_INDEX_FUNCTION = Function(
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "chainId_", "type": "uint256"},
+            {"internalType": "uint256", "name": "startBlock_", "type": "uint256"},
+            {"internalType": "uint256", "name": "endBlock_", "type": "uint256"},
+            {
+                "components": [
+                    {"internalType": "bytes32", "name": "dataClass", "type": "bytes32"},
+                    {"internalType": "bytes32", "name": "codeHash", "type": "bytes32"},
+                    {"internalType": "uint256", "name": "count", "type": "uint256"},
+                    {"internalType": "bytes32", "name": "dataHash", "type": "bytes32"},
+                ],
+                "internalType": "struct HemeraHistoryTransparency.IndexerOutput[]",
+                "name": "outputs_",
+                "type": "tuple[]",
+            },
+        ],
+        "name": "submitIndexRecord",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    }
+)

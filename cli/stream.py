@@ -16,6 +16,7 @@ from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.parameter_utils import (
     check_file_exporter_parameter,
     check_source_load_parameter,
+    create_record_report_from_parameter,
     generate_dataclass_type_list_from_parameter,
 )
 from indexer.utils.provider import get_provider_from_uri
@@ -298,6 +299,24 @@ def calculate_execution_time(func):
     help="Whether to automatically run database migration scripts to update the database to the latest version.",
 )
 @click.option(
+    "--report-private-key",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="REPORT_PRIVATE_KEY",
+    help="When the progress report contract is submitted, the private-key required by the transaction is submitted. "
+    "When this parameter is not set, indexer will not report progress to the contract",
+)
+@click.option(
+    "--report-from-address",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="REPORT_FROM_ADDRESS",
+    help="When the progress report contract is submitted, the from-address required by the transaction is submitted. "
+    "When this parameter is not set, indexer will not report progress to the contract",
+)
+@click.option(
     "--log-level",
     default="INFO",
     show_default=True,
@@ -335,6 +354,8 @@ def stream(
     config_file=None,
     force_filter_mode=False,
     auto_upgrade_db=True,
+    report_private_key=None,
+    report_from_address=None,
     log_level="INFO",
 ):
     configure_logging(log_level, log_file)
@@ -421,6 +442,7 @@ def stream(
         ),
         retry_from_record=retry_from_record,
         delay=delay,
+        record_reporter=create_record_report_from_parameter(report_private_key, report_from_address),
     )
 
     controller.action(
