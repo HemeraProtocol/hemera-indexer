@@ -27,11 +27,18 @@ class AaveV2LendingRecords(HemeraModel):
     user = Column(BYTEA)
     repayer = Column(BYTEA)
     amount = Column(BIGINT)
+    premium = Column(BIGINT)
     on_behalf_of = Column(BYTEA)
     referral = Column(INT)
     borrow_rate_mode = Column(INT)
     borrow_rate = Column(BIGINT)
     to = Column(BYTEA)
+    collateral_asset = Column(BYTEA)
+    debt_asset = Column(BYTEA)
+    debt_to_cover = Column(BIGINT)
+    liquidated_collateral_amount = Column(BIGINT)
+    liquidator = Column(BYTEA)
+    receive_atoken = Column(BOOLEAN)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
@@ -67,6 +74,18 @@ class AaveV2LendingRecords(HemeraModel):
             },
             {
                 "domain": "AaveV2RepayD",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AaveV2FlashLoanD",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AaveV2LiquidationCallD",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
