@@ -3,7 +3,7 @@
 # @Time  2024/10/22 11:33
 # @Author  will
 
-from sqlalchemy import BOOLEAN, Column, PrimaryKeyConstraint, func, text
+from sqlalchemy import BOOLEAN, NUMERIC, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
@@ -15,12 +15,12 @@ class AaveV2AddressCurrent(HemeraModel):
     address = Column(BYTEA, primary_key=True)
     asset = Column(BYTEA, primary_key=True)
 
-    supply_amount = Column(BIGINT)
-    borrow_amount = Column(BIGINT)
+    supply_amount = Column(NUMERIC(100))
+    borrow_amount = Column(NUMERIC(100))
 
     block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
-    total_value_of_liquidation = Column(BIGINT)
+    total_value_of_liquidation = Column(NUMERIC(100))
     liquidation_time = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
