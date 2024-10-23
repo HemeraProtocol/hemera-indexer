@@ -1,7 +1,5 @@
-import configparser
 import json
 import logging
-import os
 from collections import defaultdict
 
 import eth_abi

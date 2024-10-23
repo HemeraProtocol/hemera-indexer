@@ -13,7 +13,6 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.uniswap_v3 import constants
-from indexer.modules.custom.uniswap_v3.constants import AGNI_ABI
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     AgniV3Token,
     AgniV3TokenCurrentStatus,
@@ -64,6 +63,8 @@ FUNCTION_EVENT_LIST = [
     DECREASE_LIQUIDITY_EVENT,
     MINT_EVENT,
 ]
+
+AGNI_ABI = [fe.get_abi() for fe in FUNCTION_EVENT_LIST]
 
 liquidity_event_list = [INCREASE_LIQUIDITY_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT]
 LIQUIDITY_EVENT_TOPIC0_DICT = {e.get_signature(): e for e in liquidity_event_list}
