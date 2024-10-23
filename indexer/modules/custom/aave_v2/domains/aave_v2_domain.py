@@ -5,14 +5,16 @@ from indexer.domain import FilterData
 
 
 @dataclass
-class AaveV2LendingPool(FilterData):
-    reverse: str
+class AaveV2ReserveD(FilterData):
+    asset: str
     a_token_address: str
     stable_debt_token_address: str
     variable_debt_token_address: str
     interest_rate_strategy_address: str
     block_number: int
     block_timestamp: int
+    transaction_hash: str
+    log_index: int
 
 
 @dataclass
