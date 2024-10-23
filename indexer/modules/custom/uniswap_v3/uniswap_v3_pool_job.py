@@ -36,7 +36,7 @@ from indexer.modules.custom.uniswap_v3.uniswapv3_abi import (
 )
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.rpc_utils import zip_rpc_response, rpc_response_to_result
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
@@ -221,8 +221,9 @@ def get_exist_pools(db_service, position_token_address):
     session = db_service.get_service_session()
     try:
         result = (
-            session.query(UniswapV3Pools).filter(
-                UniswapV3Pools.position_token_address == bytes.fromhex(position_token_address[2:])).all()
+            session.query(UniswapV3Pools)
+            .filter(UniswapV3Pools.position_token_address == bytes.fromhex(position_token_address[2:]))
+            .all()
         )
         history_pools = {}
         if result is not None:
@@ -248,19 +249,19 @@ def get_exist_pools(db_service, position_token_address):
 
 
 def update_exist_pools(
-        position_token_address,
-        factory_address,
-        exist_pools,
-        create_topic0,
-        swap_topic0,
-        liquidity_topic0_list,
-        logs,
-        abi_list,
-        web3,
-        make_requests,
-        is_batch,
-        batch_size,
-        max_worker,
+    position_token_address,
+    factory_address,
+    exist_pools,
+    create_topic0,
+    swap_topic0,
+    liquidity_topic0_list,
+    logs,
+    abi_list,
+    web3,
+    make_requests,
+    is_batch,
+    batch_size,
+    max_worker,
 ):
     need_add = {}
     swap_pools = []
@@ -287,24 +288,31 @@ def update_exist_pools(
             # if the address created by factory_address ,collect it
             swap_pools.append({"address": address, "block_number": log.block_number})
     swap_new_pools = collect_swap_new_pools(
-        position_token_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size,
-        max_worker
+        position_token_address,
+        factory_address,
+        swap_pools,
+        abi_list,
+        web3,
+        make_requests,
+        is_batch,
+        batch_size,
+        max_worker,
     )
     need_add.update(swap_new_pools)
     return need_add
 
 
 def collect_pool_prices(
-        target0_topic0,
-        target1_topic0_list,
-        exist_pools,
-        logs,
-        web3,
-        make_requests,
-        is_batch,
-        abi_list,
-        batch_size,
-        max_workers,
+    target0_topic0,
+    target1_topic0_list,
+    exist_pools,
+    logs,
+    web3,
+    make_requests,
+    is_batch,
+    abi_list,
+    batch_size,
+    max_workers,
 ):
     pool_block_set = set()
     for log in logs:
@@ -334,8 +342,7 @@ def collect_pool_prices(
 
 
 def collect_swap_new_pools(
-        position_token_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size,
-        max_worker
+    position_token_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ):
     factory_infos = common_utils.simple_get_rpc_requests(
         web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
