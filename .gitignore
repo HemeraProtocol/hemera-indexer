@@ -51,3 +51,5 @@ sync_record
 alembic.ini
 !indexer/modules/custom/hemera_ens/abi/*.json
 !indexer/modules/custom/cyber_id/abi/*.json
+!indexer/modules/custom/aave_v2/abi/*.json
+
