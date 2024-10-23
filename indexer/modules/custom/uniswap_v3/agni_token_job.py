@@ -1,7 +1,5 @@
-import configparser
 import json
 import logging
-import os
 import queue
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -14,21 +12,33 @@ from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
-from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v3 import constants
 from indexer.modules.custom.uniswap_v3.constants import AGNI_ABI
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     AgniV3Token,
     AgniV3TokenCurrentStatus,
     AgniV3TokenDetail,
 )
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
+from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.utils import rpc_response_to_result, zip_rpc_response, distinct_collections_by_group
+from indexer.utils.rpc_utils import zip_rpc_response, rpc_response_to_result
 
 logger = logging.getLogger(__name__)
-FEATURE_ID = FeatureType.AGNI_V3_TOKENS.value
+
+from indexer.modules.custom.uniswap_v3.agni_abi import POSITIONS_FUNCTION, GET_POOL_FUNCTION, SLOT0_FUNCTION, \
+    POOL_CREATED_EVENT, SWAP_EVENT, OWNER_OF_FUNCTION, FACTORY_FUNCTION, FEE_FUNCTION, TOKEN0_FUNCTION, TOKEN1_FUNCTION, \
+    TICK_SPACING_FUNCTION, INCREASE_LIQUIDITY_EVENT, BURN_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT, \
+    MINT_EVENT
+
+FUNCTION_EVENT_LIST = [POSITIONS_FUNCTION, GET_POOL_FUNCTION, SLOT0_FUNCTION, POOL_CREATED_EVENT, SWAP_EVENT,
+                       OWNER_OF_FUNCTION, FACTORY_FUNCTION, FEE_FUNCTION, TOKEN0_FUNCTION, TOKEN1_FUNCTION,
+                       TICK_SPACING_FUNCTION, INCREASE_LIQUIDITY_EVENT, BURN_EVENT, UPDATE_LIQUIDITY_EVENT,
+                       DECREASE_LIQUIDITY_EVENT, MINT_EVENT]
+
+liquidity_event_list = [INCREASE_LIQUIDITY_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT]
+LIQUIDITY_EVENT_TOPIC0_DICT = {e.get_signature(): e for e in liquidity_event_list}
 
 
 class ExportAgniV3TokensJob(FilterTransactionDataJob):
@@ -46,29 +56,16 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._chain_id = common_utils.get_chain_id(self._web3)
         self._service = kwargs["config"].get("db_service")
-        self._load_config("agni_config.ini", self._chain_id)
         self._abi_list = AGNI_ABI
         self._liquidity_token_id_blocks = queue.Queue()
-        self._exist_token_ids = get_exist_token_ids(self._service, self._nft_address)
+
+        config = kwargs.get("config")['agni_pool_job']
+        self._position_token_address = config.get("position_token_address").lower()
+        self._factory_address = config.get("factory_address").lower()
+
+        self._exist_token_ids = get_exist_token_ids(self._service, self._position_token_address)
         self._batch_size = kwargs["batch_size"]
         self._max_worker = kwargs["max_workers"]
-
-    def _load_config(self, filename, chain_id):
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        full_path = os.path.join(base_path, filename)
-        config = configparser.ConfigParser()
-        config.read(full_path)
-        chain_id_str = str(chain_id)
-        try:
-            chain_config = config[chain_id_str]
-        except KeyError:
-            return
-        try:
-            self._nft_address = chain_config.get("nft_address").lower()
-            self._factory_address = chain_config.get("factory_address").lower()
-            self._liquidity_topic0_dict = json.loads(chain_config.get("liquidity_topic0_dict", "{}"))
-        except (configparser.NoOptionError, configparser.NoSectionError) as e:
-            raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
     def get_filter(self):
         return TransactionFilterByLogs(
@@ -76,7 +73,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
                 TopicSpecification(
                     addresses=[self._factory_address],
                 ),
-                TopicSpecification(addresses=[self._nft_address]),
+                TopicSpecification(addresses=[self._position_token_address]),
             ]
         )
 
@@ -88,11 +85,9 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
 
         # collect the nft_ids which were minted or burned
         mint_token_ids, burn_token_ids, all_token_dict = extract_changed_tokens(
-            self._data_buff[ERC721TokenTransfer.type()], self._nft_address
+            self._data_buff[ERC721TokenTransfer.type()], self._position_token_address
         )
-        token_id_liquidity_records = extract_liquidity_logs(
-            self._liquidity_topic0_dict, self._data_buff[Log.type()], self._nft_address
-        )
+        token_id_liquidity_records = extract_liquidity_logs(self._data_buff[Log.type()], self._position_token_address)
 
         need_collect_value_tokens, want_pool_tokens = gather_collect_infos(
             all_token_dict,
@@ -105,7 +100,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._web3,
             self._batch_web3_provider.make_request,
             need_collect_value_tokens,
-            self._nft_address,
+            self._position_token_address,
             self._is_batch,
             self._abi_list,
             self._batch_size,
@@ -118,7 +113,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._web3,
             self._batch_web3_provider.make_request,
             need_collect_value_tokens,
-            self._nft_address,
+            self._position_token_address,
             self._is_batch,
             self._abi_list,
             self._batch_size,
@@ -128,7 +123,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
         update_exist_tokens, new_nft_info = get_new_nfts(
             token_infos,
             want_pool_tokens,
-            self._nft_address,
+            self._position_token_address,
             self._web3,
             self._batch_web3_provider.make_request,
             need_collect_value_tokens,
@@ -144,7 +139,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._collect_item(AgniV3Token.type(), data)
             self._exist_token_ids[data.token_id] = data.pool_address
         token_result, current_statuses = parse_token_records(
-            self._nft_address, self._exist_token_ids, owner_dict, token_infos, self._block_infos
+            self._position_token_address, self._exist_token_ids, owner_dict, token_infos, self._block_infos
         )
 
         for data in token_result:
@@ -153,7 +148,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._collect_item(AgniV3TokenCurrentStatus.type(), data)
         for token_id, block_number in burn_token_ids.items():
             self._collect_item(AgniV3TokenDetail.type(), AgniV3TokenDetail(
-                nft_address=self._nft_address,
+                position_token_address=self._position_token_address,
                 pool_address=self._exist_token_ids.get(token_id, ""),
                 token_id=token_id,
                 wallet_address=constants.ZERO_ADDRESS,
@@ -162,7 +157,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
                 block_timestamp=self._block_infos[block_number]
             ))
             self._collect_item(AgniV3TokenCurrentStatus.type(), AgniV3TokenCurrentStatus(
-                nft_address=self._nft_address,
+                position_token_address=self._position_token_address,
                 pool_address=self._exist_token_ids.get(token_id, ""),
                 token_id=token_id,
                 wallet_address=constants.ZERO_ADDRESS,
@@ -172,7 +167,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             ))
 
         self._data_buff[AgniV3TokenCurrentStatus.type()] = distinct_collections_by_group(
-            self._data_buff[AgniV3TokenCurrentStatus.type()], ['nft_address', 'token_id'], 'block_number')
+            self._data_buff[AgniV3TokenCurrentStatus.type()], ['position_token_address', 'token_id'], 'block_number')
 
         self._block_infos = {}
 
@@ -182,7 +177,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
         self._data_buff[AgniV3TokenCurrentStatus.type()].sort(key=lambda x: x.block_number)
 
 
-def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, block_info):
+def parse_token_records(position_token_address, token_pool_dict, owner_dict, token_infos, block_info):
     token_result = []
     token_block_dict = {}
 
@@ -198,7 +193,7 @@ def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, b
 
         token_result.append(
             AgniV3TokenDetail(
-                nft_address=nft_address,
+                position_token_address=position_token_address,
                 pool_address=pool_address,
                 token_id=token_id,
                 wallet_address=address,
@@ -218,7 +213,7 @@ def parse_token_records(nft_address, token_pool_dict, owner_dict, token_infos, b
 
         current_statuses.append(
             AgniV3TokenCurrentStatus(
-                nft_address=nft_address,
+                position_token_address=position_token_address,
                 token_id=token_id,
                 pool_address=pool_address,
                 wallet_address=address,
@@ -256,8 +251,9 @@ def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_t
     return need_collect_value_tokens, want_pool_tokens
 
 
-def get_owner_dict(web3, make_requests, requests, nft_address, is_batch, abi_list, batch_size, max_workers):
-    owners = owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list, batch_size, max_workers)
+def get_owner_dict(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers):
+    owners = owner_rpc_requests(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size,
+                                max_workers)
     owner_dict = {}
     for data in owners:
         owner_dict.setdefault(data["token_id"], {})[data["block_number"]] = data["owner"]
@@ -267,7 +263,7 @@ def get_owner_dict(web3, make_requests, requests, nft_address, is_batch, abi_lis
 def get_new_nfts(
         all_token_infos,
         want_pool_tokens,
-        nft_address,
+        position_token_address,
         web3,
         make_requests,
         requests,
@@ -299,16 +295,16 @@ def get_new_nfts(
 
     for data in need_collect_pool_tokens:
         token_id = data["token_id"]
-        if (nft_address, token_id) in seen:
+        if (position_token_address, token_id) in seen:
             continue
-        seen.add((nft_address, token_id))
+        seen.add((position_token_address, token_id))
         key = data["token0"] + data["token1"] + str(data["fee"])
         pool_address = pool_dict[key]
         update_exist_tokens[token_id] = pool_address
 
         result.append(
             AgniV3Token(
-                nft_address=nft_address,
+                position_token_address=position_token_address,
                 token_id=token_id,
                 pool_address=pool_address,
                 tick_lower=data["tickLower"],
@@ -321,7 +317,7 @@ def get_new_nfts(
     return update_exist_tokens, result
 
 
-def get_exist_token_ids(db_service, nft_address):
+def get_exist_token_ids(db_service, position_token_address):
     if not db_service:
         return {}
 
@@ -331,7 +327,7 @@ def get_exist_token_ids(db_service, nft_address):
             session.query(UniswapV3Tokens.token_id, UniswapV3Tokens.pool_address)
             .filter(
                 UniswapV3Tokens.pool_address != None,
-                UniswapV3Tokens.nft_address == bytes.fromhex(nft_address[2:]),
+                UniswapV3Tokens.position_token_address == bytes.fromhex(position_token_address[2:]),
             )
             .all()
         )
@@ -348,7 +344,7 @@ def get_exist_token_ids(db_service, nft_address):
     return history_token
 
 
-def extract_changed_tokens(token_transfers, nft_address):
+def extract_changed_tokens(token_transfers, position_token_address):
     mint_tokens_dict = {}
     burn_tokens_dict = {}
     all_tokens_dict = {}
@@ -356,7 +352,7 @@ def extract_changed_tokens(token_transfers, nft_address):
 
     for transfer in sorted_transfers:
         token_address = transfer.token_address
-        if token_address != nft_address:
+        if token_address != position_token_address:
             continue
         token_id = transfer.token_id
         block_number = transfer.block_number
@@ -375,37 +371,30 @@ def extract_changed_tokens(token_transfers, nft_address):
     return mint_tokens_dict, burn_tokens_dict, all_tokens_dict
 
 
-def extract_liquidity_logs(topic0_dict, logs, nft_address):
+def extract_liquidity_logs(logs, position_token_address):
     token_id_block = {}
 
     for log in logs:
-        if log.address != nft_address:
+        if log.address != position_token_address:
             continue
 
         topic0 = log.topic0
-        if topic0 not in topic0_dict:
-            continue
-
-        topic_index = topic0_dict[topic0]
-        if topic_index == 1:
-            token_id_hex = log.topic1
-        elif topic_index == 2:
-            token_id_hex = log.topic2
-        else:
-            token_id_hex = log.topic3
-        token_id = int(token_id_hex[2:], 16)
-        token_id_block.setdefault(token_id, {})[log.block_number] = topic0
+        fe = LIQUIDITY_EVENT_TOPIC0_DICT.get(topic0)
+        if fe:
+            log_decoded_data = fe.decode_log(log)
+            token_id = log_decoded_data['tokenId']
+            token_id_block.setdefault(token_id, {})[log.block_number] = topic0
     return token_id_block
 
 
-def build_token_id_method_data(web3, token_ids, nft_address, fn, abi_list):
+def build_token_id_method_data(web3, token_ids, position_token_address, fn, abi_list):
     parameters = []
-    contract = web3.eth.contract(address=Web3.to_checksum_address(nft_address), abi=abi_list)
+    contract = web3.eth.contract(address=Web3.to_checksum_address(position_token_address), abi=abi_list)
 
     for idx, token in enumerate(token_ids):
         token_data = {
             "request_id": idx,
-            "param_to": nft_address,
+            "param_to": position_token_address,
             "param_number": hex(token["block_number"]),
         }
         token.update(token_data)
@@ -417,7 +406,7 @@ def build_token_id_method_data(web3, token_ids, nft_address, fn, abi_list):
         except Exception as e:
             logger.error(
                 f"Encoding token id {token['token_id']} for function {fn} failed. "
-                f"NFT address: {nft_address}. "
+                f"NFT address: {position_token_address}. "
                 f"Exception: {e}."
             )
 
@@ -425,7 +414,8 @@ def build_token_id_method_data(web3, token_ids, nft_address, fn, abi_list):
     return parameters
 
 
-def positions_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list, batch_size, max_workers):
+def positions_rpc_requests(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size,
+                           max_workers):
     if len(requests) == 0:
         return []
 
@@ -437,7 +427,7 @@ def positions_rpc_requests(web3, make_requests, requests, nft_address, is_batch,
     outputs = function_abi["outputs"]
     output_types = [output["type"] for output in outputs]
 
-    parameters = build_token_id_method_data(web3, requests, nft_address, fn_name, abi_list)
+    parameters = build_token_id_method_data(web3, requests, position_token_address, fn_name, abi_list)
     token_name_rpc = list(generate_eth_call_json_rpc(parameters))
 
     def process_batch(batch):
@@ -494,7 +484,8 @@ def positions_rpc_requests(web3, make_requests, requests, nft_address, is_batch,
     return all_token_infos
 
 
-def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi_list, batch_size, max_workers):
+def owner_rpc_requests(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size,
+                       max_workers):
     if len(requests) == 0:
         return []
 
@@ -506,7 +497,7 @@ def owner_rpc_requests(web3, make_requests, requests, nft_address, is_batch, abi
     outputs = function_abi["outputs"]
     output_types = [output["type"] for output in outputs]
 
-    parameters = build_token_id_method_data(web3, requests, nft_address, fn_name, abi_list)
+    parameters = build_token_id_method_data(web3, requests, position_token_address, fn_name, abi_list)
     token_name_rpc = list(generate_eth_call_json_rpc(parameters))
 
     def process_batch(batch):
