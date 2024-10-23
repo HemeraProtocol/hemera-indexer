@@ -9,7 +9,7 @@ from common.models import HemeraModel, general_converter
 class AaveV2Reserve(HemeraModel):
     __tablename__ = "af_aave_v2_reserve"
     asset = Column(BYTEA, primary_key=True)
-    a_token = Column(BYTEA)
+    a_token_address = Column(BYTEA)
     stable_debt_token_address = Column(BYTEA)
     variable_debt_token_address = Column(BYTEA)
     interest_rate_strategy_address = Column(BYTEA)
