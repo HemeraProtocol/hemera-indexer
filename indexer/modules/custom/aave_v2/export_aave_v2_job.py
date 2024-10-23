@@ -11,7 +11,6 @@ from sqlalchemy import func
 from web3.types import ABIEvent
 
 from common.utils.abi_code_utils import Event
-from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from common.utils.web3_utils import extract_eth_address
 from indexer.domain.log import Log
@@ -79,6 +78,10 @@ def get_event_abi(con_abi_list, event_name) -> str:
             return abi
 
 
+def get_event_name(event: Event) -> str:
+    return event.get_abi().get("name")
+
+
 def create_nested_dict(data_list: List[AaveV2AddressCurrentD]) -> Dict[str, Dict[str, AaveV2AddressCurrentD]]:
     result = {}
     for item in data_list:
@@ -113,6 +116,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.db_service = kwargs["config"].get("db_service")
 
         self.job_conf = self.user_defined_config
         self._create_reserve_topic0 = constants.RESERVE_INITIALIZED_TOPIC0
@@ -187,13 +191,13 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     on_behalf_of=extract_eth_address(log.topic2),
                     referral=log.topic3,
                     # who send asset
-                    user=dl["user"],
+                    aave_user=dl["user"],
                     amount=dl["amount"],
                     block_number=log.block_number,
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.deposit_event["name"],
+                    event_name=get_event_name(self.deposit_event),
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -202,14 +206,14 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 dl = self.withdraw_event.decode_log(log)
                 tmp: AaveV2WithdrawD = AaveV2WithdrawD(
                     reserve=extract_eth_address(log.topic1),
-                    user=extract_eth_address(log.topic2),
+                    aave_user=extract_eth_address(log.topic2),
                     to=extract_eth_address(log.topic3),
                     amount=dl["amount"],
                     block_number=log.block_number,
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.withdraw_event["name"],
+                    event_name=get_event_name(self.withdraw_event),
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -222,7 +226,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     on_behalf_of=extract_eth_address(log.topic2),
                     referral=log.topic3,
                     #  The address of the user initiating the borrow(), receiving the funds on borrow() or just initiator of the transaction on flashLoan()
-                    user=dl["user"],
+                    aave_user=dl["user"],
                     amount=dl["amount"],
                     # The rate mode: 1 for Stable, 2 for Variable
                     borrow_rate_mode=dl["interestRateMode"],
@@ -231,7 +235,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.borrow_event["name"],
+                    event_name=get_event_name(self.borrow_event),
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -241,7 +245,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 tmp: AaveV2RepayD = AaveV2RepayD(
                     reserve=extract_eth_address(log.topic1),
                     # The beneficiary of the repayment, getting his debt reduced
-                    user=extract_eth_address(log.topic2),
+                    aave_user=extract_eth_address(log.topic2),
                     # The address of the user initiating the repay(), providing the funds
                     repayer=extract_eth_address(log.topic3),
                     amount=dl["amount"],
@@ -249,7 +253,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.repay_event["name"],
+                    event_name=get_event_name(self.repay_event),
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -259,7 +263,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 tmp: AaveV2FlashLoanD = AaveV2FlashLoanD(
                     target=extract_eth_address(log.topic1),
                     # The beneficiary of the repayment, getting his debt reduced
-                    user=extract_eth_address(log.topic2),
+                    aave_user=extract_eth_address(log.topic2),
                     # The address of the user initiating the repay(), providing the funds
                     reserve=extract_eth_address(log.topic3),
                     amount=dl["amount"],
@@ -269,27 +273,26 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.flash_loan_event["name"],
+                    event_name=get_event_name(self.flash_loan_event),
                     topic0=log.topic0,
                 )
                 res.append(tmp)
             elif current_topic0 == self.liquidation_call_event.get_signature():
                 # 0xe413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286
                 dl = self.liquidation_call_event.decode_log(log)
-                tmp: AaveV2FlashLoanD = AaveV2FlashLoanD(
-                    target=extract_eth_address(log.topic1),
-                    # The beneficiary of the repayment, getting his debt reduced
-                    user=extract_eth_address(log.topic2),
-                    # The address of the user initiating the repay(), providing the funds
-                    reserve=extract_eth_address(log.topic3),
-                    amount=dl["amount"],
-                    premium=dl["premium"],
-                    referral=dl["referralCode"],
+                tmp: AaveV2LiquidationCallD = AaveV2LiquidationCallD(
+                    collateral_asset=extract_eth_address(log.topic1),
+                    debt_asset=extract_eth_address(log.topic2),
+                    aave_user=extract_eth_address(log.topic3),
+                    debt_to_cover=dl["debtToCover"],
+                    liquidated_collateral_amount=dl["liquidatedCollateralAmount"],
+                    liquidator=dl["liquidator"],
+                    receive_atoken=dl["receiveAToken"],
                     block_number=log.block_number,
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.liquidation_call_event["name"],
+                    event_name=get_event_name(self.liquidation_call_event),
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -308,14 +311,15 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         batch_result_dic = self.calculate_batch_result(res)
         exists_dic = self.get_existing_address_current(list(batch_result_dic.keys()))
         for address, outer_dic in batch_result_dic.items():
-            for vault, kad in outer_dic.items():
-                if address in exists_dic and vault in exists_dic[address]:
-                    exists_kad = exists_dic[address][vault]
-                    exists_kad.supply_amount += kad.supply_amount
-                    exists_kad.borrow_amount += kad.borrow_amount
-                    self._collect_item(kad.type(), exists_kad)
+            for reserve, kad in outer_dic.items():
+                if address in exists_dic and reserve in exists_dic[address]:
+                    exists_aad = exists_dic[address][reserve]
+                    exists_aad.supply_amount += kad.supply_amount
+                    exists_aad.borrow_amount += kad.borrow_amount
+                    self._collect_item(kad.type(), exists_aad)
                 else:
                     self._collect_item(kad.type(), kad)
+        print("here")
         # self._process_current_pool_data()
 
     def get_existing_address_current(self, addresses):
@@ -338,6 +342,8 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     asset=bytes_to_hex_str(rr.asset),
                     supply_amount=rr.supply_amount,
                     borrow_amount=rr.borrow_amount,
+                    block_number=rr.block_number,
+                    block_timestamp=rr.block_timestamp,
                 )
             )
 
@@ -349,34 +355,56 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
         res_d = defaultdict(nested_dict)
         for action in aave_records:
+            if not hasattr(action, "event_name"):
+                continue
             event_name = action.event_name
 
-            if event_name == self.deposit_event["name"]:
+            if event_name == get_event_name(self.deposit_event):
                 user = action.on_behalf_of
                 reserve = action.reserve
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].supply_amount += action.amount
-            elif event_name == self.borrow_event["name"]:
+                res_d[user][reserve].block_number = action.block_number
+                res_d[user][reserve].block_timestamp = action.block_timestamp
+            elif event_name == get_event_name(self.borrow_event):
                 reserve = action.reserve
                 user = action.on_behalf_of
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].borrow_amount += action.amount
-            elif event_name == self.repay_event["name"]:
+                res_d[user][reserve].block_number = action.block_number
+                res_d[user][reserve].block_timestamp = action.block_timestamp
+            elif event_name == get_event_name(self.repay_event):
                 reserve = action.reserve
-                user = action.user
+                user = action.aave_user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].address = user
                 res_d[user][reserve].borrow_amount -= action.amount
-            elif event_name == self.withdraw_event["name"]:
+                res_d[user][reserve].block_number = action.block_number
+                res_d[user][reserve].block_timestamp = action.block_timestamp
+            elif event_name == get_event_name(self.withdraw_event):
                 reserve = action.reserve
                 user = action.on_behalf_of
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].supply_amount -= action.amount
+                res_d[user][reserve].block_number = action.block_number
+                res_d[user][reserve].block_timestamp = action.block_timestamp
+            elif event_name == get_event_name(self.liquidation_call_event):
+                collateral_asset = action.collateral_asset
+                debt_asset = action.debt_asset
+                user = action.aave_user
+                res_d[user][collateral_asset].asset = debt_asset
+                res_d[user][collateral_asset].address = user
+                res_d[user][collateral_asset].supply_amount = 0
+                res_d[user][collateral_asset].block_number = action.block_number
+                res_d[user][collateral_asset].block_timestamp = action.block_timestamp
+
+                # res_d[user][debt_asset].total_value_of_liquidation = action.liquidated_collateral_amount
+                res_d[user][collateral_asset].liquidation_time = action.block_timestamp
             else:
-                raise FastShutdownError(f"eigen_layer_job Unexpected event {event_name}")
+                continue
         return res_d
 
     def _process_current_pool_data(self):
