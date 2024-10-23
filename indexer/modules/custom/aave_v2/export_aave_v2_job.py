@@ -2,27 +2,34 @@ import json
 import logging
 import os
 from collections import defaultdict
-from dataclasses import fields, asdict
+from dataclasses import asdict, fields
 from itertools import groupby
 from operator import attrgetter
-from typing import cast, List, Any, Dict
+from typing import Any, Dict, List, cast
 
 from sqlalchemy import func
 from web3.types import ABIEvent
 
 from common.utils.abi_code_utils import Event
 from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import hex_str_to_bytes, bytes_to_hex_str
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from common.utils.web3_utils import extract_eth_address
 from indexer.domain.log import Log
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.aave_v2 import constants
 from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
-    AaveV2ReserveD,
+    AaveV2AddressCurrentD,
+    AaveV2BorrowD,
+    AaveV2DepositD,
+    AaveV2FlashLoanD,
     AaveV2LendingPoolReserveFactorCurrent,
-    AaveV2LendingPoolReserveFactorRecord, AaveV2DepositD, AaveV2WithdrawD, AaveV2BorrowD, AaveV2RepayD,
-    AaveV2FlashLoanD, AaveV2LiquidationCallD, AaveV2AddressCurrentD, AaveV2BaseRecord, aave_v2_address_current_factory,
+    AaveV2LendingPoolReserveFactorRecord,
+    AaveV2LiquidationCallD,
+    AaveV2RepayD,
+    AaveV2ReserveD,
+    AaveV2WithdrawD,
+    aave_v2_address_current_factory,
 )
 from indexer.modules.custom.aave_v2.models.aave_v2_address_current import AaveV2AddressCurrent
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -90,8 +97,18 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     Liquidation record
     Total value of liquidation for each wallet
     """
+
     dependency_types = [Log]
-    output_types = [AaveV2ReserveD, AaveV2DepositD, AaveV2WithdrawD, AaveV2BorrowD, AaveV2RepayD, AaveV2FlashLoanD, AaveV2LiquidationCallD, AaveV2AddressCurrentD]
+    output_types = [
+        AaveV2ReserveD,
+        AaveV2DepositD,
+        AaveV2WithdrawD,
+        AaveV2BorrowD,
+        AaveV2RepayD,
+        AaveV2FlashLoanD,
+        AaveV2LiquidationCallD,
+        AaveV2AddressCurrentD,
+    ]
     able_to_reorg = False
 
     def __init__(self, **kwargs):
@@ -106,28 +123,33 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         self.lending_pool_configure_address = self.job_conf["POOL_CONFIGURE"]
         self.address_set = {self.lending_pool_address, self.lending_pool_configure_address}
 
-
         lending_pool_abi = abi_map[self.lending_pool_address]
         lending_pool_configure_abi = abi_map[self.lending_pool_configure_address]
 
-        self.reserve_init_event = Event(cast(ABIEvent, get_event_abi(lending_pool_configure_abi, 'ReserveInitialized')))
+        self.reserve_init_event = Event(cast(ABIEvent, get_event_abi(lending_pool_configure_abi, "ReserveInitialized")))
 
-        self.deposit_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, 'Deposit')))
-        self.withdraw_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, 'Withdraw')))
-        self.borrow_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, 'Borrow')))
-        self.repay_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, 'Repay')))
-        self.flash_loan_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, 'FlashLoan')))
-        self.liquidation_call_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, 'LiquidationCall')))
+        self.deposit_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, "Deposit")))
+        self.withdraw_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, "Withdraw")))
+        self.borrow_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, "Borrow")))
+        self.repay_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, "Repay")))
+        self.flash_loan_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, "FlashLoan")))
+        self.liquidation_call_event = Event(cast(ABIEvent, get_event_abi(lending_pool_abi, "LiquidationCall")))
 
     def get_filter(self):
-        topics = [self.reserve_init_event.get_signature(), self.deposit_event.get_signature(),
-                  self.withdraw_event.get_signature(), self.borrow_event.get_signature(),
-                  self.repay_event.get_signature(), self.flash_loan_event.get_signature(),
-                  self.liquidation_call_event.get_signature()]
+        topics = [
+            self.reserve_init_event.get_signature(),
+            self.deposit_event.get_signature(),
+            self.withdraw_event.get_signature(),
+            self.borrow_event.get_signature(),
+            self.repay_event.get_signature(),
+            self.flash_loan_event.get_signature(),
+            self.liquidation_call_event.get_signature(),
+        ]
         return TransactionFilterByLogs(
             [
-                TopicSpecification(addresses=[self.lending_pool_address, self.lending_pool_configure_address],
-                                   topics=topics),
+                TopicSpecification(
+                    addresses=[self.lending_pool_address, self.lending_pool_configure_address], topics=topics
+                ),
             ]
         )
 
@@ -167,12 +189,11 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     # who send asset
                     user=dl["user"],
                     amount=dl["amount"],
-
                     block_number=log.block_number,
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.deposit_event['name'],
+                    event_name=self.deposit_event["name"],
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -184,12 +205,11 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     user=extract_eth_address(log.topic2),
                     to=extract_eth_address(log.topic3),
                     amount=dl["amount"],
-
                     block_number=log.block_number,
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.withdraw_event['name'],
+                    event_name=self.withdraw_event["name"],
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -207,12 +227,11 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     # The rate mode: 1 for Stable, 2 for Variable
                     borrow_rate_mode=dl["interestRateMode"],
                     borrow_rate=dl["borrowRate"],
-
                     block_number=log.block_number,
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.borrow_event['name'],
+                    event_name=self.borrow_event["name"],
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -226,12 +245,11 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     # The address of the user initiating the repay(), providing the funds
                     repayer=extract_eth_address(log.topic3),
                     amount=dl["amount"],
-
                     block_number=log.block_number,
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.repay_event['name'],
+                    event_name=self.repay_event["name"],
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -251,7 +269,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     block_timestamp=log.block_timestamp,
                     transaction_hash=log.transaction_hash,
                     log_index=log.log_index,
-                    event_name=self.flash_loan_event['name'],
+                    event_name=self.flash_loan_event["name"],
                     topic0=log.topic0,
                 )
                 res.append(tmp)
@@ -287,6 +305,17 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             #     )
         for it in res:
             self._collect_item(it.type(), it)
+        batch_result_dic = self.calculate_batch_result(res)
+        exists_dic = self.get_existing_address_current(list(batch_result_dic.keys()))
+        for address, outer_dic in batch_result_dic.items():
+            for vault, kad in outer_dic.items():
+                if address in exists_dic and vault in exists_dic[address]:
+                    exists_kad = exists_dic[address][vault]
+                    exists_kad.supply_amount += kad.supply_amount
+                    exists_kad.borrow_amount += kad.borrow_amount
+                    self._collect_item(kad.type(), exists_kad)
+                else:
+                    self._collect_item(kad.type(), kad)
         # self._process_current_pool_data()
 
     def get_existing_address_current(self, addresses):
@@ -322,25 +351,25 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for action in aave_records:
             event_name = action.event_name
 
-            if event_name == self.deposit_event['name']:
+            if event_name == self.deposit_event["name"]:
                 user = action.on_behalf_of
                 reserve = action.reserve
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].supply_amount += action.amount
-            elif event_name == self.borrow_event['name']:
+            elif event_name == self.borrow_event["name"]:
                 reserve = action.reserve
                 user = action.on_behalf_of
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].borrow_amount += action.amount
-            elif event_name == self.repay_event['name']:
+            elif event_name == self.repay_event["name"]:
                 reserve = action.reserve
                 user = action.user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].address = user
                 res_d[user][reserve].borrow_amount -= action.amount
-            elif event_name == self.withdraw_event['name']:
+            elif event_name == self.withdraw_event["name"]:
                 reserve = action.reserve
                 user = action.on_behalf_of
                 res_d[user][reserve].address = user
@@ -374,4 +403,3 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         return AaveV2LendingPoolReserveFactorCurrent(
             **{field.name: getattr(detail, field.name) for field in fields(AaveV2LendingPoolReserveFactorRecord)}
         )
-
