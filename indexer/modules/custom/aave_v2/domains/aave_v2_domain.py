@@ -51,15 +51,15 @@ class AaveV2DepositD(AaveV2BaseRecord):
     reserve: Optional[str] = None
     on_behalf_of: Optional[str] = None
     referral: Optional[int] = None
-    user: Optional[str] = None
+    aave_user: Optional[str] = None
     amount: Optional[int] = None
 
 
 @dataclass
 class AaveV2WithdrawD(AaveV2BaseRecord):
     reserve: Optional[str] = None
-    user: Optional[str] = None
-    to: Optional[str] = None
+    aave_user: Optional[str] = None
+    to_address: Optional[str] = None
     amount: Optional[int] = None
 
 
@@ -68,7 +68,7 @@ class AaveV2BorrowD(AaveV2BaseRecord):
     reserve: Optional[str] = None
     on_behalf_of: Optional[str] = None
     referral: Optional[int] = None
-    user: Optional[str] = None
+    aave_user: Optional[str] = None
     amount: Optional[int] = None
     borrow_rate_mode: Optional[int] = None
     borrow_rate: Optional[int] = None
@@ -77,7 +77,7 @@ class AaveV2BorrowD(AaveV2BaseRecord):
 @dataclass
 class AaveV2RepayD(AaveV2BaseRecord):
     reserve: Optional[str] = None
-    user: Optional[str] = None
+    aave_user: Optional[str] = None
     repayer: Optional[str] = None
     amount: Optional[int] = None
 
@@ -85,8 +85,8 @@ class AaveV2RepayD(AaveV2BaseRecord):
 @dataclass
 class AaveV2FlashLoanD(AaveV2BaseRecord):
     target: Optional[str] = None
-    # initiator -> user, use `user`
-    user: Optional[str] = None
+    # initiator -> user, use `aave_user`
+    aave_user: Optional[str] = None
     reserve: Optional[str] = None
     amount: Optional[int] = None
     premium: Optional[int] = None
@@ -97,7 +97,7 @@ class AaveV2FlashLoanD(AaveV2BaseRecord):
 class AaveV2LiquidationCallD(AaveV2BaseRecord):
     collateral_asset: Optional[str] = None
     debt_asset: Optional[str] = None
-    user: Optional[str] = None
+    aave_user: Optional[str] = None
     debt_to_cover: Optional[int] = None
     liquidated_collateral_amount: Optional[int] = None
     liquidator: Optional[str] = None
