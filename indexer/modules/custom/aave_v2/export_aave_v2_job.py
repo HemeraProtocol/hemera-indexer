@@ -13,7 +13,7 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.aave_v2 import constants
 from indexer.modules.custom.aave_v2.abi.abi import abi_map
-from indexer.modules.custom.aave_v2.domains.aave_v2_lending import (
+from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2LendingPool,
     AaveV2LendingPoolReserveFactorCurrent,
     AaveV2LendingPoolReserveFactorRecord, AaveV2DepositD, AaveV2WithdrawD, AaveV2BorrowD, AaveV2RepayD,
@@ -21,6 +21,13 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_lending import (
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
+"""
+Add collateral, borrow asset records
+Amount of collateral (token_address + amount) added for each address
+Amount of asset (token_address + amount) borrowed for each address
+Liquidation record
+Total value of liquidation for each wallet
+"""
 
 
 class ExportAaveV2Job(FilterTransactionDataJob):
