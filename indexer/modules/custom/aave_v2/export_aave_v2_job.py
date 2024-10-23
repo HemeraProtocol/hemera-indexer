@@ -313,10 +313,13 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for address, outer_dic in batch_result_dic.items():
             for reserve, kad in outer_dic.items():
                 if address in exists_dic and reserve in exists_dic[address]:
-                    exists_aad = exists_dic[address][reserve]
-                    exists_aad.supply_amount += kad.supply_amount
-                    exists_aad.borrow_amount += kad.borrow_amount
-                    self._collect_item(kad.type(), exists_aad)
+                    if not kad.last_liquidation_time:
+                        exists_aad = exists_dic[address][reserve]
+                        exists_aad.supply_amount += kad.supply_amount
+                        exists_aad.borrow_amount += kad.borrow_amount
+                        self._collect_item(kad.type(), exists_aad)
+                    else:
+                        self._collect_item(kad.type(), kad)
                 else:
                     self._collect_item(kad.type(), kad)
         print("here")
@@ -400,6 +403,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][collateral_asset].supply_amount = 0
                 res_d[user][collateral_asset].block_number = action.block_number
                 res_d[user][collateral_asset].block_timestamp = action.block_timestamp
+
 
                 # res_d[user][debt_asset].total_value_of_liquidation = action.liquidated_collateral_amount
                 res_d[user][collateral_asset].liquidation_time = action.block_timestamp
