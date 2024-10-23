@@ -4,7 +4,7 @@
 # @Author  will
 # @File  aave_v2_lending_records.py
 # @Brief
-from sqlalchemy import BIGINT, BOOLEAN, INT, INTEGER, VARCHAR, Column, PrimaryKeyConstraint, func, text
+from sqlalchemy import BIGINT, BOOLEAN, INT, INTEGER, NUMERIC, VARCHAR, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
@@ -16,7 +16,7 @@ class AaveV2LendingRecords(HemeraModel):
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
     block_number = Column(BIGINT)
-    block_timestamp = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
     method = Column(VARCHAR)
     event_name = Column(VARCHAR)
     topic0 = Column(BYTEA)
@@ -24,19 +24,19 @@ class AaveV2LendingRecords(HemeraModel):
     to_address = Column(BYTEA)
 
     reserve = Column(BYTEA)
-    user = Column(BYTEA)
+    aave_user = Column(BYTEA)
     repayer = Column(BYTEA)
-    amount = Column(BIGINT)
+    amount = Column(NUMERIC(100))
     premium = Column(BIGINT)
     on_behalf_of = Column(BYTEA)
     referral = Column(INT)
     borrow_rate_mode = Column(INT)
     borrow_rate = Column(BIGINT)
-    to = Column(BYTEA)
+    aave_to = Column(BYTEA)
     collateral_asset = Column(BYTEA)
     debt_asset = Column(BYTEA)
     debt_to_cover = Column(BIGINT)
-    liquidated_collateral_amount = Column(BIGINT)
+    liquidated_collateral_amount = Column(NUMERIC(100))
     liquidator = Column(BYTEA)
     receive_atoken = Column(BOOLEAN)
 
