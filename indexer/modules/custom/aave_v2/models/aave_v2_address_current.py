@@ -3,7 +3,7 @@
 # @Time  2024/10/22 11:33
 # @Author  will
 
-from sqlalchemy import Column, func, BOOLEAN, text, PrimaryKeyConstraint
+from sqlalchemy import BOOLEAN, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
