@@ -23,19 +23,47 @@ from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import U
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.rpc_utils import zip_rpc_response, rpc_response_to_result
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
-from indexer.modules.custom.uniswap_v3.agni_abi import POSITIONS_FUNCTION, GET_POOL_FUNCTION, SLOT0_FUNCTION, \
-    POOL_CREATED_EVENT, SWAP_EVENT, OWNER_OF_FUNCTION, FACTORY_FUNCTION, FEE_FUNCTION, TOKEN0_FUNCTION, TOKEN1_FUNCTION, \
-    TICK_SPACING_FUNCTION, INCREASE_LIQUIDITY_EVENT, BURN_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT, \
-    MINT_EVENT
+from indexer.modules.custom.uniswap_v3.agni_abi import (
+    BURN_EVENT,
+    DECREASE_LIQUIDITY_EVENT,
+    FACTORY_FUNCTION,
+    FEE_FUNCTION,
+    GET_POOL_FUNCTION,
+    INCREASE_LIQUIDITY_EVENT,
+    MINT_EVENT,
+    OWNER_OF_FUNCTION,
+    POOL_CREATED_EVENT,
+    POSITIONS_FUNCTION,
+    SLOT0_FUNCTION,
+    SWAP_EVENT,
+    TICK_SPACING_FUNCTION,
+    TOKEN0_FUNCTION,
+    TOKEN1_FUNCTION,
+    UPDATE_LIQUIDITY_EVENT,
+)
 
-FUNCTION_EVENT_LIST = [POSITIONS_FUNCTION, GET_POOL_FUNCTION, SLOT0_FUNCTION, POOL_CREATED_EVENT, SWAP_EVENT,
-                       OWNER_OF_FUNCTION, FACTORY_FUNCTION, FEE_FUNCTION, TOKEN0_FUNCTION, TOKEN1_FUNCTION,
-                       TICK_SPACING_FUNCTION, INCREASE_LIQUIDITY_EVENT, BURN_EVENT, UPDATE_LIQUIDITY_EVENT,
-                       DECREASE_LIQUIDITY_EVENT, MINT_EVENT]
+FUNCTION_EVENT_LIST = [
+    POSITIONS_FUNCTION,
+    GET_POOL_FUNCTION,
+    SLOT0_FUNCTION,
+    POOL_CREATED_EVENT,
+    SWAP_EVENT,
+    OWNER_OF_FUNCTION,
+    FACTORY_FUNCTION,
+    FEE_FUNCTION,
+    TOKEN0_FUNCTION,
+    TOKEN1_FUNCTION,
+    TICK_SPACING_FUNCTION,
+    INCREASE_LIQUIDITY_EVENT,
+    BURN_EVENT,
+    UPDATE_LIQUIDITY_EVENT,
+    DECREASE_LIQUIDITY_EVENT,
+    MINT_EVENT,
+]
 
 liquidity_event_list = [INCREASE_LIQUIDITY_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT]
 LIQUIDITY_EVENT_TOPIC0_DICT = {e.get_signature(): e for e in liquidity_event_list}
@@ -59,7 +87,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
         self._abi_list = AGNI_ABI
         self._liquidity_token_id_blocks = queue.Queue()
 
-        config = kwargs.get("config")['agni_pool_job']
+        config = kwargs.get("config")["agni_pool_job"]
         self._position_token_address = config.get("position_token_address").lower()
         self._factory_address = config.get("factory_address").lower()
 
@@ -105,7 +133,6 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._abi_list,
             self._batch_size,
             self._max_worker,
-
         )
 
         # call positions
@@ -132,7 +159,7 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
             self._abi_list,
             self._batch_size,
             self._max_worker,
-            self._block_infos
+            self._block_infos,
         )
         self._exist_token_ids.update(update_exist_tokens)
         for data in new_nft_info:
@@ -147,27 +174,34 @@ class ExportAgniV3TokensJob(FilterTransactionDataJob):
         for data in current_statuses:
             self._collect_item(AgniV3TokenCurrentStatus.type(), data)
         for token_id, block_number in burn_token_ids.items():
-            self._collect_item(AgniV3TokenDetail.type(), AgniV3TokenDetail(
-                position_token_address=self._position_token_address,
-                pool_address=self._exist_token_ids.get(token_id, ""),
-                token_id=token_id,
-                wallet_address=constants.ZERO_ADDRESS,
-                liquidity=0,
-                block_number=block_number,
-                block_timestamp=self._block_infos[block_number]
-            ))
-            self._collect_item(AgniV3TokenCurrentStatus.type(), AgniV3TokenCurrentStatus(
-                position_token_address=self._position_token_address,
-                pool_address=self._exist_token_ids.get(token_id, ""),
-                token_id=token_id,
-                wallet_address=constants.ZERO_ADDRESS,
-                liquidity=0,
-                block_number=block_number,
-                block_timestamp=self._block_infos[block_number]
-            ))
+            self._collect_item(
+                AgniV3TokenDetail.type(),
+                AgniV3TokenDetail(
+                    position_token_address=self._position_token_address,
+                    pool_address=self._exist_token_ids.get(token_id, ""),
+                    token_id=token_id,
+                    wallet_address=constants.ZERO_ADDRESS,
+                    liquidity=0,
+                    block_number=block_number,
+                    block_timestamp=self._block_infos[block_number],
+                ),
+            )
+            self._collect_item(
+                AgniV3TokenCurrentStatus.type(),
+                AgniV3TokenCurrentStatus(
+                    position_token_address=self._position_token_address,
+                    pool_address=self._exist_token_ids.get(token_id, ""),
+                    token_id=token_id,
+                    wallet_address=constants.ZERO_ADDRESS,
+                    liquidity=0,
+                    block_number=block_number,
+                    block_timestamp=self._block_infos[block_number],
+                ),
+            )
 
         self._data_buff[AgniV3TokenCurrentStatus.type()] = distinct_collections_by_group(
-            self._data_buff[AgniV3TokenCurrentStatus.type()], ['position_token_address', 'token_id'], 'block_number')
+            self._data_buff[AgniV3TokenCurrentStatus.type()], ["position_token_address", "token_id"], "block_number"
+        )
 
         self._block_infos = {}
 
@@ -252,8 +286,9 @@ def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_t
 
 
 def get_owner_dict(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers):
-    owners = owner_rpc_requests(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size,
-                                max_workers)
+    owners = owner_rpc_requests(
+        web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers
+    )
     owner_dict = {}
     for data in owners:
         owner_dict.setdefault(data["token_id"], {})[data["block_number"]] = data["owner"]
@@ -261,18 +296,18 @@ def get_owner_dict(web3, make_requests, requests, position_token_address, is_bat
 
 
 def get_new_nfts(
-        all_token_infos,
-        want_pool_tokens,
-        position_token_address,
-        web3,
-        make_requests,
-        requests,
-        factory_address,
-        is_batch,
-        abi_list,
-        batch_size,
-        max_worker,
-        block_infos
+    all_token_infos,
+    want_pool_tokens,
+    position_token_address,
+    web3,
+    make_requests,
+    requests,
+    factory_address,
+    is_batch,
+    abi_list,
+    batch_size,
+    max_worker,
+    block_infos,
 ):
     result = []
     need_collect_pool_tokens = []
@@ -311,7 +346,7 @@ def get_new_nfts(
                 tick_upper=data["tickUpper"],
                 fee=data["fee"],
                 block_number=data["block_number"],
-                block_timestamp=block_infos[data["block_number"]]
+                block_timestamp=block_infos[data["block_number"]],
             )
         )
     return update_exist_tokens, result
@@ -382,7 +417,7 @@ def extract_liquidity_logs(logs, position_token_address):
         fe = LIQUIDITY_EVENT_TOPIC0_DICT.get(topic0)
         if fe:
             log_decoded_data = fe.decode_log(log)
-            token_id = log_decoded_data['tokenId']
+            token_id = log_decoded_data["tokenId"]
             token_id_block.setdefault(token_id, {})[log.block_number] = topic0
     return token_id_block
 
@@ -414,8 +449,9 @@ def build_token_id_method_data(web3, token_ids, position_token_address, fn, abi_
     return parameters
 
 
-def positions_rpc_requests(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size,
-                           max_workers):
+def positions_rpc_requests(
+    web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers
+):
     if len(requests) == 0:
         return []
 
@@ -471,7 +507,7 @@ def positions_rpc_requests(web3, make_requests, requests, position_token_address
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for i in range(0, len(token_name_rpc), batch_size):
-            batch = token_name_rpc[i: i + batch_size]
+            batch = token_name_rpc[i : i + batch_size]
             futures.append(executor.submit(process_batch, batch))
 
         for future in as_completed(futures):
@@ -484,8 +520,9 @@ def positions_rpc_requests(web3, make_requests, requests, position_token_address
     return all_token_infos
 
 
-def owner_rpc_requests(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size,
-                       max_workers):
+def owner_rpc_requests(
+    web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers
+):
     if len(requests) == 0:
         return []
 
@@ -531,7 +568,7 @@ def owner_rpc_requests(web3, make_requests, requests, position_token_address, is
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for i in range(0, len(token_name_rpc), batch_size):
-            batch = token_name_rpc[i: i + batch_size]
+            batch = token_name_rpc[i : i + batch_size]
             futures.append(executor.submit(process_batch, batch))
 
         for future in as_completed(futures):

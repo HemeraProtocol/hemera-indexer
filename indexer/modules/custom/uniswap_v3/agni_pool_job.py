@@ -12,11 +12,24 @@ from indexer.domain.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
-from indexer.modules.custom.uniswap_v3.agni_abi import POSITIONS_FUNCTION, GET_POOL_FUNCTION, SLOT0_FUNCTION, \
-    POOL_CREATED_EVENT, SWAP_EVENT, OWNER_OF_FUNCTION, FACTORY_FUNCTION, FEE_FUNCTION, TOKEN0_FUNCTION, TOKEN1_FUNCTION, \
-    TICK_SPACING_FUNCTION, INCREASE_LIQUIDITY_EVENT, BURN_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT, \
-    MINT_EVENT
-
+from indexer.modules.custom.uniswap_v3.agni_abi import (
+    BURN_EVENT,
+    DECREASE_LIQUIDITY_EVENT,
+    FACTORY_FUNCTION,
+    FEE_FUNCTION,
+    GET_POOL_FUNCTION,
+    INCREASE_LIQUIDITY_EVENT,
+    MINT_EVENT,
+    OWNER_OF_FUNCTION,
+    POOL_CREATED_EVENT,
+    POSITIONS_FUNCTION,
+    SLOT0_FUNCTION,
+    SWAP_EVENT,
+    TICK_SPACING_FUNCTION,
+    TOKEN0_FUNCTION,
+    TOKEN1_FUNCTION,
+    UPDATE_LIQUIDITY_EVENT,
+)
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     AgniV3Pool,
     AgniV3PoolCurrentPrice,
@@ -29,10 +42,24 @@ from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
-FUNCTION_EVENT_LIST = [POSITIONS_FUNCTION, GET_POOL_FUNCTION, SLOT0_FUNCTION, POOL_CREATED_EVENT, SWAP_EVENT,
-                       OWNER_OF_FUNCTION, FACTORY_FUNCTION, FEE_FUNCTION, TOKEN0_FUNCTION, TOKEN1_FUNCTION,
-                       TICK_SPACING_FUNCTION, INCREASE_LIQUIDITY_EVENT, BURN_EVENT, UPDATE_LIQUIDITY_EVENT,
-                       DECREASE_LIQUIDITY_EVENT, MINT_EVENT]
+FUNCTION_EVENT_LIST = [
+    POSITIONS_FUNCTION,
+    GET_POOL_FUNCTION,
+    SLOT0_FUNCTION,
+    POOL_CREATED_EVENT,
+    SWAP_EVENT,
+    OWNER_OF_FUNCTION,
+    FACTORY_FUNCTION,
+    FEE_FUNCTION,
+    TOKEN0_FUNCTION,
+    TOKEN1_FUNCTION,
+    TICK_SPACING_FUNCTION,
+    INCREASE_LIQUIDITY_EVENT,
+    BURN_EVENT,
+    UPDATE_LIQUIDITY_EVENT,
+    DECREASE_LIQUIDITY_EVENT,
+    MINT_EVENT,
+]
 AGNI_ABI = [fe.get_abi() for fe in FUNCTION_EVENT_LIST]
 
 liquidity_event_list = [INCREASE_LIQUIDITY_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT]
@@ -59,7 +86,7 @@ class ExportAgniV3PoolJob(FilterTransactionDataJob):
         self._abi_list = AGNI_ABI
         self._batch_size = kwargs["batch_size"]
 
-        config = kwargs["config"]['agni_pool_job']
+        config = kwargs["config"]["agni_pool_job"]
         self._position_token_address = config.get("position_token_address").lower()
         self._factory_address = config.get("factory_address").lower()
         self._create_pool_topic0 = POOL_CREATED_EVENT.get_signature()
@@ -222,19 +249,19 @@ def get_exist_pools(db_service, position_token_address):
 
 
 def update_exist_pools(
-        position_token_address,
-        factory_address,
-        exist_pools,
-        create_topic0,
-        swap_topic0,
-        liquidity_topic0_list,
-        logs,
-        abi_list,
-        web3,
-        make_requests,
-        is_batch,
-        batch_size,
-        max_worker,
+    position_token_address,
+    factory_address,
+    exist_pools,
+    create_topic0,
+    swap_topic0,
+    liquidity_topic0_list,
+    logs,
+    abi_list,
+    web3,
+    make_requests,
+    is_batch,
+    batch_size,
+    max_worker,
 ):
     need_add = {}
     swap_pools = []
@@ -276,16 +303,16 @@ def update_exist_pools(
 
 
 def collect_pool_prices(
-        target0_topic0,
-        target1_topic0_list,
-        exist_pools,
-        logs,
-        web3,
-        make_requests,
-        is_batch,
-        abi_list,
-        batch_size,
-        max_workers,
+    target0_topic0,
+    target1_topic0_list,
+    exist_pools,
+    logs,
+    web3,
+    make_requests,
+    is_batch,
+    abi_list,
+    batch_size,
+    max_workers,
 ):
     pool_block_set = set()
     for log in logs:
@@ -315,8 +342,7 @@ def collect_pool_prices(
 
 
 def collect_swap_new_pools(
-        position_token_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size,
-        max_worker
+    position_token_address, factory_address, swap_pools, abi_list, web3, make_requests, is_batch, batch_size, max_worker
 ):
     factory_infos = common_utils.simple_get_rpc_requests(
         web3, make_requests, swap_pools, is_batch, abi_list, "factory", "address", batch_size, max_worker
