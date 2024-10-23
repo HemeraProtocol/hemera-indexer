@@ -20,8 +20,8 @@ class AaveV2AddressCurrent(HemeraModel):
 
     block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
-    total_value_of_liquidation = Column(NUMERIC(100))
-    liquidation_time = Column(TIMESTAMP)
+    last_total_value_of_liquidation = Column(NUMERIC(100))
+    last_liquidation_time = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
