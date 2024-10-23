@@ -4,7 +4,7 @@
 # @Author  will
 # @File  aave_v2_lending_records.py
 # @Brief
-from sqlalchemy import Column, func, BOOLEAN, text, PrimaryKeyConstraint, INTEGER, BIGINT, VARCHAR, INT
+from sqlalchemy import BIGINT, BOOLEAN, INT, INTEGER, VARCHAR, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
