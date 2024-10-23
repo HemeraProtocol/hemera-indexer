@@ -13,19 +13,20 @@ from common.models import HemeraModel, general_converter
 class AaveV2AddressCurrent(HemeraModel):
     __tablename__ = "af_aave_v2_address_current"
     address = Column(BYTEA, primary_key=True)
-    reserve = Column(BYTEA, primary_key=True)
-    supply = Column(BIGINT)
-    borrow = Column(BIGINT)
-    repay = Column(BIGINT)
+    asset = Column(BYTEA, primary_key=True)
+
+    supply_amount = Column(BIGINT)
+    borrow_amount = Column(BIGINT)
 
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
+    total_value_of_liquidation = Column(BIGINT)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("address", "reserve"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "asset"),)
 
     @staticmethod
     def model_domain_mapping():
