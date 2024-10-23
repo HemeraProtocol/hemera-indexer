@@ -13,8 +13,16 @@ from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
-from indexer.modules.custom.aave_v2.domains.aave_v2_domain import AaveV2DepositD, AaveV2ReserveD, AaveV2WithdrawD, \
-    AaveV2BorrowD, AaveV2RepayD, AaveV2LiquidationCallD, AaveV2FlashLoanD, AaveV2AddressCurrentD
+from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
+    AaveV2AddressCurrentD,
+    AaveV2BorrowD,
+    AaveV2DepositD,
+    AaveV2FlashLoanD,
+    AaveV2LiquidationCallD,
+    AaveV2RepayD,
+    AaveV2ReserveD,
+    AaveV2WithdrawD,
+)
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
 from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
