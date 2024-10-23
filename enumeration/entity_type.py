@@ -14,7 +14,7 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.aave_v2.domains.aave_v2_domain import AaveV2DepositD, AaveV2ReserveD, AaveV2WithdrawD, \
-    AaveV2BorrowD, AaveV2RepayD
+    AaveV2BorrowD, AaveV2RepayD, AaveV2LiquidationCallD, AaveV2FlashLoanD, AaveV2AddressCurrentD
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
 from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
@@ -207,3 +207,6 @@ def generate_output_types(entity_types):
         yield AaveV2WithdrawD
         yield AaveV2BorrowD
         yield AaveV2RepayD
+        yield AaveV2FlashLoanD
+        yield AaveV2LiquidationCallD
+        yield AaveV2AddressCurrentD

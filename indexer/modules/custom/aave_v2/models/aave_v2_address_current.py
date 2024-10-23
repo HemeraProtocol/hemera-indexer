@@ -21,7 +21,7 @@ class AaveV2AddressCurrent(HemeraModel):
     block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
     total_value_of_liquidation = Column(BIGINT)
-    liquidation_time = Column(BIGINT)
+    liquidation_time = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
@@ -33,9 +33,9 @@ class AaveV2AddressCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV2LendingPoolReserveFactorCurrent",
+                "domain": "AaveV2AddressCurrentD",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > af_aave_v2_change_factor_current.block_number",
+                "update_strategy": "EXCLUDED.block_number > af_aave_v2_address_current.block_number",
                 "converter": general_converter,
             },
         ]
