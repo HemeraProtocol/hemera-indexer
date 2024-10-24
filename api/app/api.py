@@ -7,6 +7,7 @@ from api.app.address.routes import address_features_namespace
 from api.app.contract.routes import contract_namespace
 from api.app.explorer.routes import explorer_namespace
 from api.app.user_operation.routes import user_operation_namespace
+from api.app.validator.routes import validator_namespace
 from indexer.modules.custom.deposit_to_l2.endpoint.routes import token_deposit_namespace
 from indexer.modules.custom.hemera_ens.endpoint import af_ens_namespace
 from indexer.modules.custom.merchant_moe.endpoints.routes import merchant_moe_namespace
@@ -21,6 +22,7 @@ api = Api()
 api.add_namespace(explorer_namespace)
 api.add_namespace(opensea_namespace)
 api.add_namespace(contract_namespace)
+api.add_namespace(validator_namespace)
 api.add_namespace(uniswap_v3_namespace)
 api.add_namespace(token_deposit_namespace)
 api.add_namespace(user_operation_namespace)

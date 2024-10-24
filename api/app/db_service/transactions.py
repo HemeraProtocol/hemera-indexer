@@ -108,10 +108,10 @@ def get_total_txn_count():
     return cnt + cumulate_count
 
 
-def get_transactions_by_condition(filter_condition=None, columns="*", limit=1, offset=0):
+def get_transactions_by_condition(filter_condition=None, columns="*", limit=None, offset=None):
     entities = build_entities(Transactions, columns)
 
-    transactions = (
+    statement = (
         db.session.query(Transactions)
         .with_entities(*entities)
         .order_by(
@@ -119,10 +119,14 @@ def get_transactions_by_condition(filter_condition=None, columns="*", limit=1, o
             Transactions.transaction_index.desc(),
         )
         .filter(filter_condition)
-        .limit(limit)
-        .offset(offset)
-        .all()
     )
+    if limit is not None:
+        statement = statement.limit(limit)
+
+    if offset is not None:
+        statement = statement.offset(offset)
+
+    transactions = statement.all()
 
     return transactions
 
