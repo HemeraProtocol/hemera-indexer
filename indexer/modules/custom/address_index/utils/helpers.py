@@ -55,7 +55,10 @@ def get_contract_deployed_events(address, limit=5, offset=0) -> Optional[Dict[st
 
 
 def get_wallet_address_volumes(wallet_address: Optional[Union[str, bytes]], coin_symbol: str = "ETH"):
-    transaction_values = get_address_hist_stats(wallet_address, ["transaction_in_value", "transaction_out_value"])
+    transaction_values = get_address_hist_stats(
+        wallet_address,
+        ["transaction_in_value", "transaction_out_value", "transaction_out_fee"],
+    )
 
     block_date_list = [x["block_date"] for x in transaction_values]
     prices = get_coin_prices(block_date_list)
@@ -65,32 +68,39 @@ def get_wallet_address_volumes(wallet_address: Optional[Union[str, bytes]], coin
     total_volume_eth = 0
     total_volume_usd = 0
 
+    total_gas_fee_used_eth = 0
+    total_gas_fee_used_usd = 0
+
     for value in transaction_values:
         date = value["block_date"]
         volume_eth = (value["transaction_in_value"] + value["transaction_out_value"]) / 10**18
+        gas_fee_used = value["transaction_out_fee"] / 10**18
         price = prices_dict.get(date, 0)
         volume_usd = volume_eth * price
-
+        total_gas_fee_used_usd += gas_fee_used * price
         daily_volumes.append(
             {
                 "date": date,
                 "volume_eth": str(volume_eth),
                 "price": str(price),
                 "volume_usd": str(volume_usd),
+                "gas_fee_used": str(gas_fee_used),
             }
         )
 
         total_volume_eth += volume_eth
         total_volume_usd += volume_usd
+        total_gas_fee_used_eth += gas_fee_used
+        total_gas_fee_used_usd += total_gas_fee_used_usd
 
-    summary = {
+    return {
         "total_volume_eth": str(total_volume_eth),
         "total_volume_usd": str(total_volume_usd),
+        "total_gas_fee_used_eth": str(total_gas_fee_used_eth),
+        "total_gas_fee_used_usd": str(total_gas_fee_used_usd),
         "average_daily_volume_eth": str(total_volume_eth / len(daily_volumes)) if daily_volumes else "0",
         "average_daily_volume_usd": str(total_volume_usd / len(daily_volumes)) if daily_volumes else "0",
     }
-
-    return {"daily_volumes": daily_volumes, "summary": summary}
 
 
 def get_wallet_address_token_holdings(wallet_address: Optional[Union[str, bytes]]):
@@ -239,7 +249,7 @@ def get_latest_transaction_by_address(address: bytes) -> Optional[dict]:
                 "latest_to_address": transaction.related_address,
             }
         )
-    return None
+    return {}
 
 
 def get_address_agg_stats(
