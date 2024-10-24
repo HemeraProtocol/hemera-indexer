@@ -255,6 +255,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             self._collect_item(it.type(), it)
         liquidation_lis = []
         batch_result_dic = self.calculate_batch_result(res, liquidation_lis)
+        liquidation_lis = self.merge_liquidation_lis(liquidation_lis)
         self._collect_items(AaveV2LiquidationAddressCurrentD.type(), liquidation_lis)
         exists_dic = self.get_existing_address_current(list(batch_result_dic.keys()))
         for address, outer_dic in batch_result_dic.items():
@@ -268,6 +269,18 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     self._collect_item(kad.type(), kad)
         logger.info("This batch of data have processed")
         # self._process_current_pool_data()
+
+    def merge_liquidation_lis(self, liquidation_lis):
+        # keep the newest one
+        liquidation_lis.sort(key=lambda x: x.last_liquidation_time, reverse=False)
+        lis = []
+        unique_k_set = set()
+        for li in liquidation_lis:
+            k = (li.address, li.asset)
+            if k not in unique_k_set:
+                unique_k_set.add(k)
+                lis.append(li)
+        return lis
 
     def get_existing_address_current(self, addresses):
         if not self.db_service:
