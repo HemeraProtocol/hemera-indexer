@@ -79,6 +79,7 @@ class AaveV2RepayD(AaveV2BaseRecord):
     aave_user: Optional[str] = None
     repayer: Optional[str] = None
     amount: Optional[int] = None
+    borrow_rate_mode: Optional[int] = None
 
 
 @dataclass
@@ -109,6 +110,7 @@ class AaveV2AddressCurrentD(FilterData):
     asset: Optional[str] = None
     supply_amount: Optional[int] = None
     borrow_amount: Optional[int] = None
+    borrow_rate_mode: Optional[int] = None
     block_number: Optional[int] = None
     block_timestamp: Optional[int] = None
 
