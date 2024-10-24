@@ -228,16 +228,10 @@ volume_summary_model = address_features_namespace.model(
     {
         "total_volume_eth": fields.String(description="Total volume in ETH"),
         "total_volume_usd": fields.String(description="Total volume in USD"),
+        "total_gas_fee_used_eth": fields.String(description="Total gas fee used in ETH"),
+        "total_gas_fee_used_usd": fields.String(description="Total gas fee used in USD"),
         "average_daily_volume_eth": fields.String(description="Average daily volume in ETH"),
         "average_daily_volume_usd": fields.String(description="Average daily volume in USD"),
-    },
-)
-
-address_volumes_model = address_features_namespace.model(
-    "AddressVolumes",
-    {
-        "daily_volumes": fields.List(fields.Nested(daily_volume_model), description="Daily volume data"),
-        "summary": fields.Nested(volume_summary_model, description="Volume summary"),
     },
 )
 
@@ -256,7 +250,7 @@ aci_score_model = address_features_namespace.model(
         "score": fields.Float(description="ACI score"),
         "base_info": fields.Nested(address_base_info_model, description="Base information"),
         "assets": fields.Nested(asset_model, description="Assets"),
-        "volumes": fields.Nested(address_volumes_model, description="Volumes"),
+        "volumes": fields.Nested(volume_summary_model, description="Volumes"),
     },
 )
 
