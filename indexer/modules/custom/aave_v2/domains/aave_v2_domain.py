@@ -15,6 +15,8 @@ class AaveV2ReserveD(FilterData):
     block_timestamp: int
     transaction_hash: str
     log_index: int
+    topic0: Optional[str] = None
+    event_name: Optional[str] = None
 
 
 @dataclass
@@ -39,11 +41,8 @@ class AaveV2BaseRecord(FilterData):
     block_timestamp: Optional[int] = None
     transaction_hash: Optional[str] = None
     log_index: Optional[int] = None
-    method: Optional[str] = None
     event_name: Optional[str] = None
     topic0: Optional[str] = None
-    from_address: Optional[str] = None
-    to_address: Optional[str] = None
 
 
 @dataclass
