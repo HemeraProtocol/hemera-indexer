@@ -153,7 +153,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 tmp: AaveV2WithdrawD = AaveV2WithdrawD(
                     reserve=extract_eth_address(log.topic1),
                     aave_user=extract_eth_address(log.topic2),
-                    to=extract_eth_address(log.topic3),
                     amount=dl.get("amount"),
                     block_number=log.block_number,
                     block_timestamp=log.block_timestamp,
