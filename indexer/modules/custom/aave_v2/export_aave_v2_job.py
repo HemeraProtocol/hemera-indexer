@@ -24,14 +24,15 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     aave_v2_address_current_factory,
 )
 from indexer.modules.custom.aave_v2.models.aave_v2_address_current import AaveV2AddressCurrent
+from indexer.modules.custom.aave_v2.models.aave_v2_reserve import AaveV2Reserve
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
+from indexer.utils.token_fetcher import TokenFetcher
 
 logger = logging.getLogger(__name__)
 
 
 class ExportAaveV2Job(FilterTransactionDataJob):
-    """This job extract aave_v2 related infos
-    """
+    """This job extract aave_v2 related infos"""
 
     dependency_types = [Log]
     output_types = [
@@ -64,6 +65,31 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         self._event_processors = {}
         self._initialize_events_and_processors()
 
+        # init relative tokens
+        self.asset_reserve = {}
+        self.vary_reserve = {}
+        self.stable_reserve = {}
+        self._read_reserve()
+
+        self.token_fetcher = TokenFetcher(self._web3)
+
+    def _read_reserve(self):
+
+        with self.db_service.get_service_session() as session:
+            result = session.query(AaveV2Reserve).all()
+        for rr in result:
+            item = AaveV2ReserveD(
+                asset=bytes_to_hex_str(rr.asset),
+                a_token_address=bytes_to_hex_str(rr.a_token_address),
+                stable_debt_token_address=bytes_to_hex_str(rr.stable_debt_token_address),
+                variable_debt_token_address=bytes_to_hex_str(rr.variable_debt_token_address),
+                interest_rate_strategy_address=bytes_to_hex_str(rr.block_number),
+                block_timestamp=rr.block_number,
+            )
+            self.asset_reserve[item.asset] = item
+            self.vary_reserve[item.variable_debt_token_address] = item
+            self.stable_reserve[item.stable_debt_token_address] = item
+
     def _initialize_events_and_processors(self):
         """Initialize events and their processors based on enum configuration"""
         for event_type in AaveV2Events:
@@ -91,6 +117,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         res = []
+        balance_of_lis = []
         for log in logs:
             if not self.is_aave_v2_address(log.address):
                 continue
@@ -99,6 +126,35 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if processor is None:
                     continue
                 processed_data = processor.process(log)
+                if processed_data.type() == AaveV2ReserveD.type():
+                    # update reserve
+                    self.asset_reserve[processed_data.asset] = processed_data
+                    self.vary_reserve[processed_data.variable_debt_token_address] = processed_data
+                    self.stable_reserve[processed_data.stable_debt_token_address] = processed_data
+                elif processed_data.type() == AaveV2RepayD.type():
+                    reserve = self.asset_reserve[processed_data.reserve]
+                    balance_of_lis.append(
+                        {
+                            "address": processed_data.aave_user,
+                            "token_address": reserve.stable_debt_token_address,
+                            "token_type": "ERC20",
+                            "token_id": None,
+                            "block_number": processed_data.block_number,
+                            "block_timestamp": processed_data.block_timestamp,
+                        }
+                    )
+                    balance_of_lis.append(
+                        {
+                            "address": processed_data.aave_user,
+                            "token_address": reserve.variable_debt_token_address,
+                            "token_type": "ERC20",
+                            "token_id": None,
+                            "block_number": processed_data.block_number,
+                            "block_timestamp": processed_data.block_timestamp,
+                        }
+                    )
+                # when repay, call rpc to get debt_balance
+
                 res.append(processed_data)
 
             except Exception as e:
@@ -121,6 +177,12 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     self._collect_item(kad.type(), exists_aad)
                 else:
                     self._collect_item(kad.type(), kad)
+        balance_enriched_tokens = self.token_fetcher.fetch_token_balance(balance_of_lis)
+        for et in balance_enriched_tokens:
+            token = et["token_address"]
+            address = et["address"]
+            balance = et["balance"]
+
         logger.info("This batch of data have processed")
         # self._process_current_pool_data()
 
@@ -186,17 +248,19 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 user = action.on_behalf_of
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
+                res_d[user][reserve].borrow_rate_mode = action.borrow_rate_mode
                 res_d[user][reserve].borrow_amount += action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == AaveV2Events.REPAY.value.name:
-                reserve = action.reserve
-                user = action.aave_user
-                res_d[user][reserve].asset = reserve
-                res_d[user][reserve].address = user
-                res_d[user][reserve].borrow_amount -= action.amount
-                res_d[user][reserve].block_number = action.block_number
-                res_d[user][reserve].block_timestamp = action.block_timestamp
+                pass
+                # reserve = action.reserve
+                # user = action.aave_user
+                # res_d[user][reserve].asset = reserve
+                # res_d[user][reserve].address = user
+                # res_d[user][reserve].borrow_amount -= action.amount
+                # res_d[user][reserve].block_number = action.block_number
+                # res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == AaveV2Events.WITHDRAW.value.name:
                 reserve = action.reserve
                 user = action.aave_user
