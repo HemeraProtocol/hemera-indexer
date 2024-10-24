@@ -126,7 +126,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
     def merge_liquidation_lis(self, liquidation_lis):
         # keep the newest one
-        liquidation_lis.sort(key=lambda x: x.last_liquidation_time, reverse=False)
+        liquidation_lis.sort(key=lambda x: x.last_liquidation_time, reverse=True)
         lis = []
         unique_k_set = set()
         for li in liquidation_lis:
