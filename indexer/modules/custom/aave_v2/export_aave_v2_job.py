@@ -1,8 +1,5 @@
 import logging
 from collections import defaultdict
-from dataclasses import fields
-from itertools import groupby
-from operator import attrgetter
 from typing import Any, cast
 
 from sqlalchemy import func
@@ -10,17 +7,14 @@ from web3.types import ABIEvent
 
 from common.utils.abi_code_utils import AbiReader, Event
 from common.utils.format_utils import bytes_to_hex_str
-from common.utils.web3_utils import extract_eth_address
 from indexer.domain.log import Log
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom import common_utils
+from indexer.modules.custom.aave_v2.aave_v2_processors import AaveV2Events
 from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2AddressCurrentD,
     AaveV2BorrowD,
     AaveV2DepositD,
     AaveV2FlashLoanD,
-    AaveV2LendingPoolReserveFactorCurrent,
-    AaveV2LendingPoolReserveFactorRecord,
     AaveV2LiquidationAddressCurrentD,
     AaveV2LiquidationCallD,
     AaveV2RepayD,
@@ -35,12 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExportAaveV2Job(FilterTransactionDataJob):
-    """This job is for extract below infos:
-    Add collateral, borrow asset records
-    Amount of collateral (token_address + amount) added for each address
-    Amount of asset (token_address + amount) borrowed for each address
-    Liquidation record
-    Total value of liquidation for each wallet
+    """This job extract aave_v2 related infos
     """
 
     dependency_types = [Log]
@@ -64,42 +53,34 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         self.job_conf = self.user_defined_config
         self.abi_reader = AbiReader(__file__)
 
-        self.lending_pool_address = self.job_conf["POOL"]
-        self.lending_pool_configure_address = self.job_conf["POOL_CONFIGURE"]
-        self.address_set = {self.lending_pool_address, self.lending_pool_configure_address}
+        self.contract_addresses = {"POOL": self.job_conf["POOL"], "POOL_CONFIGURE": self.job_conf["POOL_CONFIGURE"]}
 
-        self.reserve_init_event = Event(
-            cast(ABIEvent, self.abi_reader.get_event_abi(self.lending_pool_configure_address, "ReserveInitialized"))
-        )
+        self.address_set = set(self.contract_addresses.values())
 
-        self.deposit_event = Event(cast(ABIEvent, self.abi_reader.get_event_abi(self.lending_pool_address, "Deposit")))
-        self.withdraw_event = Event(
-            cast(ABIEvent, self.abi_reader.get_event_abi(self.lending_pool_address, "Withdraw"))
-        )
-        self.borrow_event = Event(cast(ABIEvent, self.abi_reader.get_event_abi(self.lending_pool_address, "Borrow")))
-        self.repay_event = Event(cast(ABIEvent, self.abi_reader.get_event_abi(self.lending_pool_address, "Repay")))
-        self.flash_loan_event = Event(
-            cast(ABIEvent, self.abi_reader.get_event_abi(self.lending_pool_address, "FlashLoan"))
-        )
-        self.liquidation_call_event = Event(
-            cast(ABIEvent, self.abi_reader.get_event_abi(self.lending_pool_address, "LiquidationCall"))
-        )
+        # event_name -> Event
+        self.events = {}
+        # sig -> processor
+        self._event_processors = {}
+        self._initialize_events_and_processors()
+
+    def _initialize_events_and_processors(self):
+        """Initialize events and their processors based on enum configuration"""
+        for event_type in AaveV2Events:
+            config = event_type.value
+            contract_address = self.contract_addresses[config.contract_address_key]
+
+            abi = self.abi_reader.get_event_abi(contract_address, config.name)
+            event = Event(cast(ABIEvent, abi))
+
+            self.events[event_type] = event
+            signature = event.get_signature()
+            self._event_processors[signature] = config.processor_class(event, config.data_class)
 
     def get_filter(self):
-        topics = [
-            self.reserve_init_event.get_signature(),
-            self.deposit_event.get_signature(),
-            self.withdraw_event.get_signature(),
-            self.borrow_event.get_signature(),
-            self.repay_event.get_signature(),
-            self.flash_loan_event.get_signature(),
-            self.liquidation_call_event.get_signature(),
-        ]
+        topics = [event.get_signature() for event in self.events.values()]
         return TransactionFilterByLogs(
             [
-                TopicSpecification(
-                    addresses=[self.lending_pool_address, self.lending_pool_configure_address], topics=topics
-                ),
+                TopicSpecification(addresses=list(self.contract_addresses.values()), topics=topics),
             ]
         )
 
@@ -112,145 +93,17 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for log in logs:
             if not self.is_aave_v2_address(log.address):
                 continue
-            current_topic0 = log.topic0
-            if current_topic0 == self.reserve_init_event.get_signature():
-                # 0x3a0ca721fc364424566385a1aa271ed508cc2c0949c2272575fb3013a163a45f
-                dl = self.reserve_init_event.decode_log(log)
-                tmp: AaveV2ReserveD = AaveV2ReserveD(
-                    asset=common_utils.parse_hex_to_address(log.topic1),
-                    a_token_address=common_utils.parse_hex_to_address(log.topic2),
-                    stable_debt_token_address=dl.get("stableDebtToken"),
-                    variable_debt_token_address=dl.get("variableDebtToken"),
-                    interest_rate_strategy_address=dl.get("interestRateStrategyAddress"),
-                    block_number=log.block_number,
-                    block_timestamp=log.block_timestamp,
-                    transaction_hash=log.transaction_hash,
-                    log_index=log.log_index,
-                )
-                res.append(tmp)
-            elif current_topic0 == self.deposit_event.get_signature():
-                # 0xde6857219544bb5b7746f48ed30be6386fefc61b2f864cacf559893bf50fd951
-                dl = self.deposit_event.decode_log(log)
-                tmp: AaveV2DepositD = AaveV2DepositD(
-                    reserve=extract_eth_address(log.topic1),
-                    # who receive atoken
-                    on_behalf_of=extract_eth_address(log.topic2),
-                    referral=log.topic3,
-                    # who send asset
-                    aave_user=dl.get("user"),
-                    amount=dl.get("amount"),
-                    block_number=log.block_number,
-                    block_timestamp=log.block_timestamp,
-                    transaction_hash=log.transaction_hash,
-                    log_index=log.log_index,
-                    event_name=self.deposit_event.get_name(),
-                    topic0=log.topic0,
-                )
-                res.append(tmp)
-            elif current_topic0 == self.withdraw_event.get_signature():
-                # 0x3115d1449a7b732c986cba18244e897a450f61e1bb8d589cd2e69e6c8924f9f7
-                dl = self.withdraw_event.decode_log(log)
-                tmp: AaveV2WithdrawD = AaveV2WithdrawD(
-                    reserve=extract_eth_address(log.topic1),
-                    aave_user=extract_eth_address(log.topic2),
-                    amount=dl.get("amount"),
-                    block_number=log.block_number,
-                    block_timestamp=log.block_timestamp,
-                    transaction_hash=log.transaction_hash,
-                    log_index=log.log_index,
-                    event_name=self.withdraw_event.get_name(),
-                    topic0=log.topic0,
-                )
-                res.append(tmp)
-            elif current_topic0 == self.borrow_event.get_signature():
-                # 0xb3d084820fb1a9decffb176436bd02558d15fac9b0ddfed8c465bc7359d7dce0
-                dl = self.borrow_event.decode_log(log)
-                tmp: AaveV2BorrowD = AaveV2BorrowD(
-                    reserve=extract_eth_address(log.topic1),
-                    # The address that will be getting the debt
-                    on_behalf_of=extract_eth_address(log.topic2),
-                    referral=log.topic3,
-                    #  The address of the user initiating the borrow(), receiving the funds on borrow() or just initiator of the transaction on flashLoan()
-                    aave_user=dl.get("user"),
-                    amount=dl.get("amount"),
-                    # The rate mode: 1 for Stable, 2 for Variable
-                    borrow_rate_mode=dl.get("interestRateMode"),
-                    borrow_rate=dl.get("borrowRate"),
-                    block_number=log.block_number,
-                    block_timestamp=log.block_timestamp,
-                    transaction_hash=log.transaction_hash,
-                    log_index=log.log_index,
-                    event_name=self.borrow_event.get_name(),
-                    topic0=log.topic0,
-                )
-                res.append(tmp)
-            elif current_topic0 == self.repay_event.get_signature():
-                # 0xa534c8dbe71f871f9f3530e97a74601fea17b426cae02e1c5aee42c96c784051
-                dl = self.repay_event.decode_log(log)
-                tmp: AaveV2RepayD = AaveV2RepayD(
-                    reserve=extract_eth_address(log.topic1),
-                    # The beneficiary of the repayment, getting his debt reduced
-                    aave_user=extract_eth_address(log.topic2),
-                    # The address of the user initiating the repay(), providing the funds
-                    repayer=extract_eth_address(log.topic3),
-                    amount=dl.get("amount"),
-                    block_number=log.block_number,
-                    block_timestamp=log.block_timestamp,
-                    transaction_hash=log.transaction_hash,
-                    log_index=log.log_index,
-                    event_name=self.repay_event.get_name(),
-                    topic0=log.topic0,
-                )
-                res.append(tmp)
-            elif current_topic0 == self.flash_loan_event.get_signature():
-                # 0x631042c832b07452973831137f2d73e395028b44b250dedc5abb0ee766e168ac
-                dl = self.flash_loan_event.decode_log(log)
-                tmp: AaveV2FlashLoanD = AaveV2FlashLoanD(
-                    target=extract_eth_address(log.topic1),
-                    # The beneficiary of the repayment, getting his debt reduced
-                    aave_user=extract_eth_address(log.topic2),
-                    # The address of the user initiating the repay(), providing the funds
-                    reserve=extract_eth_address(log.topic3),
-                    amount=dl.get("amount"),
-                    premium=dl.get("premium"),
-                    referral=dl.get("referralCode"),
-                    block_number=log.block_number,
-                    block_timestamp=log.block_timestamp,
-                    transaction_hash=log.transaction_hash,
-                    log_index=log.log_index,
-                    event_name=self.flash_loan_event.get_name(),
-                    topic0=log.topic0,
-                )
-                res.append(tmp)
-            elif current_topic0 == self.liquidation_call_event.get_signature():
-                # 0xe413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286
-                dl = self.liquidation_call_event.decode_log(log)
-                tmp: AaveV2LiquidationCallD = AaveV2LiquidationCallD(
-                    collateral_asset=extract_eth_address(log.topic1),
-                    debt_asset=extract_eth_address(log.topic2),
-                    aave_user=extract_eth_address(log.topic3),
-                    debt_to_cover=dl.get("debtToCover"),
-                    liquidated_collateral_amount=dl.get("liquidatedCollateralAmount"),
-                    liquidator=dl.get("liquidator"),
-                    receive_atoken=dl.get("receiveAToken"),
-                    block_number=log.block_number,
-                    block_timestamp=log.block_timestamp,
-                    transaction_hash=log.transaction_hash,
-                    log_index=log.log_index,
-                    event_name=self.liquidation_call_event.get_name(),
-                    topic0=log.topic0,
-                )
-                res.append(tmp)
-            # elif current_topic0 == self._change_factor_topic0:
-            #     self._collect_item(
-            #         AaveV2LendingPoolReserveFactorRecord.type(),
-            #         AaveV2LendingPoolReserveFactorRecord(
-            #             asset_address=common_utils.parse_hex_to_address(log.topic1),
-            #             factor=common_utils.parse_hex_to_int256(log.data),
-            #             block_number=log.block_number,
-            #             block_timestamp=log.block_timestamp,
-            #         ),
-            #     )
+            try:
+                processor = self._event_processors.get(log.topic0)
+                if processor is None:
+                    continue
+                processed_data = processor.process(log)
+                res.append(processed_data)
+
+            except Exception as e:
+                logger.error(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}: {str(e)}")
+                continue
+
         for it in res:
             self._collect_item(it.type(), it)
         liquidation_lis = []
@@ -319,7 +172,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 continue
             event_name = action.event_name
 
-            if event_name == self.deposit_event.get_name():
+            if event_name == AaveV2Events.DEPOSIT.name:
                 user = action.on_behalf_of
                 reserve = action.reserve
                 res_d[user][reserve].address = user
@@ -327,7 +180,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].supply_amount += action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
-            elif event_name == self.borrow_event.get_name():
+            elif event_name == AaveV2Events.BORROW.name:
                 reserve = action.reserve
                 user = action.on_behalf_of
                 res_d[user][reserve].address = user
@@ -335,7 +188,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].borrow_amount += action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
-            elif event_name == self.repay_event.get_name():
+            elif event_name == AaveV2Events.REPAY.name:
                 reserve = action.reserve
                 user = action.aave_user
                 res_d[user][reserve].asset = reserve
@@ -343,7 +196,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].borrow_amount -= action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
-            elif event_name == self.withdraw_event.get_name():
+            elif event_name == AaveV2Events.WITHDRAW.name:
                 reserve = action.reserve
                 user = action.aave_user
                 res_d[user][reserve].address = user
@@ -351,7 +204,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].supply_amount -= action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
-            elif event_name == self.liquidation_call_event.get_name():
+            elif event_name == AaveV2Events.LIQUIDATION_CALL.name:
                 collateral_asset = action.collateral_asset
                 debt_asset = action.debt_asset
                 user = action.aave_user
@@ -373,28 +226,3 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             else:
                 continue
         return res_d
-
-    def _process_current_pool_data(self):
-        records = self._data_buff[AaveV2LendingPoolReserveFactorRecord.type()]
-        self._data_buff[AaveV2LendingPoolReserveFactorRecord.type()] = []
-        unique_records = {}
-        for record in records:
-            key = (record.asset_address, record.block_number)
-            unique_records[key] = record
-
-        for price in unique_records.values():
-            self._collect_item(AaveV2LendingPoolReserveFactorRecord.type(), price)
-
-        sorted_records = sorted(unique_records.values(), key=lambda x: (x.asset_address, x.block_number))
-        current_records = [
-            max(group, key=attrgetter("block_number"))
-            for _, group in groupby(sorted_records, key=attrgetter("asset_address"))
-        ]
-        for data in current_records:
-            self._collect_item(AaveV2LendingPoolReserveFactorCurrent.type(), self.create_current_status(data))
-
-    @staticmethod
-    def create_current_status(detail: AaveV2LendingPoolReserveFactorRecord) -> AaveV2LendingPoolReserveFactorCurrent:
-        return AaveV2LendingPoolReserveFactorCurrent(
-            **{field.name: getattr(detail, field.name) for field in fields(AaveV2LendingPoolReserveFactorRecord)}
-        )
