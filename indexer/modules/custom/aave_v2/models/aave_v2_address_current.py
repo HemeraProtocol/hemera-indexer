@@ -38,4 +38,10 @@ class AaveV2AddressCurrent(HemeraModel):
                 "update_strategy": "EXCLUDED.block_number > af_aave_v2_address_current.block_number",
                 "converter": general_converter,
             },
+            {
+                "domain": "AaveV2LiquidationAddressCurrentD",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
