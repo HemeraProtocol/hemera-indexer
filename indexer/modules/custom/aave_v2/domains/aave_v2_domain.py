@@ -112,18 +112,17 @@ class AaveV2AddressCurrentD(FilterData):
     borrow_amount: Optional[int] = None
     block_number: Optional[int] = None
     block_timestamp: Optional[int] = None
+
+
+@dataclass
+class AaveV2LiquidationAddressCurrentD(FilterData):
+    address: Optional[str] = None
+    asset: Optional[str] = None
     last_total_value_of_liquidation: Optional[int] = None
     last_liquidation_time: Optional[int] = None
 
 
 def aave_v2_address_current_factory():
     return AaveV2AddressCurrentD(
-        address=None,
-        asset=None,
-        supply_amount=0,
-        borrow_amount=0,
-        block_timestamp=None,
-        block_number=None,
-        total_value_of_liquidation=None,
-        liquidation_time=None,
+        address=None, asset=None, supply_amount=0, borrow_amount=0, block_timestamp=None, block_number=None
     )
