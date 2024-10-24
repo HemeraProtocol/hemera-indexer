@@ -5,7 +5,10 @@ Time    : 2024/10/12 下午2:13
 Author  : xuzh
 Project : hemera_indexer
 """
+import json
 import logging
+import os
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import eth_abi
@@ -63,6 +66,9 @@ class Event:
         """
         return self._event_abi
 
+    def get_name(self) -> str:
+        return self.get_abi().get("name")
+
     def get_signature(self) -> str:
         """
         Returns the signature of the event.
@@ -98,6 +104,77 @@ class Event:
         :rtype: Optional[Dict[str, Any]]
         """
         return decode_log_ignore_indexed(self._event_abi, log)
+
+
+class AbiReader:
+    """A class to read ABI (Application Binary Interface) files.
+
+    This class handles reading ABI files from a specified directory and provides
+    methods to access event ABIs and entire contract ABIs.
+
+    Attributes:
+        call_path (str): The path from where the class is being called
+        relative_path (str): Relative path to the ABI directory
+        abi_map (Dict[str, list]): Mapping of contract addresses to their ABIs
+    """
+
+    def __init__(self, call_path: str, relative_path: str = "abi") -> None:
+        """Initialize the AbiReader with paths and load ABIs.
+
+        Args:
+            call_path: Path from where the class is being called
+            relative_path: Relative path to the ABI directory
+
+        Raises:
+            FileNotFoundError: If the ABI directory doesn't exist
+        """
+        self.call_path = Path(call_path)
+        self.relative_path = relative_path
+        self.abi_map = self._read_abi()
+
+    def _get_absolute_path(self) -> Path:
+        current_dir = self.call_path.parent
+        return current_dir / self.relative_path
+
+    def _read_abi(self) -> Dict[str, list]:
+        abi_map = {}
+        abs_path = self._get_absolute_path()
+
+        if not abs_path.exists():
+            raise FileNotFoundError(f"ABI directory not found: {abs_path}")
+
+        try:
+            for file_path in abs_path.glob("*.json"):
+                try:
+                    abi_data = json.loads(file_path.read_text())
+                    address = abi_data["address"].lower()
+                    abi = abi_data["abi"]
+                    if not isinstance(abi, list):
+                        continue
+                    abi_map[address] = abi
+                except json.JSONDecodeError:
+                    print(f"Invalid JSON in file: {file_path}")
+                except KeyError as e:
+                    print(f"Missing required field {e} in file: {file_path}")
+
+        except Exception as e:
+            print(f"Error reading ABI files: {e}")
+            raise
+
+        return abi_map
+
+    def get_event_abi(self, address: str, event_name: str) -> Optional[Dict[str, Any]]:
+        address = address.lower()
+        if address not in self.abi_map:
+            print(f"No ABI found for address: {address}")
+            return None
+        return next(
+            (abi for abi in self.abi_map[address] if abi.get("type") == "event" and abi.get("name") == event_name), None
+        )
+
+    def get_entire_abi(self, address: str) -> Optional[list]:
+        address = address.lower()
+        return self.abi_map.get(address)
 
 
 def decode_log_ignore_indexed(
