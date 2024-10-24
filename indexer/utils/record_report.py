@@ -28,7 +28,7 @@ class RecordReporter:
         )
         self.nonce = self.web3.eth.get_transaction_count(self.account.address)
 
-    def report(self, chain_id: int, start_block: int, end_block: int, indexed_data: dict):
+    def report(self, chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict):
         formatted_indexed_data = []
         for data in indexed_data:
             # 确保每个字符串都是32字节

@@ -6,6 +6,7 @@ import click
 from web3 import Web3
 
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.integrity_checker import RuntimeCodeSignature
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.controller.stream_controller import StreamController
@@ -364,6 +365,8 @@ def stream(
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.getLogger("ROOT").info("Using provider " + provider_uri)
     logging.getLogger("ROOT").info("Using debug provider " + debug_provider_uri)
+    integrity_checker = RuntimeCodeSignature()
+    integrity_checker.calculate_signature(__name__)
 
     # parameter logic checking
     if source_path:
@@ -431,6 +434,7 @@ def stream(
         auto_reorg=auto_reorg,
         multicall=multicall,
         force_filter_mode=force_filter_mode,
+        runtime_signature_signer=integrity_checker,
     )
 
     controller = StreamController(
@@ -443,6 +447,7 @@ def stream(
         retry_from_record=retry_from_record,
         delay=delay,
         record_reporter=create_record_report_from_parameter(report_private_key, report_from_address),
+        runtime_signature_signer=integrity_checker,
     )
 
     controller.action(

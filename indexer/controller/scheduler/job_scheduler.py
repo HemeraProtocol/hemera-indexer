@@ -68,6 +68,7 @@ class JobScheduler:
         multicall=None,
         auto_reorg=True,
         force_filter_mode=False,
+        runtime_signature_signer=None,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
@@ -110,8 +111,14 @@ class JobScheduler:
                     self.logger.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
                     BaseJob.init_token_cache(token_dict_from_db)
         self.instantiate_jobs()
-        self.runtime_signature = RuntimeCodeSignature().calculate_signature(__name__)
+        self.runtime_signature = runtime_signature_signer
+        self._execute_runtime_signature()
         self.logger.info("Export output types: %s", required_output_types)
+
+    def _execute_runtime_signature(self):
+        self.runtime_signature.calculate_signature(__name__)
+        for job in self.jobs:
+            self.runtime_signature.calculate_signature(job.__class__.__module__)
 
     def get_required_job_classes(self, output_types) -> (List[Type[BaseJob]], bool):
         required_job_classes = set()

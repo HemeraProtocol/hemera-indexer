@@ -29,6 +29,7 @@ class StreamController(BaseController):
         retry_from_record=False,
         delay=0,
         record_reporter=None,
+        runtime_signature_signer=None,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
@@ -40,11 +41,18 @@ class StreamController(BaseController):
         self.delay = delay
         self.chain_id = self._get_current_chain_id()
         self.record_reporter: RecordReporter = record_reporter
+        self.runtime_signature = runtime_signature_signer
+        self._calculate_runtime_hash_code()
         if self.record_reporter is None:
             logger.warning(
                 "RecordReporter not initialized, indexed records will not be reported to contract. "
                 "The possible reason is that --report-private-key or --report-from-address are not set."
             )
+
+    def _calculate_runtime_hash_code(self):
+        self.runtime_signature.calculate_signature(__name__)
+        self.runtime_signature.calculate_combined_hash()
+        self.runtime_combined_hash = self.runtime_signature.get_combined_hash()
 
     def action(
         self,
@@ -108,7 +116,9 @@ class StreamController(BaseController):
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
                     if self.record_reporter:
-                        self.record_reporter.report(self.chain_id, last_synced_block + 1, target_block, report_info)
+                        self.record_reporter.report(
+                            self.chain_id, last_synced_block + 1, target_block, self.runtime_combined_hash, report_info
+                        )
                     last_synced_block = target_block
 
             except HemeraBaseException as e:
