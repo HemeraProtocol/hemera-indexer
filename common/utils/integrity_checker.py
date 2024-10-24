@@ -89,6 +89,10 @@ class StaticCodeSignature:
 
 
 class RuntimeCodeSignature:
+    """
+    The RuntimeCodeSignature ensures that only the actual executed code participates in the code hash calculation.
+    """
+
     def __init__(self):
         self._project_package = {"api", "indexer", "common"}
         self._processed_modules = set()
