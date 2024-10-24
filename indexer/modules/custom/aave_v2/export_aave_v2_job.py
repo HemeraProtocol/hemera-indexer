@@ -6,6 +6,7 @@ from sqlalchemy import func
 from web3.types import ABIEvent
 
 from common.utils.abi_code_utils import AbiReader, Event
+from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.log import Log
 from indexer.jobs import FilterTransactionDataJob
@@ -102,7 +103,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
             except Exception as e:
                 logger.error(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}: {str(e)}")
-                continue
+                raise FastShutdownError("Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
 
         for it in res:
             self._collect_item(it.type(), it)
