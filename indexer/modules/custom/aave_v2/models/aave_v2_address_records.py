@@ -17,11 +17,8 @@ class AaveV2LendingRecords(HemeraModel):
     log_index = Column(INTEGER, primary_key=True)
     block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
-    method = Column(VARCHAR)
     event_name = Column(VARCHAR)
     topic0 = Column(BYTEA)
-    from_address = Column(BYTEA)
-    to_address = Column(BYTEA)
 
     reserve = Column(BYTEA)
     aave_user = Column(BYTEA)
