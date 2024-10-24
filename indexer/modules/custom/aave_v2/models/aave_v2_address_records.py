@@ -11,7 +11,7 @@ from common.models import HemeraModel, general_converter
 
 
 class AaveV2LendingRecords(HemeraModel):
-    __tablename__ = "af_aave_v2_lending_records"
+    __tablename__ = "af_aave_v2_records"
 
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
@@ -27,15 +27,15 @@ class AaveV2LendingRecords(HemeraModel):
     aave_user = Column(BYTEA)
     repayer = Column(BYTEA)
     amount = Column(NUMERIC(100))
-    premium = Column(BIGINT)
+    premium = Column(NUMERIC(100))
     on_behalf_of = Column(BYTEA)
     referral = Column(INT)
     borrow_rate_mode = Column(INT)
-    borrow_rate = Column(BIGINT)
+    borrow_rate = Column(NUMERIC(100))
     aave_to = Column(BYTEA)
     collateral_asset = Column(BYTEA)
     debt_asset = Column(BYTEA)
-    debt_to_cover = Column(BIGINT)
+    debt_to_cover = Column(NUMERIC(100))
     liquidated_collateral_amount = Column(NUMERIC(100))
     liquidator = Column(BYTEA)
     receive_atoken = Column(BOOLEAN)
