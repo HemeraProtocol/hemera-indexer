@@ -103,7 +103,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
             except Exception as e:
                 logger.error(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}: {str(e)}")
-                raise FastShutdownError("Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
+                raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
 
         for it in res:
             self._collect_item(it.type(), it)
