@@ -173,7 +173,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 continue
             event_name = action.event_name
 
-            if event_name == AaveV2Events.DEPOSIT.name:
+            if event_name == AaveV2Events.DEPOSIT.value.name:
                 user = action.on_behalf_of
                 reserve = action.reserve
                 res_d[user][reserve].address = user
@@ -181,7 +181,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].supply_amount += action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
-            elif event_name == AaveV2Events.BORROW.name:
+            elif event_name == AaveV2Events.BORROW.value.name:
                 reserve = action.reserve
                 user = action.on_behalf_of
                 res_d[user][reserve].address = user
@@ -189,7 +189,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].borrow_amount += action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
-            elif event_name == AaveV2Events.REPAY.name:
+            elif event_name == AaveV2Events.REPAY.value.name:
                 reserve = action.reserve
                 user = action.aave_user
                 res_d[user][reserve].asset = reserve
@@ -197,7 +197,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].borrow_amount -= action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
-            elif event_name == AaveV2Events.WITHDRAW.name:
+            elif event_name == AaveV2Events.WITHDRAW.value.name:
                 reserve = action.reserve
                 user = action.aave_user
                 res_d[user][reserve].address = user
@@ -205,7 +205,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].supply_amount -= action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
-            elif event_name == AaveV2Events.LIQUIDATION_CALL.name:
+            elif event_name == AaveV2Events.LIQUIDATION_CALL.value.name:
                 collateral_asset = action.collateral_asset
                 debt_asset = action.debt_asset
                 user = action.aave_user
