@@ -365,8 +365,6 @@ def stream(
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.getLogger("ROOT").info("Using provider " + provider_uri)
     logging.getLogger("ROOT").info("Using debug provider " + debug_provider_uri)
-    integrity_checker = RuntimeCodeSignature()
-    integrity_checker.calculate_signature(__name__)
 
     # parameter logic checking
     if source_path:
@@ -420,10 +418,17 @@ def stream(
     if source_path and source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
 
+    item_exporters = create_item_exporters(output, config)
+
+    integrity_checker = RuntimeCodeSignature()
+    integrity_checker.calculate_signature(__name__, ["indexer.jobs", "indexer.modules", "indexer.exporters"])
+    for exporter in item_exporters:
+        integrity_checker.calculate_signature(exporter.__class__.__module__)
+
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporters=create_item_exporters(output, config),
+        item_exporters=item_exporters,
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,

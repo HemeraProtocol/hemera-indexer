@@ -94,7 +94,8 @@ class RuntimeCodeSignature:
     """
 
     def __init__(self):
-        self._project_package = {"api", "indexer", "common"}
+        self._project_package = ["api", "indexer", "common"]
+        self._exclude_package = []
         self._processed_modules = set()
         self._module_hashes = {}
         self._combined_hash = None
@@ -121,7 +122,9 @@ class RuntimeCodeSignature:
 
     def _should_process_module(self, module_name: str) -> bool:
         """Determines whether the module should be processed"""
-        return any(module_name.startswith(package) for package in self._project_package)
+        return any(module_name.startswith(package) for package in self._project_package) and not any(
+            module_name.startswith(package) for package in self._exclude_package
+        )
 
     def _recursive_find_imports(self, module) -> Set[str]:
         """Find all imports in a module"""
@@ -162,7 +165,7 @@ class RuntimeCodeSignature:
             if import_name not in self._processed_modules:
                 self._process_module(import_name)
 
-    def calculate_signature(self, root_module_name: str = None) -> Dict[str, str]:
+    def calculate_signature(self, root_module_name: str = None, exclude_package: List[str] = []) -> Dict[str, str]:
         """calculate runtime code signature"""
         if root_module_name is None:
             raise ValueError("root_module_name cannot be None")
@@ -170,7 +173,9 @@ class RuntimeCodeSignature:
         if root_module_name not in sys.modules:
             raise ValueError(f"{root_module_name} cannot be found in imported list.")
 
+        self._exclude_package = exclude_package
         self._process_module(root_module_name)
+        self._exclude_package.clear()
 
     def calculate_combined_hash(self):
         """Calculate the combined hash value of all file hashes"""

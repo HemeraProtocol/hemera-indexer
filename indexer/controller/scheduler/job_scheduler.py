@@ -10,7 +10,6 @@ from redis.client import Redis
 from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.format_utils import bytes_to_hex_str
-from common.utils.integrity_checker import RuntimeCodeSignature
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -116,7 +115,7 @@ class JobScheduler:
         self.logger.info("Export output types: %s", required_output_types)
 
     def _execute_runtime_signature(self):
-        self.runtime_signature.calculate_signature(__name__)
+        self.runtime_signature.calculate_signature(__name__, ["indexer.jobs", "indexer.modules"])
         for job in self.jobs:
             self.runtime_signature.calculate_signature(job.__class__.__module__)
 
