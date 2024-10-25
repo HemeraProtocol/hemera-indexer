@@ -139,7 +139,7 @@ class RecordReporter:
 
     def report(self, chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict):
         def transaction_builder(
-                chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict, nonce: int
+            chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict, nonce: int
         ):
             code_hash = hex_str_to_bytes(runtime_code_hash).rjust(32, b"\x00")
 
@@ -264,7 +264,7 @@ if __name__ == "__main__":
     from common.utils.integrity_checker import StaticCodeSignature
 
     checker = StaticCodeSignature()
-    checker.calculate_signature(['../../indexer', '../../common'])
+    checker.calculate_signature(["../../indexer", "../../common"])
     code_hash = checker.get_combined_hash()
 
     reporter = RecordReporter(
@@ -277,8 +277,9 @@ if __name__ == "__main__":
         {"dataClass": "4ac520fc", "count": 1, "dataHash": "4ac520fc"},
     ]
 
-    reporter.report(chain_id=1, start_block=10000, end_block=10001, runtime_code_hash=code_hash,
-                    indexed_data=indexed_data)
+    reporter.report(
+        chain_id=1, start_block=10000, end_block=10001, runtime_code_hash=code_hash, indexed_data=indexed_data
+    )
 
     # register = FeatureRegister(
     #     from_address="0xfdeacf567997fc153e2fe1de098aeedc71294b71",
