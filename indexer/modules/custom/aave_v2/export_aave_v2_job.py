@@ -280,20 +280,15 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 collateral_reserve = self.asset_reserve[collateral_asset]
 
                 a_record.debt_after_liquidation = debt
-                a_record.collateral_after_liquidation = \
-                    address_token_block_balance_dic[address][collateral_reserve.a_token_address][block_number]
+                a_record.collateral_after_liquidation = address_token_block_balance_dic[address][
+                    collateral_reserve.a_token_address
+                ][block_number]
                 a_record.force_update_current = True
 
         batch_result_dic = self.calculate_new_address_current(exists_dic, aave_records)
         for address, outer_dic in batch_result_dic.items():
             for reserve, kad in outer_dic.items():
-                if address in exists_dic and reserve in exists_dic[address]:
-                    exists_aad = exists_dic[address][reserve]
-                    exists_aad.supply_amount += kad.supply_amount
-                    exists_aad.borrow_amount += kad.borrow_amount
-                    self._collect_item(kad.type(), exists_aad)
-                else:
-                    self._collect_item(kad.type(), kad)
+                self._collect_item(kad.type(), kad)
 
         logger.info("This batch of data have processed")
 
@@ -326,6 +321,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             return defaultdict(aave_v2_address_current_factory)
 
         res_d = defaultdict(nested_dict)
+        # init res_d with exists_dic
+        for address, outer_dic in exists_dic.items():
+            for reserve, kad in outer_dic.items():
+                res_d[address][reserve] = kad
         for action in aave_records:
             if not hasattr(action, "event_name"):
                 continue
@@ -349,14 +348,13 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == AaveV2Events.REPAY.value.name:
-                pass
-                # reserve = action.reserve
-                # user = action.aave_user
-                # res_d[user][reserve].asset = reserve
-                # res_d[user][reserve].address = user
-                # res_d[user][reserve].borrow_amount -= action.amount
-                # res_d[user][reserve].block_number = action.block_number
-                # res_d[user][reserve].block_timestamp = action.block_timestamp
+                reserve = action.reserve
+                user = action.aave_user
+                res_d[user][reserve].asset = reserve
+                res_d[user][reserve].address = user
+                res_d[user][reserve].borrow_amount = action.after_repay_debt
+                res_d[user][reserve].block_number = action.block_number
+                res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == AaveV2Events.WITHDRAW.value.name:
                 reserve = action.reserve
                 user = action.aave_user
@@ -371,19 +369,26 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 user = action.aave_user
                 res_d[user][collateral_asset].asset = collateral_asset
                 res_d[user][collateral_asset].address = user
-                res_d[user][collateral_asset].supply_amount = 0
+                res_d[user][collateral_asset].supply_amount = action.collateral_after_liquidation
                 res_d[user][collateral_asset].block_number = action.block_number
                 res_d[user][collateral_asset].block_timestamp = action.block_timestamp
 
+                res_d[user][debt_asset].asset = debt_asset
+                res_d[user][debt_asset].address = user
+                res_d[user][debt_asset].borrow_amount = action.debt_after_liquidation
+                res_d[user][debt_asset].block_number = action.block_number
+                res_d[user][debt_asset].block_timestamp = action.block_timestamp
+
                 # record last liquidation time and amount
-                self._collect_item(AaveV2LiquidationAddressCurrentD.type(),
-                                   AaveV2LiquidationAddressCurrentD(
-                                       address=user,
-                                       asset=collateral_asset,
-                                       last_liquidation_time=action.block_timestamp,
-                                       last_total_value_of_liquidation=action.liquidated_collateral_amount,
-                                   )
-                                   )
+                self._collect_item(
+                    AaveV2LiquidationAddressCurrentD.type(),
+                    AaveV2LiquidationAddressCurrentD(
+                        address=user,
+                        asset=collateral_asset,
+                        last_liquidation_time=action.block_timestamp,
+                        last_total_value_of_liquidation=action.liquidated_collateral_amount,
+                    ),
+                )
             else:
                 continue
         return res_d
