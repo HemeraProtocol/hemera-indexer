@@ -12,6 +12,7 @@ from indexer.domain.log import Log
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.aave_v2.aave_v2_processors import AaveV2Events
 from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
+    AaveV2AddressBalanceRecordsD,
     AaveV2AddressCurrentD,
     AaveV2BorrowD,
     AaveV2DepositD,
@@ -45,6 +46,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         AaveV2LiquidationCallD,
         AaveV2AddressCurrentD,
         AaveV2LiquidationAddressCurrentD,
+        AaveV2AddressBalanceRecordsD,
     ]
     able_to_reorg = False
 
@@ -237,6 +239,15 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             address = et["address"]
             balance = et["balance"]
             block_number = et["block_number"]
+            self._collect_item(
+                AaveV2AddressBalanceRecordsD.type(),
+                AaveV2AddressBalanceRecordsD(
+                    address=address,
+                    token=token,
+                    block_number=block_number,
+                    balance=balance,
+                ),
+            )
             if address not in address_token_block_balance_dic:
                 address_token_block_balance_dic[address] = dict()
             if token not in address_token_block_balance_dic[address]:
