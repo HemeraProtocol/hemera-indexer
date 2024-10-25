@@ -133,3 +133,11 @@ def aave_v2_address_current_factory():
     return AaveV2AddressCurrentD(
         address=None, asset=None, supply_amount=0, borrow_amount=0, block_timestamp=None, block_number=None
     )
+
+
+@dataclass
+class AaveV2AddressBalanceRecordsD(FilterData):
+    address: Optional[str] = None
+    token: Optional[str] = None
+    block_number: Optional[int] = None
+    balance: Optional[int] = None
