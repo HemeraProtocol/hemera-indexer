@@ -223,7 +223,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 debt_reserve = self.asset_reserve[debt_asset]
                 borrow_rate_mode = None
                 if a_record.aave_user in address_asset_borrow:
-                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_asset.asset)
+                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_reserve.asset)
                 if not borrow_rate_mode:
                     continue
                 if borrow_rate_mode == 1:
@@ -261,11 +261,16 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         balance_enriched_tokens = self.token_fetcher.fetch_token_balance(balance_of_lis)
 
         address_token_block_balance_dic = {}
+        unique_set = set()
         for et in balance_enriched_tokens:
             token = et["token_address"]
             address = et["address"]
             balance = et["balance"]
             block_number = et["block_number"]
+            k = (address, token, block_number)
+            if k in unique_set:
+                continue
+            unique_set.add(k)
             self._collect_item(
                 AaveV2AddressBalanceRecordsD.type(),
                 AaveV2AddressBalanceRecordsD(
@@ -288,7 +293,11 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 reserve = a_record.reserve
                 block_number = a_record.block_number
 
-                borrow_rate_mode = address_asset_borrow[a_record.aave_user][reserve]
+                borrow_rate_mode = None
+                if a_record.aave_user in address_asset_borrow:
+                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(reserve)
+                if not borrow_rate_mode:
+                    continue
                 if borrow_rate_mode == 2:
                     vary_token = self.asset_reserve.get(reserve).variable_debt_token_address
                     debt = address_token_block_balance_dic[address][vary_token][block_number]
@@ -304,7 +313,11 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 block_number = a_record.block_number
 
                 debt_asset = a_record.debt_asset
-                borrow_rate_mode = address_asset_borrow[a_record.aave_user][debt_asset]
+                borrow_rate_mode = None
+                if a_record.aave_user in address_asset_borrow:
+                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_asset)
+                if not borrow_rate_mode:
+                    continue
                 if borrow_rate_mode == 2:
                     vary_token = self.asset_reserve.get(debt_asset).variable_debt_token_address
                     debt = address_token_block_balance_dic[address][vary_token][block_number]
@@ -322,11 +335,17 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     collateral_reserve.a_token_address
                 ][block_number]
                 a_record.force_update_current = True
+        liquidation_lis = []
+        batch_result_dic = self.calculate_new_address_current(exists_dic, aave_records, liquidation_lis)
+        liquidation_lis = self.merge_liquidation_lis(liquidation_lis)
+        self._collect_items(AaveV2LiquidationAddressCurrentD.type(), liquidation_lis)
 
-        batch_result_dic = self.calculate_new_address_current(exists_dic, aave_records)
+        address_currents = []
         for address, outer_dic in batch_result_dic.items():
             for reserve, kad in outer_dic.items():
-                self._collect_item(kad.type(), kad)
+                address_currents.append(kad)
+        address_currents.sort(key=lambda x: (x.address, x.asset))
+        self._collect_items(AaveV2AddressCurrentD.type(), address_currents)
 
         logger.info("This batch of data have processed")
 
@@ -355,7 +374,19 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             res[item.address][item.asset] = item
         return res
 
-    def calculate_new_address_current(self, exists_dic, aave_records) -> Any:
+    def merge_liquidation_lis(self, liquidation_lis):
+        # keep the newest one
+        liquidation_lis.sort(key=lambda x: x.last_liquidation_time, reverse=True)
+        lis = []
+        unique_k_set = set()
+        for li in liquidation_lis:
+            k = (li.address, li.asset)
+            if k not in unique_k_set:
+                unique_k_set.add(k)
+                lis.append(li)
+        return lis
+
+    def calculate_new_address_current(self, exists_dic, aave_records, liquidation_lis) -> Any:
         def nested_dict():
             return defaultdict(aave_v2_address_current_factory)
 
@@ -419,14 +450,13 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][debt_asset].block_timestamp = action.block_timestamp
 
                 # record last liquidation time and amount
-                self._collect_item(
-                    AaveV2LiquidationAddressCurrentD.type(),
+                liquidation_lis.append(
                     AaveV2LiquidationAddressCurrentD(
                         address=user,
                         asset=collateral_asset,
                         last_liquidation_time=action.block_timestamp,
                         last_total_value_of_liquidation=action.liquidated_collateral_amount,
-                    ),
+                    )
                 )
             else:
                 continue
