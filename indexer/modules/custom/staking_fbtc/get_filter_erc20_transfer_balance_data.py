@@ -48,6 +48,12 @@ class FilterJob(FilterTransactionDataJob):
             select lv_address from lendle_token_mapping
             union all 
             select variable_debt_Address from lendle_token_mapping
+            union all 
+             select lv_address from aurelius_token_mapping
+            union all 
+            select variable_debt_Address from aurelius_token_mapping
+            
+            
             """
         result = session.execute(text(sql))
 
