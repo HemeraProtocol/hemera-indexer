@@ -71,7 +71,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         self.stable_reserve = {}
         self._read_reserve()
 
-        self.token_fetcher = TokenFetcher(self._web3)
+        self.token_fetcher = TokenFetcher(self._web3, kwargs)
 
     def _read_reserve(self):
 
@@ -83,8 +83,11 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 a_token_address=bytes_to_hex_str(rr.a_token_address),
                 stable_debt_token_address=bytes_to_hex_str(rr.stable_debt_token_address),
                 variable_debt_token_address=bytes_to_hex_str(rr.variable_debt_token_address),
-                interest_rate_strategy_address=bytes_to_hex_str(rr.block_number),
-                block_timestamp=rr.block_number,
+                interest_rate_strategy_address=bytes_to_hex_str(rr.interest_rate_strategy_address),
+                block_number=rr.block_number,
+                block_timestamp=rr.block_timestamp,
+                transaction_hash=bytes_to_hex_str(rr.transaction_hash),
+                log_index=rr.log_index,
             )
             self.asset_reserve[item.asset] = item
             self.vary_reserve[item.variable_debt_token_address] = item
@@ -116,8 +119,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
-        res = []
-        balance_of_lis = []
+        aave_records = []
         for log in logs:
             if not self.is_aave_v2_address(log.address):
                 continue
@@ -126,48 +128,148 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if processor is None:
                     continue
                 processed_data = processor.process(log)
+                aave_records.append(processed_data)
+                self._collect_item(processed_data.type(), processed_data)
                 if processed_data.type() == AaveV2ReserveD.type():
                     # update reserve
                     self.asset_reserve[processed_data.asset] = processed_data
                     self.vary_reserve[processed_data.variable_debt_token_address] = processed_data
                     self.stable_reserve[processed_data.stable_debt_token_address] = processed_data
-                elif processed_data.type() == AaveV2RepayD.type():
-                    reserve = self.asset_reserve[processed_data.reserve]
-                    balance_of_lis.append(
-                        {
-                            "address": processed_data.aave_user,
-                            "token_address": reserve.stable_debt_token_address,
-                            "token_type": "ERC20",
-                            "token_id": None,
-                            "block_number": processed_data.block_number,
-                            "block_timestamp": processed_data.block_timestamp,
-                        }
-                    )
-                    balance_of_lis.append(
-                        {
-                            "address": processed_data.aave_user,
-                            "token_address": reserve.variable_debt_token_address,
-                            "token_type": "ERC20",
-                            "token_id": None,
-                            "block_number": processed_data.block_number,
-                            "block_timestamp": processed_data.block_timestamp,
-                        }
-                    )
-                # when repay, call rpc to get debt_balance
-
-                res.append(processed_data)
-
             except Exception as e:
                 logger.error(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}: {str(e)}")
                 raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
 
-        for it in res:
-            self._collect_item(it.type(), it)
+        related_address_set = set(ave.aave_user for ave in aave_records)
+        exists_dic = self.get_existing_address_current(list(related_address_set))
+
+        # we need borrowed asset and its borrow mode
+        address_asset_borrow = dict()
+        for address in exists_dic:
+            if address not in address_asset_borrow:
+                address_asset_borrow[address] = dict()
+            for asset in exists_dic[address]:
+                acd = exists_dic[address][asset]
+                address_asset_borrow[address][asset] = acd.borrow_rate_mode
+        for a_record in aave_records:
+            if a_record.type() == AaveV2BorrowD.type():
+                address_asset_borrow[a_record.aave_user][a_record.reserve] = a_record.borrow_rate_mode
+
+        balance_of_lis = []
+        for a_record in aave_records:
+            # when repay, call rpc to get debt_balance
+            if a_record.type() == AaveV2RepayD.type():
+                reserve = self.asset_reserve[a_record.reserve]
+
+                borrow_rate_mode = address_asset_borrow[a_record.aave_user][reserve]
+                if borrow_rate_mode == 1:
+
+                    balance_of_lis.append(
+                        {
+                            "address": a_record.aave_user,
+                            "token_address": reserve.stable_debt_token_address,
+                            "token_type": "ERC20",
+                            "token_id": None,
+                            "block_number": a_record.block_number,
+                            "block_timestamp": a_record.block_timestamp,
+                        }
+                    )
+                elif borrow_rate_mode == 2:
+                    balance_of_lis.append(
+                        {
+                            "address": a_record.aave_user,
+                            "token_address": reserve.variable_debt_token_address,
+                            "token_type": "ERC20",
+                            "token_id": None,
+                            "block_number": a_record.block_number,
+                            "block_timestamp": a_record.block_timestamp,
+                        }
+                    )
+                else:
+                    raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
+            elif a_record.type() == AaveV2LiquidationCallD.type():
+                aave_user = a_record.aave_user
+                collateral_asset = a_record.collateral_asset
+                collateral_reserve = self.asset_reserve[collateral_asset]
+                balance_of_lis.append(
+                    {
+                        "address": a_record.aave_user,
+                        "token_address": collateral_reserve.a_token_address,
+                        "token_type": "ERC20",
+                        "token_id": None,
+                        "block_number": a_record.block_number,
+                        "block_timestamp": a_record.block_timestamp,
+                    }
+                )
+                debt_asset = a_record.debt_asset
+                debt_reserve = self.asset_reserve[debt_asset]
+                borrow_rate_mode = address_asset_borrow[a_record.aave_user][debt_asset]
+                if borrow_rate_mode == 1:
+
+                    balance_of_lis.append(
+                        {
+                            "address": a_record.aave_user,
+                            "token_address": debt_reserve.stable_debt_token_address,
+                            "token_type": "ERC20",
+                            "token_id": None,
+                            "block_number": a_record.block_number,
+                            "block_timestamp": a_record.block_timestamp,
+                        }
+                    )
+                elif borrow_rate_mode == 2:
+                    balance_of_lis.append(
+                        {
+                            "address": a_record.aave_user,
+                            "token_address": debt_reserve.variable_debt_token_address,
+                            "token_type": "ERC20",
+                            "token_id": None,
+                            "block_number": a_record.block_number,
+                            "block_timestamp": a_record.block_timestamp,
+                        }
+                    )
+                else:
+                    raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
+
+        balance_enriched_tokens = self.token_fetcher.fetch_token_balance(balance_of_lis)
+
+        address_token_block_balance_dic = {}
+        for et in balance_enriched_tokens:
+            token = et["token_address"]
+            address = et["address"]
+            balance = et["balance"]
+            block_number = et["block_number"]
+            if address not in address_token_block_balance_dic:
+                address_token_block_balance_dic[address] = dict()
+            if token not in address_token_block_balance_dic[address]:
+                address_token_block_balance_dic[address][token] = dict()
+            address_token_block_balance_dic[address][token][block_number] = balance
+
+        # enrich repay, liquidation
+        for a_record in aave_records:
+            if a_record.type() == AaveV2RepayD.type():
+                address = a_record.aave_user
+                reserve = a_record.reserve
+                block_number = a_record.block_number
+
+                borrow_rate_mode = address_asset_borrow[a_record.aave_user][reserve]
+                if borrow_rate_mode == 2:
+                    vary_token = self.asset_reserve.get(reserve).variable_debt_token_address
+                    debt = address_token_block_balance_dic[address][vary_token][block_number]
+                elif borrow_rate_mode == 1:
+                    stable_token = self.asset_reserve.get(reserve).stable_debt_token_address
+                    debt = address_token_block_balance_dic[address][stable_token][block_number]
+                else:
+                    raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
+                a_record.after_repay_debt = debt
+                a_record.force_update_current = True
+            elif a_record.type() == AaveV2LiquidationCallD.type():
+                address = a_record.aave_user
+                reserve = a_record.reserve
+                block_number = a_record.block_number
+
         liquidation_lis = []
-        batch_result_dic = self.calculate_batch_result(res, liquidation_lis)
+        batch_result_dic = self.calculate_new_address_current(exists_dic, aave_records)
         liquidation_lis = self.merge_liquidation_lis(liquidation_lis)
         self._collect_items(AaveV2LiquidationAddressCurrentD.type(), liquidation_lis)
-        exists_dic = self.get_existing_address_current(list(batch_result_dic.keys()))
         for address, outer_dic in batch_result_dic.items():
             for reserve, kad in outer_dic.items():
                 if address in exists_dic and reserve in exists_dic[address]:
@@ -177,14 +279,8 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     self._collect_item(kad.type(), exists_aad)
                 else:
                     self._collect_item(kad.type(), kad)
-        balance_enriched_tokens = self.token_fetcher.fetch_token_balance(balance_of_lis)
-        for et in balance_enriched_tokens:
-            token = et["token_address"]
-            address = et["address"]
-            balance = et["balance"]
 
         logger.info("This batch of data have processed")
-        # self._process_current_pool_data()
 
     def merge_liquidation_lis(self, liquidation_lis):
         # keep the newest one
@@ -199,9 +295,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         return lis
 
     def get_existing_address_current(self, addresses):
-        if not self.db_service:
-            return {}
-
         addresses = [ad[2:] for ad in addresses if ad and ad.startswith("0x")]
         if not addresses:
             return {}
@@ -225,7 +318,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             res[item.address][item.asset] = item
         return res
 
-    def calculate_batch_result(self, aave_records, liquidation_lis) -> Any:
+    def calculate_new_address_current(self, exists_dic, aave_records) -> Any:
         def nested_dict():
             return defaultdict(aave_v2_address_current_factory)
 
