@@ -479,10 +479,12 @@ def stream(
     )
     if noncontinuous_blocks:
         block_ids = noncontinuous_blocks.split(",")
+        block_ids = list(set([int(block_id) for block_id in block_ids]))
+        block_ids.sort()
         for block_id in block_ids:
             controller.action(
-                start_block=int(block_id),
-                end_block=int(block_id),
+                start_block=block_id,
+                end_block=block_id,
                 block_batch_size=block_batch_size,
                 period_seconds=period_seconds,
                 pid_file=pid_file,
