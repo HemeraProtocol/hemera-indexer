@@ -22,7 +22,8 @@ class JobListGenerator(object):
             ]
         elif self.job_name == "EXPLORE":
             job_list = [
-                "test.sql", "daily_explore_aggregates.sql",
+                "test.sql",
+                # "daily_explore_aggregates.sql",
             ]
 
         return job_list
@@ -47,11 +48,11 @@ class JobListGenerator(object):
         elif self.job_name == "EXPLORE":
             job_list = [
                 "test.sql",
-                "explorer_1_update_address_txn_stats.sql",
-                "explorer_2_update_address_token_transfer_stats.sql",
-                "explorer_3_addresses.sql",
-                "explorer_4_agg_address_stats.sql",
-                "explorer_5_update_schedule_metadata.sql",
+                # "explorer_1_update_address_txn_stats.sql",
+                # "explorer_2_update_address_token_transfer_stats.sql",
+                # "explorer_3_addresses.sql",
+                # "explorer_4_agg_address_stats.sql",
+                # "explorer_5_update_schedule_metadata.sql",
             ]
 
         return job_list
