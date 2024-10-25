@@ -37,16 +37,18 @@ class ValidateBlock(Resource):
         else:
             condition = and_(Blocks.hash == hex_str_to_bytes(number_or_hash), Blocks.reorg == False)
 
-        block = get_blocks_by_condition(filter_condition=condition,
-                                        columns=['hash', 'number', 'timestamp', 'parent_hash', 'transactions_count',
-                                                 'extra_data'])
+        block = get_blocks_by_condition(
+            filter_condition=condition,
+            columns=["hash", "number", "timestamp", "parent_hash", "transactions_count", "extra_data"],
+        )
 
         if block is None:
             return None, 200
 
-        transactions = get_transactions_by_condition(filter_condition=Transactions.block_number == block[0].number,
-                                                     columns=['hash', 'transaction_index', 'from_address', 'to_address',
-                                                              'value', 'input'])
+        transactions = get_transactions_by_condition(
+            filter_condition=Transactions.block_number == block[0].number,
+            columns=["hash", "transaction_index", "from_address", "to_address", "value", "input"],
+        )
 
         block_json = validate_block_builder(block[0], transactions)
 
