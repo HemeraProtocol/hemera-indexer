@@ -207,10 +207,10 @@ SUBMIT_INDEX_FUNCTION = Function(
             {"internalType": "uint256", "name": "chainId_", "type": "uint256"},
             {"internalType": "uint256", "name": "startBlock_", "type": "uint256"},
             {"internalType": "uint256", "name": "endBlock_", "type": "uint256"},
+            {"internalType": "uint256", "name": "codeHash_", "type": "bytes32"},
             {
                 "components": [
-                    {"internalType": "bytes32", "name": "dataClass", "type": "bytes32"},
-                    {"internalType": "bytes32", "name": "codeHash", "type": "bytes32"},
+                    {"internalType": "bytes32", "name": "dataClass", "type": "bytes4"},
                     {"internalType": "uint256", "name": "count", "type": "uint256"},
                     {"internalType": "bytes32", "name": "dataHash", "type": "bytes32"},
                 ],
@@ -220,6 +220,19 @@ SUBMIT_INDEX_FUNCTION = Function(
             },
         ],
         "name": "submitIndexRecord",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    }
+)
+
+REGISTER_FEATURE_FUNCTION = Function(
+    {
+        "inputs": [
+            {"internalType": "bytes4[]", "name": "dataClass_", "type": "bytes4[]"},
+            {"internalType": "bytes32[]", "name": "gitCommitHash_", "type": "bytes32[]"},
+        ],
+        "name": "registerFeature",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function",
