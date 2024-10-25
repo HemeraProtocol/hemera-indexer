@@ -23,7 +23,7 @@ class JobListGenerator(object):
         elif self.job_name == "EXPLORE":
             job_list = [
                 "test.sql",
-                "daily_explore_aggregates.sql",
+                # "daily_explore_aggregates.sql",
             ]
 
         return job_list
