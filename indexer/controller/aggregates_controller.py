@@ -9,13 +9,13 @@ class AggregatesController(BaseController):
 
     def action(self, start_date, end_date, date_batch_size=None):
         # no batch size
-        self.job_dispatcher.run(start_date, end_date)
+        # self.job_dispatcher.run(start_date, end_date)
 
         # batch size
-        # date_batches = self.split_date_range(start_date, end_date, date_batch_size)
-        # for date_batch in date_batches:
-        #     start_date, end_date = date_batch
-        #     self.job_dispatcher.run(start_date, end_date)
+        date_batches = self.split_date_range(start_date, end_date, date_batch_size)
+        for date_batch in date_batches:
+            start_date, end_date = date_batch
+            self.job_dispatcher.run(start_date, end_date)
 
     @staticmethod
     def split_date_range(start_date, end_date, batch_size):
