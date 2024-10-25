@@ -263,13 +263,28 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 a_record.force_update_current = True
             elif a_record.type() == AaveV2LiquidationCallD.type():
                 address = a_record.aave_user
-                reserve = a_record.reserve
                 block_number = a_record.block_number
 
-        liquidation_lis = []
+                debt_asset = a_record.debt_asset
+                borrow_rate_mode = address_asset_borrow[a_record.aave_user][debt_asset]
+                if borrow_rate_mode == 2:
+                    vary_token = self.asset_reserve.get(debt_asset).variable_debt_token_address
+                    debt = address_token_block_balance_dic[address][vary_token][block_number]
+                elif borrow_rate_mode == 1:
+                    stable_token = self.asset_reserve.get(debt_asset).stable_debt_token_address
+                    debt = address_token_block_balance_dic[address][stable_token][block_number]
+                else:
+                    raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
+
+                collateral_asset = a_record.collateral_asset
+                collateral_reserve = self.asset_reserve[collateral_asset]
+
+                a_record.debt_after_liquidation = debt
+                a_record.collateral_after_liquidation = \
+                    address_token_block_balance_dic[address][collateral_reserve.a_token_address][block_number]
+                a_record.force_update_current = True
+
         batch_result_dic = self.calculate_new_address_current(exists_dic, aave_records)
-        liquidation_lis = self.merge_liquidation_lis(liquidation_lis)
-        self._collect_items(AaveV2LiquidationAddressCurrentD.type(), liquidation_lis)
         for address, outer_dic in batch_result_dic.items():
             for reserve, kad in outer_dic.items():
                 if address in exists_dic and reserve in exists_dic[address]:
@@ -281,18 +296,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     self._collect_item(kad.type(), kad)
 
         logger.info("This batch of data have processed")
-
-    def merge_liquidation_lis(self, liquidation_lis):
-        # keep the newest one
-        liquidation_lis.sort(key=lambda x: x.last_liquidation_time, reverse=True)
-        lis = []
-        unique_k_set = set()
-        for li in liquidation_lis:
-            k = (li.address, li.asset)
-            if k not in unique_k_set:
-                unique_k_set.add(k)
-                lis.append(li)
-        return lis
 
     def get_existing_address_current(self, addresses):
         addresses = [ad[2:] for ad in addresses if ad and ad.startswith("0x")]
@@ -373,14 +376,14 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][collateral_asset].block_timestamp = action.block_timestamp
 
                 # record last liquidation time and amount
-                liquidation_lis.append(
-                    AaveV2LiquidationAddressCurrentD(
-                        address=user,
-                        asset=collateral_asset,
-                        last_liquidation_time=action.block_timestamp,
-                        last_total_value_of_liquidation=action.liquidated_collateral_amount,
-                    )
-                )
+                self._collect_item(AaveV2LiquidationAddressCurrentD.type(),
+                                   AaveV2LiquidationAddressCurrentD(
+                                       address=user,
+                                       asset=collateral_asset,
+                                       last_liquidation_time=action.block_timestamp,
+                                       last_total_value_of_liquidation=action.liquidated_collateral_amount,
+                                   )
+                                   )
             else:
                 continue
         return res_d

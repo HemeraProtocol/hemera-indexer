@@ -106,6 +106,8 @@ class AaveV2LiquidationCallD(AaveV2BaseRecord):
     liquidated_collateral_amount: Optional[int] = None
     liquidator: Optional[str] = None
     receive_atoken: Optional[str] = None
+    debt_after_liquidation: Optional[int] = None
+    collateral_after_liquidation: Optional[int] = None
 
 
 @dataclass
