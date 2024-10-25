@@ -1,4 +1,7 @@
 import hashlib
+import importlib
+import inspect
+import sys
 from dataclasses import asdict, dataclass, fields, is_dataclass
 from typing import Any, Dict, Union, get_args, get_origin
 
@@ -16,6 +19,7 @@ class DomainMeta(type):
     _registry = {}
     _used_hash = set()
     _hash_mapping = {}
+    _code_integrity = {}
 
     @classmethod
     def _generate_code(mcs, cls) -> str:
@@ -58,13 +62,17 @@ class DomainMeta(type):
                     f"class {new_cls.__name__}(Domain):\n"
                     f"    __manual_hash__ = 'xxxxxxxx'  # Replace with a unique 8-character code"
                 )
-            code = manual_hash
+            dataclass_code = manual_hash
         else:
-            code = mcs._generate_code(new_cls)
+            dataclass_code = mcs._generate_code(new_cls)
 
-        mcs._used_hash.add(code)
-        mcs._hash_mapping[code] = f"{new_cls.__module__}.{name}"
-        setattr(new_cls, "_auto_hash", code)
+        module = sys.modules.get(new_cls.__module__) or importlib.import_module(new_cls.__module__)
+        code_hash = hashlib.sha256(inspect.getsource(module).encode("utf-8")).hexdigest()
+
+        mcs._used_hash.add(dataclass_code)
+        mcs._hash_mapping[dataclass_code] = f"{new_cls.__module__}.{name}"
+        mcs._code_integrity[dataclass_code] = code_hash
+        setattr(new_cls, "_auto_hash", dataclass_code)
 
         return new_cls
 
