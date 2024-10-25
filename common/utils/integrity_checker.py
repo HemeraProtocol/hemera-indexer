@@ -31,24 +31,7 @@ class StaticCodeSignature:
             return None
 
     def _calculate_combined_hash(self):
-        """Calculate the combined hash value of all file hashes"""
-
-        items = sorted(self._code_hashes.items())
-        if not items:
-            return hashlib.sha256(b"").hexdigest()
-
-        while len(items) > 1:
-            new_items = []
-            for i in range(0, len(items), 2):
-                if i + 1 < len(items):
-                    combined = f"{items[i][0]}:{items[i][1]}+{items[i + 1][0]}:{items[i + 1][1]}"
-                else:
-                    combined = f"{items[i][0]}:{items[i][1]}"
-                new_hash = hashlib.sha256(combined.encode("utf-8")).hexdigest()
-                new_items.append((f"level_{i // 2}", new_hash))
-            items = new_items
-
-        self._combined_hash = items[0][1]
+        self._combined_hash = calculate_combined_hash(self._code_hashes)
 
     def calculate_signature(self, dir_paths: Union[List[str], str]):
         if isinstance(dir_paths, str):
@@ -178,27 +161,31 @@ class RuntimeCodeSignature:
         self._exclude_package.clear()
 
     def calculate_combined_hash(self):
-        """Calculate the combined hash value of all file hashes"""
-
-        items = sorted(self._module_hashes.items())
-        if not items:
-            return hashlib.sha256(b"").hexdigest()
-
-        while len(items) > 1:
-            new_items = []
-            for i in range(0, len(items), 2):
-                if i + 1 < len(items):
-                    combined = f"{items[i][0]}:{items[i][1]}+{items[i + 1][0]}:{items[i + 1][1]}"
-                else:
-                    combined = f"{items[i][0]}:{items[i][1]}"
-                new_hash = hashlib.sha256(combined.encode("utf-8")).hexdigest()
-                new_items.append((f"level_{i // 2}", new_hash))
-            items = new_items
-
-        self._combined_hash = items[0][1]
+        self._combined_hash = calculate_combined_hash(self._module_hashes)
 
     def get_combined_hash(self) -> str:
         return self._combined_hash
+
+
+def calculate_combined_hash(hashes: dict):
+    """Calculate the combined hash value of all file hashes"""
+
+    items = [value for key, value in sorted(hashes.items())]
+    if not items:
+        return hashlib.sha256(b"").hexdigest()
+
+    while len(items) > 1:
+        new_items = []
+        for i in range(0, len(items), 2):
+            if i + 1 < len(items):
+                combined = f"{items[i]}:{items[i + 1]}"
+            else:
+                combined = items[i]
+            new_hash = hashlib.sha256(combined.encode("utf-8")).hexdigest()
+            new_items.append(new_hash)
+        items = new_items
+
+    return items[0]
 
 
 if __name__ == "__main__":
