@@ -257,13 +257,13 @@ class JobScheduler:
             report_info = []
             for dataclass in self.required_output_types:
                 base_info = {
-                    "dataClass": dataclass.type(),
-                    "codeHash": dataclass.get_code_hash(),
+                    "dataClass": dataclass.get_code_hash(),
                     "count": len(self.get_data_buff()[dataclass.type()]),
                 }
                 data_hash = hashlib.sha256(json.dumps(base_info, sort_keys=True).encode()).hexdigest()
                 base_info["dataHash"] = data_hash
                 report_info.append(base_info)
+
         except Exception as e:
             raise e
         finally:
