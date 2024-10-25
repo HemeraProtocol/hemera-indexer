@@ -43,6 +43,8 @@ class AaveV2BaseRecord(FilterData):
     log_index: Optional[int] = None
     event_name: Optional[str] = None
     topic0: Optional[str] = None
+    # when we can get address current status, we don't need events that happened before
+    force_update_current: Optional[bool] = False
 
 
 @dataclass
@@ -80,6 +82,8 @@ class AaveV2RepayD(AaveV2BaseRecord):
     repayer: Optional[str] = None
     amount: Optional[int] = None
     borrow_rate_mode: Optional[int] = None
+    # debt, after repayed
+    after_repay_debt: Optional[int] = None
 
 
 @dataclass

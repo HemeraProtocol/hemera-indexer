@@ -133,6 +133,15 @@ def calculate_execution_time(func):
     envvar="END_BLOCK",
 )
 @click.option(
+    "-nb",
+    "--noncontinuous-blocks",
+    default=None,
+    show_default=True,
+    type=int,
+    help="a list of noncontinuous blocks. eg: 1,11,122",
+    envvar="NONCONTINUOUS_BLOCKS",
+)
+@click.option(
     "--retry-from-record",
     default=True,
     show_default=True,
@@ -343,6 +352,7 @@ def stream(
     db_version,
     start_block,
     end_block,
+    noncontinuous_blocks,
     entity_types,
     output_types,
     source_types,
