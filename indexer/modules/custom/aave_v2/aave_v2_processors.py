@@ -94,7 +94,7 @@ class WithdrawProcessor(EventProcessor):
 
 
 class BorrowProcessor(EventProcessor):
-    """0xb3d084820fb1a9decffb176436bd02558d15fac9b0ddfed8c465bc7359d7dce0"""
+    """0xc6a898309e823ee50bac64e45ca8adba6690e99e7841c45d754e2a38e9019d9b"""
 
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         return {
@@ -109,7 +109,7 @@ class BorrowProcessor(EventProcessor):
 
 
 class RepayProcessor(EventProcessor):
-    """0xa534c8dbe71f871f9f3530e97a74601fea17b426cae02e1c5aee42c96c784051"""
+    """0x4cdde6e09bb755c9a5589ebaec640bbfedff1362d4b255ebf8339782b9942faa"""
 
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         return {
