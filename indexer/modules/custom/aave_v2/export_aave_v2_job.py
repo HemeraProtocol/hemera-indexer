@@ -10,6 +10,7 @@ from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.log import Log
 from indexer.jobs import FilterTransactionDataJob
+from indexer.jobs.export_token_balances_job import encode_balance_abi_parameter
 from indexer.modules.custom.aave_v2.aave_v2_processors import AaveV2Events
 from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2AddressBalanceRecordsD,
@@ -141,7 +142,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 logger.error(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}: {str(e)}")
                 raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
 
-        related_address_set = set(ave.aave_user for ave in aave_records)
+        related_address_set = set(
+            ave.aave_user for ave in aave_records if hasattr(ave, "aave_user") and ave.aave_user
+        ) | set(ave.on_behalf_of for ave in aave_records if hasattr(ave, "on_behalf_of") and ave.on_behalf_of)
         exists_dic = self.get_existing_address_current(list(related_address_set))
 
         # we need borrowed asset and its borrow mode
@@ -154,15 +157,20 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 address_asset_borrow[address][asset] = acd.borrow_rate_mode
         for a_record in aave_records:
             if a_record.type() == AaveV2BorrowD.type():
-                address_asset_borrow[a_record.aave_user][a_record.reserve] = a_record.borrow_rate_mode
+                if a_record.on_behalf_of not in address_asset_borrow:
+                    address_asset_borrow[a_record.on_behalf_of] = dict()
+                address_asset_borrow[a_record.on_behalf_of][a_record.reserve] = a_record.borrow_rate_mode
 
         balance_of_lis = []
         for a_record in aave_records:
             # when repay, call rpc to get debt_balance
             if a_record.type() == AaveV2RepayD.type():
                 reserve = self.asset_reserve[a_record.reserve]
-
-                borrow_rate_mode = address_asset_borrow[a_record.aave_user][reserve]
+                borrow_rate_mode = None
+                if a_record.aave_user in address_asset_borrow:
+                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(reserve.asset)
+                if not borrow_rate_mode:
+                    continue
                 if borrow_rate_mode == 1:
 
                     balance_of_lis.append(
@@ -173,6 +181,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                             "token_id": None,
                             "block_number": a_record.block_number,
                             "block_timestamp": a_record.block_timestamp,
+                            "param_to": reserve.stable_debt_token_address,
+                            "param_data": encode_balance_abi_parameter(a_record.aave_user, "ERC20", None),
+                            "param_number": a_record.block_number,
                         }
                     )
                 elif borrow_rate_mode == 2:
@@ -184,6 +195,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                             "token_id": None,
                             "block_number": a_record.block_number,
                             "block_timestamp": a_record.block_timestamp,
+                            "param_to": reserve.stable_debt_token_address,
+                            "param_data": encode_balance_abi_parameter(a_record.aave_user, "ERC20", None),
+                            "param_number": a_record.block_number,
                         }
                     )
                 else:
@@ -194,27 +208,37 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 collateral_reserve = self.asset_reserve[collateral_asset]
                 balance_of_lis.append(
                     {
-                        "address": a_record.aave_user,
+                        "address": aave_user,
                         "token_address": collateral_reserve.a_token_address,
                         "token_type": "ERC20",
                         "token_id": None,
                         "block_number": a_record.block_number,
                         "block_timestamp": a_record.block_timestamp,
+                        "param_to": collateral_reserve.a_token_address,
+                        "param_data": encode_balance_abi_parameter(aave_user, "ERC20", None),
+                        "param_number": a_record.block_number,
                     }
                 )
                 debt_asset = a_record.debt_asset
                 debt_reserve = self.asset_reserve[debt_asset]
-                borrow_rate_mode = address_asset_borrow[a_record.aave_user][debt_asset]
+                borrow_rate_mode = None
+                if a_record.aave_user in address_asset_borrow:
+                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_asset.asset)
+                if not borrow_rate_mode:
+                    continue
                 if borrow_rate_mode == 1:
 
                     balance_of_lis.append(
                         {
-                            "address": a_record.aave_user,
+                            "address": aave_user,
                             "token_address": debt_reserve.stable_debt_token_address,
                             "token_type": "ERC20",
                             "token_id": None,
                             "block_number": a_record.block_number,
                             "block_timestamp": a_record.block_timestamp,
+                            "param_to": debt_reserve.stable_debt_token_address,
+                            "param_data": encode_balance_abi_parameter(aave_user, "ERC20", None),
+                            "param_number": a_record.block_number,
                         }
                     )
                 elif borrow_rate_mode == 2:
@@ -226,6 +250,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                             "token_id": None,
                             "block_number": a_record.block_number,
                             "block_timestamp": a_record.block_timestamp,
+                            "param_to": debt_reserve.variable_debt_token_address,
+                            "param_data": encode_balance_abi_parameter(a_record.aave_user, "ERC20", None),
+                            "param_number": a_record.block_number,
                         }
                     )
                 else:
@@ -319,6 +346,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 asset=bytes_to_hex_str(rr.asset),
                 supply_amount=rr.supply_amount,
                 borrow_amount=rr.borrow_amount,
+                borrow_rate_mode=rr.borrow_rate_mode,
                 block_number=rr.block_number,
                 block_timestamp=int(rr.block_timestamp.timestamp()),
             )
