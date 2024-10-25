@@ -5,18 +5,124 @@ Time    : 2024/10/22 下午3:22
 Author  : xuzh
 Project : hemera_indexer
 """
+import asyncio
+import logging
+import threading
+from queue import Empty, Queue
 
 from eth_account import Account
 from web3 import Web3
 
-from common.utils.format_utils import hex_str_to_bytes
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from common.utils.web3_utils import to_checksum_address
 from indexer.domain import DomainMeta
 from indexer.utils.abi_setting import REGISTER_FEATURE_FUNCTION, SUBMIT_INDEX_FUNCTION
 
 
+class AsyncTransactionSubmitter:
+
+    def __init__(self, web3, account):
+        self.web3 = web3
+        self.account = account
+        self.nonce = self.web3.eth.get_transaction_count(self.account.address)
+
+        self.max_retries = 5
+        self.retry_delay = 5
+        self.receipt_timeout = 10
+        self.receipt_poll_latency = 2
+
+        self.submit_thread = None
+        self.transaction_queue = Queue()
+        self.running = False
+        self.logger = logging.getLogger(__name__)
+
+    def start(self):
+        if self.submit_thread is None:
+            self.running = True
+            self.submit_thread = threading.Thread(target=self._run_async_submitter)
+            self.submit_thread.daemon = False
+            self.submit_thread.start()
+            self.logger.info("Submit thread started.")
+        else:
+            self.logger.info("Submit thread already started.")
+
+    def stop(self):
+        self.running = False
+        if self.submit_thread:
+            self.submit_thread.join(timeout=5.0)
+            self.submit_thread = None
+            self.logger.info("Submit thread stopped.")
+        else:
+            self.logger.info("Submit thread already stopped.")
+
+    def set_transaction(self, info):
+        self.transaction_queue.put(info)
+
+    def _run_async_submitter(self):
+        asyncio.run(self._queue_check_and_process())
+
+    async def _queue_check_and_process(self):
+        while self.running:
+            try:
+                try:
+                    info = self.transaction_queue.get_nowait()
+                    success = await self._process_transaction(info)
+                    self.transaction_queue.task_done()
+
+                    if not success:
+                        # todo message store in db
+                        pass
+
+                except Empty as e:
+                    await asyncio.sleep(1)
+                    continue
+            except Exception as e:
+                self.logger.error(f"Submit transaction failed. {e}")
+
+    async def _process_transaction(self, info: dict) -> bool:
+        builder = info["transaction_builder"]
+        parameters = info["transaction_parameters"]
+
+        self.nonce = (
+            self.nonce if self.web3.eth.get_transaction_count(self.account.address) < self.nonce else self.nonce
+        )
+
+        for retry in range(self.max_retries):
+            try:
+                parameters["nonce"] = self.nonce
+                signed_txn = builder(**parameters)
+                txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+                receipt = self.web3.eth.wait_for_transaction_receipt(
+                    txn_hash, timeout=self.receipt_timeout, poll_latency=self.receipt_poll_latency
+                )
+
+                if receipt["status"] == 1:
+                    return True
+                else:
+                    self.logger.error(
+                        f"Transaction: {bytes_to_hex_str(txn_hash)} failed. \n"
+                        f"with info: {parameters}\n"
+                        f"Receipt: {receipt}"
+                    )
+                    if retry < self.max_retries - 1:
+                        await asyncio.sleep(self.retry_delay)
+                        continue
+
+            except ValueError as e:
+                if str(e).find("nonce too low") != -1:
+                    self.nonce = self.nonce + 1
+                    continue
+
+            except Exception as e:
+                self.logger.error(f"Building and submitting transaction failed. {e}")
+                if retry < self.max_retries - 1:
+                    await asyncio.sleep(self.retry_delay)
+                    continue
+        return False
+
+
 class RecordReporter:
-    contract_address = ""
 
     def __init__(self, private_key, from_address):
         self.web3 = Web3(Web3.HTTPProvider("https://1rpc.io/holesky"))
@@ -27,33 +133,51 @@ class RecordReporter:
             address=to_checksum_address("0xB0c42250F0A3D141aD25e5B6A162ddbd5CAE7ec5"),
             abi=[SUBMIT_INDEX_FUNCTION.get_abi()],
         )
+        self.transaction_submitter = AsyncTransactionSubmitter(web3=self.web3, account=self.account)
+        self.transaction_submitter.start()
         self.nonce = self.web3.eth.get_transaction_count(self.account.address)
 
     def report(self, chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict):
-        formatted_indexed_data = []
-        for data in indexed_data:
-            # 确保每个字符串都是32字节
-            data_class = data["dataClass"].encode("utf-8").rjust(32, b"\x00")
-            code_hash = hex_str_to_bytes(data["codeHash"]).rjust(32, b"\x00")
-            count = data["count"]
-            data_hash = hex_str_to_bytes(data["dataHash"]).rjust(32, b"\x00")
+        def transaction_builder(
+                chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict, nonce: int
+        ):
+            code_hash = hex_str_to_bytes(runtime_code_hash).rjust(32, b"\x00")
 
-            formatted_indexed_data.append((data_class, code_hash, count, data_hash))
+            formatted_indexed_data = []
+            for data in indexed_data:
+                # 确保每个字符串都是32字节
+                data_class = hex_str_to_bytes(data["dataClass"]).rjust(4, b"\x00")
+                count = data["count"]
+                data_hash = hex_str_to_bytes(data["dataHash"]).rjust(32, b"\x00")
 
-        transaction = self.contract.functions.submitIndexRecord(
-            chain_id, start_block, end_block, formatted_indexed_data
-        ).build_transaction(
+                formatted_indexed_data.append((data_class, count, data_hash))
+
+            transaction = self.contract.functions.submitIndexRecord(
+                chain_id, start_block, end_block, code_hash, formatted_indexed_data
+            ).build_transaction(
+                {
+                    "from": to_checksum_address(self.from_address),
+                    "nonce": nonce,
+                }
+            )
+
+            signed_txn = self.web3.eth.account.sign_transaction(transaction, self.private_key)
+            return signed_txn
+
+        transaction_parameters = {
+            "chain_id": chain_id,
+            "start_block": start_block,
+            "end_block": end_block,
+            "runtime_code_hash": runtime_code_hash,
+            "indexed_data": indexed_data,
+        }
+
+        self.transaction_submitter.set_transaction(
             {
-                "from": to_checksum_address(self.from_address),
-                "nonce": self.nonce,
+                "transaction_builder": transaction_builder,
+                "transaction_parameters": transaction_parameters,
             }
         )
-
-        signed_txn = self.web3.eth.account.sign_transaction(transaction, self.private_key)
-
-        # emit transaction
-        tx_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-        self.nonce = self.nonce + 1
 
 
 class FeatureRegister:
@@ -137,26 +261,33 @@ class FeatureRegister:
 
 
 if __name__ == "__main__":
-    # reporter = RecordReporter(
-    #     from_address="0xfdeacf567997fc153e2fe1de098aeedc71294b71",
-    #     private_key="0x0f0dca973a687bfcbabdd85fad3bce5d49593300771eda9cda07bf9397d17488",
-    # )
-    #
-    # indexed_data = [
-    #     {"dataClass": "block", "codeHash": "4ac520fc", "count": 1, "dataHash": "4ac520fc"},
-    #     {"dataClass": "block", "codeHash": "4ac520fc", "count": 1, "dataHash": "4ac520fc"},
-    # ]
-    #
-    # reporter.report(chain_id=1, start_block=10000, end_block=10001, indexed_data=indexed_data)
+    from common.utils.integrity_checker import StaticCodeSignature
 
-    register = FeatureRegister(
+    checker = StaticCodeSignature()
+    checker.calculate_signature(['../../indexer', '../../common'])
+    code_hash = checker.get_combined_hash()
+
+    reporter = RecordReporter(
         from_address="0xfdeacf567997fc153e2fe1de098aeedc71294b71",
         private_key="0x0f0dca973a687bfcbabdd85fad3bce5d49593300771eda9cda07bf9397d17488",
     )
 
-    register.register_all()
+    indexed_data = [
+        {"dataClass": "4ac520fc", "count": 1, "dataHash": "4ac520fc"},
+        {"dataClass": "4ac520fc", "count": 1, "dataHash": "4ac520fc"},
+    ]
 
-    # # block
+    reporter.report(chain_id=1, start_block=10000, end_block=10001, runtime_code_hash=code_hash,
+                    indexed_data=indexed_data)
+
+    # register = FeatureRegister(
+    #     from_address="0xfdeacf567997fc153e2fe1de098aeedc71294b71",
+    #     private_key="0x0f0dca973a687bfcbabdd85fad3bce5d49593300771eda9cda07bf9397d17488",
+    # )
+
+    # register.register_all()
+
+    # block
     # register.register_one("67a70c90")
     # # transaction
     # register.register_one("6048a7e2")
