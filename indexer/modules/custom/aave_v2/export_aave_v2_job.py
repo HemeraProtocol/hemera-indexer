@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from enum import Enum
 from typing import Any, cast
 
 from sqlalchemy import func
@@ -31,6 +32,11 @@ from indexer.specification.specification import TopicSpecification, TransactionF
 from indexer.utils.token_fetcher import TokenFetcher
 
 logger = logging.getLogger(__name__)
+
+
+class InterestRateMode(Enum):
+    STABLE = 1
+    VARIABLE = 2
 
 
 class ExportAaveV2Job(FilterTransactionDataJob):
@@ -171,7 +177,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(reserve.asset)
                 if not borrow_rate_mode:
                     continue
-                if borrow_rate_mode == 1:
+                if borrow_rate_mode == InterestRateMode.STABLE.value:
 
                     balance_of_lis.append(
                         {
@@ -186,7 +192,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                             "param_number": a_record.block_number,
                         }
                     )
-                elif borrow_rate_mode == 2:
+                elif borrow_rate_mode == InterestRateMode.VARIABLE.value:
                     balance_of_lis.append(
                         {
                             "address": a_record.aave_user,
@@ -226,7 +232,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_reserve.asset)
                 if not borrow_rate_mode:
                     continue
-                if borrow_rate_mode == 1:
+                if borrow_rate_mode == InterestRateMode.STABLE.value:
 
                     balance_of_lis.append(
                         {
@@ -241,7 +247,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                             "param_number": a_record.block_number,
                         }
                     )
-                elif borrow_rate_mode == 2:
+                elif borrow_rate_mode == InterestRateMode.VARIABLE.value:
                     balance_of_lis.append(
                         {
                             "address": a_record.aave_user,
@@ -298,10 +304,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(reserve)
                 if not borrow_rate_mode:
                     continue
-                if borrow_rate_mode == 2:
+                if borrow_rate_mode == InterestRateMode.VARIABLE.value:
                     vary_token = self.asset_reserve.get(reserve).variable_debt_token_address
                     debt = address_token_block_balance_dic[address][vary_token][block_number]
-                elif borrow_rate_mode == 1:
+                elif borrow_rate_mode == InterestRateMode.STABLE.value:
                     stable_token = self.asset_reserve.get(reserve).stable_debt_token_address
                     debt = address_token_block_balance_dic[address][stable_token][block_number]
                 else:
@@ -318,10 +324,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_asset)
                 if not borrow_rate_mode:
                     continue
-                if borrow_rate_mode == 2:
+                if borrow_rate_mode == InterestRateMode.VARIABLE.value:
                     vary_token = self.asset_reserve.get(debt_asset).variable_debt_token_address
                     debt = address_token_block_balance_dic[address][vary_token][block_number]
-                elif borrow_rate_mode == 1:
+                elif borrow_rate_mode == InterestRateMode.STABLE.value:
                     stable_token = self.asset_reserve.get(debt_asset).stable_debt_token_address
                     debt = address_token_block_balance_dic[address][stable_token][block_number]
                 else:
