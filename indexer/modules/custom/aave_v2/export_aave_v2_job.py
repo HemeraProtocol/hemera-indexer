@@ -195,7 +195,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                             "token_id": None,
                             "block_number": a_record.block_number,
                             "block_timestamp": a_record.block_timestamp,
-                            "param_to": reserve.stable_debt_token_address,
+                            "param_to": reserve.variable_debt_token_address,
                             "param_data": encode_balance_abi_parameter(a_record.aave_user, "ERC20", None),
                             "param_number": a_record.block_number,
                         }
