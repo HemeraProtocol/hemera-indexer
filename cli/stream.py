@@ -438,9 +438,7 @@ def stream(
         delay=delay,
     )
     if noncontinuous_blocks:
-        block_ids = noncontinuous_blocks.split(",")
-        block_ids = list(set([int(block_id) for block_id in block_ids]))
-        block_ids.sort()
+        block_ids = sorted(set(map(int, noncontinuous_blocks.split(","))))
         for block_id in block_ids:
             controller.action(
                 start_block=block_id,
