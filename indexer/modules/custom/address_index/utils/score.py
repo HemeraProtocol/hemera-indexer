@@ -4,73 +4,48 @@ from dateutil import parser
 
 
 def calculate_aci_score(profile, assets, volumes):
-    score = 0
+    """
+    Calculate ACI (Activity Credibility Index) score based on various metrics
 
-    # 1. Transaction activity score (0-40 points)
+    Args:
+        profile (dict): Contains transaction_count and first_block_timestamp
+        assets (dict): Contains total_asset_value_usd
+        volumes (dict): Contains transaction_volume
+
+    Returns:
+        float: The calculated score between 0 and 100
+    """
+    total_score = 0
+
+    # 1. TVL/Asset Score (0-100 points)
+    asset_value = float(assets.get("total_asset_value_usd", 0))
+    if asset_value >= 100000:
+        tvl_score = 100.0
+    elif asset_value >= 10000:
+        tvl_score = ((asset_value - 10000.0) / 90000.0) * 20.0 + 80.0
+    elif asset_value >= 100:
+        tvl_score = ((asset_value - 100.0) / 9900.0) * 80.0
+    else:
+        tvl_score = 0.0
+
+    # 2. Transaction Count Score (0-100 points)
     tx_count = profile.get("transaction_count", 0)
-    if tx_count > 1000:
-        score += 40
-    elif tx_count > 100:
-        score += 30
-    elif tx_count > 10:
-        score += 20
-    elif tx_count > 0:
-        score += 10
+    if tx_count >= 10000:
+        tx_score = 100.0
+    elif tx_count <= 10:
+        tx_score = 0.0
+    else:
+        tx_score = ((tx_count - 10.0) / 9990.0) * 100.0
 
-    # 2. Asset value score (0-30 points)
-    total_asset_value_usd = float(assets.get("total_asset_value_usd", "0"))
-    if total_asset_value_usd > 1000000:  # $1M+
-        score += 30
-    elif total_asset_value_usd > 100000:  # $100k+
-        score += 20
-    elif total_asset_value_usd > 10000:  # $10k+
-        score += 10
-    elif total_asset_value_usd > 0:
-        score += 5
+    # 3. Transaction Volume/Gas Fee Score (0-50 points)
+    tx_volume = float(volumes.get("total_gas_fee_used_eth", 0))
+    if tx_volume >= 10:
+        volume_score = 50.0
+    elif tx_volume == 0:
+        volume_score = 0.0
+    else:
+        volume_score = (tx_volume / 10.0) * 50.0
 
-    # 3. Volume score (0-20 points)
-    tx_volume = float(volumes.get("transaction_volume", "0"))
-    if tx_volume > 1000000:  # $1M+
-        score += 20
-    elif tx_volume > 100000:  # $100k+
-        score += 15
-    elif tx_volume > 10000:  # $10k+
-        score += 10
-    elif tx_volume > 0:
-        score += 5
+    final_score = tvl_score + tx_score + volume_score
 
-    # 4. Account age score (0-10 points)
-    first_tx_time = profile.get("first_block_timestamp")
-    if first_tx_time:
-        try:
-            # Parse the string to datetime if it's a string
-            if isinstance(first_tx_time, str):
-                first_tx_time = parser.parse(first_tx_time)
-
-            # Ensure first_tx_time is timezone-aware
-            if first_tx_time.tzinfo is None:
-                first_tx_time = first_tx_time.replace(tzinfo=timezone.utc)
-
-            # Use UTC time for consistency
-            current_time = datetime.now(timezone.utc)
-
-            # Calculate the difference in days
-            account_age = (current_time - first_tx_time).days
-
-            if account_age > 365 * 2:  # 2+ years
-                score += 10
-            elif account_age > 365:  # 1+ year
-                score += 7
-            elif account_age > 180:  # 6+ months
-                score += 5
-            elif account_age > 30:  # 1+ month
-                score += 3
-            else:
-                score += 1
-        except (ValueError, AttributeError) as e:
-            # Log the error and continue without adding to the score
-            print(f"Error processing first_block_timestamp: {e}")
-            # Optionally, you might want to add a minimal score or handle this case differently
-            score += 1
-
-    return min(score, 100)
+    return round(final_score, 2)

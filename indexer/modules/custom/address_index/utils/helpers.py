@@ -6,13 +6,14 @@ from sqlalchemy import and_, func
 
 from api.app.address.features import register_feature
 from api.app.address.models import AddressBaseProfile, ScheduledMetadata
+from api.app.utils.format_utils import format_coin_value
 from api.app.utils.token_utils import get_coin_prices, get_latest_coin_prices
-from api.app.web3_utils import get_balance
+from api.app.utils.web3_utils import get_balance
 from common.models import db
 from common.models.contracts import Contracts
 from common.models.tokens import Tokens
 from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict, format_coin_value, format_to_dict, format_value_for_json
+from common.utils.format_utils import as_dict, format_to_dict, format_value_for_json
 from indexer.modules.custom.address_index.address_index_job import AddressTransactionType, InternalTransactionType
 from indexer.modules.custom.address_index.models.address_contract_operation import AddressContractOperations
 from indexer.modules.custom.address_index.models.address_index_daily_stats import AddressIndexDailyStats
