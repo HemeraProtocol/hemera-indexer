@@ -144,6 +144,12 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     def is_aave_v2_address(self, address):
         return address in self.address_set
 
+    def _ignore_assets(self):
+        s = set()
+        # lend
+        s.add("0x80fb784b7ed66730e8b1dbd9820afd29931aab03")
+        return s
+
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         aave_records = []
@@ -189,7 +195,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for a_record in aave_records:
             # when repay, call rpc to get debt_balance
             if a_record.type() == AaveV2RepayD.type():
+                if a_record.reserved in self._ignore_assets():
+                    continue
                 reserve = self.asset_reserve[a_record.reserve]
+
                 borrow_rate_mode = None
                 if a_record.aave_user in address_asset_borrow:
                     borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(reserve.asset)
