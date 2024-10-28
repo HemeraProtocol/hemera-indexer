@@ -23,11 +23,14 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2LiquidationCallD,
     AaveV2RepayD,
     AaveV2ReserveD,
+    AaveV2ReserveV1D,
     AaveV2WithdrawD,
     aave_v2_address_current_factory,
 )
 from indexer.modules.custom.aave_v2.models.aave_v2_address_current import AaveV2AddressCurrent
 from indexer.modules.custom.aave_v2.models.aave_v2_reserve import AaveV2Reserve
+from indexer.modules.custom.aave_v2.models.aave_v2_reserve_v1 import AaveV2ReserveV1
+
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.token_fetcher import TokenFetcher
 
@@ -45,6 +48,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     dependency_types = [Log]
     output_types = [
         AaveV2ReserveD,
+        AaveV2ReserveV1D,
         AaveV2DepositD,
         AaveV2WithdrawD,
         AaveV2BorrowD,
@@ -68,6 +72,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             "POOL_V2": self.job_conf["POOL_V2"],
             "POOL_CONFIGURE": self.job_conf["POOL_CONFIGURE"],
             "POOL_V1": self.job_conf["POOL_V1"],
+            "POOL_PROXY": self.job_conf["POOL_PROXY"],
         }
 
         self.address_set = set(self.contract_addresses.values())
@@ -79,14 +84,12 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         self._initialize_events_and_processors()
 
         # init relative tokens
-        self.asset_reserve = {}
-        self.vary_reserve = {}
-        self.stable_reserve = {}
+        self.reserve_dic = {}
+        self.reserve_v1_dic = {}
+
         self._read_reserve()
 
         self.token_fetcher = TokenFetcher(self._web3, kwargs)
-
-        self.ignore_assets = {"0x80fb784b7ed66730e8b1dbd9820afd29931aab03"}
 
     def _read_reserve(self):
 
@@ -118,14 +121,35 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 transaction_hash=bytes_to_hex_str(rr.transaction_hash) if rr.transaction_hash else None,
                 log_index=rr.log_index,
             )
-            self.asset_reserve[item.asset] = item
-            self.vary_reserve[item.variable_debt_token_address] = item
-            self.stable_reserve[item.stable_debt_token_address] = item
+            self.reserve_dic[item.asset] = item
+        with self.db_service.get_service_session() as session:
+            result = session.query(AaveV2ReserveV1).all()
+        for rr in result:
+            item = AaveV2ReserveV1D(
+                asset=bytes_to_hex_str(rr.asset),
+                asset_symbol=rr.asset_symbol,
+                asset_decimals=rr.asset_decimals,
+                a_token_address=bytes_to_hex_str(rr.a_token_address),
+                a_token_symbol=rr.a_token_symbol,
+                a_token_decimals=rr.a_token_decimals,
+
+                interest_rate_strategy_address=(
+                    bytes_to_hex_str(rr.interest_rate_strategy_address) if rr.interest_rate_strategy_address else None
+                ),
+                block_number=rr.block_number,
+                block_timestamp=rr.block_timestamp,
+                transaction_hash=bytes_to_hex_str(rr.transaction_hash) if rr.transaction_hash else None,
+                log_index=rr.log_index,
+            )
+            self.reserve_v1_dic[item.asset] = item
 
     def _initialize_events_and_processors(self):
         """Initialize events and their processors based on enum configuration"""
         for event_type in AaveV2Events:
             config = event_type.value
+            if event_type == AaveV2Events.RESERVE_INIT_V1:
+                pass
+            else:
             contract_address = self.contract_addresses[config.contract_address_key]
 
             abi = self.abi_reader.get_event_abi(contract_address, config.name)
@@ -163,9 +187,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 self._collect_item(processed_data.type(), processed_data)
                 if processed_data.type() == AaveV2ReserveD.type():
                     # update reserve
-                    self.asset_reserve[processed_data.asset] = processed_data
-                    self.vary_reserve[processed_data.variable_debt_token_address] = processed_data
-                    self.stable_reserve[processed_data.stable_debt_token_address] = processed_data
+                    self.reserve_dic[processed_data.asset] = processed_data
+                elif processed_data.type() == AaveV2ReserveV1.type():
+                    self.reserve_v1_dic[processed_data.asset] = processed_data
             except Exception as e:
                 logger.error(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}: {str(e)}")
                 raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
@@ -193,7 +217,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for a_record in aave_records:
             # when repay, call rpc to get debt_balance
             if a_record.type() == AaveV2RepayD.type():
-                reserve = self.asset_reserve[a_record.reserve]
+                reserve = self.reserve_dic[a_record.reserve]
 
                 borrow_rate_mode = None
                 if a_record.aave_user in address_asset_borrow:
@@ -234,7 +258,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             elif a_record.type() == AaveV2LiquidationCallD.type():
                 aave_user = a_record.aave_user
                 collateral_asset = a_record.collateral_asset
-                collateral_reserve = self.asset_reserve[collateral_asset]
+                collateral_reserve = self.reserve_dic[collateral_asset]
                 balance_of_lis.append(
                     {
                         "address": aave_user,
@@ -249,7 +273,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     }
                 )
                 debt_asset = a_record.debt_asset
-                debt_reserve = self.asset_reserve[debt_asset]
+                debt_reserve = self.reserve_dic[debt_asset]
                 borrow_rate_mode = None
                 if a_record.aave_user in address_asset_borrow:
                     borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_reserve.asset)
@@ -328,10 +352,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if not borrow_rate_mode:
                     continue
                 if borrow_rate_mode == InterestRateMode.VARIABLE.value:
-                    vary_token = self.asset_reserve.get(reserve).variable_debt_token_address
+                    vary_token = self.reserve_dic.get(reserve).variable_debt_token_address
                     debt = address_token_block_balance_dic[address][vary_token][block_number]
                 elif borrow_rate_mode == InterestRateMode.STABLE.value:
-                    stable_token = self.asset_reserve.get(reserve).stable_debt_token_address
+                    stable_token = self.reserve_dic.get(reserve).stable_debt_token_address
                     debt = address_token_block_balance_dic[address][stable_token][block_number]
                 else:
                     raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
@@ -348,16 +372,16 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if not borrow_rate_mode:
                     continue
                 if borrow_rate_mode == InterestRateMode.VARIABLE.value:
-                    vary_token = self.asset_reserve.get(debt_asset).variable_debt_token_address
+                    vary_token = self.reserve_dic.get(debt_asset).variable_debt_token_address
                     debt = address_token_block_balance_dic[address][vary_token][block_number]
                 elif borrow_rate_mode == InterestRateMode.STABLE.value:
-                    stable_token = self.asset_reserve.get(debt_asset).stable_debt_token_address
+                    stable_token = self.reserve_dic.get(debt_asset).stable_debt_token_address
                     debt = address_token_block_balance_dic[address][stable_token][block_number]
                 else:
                     raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
 
                 collateral_asset = a_record.collateral_asset
-                collateral_reserve = self.asset_reserve[collateral_asset]
+                collateral_reserve = self.reserve_dic[collateral_asset]
 
                 a_record.debt_after_liquidation = debt
                 a_record.collateral_after_liquidation = address_token_block_balance_dic[address][
