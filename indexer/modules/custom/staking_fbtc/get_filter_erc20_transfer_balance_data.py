@@ -52,8 +52,6 @@ class FilterJob(FilterTransactionDataJob):
              select lv_address from aurelius_token_mapping
             union distinct 
             select variable_debt_Address from aurelius_token_mapping
-            union distinct 
-            select token_address from feature_staked_fbtc_config
             """
         result = session.execute(text(sql))
 
