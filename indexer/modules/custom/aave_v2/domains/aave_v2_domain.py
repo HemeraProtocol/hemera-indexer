@@ -7,9 +7,17 @@ from indexer.domain import FilterData
 @dataclass
 class AaveV2ReserveD(FilterData):
     asset: str
+    asset_decimals: Optional[int]
+    asset_symbol: Optional[str]
     a_token_address: str
+    a_token_symbol: Optional[str]
+    a_token_decimals: Optional[int]
     stable_debt_token_address: str
+    stable_debt_symbol: Optional[str]
+    stable_debt_decimals: Optional[int]
     variable_debt_token_address: str
+    variable_debt_symbol: Optional[str]
+    variable_debt_decimals: Optional[int]
     interest_rate_strategy_address: str
     block_number: int
     block_timestamp: int

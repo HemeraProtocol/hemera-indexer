@@ -41,4 +41,5 @@ eigen_layer_job:
 
 export_aave_v2_job:
   POOL_CONFIGURE: "0x311bb771e4f8952e6da169b425e7e92d6ac45756"
-  POOL: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9"
+  POOL_V2: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9"
+  POOL_V1: "0x398ec7346dcd622edc5ae82352f02be94c62d119"
