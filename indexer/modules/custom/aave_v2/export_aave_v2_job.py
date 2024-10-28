@@ -64,7 +64,11 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         self.job_conf = self.user_defined_config
         self.abi_reader = AbiReader(__file__)
 
-        self.contract_addresses = {"POOL": self.job_conf["POOL"], "POOL_CONFIGURE": self.job_conf["POOL_CONFIGURE"]}
+        self.contract_addresses = {
+            "POOL_V2": self.job_conf["POOL_V2"],
+            "POOL_CONFIGURE": self.job_conf["POOL_CONFIGURE"],
+            "POOL_V1": self.job_conf["POOL_V1"],
+        }
 
         self.address_set = set(self.contract_addresses.values())
 
@@ -89,13 +93,27 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for rr in result:
             item = AaveV2ReserveD(
                 asset=bytes_to_hex_str(rr.asset),
+                asset_symbol=rr.asset_symbol,
+                asset_decimals=rr.asset_decimals,
                 a_token_address=bytes_to_hex_str(rr.a_token_address),
-                stable_debt_token_address=bytes_to_hex_str(rr.stable_debt_token_address),
-                variable_debt_token_address=bytes_to_hex_str(rr.variable_debt_token_address),
-                interest_rate_strategy_address=bytes_to_hex_str(rr.interest_rate_strategy_address),
+                a_token_symbol=rr.a_token_symbol,
+                a_token_decimals=rr.a_token_decimals,
+                stable_debt_token_address=(
+                    bytes_to_hex_str(rr.stable_debt_token_address) if rr.stable_debt_token_address else None
+                ),
+                stable_debt_symbol=rr.stable_debt_token_symbol,
+                stable_debt_decimals=rr.stable_debt_token_decimals,
+                variable_debt_token_address=(
+                    bytes_to_hex_str(rr.variable_debt_token_address) if rr.variable_debt_token_address else None
+                ),
+                variable_debt_symbol=rr.variable_debt_token_symbol,
+                variable_debt_decimals=rr.variable_debt_token_decimals,
+                interest_rate_strategy_address=(
+                    bytes_to_hex_str(rr.interest_rate_strategy_address) if rr.interest_rate_strategy_address else None
+                ),
                 block_number=rr.block_number,
                 block_timestamp=rr.block_timestamp,
-                transaction_hash=bytes_to_hex_str(rr.transaction_hash),
+                transaction_hash=bytes_to_hex_str(rr.transaction_hash) if rr.transaction_hash else None,
                 log_index=rr.log_index,
             )
             self.asset_reserve[item.asset] = item
@@ -113,7 +131,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
             self.events[event_type] = event
             signature = event.get_signature()
-            self._event_processors[signature] = config.processor_class(event, config.data_class)
+            self._event_processors[signature] = config.processor_class(event, config.data_class, self._web3)
 
     def get_filter(self):
         topics = [event.get_signature() for event in self.events.values()]
