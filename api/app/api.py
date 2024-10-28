@@ -15,6 +15,7 @@ from indexer.modules.custom.merchant_moe.endpoints.routes import merchant_moe_na
 from indexer.modules.custom.opensea.endpoint.routes import opensea_namespace
 from indexer.modules.custom.staking_fbtc.endpoints.routes import staking_namespace
 from indexer.modules.custom.uniswap_v3.endpoints.routes import uniswap_v3_namespace
+from indexer.modules.custom.init_capital.endpoints.routes import init_capital_namespace
 
 api = Api()
 
@@ -32,3 +33,4 @@ api.add_namespace(af_ens_namespace)
 api.add_namespace(address_profile_namespace)
 
 api.add_namespace(address_features_namespace)
+api.add_namespace(init_capital_namespace)

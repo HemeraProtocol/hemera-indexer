@@ -11,19 +11,11 @@ class InitCapitalPositionHistoryDomain(FilterData):
     viewer_address: str
     mode: int
 
-    collateral_pool_address: str
-    collateral_token_addres: str
-    collateral_amount: int
-
-    borrow_pool_address: str
-    borrow_token_address: str
-    borrow_share: int
-    borrow_amount: int
+    collaterals: dict
+    borrows: dict
 
     block_number: int
     block_timestamp: int
-    transaction_hash: str
-    log_index: int
 
 
 @dataclass
@@ -40,8 +32,6 @@ class InitCapitalPositionCreateDomain(FilterData):
 
     block_number: int
     block_timestamp: int
-    transaction_hash: str
-    log_index: int
 
 
 @dataclass
@@ -50,20 +40,12 @@ class InitCapitalPositionUpdateDomain(FilterData):
     owner_address: str
     viewer_address: str
     mode: int
-    
-    collateral_pool_address: str
-    collateral_token_addres: str
-    collateral_amount: int
 
-    borrow_pool_address: str
-    borrow_token_address: str
-    borrow_share: int
-    borrow_amount: int
+    collaterals: dict
+    borrows: dict
 
     block_number: int
     block_timestamp: int
-    transaction_hash: str
-    log_index: int
 
 
 @dataclass
@@ -80,3 +62,29 @@ class InitCapitalRecordDomain(FilterData):
     block_timestamp: int
     transaction_hash: str
     log_index: int
+
+
+@dataclass
+class InitCapitalPoolHistoryDomain(FilterData):
+
+    pool_address: str
+    token_address: str
+    total_asset: int
+    total_supply: int
+    total_debt: int
+    total_debt_share: int
+
+    block_number: int
+    block_timestamp: int
+
+@dataclass
+class InitCapitalPoolUpdateDomain(FilterData):
+
+    pool_address: str
+    total_asset: int
+    total_supply: int
+    total_debt: int
+    total_debt_share: int
+
+    block_number: int
+    block_timestamp: int
