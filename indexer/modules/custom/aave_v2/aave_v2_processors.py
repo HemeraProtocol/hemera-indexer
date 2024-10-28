@@ -5,7 +5,7 @@ from enum import Enum
 from typing import Any, Type, TypeVar
 
 from common.utils.abi_code_utils import Event
-from common.utils.web3_utils import extract_eth_address
+from common.utils.web3_utils import extract_eth_address, to_checksum_address
 from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2BorrowD,
     AaveV2DepositD,
@@ -86,22 +86,26 @@ class ReserveInitProcessor(EventProcessor):
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         # call rpc, enrich token info
         asset = extract_eth_address(log.topic1)
-        asset_contract = self.web3.eth.contract(abi=self.abi, address=asset)
-        asset_symbol = asset_contract.functions.symbol.call()
+        asset_contract = self.web3.eth.contract(abi=self.abi, address=to_checksum_address(asset))
+        asset_symbol = asset_contract.functions.symbol().call()
         asset_decimals = asset_contract.functions.decimals().call()
 
         a_token = extract_eth_address(log.topic2)
-        a_token_contract = self.web3.eth.contract(abi=self.abi, address=a_token)
+        a_token_contract = self.web3.eth.contract(abi=self.abi, address=to_checksum_address(a_token))
         a_token_decimals = a_token_contract.functions.decimals().call()
         a_token_symbol = a_token_contract.functions.symbol().call()
 
         stable_debt_token = decoded_log.get("stableDebtToken")
-        stable_debt_token_contract = self.web3.eth.contract(abi=self.abi, address=stable_debt_token)
+        stable_debt_token_contract = self.web3.eth.contract(
+            abi=self.abi, address=to_checksum_address(stable_debt_token)
+        )
         stable_debt_token_symbol = stable_debt_token_contract.functions.symbol().call()
         stable_debt_token_decimals = stable_debt_token_contract.functions.decimals().call()
 
         variable_debt_token = decoded_log.get("variableDebtToken")
-        variable_debt_token_contract = self.web3.eth.contract(abi=self.abi, address=variable_debt_token)
+        variable_debt_token_contract = self.web3.eth.contract(
+            abi=self.abi, address=to_checksum_address(variable_debt_token)
+        )
         variable_debt_token_symbol = variable_debt_token_contract.functions.symbol().call()
         variable_debt_token_decimals = variable_debt_token_contract.functions.decimals().call()
         return {
