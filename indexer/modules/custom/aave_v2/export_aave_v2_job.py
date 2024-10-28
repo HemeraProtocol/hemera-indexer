@@ -195,7 +195,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for a_record in aave_records:
             # when repay, call rpc to get debt_balance
             if a_record.type() == AaveV2RepayD.type():
-                if a_record.reserved in self._ignore_assets():
+                if a_record.reserve in self._ignore_assets():
                     continue
                 reserve = self.asset_reserve[a_record.reserve]
 
