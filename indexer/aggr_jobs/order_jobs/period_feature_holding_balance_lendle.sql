@@ -4,93 +4,38 @@ where period_date >= '{start_date}'
   and period_date < '{end_date}';
 
 
+with tokens_table as (select *,
+                             CASE
+                                 WHEN address = '\xdef3542bb1b2969c1966dd91ebc504f4b37462fe' THEN 1
+                                 WHEN address = '\x874712c653aaaa7cfb201317f46e00238c2649bb' THEN -1
+                                 WHEN address = '\x08fc23af290d538647aa2836c5b3cf2fb3313759' THEN -1
+                                 ELSE 0
+                                 END AS voucher_value
+                      from tokens
+                      where address in (
+                                        '\xdef3542bb1b2969c1966dd91ebc504f4b37462fe',
+                                        '\x874712c653aaaa7cfb201317f46e00238c2649bb',
+                                        '\x08fc23af290d538647aa2836c5b3cf2fb3313759'
+                          ))
+
 insert
 into period_feature_holding_balance_lendle (period_date, wallet_address, protocol_id, contract_address,
-                                            token_address, token_symbol, balance)
-with lv_balance as (select d1.address                        as wallet_address,
-                           'lendle'                          as protocol_id,
-                           d2.pool_address,
-                           d2.token_address,
-                           d4.symbol,
-                           d1.balance / pow(10, d3.decimals) as balance
-                    from period_address_token_balances d1
-                             inner join lendle_token_mapping d2 on d1.token_address = d2.lv_address
-                             inner join tokens d3 on d2.lv_address = d3.address
-                             inner join tokens d4 on d2.token_address = d4.address
-                    order by balance desc),
+                                            token_symbol, token_address, balance)
+select date('{start_date}'),
+       d1.address,
+       'lendle',
+       d1.token_address,
+       d3.symbol  as token_symbol,
+       d3.address as token_address,
+       d1.balance / pow(10, d2.decimals) * voucher_value
 
-     debt_balance as (select d1.address                          as wallet_address,
-                             'lendle'                            as protocol_id,
-                             d2.pool_address,
-                             d2.token_address,
-                             d4.symbol,
-                             - d1.balance / pow(10, d3.decimals) as balance
-                      from period_address_token_balances d1
-                               inner join lendle_token_mapping d2 on d1.token_address = d2.variable_debt_address
-                               inner join tokens d3 on d2.lv_address = d3.address
-                               inner join tokens d4 on d2.token_address = d4.address
-                      order by balance desc),
+from period_address_token_balances d1
+         inner join tokens_table d2 on d1.token_address = d2.address
+         inner join tokens d3 on d3.address = '\xC96DE26018A54D51C097160568752C4E3BD6C364'
 
+where  token_address in (
+                        '\xdef3542bb1b2969c1966dd91ebc504f4b37462fe',
+                        '\x874712c653aaaa7cfb201317f46e00238c2649bb',
+                        '\x08fc23af290d538647aa2836c5b3cf2fb3313759'
+    );
 
-     au_lv_balance as (select d1.address                        as wallet_address,
-                              'aurelius'                        as protocol_id,
-                              d2.pool_address,
-                              d2.token_address,
-                              d4.symbol,
-                              d1.balance / pow(10, d3.decimals) as balance
-                       from period_address_token_balances d1
-                                inner join aurelius_token_mapping d2 on d1.token_address = d2.lv_address
-                                inner join tokens d3 on d2.lv_address = d3.address
-                                inner join tokens d4 on d2.token_address = d4.address
-                       order by balance desc),
-
-     au_debt_balance as (select d1.address                          as wallet_address,
-                                'aurelius'                          as protocol_id,
-                                d2.pool_address,
-                                d2.token_address,
-                                d4.symbol,
-                                - d1.balance / pow(10, d3.decimals) as balance
-                         from period_address_token_balances d1
-                                  inner join aurelius_token_mapping d2 on d1.token_address = d2.variable_debt_address
-                                  inner join tokens d3 on d2.lv_address = d3.address
-                                  inner join tokens d4 on d2.token_address = d4.address
-                         order by balance desc)
-
-select date('{start_date}') as period_date,
-       wallet_address,
-       protocol_id,
-       pool_address,
-       token_address,
-       symbol,
-       balance
-from lv_balance
-union all
-
-select date('{start_date}') as period_date,
-       wallet_address,
-       protocol_id,
-       pool_address,
-       token_address,
-       symbol,
-       balance
-from debt_balance
-union all
-
-select date('{start_date}') as period_date,
-       wallet_address,
-       protocol_id,
-       pool_address,
-       token_address,
-       symbol,
-       balance
-from au_lv_balance
-union all
-
-select date('{start_date}') as period_date,
-       wallet_address,
-       protocol_id,
-       pool_address,
-       token_address,
-       symbol,
-       balance
-from au_debt_balance
