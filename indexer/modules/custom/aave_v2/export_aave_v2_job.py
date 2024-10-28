@@ -72,7 +72,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             "POOL_V2": self.job_conf["POOL_V2"],
             "POOL_CONFIGURE": self.job_conf["POOL_CONFIGURE"],
             "POOL_V1": self.job_conf["POOL_V1"],
-            "POOL_PROXY": self.job_conf["POOL_PROXY"],
         }
 
         self.address_set = set(self.contract_addresses.values())
@@ -150,6 +149,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             if event_type == AaveV2Events.RESERVE_INIT_V1:
                 pass
             else:
+                pass
             contract_address = self.contract_addresses[config.contract_address_key]
 
             abi = self.abi_reader.get_event_abi(contract_address, config.name)
