@@ -1,4 +1,4 @@
-from sqlalchemy import Column, PrimaryKeyConstraint, func, text
+from sqlalchemy import NUMERIC, VARCHAR, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
@@ -7,9 +7,21 @@ from common.models import HemeraModel, general_converter
 class AaveV2Reserve(HemeraModel):
     __tablename__ = "af_aave_v2_reserve"
     asset = Column(BYTEA, primary_key=True)
+    asset_decimals = Column(NUMERIC(100))
+    asset_symbol = Column(VARCHAR)
+
     a_token_address = Column(BYTEA)
+    a_token_decimals = Column(NUMERIC(100))
+    a_token_symbol = Column(VARCHAR)
+
     stable_debt_token_address = Column(BYTEA)
+    stable_debt_token_decimals = Column(NUMERIC(100))
+    stable_debt_token_symbol = Column(VARCHAR)
+
     variable_debt_token_address = Column(BYTEA)
+    variable_debt_token_decimals = Column(NUMERIC(100))
+    variable_debt_token_symbol = Column(VARCHAR)
+
     interest_rate_strategy_address = Column(BYTEA)
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
