@@ -101,13 +101,13 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 stable_debt_token_address=(
                     bytes_to_hex_str(rr.stable_debt_token_address) if rr.stable_debt_token_address else None
                 ),
-                stable_debt_symbol=rr.stable_debt_token_symbol,
-                stable_debt_decimals=rr.stable_debt_token_decimals,
+                stable_debt_token_symbol=rr.stable_debt_token_symbol,
+                stable_debt_token_decimals=rr.stable_debt_token_decimals,
                 variable_debt_token_address=(
                     bytes_to_hex_str(rr.variable_debt_token_address) if rr.variable_debt_token_address else None
                 ),
-                variable_debt_symbol=rr.variable_debt_token_symbol,
-                variable_debt_decimals=rr.variable_debt_token_decimals,
+                variable_debt_token_symbol=rr.variable_debt_token_symbol,
+                variable_debt_token_decimals=rr.variable_debt_token_decimals,
                 interest_rate_strategy_address=(
                     bytes_to_hex_str(rr.interest_rate_strategy_address) if rr.interest_rate_strategy_address else None
                 ),
