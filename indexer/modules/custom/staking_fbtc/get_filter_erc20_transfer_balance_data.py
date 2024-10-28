@@ -46,14 +46,14 @@ class FilterJob(FilterTransactionDataJob):
 
         sql = f"""
             select lv_address from lendle_token_mapping
-            union all 
+            union distinct 
             select variable_debt_Address from lendle_token_mapping
-            union all 
+            union distinct 
              select lv_address from aurelius_token_mapping
-            union all 
+            union distinct 
             select variable_debt_Address from aurelius_token_mapping
-            
-            
+            union distinct 
+            select token_address from feature_staked_fbtc_config
             """
         result = session.execute(text(sql))
 
