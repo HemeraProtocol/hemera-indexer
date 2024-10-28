@@ -86,6 +86,8 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
         self.token_fetcher = TokenFetcher(self._web3, kwargs)
 
+        self.ignore_assets = {"0x80fb784b7ed66730e8b1dbd9820afd29931aab03"}
+
     def _read_reserve(self):
 
         with self.db_service.get_service_session() as session:
@@ -144,12 +146,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     def is_aave_v2_address(self, address):
         return address in self.address_set
 
-    def _ignore_assets(self):
-        s = set()
-        # lend
-        s.add("0x80fb784b7ed66730e8b1dbd9820afd29931aab03")
-        return s
-
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         aave_records = []
@@ -161,6 +157,8 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if processor is None:
                     continue
                 processed_data = processor.process(log)
+                if hasattr(processed_data, "reserve") and processed_data.reserve in self.ignore_assets:
+                    continue
                 aave_records.append(processed_data)
                 self._collect_item(processed_data.type(), processed_data)
                 if processed_data.type() == AaveV2ReserveD.type():
@@ -195,8 +193,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for a_record in aave_records:
             # when repay, call rpc to get debt_balance
             if a_record.type() == AaveV2RepayD.type():
-                if a_record.reserve in self._ignore_assets():
-                    continue
                 reserve = self.asset_reserve[a_record.reserve]
 
                 borrow_rate_mode = None
