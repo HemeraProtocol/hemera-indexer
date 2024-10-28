@@ -411,7 +411,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 reserve = action.reserve
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
-                res_d[user][reserve].supply_amount += action.amount
+                if res_d[user][reserve].supply_amount is None:
+                    res_d[user][reserve].supply_amount = action.amount
+                else:
+                    res_d[user][reserve].supply_amount += action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == AaveV2Events.BORROW.value.name:
@@ -420,7 +423,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].borrow_rate_mode = action.borrow_rate_mode
-                res_d[user][reserve].borrow_amount += action.amount
+                if res_d[user][reserve].borrow_amount is None:
+                    res_d[user][reserve].borrow_amount = action.amount
+                else:
+                    res_d[user][reserve].borrow_amount += action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == AaveV2Events.REPAY.value.name:
@@ -436,7 +442,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 user = action.aave_user
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
-                res_d[user][reserve].supply_amount -= action.amount
+                if res_d[user][reserve].supply_amount is None:
+                    res_d[user][reserve].supply_amount = action.amount
+                else:
+                    res_d[user][reserve].supply_amount -= action.amount
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == AaveV2Events.LIQUIDATION_CALL.value.name:
