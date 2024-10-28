@@ -13,8 +13,7 @@ job_list = ['period_address_token_balances',
             # 'period_feature_erc1155_token_holdings.sql',
             'period_feature_erc1155_token_supply_records.sql',
             'period_feature_holding_balance_merchantmoe.sql',
-            'period_feature_erc20_token_supply_records.sql', 'period_feature_holding_balance_dodo.sql',
-            'period_feature_holding_balance_lendle.sql'
+            'period_feature_erc20_token_supply_records.sql', 'period_feature_holding_balance_dodo.sql'
             ]
 
 
@@ -36,6 +35,9 @@ class AggrOrderJob(AggrBaseJob):
                 job_list.append('period_feature_holding_balance_uniswap_v3_meth.sql')
             if 'period_feature_holding_balance_merchantmoe_meth.sql' not in job_list:
                 job_list.append('period_feature_holding_balance_merchantmoe_meth.sql')
+            if 'period_feature_holding_balance_lendle.sql' not in job_list:
+                job_list.append('period_feature_holding_balance_lendle.sql')
+
 
     def run(self, **kwargs):
         start_date_limit = kwargs["start_date"]
