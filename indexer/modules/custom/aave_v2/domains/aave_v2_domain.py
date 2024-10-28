@@ -13,11 +13,11 @@ class AaveV2ReserveD(FilterData):
     a_token_symbol: Optional[str]
     a_token_decimals: Optional[int]
     stable_debt_token_address: str
-    stable_debt_symbol: Optional[str]
-    stable_debt_decimals: Optional[int]
+    stable_debt_token_symbol: Optional[str]
+    stable_debt_token_decimals: Optional[int]
     variable_debt_token_address: str
-    variable_debt_symbol: Optional[str]
-    variable_debt_decimals: Optional[int]
+    variable_debt_token_symbol: Optional[str]
+    variable_debt_token_decimals: Optional[int]
     interest_rate_strategy_address: str
     block_number: int
     block_timestamp: int
