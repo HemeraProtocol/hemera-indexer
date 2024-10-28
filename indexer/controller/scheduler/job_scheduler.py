@@ -157,12 +157,13 @@ class JobScheduler:
         for cls in all_subclasses:
             self.job_classes.append(cls)
             for output in cls.output_types:
+                if output.type() in self.job_map:
+                    raise Exception(
+                        f"Duplicated output type: {output.type()}, job: {cls.__name__}, existing: {self.job_map[output.type()]}, plz check your job definition"
+                    )
                 self.job_map[output.type()].append(cls)
             for dependency in cls.dependency_types:
                 self.dependency_map[dependency.type()].append(cls)
-            self.logger.info(
-                f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}"
-            )
 
     def instantiate_jobs(self):
         filters = []
