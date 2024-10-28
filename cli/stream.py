@@ -440,6 +440,8 @@ def stream(
         multicall=multicall,
         force_filter_mode=force_filter_mode,
         runtime_signature_signer=integrity_checker,
+        report_private_key=report_private_key,
+        report_from_address=report_from_address,
     )
 
     controller = StreamController(

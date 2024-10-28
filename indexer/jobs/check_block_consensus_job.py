@@ -21,6 +21,8 @@ class CheckBlockConsensusJob(BaseJob):
         self._batch_size = kwargs["batch_size"]
         self._multicall = kwargs["multicall"]
         self._debug_batch_size = kwargs["debug_batch_size"]
+        self._report_private_key = kwargs["report_private_key"]
+        self._report_from_address = kwargs["report_from_address"]
         self.db_service = self._config.get("db_service") if "db_service" in self._config else None
         self._postgre_uri = self.db_service.get_service_uri() if self.db_service else None
 
@@ -67,6 +69,10 @@ class CheckBlockConsensusJob(BaseJob):
                     f"{block.number}",
                     "--ranges",
                     f"{ranges}",
+                    "--report-private-key",
+                    f"{self._report_private_key}",
+                    "--report-from-address",
+                    f"{self._report_from_address}",
                     "--log-file",
                     f"./logs/auto_reorg_{block.number}_{ranges}.log",
                 ]

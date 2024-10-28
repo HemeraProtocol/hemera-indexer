@@ -10,7 +10,6 @@ from redis.client import Redis
 from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.format_utils import bytes_to_hex_str
-from common.utils.integrity_checker import RuntimeCodeSignature
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -68,7 +67,9 @@ class JobScheduler:
         multicall=None,
         auto_reorg=True,
         force_filter_mode=False,
-        runtime_signature_signer=RuntimeCodeSignature(),
+        runtime_signature_signer=None,
+        report_private_key=None,
+        report_from_address=None,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
@@ -79,6 +80,8 @@ class JobScheduler:
         self._is_multicall = multicall
         self.debug_batch_size = debug_batch_size
         self.max_workers = max_workers
+        self.report_private_key = report_private_key
+        self.report_from_address = report_from_address
         self.config = config
         self.required_output_types = required_output_types
         self.required_source_types = required_source_types
@@ -116,6 +119,8 @@ class JobScheduler:
         self.logger.info("Export output types: %s", required_output_types)
 
     def _execute_runtime_signature(self):
+        if self.runtime_signature is None:
+            return
         self.runtime_signature.calculate_signature(__name__, ["indexer.jobs", "indexer.modules"])
         for job in self.jobs:
             self.runtime_signature.calculate_signature(job.__class__.__module__)
@@ -235,6 +240,8 @@ class JobScheduler:
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
+                report_private_key=self.report_private_key,
+                report_from_address=self.report_from_address,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,

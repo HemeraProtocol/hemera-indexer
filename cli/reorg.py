@@ -4,12 +4,14 @@ import os
 import click
 
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.integrity_checker import RuntimeCodeSignature
 from enumeration.entity_type import ALL_ENTITY_COLLECTIONS, calculate_entity_value, generate_output_types
 from indexer.controller.reorg_controller import ReorgController
 from indexer.controller.scheduler.reorg_scheduler import ReorgScheduler
 from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
+from indexer.utils.parameter_utils import create_record_report_from_parameter
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.rpc_utils import pick_random_provider_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
@@ -117,6 +119,24 @@ exception_recorder = ExceptionRecorder()
     help="Whether to automatically run database migration scripts to update the database to the latest version.",
 )
 @click.option(
+    "--report-private-key",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="REPORT_PRIVATE_KEY",
+    help="When the progress report contract is submitted, the private-key required by the transaction is submitted. "
+    "When this parameter is not set, indexer will not report progress to the contract",
+)
+@click.option(
+    "--report-from-address",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="REPORT_FROM_ADDRESS",
+    help="When the progress report contract is submitted, the from-address required by the transaction is submitted. "
+    "When this parameter is not set, indexer will not report progress to the contract",
+)
+@click.option(
     "--log-level",
     default="INFO",
     show_default=True,
@@ -138,6 +158,8 @@ def reorg(
     cache=None,
     config_file=None,
     auto_upgrade_db=True,
+    report_private_key=None,
+    report_from_address=None,
     log_level="INFO",
 ):
     configure_logging(log_level=log_level, log_file=log_file)
@@ -175,6 +197,9 @@ def reorg(
     entity_types = calculate_entity_value(",".join(ALL_ENTITY_COLLECTIONS))
     output_types = list(generate_output_types(entity_types))
 
+    integrity_checker = RuntimeCodeSignature()
+    integrity_checker.calculate_signature(__name__, ["indexer.jobs", "indexer.modules", "indexer.exporters"])
+
     job_scheduler = ReorgScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
@@ -185,6 +210,7 @@ def reorg(
         config=config,
         cache=cache,
         multicall=multicall,
+        runtime_signature_signer=integrity_checker,
     )
 
     controller = ReorgController(
@@ -192,6 +218,8 @@ def reorg(
         job_scheduler=job_scheduler,
         ranges=ranges,
         config=config,
+        record_reporter=create_record_report_from_parameter(report_private_key, report_from_address),
+        runtime_signature_signer=integrity_checker,
     )
 
     job = None
