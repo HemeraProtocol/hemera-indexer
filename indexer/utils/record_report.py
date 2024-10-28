@@ -12,6 +12,7 @@ from queue import Empty, Queue
 
 from eth_account import Account
 from web3 import Web3
+from web3.exceptions import TimeExhausted
 
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from common.utils.web3_utils import to_checksum_address
@@ -28,7 +29,7 @@ class AsyncTransactionSubmitter:
 
         self.max_retries = 5
         self.retry_delay = 5
-        self.receipt_timeout = 10
+        self.receipt_timeout = 30
         self.receipt_poll_latency = 2
 
         self.submit_thread = None
@@ -49,7 +50,7 @@ class AsyncTransactionSubmitter:
     def stop(self):
         self.running = False
         if self.submit_thread:
-            self.submit_thread.join(timeout=5.0)
+            self.submit_thread.join(timeout=self.receipt_timeout)
             self.submit_thread = None
             self.logger.info("Submit thread stopped.")
         else:
@@ -83,42 +84,67 @@ class AsyncTransactionSubmitter:
         builder = info["transaction_builder"]
         parameters = info["transaction_parameters"]
 
+        self.logger.info(f"Processing transaction with parameters: {parameters}")
+
         self.nonce = (
             self.nonce if self.web3.eth.get_transaction_count(self.account.address) < self.nonce else self.nonce
         )
 
-        for retry in range(self.max_retries):
-            try:
-                parameters["nonce"] = self.nonce
-                signed_txn = builder(**parameters)
-                txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-
-                receipt = self.web3.eth.wait_for_transaction_receipt(
-                    txn_hash, timeout=self.receipt_timeout, poll_latency=self.receipt_poll_latency
-                )
-
-                if receipt["status"] == 1:
-                    return True
-                else:
-                    self.logger.error(
-                        f"Transaction: {bytes_to_hex_str(txn_hash)} failed. \n"
-                        f"with info: {parameters}\n"
-                        f"Receipt: {receipt}"
+        for entire_retry in range(self.max_retries):
+            for submit_retry in range(self.max_retries):
+                try:
+                    parameters["nonce"] = self.nonce
+                    signed_txn = builder(**parameters)
+                    txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
+                    self.logger.info(
+                        f"Submitted transaction {signed_txn} successfully with parameter: {parameters}.\n"
+                        f"Waiting for receipt."
                     )
-                    if retry < self.max_retries - 1:
-                        await asyncio.sleep(self.retry_delay)
+
+                except ValueError as e:
+                    if str(e).find("nonce too low") != -1:
+                        self.nonce = self.nonce + 1
                         continue
 
-            except ValueError as e:
-                if str(e).find("nonce too low") != -1:
-                    self.nonce = self.nonce + 1
-                    continue
-
-            except Exception as e:
-                self.logger.error(f"Building and submitting transaction failed. {e}")
-                if retry < self.max_retries - 1:
+                except Exception as e:
+                    self.logger.error(f"Building and submitting transaction failed. {e}")
                     await asyncio.sleep(self.retry_delay)
                     continue
+
+            for receipt_retry in range(self.max_retries):
+                try:
+                    receipt = self.web3.eth.wait_for_transaction_receipt(
+                        txn_hash, timeout=self.receipt_timeout, poll_latency=self.receipt_poll_latency
+                    )
+
+                    if receipt["status"] == 1:
+                        self.logger.info(f"Transaction {bytes_to_hex_str(txn_hash)} had been receipted.")
+                        return True
+                    else:
+                        self.logger.error(
+                            f"Transaction: {bytes_to_hex_str(txn_hash)} failed. \n"
+                            f"with info: {parameters}\n"
+                            f"Receipt: {receipt}"
+                        )
+
+                        break
+                except TimeExhausted as e:
+                    self.logger.warning(
+                        f"Transaction: {bytes_to_hex_str(txn_hash)} is not in the chain after "
+                        f"{self.receipt_timeout * (receipt_retry + 1)} seconds. \n"
+                        f"Reporter will continue to retry waiting for receipt "
+                        f"{self.max_retries - receipt_retry - 1} times, {self.receipt_timeout} seconds each time.\n."
+                    )
+                    receipt = None
+                    continue
+
+            if receipt is None or receipt["status"] == 0:
+                self.logger.warning(
+                    f"Transaction: {bytes_to_hex_str(txn_hash)} had not been receipted by chain. \n"
+                    f"Reporter will retry to submit the transaction with info: {parameters}. \n "
+                )
+                await asyncio.sleep(self.retry_delay)
+
         return False
 
 
@@ -261,36 +287,4 @@ class FeatureRegister:
 
 
 if __name__ == "__main__":
-    from common.utils.integrity_checker import StaticCodeSignature
-
-    checker = StaticCodeSignature()
-    checker.calculate_signature(["../../indexer", "../../common"])
-    code_hash = checker.get_combined_hash()
-
-    reporter = RecordReporter(
-        from_address="0xfdeacf567997fc153e2fe1de098aeedc71294b71",
-        private_key="0x0f0dca973a687bfcbabdd85fad3bce5d49593300771eda9cda07bf9397d17488",
-    )
-
-    indexed_data = [
-        {"dataClass": "4ac520fc", "count": 1, "dataHash": "4ac520fc"},
-        {"dataClass": "4ac520fc", "count": 1, "dataHash": "4ac520fc"},
-    ]
-
-    reporter.report(
-        chain_id=1, start_block=10000, end_block=10001, runtime_code_hash=code_hash, indexed_data=indexed_data
-    )
-
-    # register = FeatureRegister(
-    #     from_address="0xfdeacf567997fc153e2fe1de098aeedc71294b71",
-    #     private_key="0x0f0dca973a687bfcbabdd85fad3bce5d49593300771eda9cda07bf9397d17488",
-    # )
-
-    # register.register_all()
-
-    # block
-    # register.register_one("67a70c90")
-    # # transaction
-    # register.register_one("6048a7e2")
-    # # log
-    # register.register_one("718c3b53")
+    pass
