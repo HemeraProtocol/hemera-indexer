@@ -28,6 +28,25 @@ class AaveV2ReserveD(FilterData):
 
 
 @dataclass
+class AaveV2ReserveV1D(FilterData):
+    asset: str
+    asset_decimals: Optional[int]
+    asset_symbol: Optional[str]
+    a_token_address: str
+    a_token_symbol: Optional[str]
+    a_token_decimals: Optional[int]
+
+    interest_rate_strategy_address: str
+    block_number: int
+    block_timestamp: int
+    transaction_hash: str
+    transaction_hash_v1: str
+    log_index: int
+    topic0: Optional[str] = None
+    event_name: Optional[str] = None
+
+
+@dataclass
 class AaveV2LendingPoolReserveFactorCurrent(FilterData):
     asset_address: str
     factor: int
