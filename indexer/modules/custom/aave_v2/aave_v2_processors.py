@@ -13,6 +13,7 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2LiquidationCallD,
     AaveV2RepayD,
     AaveV2ReserveD,
+    AaveV2ReserveV1D,
     AaveV2WithdrawD,
 )
 
@@ -57,8 +58,8 @@ class EventProcessor(ABC):
         pass
 
 
-class ReserveInitProcessor(EventProcessor):
-    """0x3a0ca721fc364424566385a1aa271ed508cc2c0949c2272575fb3013a163a45f"""
+class BaseReserveProcessor(EventProcessor):
+    """Base class for reserve initialization processors"""
 
     def __init__(self, event: Event, data_class: Type[T], web3=None):
         super().__init__(event, data_class, web3)
@@ -83,45 +84,61 @@ class ReserveInitProcessor(EventProcessor):
             },
         ]
 
+    def _get_token_info(self, address: str) -> dict:
+        """Get token decimals and symbol"""
+        contract = self.web3.eth.contract(abi=self.abi, address=to_checksum_address(address))
+        return {"decimals": contract.functions.decimals().call(), "symbol": contract.functions.symbol().call()}
+
+
+class ReserveInitProcessor(BaseReserveProcessor):
+    """0x3a0ca721fc364424566385a1aa271ed508cc2c0949c2272575fb3013a163a45f"""
+
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
-        # call rpc, enrich token info
         asset = extract_eth_address(log.topic1)
-        asset_contract = self.web3.eth.contract(abi=self.abi, address=to_checksum_address(asset))
-        asset_symbol = asset_contract.functions.symbol().call()
-        asset_decimals = asset_contract.functions.decimals().call()
+        asset_info = self._get_token_info(asset)
 
         a_token = extract_eth_address(log.topic2)
-        a_token_contract = self.web3.eth.contract(abi=self.abi, address=to_checksum_address(a_token))
-        a_token_decimals = a_token_contract.functions.decimals().call()
-        a_token_symbol = a_token_contract.functions.symbol().call()
+        a_token_info = self._get_token_info(a_token)
 
         stable_debt_token = decoded_log.get("stableDebtToken")
-        stable_debt_token_contract = self.web3.eth.contract(
-            abi=self.abi, address=to_checksum_address(stable_debt_token)
-        )
-        stable_debt_token_symbol = stable_debt_token_contract.functions.symbol().call()
-        stable_debt_token_decimals = stable_debt_token_contract.functions.decimals().call()
+        stable_debt_info = self._get_token_info(stable_debt_token)
 
         variable_debt_token = decoded_log.get("variableDebtToken")
-        variable_debt_token_contract = self.web3.eth.contract(
-            abi=self.abi, address=to_checksum_address(variable_debt_token)
-        )
-        variable_debt_token_symbol = variable_debt_token_contract.functions.symbol().call()
-        variable_debt_token_decimals = variable_debt_token_contract.functions.decimals().call()
+        variable_debt_info = self._get_token_info(variable_debt_token)
+
         return {
             "asset": asset,
-            "asset_symbol": asset_symbol,
-            "asset_decimals": asset_decimals,
+            "asset_symbol": asset_info["symbol"],
+            "asset_decimals": asset_info["decimals"],
             "a_token_address": a_token,
-            "a_token_symbol": a_token_symbol,
-            "a_token_decimals": a_token_decimals,
+            "a_token_symbol": a_token_info["symbol"],
+            "a_token_decimals": a_token_info["decimals"],
             "stable_debt_token_address": stable_debt_token,
-            "stable_debt_token_decimals": stable_debt_token_decimals,
-            "stable_debt_token_symbol": stable_debt_token_symbol,
+            "stable_debt_token_decimals": stable_debt_info["decimals"],
+            "stable_debt_token_symbol": stable_debt_info["symbol"],
             "variable_debt_token_address": variable_debt_token,
-            "variable_debt_token_symbol": variable_debt_token_symbol,
-            "variable_debt_token_decimals": variable_debt_token_decimals,
+            "variable_debt_token_symbol": variable_debt_info["symbol"],
+            "variable_debt_token_decimals": variable_debt_info["decimals"],
             "interest_rate_strategy_address": decoded_log.get("interestRateStrategyAddress"),
+        }
+
+
+class ReserveInitProcessorV1(BaseReserveProcessor):
+    def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
+        asset = extract_eth_address(log.topic1)
+        asset_info = self._get_token_info(asset)
+
+        a_token = extract_eth_address(log.topic2)
+        a_token_info = self._get_token_info(a_token)
+
+        return {
+            "asset": asset,
+            "asset_symbol": asset_info["symbol"],
+            "asset_decimals": asset_info["decimals"],
+            "a_token_address": a_token,
+            "a_token_symbol": a_token_info["symbol"],
+            "a_token_decimals": a_token_info["decimals"],
+            "interest_rate_strategy_address": decoded_log.get("_interestRateStrategyAddress"),
         }
 
 
@@ -286,6 +303,12 @@ class AaveV2Events(Enum):
         contract_address_key="POOL_CONFIGURE",
         processor_class=ReserveInitProcessor,
         data_class=AaveV2ReserveD,
+    )
+    RESERVE_INIT_V1 = EventConfig(
+        name="ReserveInitialized",
+        contract_address_key="POOL_PROXY",
+        processor_class=ReserveInitProcessorV1,
+        data_class=AaveV2ReserveV1D,
     )
     DEPOSIT = EventConfig(
         name="Deposit", contract_address_key="POOL_V2", processor_class=DepositProcessor, data_class=AaveV2DepositD
