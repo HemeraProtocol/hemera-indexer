@@ -10,6 +10,7 @@ from redis.client import Redis
 from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.format_utils import bytes_to_hex_str
+from common.utils.integrity_checker import RuntimeCodeSignature
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -67,7 +68,7 @@ class JobScheduler:
         multicall=None,
         auto_reorg=True,
         force_filter_mode=False,
-        runtime_signature_signer=None,
+        runtime_signature_signer=RuntimeCodeSignature(),
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
