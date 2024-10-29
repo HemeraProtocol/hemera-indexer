@@ -450,8 +450,10 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         return result
 
     def run(self):
-
-        lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
+        if self.chain_name == 'mantle':
+            lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
+        else:
+            lendle_json = {}
         staked = self.timed_call(self.get_staked_json, 'get_staked_json')
 
         # get all protocol json, actually then can be abstract...
