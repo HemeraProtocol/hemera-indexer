@@ -190,8 +190,11 @@ class PeriodFeatureDefiWalletCmethAggregates:
         address_token_balances = self.timed_call(self.get_period_address_token_balances,
                                                  'get_period_address_token_balances')
 
-        merchantmoe_json = self.timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
 
+        if self.chain_name == 'mantle':
+            merchantmoe_json = self.timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
+        else:
+            merchantmoe_json = {}
         # period_date can be removed from the key
         protocols = [merchantmoe_json]
 
