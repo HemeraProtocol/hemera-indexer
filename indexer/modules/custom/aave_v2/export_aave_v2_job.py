@@ -185,6 +185,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         aave_records = []
+        reserve_init_lis = []
         for log in logs:
             if not self.is_aave_v2_address(log.address):
                 continue
@@ -201,13 +202,15 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                         raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
 
                     processed_data.amount = self.format_amount(processed_data.amount, res.asset_decimals)
-                aave_records.append(processed_data)
-                self._collect_item(processed_data.type(), processed_data)
                 if processed_data.type() == AaveV2ReserveD.type():
                     # update reserve
                     self.reserve_dic[processed_data.asset] = processed_data
                 elif processed_data.type() == AaveV2ReserveV1D.type():
                     self.reserve_v1_dic[processed_data.asset] = processed_data
+                    reserve_init_lis.append(processed_data)
+                    continue
+                self._collect_item(processed_data.type(), processed_data)
+                aave_records.append(processed_data)
             except Exception as e:
                 logger.error(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}: {str(e)}")
                 raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
@@ -410,7 +413,8 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         batch_result_dic = self.calculate_new_address_current(exists_dic, aave_records, liquidation_lis)
         liquidation_lis = self.merge_liquidation_lis(liquidation_lis)
         self._collect_items(AaveV2LiquidationAddressCurrentD.type(), liquidation_lis)
-
+        reserve_init_lis = self.merge_reserve_init_lis(reserve_init_lis)
+        self._collect_items(AaveV2ReserveV1D.type(), reserve_init_lis)
         address_currents = []
         for address, outer_dic in batch_result_dic.items():
             for reserve, kad in outer_dic.items():
@@ -452,6 +456,18 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         unique_k_set = set()
         for li in liquidation_lis:
             k = (li.address, li.asset)
+            if k not in unique_k_set:
+                unique_k_set.add(k)
+                lis.append(li)
+        return lis
+
+    def merge_reserve_init_lis(self, reserve_init_lis):
+        # keep the newest one
+        reserve_init_lis.sort(key=lambda x: x.last_reserve_time, reverse=True)
+        lis = []
+        unique_k_set = set()
+        for li in reserve_init_lis:
+            k = li.asset
             if k not in unique_k_set:
                 unique_k_set.add(k)
                 lis.append(li)
