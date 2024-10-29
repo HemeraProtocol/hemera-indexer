@@ -9,7 +9,7 @@ from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
-from indexer.utils.record_report import RecordReporter
+from indexer.utils.report_to_contract import RecordReporter
 from indexer.utils.sync_recorder import BaseRecorder
 
 exception_recorder = ExceptionRecorder()

@@ -12,7 +12,7 @@ from common.utils.format_utils import hex_str_to_bytes
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.utils.exception_recorder import ExceptionRecorder
-from indexer.utils.record_report import RecordReporter
+from indexer.utils.report_to_contract import RecordReporter
 
 exception_recorder = ExceptionRecorder()
 logger = logging.getLogger(__name__)
