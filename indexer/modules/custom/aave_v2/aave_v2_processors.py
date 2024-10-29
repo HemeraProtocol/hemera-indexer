@@ -131,6 +131,11 @@ class ReserveInitProcessorV1(BaseReserveProcessor):
                 "symbol": "_ETH",
                 "decimals": 18,
             }
+        elif asset == "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2":
+            asset_info = {
+                "symbol": "MKR",
+                "decimals": 18,
+            }
         else:
             asset_info = self._get_token_info(asset)
 
