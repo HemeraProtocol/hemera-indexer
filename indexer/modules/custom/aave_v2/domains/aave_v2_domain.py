@@ -97,6 +97,17 @@ class AaveV2RepayD(AaveV2BaseRecord):
 
 
 @dataclass
+class AaveV2RepayV1D(AaveV2BaseRecord):
+    reserve: Optional[str] = None
+    aave_user: Optional[str] = None
+    repayer: Optional[str] = None
+    amount: Optional[int] = None
+    borrow_rate_mode: Optional[int] = None
+    # debt, after repayed
+    after_repay_debt: Optional[int] = None
+
+
+@dataclass
 class AaveV2FlashLoanD(AaveV2BaseRecord):
     target: Optional[str] = None
     # initiator -> user, use `aave_user`
@@ -109,6 +120,19 @@ class AaveV2FlashLoanD(AaveV2BaseRecord):
 
 @dataclass
 class AaveV2LiquidationCallD(AaveV2BaseRecord):
+    collateral_asset: Optional[str] = None
+    debt_asset: Optional[str] = None
+    aave_user: Optional[str] = None
+    debt_to_cover: Optional[int] = None
+    liquidated_collateral_amount: Optional[int] = None
+    liquidator: Optional[str] = None
+    receive_atoken: Optional[str] = None
+    debt_after_liquidation: Optional[int] = None
+    collateral_after_liquidation: Optional[int] = None
+
+
+@dataclass
+class AaveV2LiquidationCallV1D(AaveV2BaseRecord):
     collateral_asset: Optional[str] = None
     debt_asset: Optional[str] = None
     aave_user: Optional[str] = None
@@ -146,8 +170,9 @@ def aave_v2_address_current_factory():
 
 
 @dataclass
-class AaveV2AddressBalanceRecordsD(FilterData):
-    address: Optional[str] = None
-    token: Optional[str] = None
+class AaveV2CallRecordsD(FilterData):
+    target: Optional[str] = None
+    params: Optional[str] = None
+    function: Optional[str] = None
     block_number: Optional[int] = None
-    balance: Optional[int] = None
+    result: Optional[str] = None
