@@ -164,10 +164,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     def is_aave_v2_address(self, address):
         return address in self.address_set
 
-    def format_amount(self, amount, decimals=18):
-        formatted_value = f"{amount / 10 ** decimals:.6f}".rstrip("0").rstrip(".")
-        return formatted_value if formatted_value else "0"
-
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         aave_records = []
@@ -180,14 +176,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if processor is None:
                     continue
                 processed_data = processor.process(log)
-                if hasattr(processed_data, "reserve") and hasattr(processed_data, "amount") and processed_data.amount is not None:
-                    res = self.reserve_dic.get(processed_data.reserve)
-                    if not res:
-                        res = self.reserve_v1_dic.get(processed_data.reserve)
-                    if not res:
-                        raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
 
-                    processed_data.amount = self.format_amount(processed_data.amount, res.asset_decimals)
                 if processed_data.type() == AaveV2ReserveD.type():
                     # update reserve
                     self.reserve_dic[processed_data.asset] = processed_data
