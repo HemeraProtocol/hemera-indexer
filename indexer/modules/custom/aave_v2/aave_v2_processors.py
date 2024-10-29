@@ -323,7 +323,7 @@ class AaveV2Events(Enum):
     )
     RESERVE_INIT_V1 = EventConfig(
         name="ReserveInitialized",
-        contract_address_key="POOL_PROXY",
+        contract_address_key="INIT_PROXY",
         processor_class=ReserveInitProcessorV1,
         data_class=AaveV2ReserveV1D,
     )
