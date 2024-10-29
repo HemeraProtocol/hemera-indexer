@@ -463,7 +463,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
     def merge_reserve_init_lis(self, reserve_init_lis):
         # keep the newest one
-        reserve_init_lis.sort(key=lambda x: x.last_reserve_time, reverse=True)
+        reserve_init_lis.sort(key=lambda x: x.block_timestamp, reverse=True)
         lis = []
         unique_k_set = set()
         for li in reserve_init_lis:
