@@ -126,7 +126,13 @@ class ReserveInitProcessor(BaseReserveProcessor):
 class ReserveInitProcessorV1(BaseReserveProcessor):
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         asset = extract_eth_address(log.topic1)
-        asset_info = self._get_token_info(asset)
+        if asset == "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee":
+            asset_info = {
+                "symbol": "_ETH",
+                "decimals": 18,
+            }
+        else:
+            asset_info = self._get_token_info(asset)
 
         a_token = extract_eth_address(log.topic2)
         a_token_info = self._get_token_info(a_token)
