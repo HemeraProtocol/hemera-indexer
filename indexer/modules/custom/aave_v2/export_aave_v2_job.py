@@ -181,9 +181,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     continue
                 processed_data = processor.process(log)
                 if hasattr(processed_data, "reserve") and hasattr(processed_data, "amount") and processed_data.amount is not None:
-                    res = self.reserve_dic[processed_data.reserve]
+                    res = self.reserve_dic.get(processed_data.reserve)
                     if not res:
-                        res = self.reserve_v1_dic[processed_data.reserve]
+                        res = self.reserve_v1_dic.get(processed_data.reserve)
                     if not res:
                         raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
 
