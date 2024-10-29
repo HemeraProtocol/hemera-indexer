@@ -1,3 +1,4 @@
+import json
 import logging
 from collections import defaultdict
 from enum import Enum
@@ -72,6 +73,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             "POOL_V2": self.job_conf["POOL_V2"],
             "POOL_CONFIGURE": self.job_conf["POOL_CONFIGURE"],
             "POOL_V1": self.job_conf["POOL_V1"],
+            "INIT_PROXY": self.job_conf["INIT_PROXY"],
         }
 
         self.address_set = set(self.contract_addresses.values())
@@ -147,20 +149,26 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         for event_type in AaveV2Events:
             config = event_type.value
             if event_type == AaveV2Events.RESERVE_INIT_V1:
-                pass
+                contract_address = "0x4965f6fa20fe9728decf5165016fc338a5a85abf"
+                abi = json.loads("""{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"_reserve","type":"address"},{"indexed":true,"internalType":"address","name":"_mToken","type":"address"},{"indexed":false,"internalType":"address","name":"_interestRateStrategyAddress","type":"address"}],"name":"ReserveInitialized","type":"event"}""")
+                event = Event(cast(ABIEvent, abi))
+                signature = event.get_signature()
+                self.events[event_type] = event
+                self._event_processors[signature] = config.processor_class(event, config.data_class, self._web3)
+
             else:
-                pass
-            contract_address = self.contract_addresses[config.contract_address_key]
+                contract_address = self.contract_addresses[config.contract_address_key]
 
-            abi = self.abi_reader.get_event_abi(contract_address, config.name)
-            event = Event(cast(ABIEvent, abi))
+                abi = self.abi_reader.get_event_abi(contract_address, config.name)
+                event = Event(cast(ABIEvent, abi))
 
-            self.events[event_type] = event
-            signature = event.get_signature()
-            self._event_processors[signature] = config.processor_class(event, config.data_class, self._web3)
+                self.events[event_type] = event
+                signature = event.get_signature()
+                self._event_processors[signature] = config.processor_class(event, config.data_class, self._web3)
 
     def get_filter(self):
-        topics = [event.get_signature() for event in self.events.values()]
+        # topics = [event.get_signature() for event in self.events.values()]
+        topics = ['0x3a0ca721fc364424566385a1aa271ed508cc2c0949c2272575fb3013a163a45f', '0x1d9fcd0dc935b4778d5af97f55c4d7b2553257382f1ef25c412114c8eeebd88e']
         return TransactionFilterByLogs(
             [
                 TopicSpecification(addresses=list(self.contract_addresses.values()), topics=topics),
@@ -169,6 +177,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
     def is_aave_v2_address(self, address):
         return address in self.address_set
+
+    def format_amount(self, amount, decimals=18):
+        formatted_value = f"{amount / 10 ** decimals:.6f}".rstrip("0").rstrip(".")
+        return formatted_value if formatted_value else "0"
 
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
@@ -181,14 +193,20 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if processor is None:
                     continue
                 processed_data = processor.process(log)
-                if hasattr(processed_data, "reserve") and processed_data.reserve in self.ignore_assets:
-                    continue
+                if hasattr(processed_data, "reserve") and hasattr(processed_data, "amount") and processed_data.amount is not None:
+                    res = self.reserve_dic[processed_data.reserve]
+                    if not res:
+                        res = self.reserve_v1_dic[processed_data.reserve]
+                    if not res:
+                        raise FastShutdownError(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}")
+
+                    processed_data.amount = self.format_amount(processed_data.amount, res.asset_decimals)
                 aave_records.append(processed_data)
                 self._collect_item(processed_data.type(), processed_data)
                 if processed_data.type() == AaveV2ReserveD.type():
                     # update reserve
                     self.reserve_dic[processed_data.asset] = processed_data
-                elif processed_data.type() == AaveV2ReserveV1.type():
+                elif processed_data.type() == AaveV2ReserveV1D.type():
                     self.reserve_v1_dic[processed_data.asset] = processed_data
             except Exception as e:
                 logger.error(f"Error processing log {log.log_index} " f"in tx {log.transaction_hash}: {str(e)}")
