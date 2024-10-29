@@ -14,14 +14,16 @@ from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfe
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
 from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
-    AaveV2AddressBalanceRecordsD,
     AaveV2AddressCurrentD,
     AaveV2BorrowD,
+    AaveV2CallRecordsD,
     AaveV2DepositD,
     AaveV2FlashLoanD,
     AaveV2LiquidationAddressCurrentD,
     AaveV2LiquidationCallD,
+    AaveV2LiquidationCallV1D,
     AaveV2RepayD,
+    AaveV2RepayV1D,
     AaveV2ReserveD,
     AaveV2ReserveV1D,
     AaveV2WithdrawD,
@@ -221,8 +223,10 @@ def generate_output_types(entity_types):
         yield AaveV2WithdrawD
         yield AaveV2BorrowD
         yield AaveV2RepayD
+        yield AaveV2RepayV1D
         yield AaveV2FlashLoanD
         yield AaveV2LiquidationCallD
         yield AaveV2AddressCurrentD
         yield AaveV2LiquidationAddressCurrentD
-        yield AaveV2AddressBalanceRecordsD
+        yield AaveV2CallRecordsD
+        yield AaveV2LiquidationCallV1D
