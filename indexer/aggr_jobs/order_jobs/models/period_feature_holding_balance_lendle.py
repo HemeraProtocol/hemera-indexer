@@ -6,16 +6,16 @@ from common.models import HemeraModel, general_converter
 
 
 class PeriodFeatureHoldingBalanceLendle(HemeraModel):
-    __tablename__ = "period_feature_holding_balance_lendle"
+    __tablename__ = "period_feature_holding_balance_lendle_au"
 
     period_date = Column(DATE, primary_key=True, nullable=False)
     wallet_address = Column(BYTEA, primary_key=True)
     protocol_id = Column(VARCHAR, primary_key=True)
     contract_address = Column(BYTEA, primary_key=True)
+    token_address = Column(BYTEA, primary_key=True)
+    lb_debt_token_address = Column(BYTEA, primary_key=True)
 
     token_symbol = Column(VARCHAR)
-    token_address = Column(BYTEA)
-
     balance = Column(NUMERIC(100, 18))
 
     create_time = Column(TIMESTAMP, server_default=func.now())

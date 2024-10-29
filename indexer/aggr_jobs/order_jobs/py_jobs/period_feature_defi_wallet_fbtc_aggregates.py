@@ -290,6 +290,77 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         results = self.get_pool_token_pair_data(orm_list)
         return results
 
+    def get_token_data_for_lendle_au(self, orm_list):
+        fbtc_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
+
+        token_symbol_list = list({r.token_symbol for r in orm_list})
+
+        price_dict = self.get_latest_price(token_symbol_list)
+
+        wallet_protocol_contract_token_group = defaultdict(
+            lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
+
+        for record in orm_list:
+            period_date_key = record.period_date
+            wallet_address = record.wallet_address
+            protocol_id = record.protocol_id
+            contract_address = format_value_for_json(record.contract_address)
+            token_address = format_value_for_json(record.token_address)
+
+            wallet_protocol_contract_token_group[(period_date_key, wallet_address)][protocol_id][contract_address][
+                token_address].append(record)
+
+        fbtc_orm_list = [r for r in orm_list if r.token_address.hex() == fbtc_address[2:]]
+        self.get_token_aggr_by_protocol(fbtc_orm_list, price_dict)
+
+        results = {}
+
+        for period_date_wallet, protocol_contract_token_group in wallet_protocol_contract_token_group.items():
+            period_date, wallet_address = period_date_wallet
+
+            wallet_address_json = []
+            total_balance = 0
+            total_usd = 0
+
+            for protocol_id, contract_token_group in protocol_contract_token_group.items():
+                protocol_json = {'pool_data': [],
+                                 'protocol_id': protocol_id}
+
+                for contract_address, token_group in contract_token_group.items():
+                    token_data_list = []
+                    for token_address, records in token_group.items():
+                        token_group_balance = 0
+                        token_group_usd = 0
+
+                        for record in records:
+                            symbol = format_value_for_json(record.token_symbol)
+                            token0_used = float(price_dict.get(symbol, 0) * record.balance)
+
+                            token_group_balance += float(record.balance)
+                            token_group_usd += token0_used
+
+                            if token_address == fbtc_address:
+                                total_balance += float(record.balance)
+                                total_usd += token0_used
+
+                        token_data_list.append({
+                            "token_symbol": symbol,
+                            "token_address": token_address,
+                            "token_balance": token_group_balance,
+                            "token_balance_usd": token_group_usd})
+
+                    contract_json = {
+                        "token_data": token_data_list,
+                        "contract_address": contract_address,
+                    }
+
+                    protocol_json['pool_data'].append(contract_json)
+                wallet_address_json.append(protocol_json)
+
+                results[(period_date, wallet_address)] = {'contract_json': wallet_address_json, 'balance': total_balance,
+                                                      'usd': total_usd}
+        return results
+
     def get_token_data(self, orm_list):
         price_dict = self.get_latest_price(['FBTC'])
 
@@ -360,13 +431,15 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceStakedFbtcDetail)
         return self.get_token_data(orm_list)
 
-    def get_satlayer_json(self):
-        orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceSatlayerFbtc)
-        return self.get_token_data(orm_list)
+    # def get_satlayer_json(self):
+    #     orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceSatlayerFbtc)
+    #     return self.get_token_data(orm_list)
 
     def get_lendle_json(self):
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceLendle)
-        return self.get_token_data(orm_list)
+        results = self.get_token_data_for_lendle_au(orm_list)
+
+        return results
 
     @staticmethod
     def timed_call(method, method_name):
@@ -377,23 +450,24 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         return result
 
     def run(self):
+
+        lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
+        staked = self.timed_call(self.get_staked_json, 'get_staked_json')
+
         # get all protocol json, actually then can be abstract...
         address_token_balances = self.timed_call(self.get_period_address_token_balances,
                                                  'get_period_address_token_balances')
-
-        staked = self.timed_call(self.get_staked_json, 'get_staked_json')
 
         uniswapv3 = self.timed_call(self.get_uniswap_v3_json, 'get_uniswap_v3_json')
         merchantmoe_json = self.timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
 
         dodo_json = self.timed_call(self.get_dodo_json, 'get_dodo_json')
-        lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
 
         # period_date can be removed from the key
         protocols = [uniswapv3, staked, merchantmoe_json, dodo_json, lendle_json]
-        if self.chain_name == 'eth':
-            satlayer_json = self.timed_call(self.get_satlayer_json, 'get_satlayer_json')
-            protocols.append(satlayer_json)
+        # if self.chain_name == 'eth':
+        #     satlayer_json = self.timed_call(self.get_satlayer_json, 'get_satlayer_json')
+        #     protocols.append(satlayer_json)
 
         protocols_with_address_balance = protocols + [address_token_balances]
 

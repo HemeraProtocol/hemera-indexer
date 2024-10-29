@@ -6,11 +6,12 @@ from indexer.aggr_jobs.aggr_base_job import AggrBaseJob
 from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_fbtc_aggregates import \
     PeriodFeatureDefiWalletFbtcAggregates
 
-job_list = ['period_address_token_balances',
+job_list = [
+            'period_address_token_balances',
             'period_feature_holding_balance_uniswap_v3.sql',
             'period_feature_staked_fbtc_detail_records.sql',
             'period_feature_holding_balance_staked_fbtc_detail.sql',
-            # 'period_feature_erc1155_token_holdings.sql',
+            'period_feature_holding_balance_staked_transferred_fbtc_detail.sql',
             'period_feature_erc1155_token_supply_records.sql',
             'period_feature_holding_balance_merchantmoe.sql',
             'period_feature_erc20_token_supply_records.sql', 'period_feature_holding_balance_dodo.sql'
@@ -28,7 +29,8 @@ class AggrOrderJob(AggrBaseJob):
 
         if self.chain_name == 'eth':
             if 'period_feature_holding_balance_satlayer_fbtc.sql' not in job_list:
-                job_list.append('period_feature_holding_balance_satlayer_fbtc.sql')
+                # job_list.append('period_feature_holding_balance_satlayer_fbtc.sql')
+                pass
 
         elif self.chain_name == 'mantle':
             if 'period_feature_holding_balance_uniswap_v3_meth.sql' not in job_list:
@@ -37,7 +39,8 @@ class AggrOrderJob(AggrBaseJob):
                 job_list.append('period_feature_holding_balance_merchantmoe_meth.sql')
             if 'period_feature_holding_balance_lendle.sql' not in job_list:
                 job_list.append('period_feature_holding_balance_lendle.sql')
-
+            if 'period_feature_holding_balance_lendle_au.sql' not in job_list:
+                job_list.append('period_feature_holding_balance_lendle_au.sql')
 
     def run(self, **kwargs):
         start_date_limit = kwargs["start_date"]
