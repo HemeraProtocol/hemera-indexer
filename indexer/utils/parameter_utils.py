@@ -20,8 +20,8 @@ def extract_path_from_parameter(cli_path: str) -> str:
 
 def check_file_exporter_parameter(outputs, block_batch_size, blocks_per_file):
     if outputs is not None and (
-            check_exporter_in_chosen(outputs, ItemExporterType.CSVFILE)
-            or check_exporter_in_chosen(outputs, ItemExporterType.JSONFILE)
+        check_exporter_in_chosen(outputs, ItemExporterType.CSVFILE)
+        or check_exporter_in_chosen(outputs, ItemExporterType.JSONFILE)
     ):
         if block_batch_size > blocks_per_file or block_batch_size % blocks_per_file != 0:
             raise click.ClickException(

@@ -21,14 +21,14 @@ logger = logging.getLogger(__name__)
 class ReorgController(BaseController):
 
     def __init__(
-            self,
-            batch_web3_provider,
-            job_scheduler,
-            ranges,
-            config,
-            max_retries=5,
-            record_reporter=None,
-            runtime_signature_signer=None,
+        self,
+        batch_web3_provider,
+        job_scheduler,
+        ranges,
+        config,
+        max_retries=5,
+        record_reporter=None,
+        runtime_signature_signer=None,
     ):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
