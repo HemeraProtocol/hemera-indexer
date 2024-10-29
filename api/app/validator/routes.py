@@ -9,9 +9,10 @@ from flask_restx import Resource
 from sqlalchemy import and_
 
 from api.app.db_service.blocks import get_blocks_by_condition
+from api.app.db_service.report_record import get_report_record
 from api.app.db_service.transactions import get_transactions_by_condition
 from api.app.validator import validator_namespace
-from api.app.validator.parse import validate_block_builder
+from api.app.validator.parse import report_record_builder, validate_block_builder
 from common.models.blocks import Blocks
 from common.models.transactions import Transactions
 from common.utils.format_utils import hex_str_to_bytes
@@ -53,3 +54,39 @@ class ValidateBlock(Resource):
         block_json = validate_block_builder(block[0], transactions)
 
         return block_json, 200
+
+
+@validator_namespace.route("/v1/validator/check_report/<number>")
+class CheckReportBlock(Resource):
+    """
+    Get the contract reporting record and status by given block number.
+
+    :param number: The block number to use for searching from db.
+    :type number: int
+
+    :return: A json containing the records data json list. Can be None if no record is found.
+    :rtype: json
+    """
+
+    def get(self, number):
+        if number.isnumeric():
+            number = int(number)
+        else:
+            return f"{number} is not numeric.", 500
+
+        records = get_report_record(
+            number,
+            [
+                "chain_id",
+                "start_block_number",
+                "end_block_number",
+                "runtime_code_hash",
+                "report_details",
+                "transaction_hash",
+                "report_status",
+                "exception",
+                "create_time",
+            ],
+        )
+
+        return report_record_builder(records), 200

@@ -41,3 +41,23 @@ def validate_block_builder(block: Blocks, transactions: List[Transactions]) -> d
         "extra_data": bytes_to_hex_str(block.extra_data),
     }
     return validate_block
+
+
+def report_record_builder(records: List[dict]) -> List[dict]:
+    formated_records = []
+    for record in records:
+        formated_records.append(
+            {
+                "chain_id": record.chain_id,
+                "start_block_number": record.start_block_number,
+                "end_block_number": record.end_block_number,
+                "runtime_code_hash": bytes_to_hex_str(record.runtime_code_hash),
+                "report_details": record.report_details,
+                "transaction_hash": bytes_to_hex_str(record.transaction_hash),
+                "report_status": record.report_status.value,
+                "exception": record.exception,
+                "report_time": int(record.create_time.timestamp()),
+            }
+        )
+
+    return formated_records
