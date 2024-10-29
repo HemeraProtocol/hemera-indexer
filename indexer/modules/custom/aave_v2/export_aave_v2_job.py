@@ -43,6 +43,10 @@ class InterestRateMode(Enum):
     VARIABLE = 2
 
 
+GET_USRE_BALANCE = "getUserBorrowBalances(address,address)(uint256,uint256,uint256)"
+BALANCE_OF = "balanceOf(address)(uint256)"
+
+
 class ExportAaveV2Job(FilterTransactionDataJob):
     """This job extract aave_v2 related infos"""
 
@@ -219,9 +223,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 reserve = self.reserve_v1_dic[a_record.reserve]
                 eth_call_lis.append(
                     Call(
-                        "0x3dfd23A6c5E8BbcFc9581d2E864a68feb6a076d3",
+                        self.contract_addresses["POOL_V1_CORE"],
                         [
-                            "getUserBorrowBalances(address,address)(uint256,uint256,uint256)",
+                            GET_USRE_BALANCE,
                             a_record.reserve,
                             a_record.aave_user,
                         ],
@@ -232,9 +236,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             elif a_record.type() == AaveV2ReserveD.type():
                 eth_call_lis.append(
                     Call(
-                        "0x3dfd23A6c5E8BbcFc9581d2E864a68feb6a076d3",
+                        self.contract_addresses["POOL_V1_CORE"],
                         [
-                            "getUserBorrowBalances(address,address)(uint256,uint256,uint256)",
+                            GET_USRE_BALANCE,
                             a_record.reserve,
                             a_record.aave_user,
                         ],
@@ -256,7 +260,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     eth_call_lis.append(
                         Call(
                             target=reserve.stable_debt_token_address,
-                            function=["balanceOf(address)(uint256)", a_record.aave_user],
+                            function=["", a_record.aave_user],
                             returns=None,
                             block_id=a_record.block_number,
                         )
@@ -265,7 +269,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     eth_call_lis.append(
                         Call(
                             target=reserve.variable_debt_token_address,
-                            function=["balanceOf(address)(uint256)", a_record.aave_user],
+                            function=[BALANCE_OF, a_record.aave_user],
                             returns=None,
                             block_id=a_record.block_number,
                         )
@@ -279,7 +283,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=collateral_reserve.a_token_address,
-                        function=["balanceOf(address)(uint256)", aave_user],
+                        function=[BALANCE_OF, aave_user],
                         returns=None,
                         block_id=a_record.block_number,
                     )
@@ -296,7 +300,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     eth_call_lis.append(
                         Call(
                             target=debt_reserve.stable_debt_token_address,
-                            function=["balanceOf(address)(uint256)", aave_user],
+                            function=[BALANCE_OF, aave_user],
                             returns=None,
                             block_id=a_record.block_number,
                         )
@@ -305,7 +309,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     eth_call_lis.append(
                         Call(
                             target=debt_reserve.variable_debt_token_address,
-                            function=["balanceOf(address)(uint256)", a_record.aave_user],
+                            function=[BALANCE_OF, a_record.aave_user],
                             returns=None,
                             block_id=a_record.block_number,
                         )
