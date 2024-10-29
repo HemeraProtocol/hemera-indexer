@@ -40,26 +40,9 @@ class AaveV2ReserveV1D(FilterData):
     block_number: int
     block_timestamp: int
     transaction_hash: str
-    transaction_hash_v1: str
     log_index: int
     topic0: Optional[str] = None
     event_name: Optional[str] = None
-
-
-@dataclass
-class AaveV2LendingPoolReserveFactorCurrent(FilterData):
-    asset_address: str
-    factor: int
-    block_number: int
-    block_timestamp: int
-
-
-@dataclass
-class AaveV2LendingPoolReserveFactorRecord(FilterData):
-    asset_address: str
-    factor: int
-    block_number: int
-    block_timestamp: int
 
 
 @dataclass
