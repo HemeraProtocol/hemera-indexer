@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Set, Union
 
 class StaticCodeSignature:
     def __init__(self):
-        self.exclude_patterns = {".git", "__pycache__", "*.pyc", "*.pyo", "*.pyd", ".venv", ".env", "tests"}
+        self.exclude_patterns = []
         self._cached_files: Set[str] = set()
         self._code_hashes: Dict[str, str] = {}
         self._combined_hash = None
@@ -33,11 +33,16 @@ class StaticCodeSignature:
     def _calculate_combined_hash(self):
         self._combined_hash = calculate_combined_hash(self._code_hashes)
 
-    def calculate_signature(self, dir_paths: Union[List[str], str]):
-        if isinstance(dir_paths, str):
-            self._scan_directory(dir_paths)
-        elif isinstance(dir_paths, list):
-            for dir_path in dir_paths:
+    def calculate_signature(
+        self,
+        root_dir_paths: Union[List[str], str],
+        exclude_patterns: List[str] = [".git", "__pycache__", "*.pyc", "*.pyo", "*.pyd", ".venv", ".env", "tests"],
+    ):
+        self.exclude_patterns = exclude_patterns
+        if isinstance(root_dir_paths, str):
+            self._scan_directory(root_dir_paths)
+        elif isinstance(root_dir_paths, list):
+            for dir_path in root_dir_paths:
                 self._scan_directory(dir_path)
         else:
             raise TypeError(f"dir_paths must be a string or a list of strings")
