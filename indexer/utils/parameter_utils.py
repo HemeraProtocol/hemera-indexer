@@ -20,8 +20,8 @@ def extract_path_from_parameter(cli_path: str) -> str:
 
 def check_file_exporter_parameter(outputs, block_batch_size, blocks_per_file):
     if outputs is not None and (
-        check_exporter_in_chosen(outputs, ItemExporterType.CSVFILE)
-        or check_exporter_in_chosen(outputs, ItemExporterType.JSONFILE)
+            check_exporter_in_chosen(outputs, ItemExporterType.CSVFILE)
+            or check_exporter_in_chosen(outputs, ItemExporterType.JSONFILE)
     ):
         if block_batch_size > blocks_per_file or block_batch_size % blocks_per_file != 0:
             raise click.ClickException(
@@ -81,6 +81,10 @@ def generate_dataclass_type_list_from_parameter(require_types: str, generate_typ
 
 def create_record_report_from_parameter(private_key, from_address, service):
     if private_key is None or from_address is None or service is None:
+        logging.warning(
+            "RecordReporter would not initialized, indexed records will not be reported to contract. "
+            "The possible reason is that -pg or --report-private-key or --report-from-address are not set."
+        )
         return None
 
     return RecordReporter(private_key, from_address, service)

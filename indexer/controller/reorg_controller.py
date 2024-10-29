@@ -21,14 +21,14 @@ logger = logging.getLogger(__name__)
 class ReorgController(BaseController):
 
     def __init__(
-        self,
-        batch_web3_provider,
-        job_scheduler,
-        ranges,
-        config,
-        max_retries=5,
-        record_reporter=None,
-        runtime_signature_signer=None,
+            self,
+            batch_web3_provider,
+            job_scheduler,
+            ranges,
+            config,
+            max_retries=5,
+            record_reporter=None,
+            runtime_signature_signer=None,
     ):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
@@ -39,11 +39,6 @@ class ReorgController(BaseController):
         self.record_reporter: RecordReporter = record_reporter
         self.runtime_signature = runtime_signature_signer
         self._calculate_runtime_hash_code()
-        if self.record_reporter is None:
-            logger.warning(
-                "RecordReporter not initialized, indexed records will not be reported to contract. "
-                "The possible reason is that --report-private-key or --report-from-address are not set."
-            )
 
     def _calculate_runtime_hash_code(self):
         self.runtime_signature.calculate_signature(__name__)
