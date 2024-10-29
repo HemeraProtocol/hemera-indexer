@@ -3,19 +3,21 @@ import time
 from sqlalchemy import text
 
 from indexer.aggr_jobs.aggr_base_job import AggrBaseJob
+from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_cmeth_aggregates import \
+    PeriodFeatureDefiWalletCmethAggregates
 from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_fbtc_aggregates import \
     PeriodFeatureDefiWalletFbtcAggregates
 
 job_list = [
-            'period_address_token_balances',
-            'period_feature_holding_balance_uniswap_v3.sql',
-            'period_feature_staked_fbtc_detail_records.sql',
-            'period_feature_holding_balance_staked_fbtc_detail.sql',
-            'period_feature_holding_balance_staked_transferred_fbtc_detail.sql',
-            'period_feature_erc1155_token_supply_records.sql',
-            'period_feature_holding_balance_merchantmoe.sql',
-            'period_feature_erc20_token_supply_records.sql', 'period_feature_holding_balance_dodo.sql'
-            ]
+    'period_address_token_balances',
+    'period_feature_holding_balance_uniswap_v3.sql',
+    'period_feature_staked_fbtc_detail_records.sql',
+    'period_feature_holding_balance_staked_fbtc_detail.sql',
+    'period_feature_holding_balance_staked_transferred_fbtc_detail.sql',
+    'period_feature_erc1155_token_supply_records.sql',
+    'period_feature_holding_balance_merchantmoe.sql',
+    'period_feature_erc20_token_supply_records.sql', 'period_feature_holding_balance_dodo.sql'
+]
 
 
 class AggrOrderJob(AggrBaseJob):
@@ -28,19 +30,16 @@ class AggrOrderJob(AggrBaseJob):
         self.version = config["version"]
 
         if self.chain_name == 'eth':
-            if 'period_feature_holding_balance_satlayer_fbtc.sql' not in job_list:
-                # job_list.append('period_feature_holding_balance_satlayer_fbtc.sql')
-                pass
+            pass
 
         elif self.chain_name == 'mantle':
-            if 'period_feature_holding_balance_uniswap_v3_meth.sql' not in job_list:
-                job_list.append('period_feature_holding_balance_uniswap_v3_meth.sql')
-            if 'period_feature_holding_balance_merchantmoe_meth.sql' not in job_list:
-                job_list.append('period_feature_holding_balance_merchantmoe_meth.sql')
-            if 'period_feature_holding_balance_lendle.sql' not in job_list:
-                job_list.append('period_feature_holding_balance_lendle.sql')
+            if 'period_feature_holding_balance_merchantmoe_cmeth.sql' not in job_list:
+                job_list.append('period_feature_holding_balance_merchantmoe_cmeth.sql')
+
             if 'period_feature_holding_balance_lendle_au.sql' not in job_list:
                 job_list.append('period_feature_holding_balance_lendle_au.sql')
+            # if 'period_feature_holding_balance_lendle.sql' not in job_list:
+            #     job_list.append('period_feature_holding_balance_lendle.sql')
 
     def run(self, **kwargs):
         start_date_limit = kwargs["start_date"]
@@ -68,6 +67,15 @@ class AggrOrderJob(AggrBaseJob):
                                                                                                    self.version
                                                                                                    )
             period_feature_defi_wallet_fbtc_aggregates_job.run()
+
+            period_feature_defi_wallet_cmeth_aggregates_job = PeriodFeatureDefiWalletCmethAggregates(self.chain_name,
+                                                                                                     self.db_service,
+                                                                                                     start_date,
+                                                                                                     end_date,
+                                                                                                     self.version
+                                                                                                     )
+            period_feature_defi_wallet_cmeth_aggregates_job.run()
+
             print('======== finished date', start_date)
 
         session.close()

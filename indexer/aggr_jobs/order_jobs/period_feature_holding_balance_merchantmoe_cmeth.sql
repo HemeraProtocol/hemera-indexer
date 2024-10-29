@@ -1,9 +1,9 @@
 delete
-from period_feature_holding_balance_merchantmoe_meth
+from period_feature_holding_balance_merchantmoe_cmeth
 where period_date >= '{start_date}'
   and period_date < '{end_date}';
 insert
-into period_feature_holding_balance_merchantmoe_meth(period_date, protocol_id, contract_address, token_id,
+into period_feature_holding_balance_merchantmoe_cmeth(period_date, protocol_id, contract_address, token_id,
                                                 wallet_address, token0_address, token0_symbol, token0_balance,
                                                 token1_address, token1_symbol, token1_balance)
 with moe_pools_table as (select d0.*,
@@ -15,8 +15,8 @@ with moe_pools_table as (select d0.*,
                          from feature_merchant_moe_pools d0
                                   inner join tokens d4 on d0.token0_address = d4.address
                                   inner join tokens d5 on d0.token1_address = d5.address
-                         where d4.symbol = 'FBTC'
-                            or d5.symbol = 'FBTC'),
+                         where d4.symbol = 'cmETH'
+                            or d5.symbol = 'cmETH'),
 
      moe_pool_with_records_table as (select d0.*, d1.address, d1.token_id, d1.balance
                                      from moe_pools_table d0
