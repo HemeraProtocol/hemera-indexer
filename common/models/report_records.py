@@ -20,8 +20,8 @@ class ReportStatus(enum.Enum):
     TRANSACTION_FAILED = "transaction_failed"
 
 
-class ReportRecord(HemeraModel):
-    __tablename__ = "report_record"
+class ReportRecords(HemeraModel):
+    __tablename__ = "report_records"
     report_id = Column(INTEGER, primary_key=True)
     chain_id = Column(INTEGER)
     start_block_number = Column(BIGINT)
@@ -36,7 +36,7 @@ class ReportRecord(HemeraModel):
 
 
 Index(
-    "report_record_start_end_block_number_index",
-    desc(ReportRecord.start_block_number),
-    desc(ReportRecord.end_block_number),
+    "report_records_start_end_block_number_index",
+    desc(ReportRecords.start_block_number),
+    desc(ReportRecords.end_block_number),
 )

@@ -16,7 +16,7 @@ from sqlalchemy import insert, update
 from web3 import Web3
 from web3.exceptions import TimeExhausted
 
-from common.models.report_record import ReportRecord, ReportStatus
+from common.models.report_records import ReportRecords, ReportStatus
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from common.utils.web3_utils import to_checksum_address
 from indexer.domain import DomainMeta
@@ -64,7 +64,7 @@ class AsyncTransactionSubmitter:
         session = self.service.get_service_session()
 
         try:
-            stmt = insert(ReportRecord).values(
+            stmt = insert(ReportRecords).values(
                 {
                     "chain_id": info["chain_id"],
                     "start_block_number": info["start_block"],
@@ -85,8 +85,8 @@ class AsyncTransactionSubmitter:
         session = self.service.get_service_session()
         try:
             stmt = (
-                update(ReportRecord)
-                .where(ReportRecord.report_id == report_id)
+                update(ReportRecords)
+                .where(ReportRecords.report_id == report_id)
                 .values(
                     {"report_status": report_status, "exception": exception, "update_time": datetime.now(timezone.utc)}
                 )
