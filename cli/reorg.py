@@ -218,7 +218,7 @@ def reorg(
         job_scheduler=job_scheduler,
         ranges=ranges,
         config=config,
-        record_reporter=create_record_report_from_parameter(report_private_key, report_from_address),
+        record_reporter=create_record_report_from_parameter(report_private_key, report_from_address, service),
         runtime_signature_signer=integrity_checker,
     )
 

@@ -383,6 +383,7 @@ def stream(
         config["db_service"] = service
         exception_recorder.init_pg_service(service)
     else:
+        service = None
         logging.getLogger("ROOT").warning("No postgres url provided. Exception recorder will not be useful.")
 
     if config_file:
@@ -453,7 +454,7 @@ def stream(
         ),
         retry_from_record=retry_from_record,
         delay=delay,
-        record_reporter=create_record_report_from_parameter(report_private_key, report_from_address),
+        record_reporter=create_record_report_from_parameter(report_private_key, report_from_address, service),
         runtime_signature_signer=integrity_checker,
     )
 

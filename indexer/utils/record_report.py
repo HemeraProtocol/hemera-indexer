@@ -8,12 +8,15 @@ Project : hemera_indexer
 import asyncio
 import logging
 import threading
+from datetime import datetime, timezone
 from queue import Empty, Queue
 
 from eth_account import Account
+from sqlalchemy import insert, update
 from web3 import Web3
 from web3.exceptions import TimeExhausted
 
+from common.models.report_record import ReportRecord, ReportStatus
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from common.utils.web3_utils import to_checksum_address
 from indexer.domain import DomainMeta
@@ -22,9 +25,10 @@ from indexer.utils.abi_setting import REGISTER_FEATURE_FUNCTION, SUBMIT_INDEX_FU
 
 class AsyncTransactionSubmitter:
 
-    def __init__(self, web3, account):
+    def __init__(self, web3, account, service):
         self.web3 = web3
         self.account = account
+        self.service = service
         self.nonce = self.web3.eth.get_transaction_count(self.account.address)
 
         self.max_retries = 5
@@ -55,6 +59,42 @@ class AsyncTransactionSubmitter:
             self.logger.info("Submit thread stopped.")
         else:
             self.logger.info("Submit thread already stopped.")
+
+    def submit_record_to_db(self, info, transaction_hash=None, exception=None):
+        session = self.service.get_service_session()
+
+        try:
+            stmt = insert(ReportRecord).values(
+                {
+                    "chain_id": info["chain_id"],
+                    "start_block_number": info["start_block"],
+                    "end_block_number": info["end_block"],
+                    "runtime_code_hash": hex_str_to_bytes(info["runtime_code_hash"]),
+                    "report_details": info["indexed_data"],
+                    "transaction_hash": transaction_hash,
+                    "exception": exception,
+                }
+            )
+            result = session.execute(stmt)
+            session.commit()
+        finally:
+            session.close()
+        return result.inserted_primary_key[0]
+
+    def update_report_status(self, report_id, report_status, exception=None):
+        session = self.service.get_service_session()
+        try:
+            stmt = (
+                update(ReportRecord)
+                .where(ReportRecord.report_id == report_id)
+                .values(
+                    {"report_status": report_status, "exception": exception, "update_time": datetime.now(timezone.utc)}
+                )
+            )
+            session.execute(stmt)
+            session.commit()
+        finally:
+            session.close()
 
     def set_transaction(self, info):
         self.transaction_queue.put(info)
@@ -100,6 +140,7 @@ class AsyncTransactionSubmitter:
                         f"Submitted transaction {signed_txn} successfully with parameter: {parameters}.\n"
                         f"Waiting for receipt."
                     )
+                    report_id = self.submit_record_to_db(parameters, txn_hash)
 
                 except ValueError as e:
                     if str(e).find("nonce too low") != -1:
@@ -119,6 +160,7 @@ class AsyncTransactionSubmitter:
 
                     if receipt["status"] == 1:
                         self.logger.info(f"Transaction {bytes_to_hex_str(txn_hash)} had been receipted.")
+                        self.update_report_status(report_id, ReportStatus.SUCCESS)
                         return True
                     else:
                         self.logger.error(
@@ -126,14 +168,14 @@ class AsyncTransactionSubmitter:
                             f"with info: {parameters}\n"
                             f"Receipt: {receipt}"
                         )
-
+                        self.update_report_status(report_id, ReportStatus.TRANSACTION_FAILED)
                         break
                 except TimeExhausted as e:
                     self.logger.warning(
                         f"Transaction: {bytes_to_hex_str(txn_hash)} is not in the chain after "
                         f"{self.receipt_timeout * (receipt_retry + 1)} seconds. \n"
                         f"Reporter will continue to retry waiting for receipt "
-                        f"{self.max_retries - receipt_retry - 1} times, {self.receipt_timeout} seconds each time.\n."
+                        f"{self.max_retries - receipt_retry - 1} times, {self.receipt_timeout} seconds each time.\n"
                     )
                     receipt = None
                     continue
@@ -143,6 +185,12 @@ class AsyncTransactionSubmitter:
                     f"Transaction: {bytes_to_hex_str(txn_hash)} had not been receipted by chain. \n"
                     f"Reporter will retry to submit the transaction with info: {parameters}. \n "
                 )
+                self.update_report_status(
+                    report_id,
+                    ReportStatus.NO_RECEIPT,
+                    exception=f"Transaction is not in the chain after "
+                    f"{self.receipt_timeout * self.max_retries} seconds.",
+                )
                 await asyncio.sleep(self.retry_delay)
 
         return False
@@ -150,7 +198,7 @@ class AsyncTransactionSubmitter:
 
 class RecordReporter:
 
-    def __init__(self, private_key, from_address):
+    def __init__(self, private_key, from_address, service):
         self.web3 = Web3(Web3.HTTPProvider("https://1rpc.io/holesky"))
         self.private_key = private_key
         self.account = Account.from_key(private_key)
@@ -159,7 +207,7 @@ class RecordReporter:
             address=to_checksum_address("0xB0c42250F0A3D141aD25e5B6A162ddbd5CAE7ec5"),
             abi=[SUBMIT_INDEX_FUNCTION.get_abi()],
         )
-        self.transaction_submitter = AsyncTransactionSubmitter(web3=self.web3, account=self.account)
+        self.transaction_submitter = AsyncTransactionSubmitter(web3=self.web3, account=self.account, service=service)
         self.transaction_submitter.start()
         self.nonce = self.web3.eth.get_transaction_count(self.account.address)
 

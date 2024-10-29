@@ -79,8 +79,8 @@ def generate_dataclass_type_list_from_parameter(require_types: str, generate_typ
     return types
 
 
-def create_record_report_from_parameter(private_key, from_address):
-    if private_key is None or from_address is None:
+def create_record_report_from_parameter(private_key, from_address, service):
+    if private_key is None or from_address is None or service is None:
         return None
 
-    return RecordReporter(private_key, from_address)
+    return RecordReporter(private_key, from_address, service)
