@@ -11,7 +11,9 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2DepositD,
     AaveV2FlashLoanD,
     AaveV2LiquidationCallD,
+    AaveV2LiquidationCallV1D,
     AaveV2RepayD,
+    AaveV2RepayV1D,
     AaveV2ReserveD,
     AaveV2ReserveV1D,
     AaveV2WithdrawD,
@@ -352,8 +354,8 @@ class AaveV2Events(Enum):
     REPAY = EventConfig(
         name="Repay", contract_address_key="POOL_V2", processor_class=RepayProcessor, data_class=AaveV2RepayD
     )
-    Repay_V1 = EventConfig(
-        name="Repay", contract_address_key="POOL_V1", processor_class=RepayProcessorV1, data_class=AaveV2RepayD
+    REPAY_V1 = EventConfig(
+        name="Repay", contract_address_key="POOL_V1", processor_class=RepayProcessorV1, data_class=AaveV2RepayV1D
     )
     FLASH_LOAN = EventConfig(
         name="FlashLoan",
@@ -371,5 +373,5 @@ class AaveV2Events(Enum):
         name="LiquidationCall",
         contract_address_key="POOL_V1",
         processor_class=LiquidationCallProcessorV1,
-        data_class=AaveV2LiquidationCallD,
+        data_class=AaveV2LiquidationCallV1D,
     )
