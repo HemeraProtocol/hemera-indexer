@@ -1,10 +1,11 @@
 import time
 from collections import defaultdict
 from datetime import datetime
+from decimal import Decimal
 from itertools import groupby
 from operator import attrgetter
 
-from sqlalchemy import func, desc, or_, and_
+from sqlalchemy import func, desc, or_, and_, text
 
 from common.models.token_price import TokenPrice
 from common.utils.format_utils import format_value_for_json
@@ -24,6 +25,9 @@ class PeriodFeatureDefiWalletCmethAggregates:
         self.version = version
         self.results = []
 
+        self.token_address = '0xe6829d9a7ee3040e1276fa75293bde931859e8fa'
+        self.token_symbol = 'cmETH'
+
     def get_pool_token_pair_data(self, orm_list):
         distinct_symbol_list = []
 
@@ -31,9 +35,9 @@ class PeriodFeatureDefiWalletCmethAggregates:
 
         for record in orm_list:
             period_date_key = record.period_date
-            wallet_key = record.wallet_address
+            wallet_key = self.format_value_for_json(record.wallet_address)
             protocol_key = record.protocol_id
-            contract_key = record.contract_address
+            contract_key = self.format_value_for_json(record.contract_address)
 
             wallet_protocol_contract_group[(period_date_key, wallet_key)][protocol_key][contract_key].append(record)
 
@@ -95,7 +99,7 @@ class PeriodFeatureDefiWalletCmethAggregates:
                                 "token_balance": contract_token1_balance,
                                 "token_balance_usd": contract_token1_usd,
                             }
-                        ], "contract_address": format_value_for_json(contract_address),
+                        ], "contract_address": contract_address,
                     }
 
                     protocol_json['pool_data'].append(token_json)
@@ -156,8 +160,7 @@ class PeriodFeatureDefiWalletCmethAggregates:
         return orm_list
 
     def get_period_address_token_balances(self):
-        cmeth_address = '0xe6829d9a7ee3040e1276fa75293bde931859e8fa'
-        address = bytes.fromhex(cmeth_address.lower()[2:])
+        address = bytes.fromhex(self.token_address.lower()[2:])
 
         the_period_date = datetime.strptime(self.start_date, '%Y-%m-%d').date()
         session = self.db_service.Session()
@@ -167,7 +170,9 @@ class PeriodFeatureDefiWalletCmethAggregates:
 
         price_dict = self.get_latest_price(['cmETH'])
         results = {
-            (the_period_date, r.address): [float(r.balance / 10 ** 18), float(r.balance * price_dict.get('cmETH', 0) / 10 ** 18)]
+            (the_period_date, self.format_value_for_json(r.address)): [float(r.balance / 10 ** 18),
+                                                                       float(r.balance * price_dict.get('cmETH',
+                                                                                                        0) / 10 ** 18)]
             for r in period_addresses}
         session.close()
 
@@ -176,6 +181,110 @@ class PeriodFeatureDefiWalletCmethAggregates:
     def get_merchantmoe_json(self):
         orm_list = self.get_filter_cmeth_orm(PeriodFeatureHoldingBalanceMerchantmoeCmeth)
         results = self.get_pool_token_pair_data(orm_list)
+        return results
+
+    def get_token_data_for_target_token(self, orm_list, target_token_dict):
+        wallet_protocol_contract_group = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+        for record in orm_list:
+            period_date_key = record.period_date
+            wallet_key = self.format_value_for_json(record.wallet_address)
+            protocol_key = record.protocol_id
+            contract_key = self.format_value_for_json(record.contract_address)
+
+            wallet_protocol_contract_group[(period_date_key, wallet_key)][protocol_key][contract_key].append(record)
+
+        results = {}
+
+        for period_date_wallet, protocol_contract_group in wallet_protocol_contract_group.items():
+            period_date, wallet_address = period_date_wallet
+
+            wallet_address_json = []
+            total_balance = 0
+            total_usd = 0
+
+            for protocol_id, contract_group in protocol_contract_group.items():
+                protocol_json = {'pool_data': [],
+                                 'protocol_id': protocol_id}
+                for contract_address, records in contract_group.items():
+                    contract_token_balance = 0
+                    contract_token_usd = 0
+
+                    for record in records:
+                        token0_used = float(target_token_dict['price'] * record.balance)
+
+                        contract_token_balance += float(record.balance)
+                        contract_token_usd += token0_used
+
+                        total_balance += float(record.balance)
+                        total_usd += token0_used
+
+                    token_json = {
+                        "token_data": [
+                            {
+                                "token_symbol": target_token_dict['symbol'],
+                                "token_address": target_token_dict['address'],
+                                "token_balance": contract_token_balance,
+                                "token_balance_usd": contract_token_usd}
+                        ],
+                        "contract_address": format_value_for_json(contract_address),
+                    }
+
+                    protocol_json['pool_data'].append(token_json)
+                wallet_address_json.append(protocol_json)
+
+            results[(period_date, wallet_address)] = {'contract_json': wallet_address_json, 'balance': total_balance,
+                                                      'usd': total_usd}
+        return results
+
+    @staticmethod
+    def format_value_for_json(value):
+        if isinstance(value, memoryview):
+            return "0x" + value.tobytes().hex()
+        if isinstance(value, datetime):
+            return value.astimezone().isoformat("T", "seconds")
+        elif isinstance(value, Decimal):
+            return float(value)
+        elif isinstance(value, bytes):
+            return "0x" + value.hex()
+        else:
+            return value
+
+    def get_staked_detail_orm_list(self):
+        sql = f"""  select 
+                            date('{self.start_date}') as period_date,
+                            protocol_id,
+                           contract_address,
+                           wallet_address,
+                           token_address,
+                           block_cumulative_value / pow(10, decimals) as balance
+                    from (select d1.*,
+                                 d2.decimals,
+                                 row_number()
+                                 over (partition by contract_address, wallet_address, token_address order by d1.block_number desc) rn
+                          from feature_staked_transfer_detail_records d1
+                                   inner join tokens d2 on d1.token_address = d2.address
+                          where d1.token_address = decode('e6829d9a7ee3040e1276fa75293bde931859e8fa', 'hex')
+                            and to_timestamp(block_timestamp) < '{self.end_date}' 
+                            ) t
+                    where rn = 1 
+                """
+        session = self.db_service.Session()
+        stmt = session.execute(text(sql))
+        orm_result = stmt.fetchall()
+        return orm_result
+
+    def get_staked_json(self):
+        price_dict = self.get_latest_price([self.token_symbol])
+        orm_list = self.get_staked_detail_orm_list()
+
+        target_token_dict = {
+            'price': price_dict.get(self.token_symbol, 0),
+            'address': self.token_address,
+            'symbol': self.token_symbol,
+        }
+
+        results = self.get_token_data_for_target_token(orm_list, target_token_dict)
         return results
 
     @staticmethod
@@ -187,17 +296,18 @@ class PeriodFeatureDefiWalletCmethAggregates:
         return result
 
     def run(self):
-        address_token_balances = self.timed_call(self.get_period_address_token_balances,
-                                                 'get_period_address_token_balances')
-
-
         if self.chain_name == 'mantle':
+            staked_json = self.timed_call(self.get_staked_json, 'get_staked_json')
             merchantmoe_json = self.timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
+
         else:
+            staked_json = {}
             merchantmoe_json = {}
         # period_date can be removed from the key
-        protocols = [merchantmoe_json]
+        protocols = [staked_json, merchantmoe_json]
 
+        address_token_balances = self.timed_call(self.get_period_address_token_balances,
+                                                 'get_period_address_token_balances')
         protocols_with_address_balance = protocols + [address_token_balances]
 
         protocol_wallet_keys_list = list({key for d in protocols_with_address_balance for key in d.keys()})
