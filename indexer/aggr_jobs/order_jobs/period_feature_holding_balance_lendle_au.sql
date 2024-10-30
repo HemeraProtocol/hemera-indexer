@@ -80,7 +80,7 @@ select date('{start_date}') as period_date,
        lb_debt_token_address,
        balance
 from debt_balance
-where balance > 0
+where balance < 0
 union all
 
 select date('{start_date}') as period_date,
@@ -105,4 +105,4 @@ select date('{start_date}') as period_date,
        lb_debt_token_address,
        balance
 from au_debt_balance
-where balance > 0
+where balance < 0
