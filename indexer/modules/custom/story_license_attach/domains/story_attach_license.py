@@ -13,3 +13,15 @@ class StoryLicenseAttach(FilterData):
     license_terms_id: int
     contract_address: str
     block_number: int
+
+@dataclass
+class StoryLicenseTermsAttach(Domain):
+    transaction_hash: str
+    log_index: int
+    caller: str
+    ip_id: str
+    license_template: str
+    license_terms_id: int
+    contract_address: str
+    block_number: int
+    block_timestamp: int
