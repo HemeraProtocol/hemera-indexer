@@ -28,24 +28,6 @@ class AaveV2ReserveD(FilterData):
 
 
 @dataclass
-class AaveV2ReserveV1D(FilterData):
-    asset: str
-    asset_decimals: Optional[int]
-    asset_symbol: Optional[str]
-    a_token_address: str
-    a_token_symbol: Optional[str]
-    a_token_decimals: Optional[int]
-
-    interest_rate_strategy_address: str
-    block_number: int
-    block_timestamp: int
-    transaction_hash: str
-    log_index: int
-    topic0: Optional[str] = None
-    event_name: Optional[str] = None
-
-
-@dataclass
 class AaveV2BaseRecord(FilterData):
     block_number: Optional[int] = None
     block_timestamp: Optional[int] = None
@@ -97,17 +79,6 @@ class AaveV2RepayD(AaveV2BaseRecord):
 
 
 @dataclass
-class AaveV2RepayV1D(AaveV2BaseRecord):
-    reserve: Optional[str] = None
-    aave_user: Optional[str] = None
-    repayer: Optional[str] = None
-    amount: Optional[int] = None
-    borrow_rate_mode: Optional[int] = None
-    # debt, after repayed
-    after_repay_debt: Optional[int] = None
-
-
-@dataclass
 class AaveV2FlashLoanD(AaveV2BaseRecord):
     target: Optional[str] = None
     # initiator -> user, use `aave_user`
@@ -120,19 +91,6 @@ class AaveV2FlashLoanD(AaveV2BaseRecord):
 
 @dataclass
 class AaveV2LiquidationCallD(AaveV2BaseRecord):
-    collateral_asset: Optional[str] = None
-    debt_asset: Optional[str] = None
-    aave_user: Optional[str] = None
-    debt_to_cover: Optional[int] = None
-    liquidated_collateral_amount: Optional[int] = None
-    liquidator: Optional[str] = None
-    receive_atoken: Optional[str] = None
-    debt_after_liquidation: Optional[int] = None
-    collateral_after_liquidation: Optional[int] = None
-
-
-@dataclass
-class AaveV2LiquidationCallV1D(AaveV2BaseRecord):
     collateral_asset: Optional[str] = None
     debt_asset: Optional[str] = None
     aave_user: Optional[str] = None
