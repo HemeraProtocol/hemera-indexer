@@ -196,6 +196,7 @@ class FilterTransactionDataJob(ExtensionJob):
     dependency_types = [Transaction]
     output_types = []
     is_filter = True
+    is_locked = False
 
     def get_filter(self):
         raise NotImplementedError

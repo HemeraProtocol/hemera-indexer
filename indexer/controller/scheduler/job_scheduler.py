@@ -116,9 +116,25 @@ class JobScheduler:
         required_job_classes = set()
         output_type_queue = deque(output_types)
         is_filter = True
+        is_locked_number = 0
+        locked_output_types = []
+
+        jobs_set = set()
+
         for output_type in output_types:
             for job_class in self.job_map[output_type.type()]:
-                is_filter = job_class.is_filter and is_filter
+                jobs_set.add(job_class)
+        for job_class in jobs_set:
+            is_filter = job_class.is_filter and is_filter
+            if job_class.is_locked:
+                is_locked_number += 1
+                locked_output_types += job_class.output_types
+
+        if is_locked_number > 1:
+            raise Exception("Only one job can be locked in a pipeline")
+
+        if is_locked_number == 1 and not set(output_types).issubset(set(locked_output_types)):
+            raise Exception("Output types must be subset of locked job output types")
 
         while output_type_queue:
             output_type = output_type_queue.popleft()
