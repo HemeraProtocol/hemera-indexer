@@ -264,7 +264,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 address = a_record.aave_user
                 reserve = self.reserve_dic[a_record.reserve]
                 block_number = a_record.block_number
-                after_withdraw = address_token_block_balance_dic[address][block_number][reserve.a_token_address]
+                after_withdraw = address_token_block_balance_dic[address][reserve.a_token_address][block_number]
                 a_record.after_withdraw = after_withdraw
                 a_record.force_update_current = True
             elif a_record.type() == AaveV2RepayD.type():
