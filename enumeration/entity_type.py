@@ -21,11 +21,8 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2FlashLoanD,
     AaveV2LiquidationAddressCurrentD,
     AaveV2LiquidationCallD,
-    AaveV2LiquidationCallV1D,
     AaveV2RepayD,
-    AaveV2RepayV1D,
     AaveV2ReserveD,
-    AaveV2ReserveV1D,
     AaveV2WithdrawD,
 )
 from indexer.modules.custom.address_index.domain import *
@@ -218,15 +215,12 @@ def generate_output_types(entity_types):
 
     if entity_types & EntityType.AAVEV2:
         yield AaveV2ReserveD
-        yield AaveV2ReserveV1D
         yield AaveV2DepositD
         yield AaveV2WithdrawD
         yield AaveV2BorrowD
         yield AaveV2RepayD
-        yield AaveV2RepayV1D
         yield AaveV2FlashLoanD
         yield AaveV2LiquidationCallD
         yield AaveV2AddressCurrentD
         yield AaveV2LiquidationAddressCurrentD
         yield AaveV2CallRecordsD
-        yield AaveV2LiquidationCallV1D
