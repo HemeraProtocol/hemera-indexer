@@ -178,7 +178,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                             BALANCE_OF,
                             a_record.aave_user,
                         ],
-                        None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -189,7 +188,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     Call(
                         target=reserve.stable_debt_token_address,
                         function=[BALANCE_OF, a_record.aave_user],
-                        returns=None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -197,7 +195,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     Call(
                         target=reserve.variable_debt_token_address,
                         function=[BALANCE_OF, a_record.aave_user],
-                        returns=None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -210,7 +207,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     Call(
                         target=collateral_reserve.a_token_address,
                         function=[BALANCE_OF, aave_user],
-                        returns=None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -221,7 +217,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     Call(
                         target=debt_reserve.stable_debt_token_address,
                         function=[BALANCE_OF, aave_user],
-                        returns=None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -229,7 +224,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     Call(
                         target=debt_reserve.variable_debt_token_address,
                         function=[BALANCE_OF, aave_user],
-                        returns=None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -264,9 +258,16 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 address_token_block_balance_dic[address][token] = dict()
             address_token_block_balance_dic[address][token][block_number] = cl.returns
 
-        # enrich repay, liquidation
+        # enrich repay, liquidation, withdraw
         for a_record in aave_records:
-            if a_record.type() == AaveV2RepayD.type():
+            if a_record.type() == AaveV2WithdrawD.type():
+                address = a_record.aave_user
+                reserve = self.reserve_dic[a_record.reserve]
+                block_number = a_record.block_number
+                after_withdraw = address_token_block_balance_dic[address][block_number][reserve.a_token_address]
+                a_record.after_withdraw = after_withdraw
+                a_record.force_update_current = True
+            elif a_record.type() == AaveV2RepayD.type():
                 address = a_record.aave_user
                 reserve = self.reserve_dic[a_record.reserve]
                 block_number = a_record.block_number
