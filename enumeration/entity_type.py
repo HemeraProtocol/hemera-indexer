@@ -34,8 +34,9 @@ from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail impor
     StakedFBTCCurrentStatus,
     StakedFBTCDetail,
     TransferredFBTCCurrentStatus,
-    TransferredFBTCDetail,
+    TransferredFBTCDetail, TransferredStakedDetail,
 )
+from indexer.modules.custom.staking_fbtc.get_filter_erc20_transfer_balance_data import FilterDomain
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20CurrentTotalSupply, Erc20TotalSupply
 from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
     UniswapV2CurrentLiquidityHolding,
@@ -315,6 +316,8 @@ def generate_output_types(entity_types):
         yield AgniV3Pool
         yield AgniV3PoolPrice
         yield AgniV3PoolCurrentPrice
+        yield TransferredStakedDetail
+        yield FilterDomain
 
     if entity_types & EntityType.FBTC_20:
         yield Token

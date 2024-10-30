@@ -1,4 +1,3 @@
-import logging
 from dataclasses import dataclass
 
 from sqlalchemy import text
@@ -10,11 +9,7 @@ from indexer.domain.token_transfer import ERC20TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
-from indexer.modules.custom.feature_type import FeatureType
-
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-
-
 
 
 @dataclass
