@@ -237,7 +237,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         enriched_eth_call_lis = self.multicall_helper.execute_calls(eth_call_lis)
 
         address_token_block_balance_dic = {}
-        address_asset_block_borrow_balance_dic = {}
 
         unique_set = set()
         for cl in enriched_eth_call_lis:
@@ -263,7 +262,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 address_token_block_balance_dic[address] = dict()
             if token not in address_token_block_balance_dic[address]:
                 address_token_block_balance_dic[address][token] = dict()
-            address_token_block_balance_dic[address][token][block_number] = cl.returns[0][1]
+            address_token_block_balance_dic[address][token][block_number] = cl.returns
 
         # enrich repay, liquidation
         for a_record in aave_records:
