@@ -14,13 +14,10 @@ class AlertTaskInfo:
     reference_block_number: int
 
     def encode_sig_hash(self):
-        types = ['bytes32', 'uint32']
+        types = ["bytes32", "uint32"]
 
         # Pack the data
-        values = [
-            self.alert_hash,
-            self.reference_block_number
-        ]
+        values = [self.alert_hash, self.reference_block_number]
         encoded = encode(types, values)
         return encoded
 

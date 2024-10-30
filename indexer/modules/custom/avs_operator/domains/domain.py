@@ -22,9 +22,9 @@ class HemeraHistoryTransparency(FilterData):
         hasher.update(self.data_class)
         hasher.update(self.code_hash)
         hasher.update(self.data_hash)
-        hasher.update(self.start_block.to_bytes(32, 'big'))
-        hasher.update(self.end_block.to_bytes(32, 'big'))
-        hasher.update(self.count.to_bytes(32, 'big'))
+        hasher.update(self.start_block.to_bytes(32, "big"))
+        hasher.update(self.end_block.to_bytes(32, "big"))
+        hasher.update(self.count.to_bytes(32, "big"))
         return hasher.digest()[:32]
 
 

@@ -7,54 +7,23 @@ class IndexRecordEvent(Event):
             {
                 "anonymous": False,
                 "inputs": [
-                    {
-                        "indexed": False,
-                        "internalType": "uint256",
-                        "name": "chainId",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "uint256",
-                        "name": "startBlock",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "uint256",
-                        "name": "endBlock",
-                        "type": "uint256"
-                    },
-                    {
-                        "indexed": False,
-                        "internalType": "bytes32",
-                        "name": "codeHash_",
-                        "type": "bytes32"
-                    },
+                    {"indexed": False, "internalType": "uint256", "name": "chainId", "type": "uint256"},
+                    {"indexed": False, "internalType": "uint256", "name": "startBlock", "type": "uint256"},
+                    {"indexed": False, "internalType": "uint256", "name": "endBlock", "type": "uint256"},
+                    {"indexed": False, "internalType": "bytes32", "name": "codeHash_", "type": "bytes32"},
                     {
                         "components": [
-                            {
-                                "internalType": "bytes4",
-                                "name": "dataClass",
-                                "type": "bytes4"
-                            },
-                            {
-                                "internalType": "uint256",
-                                "name": "count",
-                                "type": "uint256"
-                            },
-                            {
-                                "internalType": "bytes32",
-                                "name": "dataHash",
-                                "type": "bytes32"
-                            }
+                            {"internalType": "bytes4", "name": "dataClass", "type": "bytes4"},
+                            {"internalType": "uint256", "name": "count", "type": "uint256"},
+                            {"internalType": "bytes32", "name": "dataHash", "type": "bytes32"},
                         ],
                         "indexed": False,
                         "internalType": "struct HemeraHistoryTransparency.IndexerOutput",
                         "name": "outputs",
-                        "type": "tuple"
-                    }
+                        "type": "tuple",
+                    },
                 ],
                 "name": "indexRecord",
-                "type": "event"
-            })
+                "type": "event",
+            }
+        )

@@ -1,6 +1,7 @@
-from common.models import HemeraModel, general_converter
 from sqlalchemy import Column, func
-from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, TIMESTAMP, BOOLEAN
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, TIMESTAMP
+
+from common.models import HemeraModel, general_converter
 
 
 class HemeraAvsOperatorLog(HemeraModel):
