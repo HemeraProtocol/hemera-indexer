@@ -24,7 +24,7 @@ class StreamController(BaseController):
         sync_recorder: BaseRecorder,
         job_scheduler: JobScheduler,
         limit_reader: LimitReader,
-        max_retries=5,
+        max_retries=2,
         retry_from_record=False,
         delay=0,
     ):
