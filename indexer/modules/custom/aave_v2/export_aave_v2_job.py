@@ -168,7 +168,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
         eth_call_lis = []
         for a_record in aave_records:
-            # when repay, call rpc to get debt_balance
+            # when repay, liquidation, withdrawal, call rpc to get token balance
             if a_record.type() == AaveV2WithdrawD.type():
                 reserve = self.reserve_dic[a_record.reserve]
                 eth_call_lis.append(
