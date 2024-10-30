@@ -18,7 +18,7 @@ from indexer.modules.custom.avs_operator.abi.contract import RegistryCoordinator
 from indexer.modules.custom.avs_operator.abi.event import IndexRecordEvent
 from indexer.modules.custom.avs_operator.aggregator.client import AggregatorClient
 from indexer.modules.custom.avs_operator.aggregator.task import AlertTaskInfo
-from indexer.modules.custom.avs_operator.bn254.sign import sign_message
+from indexer.modules.custom.avs_operator.bn128.sign import sign_message
 from indexer.modules.custom.avs_operator.domains.domain import HemeraHistoryTransparency, LogWithDecodeData
 from indexer.specification.specification import TransactionFilterByLogs, TopicSpecification
 

@@ -1,10 +1,6 @@
 from typing import Tuple
 
-from py_ecc.bn128 import (
-    multiply,
-    field_modulus,
-    FQ,
-)
+from py_ecc.bn128 import multiply, field_modulus, FQ
 
 from common.utils.format_utils import bytes_to_hex_str
 
