@@ -54,6 +54,8 @@ class AaveV2WithdrawD(AaveV2BaseRecord):
     aave_user: Optional[str] = None
     to_address: Optional[str] = None
     amount: Optional[int] = None
+    #
+    after_withdraw: Optional[int] = None
 
 
 @dataclass
