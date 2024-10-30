@@ -233,7 +233,7 @@ class AaveV2Events(Enum):
     )
 
     DEPOSIT_V1 = EventConfig(
-        name="Deposit", contract_address_key="POOL_V1", processor_class=DepositProcessorV1, data_class=AaveV2DepositD
+        name="Deposit", contract_address_key="POOL_V2", processor_class=DepositProcessor, data_class=AaveV2DepositD
     )
     WITHDRAW = EventConfig(
         name="Withdraw", contract_address_key="POOL_V2", processor_class=WithdrawProcessor, data_class=AaveV2WithdrawD
