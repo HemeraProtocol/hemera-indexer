@@ -1,27 +1,37 @@
-import logging
-from typing import List
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
-from common.utils.web3_utils import ZERO_ADDRESS
+from typing import List
 
 # Dependency dataclass
 from indexer.domain.log import Log
-from indexer.domain.token_transfer import TokenTransfer, extract_transfer_from_log
+from indexer.domain.token_transfer import TokenTransfer
 from indexer.jobs.base_job import FilterTransactionDataJob
 
 # Custom dataclass
-from indexer.modules.custom.erc721_token_mint.domain.erc721_mint_time import ERC721TokenMint
+from indexer.modules.custom.demo_job.domain.erc721_mint_time import ERC721TokenMint
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 # Utility
 from indexer.utils.abi_setting import ERC721_TRANSFER_EVENT
+from common.utils.web3_utils import ZERO_ADDRESS
 
-logger = logging.getLogger(__name__)
 
-
-def _filter_mint_tokens(logs: List[Log]) -> List[TokenTransfer]:
+def _filter_erc721_mint_event(logs: List[Log]) -> List[TokenTransfer]:
     token_transfers = []
     for log in logs:
-        token_transfers += extract_transfer_from_log(log)
+        if log.topic0 == ERC721_TRANSFER_EVENT.get_signature():
+            decoded_data = ERC721_TRANSFER_EVENT.decode_log(log)
+            if decoded_data["from"] == ZERO_ADDRESS:
+                token_transfers.append(ERC721TokenMint(
+                    address=decoded_data["to"],
+                    token_address=log.address,
+                    token_id=decoded_data["value"],
+                    block_timestamp=log.block_timestamp,
+                    block_number=log.block_number,
+                    transaction_hash=log.transaction_hash,
+                    log_index=log.log_index,
+                ))
     return [
         transfer
         for transfer in token_transfers
@@ -58,21 +68,11 @@ class DemoJob(FilterTransactionDataJob):
         logs = self._data_buff[Log.type()]
 
         # Core logic of UDF
-        mint_tokens = _filter_mint_tokens(logs)
-        erc721_mint_infos = [
-            ERC721TokenMint(
-                token_address=token.token_address,
-                token_id=token.value,
-                block_timestamp=token.block_timestamp,
-                block_number=token.block_number,
-                transaction_hash=token.transaction_hash,
-            )
-            for token in mint_tokens
-        ]
+        erc721_token_mints = _filter_erc721_mint_event(logs)
 
         # This is one of the functions that convert dataclass into models and export
         # The other functions can be found in indexer/jobs/base_job.py
-        self._collect_domains(erc721_mint_infos)
+        self._collect_domains(erc721_token_mints)
 
     def _process(self, **kwargs):
         pass
