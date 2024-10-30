@@ -76,6 +76,7 @@ class JobScheduler:
         self.debug_batch_size = debug_batch_size
         self.max_workers = max_workers
         self.config = config
+        required_output_types.sort(key=lambda x: x.type())
         self.required_output_types = required_output_types
         self.required_source_types = required_source_types
         self.load_from_source = config.get("source_path") if "source_path" in config else None
@@ -107,7 +108,9 @@ class JobScheduler:
                     self.logger.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
                     BaseJob.init_token_cache(token_dict_from_db)
         self.instantiate_jobs()
-        self.logger.info("Export output types: %s", required_output_types)
+        self.logger.info("Export output types: ")
+        for output_type in self.required_output_types:
+            self.logger.info(f"[*] {output_type.type()}")
 
     def get_required_job_classes(self, output_types) -> (List[Type[BaseJob]], bool):
         required_job_classes = set()
@@ -157,12 +160,13 @@ class JobScheduler:
         for cls in all_subclasses:
             self.job_classes.append(cls)
             for output in cls.output_types:
+                if output.type() in self.job_map:
+                    raise Exception(
+                        f"Duplicated output type: {output.type()}, job: {cls.__name__}, existing: {self.job_map[output.type()]}, plz check your job definition"
+                    )
                 self.job_map[output.type()].append(cls)
             for dependency in cls.dependency_types:
                 self.dependency_map[dependency.type()].append(cls)
-            self.logger.info(
-                f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}"
-            )
 
     def instantiate_jobs(self):
         filters = []
@@ -237,12 +241,14 @@ class JobScheduler:
             for job in self.jobs:
                 job.run(start_block=start_block, end_block=end_block)
 
-            for key, value in self.get_data_buff().items():
-                message = f"{key}: {len(value)}"
-                self.logger.info(message)
+            for output_type in self.required_output_types:
+                key = output_type.type()
+                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type()))}"
+                self.logger.info(f"{message}")
                 exception_recorder.log(
                     block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
                 )
+
         except Exception as e:
             raise e
         finally:

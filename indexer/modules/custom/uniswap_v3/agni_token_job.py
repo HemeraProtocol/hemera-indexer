@@ -18,6 +18,7 @@ from indexer.modules.custom.uniswap_v3 import constants, util
 from indexer.modules.custom.uniswap_v3.constants import AGNI_ABI
 from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     AgniV3Pool,
+    AgniV3PoolFromTokenJob,
     AgniV3Token,
     AgniV3TokenCollectFee,
     AgniV3TokenCurrentStatus,
@@ -36,7 +37,7 @@ logger = logging.getLogger(__name__)
 class AgniTokenJob(FilterTransactionDataJob):
     dependency_types = [Log, AgniV3Pool]
     output_types = [
-        AgniV3Pool,
+        AgniV3PoolFromTokenJob,
         AgniV3Token,
         AgniV3TokenDetail,
         AgniV3TokenCurrentStatus,
@@ -309,7 +310,7 @@ def get_exist_pools(db_service, position_token_address):
         if result is not None:
             for item in result:
                 pool_key = bytes_to_hex_str(item.pool_address)
-                history_pools[pool_key] = AgniV3Pool(
+                history_pools[pool_key] = AgniV3PoolFromTokenJob(
                     pool_address=pool_key,
                     position_token_address=bytes_to_hex_str(item.position_token_address),
                     factory_address=bytes_to_hex_str(item.factory_address),

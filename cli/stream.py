@@ -5,6 +5,7 @@ import time
 import click
 from web3 import Web3
 
+from cli.logo import print_logo
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
 from indexer.controller.scheduler.job_scheduler import JobScheduler
@@ -337,6 +338,7 @@ def stream(
     auto_upgrade_db=True,
     log_level="INFO",
 ):
+    print_logo()
     configure_logging(log_level, log_file)
     configure_signals()
     provider_uri = pick_random_provider_uri(provider_uri)

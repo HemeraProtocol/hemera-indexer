@@ -131,6 +131,11 @@ class AgniV3Pool(UniswapV3Pool):
 
 
 @dataclass
+class AgniV3PoolFromTokenJob(UniswapV3Pool):
+    pass
+
+
+@dataclass
 class AgniV3Token(UniswapV3Token):
     pass
 
