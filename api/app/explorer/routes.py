@@ -1529,6 +1529,7 @@ class ExplorerTokenTokenTransfers(Resource):
         }, 200
 
 
+@explorer_namespace.route("/v1/explorer/token/<token_address>/top_holders")
 @explorer_namespace.route("/v2/explorer/token/<token_address>/top_holders")
 class ExplorerTokenTopHolders(Resource):
     @cache.cached(timeout=360, query_string=True)
