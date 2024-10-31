@@ -77,6 +77,7 @@ class InitCapitalPoolHistoryDomain(FilterData):
     block_number: int
     block_timestamp: int
 
+
 @dataclass
 class InitCapitalPoolUpdateDomain(FilterData):
 

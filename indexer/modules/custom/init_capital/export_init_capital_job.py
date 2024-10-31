@@ -1,14 +1,14 @@
 import logging
+
 import orjson
 
 # Utility
 from common.utils.abi_code_utils import decode_data, decode_log, encode_data
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.rpc_utils import zip_rpc_response, rpc_response_to_result
 
 # Dependency dataclass
 from indexer.domain.log import Log
+from indexer.executors.batch_work_executor import BatchWorkExecutor
 
 # Job
 from indexer.jobs.base_job import FilterTransactionDataJob
@@ -19,23 +19,28 @@ from indexer.modules.custom.init_capital.abi import (
     INIT_COLLATERALIZE_EVENT,
     INIT_CREATE_POSITION_EVENT,
     INIT_DECOLLATERALIZE_EVENT,
-    INIT_REPAY_EVENT,
-    INIT_POOL_TOTAL_SUPPLY_FUNCTION,
+    INIT_LIQUIDATE_EVENT,
     INIT_POOL_TOTAL_ASSETS_FUNCTION,
     INIT_POOL_TOTAL_DEBT_FUNCTION,
     INIT_POOL_TOTAL_DEBT_SHARES_FUNCTION,
+    INIT_POOL_TOTAL_SUPPLY_FUNCTION,
+    INIT_REPAY_EVENT,
 )
 from indexer.modules.custom.init_capital.domains.init_capital_domains import (
+    InitCapitalPoolHistoryDomain,
+    InitCapitalPoolUpdateDomain,
     InitCapitalPositionCreateDomain,
     InitCapitalPositionHistoryDomain,
     InitCapitalPositionUpdateDomain,
     InitCapitalRecordDomain,
-    InitCapitalPoolHistoryDomain,
-    InitCapitalPoolUpdateDomain
 )
-from indexer.modules.custom.init_capital.models.init_capital_models import InitCapitalPositionCurrent, InitCapitalPoolCurrent
+from indexer.modules.custom.init_capital.models.init_capital_models import (
+    InitCapitalPoolCurrent,
+    InitCapitalPositionCurrent,
+)
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
+from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +67,7 @@ class InitCapitalJob(FilterTransactionDataJob):
         InitCapitalPositionUpdateDomain,
         InitCapitalRecordDomain,
         InitCapitalPoolUpdateDomain,
-        InitCapitalPoolHistoryDomain
+        InitCapitalPoolHistoryDomain,
     ]
 
     able_to_reorg = True
@@ -82,6 +87,7 @@ class InitCapitalJob(FilterTransactionDataJob):
                     INIT_BORROW_EVENT.get_signature(),
                     INIT_REPAY_EVENT.get_signature(),
                     INIT_CREATE_POSITION_EVENT.get_signature(),
+                    INIT_LIQUIDATE_EVENT.get_signature(),
                 ],
             )
         ]
@@ -116,6 +122,7 @@ class InitCapitalJob(FilterTransactionDataJob):
             elif log.topic0 in [
                 INIT_DECOLLATERALIZE_EVENT.get_signature(),
                 INIT_COLLATERALIZE_EVENT.get_signature(),
+                INIT_LIQUIDATE_EVENT.get_signature(),
             ]:
                 existing_position_ids.append(decode_data("uint256", hex_str_to_bytes(log.topic1))[0])
             elif log.topic0 in [
@@ -156,6 +163,7 @@ class InitCapitalJob(FilterTransactionDataJob):
             if log.topic0 in [
                 INIT_DECOLLATERALIZE_EVENT.get_signature(),
                 INIT_COLLATERALIZE_EVENT.get_signature(),
+                INIT_LIQUIDATE_EVENT.get_signature(),
             ]:
                 position_id = decode_data("uint256", hex_str_to_bytes(log.topic1))[0]
             elif log.topic0 in [
@@ -186,54 +194,74 @@ class InitCapitalJob(FilterTransactionDataJob):
                     if log.topic0 == INIT_COLLATERALIZE_EVENT.get_signature():
                         decoded_data = decode_log(INIT_COLLATERALIZE_EVENT.get_abi(), log)
                         record_map[(log.transaction_hash, log.log_index)] = InitCapitalRecordDomain(
-                                action_type=1,
-                                position_id=position_id,
-                                pool_address=decoded_data["pool"],
-                                token_address=self._pool_token_map[decoded_data["pool"]],
-                                amount=decoded_data["amt"],
-                                share=None,
-                                address=existing_position.viewer_address,
-                                block_number=log.block_number,
-                                block_timestamp=log.block_timestamp,
-                                transaction_hash=log.transaction_hash,
-                                log_index=log.log_index,
-                            )
+                            action_type=1,
+                            position_id=position_id,
+                            pool_address=decoded_data["pool"],
+                            token_address=self._pool_token_map[decoded_data["pool"]],
+                            amount=decoded_data["amt"],
+                            share=None,
+                            address=existing_position.viewer_address,
+                            block_number=log.block_number,
+                            block_timestamp=log.block_timestamp,
+                            transaction_hash=log.transaction_hash,
+                            log_index=log.log_index,
+                        )
                         self.update_position_collaterals(existing_position, decoded_data["pool"], decoded_data["amt"])
                         pools_to_update.append(decoded_data["pool"])
 
                     elif log.topic0 == INIT_DECOLLATERALIZE_EVENT.get_signature():
                         decoded_data = decode_log(INIT_DECOLLATERALIZE_EVENT.get_abi(), log)
                         record_map[(log.transaction_hash, log.log_index)] = InitCapitalRecordDomain(
-                                action_type=3,
-                                position_id=position_id,
-                                pool_address=decoded_data["pool"],
-                                token_address=self._pool_token_map[decoded_data["pool"]],
-                                amount=decoded_data["amt"],
-                                share=None,
-                                address=decoded_data["to"],
-                                block_number=log.block_number,
-                                block_timestamp=log.block_timestamp,
-                                transaction_hash=log.transaction_hash,
-                                log_index=log.log_index,
-                            )
+                            action_type=3,
+                            position_id=position_id,
+                            pool_address=decoded_data["pool"],
+                            token_address=self._pool_token_map[decoded_data["pool"]],
+                            amount=decoded_data["amt"],
+                            share=None,
+                            address=decoded_data["to"],
+                            block_number=log.block_number,
+                            block_timestamp=log.block_timestamp,
+                            transaction_hash=log.transaction_hash,
+                            log_index=log.log_index,
+                        )
                         self.update_position_collaterals(existing_position, decoded_data["pool"], -decoded_data["amt"])
                         pools_to_update.append(decoded_data["pool"])
+
+                    elif log.topic0 == INIT_LIQUIDATE_EVENT.get_signature():
+                        decoded_data = decode_log(INIT_LIQUIDATE_EVENT.get_abi(), log)
+                        record_map[(log.transaction_hash, log.log_index)] = InitCapitalRecordDomain(
+                            action_type=5,
+                            position_id=position_id,
+                            pool_address=decoded_data["poolOut"],
+                            token_address=self._pool_token_map[decoded_data["poolOut"]],
+                            amount=decoded_data["shares"],
+                            share=None,
+                            address=decoded_data["liquidator"],
+                            block_number=log.block_number,
+                            block_timestamp=log.block_timestamp,
+                            transaction_hash=log.transaction_hash,
+                            log_index=log.log_index,
+                        )
+                        self.update_position_collaterals(
+                            existing_position, decoded_data["poolOut"], -decoded_data["shares"]
+                        )
+                        pools_to_update.append(decoded_data["poolOut"])
 
                     elif log.topic0 == INIT_BORROW_EVENT.get_signature():
                         decoded_data = decode_log(INIT_BORROW_EVENT.get_abi(), log)
                         record_map[(log.transaction_hash, log.log_index)] = InitCapitalRecordDomain(
-                                action_type=2,
-                                position_id=position_id,
-                                pool_address=decoded_data["pool"],
-                                token_address=self._pool_token_map[decoded_data["pool"]],
-                                amount=decoded_data["borrowAmt"],
-                                share=decoded_data["shares"],
-                                address=decoded_data["to"],
-                                block_number=log.block_number,
-                                block_timestamp=log.block_timestamp,
-                                transaction_hash=log.transaction_hash,
-                                log_index=log.log_index,
-                            )
+                            action_type=2,
+                            position_id=position_id,
+                            pool_address=decoded_data["pool"],
+                            token_address=self._pool_token_map[decoded_data["pool"]],
+                            amount=decoded_data["borrowAmt"],
+                            share=decoded_data["shares"],
+                            address=decoded_data["to"],
+                            block_number=log.block_number,
+                            block_timestamp=log.block_timestamp,
+                            transaction_hash=log.transaction_hash,
+                            log_index=log.log_index,
+                        )
                         self.update_position_borrows(
                             existing_position, decoded_data["pool"], decoded_data["borrowAmt"], decoded_data["shares"]
                         )
@@ -242,18 +270,18 @@ class InitCapitalJob(FilterTransactionDataJob):
                     elif log.topic0 == INIT_REPAY_EVENT.get_signature():
                         decoded_data = decode_log(INIT_REPAY_EVENT.get_abi(), log)
                         record_map[(log.transaction_hash, log.log_index)] = InitCapitalRecordDomain(
-                                action_type=4,
-                                position_id=position_id,
-                                pool_address=decoded_data["pool"],
-                                token_address=self._pool_token_map[decoded_data["pool"]],
-                                amount=decoded_data["amtToRepay"],
-                                share=decoded_data["shares"],
-                                address=decoded_data["repayer"],
-                                block_number=log.block_number,
-                                block_timestamp=log.block_timestamp,
-                                transaction_hash=log.transaction_hash,
-                                log_index=log.log_index,
-                            )
+                            action_type=4,
+                            position_id=position_id,
+                            pool_address=decoded_data["pool"],
+                            token_address=self._pool_token_map[decoded_data["pool"]],
+                            amount=decoded_data["amtToRepay"],
+                            share=decoded_data["shares"],
+                            address=decoded_data["repayer"],
+                            block_number=log.block_number,
+                            block_timestamp=log.block_timestamp,
+                            transaction_hash=log.transaction_hash,
+                            log_index=log.log_index,
+                        )
                         self.update_position_borrows(
                             existing_position,
                             decoded_data["pool"],
@@ -275,7 +303,9 @@ class InitCapitalJob(FilterTransactionDataJob):
                     block_number=existing_position.block_number,
                     block_timestamp=existing_position.block_timestamp,
                 )
-                block_pool_to_update.append([block_number, existing_position.block_timestamp, list(set(pools_to_update))])
+                block_pool_to_update.append(
+                    [block_number, existing_position.block_timestamp, list(set(pools_to_update))]
+                )
 
         # 5. Get pool updates
         pool_history, pool_current = self.get_pool_info_updates(block_pool_to_update)
@@ -284,10 +314,10 @@ class InitCapitalJob(FilterTransactionDataJob):
         # The other functions can be found in indexer/jobs/base_job.py
         self._collect_domains(list(new_position_map.values()))
         self._collect_domains(list(existing_position_map.values()))
-        self._collect_domains(list(position_history_map.values())) # InitCapitalPositionHistoryDomain
-        self._collect_domains(list(record_map.values())) # InitCapitalRecordDomain
-        self._collect_domains(pool_history) # InitCapitalPoolHistoryDomain
-        self._collect_domains(pool_current) # InitCapitalPoolUpdateDomain
+        self._collect_domains(list(position_history_map.values()))  # InitCapitalPositionHistoryDomain
+        self._collect_domains(list(record_map.values()))  # InitCapitalRecordDomain
+        self._collect_domains(pool_history)  # InitCapitalPoolHistoryDomain
+        self._collect_domains(pool_current)  # InitCapitalPoolUpdateDomain
 
     def _process(self, **kwargs):
         pass
@@ -360,13 +390,11 @@ class InitCapitalJob(FilterTransactionDataJob):
                 }
             )
         position.borrows = borrows
-        
+
     def get_pool_token_maps(self):
         pool_token_map = {}
         with self.db_service.get_service_session() as session:
-            result = (
-                session.query(InitCapitalPoolCurrent).all()
-            )
+            result = session.query(InitCapitalPoolCurrent).all()
 
         for record in result:
             pool_token_map[bytes_to_hex_str(record.pool_address)] = bytes_to_hex_str(record.token_address)
@@ -375,22 +403,29 @@ class InitCapitalJob(FilterTransactionDataJob):
 
     def get_pool_info_updates(self, block_pool_to_update):
         pool_info_list = []
-        for (block_number, block_timestamp, pool_address_list) in block_pool_to_update:
+        for block_number, block_timestamp, pool_address_list in block_pool_to_update:
             for pool_address in pool_address_list:
-                for function in [INIT_POOL_TOTAL_ASSETS_FUNCTION, INIT_POOL_TOTAL_SUPPLY_FUNCTION, INIT_POOL_TOTAL_DEBT_SHARES_FUNCTION, INIT_POOL_TOTAL_DEBT_FUNCTION]:
+                for function in [
+                    INIT_POOL_TOTAL_ASSETS_FUNCTION,
+                    INIT_POOL_TOTAL_SUPPLY_FUNCTION,
+                    INIT_POOL_TOTAL_DEBT_SHARES_FUNCTION,
+                    INIT_POOL_TOTAL_DEBT_FUNCTION,
+                ]:
                     params = {
                         "param_to": pool_address,
                         "param_data": function.get_signature(),
                         "param_number": block_number,
-                        "request_id": str(block_number) + '-' + pool_address + '-' + function.get_signature(),
+                        "request_id": str(block_number) + "-" + pool_address + "-" + function.get_signature(),
                         "block_timestamp": block_timestamp,
                     }
                     pool_info_list.append(params)
-        
+
         if len(pool_info_list) <= 0:
             return [], []
-        
-        response = self._batch_web3_provider.make_request(params=orjson.dumps(list(generate_eth_call_json_rpc(pool_info_list))))
+
+        response = self._batch_web3_provider.make_request(
+            params=orjson.dumps(list(generate_eth_call_json_rpc(pool_info_list)))
+        )
 
         all_pool_info = []
         for data in list(zip_rpc_response(pool_info_list, response)):
@@ -431,8 +466,8 @@ class InitCapitalJob(FilterTransactionDataJob):
             if pool_info["param_data"] == INIT_POOL_TOTAL_DEBT_SHARES_FUNCTION.get_signature():
                 pool_history_map[block_number_pool_address].total_debt_share = pool_info["decoded_data"]
             if pool_info["param_data"] == INIT_POOL_TOTAL_ASSETS_FUNCTION.get_signature():
-                pool_history_map[block_number_pool_address].total_asset = pool_info["decoded_data"] 
-        
+                pool_history_map[block_number_pool_address].total_asset = pool_info["decoded_data"]
+
         pool_history_list = sorted(list(pool_history_map.values()), key=lambda p: p.block_number)
 
         for pool_history in pool_history_list:
@@ -446,11 +481,9 @@ class InitCapitalJob(FilterTransactionDataJob):
                     total_debt=0,
                     total_debt_share=0,
                 )
-            pool_current_map[pool_history.pool_address].total_asset=pool_history.total_asset
-            pool_current_map[pool_history.pool_address].total_supply=pool_history.total_supply
-            pool_current_map[pool_history.pool_address].total_debt=pool_history.total_debt
-            pool_current_map[pool_history.pool_address].total_debt_share=pool_history.total_debt_share
+            pool_current_map[pool_history.pool_address].total_asset = pool_history.total_asset
+            pool_current_map[pool_history.pool_address].total_supply = pool_history.total_supply
+            pool_current_map[pool_history.pool_address].total_debt = pool_history.total_debt
+            pool_current_map[pool_history.pool_address].total_debt_share = pool_history.total_debt_share
 
         return pool_history_list, list(pool_current_map.values())
-                
-        

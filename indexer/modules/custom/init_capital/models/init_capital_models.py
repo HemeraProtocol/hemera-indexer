@@ -76,7 +76,7 @@ class InitCapitalPositionCurrent(HemeraModel):
 class InitCapitalRecords(HemeraModel):
     __tablename__ = "init_capital_record"
 
-    # 1 -> collaterize  2 -> borrow 3 -> decollaterize 4 -> repay
+    # 1 -> collaterize  2 -> borrow 3 -> decollaterize 4 -> repay 5 -> liquidate
     action_type = Column(SMALLINT)
     position_id = Column(NUMERIC(100))
     pool_address = Column(BYTEA)
@@ -108,7 +108,7 @@ class InitCapitalRecords(HemeraModel):
 """
     uint private constant VIRTUAL_SHARES = 10 ** 8;
     uint private constant VIRTUAL_ASSETS = 1;
-    
+
     function toAmt(uint _shares) public view returns (uint amt) {
         return _amt.mulDiv(totalAssets() + VIRTUAL_ASSETS, totalSupply() + VIRTUAL_SHARES);
     }
@@ -116,6 +116,8 @@ class InitCapitalRecords(HemeraModel):
         amt = totalDebtShares > 0 ? _shares.mulDiv(totalDebt, totalDebtShares, MathUpgradeable.Rounding.Up) : 0;
     }
 """
+
+
 class InitCapitalPoolsHistory(HemeraModel):
     __tablename__ = "init_capital_pool_history"
 
@@ -125,13 +127,12 @@ class InitCapitalPoolsHistory(HemeraModel):
     total_supply = Column(NUMERIC(100))
     total_debt = Column(NUMERIC(100))
     total_debt_share = Column(NUMERIC(100))
-    
+
     block_number = Column(BIGINT, primary_key=True)
     block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-
 
     @staticmethod
     def model_domain_mapping():
@@ -145,7 +146,6 @@ class InitCapitalPoolsHistory(HemeraModel):
         ]
 
 
-
 class InitCapitalPoolCurrent(HemeraModel):
     __tablename__ = "init_capital_pool_current"
 
@@ -155,7 +155,7 @@ class InitCapitalPoolCurrent(HemeraModel):
     total_supply = Column(NUMERIC(100))
     total_debt = Column(NUMERIC(100))
     total_debt_share = Column(NUMERIC(100))
-    
+
     block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
 

@@ -194,59 +194,40 @@ INIT_POOL_TOTAL_SUPPLY_FUNCTION = Function(
     {
         "inputs": [],
         "name": "totalSupply",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     }
 )
 
-INIT_POOL_TOTAL_DEBT_SHARES_FUNCTION = Function({
+INIT_POOL_TOTAL_DEBT_SHARES_FUNCTION = Function(
+    {
         "inputs": [],
         "name": "totalDebtShares",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
         "stateMutability": "view",
-        "type": "function"
+        "type": "function",
     }
 )
 
 
-INIT_POOL_TOTAL_DEBT_FUNCTION = Function({
-    "inputs": [],
-    "name": "totalDebt",
-    "outputs": [
-        {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-        }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-})
+INIT_POOL_TOTAL_DEBT_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "totalDebt",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
 
 
-INIT_POOL_TOTAL_ASSETS_FUNCTION = Function({
-    "inputs": [],
-    "name": "totalAssets",
-    "outputs": [
-        {
-            "internalType": "uint256",
-            "name": "",
-            "type": "uint256"
-        }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-})
+INIT_POOL_TOTAL_ASSETS_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "totalAssets",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
