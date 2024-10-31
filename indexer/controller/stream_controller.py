@@ -112,7 +112,12 @@ class StreamController(BaseController):
                     self.sync_recorder.set_last_synced_block(target_block)
                     if self.record_reporter:
                         self.record_reporter.report(
-                            self.chain_id, last_synced_block + 1, target_block, self.runtime_combined_hash, report_info
+                            self.chain_id,
+                            last_synced_block + 1,
+                            target_block,
+                            self.runtime_combined_hash,
+                            report_info,
+                            "stream",
                         )
                     last_synced_block = target_block
 

@@ -123,7 +123,7 @@ class ReorgController(BaseController):
 
                 if self.record_reporter:
                     self.record_reporter.report(
-                        self.chain_id, fix_block, fix_block, self.runtime_combined_hash, report_info
+                        self.chain_id, fix_block, fix_block, self.runtime_combined_hash, report_info, "reorg"
                     )
                 break
 

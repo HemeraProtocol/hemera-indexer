@@ -24,6 +24,7 @@ class ReportRecords(HemeraModel):
     __tablename__ = "report_records"
     report_id = Column(INTEGER, primary_key=True)
     chain_id = Column(INTEGER)
+    mission_type = Column(VARCHAR)
     start_block_number = Column(BIGINT)
     end_block_number = Column(BIGINT)
     runtime_code_hash = Column(BYTEA)

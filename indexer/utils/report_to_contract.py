@@ -102,19 +102,19 @@ class AsyncTransactionSubmitter:
         feature.add_done_callback(_handle_future_result)
         self.logger.info("Transaction submitted to processing queue")
 
-    async def submit_record_to_db(self, info, transaction_hash=None, exception=None):
+    async def submit_record_to_db(self, info, transaction_hash=None, report_from=None):
         session = self.service.get_service_session()
 
         try:
             stmt = insert(ReportRecords).values(
                 {
                     "chain_id": info["chain_id"],
+                    "mission_type": report_from,
                     "start_block_number": info["start_block"],
                     "end_block_number": info["end_block"],
                     "runtime_code_hash": hex_str_to_bytes(info["runtime_code_hash"]),
                     "report_details": info["indexed_data"],
                     "transaction_hash": transaction_hash,
-                    "exception": exception,
                 }
             )
             result = session.execute(stmt)
@@ -154,6 +154,7 @@ class AsyncTransactionSubmitter:
         txn_hash, report_id = None, None
         builder = info["transaction_builder"]
         parameters = info["transaction_parameters"]
+        report_from = info["report_from"]
 
         self.logger.info(f"Processing transaction with parameters: {parameters}")
 
@@ -173,7 +174,9 @@ class AsyncTransactionSubmitter:
                             f"Waiting for receipt."
                         )
 
-                        report_id = await self.submit_record_to_db(parameters, txn_hash)
+                        report_id = await self.submit_record_to_db(
+                            parameters, transaction_hash=txn_hash, report_from=report_from
+                        )
                         break
 
                     except ValueError as e:
@@ -267,7 +270,15 @@ class RecordReporter:
     def stop(self):
         self.transaction_submitter.stop()
 
-    def report(self, chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict):
+    def report(
+        self,
+        chain_id: int,
+        start_block: int,
+        end_block: int,
+        runtime_code_hash: str,
+        indexed_data: dict,
+        report_from: str,
+    ):
         def transaction_builder(
             chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict, nonce: int
         ):
@@ -306,6 +317,7 @@ class RecordReporter:
             {
                 "transaction_builder": transaction_builder,
                 "transaction_parameters": transaction_parameters,
+                "report_from": report_from,
             }
         )
 
