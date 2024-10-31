@@ -125,10 +125,11 @@ class JobScheduler:
             for job_class in self.job_map[output_type.type()]:
                 jobs_set.add(job_class)
         for job_class in jobs_set:
-            is_filter = job_class.is_filter and is_filter
-            if job_class.is_locked:
-                is_locked_number += 1
-                locked_output_types += job_class.output_types
+            if isinstance(job_class, FilterTransactionDataJob):
+                is_filter = job_class.is_filter and is_filter
+                if job_class.is_locked:
+                    is_locked_number += 1
+                    locked_output_types += job_class.output_types
 
         if is_locked_number > 1:
             raise Exception("Only one job can be locked in a pipeline")
