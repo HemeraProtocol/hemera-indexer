@@ -10,7 +10,7 @@ from common.models import HemeraModel, general_converter
 class ERC721TokenMint(HemeraModel):
     __tablename__ = "erc721_token_mint"
 
-    address = Column(BYTEA, primary_key=True)
+    address = Column(BYTEA)
     token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
 
