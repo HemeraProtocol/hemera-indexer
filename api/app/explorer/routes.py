@@ -101,6 +101,7 @@ TRANSACTION_LIST_COLUMNS = [
     "from_address",
     "to_address",
     "value",
+    "input",
     "method_id",
     "block_number",
     "block_timestamp",
