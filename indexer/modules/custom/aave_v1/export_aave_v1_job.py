@@ -1,6 +1,5 @@
 import logging
 from collections import defaultdict
-from enum import Enum
 from typing import Any, cast
 
 from sqlalchemy import func
@@ -23,21 +22,15 @@ from indexer.modules.custom.aave_v1.domains.aave_v1_domain import (
     AaveV1RepayD,
     AaveV1ReserveD,
     AaveV1WithdrawD,
-    aave_v2_address_current_factory, AaveV1Reserve,
+    aave_v2_address_current_factory,
 )
 from indexer.modules.custom.aave_v1.models.aave_v1_address_current import AaveV1AddressCurrent
-
+from indexer.modules.custom.aave_v1.models.aave_v1_reserve import AaveV1Reserve
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 logger = logging.getLogger(__name__)
-
-
-class InterestRateMode(Enum):
-    STABLE = 1
-    VARIABLE = 2
-
 
 GET_USRE_BALANCE = "getUserBorrowBalances(address,address)(uint256,uint256,uint256)"
 BALANCE_OF = "balanceOf(address)(uint256)"
@@ -144,11 +137,7 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                 if processor is None:
                     continue
                 processed_data = processor.process(log)
-
                 if processed_data.type() == AaveV1ReserveD.type():
-                    # update reserve
-                    self.reserve_dic[processed_data.asset] = processed_data
-                elif processed_data.type() == AaveV1ReserveD.type():
                     self.reserve_dic[processed_data.asset] = processed_data
                     reserve_init_lis.append(processed_data)
                     continue
@@ -163,25 +152,11 @@ class ExportAaveV1Job(FilterTransactionDataJob):
         ) | set(ave.on_behalf_of for ave in aave_records if hasattr(ave, "on_behalf_of") and ave.on_behalf_of)
         exists_dic = self.get_existing_address_current(list(related_address_set))
 
-        # we need borrowed asset and its borrow mode
-        address_asset_borrow = dict()
-        for address in exists_dic:
-            if address not in address_asset_borrow:
-                address_asset_borrow[address] = dict()
-            for asset in exists_dic[address]:
-                acd = exists_dic[address][asset]
-                address_asset_borrow[address][asset] = acd.borrow_rate_mode
-        for a_record in aave_records:
-            if a_record.type() == AaveV1BorrowD.type():
-                if a_record.on_behalf_of not in address_asset_borrow:
-                    address_asset_borrow[a_record.on_behalf_of] = dict()
-                address_asset_borrow[a_record.on_behalf_of][a_record.reserve] = a_record.borrow_rate_mode
-
         eth_call_lis = []
         for a_record in aave_records:
             # when repay, call rpc to get debt_balance
             if a_record.type() == AaveV1RepayD.type():
-                reserve = self.reserve_v1_dic[a_record.reserve]
+                reserve = self.reserve_dic[a_record.reserve]
                 eth_call_lis.append(
                     Call(
                         self.contract_addresses["POOL_V1_CORE"],
@@ -203,7 +178,6 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                             a_record.reserve,
                             a_record.aave_user,
                         ],
-                        None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -211,27 +185,14 @@ class ExportAaveV1Job(FilterTransactionDataJob):
             elif a_record.type() == AaveV1RepayD.type():
                 reserve = self.reserve_dic[a_record.reserve]
 
-                if borrow_rate_mode == InterestRateMode.STABLE.value:
-
-                    eth_call_lis.append(
-                        Call(
-                            target=reserve.stable_debt_token_address,
-                            function=["", a_record.aave_user],
-                            returns=None,
-                            block_id=a_record.block_number,
-                        )
+                eth_call_lis.append(
+                    Call(
+                        target=self.contract_addresses["POOL_V1_CORE"],
+                        function=["", a_record.aave_user],
+                        returns=None,
+                        block_id=a_record.block_number,
                     )
-                elif borrow_rate_mode == InterestRateMode.VARIABLE.value:
-                    eth_call_lis.append(
-                        Call(
-                            target=reserve.variable_debt_token_address,
-                            function=[BALANCE_OF, a_record.aave_user],
-                            returns=None,
-                            block_id=a_record.block_number,
-                        )
-                    )
-                else:
-                    raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
+                )
             elif a_record.type() == AaveV1LiquidationCallD.type():
                 aave_user = a_record.aave_user
                 collateral_asset = a_record.collateral_asset
@@ -246,32 +207,15 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                 )
                 debt_asset = a_record.debt_asset
                 debt_reserve = self.reserve_dic[debt_asset]
-                borrow_rate_mode = None
-                if a_record.aave_user in address_asset_borrow:
-                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_reserve.asset)
-                if not borrow_rate_mode:
-                    continue
-                if borrow_rate_mode == InterestRateMode.STABLE.value:
 
-                    eth_call_lis.append(
-                        Call(
-                            target=debt_reserve.stable_debt_token_address,
-                            function=[BALANCE_OF, aave_user],
-                            returns=None,
-                            block_id=a_record.block_number,
-                        )
+                eth_call_lis.append(
+                    Call(
+                        target=debt_reserve.stable_debt_token_address,
+                        function=[BALANCE_OF, aave_user],
+                        returns=None,
+                        block_id=a_record.block_number,
                     )
-                elif borrow_rate_mode == InterestRateMode.VARIABLE.value:
-                    eth_call_lis.append(
-                        Call(
-                            target=debt_reserve.variable_debt_token_address,
-                            function=[BALANCE_OF, a_record.aave_user],
-                            returns=None,
-                            block_id=a_record.block_number,
-                        )
-                    )
-                else:
-                    raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
+                )
 
         enriched_eth_call_lis = self.multicall_helper.execute_calls(eth_call_lis)
 
@@ -303,14 +247,14 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                     address_asset_block_borrow_balance_dic[address] = dict()
                 if asset not in address_asset_block_borrow_balance_dic[address]:
                     address_asset_block_borrow_balance_dic[address][asset] = dict()
-                address_asset_block_borrow_balance_dic[address][asset][block_number] = cl.returns[0][1]
+                address_asset_block_borrow_balance_dic[address][asset][block_number] = cl.returns
             else:
                 address = cl.args[0]
                 if address not in address_token_block_balance_dic:
                     address_token_block_balance_dic[address] = dict()
                 if token not in address_token_block_balance_dic[address]:
                     address_token_block_balance_dic[address][token] = dict()
-                address_token_block_balance_dic[address][token][block_number] = cl.returns[0][1]
+                address_token_block_balance_dic[address][token][block_number] = cl.returns
 
         # enrich repay, liquidation
         for a_record in aave_records:
@@ -319,20 +263,7 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                 reserve = a_record.reserve
                 block_number = a_record.block_number
 
-                borrow_rate_mode = None
-                if a_record.aave_user in address_asset_borrow:
-                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(reserve)
-                if not borrow_rate_mode:
-                    continue
-                if borrow_rate_mode == InterestRateMode.VARIABLE.value:
-                    vary_token = self.reserve_dic.get(reserve).variable_debt_token_address
-                    debt = address_token_block_balance_dic[address][vary_token][block_number]
-                elif borrow_rate_mode == InterestRateMode.STABLE.value:
-                    stable_token = self.reserve_dic.get(reserve).stable_debt_token_address
-                    debt = address_token_block_balance_dic[address][stable_token][block_number]
-                else:
-                    raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
-                a_record.after_repay_debt = debt
+                a_record.after_repay_debt = address_token_block_balance_dic[address][reserve][block_number]
                 a_record.force_update_current = True
             elif a_record.type() == AaveV1LiquidationCallD.type():
                 address = a_record.aave_user
@@ -340,23 +271,11 @@ class ExportAaveV1Job(FilterTransactionDataJob):
 
                 debt_asset = a_record.debt_asset
                 borrow_rate_mode = None
-                if a_record.aave_user in address_asset_borrow:
-                    borrow_rate_mode = address_asset_borrow[a_record.aave_user].get(debt_asset)
-                if not borrow_rate_mode:
-                    continue
-                if borrow_rate_mode == InterestRateMode.VARIABLE.value:
-                    vary_token = self.reserve_dic.get(debt_asset).variable_debt_token_address
-                    debt = address_token_block_balance_dic[address][vary_token][block_number]
-                elif borrow_rate_mode == InterestRateMode.STABLE.value:
-                    stable_token = self.reserve_dic.get(debt_asset).stable_debt_token_address
-                    debt = address_token_block_balance_dic[address][stable_token][block_number]
-                else:
-                    raise FastShutdownError(f"Unsupported borrow type {borrow_rate_mode}")
 
                 collateral_asset = a_record.collateral_asset
                 collateral_reserve = self.reserve_dic[collateral_asset]
 
-                a_record.debt_after_liquidation = debt
+                a_record.debt_after_liquidation = address_token_block_balance_dic[address][debt_asset][collateral_asset][block_number]
                 a_record.collateral_after_liquidation = address_token_block_balance_dic[address][
                     collateral_reserve.a_token_address
                 ][block_number]
@@ -366,7 +285,7 @@ class ExportAaveV1Job(FilterTransactionDataJob):
         liquidation_lis = self.merge_liquidation_lis(liquidation_lis)
         self._collect_items(AaveV1LiquidationAddressCurrentD.type(), liquidation_lis)
         reserve_init_lis = self.merge_reserve_init_lis(reserve_init_lis)
-        self._collect_items(AaveV1ReserveV1D.type(), reserve_init_lis)
+        self._collect_items(AaveV1ReserveD.type(), reserve_init_lis)
         address_currents = []
         for address, outer_dic in batch_result_dic.items():
             for reserve, kad in outer_dic.items():

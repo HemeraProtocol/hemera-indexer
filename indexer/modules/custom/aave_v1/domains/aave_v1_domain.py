@@ -12,29 +12,6 @@ class AaveV1ReserveD(FilterData):
     a_token_address: str
     a_token_symbol: Optional[str]
     a_token_decimals: Optional[int]
-    stable_debt_token_address: str
-    stable_debt_token_symbol: Optional[str]
-    stable_debt_token_decimals: Optional[int]
-    variable_debt_token_address: str
-    variable_debt_token_symbol: Optional[str]
-    variable_debt_token_decimals: Optional[int]
-    interest_rate_strategy_address: str
-    block_number: int
-    block_timestamp: int
-    transaction_hash: str
-    log_index: int
-    topic0: Optional[str] = None
-    event_name: Optional[str] = None
-
-
-@dataclass
-class AaveV1Reserve(FilterData):
-    asset: str
-    asset_decimals: Optional[int]
-    asset_symbol: Optional[str]
-    a_token_address: str
-    a_token_symbol: Optional[str]
-    a_token_decimals: Optional[int]
 
     interest_rate_strategy_address: str
     block_number: int

@@ -30,7 +30,6 @@ class EventProcessor(ABC):
         self.web3 = web3
 
     def process(self, log: Any) -> T:
-        """Process log data with common field handling and custom processing"""
         try:
             decoded_log = self.event.decode_log(log)
             common_fields = self._extract_common_fields(log, self.event)
@@ -41,7 +40,6 @@ class EventProcessor(ABC):
             raise
 
     def _extract_common_fields(self, log: Any, event: Any) -> dict:
-        """Extract common fields present in all events"""
         return {
             "block_number": log.block_number,
             "block_timestamp": log.block_timestamp,
@@ -53,12 +51,10 @@ class EventProcessor(ABC):
 
     @abstractmethod
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
-        """Process event-specific fields - to be implemented by concrete processors"""
         pass
 
 
 class BaseReserveProcessor(EventProcessor):
-    """Base class for reserve initialization processors"""
 
     def __init__(self, event: Event, data_class: Type[T], web3=None):
         super().__init__(event, data_class, web3)
@@ -221,21 +217,6 @@ class FlashLoanProcessor(EventProcessor):
 
 
 class LiquidationCallProcessor(EventProcessor):
-    """0xe413a321e8681d831f4dbccbca790d2952b56f977908e45be37335533e005286"""
-
-    def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
-        return {
-            "collateral_asset": extract_eth_address(log.topic1),
-            "debt_asset": extract_eth_address(log.topic2),
-            "aave_user": extract_eth_address(log.topic3),
-            "debt_to_cover": decoded_log.get("debtToCover"),
-            "liquidated_collateral_amount": decoded_log.get("liquidatedCollateralAmount"),
-            "liquidator": decoded_log.get("liquidator"),
-            "receive_atoken": decoded_log.get("receiveAToken"),
-        }
-
-
-class LiquidationCallProcessorV1(EventProcessor):
     """0x56864757fd5b1fc9f38f5f3a981cd8ae512ce41b902cf73fc506ee369c6bc237"""
 
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
@@ -255,7 +236,7 @@ class EventConfig:
     """Configuration for each event type"""
 
     name: str
-    contract_address_key: str  # POOL or POOL_CONFIGURE
+    contract_address_key: str
     processor_class: Type[EventProcessor]
     data_class: Type[Any]
 
@@ -281,22 +262,22 @@ class AaveV1Events(Enum):
         data_class=AaveV1WithdrawD,
     )
 
-    BORROW_V1 = EventConfig(
+    BORROW = EventConfig(
         name="Borrow", contract_address_key="POOL_V1", processor_class=BorrowProcessor, data_class=AaveV1BorrowD
     )
 
-    REPAY_V1 = EventConfig(
+    REPAY = EventConfig(
         name="Repay", contract_address_key="POOL_V1", processor_class=RepayProcessor, data_class=AaveV1RepayD
     )
     FLASH_LOAN = EventConfig(
         name="FlashLoan",
-        contract_address_key="POOL_V2",
+        contract_address_key="POOL_V1",
         processor_class=FlashLoanProcessor,
         data_class=AaveV1FlashLoanD,
     )
     LIQUIDATION_CALL = EventConfig(
         name="LiquidationCall",
-        contract_address_key="POOL_V2",
+        contract_address_key="POOL_V1",
         processor_class=LiquidationCallProcessor,
         data_class=AaveV1LiquidationCallD,
     )

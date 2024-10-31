@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIME
 from common.models import HemeraModel, general_converter
 
 
-class AaveV2ReserveV1(HemeraModel):
+class AaveV1Reserve(HemeraModel):
     __tablename__ = "af_aave_v1_reserve"
     asset = Column(BYTEA, primary_key=True)
     asset_decimals = Column(NUMERIC(100))
@@ -29,7 +29,7 @@ class AaveV2ReserveV1(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV1Reserve",
+                "domain": "AaveV1ReserveD",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

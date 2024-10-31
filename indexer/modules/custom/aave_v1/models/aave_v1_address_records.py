@@ -10,7 +10,7 @@ from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 from common.models import HemeraModel, general_converter
 
 
-class AaveV2LendingRecords(HemeraModel):
+class AaveV1LendingRecords(HemeraModel):
     __tablename__ = "af_aave_v1_records"
 
     transaction_hash = Column(BYTEA, primary_key=True)
