@@ -131,6 +131,7 @@ class ReorgController(BaseController):
                 logger.exception(f"An rpc response exception occurred while syncing block data. error: {e}")
                 if e.crashable:
                     logger.exception("Mission will crash immediately.")
+                    self.record_reporter.stop()
                     raise e
 
                 if e.retriable:
@@ -138,21 +139,23 @@ class ReorgController(BaseController):
                     tries_reset = False
                     if tries >= self.max_retries:
                         logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                        self.record_reporter.stop()
                         raise e
                     else:
                         logger.info(f"No: {tries} retry is about to start.")
                 else:
                     logger.exception("Mission will not retry, and exit immediately.")
+                    self.record_reporter.stop()
                     raise e
 
             except Exception as e:
-                print(e)
                 logger.exception("An exception occurred while reorging block data.")
                 tries += 1
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
                     logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     exception_recorder.force_to_flush()
+                    self.record_reporter.stop()
                     raise e
                 else:
                     logger.info("After 5 seconds will retry the job.")

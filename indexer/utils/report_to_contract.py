@@ -8,8 +8,8 @@ Project : hemera_indexer
 import asyncio
 import logging
 import threading
+from concurrent import futures
 from datetime import datetime, timezone
-from queue import Empty, Queue
 
 from eth_account import Account
 from sqlalchemy import insert, update
@@ -26,41 +26,83 @@ from indexer.utils.abi_setting import REGISTER_FEATURE_FUNCTION, SUBMIT_INDEX_FU
 class AsyncTransactionSubmitter:
 
     def __init__(self, web3, account, service):
-        self.web3 = web3
-        self.account = account
-        self.service = service
-        self.nonce = self.web3.eth.get_transaction_count(self.account.address)
-
         self.max_retries = 5
         self.retry_delay = 5
         self.receipt_timeout = 30
         self.receipt_poll_latency = 2
+        self.max_concurrent = 50
 
-        self.submit_thread = None
-        self.transaction_queue = Queue()
+        self.web3 = web3
+        self.account = account
+        self.service = service
+        self.nonce = self.web3.eth.get_transaction_count(self.account.address)
+        self.nonce_lock = None
+
         self.running = False
+        self.thread_pool = None
+        self.loop_thread = None
+        self.event_loop = None
+        self.loop_ready = threading.Event()
+
         self.logger = logging.getLogger(__name__)
 
     def start(self):
-        if self.submit_thread is None:
+        if not self.running:
             self.running = True
-            self.submit_thread = threading.Thread(target=self._run_async_submitter)
-            self.submit_thread.daemon = False
-            self.submit_thread.start()
-            self.logger.info("Submit thread started.")
+            self.loop_thread = threading.Thread(target=self._run_event_loop)
+            self.loop_thread.daemon = False
+            self.loop_thread.start()
+
+            self.loop_ready.wait()
+            self.logger.info("Transaction submitter started.")
         else:
-            self.logger.info("Submit thread already started.")
+            self.logger.info("Transaction submitter already started.")
+
+    def _run_event_loop(self):
+        try:
+            self.event_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self.event_loop)
+
+            self.nonce_lock = asyncio.Lock(loop=self.event_loop)
+            self.thread_pool = futures.ThreadPoolExecutor(
+                max_workers=self.max_concurrent, thread_name_prefix="Web3Worker"
+            )
+
+            self.loop_ready.set()
+
+            self.event_loop.run_forever()
+        finally:
+            self.thread_pool.shutdown(wait=True)
+            self.event_loop.close()
+            self.logger.info("Event loop closed.")
 
     def stop(self):
-        self.running = False
-        if self.submit_thread:
-            self.submit_thread.join(timeout=self.receipt_timeout)
-            self.submit_thread = None
-            self.logger.info("Submit thread stopped.")
+        if self.running:
+            self.running = False
+            if self.event_loop and self.loop_thread:
+                self.event_loop.call_soon_threadsafe(self.event_loop.stop)
+                self.loop_thread.join()
+                self.loop_thread = None
+            self.logger.info("Transaction submitter stopped.")
         else:
-            self.logger.info("Submit thread already stopped.")
+            self.logger.info("Transaction submitter already stopped.")
 
-    def submit_record_to_db(self, info, transaction_hash=None, exception=None):
+    def set_transaction(self, info):
+
+        def _handle_future_result(future):
+            try:
+                future.result()
+            except Exception as e:
+                self.logger.error(f"Transaction processing failed: {e}")
+
+        if not self.running:
+            raise RuntimeError("Transaction submitter not running.")
+
+        feature = asyncio.run_coroutine_threadsafe(self._process_transaction(info), self.event_loop)
+        feature.add_done_callback(_handle_future_result)
+        self.logger.info("Transaction submitted to processing queue")
+
+    async def submit_record_to_db(self, info, transaction_hash=None, exception=None):
         session = self.service.get_service_session()
 
         try:
@@ -81,7 +123,7 @@ class AsyncTransactionSubmitter:
             session.close()
         return result.inserted_primary_key[0]
 
-    def update_report_status(self, report_id, report_status, exception=None):
+    async def update_report_status(self, report_id, report_status, exception=None):
         session = self.service.get_service_session()
         try:
             stmt = (
@@ -96,104 +138,111 @@ class AsyncTransactionSubmitter:
         finally:
             session.close()
 
-    def set_transaction(self, info):
-        self.transaction_queue.put(info)
-
-    def _run_async_submitter(self):
-        asyncio.run(self._queue_check_and_process())
-
-    async def _queue_check_and_process(self):
-        while self.running:
-            try:
-                try:
-                    info = self.transaction_queue.get_nowait()
-                    success = await self._process_transaction(info)
-                    self.transaction_queue.task_done()
-
-                    if not success:
-                        # todo message store in db
-                        pass
-
-                except Empty as e:
-                    await asyncio.sleep(1)
-                    continue
-            except Exception as e:
-                self.logger.error(f"Submit transaction failed. {e}")
+    async def _get_next_nonce(self):
+        online_nonce = await self.event_loop.run_in_executor(
+            self.thread_pool,
+            self.web3.eth.get_transaction_count,
+            self.account.address,
+        )
+        if self.nonce == online_nonce:
+            self.nonce -= 1
+        current_nonce = max(self.nonce, online_nonce)
+        self.nonce = current_nonce + 1 if current_nonce == online_nonce else self.nonce
+        return current_nonce
 
     async def _process_transaction(self, info: dict) -> bool:
+        txn_hash, report_id = None, None
         builder = info["transaction_builder"]
         parameters = info["transaction_parameters"]
 
         self.logger.info(f"Processing transaction with parameters: {parameters}")
 
-        self.nonce = (
-            self.nonce if self.web3.eth.get_transaction_count(self.account.address) < self.nonce else self.nonce
-        )
-
         for entire_retry in range(self.max_retries):
             for submit_retry in range(self.max_retries):
-                try:
-                    parameters["nonce"] = self.nonce
-                    signed_txn = builder(**parameters)
-                    txn_hash = self.web3.eth.send_raw_transaction(signed_txn.rawTransaction)
-                    self.logger.info(
-                        f"Submitted transaction {signed_txn} successfully with parameter: {parameters}.\n"
-                        f"Waiting for receipt."
-                    )
-                    report_id = self.submit_record_to_db(parameters, txn_hash)
+                async with self.nonce_lock:
+                    try:
+                        parameters["nonce"] = await self._get_next_nonce()
 
-                except ValueError as e:
-                    if str(e).find("nonce too low") != -1:
-                        self.nonce = self.nonce + 1
-                        continue
-
-                except Exception as e:
-                    self.logger.error(f"Building and submitting transaction failed. {e}")
-                    await asyncio.sleep(self.retry_delay)
-                    continue
-
-            for receipt_retry in range(self.max_retries):
-                try:
-                    receipt = self.web3.eth.wait_for_transaction_receipt(
-                        txn_hash, timeout=self.receipt_timeout, poll_latency=self.receipt_poll_latency
-                    )
-
-                    if receipt["status"] == 1:
-                        self.logger.info(f"Transaction {bytes_to_hex_str(txn_hash)} had been receipted.")
-                        self.update_report_status(report_id, ReportStatus.SUCCESS)
-                        return True
-                    else:
-                        self.logger.error(
-                            f"Transaction: {bytes_to_hex_str(txn_hash)} failed. \n"
-                            f"with info: {parameters}\n"
-                            f"Receipt: {receipt}"
+                        signed_txn = builder(**parameters)
+                        txn_hash = await self.event_loop.run_in_executor(
+                            self.thread_pool, self.web3.eth.send_raw_transaction, signed_txn.rawTransaction
                         )
-                        self.update_report_status(report_id, ReportStatus.TRANSACTION_FAILED)
-                        break
-                except TimeExhausted as e:
-                    self.logger.warning(
-                        f"Transaction: {bytes_to_hex_str(txn_hash)} is not in the chain after "
-                        f"{self.receipt_timeout * (receipt_retry + 1)} seconds. \n"
-                        f"Reporter will continue to retry waiting for receipt "
-                        f"{self.max_retries - receipt_retry - 1} times, {self.receipt_timeout} seconds each time.\n"
-                    )
-                    receipt = None
-                    continue
 
-            if receipt is None or receipt["status"] == 0:
+                        self.logger.info(
+                            f"Submitted transaction {signed_txn} successfully with parameter: {parameters}.\n"
+                            f"Waiting for receipt."
+                        )
+
+                        report_id = await self.submit_record_to_db(parameters, txn_hash)
+                        break
+
+                    except ValueError as e:
+                        if (
+                            str(e).find("nonce too low") != -1
+                            or str(e).find("replacement transaction underpriced") != -1
+                        ):
+                            self.logger.error(e)
+                            self.logger.warning(
+                                "Reporter will retry to submit the transaction with another nonce. "
+                                f"Now nonce: {self.nonce}"
+                            )
+                            async with self.nonce_lock:
+                                self.nonce += 1
+
+                    except Exception as e:
+                        self.logger.error(
+                            f"Building and submitting transaction failed with parameter: {parameters}. {e}"
+                        )
+                        await asyncio.sleep(self.retry_delay)
+
+            receipt = await self._wait_for_receipt(txn_hash)
+            if receipt is None:
                 self.logger.warning(
                     f"Transaction: {bytes_to_hex_str(txn_hash)} had not been receipted by chain. \n"
                     f"Reporter will retry to submit the transaction with info: {parameters}. \n "
                 )
-                self.update_report_status(
+                await self.update_report_status(
                     report_id,
                     ReportStatus.NO_RECEIPT,
                     exception=f"Transaction is not in the chain after "
                     f"{self.receipt_timeout * self.max_retries} seconds.",
                 )
-                await asyncio.sleep(self.retry_delay)
+            elif receipt["status"] == 1:
+                self.logger.info(f"Transaction {bytes_to_hex_str(txn_hash)} had been receipted.")
+                await self.update_report_status(report_id, ReportStatus.SUCCESS)
+                return True
+            elif receipt["status"] == 0:
+                self.logger.warning(
+                    f"Transaction: {bytes_to_hex_str(txn_hash)} failed. \n"
+                    f"with info: {parameters}\n"
+                    f"Receipt: {receipt}\n"
+                    f"Reporter will retry to submit the transaction with info: {parameters}. \n "
+                )
+                await self.update_report_status(report_id, ReportStatus.TRANSACTION_FAILED)
+
+            await asyncio.sleep(self.retry_delay)
 
         return False
+
+    async def _wait_for_receipt(self, txn_hash):
+        receipt = None
+        for receipt_retry in range(self.max_retries):
+            try:
+                receipt = await self.event_loop.run_in_executor(
+                    self.thread_pool,
+                    lambda: self.web3.eth.wait_for_transaction_receipt(
+                        txn_hash, timeout=self.receipt_timeout, poll_latency=self.receipt_poll_latency
+                    ),
+                )
+            except TimeExhausted as e:
+                self.logger.warning(
+                    f"Transaction: {bytes_to_hex_str(txn_hash)} is not in the chain after "
+                    f"{self.receipt_timeout * (receipt_retry + 1)} seconds. \n"
+                    f"Reporter will continue to retry waiting for receipt "
+                    f"{self.max_retries - receipt_retry - 1} times, {self.receipt_timeout} seconds each time.\n"
+                )
+
+        return receipt
 
 
 class RecordReporter:
@@ -208,8 +257,15 @@ class RecordReporter:
             abi=[SUBMIT_INDEX_FUNCTION.get_abi()],
         )
         self.transaction_submitter = AsyncTransactionSubmitter(web3=self.web3, account=self.account, service=service)
-        self.transaction_submitter.start()
         self.nonce = self.web3.eth.get_transaction_count(self.account.address)
+
+        self.start()
+
+    def start(self):
+        self.transaction_submitter.start()
+
+    def stop(self):
+        self.transaction_submitter.stop()
 
     def report(self, chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict):
         def transaction_builder(

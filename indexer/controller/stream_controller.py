@@ -120,6 +120,7 @@ class StreamController(BaseController):
                 logger.error(f"An rpc response exception occurred while syncing block data. error: {e}")
                 if e.crashable:
                     logger.error("Mission will crash immediately.")
+                    self.record_reporter.stop()
                     raise e
 
                 if e.retriable:
@@ -127,11 +128,13 @@ class StreamController(BaseController):
                     tries_reset = False
                     if tries >= self.max_retries:
                         logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                        self.record_reporter.stop()
                         raise e
                     else:
                         logger.info(f"No: {tries} retry is about to start.")
                 else:
                     logger.error("Mission will not retry, and exit immediately.")
+                    self.record_reporter.stop()
                     raise e
 
             except Exception as e:
@@ -141,6 +144,7 @@ class StreamController(BaseController):
                 if not retry_errors or tries >= self.max_retries:
                     logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     exception_recorder.force_to_flush()
+                    self.record_reporter.stop()
                     raise e
 
                 else:
