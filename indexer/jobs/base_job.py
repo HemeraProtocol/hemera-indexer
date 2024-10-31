@@ -45,6 +45,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     tokens = None
 
+    is_locked = False
     is_filter = False
     dependency_types = []
     output_types = []
@@ -196,7 +197,6 @@ class FilterTransactionDataJob(ExtensionJob):
     dependency_types = [Transaction]
     output_types = []
     is_filter = True
-    is_locked = False
 
     def get_filter(self):
         raise NotImplementedError
