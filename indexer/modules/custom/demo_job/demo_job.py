@@ -3,18 +3,19 @@
 
 from typing import List
 
+from common.utils.web3_utils import ZERO_ADDRESS
+
 # Dependency dataclass
 from indexer.domain.log import Log
 from indexer.domain.token_transfer import TokenTransfer
 from indexer.jobs.base_job import FilterTransactionDataJob
 
 # Custom dataclass
-from indexer.modules.custom.demo_job.domain.erc721_mint_time import ERC721TokenMint
+from indexer.modules.custom.demo_job.domain.erc721_token_mint import ERC721TokenMint
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 # Utility
 from indexer.utils.abi_setting import ERC721_TRANSFER_EVENT
-from common.utils.web3_utils import ZERO_ADDRESS
 
 
 def _filter_erc721_mint_event(logs: List[Log]) -> List[TokenTransfer]:
@@ -23,20 +24,18 @@ def _filter_erc721_mint_event(logs: List[Log]) -> List[TokenTransfer]:
         if log.topic0 == ERC721_TRANSFER_EVENT.get_signature():
             decoded_data = ERC721_TRANSFER_EVENT.decode_log(log)
             if decoded_data["from"] == ZERO_ADDRESS:
-                token_transfers.append(ERC721TokenMint(
-                    address=decoded_data["to"],
-                    token_address=log.address,
-                    token_id=decoded_data["value"],
-                    block_timestamp=log.block_timestamp,
-                    block_number=log.block_number,
-                    transaction_hash=log.transaction_hash,
-                    log_index=log.log_index,
-                ))
-    return [
-        transfer
-        for transfer in token_transfers
-        if transfer.from_address == ZERO_ADDRESS and transfer.token_type == "ERC721"
-    ]
+                token_transfers.append(
+                    ERC721TokenMint(
+                        address=decoded_data["to"],
+                        token_address=log.address,
+                        token_id=decoded_data["tokenId"],
+                        block_timestamp=log.block_timestamp,
+                        block_number=log.block_number,
+                        transaction_hash=log.transaction_hash,
+                        log_index=log.log_index,
+                    )
+                )
+    return token_transfers
 
 
 class DemoJob(FilterTransactionDataJob):

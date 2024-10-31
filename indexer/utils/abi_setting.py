@@ -51,7 +51,7 @@ ERC721_TRANSFER_EVENT = Event(
         "inputs": [
             {"indexed": True, "name": "from", "type": "address"},
             {"indexed": True, "name": "to", "type": "address"},
-            {"indexed": True, "name": "value", "type": "uint256"},
+            {"indexed": True, "name": "tokenId", "type": "uint256"},
         ],
         "name": "Transfer",
         "type": "event",
