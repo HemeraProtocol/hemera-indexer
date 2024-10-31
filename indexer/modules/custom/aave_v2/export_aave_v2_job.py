@@ -410,10 +410,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 user = action.aave_user
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
-                if res_d[user][reserve].supply_amount is None:
-                    res_d[user][reserve].supply_amount = action.amount
-                else:
-                    res_d[user][reserve].supply_amount -= action.amount
+                res_d[user][reserve].supply_amount = action.after_withdraw
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == AaveV2Events.LIQUIDATION_CALL.value.name:
