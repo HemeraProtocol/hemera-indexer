@@ -281,4 +281,3 @@ class AaveV1Events(Enum):
         processor_class=LiquidationCallProcessor,
         data_class=AaveV1LiquidationCallD,
     )
-

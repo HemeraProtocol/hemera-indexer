@@ -156,7 +156,6 @@ class ExportAaveV1Job(FilterTransactionDataJob):
         for a_record in aave_records:
             # when repay, call rpc to get debt_balance
             if a_record.type() == AaveV1RepayD.type():
-                reserve = self.reserve_dic[a_record.reserve]
                 eth_call_lis.append(
                     Call(
                         self.contract_addresses["POOL_V1_CORE"],
@@ -165,7 +164,6 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                             a_record.reserve,
                             a_record.aave_user,
                         ],
-                        None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -183,13 +181,10 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                 )
 
             elif a_record.type() == AaveV1RepayD.type():
-                reserve = self.reserve_dic[a_record.reserve]
-
                 eth_call_lis.append(
                     Call(
                         target=self.contract_addresses["POOL_V1_CORE"],
-                        function=["", a_record.aave_user],
-                        returns=None,
+                        function=[GET_USRE_BALANCE, a_record.reserve, a_record.aave_user],
                         block_id=a_record.block_number,
                     )
                 )
@@ -201,7 +196,6 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                     Call(
                         target=collateral_reserve.a_token_address,
                         function=[BALANCE_OF, aave_user],
-                        returns=None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -212,7 +206,6 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                     Call(
                         target=debt_reserve.stable_debt_token_address,
                         function=[BALANCE_OF, aave_user],
-                        returns=None,
                         block_id=a_record.block_number,
                     )
                 )
@@ -270,12 +263,13 @@ class ExportAaveV1Job(FilterTransactionDataJob):
                 block_number = a_record.block_number
 
                 debt_asset = a_record.debt_asset
-                borrow_rate_mode = None
 
                 collateral_asset = a_record.collateral_asset
                 collateral_reserve = self.reserve_dic[collateral_asset]
 
-                a_record.debt_after_liquidation = address_token_block_balance_dic[address][debt_asset][collateral_asset][block_number]
+                a_record.debt_after_liquidation = address_token_block_balance_dic[address][debt_asset][
+                    collateral_asset
+                ][block_number]
                 a_record.collateral_after_liquidation = address_token_block_balance_dic[address][
                     collateral_reserve.a_token_address
                 ][block_number]
