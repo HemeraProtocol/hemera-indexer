@@ -10,6 +10,7 @@ from typing import List
 from common.models.blocks import Blocks
 from common.models.transactions import Transactions
 from common.utils.format_utils import bytes_to_hex_str
+from indexer.domain import DomainMeta
 
 
 def validate_transaction_builder(transactions: List[Transactions]) -> List[str]:
@@ -46,13 +47,25 @@ def validate_block_builder(block: Blocks, transactions: List[Transactions]) -> d
 def report_record_builder(records: List[dict]) -> List[dict]:
     formated_records = []
     for record in records:
+
+        report_details = []
+        for detail in record.report_details:
+            dataclass = DomainMeta._hash_mapping[detail["dataClass"]]
+            report_details.append(
+                {
+                    "dataclass": dataclass,
+                    "count": detail["count"],
+                }
+            )
+
         formated_records.append(
             {
                 "chain_id": record.chain_id,
+                "mission_type": record.mission_type,
                 "start_block_number": record.start_block_number,
                 "end_block_number": record.end_block_number,
                 "runtime_code_hash": bytes_to_hex_str(record.runtime_code_hash),
-                "report_details": record.report_details,
+                "report_details": report_details,
                 "transaction_hash": bytes_to_hex_str(record.transaction_hash),
                 "report_status": record.report_status.value,
                 "exception": record.exception,

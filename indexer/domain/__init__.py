@@ -19,6 +19,7 @@ class DomainMeta(type):
     _registry = {}
     _used_hash = set()
     _hash_mapping = {}
+    _dataclass_mapping = {}
     _code_integrity = {}
 
     @classmethod
@@ -71,6 +72,7 @@ class DomainMeta(type):
 
         mcs._used_hash.add(dataclass_code)
         mcs._hash_mapping[dataclass_code] = f"{new_cls.__module__}.{name}"
+        mcs._dataclass_mapping[f"{new_cls.__module__}.{name}"] = dataclass_code
         mcs._code_integrity[dataclass_code] = code_hash
         setattr(new_cls, "_auto_hash", dataclass_code)
 
