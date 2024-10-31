@@ -16,11 +16,11 @@ from indexer.modules.custom.merchant_moe.abi import (
     GET_BIN_STEP_FUNCTION,
     GET_TOKENX_FUNCTION,
     GET_TOKENY_FUNCTION,
+    LB_PAIR_CREATED_EVENT,
     SWAP_EVENT,
     TOTAL_SUPPLY_FUNCTION,
     TRANSFER_BATCH_EVNET,
     WITHDRAWN_FROM_BINS_EVENT,
-    LB_PAIR_CREATED_EVENT
 )
 from indexer.modules.custom.merchant_moe.domains.erc1155_token_holding import (
     MerchantMoeErc1155TokenCurrentHolding,
@@ -53,8 +53,13 @@ FUNCTION_LIST = [
 ]
 ABI_LIST = [f.get_abi() for f in FUNCTION_LIST]
 
-EVENT_LIST = [DEPOSITED_TO_BINS_EVENT, WITHDRAWN_FROM_BINS_EVENT, TRANSFER_BATCH_EVNET, SWAP_EVENT,
-              LB_PAIR_CREATED_EVENT]
+EVENT_LIST = [
+    DEPOSITED_TO_BINS_EVENT,
+    WITHDRAWN_FROM_BINS_EVENT,
+    TRANSFER_BATCH_EVNET,
+    SWAP_EVENT,
+    LB_PAIR_CREATED_EVENT,
+]
 TOPIC0_LIST = [e.get_signature() for e in EVENT_LIST]
 
 
@@ -99,8 +104,9 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
 
         token_balances = self._data_buff[TokenBalance.type()]
 
-        erc115_token_balances = [tb for tb in token_balances if
-                                 tb.token_type == 'ERC1155' and tb.token_address in self._exist_pool]
+        erc115_token_balances = [
+            tb for tb in token_balances if tb.token_type == "ERC1155" and tb.token_address in self._exist_pool
+        ]
         # Maybe it can be removed
         erc115_token_balances.sort(key=lambda x: x.block_number)
 
@@ -115,13 +121,14 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
             }
 
             position_token_address_request_token_id_dict[erc115_token_balance.token_address][
-                erc115_token_balance.token_id, erc115_token_balance.block_number] = token_id_requset_dict
+                erc115_token_balance.token_id, erc115_token_balance.block_number
+            ] = token_id_requset_dict
             # current holding
             holding_common_params = {
-                'position_token_address': erc115_token_balance.token_address,
-                'wallet_address': erc115_token_balance.address,
-                'balance': erc115_token_balance.balance,
-                **token_id_requset_dict
+                "position_token_address": erc115_token_balance.token_address,
+                "wallet_address": erc115_token_balance.address,
+                "balance": erc115_token_balance.balance,
+                **token_id_requset_dict,
             }
 
             merchant_moe_erc_token_holding = MerchantMoeErc1155TokenHolding(**holding_common_params)
@@ -129,8 +136,9 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
 
             merchant_moe_erc_token_current_holding = MerchantMoeErc1155TokenCurrentHolding(**holding_common_params)
             # covered by the latest one
-            current_holding_dict[
-                erc115_token_balance.token_address, erc115_token_balance.token_id] = merchant_moe_erc_token_current_holding
+            current_holding_dict[erc115_token_balance.token_address, erc115_token_balance.token_id] = (
+                merchant_moe_erc_token_current_holding
+            )
 
         self._collect_domains(current_holding_dict.values())
 
@@ -151,20 +159,21 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
 
             current_supply_dict = {}
 
-            total_supply_result.sort(key=lambda x: x['block_number'])
+            total_supply_result.sort(key=lambda x: x["block_number"])
             for supply_result in total_supply_result:
                 supply_common_params = {
-                    'position_token_address': position_token_address,
-                    'token_id': supply_result['token_id'],
-                    'total_supply': supply_result['totalSupply'],
-                    'block_number': supply_result['block_number'],
-                    'block_timestamp': supply_result['block_timestamp']
+                    "position_token_address": position_token_address,
+                    "token_id": supply_result["token_id"],
+                    "total_supply": supply_result["totalSupply"],
+                    "block_number": supply_result["block_number"],
+                    "block_timestamp": supply_result["block_timestamp"],
                 }
                 merchant_moe_erc_token_supply = MerchantMoeErc1155TokenSupply(**supply_common_params)
                 self._collect_domain(merchant_moe_erc_token_supply)
                 merchant_moe_erc_token_current_supply = MerchantMoeErc1155TokenCurrentSupply(**supply_common_params)
-                current_supply_dict[
-                    position_token_address, supply_result['token_id']] = merchant_moe_erc_token_current_supply
+                current_supply_dict[position_token_address, supply_result["token_id"]] = (
+                    merchant_moe_erc_token_current_supply
+                )
 
             self._collect_domains(current_supply_dict.values())
 
@@ -181,8 +190,8 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                     "token_id": token_id,
                 }
                 position_token_address_request_token_id_dict[log.address][
-                    token_id, log.block_number] = token_id_requset_dict
-
+                    token_id, log.block_number
+                ] = token_id_requset_dict
 
         for position_token_address, request_token_id_dict in position_token_address_request_token_id_dict.items():
             total_bins_requests = []
@@ -198,29 +207,28 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 self._is_batch,
                 ABI_LIST,
             )
-            total_bin_result.sort(key=lambda x: x['block_number'])
+            total_bin_result.sort(key=lambda x: x["block_number"])
             for bins_result in total_bin_result:
                 bin_common_params = {
-                    'position_token_address': position_token_address,
-                    'token_id': bins_result['token_id'],
-                    'block_number': bins_result['block_number'],
-                    'block_timestamp': bins_result['block_timestamp'],
-                    'reserve0_bin': bins_result['reserve0_bin'],
-                    'reserve1_bin': bins_result['reserve1_bin'],
+                    "position_token_address": position_token_address,
+                    "token_id": bins_result["token_id"],
+                    "block_number": bins_result["block_number"],
+                    "block_timestamp": bins_result["block_timestamp"],
+                    "reserve0_bin": bins_result["reserve0_bin"],
+                    "reserve1_bin": bins_result["reserve1_bin"],
                 }
 
                 mer_chant_moe_token_bin = MerChantMoeTokenBin(**bin_common_params)
                 self._collect_domain(mer_chant_moe_token_bin)
 
                 mer_chant_moe_token_current_bin = MerChantMoeTokenCurrentBin(**bin_common_params)
-                current_bins_dict[position_token_address, bins_result['token_id']] = mer_chant_moe_token_current_bin
+                current_bins_dict[position_token_address, bins_result["token_id"]] = mer_chant_moe_token_current_bin
             self._collect_domains(current_bins_dict.values())
 
         # get active id and step
         if logs is not None and len(logs) > 0:
             self._batch_work_executor.execute(
-                logs, self._collect_pool_batch, total_items=len(logs),
-                split_method=split_logs
+                logs, self._collect_pool_batch, total_items=len(logs), split_method=split_logs
             )
             self._batch_work_executor.wait()
 
@@ -241,7 +249,6 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                         block_timestamp=log.block_timestamp,
                     )
                     self._collect_domain(mer_chant_moe_pool)
-
 
     def _collect_pool_batch(self, log_dict) -> None:
         if log_dict is None or len(log_dict) == 0:
@@ -298,6 +305,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         if current_pool_data:
             self._collect_item(MerChantMoePoolCurrentStatu.type(), current_pool_data)
 
+
 def split_logs(logs):
     log_dict = defaultdict(list)
     for data in logs:
@@ -305,6 +313,7 @@ def split_logs(logs):
 
     for address, data in log_dict.items():
         yield {address: data}
+
 
 def batch_get_bin(web3, make_requests, requests, nft_address, is_batch, abi_list):
     fn_name = "getBin"

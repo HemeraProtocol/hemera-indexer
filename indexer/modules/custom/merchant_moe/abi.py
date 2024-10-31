@@ -124,11 +124,17 @@ SWAP_EVENT = Event(
     }
 )
 
-LB_PAIR_CREATED_EVENT = Event({"anonymous": False, "inputs": [
-    {"indexed": True, "internalType": "contract IERC20", "name": "tokenX", "type": "address"},
-    {"indexed": True, "internalType": "contract IERC20", "name": "tokenY", "type": "address"},
-    {"indexed": True, "internalType": "uint256", "name": "binStep", "type": "uint256"},
-    {"indexed": False, "internalType": "contract ILBPair", "name": "LBPair", "type": "address"},
-    {"indexed": False, "internalType": "uint256", "name": "pid", "type": "uint256"}], "name": "LBPairCreated",
-                           "type": "event"}
-                              )
+LB_PAIR_CREATED_EVENT = Event(
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "internalType": "contract IERC20", "name": "tokenX", "type": "address"},
+            {"indexed": True, "internalType": "contract IERC20", "name": "tokenY", "type": "address"},
+            {"indexed": True, "internalType": "uint256", "name": "binStep", "type": "uint256"},
+            {"indexed": False, "internalType": "contract ILBPair", "name": "LBPair", "type": "address"},
+            {"indexed": False, "internalType": "uint256", "name": "pid", "type": "uint256"},
+        ],
+        "name": "LBPairCreated",
+        "type": "event",
+    }
+)
