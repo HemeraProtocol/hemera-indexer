@@ -13,7 +13,7 @@ from common.models import db
 from common.models.contracts import Contracts
 from common.models.tokens import Tokens
 from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict, format_to_dict, format_value_for_json
+from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, format_value_for_json, hex_str_to_bytes
 from indexer.modules.custom.address_index.address_index_job import AddressTransactionType, InternalTransactionType
 from indexer.modules.custom.address_index.models.address_contract_operation import AddressContractOperations
 from indexer.modules.custom.address_index.models.address_index_daily_stats import AddressIndexDailyStats
@@ -94,19 +94,24 @@ def get_wallet_address_volumes(wallet_address: Optional[Union[str, bytes]], coin
         total_gas_fee_used_eth += gas_fee_used
         total_gas_fee_used_usd += total_gas_fee_used_usd
 
+        daily_volumes.sort(key=lambda x: x["date"])
+        interval_day: int = (
+            (daily_volumes[-1].get("date") - daily_volumes[0].get("date")).days if len(daily_volumes) > 1 else 1
+        )
+
     return {
         "total_volume_eth": str(total_volume_eth),
         "total_volume_usd": str(total_volume_usd),
         "total_gas_fee_used_eth": str(total_gas_fee_used_eth),
         "total_gas_fee_used_usd": str(total_gas_fee_used_usd),
-        "average_daily_volume_eth": str(total_volume_eth / len(daily_volumes)) if daily_volumes else "0",
-        "average_daily_volume_usd": str(total_volume_usd / len(daily_volumes)) if daily_volumes else "0",
+        "average_daily_volume_eth": str(total_volume_eth / interval_day) if daily_volumes else "0",
+        "average_daily_volume_usd": str(total_volume_usd / interval_day) if daily_volumes else "0",
     }
 
 
 def get_wallet_address_token_holdings(wallet_address: Optional[Union[str, bytes]]):
     if isinstance(wallet_address, str):
-        address_bytes = binascii.unhexlify(wallet_address[2:])
+        address_bytes = hex_str_to_bytes(wallet_address)
     else:
         address_bytes = wallet_address
 
@@ -135,9 +140,9 @@ def get_wallet_address_token_holdings(wallet_address: Optional[Union[str, bytes]
             res.append(
                 format_value_for_json(
                     {
-                        "balance": float(int(holder.balance_of) / (10**token.decimals or 0)),
+                        "balance": float(int(holder.balance_of) / (10 ** (token.decimals or 0))),
                         "token": {
-                            "address": "0x" + holder.token_address.hex(),
+                            "address": bytes_to_hex_str(holder.token_address),
                             "token_name": token.name,
                             "token_symbol": token.symbol,
                             "token_logo_url": token.icon_url,
@@ -301,7 +306,7 @@ def get_address_base_info(address: Union[str, bytes]) -> dict:
     """
     Fetch and combine address profile data from both the base profile and recent transactions.
     """
-    address_bytes = bytes.fromhex(address[2:]) if isinstance(address, str) else address
+    address_bytes = hex_str_to_bytes(address) if isinstance(address, str) else address
 
     # Fetch the base profile
     base_profile = db.session.query(AddressBaseProfile).filter_by(address=address_bytes).first()
@@ -337,7 +342,7 @@ def get_address_base_info(address: Union[str, bytes]) -> dict:
 
 def get_address_first_deploy_contract_time(address: Union[str, bytes]) -> datetime:
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     first_deploy_contract = (
         db.session.query(AddressContractOperations.block_timestamp)
         .filter(
@@ -368,7 +373,7 @@ def get_address_hist_deploy_contract_count(
 
 def get_address_deploy_contract_count_before_date(address: Union[str, bytes], start_time: datetime = None) -> int:
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     if start_time:
         count = (
             db.session.query(AddressContractOperations)
@@ -386,7 +391,7 @@ def get_address_deploy_contract_count_before_date(address: Union[str, bytes], st
 
 def get_address_contract_operations(address: Union[str, bytes], limit=5, offset=0) -> list[dict]:
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     transactions = (
         db.session.query(AddressContractOperations)
         .order_by(
@@ -480,7 +485,7 @@ def get_address_hist_agg_stats(
     address: Union[str, bytes], attr: Union[str, List[str]], start_time: datetime = None, end_time: datetime = None
 ):
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
 
     if isinstance(attr, str):
         attr = [attr]
@@ -510,7 +515,7 @@ def get_address_hist_stats(
     address: Union[str, bytes], attr: Union[str, List[str]], start_time: datetime = None, end_time: datetime = None
 ):
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
 
     if isinstance(attr, str):
         attr = [attr]

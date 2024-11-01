@@ -13,9 +13,9 @@ def calculate_aci_score(profile, assets, volumes):
         volumes (dict): Contains transaction_volume
 
     Returns:
-        float: The calculated score between 0 and 100
+
     """
-    total_score = 0
+    base_score = 580
 
     # 1. TVL/Asset Score (0-100 points)
     asset_value = float(assets.get("total_asset_value_usd", 0))
@@ -46,6 +46,19 @@ def calculate_aci_score(profile, assets, volumes):
     else:
         volume_score = (tx_volume / 10.0) * 50.0
 
-    final_score = tvl_score + tx_score + volume_score
+    # 4. Account Age Score (0-70 points)
+    first_timestamp = profile.get("first_block_timestamp")
+    age_score = 0.0
+    if first_timestamp:
+        first_time = datetime.fromisoformat(first_timestamp).timestamp()
+        current_time = datetime.now().timestamp()
+        account_age_months = (current_time - first_time) / (30 * 24 * 60 * 60)  # Convert seconds to months
 
-    return round(final_score, 2)
+        if account_age_months >= 120:  # 10 years or more
+            age_score = 70.0
+        elif account_age_months >= 3:  # Between 3 months and 10 years
+            age_score = ((account_age_months - 3) / (120 - 3)) * 70.0
+
+    final_score = base_score + tvl_score + tx_score + volume_score + age_score
+
+    return min(round(final_score, 2), 850)
