@@ -112,7 +112,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         current_holding_dict = {}
 
         for erc115_token_balance in erc115_token_balances:
-            token_id_requset_dict = {
+            token_id_request_dict = {
                 "block_number": erc115_token_balance.block_number,
                 "block_timestamp": erc115_token_balance.block_timestamp,
                 "token_id": erc115_token_balance.token_id,
@@ -120,13 +120,13 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
 
             position_token_address_request_token_id_dict[erc115_token_balance.token_address][
                 erc115_token_balance.token_id, erc115_token_balance.block_number
-            ] = token_id_requset_dict
+            ] = token_id_request_dict
             # current holding
             holding_common_params = {
                 "position_token_address": erc115_token_balance.token_address,
                 "wallet_address": erc115_token_balance.address,
                 "balance": erc115_token_balance.balance,
-                **token_id_requset_dict,
+                **token_id_request_dict,
             }
 
             merchant_moe_erc_token_holding = MerchantMoeErc1155TokenHolding(**holding_common_params)
@@ -140,7 +140,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
 
         self._collect_domains(current_holding_dict.values())
 
-        # collect total supply, total_suuply changes only in the case of changing of the erc115 token
+        # collect total supply, total_supply changes only in the case of changing of the erc115 token
         for position_token_address, request_token_id_dict in position_token_address_request_token_id_dict.items():
             total_supply_requests = []
             for _, request_dict in request_token_id_dict.items():
@@ -182,14 +182,14 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 decode_dict = SWAP_EVENT.decode_log(log)
                 token_id = decode_dict["id"]
 
-                token_id_requset_dict = {
+                token_id_request_dict = {
                     "block_number": log.block_number,
                     "block_timestamp": log.block_timestamp,
                     "token_id": token_id,
                 }
                 position_token_address_request_token_id_dict[log.address][
                     token_id, log.block_number
-                ] = token_id_requset_dict
+                ] = token_id_request_dict
 
         for position_token_address, request_token_id_dict in position_token_address_request_token_id_dict.items():
             total_bins_requests = []
