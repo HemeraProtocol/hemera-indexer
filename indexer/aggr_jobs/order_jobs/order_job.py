@@ -38,8 +38,10 @@ class AggrOrderJob(AggrBaseJob):
 
             if 'period_feature_holding_balance_lendle_au.sql' not in job_list:
                 job_list.append('period_feature_holding_balance_lendle_au.sql')
-            # if 'period_feature_holding_balance_lendle.sql' not in job_list:
-            #     job_list.append('period_feature_holding_balance_lendle.sql')
+
+            if 'period_feature_holding_balance_init_capital.sql' not in job_list:
+                job_list.append('period_feature_holding_balance_init_capital.sql')
+
 
     def run(self, **kwargs):
         start_date_limit = kwargs["start_date"]
