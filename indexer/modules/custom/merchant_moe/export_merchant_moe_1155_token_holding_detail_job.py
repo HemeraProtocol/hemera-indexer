@@ -29,13 +29,13 @@ from indexer.modules.custom.merchant_moe.domains.erc1155_token_holding import (
     MerchantMoeErc1155TokenSupply,
 )
 from indexer.modules.custom.merchant_moe.domains.merchant_moe import (
-    MerChantMoePool,
-    MerChantMoePoolCurrentStatus,
-    MerChantMoePoolRecord,
-    MerChantMoeTokenBin,
-    MerChantMoeTokenCurrentBin,
+    MerchantMoePool,
+    MerchantMoePoolCurrentStatus,
+    MerchantMoePoolRecord,
+    MerchantMoeTokenBin,
+    MerchantMoeTokenCurrentBin,
 )
-from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
+from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerchantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
@@ -60,11 +60,11 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         MerchantMoeErc1155TokenCurrentHolding,
         MerchantMoeErc1155TokenSupply,
         MerchantMoeErc1155TokenCurrentSupply,
-        MerChantMoeTokenBin,
-        MerChantMoeTokenCurrentBin,
-        MerChantMoePool,
-        MerChantMoePoolCurrentStatus,
-        MerChantMoePoolRecord,
+        MerchantMoeTokenBin,
+        MerchantMoeTokenCurrentBin,
+        MerchantMoePool,
+        MerchantMoePoolCurrentStatus,
+        MerchantMoePoolRecord,
     ]
     able_to_reorg = True
 
@@ -216,10 +216,10 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                     "reserve1_bin": bins_result["reserve1_bin"],
                 }
 
-                mer_chant_moe_token_bin = MerChantMoeTokenBin(**bin_common_params)
+                mer_chant_moe_token_bin = MerchantMoeTokenBin(**bin_common_params)
                 self._collect_domain(mer_chant_moe_token_bin)
 
-                mer_chant_moe_token_current_bin = MerChantMoeTokenCurrentBin(**bin_common_params)
+                mer_chant_moe_token_current_bin = MerchantMoeTokenCurrentBin(**bin_common_params)
                 current_bins_dict[position_token_address, bins_result["token_id"]] = mer_chant_moe_token_current_bin
             self._collect_domains(current_bins_dict.values())
 
@@ -239,7 +239,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 position_token_address = decoded_log_dict["LBPair"]
                 if position_token_address not in self._exist_pool:
                     self._exist_pool.append(position_token_address)
-                    mer_chant_moe_pool = MerChantMoePool(
+                    mer_chant_moe_pool = MerchantMoePool(
                         position_token_address=position_token_address,
                         token0_address=decoded_log_dict["tokenX"],
                         token1_address=decoded_log_dict["tokenY"],
@@ -284,7 +284,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         )
         current_pool_data = None
         for data in active_id_array:
-            entity = MerChantMoePoolRecord(
+            entity = MerchantMoePoolRecord(
                 pool_address=data["token_address"],
                 active_id=data["getActiveId"],
                 bin_step=data["getBinStep"],
@@ -292,16 +292,16 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 block_timestamp=data["block_timestamp"],
             )
             if current_pool_data is None or current_pool_data.block_number < entity.block_number:
-                current_pool_data = MerChantMoePoolCurrentStatus(
+                current_pool_data = MerchantMoePoolCurrentStatus(
                     pool_address=entity.pool_address,
                     active_id=entity.active_id,
                     bin_step=entity.bin_step,
                     block_number=entity.block_number,
                     block_timestamp=entity.block_timestamp,
                 )
-            self._collect_item(MerChantMoePoolRecord.type(), entity)
+            self._collect_item(MerchantMoePoolRecord.type(), entity)
         if current_pool_data:
-            self._collect_item(MerChantMoePoolCurrentStatus.type(), current_pool_data)
+            self._collect_item(MerchantMoePoolCurrentStatus.type(), current_pool_data)
 
 
 def split_logs(logs):
@@ -447,7 +447,7 @@ def get_exist_pools(db_service):
 
     session = db_service.get_service_session()
     try:
-        result = session.query(FeatureMerChantMoePools).all()
+        result = session.query(FeatureMerchantMoePools).all()
         history_pools = set()
         if result is not None:
             for item in result:
