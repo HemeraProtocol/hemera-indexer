@@ -267,7 +267,11 @@ class JobScheduler:
                 if key in output_types:
                     self.logger.info(message)
                     exception_recorder.log(
-                        block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
+                        block_number=-1,
+                        dataclass=key,
+                        message_type="item_counter",
+                        message=message,
+                        level=RecordLevel.INFO,
                     )
 
                     base_info = {
@@ -280,7 +284,11 @@ class JobScheduler:
                 else:
                     self.logger.debug(message)
                     exception_recorder.log(
-                        block_number=-1, dataclass=key, message_type="item_counter", message=f"{message} not require output", level=RecordLevel.Debug
+                        block_number=-1,
+                        dataclass=key,
+                        message_type="item_counter",
+                        message=f"{message} not require output",
+                        level=RecordLevel.Debug,
                     )
 
         except Exception as e:
