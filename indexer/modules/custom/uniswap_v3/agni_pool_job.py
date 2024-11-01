@@ -269,7 +269,7 @@ def update_exist_pools(
             continue
         current_topic0 = log.topic0
         if factory_address == address and create_topic0 == current_topic0:
-            decoded_data = decode_logs("PoolCreated", abi_list, log)
+            decoded_data = POOL_CREATED_EVENT.decode_log(log)
             pool_address = decoded_data["pool"]
 
             new_pool = {
@@ -384,15 +384,6 @@ def collect_swap_new_pools(
     return need_add
 
 
-def decode_logs(fn_name, contract_abi, log):
-    function_abi = next(
-        (abi for abi in contract_abi if abi["name"] == fn_name and abi["type"] == "event"),
-        None,
-    )
-    if not function_abi:
-        raise ValueError("Function ABI not found")
-
-    return decode_log(function_abi, log)
 
 
 def split_logs(logs):
