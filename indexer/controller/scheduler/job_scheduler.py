@@ -83,6 +83,7 @@ class JobScheduler:
         self.report_private_key = report_private_key
         self.report_from_address = report_from_address
         self.config = config
+        required_output_types.sort(key=lambda x: x.type())
         self.required_output_types = required_output_types
         self.required_source_types = required_source_types
         self.load_from_source = config.get("source_path") if "source_path" in config else None
@@ -116,7 +117,9 @@ class JobScheduler:
         self.instantiate_jobs()
         self.runtime_signature = runtime_signature_signer
         self._execute_runtime_signature()
-        self.logger.info("Export output types: %s", required_output_types)
+        self.logger.info("Export output types: ")
+        for output_type in self.required_output_types:
+            self.logger.info(f"[*] {output_type.type()}")
 
     def _execute_runtime_signature(self):
         if self.runtime_signature is None:
@@ -173,12 +176,13 @@ class JobScheduler:
         for cls in all_subclasses:
             self.job_classes.append(cls)
             for output in cls.output_types:
+                if output.type() in self.job_map:
+                    raise Exception(
+                        f"Duplicated output type: {output.type()}, job: {cls.__name__}, existing: {self.job_map[output.type()]}, plz check your job definition"
+                    )
                 self.job_map[output.type()].append(cls)
             for dependency in cls.dependency_types:
                 self.dependency_map[dependency.type()].append(cls)
-            self.logger.info(
-                f"Discovered job class {cls.__name__} with outputs {[output.type() for output in cls.output_types]}"
-            )
 
     def instantiate_jobs(self):
         filters = []
@@ -255,22 +259,29 @@ class JobScheduler:
             for job in self.jobs:
                 job.run(start_block=start_block, end_block=end_block)
 
+            report_info = []
+            output_types = {output.type(): output for output in self.required_output_types}
             for key, value in self.get_data_buff().items():
                 message = f"{key}: {len(value)}"
-                self.logger.info(message)
-                exception_recorder.log(
-                    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
-                )
 
-            report_info = []
-            for dataclass in self.required_output_types:
-                base_info = {
-                    "dataClass": dataclass.get_code_hash(),
-                    "count": len(self.get_data_buff()[dataclass.type()]),
-                }
-                data_hash = hashlib.sha256(json.dumps(base_info, sort_keys=True).encode()).hexdigest()
-                base_info["dataHash"] = data_hash
-                report_info.append(base_info)
+                if key in output_types:
+                    self.logger.info(message)
+                    exception_recorder.log(
+                        block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
+                    )
+
+                    base_info = {
+                        "dataClass": output_types[key].get_code_hash(),
+                        "count": len(self.get_data_buff()[key]),
+                    }
+                    data_hash = hashlib.sha256(json.dumps(base_info, sort_keys=True).encode()).hexdigest()
+                    base_info["dataHash"] = data_hash
+                    report_info.append(base_info)
+                else:
+                    self.logger.debug(message)
+                    exception_recorder.log(
+                        block_number=-1, dataclass=key, message_type="item_counter", message=f"{message} not require output", level=RecordLevel.Debug
+                    )
 
         except Exception as e:
             raise e
