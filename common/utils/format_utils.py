@@ -5,6 +5,7 @@ from typing import Optional, Union
 
 from sqlalchemy import Integer, Numeric
 
+
 def bytes_to_hex_str(b: bytes) -> str:
     """
     Converts a bytes object to a hexadecimal string with '0x' prefix.
