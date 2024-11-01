@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 040e5251f45d -> e3a3e2114b9c
 
-CREATE TABLE arbitrum_state_batches (
+CREATE TABLE IF NOT EXISTS arbitrum_state_batches (
     node_num SERIAL NOT NULL,
     create_l1_block_number INTEGER,
     create_l1_block_timestamp TIMESTAMP WITHOUT TIME ZONE,
@@ -23,7 +23,7 @@ CREATE TABLE arbitrum_state_batches (
     PRIMARY KEY (node_num)
 );
 
-CREATE TABLE arbitrum_transaction_batches (
+CREATE TABLE IF NOT EXISTS arbitrum_transaction_batches (
     batch_index SERIAL NOT NULL,
     l1_block_number INTEGER,
     l1_block_timestamp TIMESTAMP WITHOUT TIME ZONE,
@@ -37,13 +37,13 @@ CREATE TABLE arbitrum_transaction_batches (
     PRIMARY KEY (batch_index)
 );
 
-CREATE TABLE bridge_tokens (
+CREATE TABLE IF NOT EXISTS bridge_tokens (
     l1_token_address BYTEA NOT NULL,
     l2_token_address BYTEA NOT NULL,
     PRIMARY KEY (l1_token_address, l2_token_address)
 );
 
-CREATE TABLE data_store_tx_mapping (
+CREATE TABLE IF NOT EXISTS data_store_tx_mapping (
     data_store_id INTEGER NOT NULL,
     index INTEGER NOT NULL,
     block_number INTEGER,
@@ -51,7 +51,7 @@ CREATE TABLE data_store_tx_mapping (
     PRIMARY KEY (data_store_id, index)
 );
 
-CREATE TABLE data_stores (
+CREATE TABLE IF NOT EXISTS data_stores (
     id SERIAL NOT NULL,
     store_number INTEGER,
     duration_data_store_id INTEGER,
@@ -78,7 +78,7 @@ CREATE TABLE data_stores (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE l1_state_batches (
+CREATE TABLE IF NOT EXISTS l1_state_batches (
     batch_index SERIAL NOT NULL,
     previous_total_elements INTEGER,
     batch_size INTEGER,
@@ -91,7 +91,7 @@ CREATE TABLE l1_state_batches (
     PRIMARY KEY (batch_index)
 );
 
-CREATE TABLE l1_to_l2_bridge_transactions (
+CREATE TABLE IF NOT EXISTS l1_to_l2_bridge_transactions (
     msg_hash BYTEA NOT NULL,
     version INTEGER,
     index INTEGER,
@@ -120,7 +120,7 @@ CREATE TABLE l1_to_l2_bridge_transactions (
     PRIMARY KEY (msg_hash)
 );
 
-CREATE TABLE l2_to_l1_bridge_transactions (
+CREATE TABLE IF NOT EXISTS l2_to_l1_bridge_transactions (
     msg_hash BYTEA NOT NULL,
     version INTEGER,
     index INTEGER,
@@ -152,7 +152,7 @@ CREATE TABLE l2_to_l1_bridge_transactions (
     PRIMARY KEY (msg_hash)
 );
 
-CREATE TABLE linea_batches (
+CREATE TABLE IF NOT EXISTS linea_batches (
     number SERIAL NOT NULL,
     verify_tx_hash VARCHAR,
     verify_block_number INTEGER,
@@ -165,7 +165,7 @@ CREATE TABLE linea_batches (
     PRIMARY KEY (number)
 );
 
-CREATE TABLE mantle_batches (
+CREATE TABLE IF NOT EXISTS mantle_batches (
     index SERIAL NOT NULL,
     data_store_index INTEGER,
     upgrade_data_store_id INTEGER,
@@ -175,7 +175,7 @@ CREATE TABLE mantle_batches (
     PRIMARY KEY (index)
 );
 
-CREATE TABLE op_bedrock_state_batches (
+CREATE TABLE IF NOT EXISTS op_bedrock_state_batches (
     batch_index SERIAL NOT NULL,
     l1_block_number INTEGER,
     l1_block_timestamp TIMESTAMP WITHOUT TIME ZONE,
@@ -189,7 +189,7 @@ CREATE TABLE op_bedrock_state_batches (
     PRIMARY KEY (batch_index)
 );
 
-CREATE TABLE op_da_transactions (
+CREATE TABLE IF NOT EXISTS op_da_transactions (
     receipt_blob_gas_used INTEGER,
     receipt_blob_gas_price NUMERIC,
     blob_versioned_hashes VARCHAR[],
@@ -217,7 +217,7 @@ CREATE TABLE op_da_transactions (
     PRIMARY KEY (hash)
 );
 
-CREATE TABLE zkevm_batches (
+CREATE TABLE IF NOT EXISTS zkevm_batches (
     batch_index SERIAL NOT NULL,
     coinbase VARCHAR,
     state_root VARCHAR,

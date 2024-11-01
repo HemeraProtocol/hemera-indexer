@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade e3a3e2114b9c -> aa99dd347ef1
 
-CREATE TABLE feature_uniswap_v2_pools (
+CREATE TABLE IF NOT EXISTS feature_uniswap_v2_pools (
     factory_address BYTEA NOT NULL,
     pool_address BYTEA NOT NULL,
     token0_address BYTEA,

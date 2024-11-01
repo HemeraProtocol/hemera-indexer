@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 43d14640a8ac -> f4efa18760cc
 
-CREATE TABLE af_uniswap_v3_pool_prices_current (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_pool_prices_current (
     pool_address BYTEA NOT NULL,
     block_number BIGINT,
     block_timestamp BIGINT,
@@ -14,7 +14,7 @@ CREATE TABLE af_uniswap_v3_pool_prices_current (
     PRIMARY KEY (pool_address)
 );
 
-CREATE TABLE af_uniswap_v3_pool_prices_hist (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_pool_prices_hist (
     pool_address BYTEA NOT NULL,
     block_number BIGINT NOT NULL,
     block_timestamp BIGINT NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE af_uniswap_v3_pool_prices_hist (
     PRIMARY KEY (pool_address, block_timestamp, block_number)
 );
 
-CREATE TABLE af_uniswap_v3_pool_swap_hist (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_pool_swap_hist (
     pool_address BYTEA NOT NULL,
     transaction_hash BYTEA NOT NULL,
     log_index INTEGER NOT NULL,
@@ -50,7 +50,7 @@ CREATE TABLE af_uniswap_v3_pool_swap_hist (
     PRIMARY KEY (pool_address, transaction_hash, log_index)
 );
 
-CREATE TABLE af_uniswap_v3_pools (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_pools (
     position_token_address BYTEA NOT NULL,
     pool_address BYTEA NOT NULL,
     factory_address BYTEA,
@@ -65,7 +65,7 @@ CREATE TABLE af_uniswap_v3_pools (
     PRIMARY KEY (position_token_address, pool_address)
 );
 
-CREATE TABLE af_uniswap_v3_token_collect_fee_hist (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_token_collect_fee_hist (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     block_number BIGINT NOT NULL,
@@ -95,7 +95,7 @@ CREATE INDEX af_uniswap_v3_token_collect_fee_hist_token1_index ON af_uniswap_v3_
 
 CREATE INDEX af_uniswap_v3_token_collect_fee_hist_token_id_index ON af_uniswap_v3_token_collect_fee_hist (token_id);
 
-CREATE TABLE af_uniswap_v3_token_data_current (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_token_data_current (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     block_number BIGINT,
@@ -110,7 +110,7 @@ CREATE TABLE af_uniswap_v3_token_data_current (
 
 CREATE INDEX af_uniswap_v3_token_data_current_wallet_desc_index ON af_uniswap_v3_token_data_current (wallet_address DESC);
 
-CREATE TABLE af_uniswap_v3_token_data_hist (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_token_data_hist (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     block_number BIGINT NOT NULL,
@@ -128,7 +128,7 @@ CREATE INDEX af_uniswap_v3_token_data_hist_token_block_desc_index ON af_uniswap_
 
 CREATE INDEX af_uniswap_v3_token_data_hist_wallet_token_block_desc_index ON af_uniswap_v3_token_data_hist (wallet_address DESC, position_token_address DESC, block_timestamp DESC);
 
-CREATE TABLE af_uniswap_v3_token_liquidity_hist (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_token_liquidity_hist (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     block_number BIGINT NOT NULL,
@@ -159,7 +159,7 @@ CREATE INDEX af_uniswap_v3_token_liquidity_hist_token1_index ON af_uniswap_v3_to
 
 CREATE INDEX af_uniswap_v3_token_liquidity_hist_token_id_index ON af_uniswap_v3_token_liquidity_hist (token_id);
 
-CREATE TABLE af_uniswap_v3_tokens (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_tokens (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     pool_address BYTEA,

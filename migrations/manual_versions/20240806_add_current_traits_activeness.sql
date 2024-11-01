@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 832fa52da346 -> b86e241b5e18
 
-CREATE TABLE current_traits_activeness (
+CREATE TABLE IF NOT EXISTS current_traits_activeness (
     block_number BIGINT NOT NULL,
     address BYTEA NOT NULL,
     value JSONB,

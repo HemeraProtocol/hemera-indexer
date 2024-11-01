@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE af_eigen_layer_address_current (
+CREATE TABLE IF NOT EXISTS af_eigen_layer_address_current (
     address BYTEA NOT NULL,
     strategy BYTEA NOT NULL,
     token BYTEA,
@@ -15,7 +15,7 @@ CREATE TABLE af_eigen_layer_address_current (
     PRIMARY KEY (address, strategy)
 );
 
-CREATE TABLE af_eigen_layer_records (
+CREATE TABLE IF NOT EXISTS af_eigen_layer_records (
     transaction_hash BYTEA NOT NULL,
     log_index INTEGER NOT NULL,
     internal_idx INTEGER NOT NULL,

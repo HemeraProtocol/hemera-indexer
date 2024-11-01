@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 9a1e927f02bb -> 040e5251f45d
 
-CREATE TABLE exception_records (
+CREATE TABLE IF NOT EXISTS exception_records (
     id BIGSERIAL NOT NULL,
     block_number BIGINT,
     dataclass VARCHAR,

@@ -1,13 +1,13 @@
 BEGIN;
 
-CREATE TABLE alembic_version (
+CREATE TABLE IF NOT EXISTS alembic_version (
     version_num VARCHAR(32) NOT NULL,
     CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
 );
 
 -- Running upgrade  -> 5e4608933f64
 
-CREATE TABLE address_coin_balances (
+CREATE TABLE IF NOT EXISTS address_coin_balances (
     address BYTEA NOT NULL,
     balance NUMERIC(100),
     block_number BIGINT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE address_coin_balances (
     PRIMARY KEY (address, block_number)
 );
 
-CREATE TABLE address_token_balances (
+CREATE TABLE IF NOT EXISTS address_token_balances (
     address BYTEA NOT NULL,
     token_id NUMERIC(78),
     token_type VARCHAR,
@@ -32,7 +32,7 @@ CREATE TABLE address_token_balances (
     PRIMARY KEY (address, token_address, token_id, block_number)
 );
 
-CREATE TABLE block_ts_mapper (
+CREATE TABLE IF NOT EXISTS block_ts_mapper (
     ts BIGSERIAL NOT NULL,
     block_number BIGINT,
     timestamp TIMESTAMP WITHOUT TIME ZONE,
@@ -41,7 +41,7 @@ CREATE TABLE block_ts_mapper (
 
 CREATE INDEX block_ts_mapper_idx ON block_ts_mapper (block_number DESC);
 
-CREATE TABLE blocks (
+CREATE TABLE IF NOT EXISTS blocks (
     hash BYTEA NOT NULL,
     number BIGINT,
     timestamp TIMESTAMP WITHOUT TIME ZONE,
@@ -71,7 +71,7 @@ CREATE INDEX blocks_number_index ON blocks (number DESC);
 
 CREATE INDEX blocks_timestamp_index ON blocks (timestamp DESC);
 
-CREATE TABLE contract_internal_transactions (
+CREATE TABLE IF NOT EXISTS contract_internal_transactions (
     trace_id VARCHAR NOT NULL,
     from_address BYTEA,
     to_address BYTEA,
@@ -100,7 +100,7 @@ CREATE INDEX internal_transactions_address_number_transaction_index ON contract_
 
 CREATE INDEX internal_transactions_block_timestamp_index ON contract_internal_transactions (block_timestamp DESC);
 
-CREATE TABLE contracts (
+CREATE TABLE IF NOT EXISTS contracts (
     address BYTEA NOT NULL,
     name VARCHAR,
     contract_creator BYTEA,
@@ -126,7 +126,7 @@ CREATE TABLE contracts (
     PRIMARY KEY (address)
 );
 
-CREATE TABLE erc1155_token_holders (
+CREATE TABLE IF NOT EXISTS erc1155_token_holders (
     token_address BYTEA NOT NULL,
     wallet_address BYTEA NOT NULL,
     token_id NUMERIC(78) NOT NULL,
@@ -142,7 +142,7 @@ CREATE TABLE erc1155_token_holders (
 
 CREATE INDEX erc1155_token_holders_token_address_balance_of_index ON erc1155_token_holders (token_address, balance_of DESC);
 
-CREATE TABLE erc1155_token_id_details (
+CREATE TABLE IF NOT EXISTS erc1155_token_id_details (
     address BYTEA NOT NULL,
     token_id NUMERIC(78) NOT NULL,
     token_supply NUMERIC(78),
@@ -158,7 +158,7 @@ CREATE TABLE erc1155_token_id_details (
 
 CREATE INDEX erc1155_detail_desc_address_id_index ON erc1155_token_id_details (address DESC, token_id);
 
-CREATE TABLE erc1155_token_transfers (
+CREATE TABLE IF NOT EXISTS erc1155_token_transfers (
     transaction_hash BYTEA NOT NULL,
     log_index INTEGER NOT NULL,
     from_address BYTEA,
@@ -179,7 +179,7 @@ CREATE INDEX erc1155_token_transfers_address_block_number_log_index_index ON erc
 
 CREATE INDEX erc1155_token_transfers_block_timestamp_index ON erc1155_token_transfers (block_timestamp DESC);
 
-CREATE TABLE erc20_token_holders (
+CREATE TABLE IF NOT EXISTS erc20_token_holders (
     token_address BYTEA NOT NULL,
     wallet_address BYTEA NOT NULL,
     balance_of NUMERIC(100),
@@ -193,7 +193,7 @@ CREATE TABLE erc20_token_holders (
 
 CREATE INDEX erc20_token_holders_token_address_balance_of_index ON erc20_token_holders (token_address, balance_of DESC);
 
-CREATE TABLE erc20_token_transfers (
+CREATE TABLE IF NOT EXISTS erc20_token_transfers (
     transaction_hash BYTEA NOT NULL,
     log_index INTEGER NOT NULL,
     from_address BYTEA,
@@ -213,7 +213,7 @@ CREATE INDEX erc20_token_transfers_address_block_number_log_index_index ON erc20
 
 CREATE INDEX erc20_token_transfers_block_timestamp_index ON erc20_token_transfers (block_timestamp DESC);
 
-CREATE TABLE erc721_token_holders (
+CREATE TABLE IF NOT EXISTS erc721_token_holders (
     token_address BYTEA NOT NULL,
     wallet_address BYTEA NOT NULL,
     balance_of NUMERIC(100),
@@ -227,7 +227,7 @@ CREATE TABLE erc721_token_holders (
 
 CREATE INDEX erc721_token_holders_token_address_balance_of_index ON erc721_token_holders (token_address, balance_of DESC);
 
-CREATE TABLE erc721_token_id_changes (
+CREATE TABLE IF NOT EXISTS erc721_token_id_changes (
     address BYTEA NOT NULL,
     token_id NUMERIC(78) NOT NULL,
     token_owner BYTEA,
@@ -241,7 +241,7 @@ CREATE TABLE erc721_token_id_changes (
 
 CREATE INDEX erc721_change_address_id_number_desc_index ON erc721_token_id_changes (address, token_id, block_number DESC);
 
-CREATE TABLE erc721_token_id_details (
+CREATE TABLE IF NOT EXISTS erc721_token_id_details (
     address BYTEA NOT NULL,
     token_id NUMERIC(78) NOT NULL,
     token_owner BYTEA,
@@ -257,7 +257,7 @@ CREATE TABLE erc721_token_id_details (
 
 CREATE INDEX erc721_detail_owner_address_id_index ON erc721_token_id_details (token_owner DESC, address, token_id);
 
-CREATE TABLE erc721_token_transfers (
+CREATE TABLE IF NOT EXISTS erc721_token_transfers (
     transaction_hash BYTEA NOT NULL,
     log_index INTEGER NOT NULL,
     from_address BYTEA,
@@ -278,7 +278,7 @@ CREATE INDEX erc721_token_transfers_address_block_number_log_index_index ON erc7
 
 CREATE INDEX erc721_token_transfers_block_timestamp_index ON erc721_token_transfers (block_timestamp DESC);
 
-CREATE TABLE fix_record (
+CREATE TABLE IF NOT EXISTS fix_record (
     job_id SERIAL NOT NULL,
     start_block_number BIGINT,
     last_fixed_block_number BIGINT,
@@ -289,7 +289,7 @@ CREATE TABLE fix_record (
     PRIMARY KEY (job_id)
 );
 
-CREATE TABLE logs (
+CREATE TABLE IF NOT EXISTS logs (
     log_index INTEGER NOT NULL,
     address BYTEA,
     data BYTEA,
@@ -312,7 +312,7 @@ CREATE INDEX logs_address_block_number_log_index_index ON logs (address, block_n
 
 CREATE INDEX logs_block_timestamp_index ON logs (block_timestamp DESC);
 
-CREATE TABLE sync_record (
+CREATE TABLE IF NOT EXISTS sync_record (
     mission_type VARCHAR NOT NULL,
     entity_types INTEGER NOT NULL,
     last_block_number BIGINT,
@@ -320,7 +320,7 @@ CREATE TABLE sync_record (
     PRIMARY KEY (mission_type, entity_types)
 );
 
-CREATE TABLE tokens (
+CREATE TABLE IF NOT EXISTS tokens (
     address BYTEA NOT NULL,
     name VARCHAR,
     symbol VARCHAR,
@@ -350,7 +350,7 @@ CREATE INDEX tokens_symbol_index ON tokens (symbol);
 
 CREATE INDEX tokens_type_index ON tokens (token_type);
 
-CREATE TABLE traces (
+CREATE TABLE IF NOT EXISTS traces (
     trace_id VARCHAR NOT NULL,
     from_address BYTEA,
     to_address BYTEA,
@@ -380,7 +380,7 @@ CREATE INDEX traces_address_block_timestamp_index ON traces (from_address, to_ad
 
 CREATE INDEX traces_transaction_hash_index ON traces (transaction_hash);
 
-CREATE TABLE transactions (
+CREATE TABLE IF NOT EXISTS transactions (
     hash BYTEA NOT NULL,
     transaction_index INTEGER,
     from_address BYTEA,

@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade c609922eae7a -> 67015d9fa59b
 
-CREATE TABLE af_merchant_moe_pool_data_current (
+CREATE TABLE IF NOT EXISTS af_merchant_moe_pool_data_current (
     pool_address BYTEA NOT NULL,
     block_timestamp BIGINT,
     block_number BIGINT,
@@ -14,7 +14,7 @@ CREATE TABLE af_merchant_moe_pool_data_current (
     PRIMARY KEY (pool_address)
 );
 
-CREATE TABLE af_merchant_moe_pool_data_hist (
+CREATE TABLE IF NOT EXISTS af_merchant_moe_pool_data_hist (
     pool_address BYTEA NOT NULL,
     block_timestamp BIGINT NOT NULL,
     block_number BIGINT NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE af_merchant_moe_pool_data_hist (
     PRIMARY KEY (pool_address, block_timestamp, block_number)
 );
 
-CREATE TABLE af_staked_fbtc_current (
+CREATE TABLE IF NOT EXISTS af_staked_fbtc_current (
     vault_address BYTEA NOT NULL,
     wallet_address BYTEA NOT NULL,
     block_number BIGINT,
@@ -43,7 +43,7 @@ CREATE INDEX af_staked_fbtc_current_protocol_block_desc_index ON af_staked_fbtc_
 
 CREATE INDEX af_staked_fbtc_current_wallet_block_desc_index ON af_staked_fbtc_current (wallet_address DESC);
 
-CREATE TABLE af_staked_fbtc_detail_hist (
+CREATE TABLE IF NOT EXISTS af_staked_fbtc_detail_hist (
     vault_address BYTEA NOT NULL,
     wallet_address BYTEA NOT NULL,
     block_number BIGINT NOT NULL,

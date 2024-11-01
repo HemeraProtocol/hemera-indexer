@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 8a915490914a -> b15f744e8582
 
-CREATE TABLE daily_addresses_aggregates (
+CREATE TABLE IF NOT EXISTS daily_addresses_aggregates (
     block_date DATE NOT NULL,
     active_address_cnt BIGINT,
     receiver_address_cnt BIGINT,
@@ -12,7 +12,7 @@ CREATE TABLE daily_addresses_aggregates (
     PRIMARY KEY (block_date)
 );
 
-CREATE TABLE daily_blocks_aggregates (
+CREATE TABLE IF NOT EXISTS daily_blocks_aggregates (
     block_date DATE NOT NULL,
     cnt BIGINT,
     avg_size NUMERIC,
@@ -26,7 +26,7 @@ CREATE TABLE daily_blocks_aggregates (
     PRIMARY KEY (block_date)
 );
 
-CREATE TABLE daily_tokens_aggregates (
+CREATE TABLE IF NOT EXISTS daily_tokens_aggregates (
     block_date DATE NOT NULL,
     erc20_active_address_cnt INTEGER,
     erc20_total_transfer_cnt BIGINT,
@@ -37,7 +37,7 @@ CREATE TABLE daily_tokens_aggregates (
     PRIMARY KEY (block_date)
 );
 
-CREATE TABLE daily_transactions_aggregates (
+CREATE TABLE IF NOT EXISTS daily_transactions_aggregates (
     block_date DATE NOT NULL,
     cnt BIGINT,
     total_cnt BIGINT,
@@ -61,7 +61,7 @@ CREATE TABLE daily_transactions_aggregates (
     PRIMARY KEY (block_date)
 );
 
-CREATE TABLE scheduled_token_count_metadata (
+CREATE TABLE IF NOT EXISTS scheduled_token_count_metadata (
     id SERIAL NOT NULL,
     dag_id VARCHAR,
     execution_date TIMESTAMP WITHOUT TIME ZONE,
@@ -69,7 +69,7 @@ CREATE TABLE scheduled_token_count_metadata (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE scheduled_wallet_count_metadata (
+CREATE TABLE IF NOT EXISTS scheduled_wallet_count_metadata (
     id SERIAL NOT NULL,
     dag_id VARCHAR,
     execution_date TIMESTAMP WITHOUT TIME ZONE,
@@ -77,7 +77,7 @@ CREATE TABLE scheduled_wallet_count_metadata (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE statistics_wallet_addresses (
+CREATE TABLE IF NOT EXISTS statistics_wallet_addresses (
     address BYTEA NOT NULL,
     txn_in_cnt INTEGER,
     txn_out_cnt INTEGER,
@@ -104,7 +104,7 @@ CREATE TABLE statistics_wallet_addresses (
     PRIMARY KEY (address)
 );
 
-CREATE TABLE wallet_addresses (
+CREATE TABLE IF NOT EXISTS wallet_addresses (
     address BYTEA NOT NULL,
     ens_name VARCHAR,
     PRIMARY KEY (address)

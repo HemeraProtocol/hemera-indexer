@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade e8f78802f27a -> 3dd9b90d2e31
 
-CREATE TABLE af_opensea__transactions (
+CREATE TABLE IF NOT EXISTS af_opensea__transactions (
     address BYTEA NOT NULL,
     is_offer BOOLEAN NOT NULL,
     related_address BYTEA,
@@ -30,7 +30,7 @@ CREATE INDEX af_opensea__transactions_address_block_timestamp_idx ON af_opensea_
 
 CREATE INDEX af_opensea__transactions_block_timestamp_idx ON af_opensea__transactions (block_timestamp DESC);
 
-CREATE TABLE af_opensea_daily_transactions (
+CREATE TABLE IF NOT EXISTS af_opensea_daily_transactions (
     address BYTEA NOT NULL,
     block_date DATE NOT NULL,
     buy_txn_count INTEGER,
@@ -50,7 +50,7 @@ CREATE TABLE af_opensea_daily_transactions (
     PRIMARY KEY (address, block_date)
 );
 
-CREATE TABLE af_opensea_na_crypto_token_mapping (
+CREATE TABLE IF NOT EXISTS af_opensea_na_crypto_token_mapping (
     id SERIAL NOT NULL,
     address_var VARCHAR(42),
     price_symbol VARCHAR,
@@ -58,7 +58,7 @@ CREATE TABLE af_opensea_na_crypto_token_mapping (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE af_opensea_na_orders (
+CREATE TABLE IF NOT EXISTS af_opensea_na_orders (
     order_hash BYTEA,
     zone BYTEA,
     offerer BYTEA,
@@ -79,7 +79,7 @@ CREATE TABLE af_opensea_na_orders (
 
 CREATE INDEX idx_order_hash ON af_opensea_na_orders (order_hash);
 
-CREATE TABLE af_opensea_na_scheduled_metadata (
+CREATE TABLE IF NOT EXISTS af_opensea_na_scheduled_metadata (
     id SERIAL NOT NULL,
     dag_id VARCHAR,
     execution_date TIMESTAMP WITHOUT TIME ZONE,
@@ -87,7 +87,7 @@ CREATE TABLE af_opensea_na_scheduled_metadata (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE af_opensea_profile (
+CREATE TABLE IF NOT EXISTS af_opensea_profile (
     address BYTEA NOT NULL,
     buy_txn_count INTEGER DEFAULT 0,
     sell_txn_count INTEGER DEFAULT 0,

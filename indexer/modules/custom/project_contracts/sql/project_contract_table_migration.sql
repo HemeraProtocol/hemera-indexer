@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE af_project_contracts (
+CREATE TABLE IF NOT EXISTS af_project_contracts (
     project_id VARCHAR,
     chain_id INTEGER,
     address BYTEA NOT NULL,
@@ -16,7 +16,7 @@ CREATE TABLE af_project_contracts (
     PRIMARY KEY (address)
 );
 
-CREATE TABLE af_projects (
+CREATE TABLE IF NOT EXISTS af_projects (
     project_id VARCHAR NOT NULL,
     name VARCHAR,
     deployer BYTEA NOT NULL,

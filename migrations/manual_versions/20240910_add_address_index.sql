@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade f4efa18760cc -> e8f78802f27a
 
-CREATE TABLE address_nft_1155_holders (
+CREATE TABLE IF NOT EXISTS address_nft_1155_holders (
     address BYTEA NOT NULL,
     token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE address_nft_1155_holders (
 
 CREATE INDEX address_nft_1155_holders_token_address_balance_of_idx ON address_nft_1155_holders (token_address, token_id, balance_of DESC);
 
-CREATE TABLE address_nft_transfers (
+CREATE TABLE IF NOT EXISTS address_nft_transfers (
     address BYTEA NOT NULL,
     block_number INTEGER NOT NULL,
     log_index INTEGER NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE address_nft_transfers (
     PRIMARY KEY (address, block_number, log_index, block_timestamp, block_hash, token_id)
 );
 
-CREATE TABLE address_token_holders (
+CREATE TABLE IF NOT EXISTS address_token_holders (
     address BYTEA NOT NULL,
     token_address BYTEA NOT NULL,
     balance_of NUMERIC(100),
@@ -42,7 +42,7 @@ CREATE TABLE address_token_holders (
 
 CREATE INDEX address_token_holders_token_address_balance_of_idx ON address_token_holders (token_address, balance_of DESC);
 
-CREATE TABLE address_token_transfers (
+CREATE TABLE IF NOT EXISTS address_token_transfers (
     address BYTEA NOT NULL,
     block_number INTEGER NOT NULL,
     log_index INTEGER NOT NULL,
@@ -58,7 +58,7 @@ CREATE TABLE address_token_transfers (
     PRIMARY KEY (address, block_number, log_index, block_timestamp, block_hash)
 );
 
-CREATE TABLE address_transactions (
+CREATE TABLE IF NOT EXISTS address_transactions (
     address BYTEA NOT NULL,
     block_number INTEGER NOT NULL,
     transaction_index INTEGER NOT NULL,
@@ -80,7 +80,7 @@ CREATE INDEX address_transactions_address_block_timestamp_block_number_t_idx ON 
 
 CREATE INDEX address_transactions_address_txn_type_block_timestamp_block_idx ON address_transactions (address, txn_type, block_timestamp DESC, block_number DESC, transaction_index DESC);
 
-CREATE TABLE token_address_nft_inventories (
+CREATE TABLE IF NOT EXISTS token_address_nft_inventories (
     token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     wallet_address BYTEA,

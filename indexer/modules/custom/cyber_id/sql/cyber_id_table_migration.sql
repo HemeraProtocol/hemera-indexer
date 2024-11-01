@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE cyber_address (
+CREATE TABLE IF NOT EXISTS cyber_address (
     address BYTEA NOT NULL,
     name VARCHAR,
     reverse_node BYTEA,
@@ -10,7 +10,7 @@ CREATE TABLE cyber_address (
     PRIMARY KEY (address)
 );
 
-CREATE TABLE cyber_id_record (
+CREATE TABLE IF NOT EXISTS cyber_id_record (
     node BYTEA NOT NULL,
     token_id NUMERIC(100),
     label VARCHAR,

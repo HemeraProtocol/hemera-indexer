@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 3d5ce8939570 -> 9a1e927f02bb
 
-CREATE TABLE user_operations_results (
+CREATE TABLE IF NOT EXISTS user_operations_results (
     user_op_hash BYTEA NOT NULL,
     sender VARCHAR(42),
     paymaster VARCHAR(42),

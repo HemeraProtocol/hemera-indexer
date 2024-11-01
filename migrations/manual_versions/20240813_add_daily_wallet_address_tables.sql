@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 1b1c6a8b6c7b -> bf51d23c852f
 
-CREATE TABLE daily_contract_interacted_aggregates (
+CREATE TABLE IF NOT EXISTS daily_contract_interacted_aggregates (
     block_date DATE NOT NULL,
     from_address BYTEA NOT NULL,
     to_address BYTEA NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE daily_contract_interacted_aggregates (
     PRIMARY KEY (block_date, from_address, to_address)
 );
 
-CREATE TABLE daily_wallet_addresses_aggregates (
+CREATE TABLE IF NOT EXISTS daily_wallet_addresses_aggregates (
     address BYTEA NOT NULL,
     block_date DATE NOT NULL,
     txn_in_cnt INTEGER,
@@ -52,7 +52,7 @@ CREATE TABLE daily_wallet_addresses_aggregates (
     PRIMARY KEY (address, block_date)
 );
 
-CREATE TABLE period_wallet_addresses_aggregates (
+CREATE TABLE IF NOT EXISTS period_wallet_addresses_aggregates (
     address BYTEA NOT NULL,
     period_date DATE NOT NULL,
     txn_in_cnt INTEGER,

@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade b86e241b5e18 -> 1b1c6a8b6c7b
 
-CREATE TABLE feature_blue_chip_holders (
+CREATE TABLE IF NOT EXISTS feature_blue_chip_holders (
     wallet_address BYTEA NOT NULL,
     hold_detail JSONB,
     current_count BIGINT,

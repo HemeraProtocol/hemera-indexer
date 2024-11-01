@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade b15f744e8582 -> 9f2cf385645f
 
-CREATE TABLE address_current_token_balances (
+CREATE TABLE IF NOT EXISTS address_current_token_balances (
     address BYTEA NOT NULL,
     token_id NUMERIC(78),
     token_type VARCHAR,

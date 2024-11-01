@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE af_karak_address_current (
+CREATE TABLE IF NOT EXISTS af_karak_address_current (
     address BYTEA NOT NULL,
     vault BYTEA NOT NULL,
     deposit_amount NUMERIC(100),
@@ -14,7 +14,7 @@ CREATE TABLE af_karak_address_current (
     PRIMARY KEY (address, vault)
 );
 
-CREATE TABLE af_karak_records (
+CREATE TABLE IF NOT EXISTS af_karak_records (
     transaction_hash BYTEA NOT NULL,
     log_index INTEGER NOT NULL,
     block_number BIGINT,
@@ -39,7 +39,7 @@ CREATE TABLE af_karak_records (
     PRIMARY KEY (transaction_hash, log_index)
 );
 
-CREATE TABLE af_karak_vault_token (
+CREATE TABLE IF NOT EXISTS af_karak_vault_token (
     vault BYTEA NOT NULL,
     token BYTEA NOT NULL,
     name VARCHAR,

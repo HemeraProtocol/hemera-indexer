@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 0b922153e040 -> 3d5ce8939570
 
-CREATE TABLE all_feature_value_records (
+CREATE TABLE IF NOT EXISTS all_feature_value_records (
     feature_id NUMERIC(100) NOT NULL,
     block_number BIGINT NOT NULL,
     address BYTEA NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE all_feature_value_records (
 
 CREATE INDEX all_feature_value_records_feature_block_index ON all_feature_value_records (feature_id, block_number DESC);
 
-CREATE TABLE feature_uniswap_v3_pools (
+CREATE TABLE IF NOT EXISTS feature_uniswap_v3_pools (
     nft_address BYTEA NOT NULL,
     pool_address BYTEA NOT NULL,
     token0_address BYTEA,
@@ -27,7 +27,7 @@ CREATE TABLE feature_uniswap_v3_pools (
     PRIMARY KEY (nft_address, pool_address)
 );
 
-CREATE TABLE feature_uniswap_v3_tokens (
+CREATE TABLE IF NOT EXISTS feature_uniswap_v3_tokens (
     nft_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     pool_address BYTEA,

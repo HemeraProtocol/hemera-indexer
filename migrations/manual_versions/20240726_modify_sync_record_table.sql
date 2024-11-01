@@ -4,7 +4,7 @@ BEGIN;
 
 DROP TABLE sync_record;
 
-CREATE TABLE sync_record (
+CREATE TABLE IF NOT EXISTS sync_record (
     mission_sign VARCHAR NOT NULL,
     last_block_number BIGINT,
     update_time TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),

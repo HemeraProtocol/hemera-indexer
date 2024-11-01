@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 2359a28d63cb -> 6c2eecd6316b
 
-CREATE TABLE af_token_deposits__transactions (
+CREATE TABLE IF NOT EXISTS af_token_deposits__transactions (
     transaction_hash BYTEA NOT NULL,
     wallet_address BYTEA,
     chain_id BIGINT,
@@ -27,7 +27,7 @@ CREATE INDEX af_deposits_transactions_token_address_index ON af_token_deposits__
 
 CREATE INDEX af_deposits_transactions_wallet_address_index ON af_token_deposits__transactions (wallet_address);
 
-CREATE TABLE af_token_deposits_current (
+CREATE TABLE IF NOT EXISTS af_token_deposits_current (
     wallet_address BYTEA NOT NULL,
     chain_id BIGINT NOT NULL,
     contract_address BYTEA NOT NULL,

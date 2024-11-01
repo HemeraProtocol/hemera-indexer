@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 3dd9b90d2e31 -> c609922eae7a
 
-CREATE TABLE af_merchant_moe_pools (
+CREATE TABLE IF NOT EXISTS af_merchant_moe_pools (
     position_token_address BYTEA NOT NULL,
     block_timestamp BIGINT,
     block_number BIGINT,
@@ -14,7 +14,7 @@ CREATE TABLE af_merchant_moe_pools (
     PRIMARY KEY (position_token_address)
 );
 
-CREATE TABLE af_merchant_moe_token_bin_current (
+CREATE TABLE IF NOT EXISTS af_merchant_moe_token_bin_current (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     block_timestamp BIGINT,
@@ -28,7 +28,7 @@ CREATE TABLE af_merchant_moe_token_bin_current (
 
 CREATE INDEX af_merchant_moe_token_bin_current_token_id_index ON af_merchant_moe_token_bin_current (position_token_address DESC, token_id ASC);
 
-CREATE TABLE af_merchant_moe_token_bin_hist (
+CREATE TABLE IF NOT EXISTS af_merchant_moe_token_bin_hist (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     block_timestamp BIGINT NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE af_merchant_moe_token_bin_hist (
 
 CREATE INDEX af_merchant_moe_token_bin_hist_token_block_desc_index ON af_merchant_moe_token_bin_hist (position_token_address DESC, block_timestamp DESC);
 
-CREATE TABLE af_merchant_moe_token_supply_current (
+CREATE TABLE IF NOT EXISTS af_merchant_moe_token_supply_current (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     block_timestamp BIGINT,
@@ -54,7 +54,7 @@ CREATE TABLE af_merchant_moe_token_supply_current (
     PRIMARY KEY (position_token_address, token_id)
 );
 
-CREATE TABLE af_merchant_moe_token_supply_hist (
+CREATE TABLE IF NOT EXISTS af_merchant_moe_token_supply_hist (
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
     block_timestamp BIGINT NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE af_merchant_moe_token_supply_hist (
 
 CREATE INDEX af_merchant_moe_token_supply_hist_token_block_desc_index ON af_merchant_moe_token_supply_hist (position_token_address DESC, block_timestamp DESC);
 
-CREATE TABLE af_holding_balance_merchantmoe_period (
+CREATE TABLE IF NOT EXISTS af_holding_balance_merchantmoe_period (
     period_date DATE NOT NULL,
     protocol_id VARCHAR NOT NULL,
     position_token_address BYTEA NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE af_holding_balance_merchantmoe_period (
 
 CREATE INDEX af_holding_balance_merchantmoe_period_period_date ON af_holding_balance_merchantmoe_period (period_date);
 
-CREATE TABLE af_holding_balance_uniswap_v3_period (
+CREATE TABLE IF NOT EXISTS af_holding_balance_uniswap_v3_period (
     period_date DATE NOT NULL,
     protocol_id VARCHAR NOT NULL,
     position_token_address BYTEA NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE af_holding_balance_uniswap_v3_period (
 
 CREATE INDEX af_holding_balance_uniswap_v3_period_period_date ON af_holding_balance_uniswap_v3_period (period_date);
 
-CREATE TABLE af_merchant_moe_token_bin_hist_period (
+CREATE TABLE IF NOT EXISTS af_merchant_moe_token_bin_hist_period (
     period_date DATE NOT NULL,
     position_token_address BYTEA NOT NULL,
     token_id NUMERIC(100) NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE af_merchant_moe_token_bin_hist_period (
     PRIMARY KEY (period_date, position_token_address, token_id)
 );
 
-CREATE TABLE af_uniswap_v3_pool_prices_daily (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_pool_prices_daily (
     block_date DATE NOT NULL,
     pool_address BYTEA NOT NULL,
     sqrt_price_x96 NUMERIC(78),
@@ -124,7 +124,7 @@ CREATE TABLE af_uniswap_v3_pool_prices_daily (
 
 CREATE INDEX af_uniswap_v3_pool_prices_daily_block_date_index ON af_uniswap_v3_pool_prices_daily (block_date);
 
-CREATE TABLE af_uniswap_v3_pool_prices_period (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_pool_prices_period (
     period_date DATE NOT NULL,
     pool_address BYTEA NOT NULL,
     sqrt_price_x96 NUMERIC(78),
@@ -134,7 +134,7 @@ CREATE TABLE af_uniswap_v3_pool_prices_period (
 
 CREATE INDEX af_uniswap_v3_pool_prices_period_period_date_index ON af_uniswap_v3_pool_prices_period (period_date);
 
-CREATE TABLE af_uniswap_v3_token_data_daily (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_token_data_daily (
     block_date DATE NOT NULL,
     position_token_address BYTEA NOT NULL,
     token_id INTEGER NOT NULL,
@@ -147,7 +147,7 @@ CREATE TABLE af_uniswap_v3_token_data_daily (
 
 CREATE INDEX af_uniswap_v3_token_data_daily_index ON af_uniswap_v3_token_data_daily (block_date);
 
-CREATE TABLE af_uniswap_v3_token_data_period (
+CREATE TABLE IF NOT EXISTS af_uniswap_v3_token_data_period (
     period_date DATE NOT NULL,
     position_token_address BYTEA NOT NULL,
     token_id INTEGER NOT NULL,

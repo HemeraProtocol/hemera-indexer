@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 6c2eecd6316b -> 43d14640a8ac
 
-CREATE TABLE af_ens_address_current (
+CREATE TABLE IF NOT EXISTS af_ens_address_current (
     address BYTEA NOT NULL,
     name VARCHAR,
     reverse_node BYTEA,
@@ -12,7 +12,7 @@ CREATE TABLE af_ens_address_current (
     PRIMARY KEY (address)
 );
 
-CREATE TABLE af_ens_event (
+CREATE TABLE IF NOT EXISTS af_ens_event (
     transaction_hash BYTEA NOT NULL,
     transaction_index INTEGER NOT NULL,
     log_index INTEGER NOT NULL,
@@ -49,7 +49,7 @@ CREATE INDEX ens_event_address ON af_ens_event (from_address);
 
 CREATE INDEX ens_idx_block_number_log_index ON af_ens_event (block_number, log_index DESC);
 
-CREATE TABLE af_ens_node_current (
+CREATE TABLE IF NOT EXISTS af_ens_node_current (
     node BYTEA NOT NULL,
     token_id NUMERIC(100),
     w_token_id NUMERIC(100),
