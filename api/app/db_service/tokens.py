@@ -71,7 +71,7 @@ def get_token_address_token_transfer_cnt(token_type: str, address: str):
         .filter(
             and_(
                 (
-                    type_to_token_transfer_table(token_type).block_timestamp >= last_timestamp.date()
+                    type_to_token_transfer_table(token_type).block_timestamp >= last_timestamp
                     if last_timestamp is not None
                     else True
                 ),
