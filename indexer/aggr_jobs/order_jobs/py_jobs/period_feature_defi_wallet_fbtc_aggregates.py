@@ -12,6 +12,8 @@ from indexer.aggr_jobs.order_jobs.models.period_address_token_balances import Pe
 from indexer.aggr_jobs.order_jobs.models.period_feature_defi_fbtc_aggregates import PeriodFeatureDefiFbtcAggregates
 from indexer.aggr_jobs.order_jobs.models.period_feature_defi_wallet_fbtc_detail import PeriodFeatureDefiWalletFbtcDetail
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_dodo import PeriodFeatureHoldingBalanceDoDo
+from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_init_capital import \
+    PeriodFeatureHoldingBalanceInitCapital
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_lendle import PeriodFeatureHoldingBalanceLendle
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_merchantmoe import \
     PeriodFeatureHoldingBalanceMerchantmoe
@@ -429,7 +431,9 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
     def get_staked_json(self):
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceStakedFbtcDetail)
-        return self.get_token_data(orm_list)
+        # exclude init_capital
+        filter_orm_list = [orm for orm in orm_list if orm.protocol_id != 'init_capital']
+        return self.get_token_data(filter_orm_list)
 
     # def get_satlayer_json(self):
     #     orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceSatlayerFbtc)
@@ -438,8 +442,13 @@ class PeriodFeatureDefiWalletFbtcAggregates:
     def get_lendle_json(self):
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceLendle)
         results = self.get_token_data_for_lendle_au(orm_list)
-
         return results
+
+    def get_init_capital_json(self):
+        orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceInitCapital)
+        results = self.get_token_data_for_lendle_au(orm_list)
+        return results
+
 
     @staticmethod
     def timed_call(method, method_name):
@@ -451,9 +460,13 @@ class PeriodFeatureDefiWalletFbtcAggregates:
 
     def run(self):
         if self.chain_name == 'mantle':
+            init_capital = self.timed_call(self.get_init_capital_json, 'get_init_capital_json')
             lendle_json = self.timed_call(self.get_lendle_json, 'get_lendle_json')
+
         else:
+            init_capital = {}
             lendle_json = {}
+
         staked = self.timed_call(self.get_staked_json, 'get_staked_json')
 
         # get all protocol json, actually then can be abstract...
@@ -466,7 +479,7 @@ class PeriodFeatureDefiWalletFbtcAggregates:
         dodo_json = self.timed_call(self.get_dodo_json, 'get_dodo_json')
 
         # period_date can be removed from the key
-        protocols = [uniswapv3, staked, merchantmoe_json, dodo_json, lendle_json]
+        protocols = [uniswapv3, staked, merchantmoe_json, dodo_json, lendle_json, init_capital]
         # if self.chain_name == 'eth':
         #     satlayer_json = self.timed_call(self.get_satlayer_json, 'get_satlayer_json')
         #     protocols.append(satlayer_json)
