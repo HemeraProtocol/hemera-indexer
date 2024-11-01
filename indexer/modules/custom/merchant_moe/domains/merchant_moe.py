@@ -60,7 +60,7 @@ class MerChantMoePoolRecord(FilterData):
 
 
 @dataclass
-class MerChantMoePoolCurrentStatu(FilterData):
+class MerChantMoePoolCurrentStatus(FilterData):
     pool_address: str
     active_id: int
     bin_step: int

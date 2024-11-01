@@ -30,14 +30,13 @@ from indexer.modules.custom.merchant_moe.domains.erc1155_token_holding import (
 )
 from indexer.modules.custom.merchant_moe.domains.merchant_moe import (
     MerChantMoePool,
-    MerChantMoePoolCurrentStatu,
+    MerChantMoePoolCurrentStatus,
     MerChantMoePoolRecord,
     MerChantMoeTokenBin,
     MerChantMoeTokenCurrentBin,
 )
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
@@ -53,15 +52,6 @@ FUNCTION_LIST = [
 ]
 ABI_LIST = [f.get_abi() for f in FUNCTION_LIST]
 
-EVENT_LIST = [
-    DEPOSITED_TO_BINS_EVENT,
-    WITHDRAWN_FROM_BINS_EVENT,
-    TRANSFER_BATCH_EVNET,
-    SWAP_EVENT,
-    LB_PAIR_CREATED_EVENT,
-]
-TOPIC0_LIST = [e.get_signature() for e in EVENT_LIST]
-
 
 class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
     dependency_types = [TokenBalance, Log]
@@ -73,7 +63,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
         MerChantMoeTokenBin,
         MerChantMoeTokenCurrentBin,
         MerChantMoePool,
-        MerChantMoePoolCurrentStatu,
+        MerChantMoePoolCurrentStatus,
         MerChantMoePoolRecord,
     ]
     able_to_reorg = True
@@ -94,7 +84,15 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
     def get_filter(self):
         return TransactionFilterByLogs(
             [
-                TopicSpecification(topics=TOPIC0_LIST),
+                TopicSpecification(
+                    topics=[
+                        DEPOSITED_TO_BINS_EVENT.get_signature(),
+                        WITHDRAWN_FROM_BINS_EVENT.get_signature(),
+                        TRANSFER_BATCH_EVNET.get_signature(),
+                        SWAP_EVENT.get_signature(),
+                        LB_PAIR_CREATED_EVENT.get_signature(),
+                    ]
+                ),
             ]
         )
 
@@ -294,7 +292,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 block_timestamp=data["block_timestamp"],
             )
             if current_pool_data is None or current_pool_data.block_number < entity.block_number:
-                current_pool_data = MerChantMoePoolCurrentStatu(
+                current_pool_data = MerChantMoePoolCurrentStatus(
                     pool_address=entity.pool_address,
                     active_id=entity.active_id,
                     bin_step=entity.bin_step,
@@ -303,7 +301,7 @@ class ExportMerchantMoe1155LiquidityJob(FilterTransactionDataJob):
                 )
             self._collect_item(MerChantMoePoolRecord.type(), entity)
         if current_pool_data:
-            self._collect_item(MerChantMoePoolCurrentStatu.type(), current_pool_data)
+            self._collect_item(MerChantMoePoolCurrentStatus.type(), current_pool_data)
 
 
 def split_logs(logs):

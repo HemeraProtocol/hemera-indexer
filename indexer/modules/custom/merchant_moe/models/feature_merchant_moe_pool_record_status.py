@@ -22,7 +22,7 @@ class FeatureMerChantMoePoolRecordStatus(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "MerChantMoePoolCurrentStatu",
+                "domain": "MerChantMoePoolCurrentStatus",
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_merchant_moe_pool_data_current.block_number",
                 "converter": general_converter,
