@@ -41,6 +41,7 @@ class Network(Enum):
     Milkomeda = (2001, 0)
     Kava = (2222, 0)
     FantomTestnet = (4002, 0)
+    ZetaMainnet = (7000, 1632781)
     Canto = (7700, 0)
     Klaytn = (8217, 0)
     Base = (8453, 5022)
@@ -121,6 +122,7 @@ MULTICALL3_ADDRESSES = {
     Network.MoonbaseAlphaTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
     Network.Milkomeda: "0xcA11bde05977b3631167028862bE2a173976CA11",
     Network.FantomTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
+    Network.ZetaMainnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
     Network.Canto: "0xcA11bde05977b3631167028862bE2a173976CA11",
     Network.Klaytn: "0xcA11bde05977b3631167028862bE2a173976CA11",
     Network.EvmosTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
