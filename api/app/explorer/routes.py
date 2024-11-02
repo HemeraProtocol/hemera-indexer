@@ -12,8 +12,8 @@ from decimal import Decimal
 import flask
 from flask import Response
 from flask_restx import Resource, reqparse
-from sqlalchemy.sql import and_, cast, func, nullslast, or_
-from sqlalchemy.sql.sqltypes import VARCHAR, Numeric
+from sqlalchemy.sql import and_, func, nullslast, or_
+from sqlalchemy.sql.sqltypes import Numeric
 
 from api.app.cache import cache
 from api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
@@ -66,14 +66,9 @@ from common.models.blocks import Blocks
 from common.models.contract_internal_transactions import ContractInternalTransactions
 from common.models.contracts import Contracts
 from common.models.current_token_balances import CurrentTokenBalances
-from common.models.daily_address_aggregates import DailyAddressesAggregates
-from common.models.daily_blocks_aggregates import DailyBlocksAggregates
-from common.models.daily_tokens_aggregates import DailyTokensAggregates
-from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
-from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.models.token_balances import AddressTokenBalances
 from common.models.tokens import Tokens
 from common.models.traces import Traces
@@ -89,6 +84,11 @@ from common.utils.web3_utils import (
     is_eth_transaction_hash,
     to_checksum_address,
 )
+from indexer.modules.custom.address_index.models.address_index_stats import AddressIndexStats
+from indexer.modules.custom.stats.models.daily_addresses_stats import DailyAddressesStats
+from indexer.modules.custom.stats.models.daily_blocks_stats import DailyBlocksStats
+from indexer.modules.custom.stats.models.daily_tokens_stats import DailyTokensStats
+from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
 
 PAGE_SIZE = 25
 MAX_TRANSACTION = 500000
@@ -1615,18 +1615,18 @@ class ExplorerStatisticsContractData(Resource):
         "transactions_received": lambda session, limit: session.query(
             Transactions.to_address.label("address"),
             func.count().label("transaction_count"),
-            StatisticsWalletAddresses.tag,
+            AddressIndexStats.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.to_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            AddressIndexStats,
+            Transactions.to_address == AddressIndexStats.address,
             isouter=True,
         )
         .filter(
             Transactions.block_timestamp > datetime.now() - timedelta(days=1),
             Transactions.to_address.in_(session.query(Contracts.address)),
         )
-        .group_by(Transactions.to_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.to_address, AddressIndexStats.tag)
         .order_by(func.count().desc())
         .limit(limit)
         .all(),
@@ -1661,30 +1661,30 @@ class ExplorerStatisticsAddressData(Resource):
         "gas_used": lambda session, limit: session.query(
             Transactions.from_address.label("address"),
             func.sum(Transactions.receipt_gas_used).label("gas_used"),
-            StatisticsWalletAddresses.tag,
+            AddressIndexStats.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            AddressIndexStats,
+            Transactions.from_address == AddressIndexStats.address,
             isouter=True,
         )
         .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
-        .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.from_address, AddressIndexStats.tag)
         .order_by(func.sum(Transactions.receipt_gas_used).desc())
         .limit(limit)
         .all(),
         "transactions_sent": lambda session, limit: session.query(
             Transactions.from_address.label("address"),
             func.count().label("transaction_count"),
-            StatisticsWalletAddresses.tag,
+            AddressIndexStats.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            AddressIndexStats,
+            Transactions.from_address == AddressIndexStats.address,
             isouter=True,
         )
         .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
-        .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.from_address, AddressIndexStats.tag)
         .order_by(func.count().desc())
         .limit(limit)
         .all(),
@@ -1762,13 +1762,13 @@ class ExplorerChartDataDaily(Resource):
         data_list = {}
         for table_name, fields in tables_to_query.items():
             if table_name == "transaction":
-                table = DailyTransactionsAggregates
+                table = DailyTransactionsStats
             elif table_name == "address":
-                table = DailyAddressesAggregates
+                table = DailyAddressesStats
             elif table_name == "block":
-                table = DailyBlocksAggregates
+                table = DailyBlocksStats
             elif table_name == "token":
-                table = DailyTokensAggregates
+                table = DailyTokensStats
             else:
                 return {"error": f"Unknown table name in metric: {metrics_list}."}, 400
 

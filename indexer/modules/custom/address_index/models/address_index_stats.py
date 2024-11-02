@@ -1,14 +1,13 @@
-from sqlalchemy import DATE, Column
+from sqlalchemy import DATE, VARCHAR, Column
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, NUMERIC
 
 from common.models import HemeraModel
 
 
-class AddressIndexDailyStats(HemeraModel):
-    __tablename__ = "af_index_daily_stats"
+class AddressIndexStats(HemeraModel):
+    __tablename__ = "af_index_stats"
 
     address = Column(BYTEA, primary_key=True)
-    block_date = Column(DATE, primary_key=True)
 
     transaction_in_count = Column(INTEGER)
     transaction_out_count = Column(INTEGER)
@@ -63,3 +62,5 @@ class AddressIndexDailyStats(HemeraModel):
     nft_transfer_count = Column(INTEGER)
     nft_721_transfer_count = Column(INTEGER)
     nft_1155_transfer_count = Column(INTEGER)
+
+    tag = Column(VARCHAR)
