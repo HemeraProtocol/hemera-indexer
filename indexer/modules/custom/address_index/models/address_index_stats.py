@@ -13,9 +13,9 @@ class AddressIndexStats(HemeraModel):
     transaction_out_count = Column(INTEGER)
     transaction_self_count = Column(INTEGER)
 
-    transaction_in_value = Column(BIGINT)
-    transaction_out_value = Column(BIGINT)
-    transaction_self_value = Column(BIGINT)
+    transaction_in_value = Column(NUMERIC)
+    transaction_out_value = Column(NUMERIC)
+    transaction_self_value = Column(NUMERIC)
 
     transaction_in_fee = Column(NUMERIC)
     transaction_out_fee = Column(NUMERIC)
@@ -25,9 +25,9 @@ class AddressIndexStats(HemeraModel):
     internal_transaction_out_count = Column(INTEGER)
     internal_transaction_self_count = Column(INTEGER)
 
-    internal_transaction_in_value = Column(BIGINT)
-    internal_transaction_out_value = Column(BIGINT)
-    internal_transaction_self_value = Column(BIGINT)
+    internal_transaction_in_value = Column(NUMERIC)
+    internal_transaction_out_value = Column(NUMERIC)
+    internal_transaction_self_value = Column(NUMERIC)
 
     erc20_transfer_in_count = Column(INTEGER)
     erc20_transfer_out_count = Column(INTEGER)
