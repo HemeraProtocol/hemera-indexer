@@ -14,6 +14,8 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_defi_wallet_cmeth_detail
     PeriodFeatureDefiWalletCmethDetail
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_merchantmoe_cmeth import \
     PeriodFeatureHoldingBalanceMerchantmoeCmeth
+from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_v3 import \
+    PeriodFeatureHoldingBalanceUniswapV3
 
 
 class PeriodFeatureDefiWalletCmethAggregates:
@@ -183,6 +185,11 @@ class PeriodFeatureDefiWalletCmethAggregates:
         results = self.get_pool_token_pair_data(orm_list)
         return results
 
+    def get_uniswap_v3_json(self):
+        uniswapV3_list = self.get_filter_cmeth_orm(PeriodFeatureHoldingBalanceUniswapV3)
+        results = self.get_pool_token_pair_data(uniswapV3_list)
+        return results
+
     def get_token_data_for_target_token(self, orm_list, target_token_dict):
         wallet_protocol_contract_group = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
@@ -297,14 +304,16 @@ class PeriodFeatureDefiWalletCmethAggregates:
 
     def run(self):
         if self.chain_name == 'mantle':
+            uniswap_v3_json = self.timed_call(self.get_uniswap_v3_json, 'get_uniswap_v3_json')
             staked_json = self.timed_call(self.get_staked_json, 'get_staked_json')
             merchantmoe_json = self.timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
 
         else:
+            uniswap_v3_json ={}
             staked_json = {}
             merchantmoe_json = {}
         # period_date can be removed from the key
-        protocols = [staked_json, merchantmoe_json]
+        protocols = [staked_json, merchantmoe_json, uniswap_v3_json]
 
         address_token_balances = self.timed_call(self.get_period_address_token_balances,
                                                  'get_period_address_token_balances')
