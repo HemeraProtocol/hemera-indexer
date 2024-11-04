@@ -77,7 +77,7 @@ from common.utils.abi_code_utils import Function, decode_function, decode_log_da
 from common.utils.config import get_config
 from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
-from common.utils.format_utils import bytes_to_hex_str, format_to_dict, hex_str_to_bytes, row_to_dict
+from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, hex_str_to_bytes, row_to_dict
 from common.utils.web3_utils import (
     get_debug_trace_transaction,
     is_eth_address,
@@ -657,6 +657,44 @@ class ExplorerTransactionInternalTransactions(Resource):
         # Add display name for from/to address
         fill_address_display_to_transactions(transaction_list, bytea_address_list)
 
+        return {"total": len(transaction_list), "data": transaction_list}, 200
+
+
+@explorer_namespace.route("/v1/explorer/transaction/<hash>/all_internal_transactions")
+class ExplorerTransactionInternalTransactions(Resource):
+    @cache.cached(timeout=360, query_string=True)
+    def get(self, hash):
+
+        internal_transactions = (
+            db.session.query(Traces).filter(Traces.transaction_hash == bytes.fromhex(hash[2:])).all()
+        )
+        transaction_list = []
+        address_list = []
+        for transaction in internal_transactions:
+            transaction_json = as_dict(transaction)
+            transaction_json["from_address_is_contract"] = False
+            transaction_json["to_address_is_contract"] = False
+            transaction_list.append(transaction_json)
+            address_list.append(transaction.from_address)
+            address_list.append(transaction.to_address)
+
+        # Find contract
+        contracts = (
+            db.session.query(Contracts)
+            .with_entities(Contracts.address)
+            .filter(Contracts.address.in_(list(set(address_list))))
+            .all()
+        )
+        contract_list = set(map(lambda x: x.address, contracts))
+
+        for transaction_json in transaction_list:
+            if transaction_json["to_address"] in contract_list:
+                transaction_json["to_address_is_contract"] = True
+            if transaction_json["from_address"] in contract_list:
+                transaction_json["from_address_is_contract"] = True
+
+        fill_address_display_to_transactions(transaction_list)
+        transaction_list.sort(key=lambda x: int(x["trace_id"].split("-")[-1]) if x["trace_id"] else 0)
         return {"total": len(transaction_list), "data": transaction_list}, 200
 
 
