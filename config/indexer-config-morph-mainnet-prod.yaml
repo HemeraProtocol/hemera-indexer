@@ -1,0 +1,3 @@
+chain_id: 2818
+morph_bridge_on_l2_job:
+  l2_cross_domain_messenger_contract_address: "0x5300000000000000000000000000000000000007"
