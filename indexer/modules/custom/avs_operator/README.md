@@ -71,6 +71,10 @@ eigenlayer operator status operator.yaml
 ```
 
 ## Joining Hemera AVS
+Contact us to add the operator address to the whitelist.
+
+### Register Operators
+Follow [alt-research](https://github.com/alt-research/mach-avs/blob/m2-dev/scripts/README.md) and register the operator using `register_operator.sh`
 
 ### Configuration
 
@@ -81,10 +85,20 @@ Edit the configuration file `indexer-config-avs-holesky.yaml` in the config dire
 ** Run by source code **
 
 ```
-cd indexer
-python3 hemera.py stream -O hemera_history_transparency --output postgres --postgres-url
+cd hemera_indexer
+python3 hemera.py stream --provider-uri https://holesky.drpc.org --debug-provider-uri https://holesky.drpc.org -O hemera_history_transparency --output postgres --postgres-url
 postgresql://postgres:123456@localhost:5432/hemera_indexer --config-file ./config/indexer-config-avs-holesky.yaml
 ```
+
+** Run by docker **
+```commandline
+cd hemera_indexer
+cd docker-compose
+vim avs.env
+sudo docker compose -f avs-operator.yaml up
+```
+
+
 
 
 
