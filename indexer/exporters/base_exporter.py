@@ -11,10 +11,10 @@ class BaseExporter(object):
     def close(self):
         pass
 
-    def export_items(self, items):
+    def export_items(self, items, **kwargs):
         pass
 
-    def export_item(self, item):
+    def export_item(self, item, **kwargs):
         pass
 
     def batch_finish(self):
