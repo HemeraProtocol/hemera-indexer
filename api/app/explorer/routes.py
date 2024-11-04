@@ -674,6 +674,11 @@ class ExplorerTransactionInternalTransactions(Resource):
             transaction_json = as_dict(transaction)
             transaction_json["from_address_is_contract"] = False
             transaction_json["to_address_is_contract"] = False
+            transaction_json["value"] = (
+                format_coin_value_with_unit(transaction.value or 0, app_config.token_configuration.native_token)
+                if transaction.value
+                else 0
+            )
             transaction_list.append(transaction_json)
             address_list.append(transaction.from_address)
             address_list.append(transaction.to_address)
