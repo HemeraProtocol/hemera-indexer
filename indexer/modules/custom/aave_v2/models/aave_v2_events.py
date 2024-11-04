@@ -10,8 +10,8 @@ from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 from common.models import HemeraModel, general_converter
 
 
-class AaveV2LendingRecords(HemeraModel):
-    __tablename__ = "af_aave_v2_records"
+class AaveV2Events(HemeraModel):
+    __tablename__ = "af_aave_v2_events"
 
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
@@ -95,6 +95,12 @@ class AaveV2LendingRecords(HemeraModel):
             },
             {
                 "domain": "AaveV2LiquidationCallV1D",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AaveV2ReserveDataUpdatedRecordsD",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

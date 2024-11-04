@@ -136,3 +136,24 @@ class AaveV2CallRecordsD(FilterData):
     function: Optional[str] = None
     block_number: Optional[int] = None
     result: Optional[str] = None
+
+
+@dataclass
+class AaveV2ReserveDataUpdatedRecordsD(AaveV2BaseRecord):
+    reserve: Optional[str] = None
+    liquidityRate: Optional[int] = None
+    stableBorrowRate: Optional[int] = None
+    variableBorrowRate: Optional[int] = None
+    liquidityIndex: Optional[int] = None
+    variableBorrowIndex: Optional[int] = None
+
+
+@dataclass
+class AaveV2ReserveDataCurrentD(FilterData):
+    asset: Optional[str] = None
+    liquidityRate: Optional[int] = None
+    stableBorrowRate: Optional[int] = None
+    variableBorrowRate: Optional[int] = None
+    liquidityIndex: Optional[int] = None
+    variableBorrowIndex: Optional[int] = None
+    block_number: Optional[int] = None

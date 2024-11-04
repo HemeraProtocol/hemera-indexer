@@ -22,11 +22,13 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2LiquidationCallD,
     AaveV2RepayD,
     AaveV2ReserveD,
+    AaveV2ReserveDataCurrentD,
+    AaveV2ReserveDataUpdatedRecordsD,
     AaveV2WithdrawD,
     aave_v2_address_current_factory,
 )
 from indexer.modules.custom.aave_v2.models.aave_v2_address_current import AaveV2AddressCurrent
-from indexer.modules.custom.aave_v2.models.aave_v2_reserve import AaveV2Reserve
+from indexer.modules.custom.aave_v2.models.aave_v2_reserve import AaveV2ReserveCurrent
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
@@ -39,7 +41,8 @@ class InterestRateMode(Enum):
     VARIABLE = 2
 
 
-BALANCE_OF = "balanceOf(address)(uint256)"
+BALANCE_OF = "scaledBalanceOf(address)(uint256)"
+PRINCIPAL_BALANCE_OF = "principalBalanceOf(address)(uint256)"
 
 
 class ExportAaveV2Job(FilterTransactionDataJob):
@@ -57,6 +60,8 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         AaveV2AddressCurrentD,
         AaveV2LiquidationAddressCurrentD,
         AaveV2CallRecordsD,
+        AaveV2ReserveDataUpdatedRecordsD,
+        AaveV2ReserveDataCurrentD,
     ]
     able_to_reorg = False
 
@@ -90,7 +95,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     def _read_reserve(self):
 
         with self.db_service.get_service_session() as session:
-            result = session.query(AaveV2Reserve).all()
+            result = session.query(AaveV2ReserveCurrent).all()
         for rr in result:
             item = AaveV2ReserveD(
                 asset=bytes_to_hex_str(rr.asset),
@@ -143,6 +148,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     def _collect(self, **kwargs):
         logs = self._data_buff[Log.type()]
         aave_records = []
+        reserve_block_index_data = dict()
         for log in logs:
             if not self.is_aave_v2_address(log.address):
                 continue
@@ -155,6 +161,33 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if processed_data.type() == AaveV2ReserveD.type():
                     # update reserve
                     self.reserve_dic[processed_data.asset] = processed_data
+                elif processed_data.type() == AaveV2ReserveDataUpdatedRecordsD.type():
+                    tmp = AaveV2ReserveDataCurrentD(
+                        block_number=log.block_number,
+                        asset=processed_data.reserve,
+                        liquidityRate=processed_data.liquidityRate,
+                        stableBorrowRate=processed_data.stableBorrowRate,
+                        variableBorrowRate=processed_data.variableBorrowRate,
+                        liquidityIndex=processed_data.liquidityIndex,
+                        variableBorrowIndex=processed_data.variableBorrowIndex,
+                    )
+                    if tmp.asset not in reserve_block_index_data:
+                        reserve_block_index_data[tmp.asset] = dict()
+                    reserve_block_index_data[tmp.asset][tmp.block_number] = tmp
+
+                    self._collect_item(
+                        AaveV2ReserveDataCurrentD.type(),
+                        AaveV2ReserveDataCurrentD(
+                            block_number=log.block_number,
+                            asset=processed_data.reserve,
+                            liquidityRate=processed_data.liquidityRate,
+                            stableBorrowRate=processed_data.stableBorrowRate,
+                            variableBorrowRate=processed_data.variableBorrowRate,
+                            liquidityIndex=processed_data.liquidityIndex,
+                            variableBorrowIndex=processed_data.variableBorrowIndex,
+                        ),
+                    )
+
                 self._collect_item(processed_data.type(), processed_data)
                 aave_records.append(processed_data)
             except Exception as e:
@@ -187,7 +220,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=reserve.stable_debt_token_address,
-                        function=[BALANCE_OF, a_record.aave_user],
+                        function=[PRINCIPAL_BALANCE_OF, a_record.aave_user],
                         block_id=a_record.block_number,
                     )
                 )
@@ -216,7 +249,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=debt_reserve.stable_debt_token_address,
-                        function=[BALANCE_OF, aave_user],
+                        function=[PRINCIPAL_BALANCE_OF, aave_user],
                         block_id=a_record.block_number,
                     )
                 )
