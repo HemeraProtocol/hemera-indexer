@@ -21,12 +21,14 @@ class Call:
         target: AnyAddress,
         function: Union[str, Iterable[Union[str, Any]]],
         returns: Optional[Iterable[Tuple[str, Callable]]] = None,
-        block_id: Union[Optional[int], str] = None,
+        block_number: Union[Optional[int], str] = None,
         gas_limit: Optional[int] = None,
+        call_id: Optional[int] = None,
+        user_defined_k: Optional[Any] = None,
     ) -> None:
         self.target = to_checksum_address(target)
         self.returns = returns
-        self.block_id = block_id
+        self.block_id = block_number
         self.gas_limit = gas_limit
 
         self.args: Optional[List[Any]]
@@ -36,6 +38,8 @@ class Call:
             self.function = function
             self.args = None
         self.signature = _get_signature(self.function)
+        self.call_id = call_id
+        self.user_defined_k = user_defined_k
 
     def __repr__(self) -> str:
         return f"<Call {self.function} on {self.target[:8]}>"

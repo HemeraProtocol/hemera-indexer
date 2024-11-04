@@ -112,7 +112,7 @@ class TokenFetcher:
                                 address,
                                 ["tokenURI(uint256)(string)", row["token_id"]],
                                 [(row[self.fixed_k], None)],
-                                block_id=block_id,
+                                block_number=block_id,
                             )
 
                         else:
@@ -120,7 +120,7 @@ class TokenFetcher:
                                 address,
                                 ["ownerOf(uint256)(address)", row["token_id"]],
                                 [(row[self.fixed_k], None)],
-                                block_id=block_id,
+                                block_number=block_id,
                             )
                     elif row["token_type"] == TokenType.ERC1155.value:
                         if row["is_get_token_uri"] is True:
@@ -128,7 +128,7 @@ class TokenFetcher:
                                 address,
                                 ["uri(uint256)(string)", row["token_id"]],
                                 [(row[self.fixed_k], None)],
-                                block_id=block_id,
+                                block_number=block_id,
                             )
 
                         else:
@@ -136,7 +136,7 @@ class TokenFetcher:
                                 address,
                                 ["totalSupply(uint256)(uint256)", row["token_id"]],
                                 [(row[self.fixed_k], None)],
-                                block_id=block_id,
+                                block_number=block_id,
                             )
 
                     if construct_call:
@@ -288,14 +288,14 @@ class TokenFetcher:
                             token,
                             [BALANCE_OF_ERC1155, wal, token_id],
                             [(row[self.fixed_k], None)],
-                            block_id=block_id,
+                            block_number=block_id,
                         )
                     else:
                         construct_call = Call(
                             token,
                             [BALANCE_OF_ERC20, wal],
                             [(row[self.fixed_k], None)],
-                            block_id=block_id,
+                            block_number=block_id,
                         )
                     if construct_call:
                         wrapped_calls_map[construct_call.returns[0][0]] = row

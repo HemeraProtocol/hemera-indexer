@@ -57,7 +57,7 @@ class Multicall:
             self.multicall_address,
             self.multicall_sig,
             returns=None,
-            block_id=self.block_id,
+            block_number=self.block_id,
             gas_limit=self.gas_limit,
         )
 
