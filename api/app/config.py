@@ -204,6 +204,9 @@ class AppConfig(YAMLWizard):
         if os.getenv("GAS_FEE_TOKEN"):
             self.token_configuration.gas_fee_token = os.getenv("GAS_FEE_TOKEN", self.token_configuration.gas_fee_token)
 
+        if os.getenv("ROLLUP_TYPE"):
+            self.l2_config.rollup_type = os.getenv("ROLLUP_TYPE", self.l2_config.rollup_type)
+
     def get_onchain_badge_config(self):
         if "on_chain_badge" in self.extra_config:
             return self.extra_config["ONCHAIN_BADGE_INFO"]

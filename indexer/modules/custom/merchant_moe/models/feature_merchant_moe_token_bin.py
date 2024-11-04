@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 from common.models import HemeraModel, general_converter
 
 
-class FeatureMerChantMoeTokenBinRecords(HemeraModel):
+class FeatureMerchantMoeTokenBinRecords(HemeraModel):
     __tablename__ = "af_merchant_moe_token_bin_hist"
     position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
@@ -23,7 +23,7 @@ class FeatureMerChantMoeTokenBinRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "MerChantMoeTokenBin",
+                "domain": "MerchantMoeTokenBin",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -33,6 +33,6 @@ class FeatureMerChantMoeTokenBinRecords(HemeraModel):
 
 Index(
     "af_merchant_moe_token_bin_hist_token_block_desc_index",
-    desc(FeatureMerChantMoeTokenBinRecords.position_token_address),
-    desc(FeatureMerChantMoeTokenBinRecords.block_timestamp),
+    desc(FeatureMerchantMoeTokenBinRecords.position_token_address),
+    desc(FeatureMerchantMoeTokenBinRecords.block_timestamp),
 )
