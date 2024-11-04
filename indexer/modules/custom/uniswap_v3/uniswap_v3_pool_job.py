@@ -4,14 +4,12 @@ from collections import defaultdict
 
 import eth_abi
 
-from common.utils.abi_code_utils import decode_log
-from indexer.domain import dict_to_dataclass
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils
-from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
+from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
     UniswapV3Pool,
     UniswapV3PoolCurrentPrice,
     UniswapV3PoolPrice,
@@ -62,12 +60,6 @@ FUNCTION_EVENT_LIST = [
 ]
 UNISWAP_V3_ABI = [fe.get_abi() for fe in FUNCTION_EVENT_LIST]
 
-liquidity_event_list = [INCREASE_LIQUIDITY_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT]
-LIQUIDITY_EVENT_TOPIC0_LIST = [e.get_signature() for e in liquidity_event_list]
-
-nft_event_list = [MINT_EVENT, BURN_EVENT]
-NFT_EVENT_TOPIC0_LIST = [e.get_signature() for e in nft_event_list]
-
 
 class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
@@ -97,20 +89,33 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._max_worker = kwargs["max_workers"]
 
     def get_filter(self):
-        liquidity_topic0_list = LIQUIDITY_EVENT_TOPIC0_LIST + NFT_EVENT_TOPIC0_LIST
-        liquidity_topic0_list.append(self._pool_swap_topic0)
-        liquidity_topic0_list.append(self._create_pool_topic0)
-
         return TransactionFilterByLogs(
             [
-                TopicSpecification(topics=liquidity_topic0_list),
+                TopicSpecification(
+                    topics=[
+                        # lp change event
+                        INCREASE_LIQUIDITY_EVENT.get_signature(),
+                        UPDATE_LIQUIDITY_EVENT.get_signature(),
+                        DECREASE_LIQUIDITY_EVENT.get_signature(),
+                        # position_token_address change event
+                        MINT_EVENT.get_signature(),
+                        BURN_EVENT.get_signature(),
+                        # POOL EVENT
+                        POOL_CREATED_EVENT.get_signature(),
+                        SWAP_EVENT.get_signature(),
+                    ]
+                ),
             ]
         )
 
     def _collect(self, **kwargs):
+        # collect pool by create event
+        self.get_pools()
+
         # collect swap event
         self.get_swap_event()
 
+        # get prices
         logs = self._data_buff[Log.type()]
         grouped_logs = defaultdict(list)
         for log in logs:
@@ -122,31 +127,64 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             max_log_index_record = max(group, key=lambda x: x.log_index)
             max_log_index_records.append(max_log_index_record)
 
-        # first collect pool info
-        need_add_in_exists_pools = get_new_pools(
+        self._batch_work_executor.execute(
+            max_log_index_records, self._collect_batch, len(max_log_index_records), split_logs
+        )
+        self._batch_work_executor.wait()
+
+    def get_pools(self):
+        maybe_unknown_event_in_swap_eventy_dict = defaultdict(dict)
+
+        logs = self._data_buff[Log.type()]
+        for log in logs:
+            log_address = log.address
+            if log_address not in self._exist_pools:
+                # collect pools by create event
+                if log_address == self._factory_address and log.topic0 == POOL_CREATED_EVENT.get_signature():
+                    decoded_data = POOL_CREATED_EVENT.decode_log(log)
+                    pool_address = decoded_data["pool"]
+                    new_pool_dict = {
+                        "position_token_address": self._position_token_address,
+                        "token0_address": decoded_data["token0"],
+                        "token1_address": decoded_data["token1"],
+                        "fee": decoded_data["fee"],
+                        "tick_spacing": decoded_data["tickSpacing"],
+                        "pool_address": pool_address,
+                        "block_number": log.block_number,
+                    }
+                    self._exist_pools[log_address] = new_pool_dict
+
+                    uniswap_v3_pool = UniswapV3Pool(
+                        block_timestamp=log.block_timestamp, factory_address=self._factory_address, **new_pool_dict
+                    )
+
+                    self._collect_domain(uniswap_v3_pool)
+                # collect pools by swap event
+                elif log.topic0 == SWAP_EVENT.get_signature():
+                    # if the address created by factory_address ,collect it
+                    maybe_unknown_event_in_swap_eventy_dict[log_address] = {
+                        "address": log_address,
+                        "block_number": log.block_number,
+                        "block_timestamp": log.block_timestamp,
+                    }
+
+        pools_get_from_swap_event = collect_swap_new_pools(
             self._position_token_address,
             self._factory_address,
-            self._exist_pools,
-            self._create_pool_topic0,
-            self._pool_swap_topic0,
-            LIQUIDITY_EVENT_TOPIC0_LIST,
-            max_log_index_records,
-            self._abi_list,
+            list(maybe_unknown_event_in_swap_eventy_dict.values()),
+            UNISWAP_V3_ABI,
             self._web3,
             self._batch_web3_provider.make_request,
             self._is_batch,
             self._batch_size,
             self._max_worker,
         )
-        self._exist_pools.update(need_add_in_exists_pools)
+        for pool_address, pool_dict in pools_get_from_swap_event.items():
+            if pool_address not in self._exist_pools:
+                self._exist_pools[pool_address] = pool_dict
+                uniswap_v3_pool = UniswapV3Pool(factory_address=self._factory_address, fee=0, **pool_dict)
 
-        for pools in format_pool_item(need_add_in_exists_pools):
-            self._collect_item(UniswapV3Pool.type(), pools)
-
-        self._batch_work_executor.execute(
-            max_log_index_records, self._collect_batch, len(max_log_index_records), split_logs
-        )
-        self._batch_work_executor.wait()
+                self._collect_domain(uniswap_v3_pool)
 
     def get_swap_event(self):
         transactions = self._data_buff[Transaction.type()]
@@ -195,12 +233,18 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     def _collect_batch(self, logs_dict):
         if not logs_dict:
             return
-
         token_address = next(iter(logs_dict))
         logs = logs_dict[token_address]
         block_info = {log.block_number: log.block_timestamp for log in logs}
 
-        liquidity_list = NFT_EVENT_TOPIC0_LIST + LIQUIDITY_EVENT_TOPIC0_LIST
+        liquidity_list = [  # lp change event
+            INCREASE_LIQUIDITY_EVENT.get_signature(),
+            UPDATE_LIQUIDITY_EVENT.get_signature(),
+            DECREASE_LIQUIDITY_EVENT.get_signature(),
+            # position_token_address change event
+            MINT_EVENT.get_signature(),
+            BURN_EVENT.get_signature(),
+        ]
 
         pool_prices = collect_pool_prices(
             self._pool_swap_topic0,
@@ -234,13 +278,6 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self._data_buff[UniswapV3Pool.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3PoolPrice.type()].sort(key=lambda x: x.block_number)
         self._data_buff[UniswapV3PoolCurrentPrice.type()].sort(key=lambda x: x.block_number)
-
-
-def format_pool_item(new_pools):
-    result = []
-    for pool_address, pool in new_pools.items():
-        result.append(dict_to_dataclass(pool, UniswapV3Pool))
-    return result
 
 
 def format_value_records(exist_pools, factory_address, pool_prices, block_info):
@@ -293,60 +330,6 @@ def get_exist_pools(db_service, position_token_address):
         session.close()
 
     return history_pools
-
-
-def get_new_pools(
-    position_token_address,
-    factory_address,
-    exist_pools,
-    create_topic0,
-    swap_topic0,
-    liquidity_topic0_list,
-    logs,
-    abi_list,
-    web3,
-    make_requests,
-    is_batch,
-    batch_size,
-    max_worker,
-):
-    need_add = {}
-    unknown_pools_with_swap = []
-    for log in logs:
-        address = log.address
-        if address in exist_pools:
-            continue
-        current_topic0 = log.topic0
-        if factory_address == address and create_topic0 == current_topic0:
-            decoded_data = POOL_CREATED_EVENT.decode_log(log)
-            pool_address = decoded_data["pool"]
-
-            new_pool = {
-                "position_token_address": position_token_address,
-                "token0_address": decoded_data["token0"],
-                "token1_address": decoded_data["token1"],
-                "fee": decoded_data["fee"],
-                "tick_spacing": decoded_data["tickSpacing"],
-                "pool_address": pool_address,
-                "block_number": log.block_number,
-            }
-            need_add[pool_address] = new_pool
-        elif swap_topic0 == current_topic0 or current_topic0 in liquidity_topic0_list:
-            # if the address created by factory_address ,collect it
-            unknown_pools_with_swap.append({"address": address, "block_number": log.block_number})
-    swap_new_pools = collect_swap_new_pools(
-        position_token_address,
-        factory_address,
-        unknown_pools_with_swap,
-        abi_list,
-        web3,
-        make_requests,
-        is_batch,
-        batch_size,
-        max_worker,
-    )
-    need_add.update(swap_new_pools)
-    return need_add
 
 
 def collect_pool_prices(
@@ -402,6 +385,7 @@ def collect_swap_new_pools(
                 {
                     "block_number": data["block_number"],
                     "address": data["address"],
+                    "block_timestamp": data["block_timestamp"],
                 }
             )
     if len(uniswap_pools) == 0:
@@ -428,20 +412,10 @@ def collect_swap_new_pools(
                 "tick_spacing": data["tickSpacing"],
                 "pool_address": pool_address,
                 "block_number": data["block_number"],
+                "block_timestamp": data["block_timestamp"],
             }
             need_add[pool_address] = new_pool
     return need_add
-
-
-def decode_logs(fn_name, contract_abi, log):
-    function_abi = next(
-        (abi for abi in contract_abi if abi["name"] == fn_name and abi["type"] == "event"),
-        None,
-    )
-    if not function_abi:
-        raise ValueError("Function ABI not found")
-
-    return decode_log(function_abi, log)
 
 
 def split_logs(logs):
