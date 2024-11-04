@@ -23,6 +23,8 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2LiquidationCallD,
     AaveV2RepayD,
     AaveV2ReserveD,
+    AaveV2ReserveDataCurrentD,
+    AaveV2ReserveDataUpdatedRecordsD,
     AaveV2WithdrawD,
 )
 from indexer.modules.custom.address_index.domain import *
@@ -224,3 +226,5 @@ def generate_output_types(entity_types):
         yield AaveV2AddressCurrentD
         yield AaveV2LiquidationAddressCurrentD
         yield AaveV2CallRecordsD
+        yield AaveV2ReserveDataUpdatedRecordsD
+        yield AaveV2ReserveDataCurrentD

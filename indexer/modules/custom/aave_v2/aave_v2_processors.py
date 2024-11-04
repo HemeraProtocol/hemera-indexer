@@ -13,6 +13,7 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2LiquidationCallD,
     AaveV2RepayD,
     AaveV2ReserveD,
+    AaveV2ReserveDataUpdatedRecordsD,
     AaveV2WithdrawD,
 )
 
@@ -208,6 +209,20 @@ class LiquidationCallProcessor(EventProcessor):
         }
 
 
+class ReserveDataUpdateProcessor(EventProcessor):
+    """0x804c9b842b2748a22bb64b345453a3de7ca54a6ca45ce00d415894979e22897a"""
+
+    def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
+        return {
+            "reserve": extract_eth_address(log.topic1),
+            "liquidityRate": decoded_log.get("liquidityRate"),
+            "stableBorrowRate": decoded_log.get("stableBorrowRate"),
+            "variableBorrowRate": decoded_log.get("variableBorrowRate"),
+            "liquidityIndex": decoded_log.get("liquidityIndex"),
+            "variableBorrowIndex": decoded_log.get("variableBorrowIndex"),
+        }
+
+
 @dataclass
 class EventConfig:
     """Configuration for each event type"""
@@ -258,4 +273,10 @@ class AaveV2Events(Enum):
         contract_address_key="POOL_V2",
         processor_class=LiquidationCallProcessor,
         data_class=AaveV2LiquidationCallD,
+    )
+    RESERVE_DATA_UPDATE = EventConfig(
+        name="ReserveDataUpdated",
+        contract_address_key="POOL_V2",
+        processor_class=ReserveDataUpdateProcessor,
+        data_class=AaveV2ReserveDataUpdatedRecordsD,
     )
