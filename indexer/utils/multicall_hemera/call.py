@@ -7,7 +7,7 @@ from eth_typing.abi import Decodable
 from eth_utils import to_checksum_address
 
 from common.utils.abi_code_utils import Function
-from common.utils.format_utils import bytes_to_hex_str, format_block_id
+from common.utils.format_utils import format_block_id, hex_str_to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +40,7 @@ class Call:
 
     @property
     def data(self) -> bytes:
-        return self.function_abi.encode_function_call_data(self.parameters or []).encode()
+        return hex_str_to_bytes(self.function_abi.encode_function_call_data(self.parameters or []))
 
     def decode_output(self, output: Decodable) -> Any:
         try:
@@ -49,11 +49,11 @@ class Call:
             decoded = [None] * (
                 1 if not self.function_abi.get_outputs_type() else len(self.function_abi.get_outputs_type())
             )
+            return None
         return decoded
 
     def to_rpc_param(self):
         args = self.prep_args()
-        args[0]["data"] = bytes_to_hex_str(args[0]["data"])
         return {
             "jsonrpc": "2.0",
             "method": "eth_call",
@@ -62,7 +62,7 @@ class Call:
         }
 
     def prep_args(self) -> List:
-        call_data = self.function_abi.encode_function_call_data(self.parameters)
+        call_data = self.function_abi.encode_function_call_data(self.parameters if self.parameters else [])
         args = [{"to": self.target, "data": call_data}, format_block_id(self.block_number)]
         if self.gas_limit:
             args[0]["gas"] = self.gas_limit

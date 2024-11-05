@@ -14,7 +14,7 @@ from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call, Multicall
 from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
-from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_address, get_multicall_network
+from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_network
 from indexer.utils.multicall_hemera.util import make_request_concurrent, rebatch_by_size
 from indexer.utils.provider import get_provider_from_uri
 
@@ -51,6 +51,9 @@ class MultiCallHelper:
             call.call_id = cnt
             # make sure returns is not configured
             call.returns = None
+
+            args = call.prep_args()
+            pars = call.to_rpc_param()
             if call.block_number is None:
                 raise FastShutdownError("MultiCallHelper.validate_calls failed: block_number is None")
 
@@ -64,17 +67,21 @@ class MultiCallHelper:
                 result = res.get("result")
                 if result:
                     self.logger.debug(f"{__name__}, calls {len(calls)}")
-                    block_id, _, outputs = TRY_BLOCK_AND_AGGREGATE_FUNC.decode_data(hex_str_to_bytes(result))
-                    for call, (success, output) in zip(calls, outputs):
-                        call.returns = Call.decode_output(output, call.function_abi, call.returns, success)
+                    dic = TRY_BLOCK_AND_AGGREGATE_FUNC.decode_function_output_data(result)
+                    block_number = dic["blockNumber"]
+                    outputs = dic["returnData"]
+                    for call, (output) in zip(calls, outputs):
+                        call.returns = call.decode_output(output["returnData"])
 
     def execute_calls(self, calls: List[Call]) -> List[Call]:
-        """execute eth calls
-        1. check every call have a block number, this is must
-        2. according to multicall contract launch block_number, split these calls into two lists. one can execute through multicall, while the other cannot
-        3. for some reason, multicall may fail. re_collect these calls
-        4. execute left calls directly through rpc
-        5. return the calls, with result enriched
+        """Execute eth calls
+        1. Validate that each call has a specified block number (required)
+        2. Split calls into two groups based on multicall contract deployment block:
+           - Calls that can be executed via multicall contract
+           - Calls that must be executed directly (before multicall deployment)
+        3. Handle failed multicall executions by collecting failed calls
+        4. Execute remaining calls directly through RPC
+        5. Return all calls with their execution results attached
         """
         self.validate_calls(calls)
         to_execute_batch_calls, to_execute_multi_calls = self.prepare_calls(calls)
@@ -100,7 +107,7 @@ class MultiCallHelper:
             response = [self.make_request(params=orjson.dumps(rpc_param[0]))]
         for call, data in zip(calls, response):
             result = data.get("result")
-            call.returns = Call.decode_output(hex_str_to_bytes(result), call.signature, call.returns, None)
+            call.returns = call.decode_output(hex_str_to_bytes(result))
 
     def prepare_calls(self, calls: List[Call]):
         grouped_data = defaultdict(list)

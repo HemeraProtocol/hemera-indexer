@@ -3,7 +3,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 import orjson
 
-from common.utils.format_utils import bytes_to_hex_str
+from common.utils.format_utils import format_block_id
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.abi import AGGREGATE_FUNC, TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_address, get_multicall_network
@@ -53,10 +53,16 @@ class Multicall(Call):
     def to_rpc_param(self):
         self.parameters = get_args(self.calls, self.require_success)
         args = self.prep_args()
-        args[0]["data"] = bytes_to_hex_str(args[0]["data"])
         return {
             "jsonrpc": "2.0",
             "method": "eth_call",
             "params": args,
             "id": abs(hash(orjson.dumps(args))),
         }
+
+    def prep_args(self) -> List:
+        call_data = self.multicall_func.encode_function_call_data(self.parameters if self.parameters else [])
+        args = [{"to": self.multicall_address, "data": call_data}, format_block_id(self.block_number)]
+        if self.gas_limit:
+            args[0]["gas"] = self.gas_limit
+        return args
