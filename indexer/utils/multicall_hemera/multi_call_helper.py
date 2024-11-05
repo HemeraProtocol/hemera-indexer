@@ -11,7 +11,6 @@ from typing import List
 import orjson
 
 from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call, Multicall
 from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_network
@@ -51,9 +50,6 @@ class MultiCallHelper:
             call.call_id = cnt
             # make sure returns is not configured
             call.returns = None
-
-            args = call.prep_args()
-            pars = call.to_rpc_param()
             if call.block_number is None:
                 raise FastShutdownError("MultiCallHelper.validate_calls failed: block_number is None")
 
@@ -107,7 +103,7 @@ class MultiCallHelper:
             response = [self.make_request(params=orjson.dumps(rpc_param[0]))]
         for call, data in zip(calls, response):
             result = data.get("result")
-            call.returns = call.decode_output(hex_str_to_bytes(result))
+            call.returns = call.decode_output(result)
 
     def prepare_calls(self, calls: List[Call]):
         grouped_data = defaultdict(list)

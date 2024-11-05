@@ -12,46 +12,35 @@ logger = logging.getLogger(__name__)
 CallResponse = Tuple[Union[None, bool], bytes]
 
 
-def get_args(calls: List[Call], require_success: bool = True) -> List[Union[bool, List[List[Any]]]]:
-    if require_success is True:
-        return [[[call.target, call.data] for call in calls]]
-    return [require_success, [[call.target, call.data] for call in calls]]
-
-
-def unpack_aggregate_outputs(outputs: Any) -> Tuple[CallResponse, ...]:
-    return tuple((None, output) for output in outputs)
-
-
-def unpack_batch_results(batch_results: List[List[CallResponse]]) -> List[CallResponse]:
-    return [result for batch in batch_results for result in batch]
-
-
-class Multicall(Call):
+class Multicall:
 
     def __init__(
         self,
         calls: List[Call],
         chain_id: int = None,
-        block_number: Union[Optional[int], str] = None,
+        block_number: Optional[int] = None,
         require_success: bool = True,
         gas_limit: int = GAS_LIMIT,
     ) -> None:
         self.calls = calls
-        self.block_number = block_number
         self.require_success = require_success
         self.gas_limit = gas_limit
         self.chain_id = chain_id
+        self.block_number = block_number
         self.network = get_multicall_network(self.chain_id)
         if require_success is True:
             self.multicall_func = AGGREGATE_FUNC
         else:
             self.multicall_func = TRY_BLOCK_AND_AGGREGATE_FUNC
         self.multicall_address = get_multicall_address(self.network)
+        self.parameters = self.get_args(self.require_success)
 
-        super().__init__(target=self.multicall_address, function_abi=self.multicall_func, gas_limit=self.gas_limit)
+    def get_args(self, require_success: bool = True) -> List[Union[bool, List[List[Any]]]]:
+        if require_success is True:
+            return [[[call.target, call.data] for call in self.calls]]
+        return [require_success, [[call.target, call.data] for call in self.calls]]
 
     def to_rpc_param(self):
-        self.parameters = get_args(self.calls, self.require_success)
         args = self.prep_args()
         return {
             "jsonrpc": "2.0",

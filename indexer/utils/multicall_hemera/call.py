@@ -7,7 +7,7 @@ from eth_typing.abi import Decodable
 from eth_utils import to_checksum_address
 
 from common.utils.abi_code_utils import Function
-from common.utils.format_utils import format_block_id, hex_str_to_bytes
+from common.utils.format_utils import bytes_to_hex_str, format_block_id, hex_str_to_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -44,13 +44,12 @@ class Call:
 
     def decode_output(self, output: Decodable) -> Any:
         try:
-            decoded = self.function_abi.decode_function_output_data(output.hex())
-        except Exception:
-            decoded = [None] * (
-                1 if not self.function_abi.get_outputs_type() else len(self.function_abi.get_outputs_type())
-            )
+            decoded = self.function_abi.decode_function_output_data(bytes_to_hex_str(output))
+            return decoded
+        except Exception as e:
+            logger.error(f"Failed to decode output of {self.function_abi.get_name()} data {bytes_to_hex_str(output)}")
+            raise e
             return None
-        return decoded
 
     def to_rpc_param(self):
         args = self.prep_args()
