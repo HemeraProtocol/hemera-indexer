@@ -193,11 +193,10 @@ class PGSourceJob(BaseSourceJob):
             domains = self._dataclass_build(self.pg_datas[table], output_type)
             if hasattr(table, "__query_order__"):
                 domains.sort(key=lambda x: tuple(getattr(x, column.name) for column in table.__query_order__))
-            self.output_collection[output_type.type()] = domains
+            self._data_buff[output_type.type()] = domains
 
     def _export(self):
-        for output_type in self.output_types:
-            self._data_buff[output_type.type()] = self.output_collection[output_type.type()]
+        pass
 
     def _query_timestamp_with_block(self, block_number):
         session = self._service.get_service_session()
