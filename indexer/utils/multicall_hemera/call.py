@@ -1,13 +1,13 @@
 import logging
-from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Sequence, Union
 
 import orjson
 from eth_typing import Address, ChecksumAddress, HexAddress
 from eth_typing.abi import Decodable
 from eth_utils import to_checksum_address
 
+from common.utils.abi_code_utils import Function
 from common.utils.format_utils import bytes_to_hex_str, format_block_id
-from indexer.utils.multicall_hemera.signature import Signature, _get_signature
 
 logger = logging.getLogger(__name__)
 
@@ -19,68 +19,40 @@ class Call:
     def __init__(
         self,
         target: AnyAddress,
-        function: Union[str, Iterable[Union[str, Any]]],
-        returns: Optional[Iterable[Tuple[str, Callable]]] = None,
-        block_number: Union[Optional[int], str] = None,
+        function_abi: Function,
+        parameters: Sequence[Any] = None,
+        block_number: Optional[int] = None,
         gas_limit: Optional[int] = None,
-        call_id: Optional[int] = None,
         user_defined_k: Optional[Any] = None,
     ) -> None:
         self.target = to_checksum_address(target)
-        self.returns = returns
-        self.block_id = block_number
+        self.block_number = block_number
         self.gas_limit = gas_limit
 
-        self.args: Optional[List[Any]]
-        if isinstance(function, list):
-            self.function, *self.args = function
-        else:
-            self.function = function
-            self.args = None
-        self.signature = _get_signature(self.function)
-        self.call_id = call_id
+        self.function_abi = function_abi
+        self.parameters = parameters
         self.user_defined_k = user_defined_k
+        self.returns = None
+        self.call_id = None
 
     def __repr__(self) -> str:
-        return f"<Call {self.function} on {self.target[:8]}>"
+        return f"<Call {self.function_abi.get_name()} on {self.target[:8]}>"
 
     @property
     def data(self) -> bytes:
-        return self.signature.encode_data(self.args)
+        return self.function_abi.encode_function_call_data(self.parameters or []).encode()
 
-    def decode_output(
-        output: Decodable,
-        signature: Signature,
-        returns: Optional[Iterable[Tuple[str, Callable]]] = None,
-        success: Optional[bool] = None,
-    ) -> Any:
-
-        if success is None:
-            apply_handler = lambda handler, value: handler(value)
-        else:
-            apply_handler = lambda handler, value: handler(success, value)
-
-        if success is None or success:
-            try:
-                decoded = signature.decode_data(output)
-            except:
-                success, decoded = False, [None] * (1 if not returns else len(returns))  # type: ignore
-        else:
-            decoded = [None] * (1 if not returns else len(returns))  # type: ignore
-
-        logger.debug(f"returns: {returns}")
-        logger.debug(f"decoded: {decoded}")
-
-        if returns:
-            return {
-                name: apply_handler(handler, value) if handler else value
-                for (name, handler), value in zip(returns, decoded)
-            }
-        else:
-            return decoded if len(decoded) > 1 else decoded[0]
+    def decode_output(self, output: Decodable) -> Any:
+        try:
+            decoded = self.function_abi.decode_function_output_data(output.hex())
+        except Exception:
+            decoded = [None] * (
+                1 if not self.function_abi.get_outputs_type() else len(self.function_abi.get_outputs_type())
+            )
+        return decoded
 
     def to_rpc_param(self):
-        args = prep_args(self.target, self.signature, self.args, self.block_id, self.gas_limit)
+        args = self.prep_args()
         args[0]["data"] = bytes_to_hex_str(args[0]["data"])
         return {
             "jsonrpc": "2.0",
@@ -89,15 +61,9 @@ class Call:
             "id": abs(hash(orjson.dumps(args))),
         }
 
-
-def prep_args(
-    target: str, signature: Signature, args: Optional[Any], block_id: Union[Optional[int], str], gas_limit: int
-) -> List:
-    call_data = signature.encode_data(args)
-
-    args = [{"to": target, "data": call_data}, format_block_id(block_id)]
-
-    if gas_limit:
-        args[0]["gas"] = gas_limit
-
-    return args
+    def prep_args(self) -> List:
+        call_data = self.function_abi.encode_function_call_data(self.parameters)
+        args = [{"to": self.target, "data": call_data}, format_block_id(self.block_number)]
+        if self.gas_limit:
+            args[0]["gas"] = self.gas_limit
+        return args

@@ -13,8 +13,9 @@ import orjson
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call, Multicall
-from indexer.utils.multicall_hemera.constants import GAS_LIMIT, Network
-from indexer.utils.multicall_hemera.util import make_request_concurrent, rebatch_by_size, sig
+from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
+from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_address, get_multicall_network
+from indexer.utils.multicall_hemera.util import make_request_concurrent, rebatch_by_size
 from indexer.utils.provider import get_provider_from_uri
 
 
@@ -39,16 +40,9 @@ class MultiCallHelper:
             self.multi_call = None
             self.deploy_block_number = 2**56
         else:
-            try:
-                self.net = Network.from_value(self.chain_id)
-            except Exception:
-                self.logger.warning(f"multicall is not enabled on chain {self.chain_id}")
-                self.net = None
-                self.multi_call = None
-                self.deploy_block_number = 2**56
-            else:
-                self.multi_call = Multicall([], require_success=False, chain_id=self.chain_id)
-                self.deploy_block_number = self.net.deploy_block_number
+            self.net = get_multicall_network(self.chain_id)
+            self.multi_call = Multicall([], require_success=False, chain_id=self.chain_id)
+            self.deploy_block_number = self.net.deploy_block_number
 
     def validate_calls(self, calls):
         cnt = 0
@@ -70,9 +64,9 @@ class MultiCallHelper:
                 result = res.get("result")
                 if result:
                     self.logger.debug(f"{__name__}, calls {len(calls)}")
-                    block_id, _, outputs = sig.decode_data(hex_str_to_bytes(result))
+                    block_id, _, outputs = TRY_BLOCK_AND_AGGREGATE_FUNC.decode_data(hex_str_to_bytes(result))
                     for call, (success, output) in zip(calls, outputs):
-                        call.returns = Call.decode_output(output, call.signature, call.returns, success)
+                        call.returns = Call.decode_output(output, call.function_abi, call.returns, success)
 
     def execute_calls(self, calls: List[Call]) -> List[Call]:
         """execute eth calls
@@ -111,7 +105,7 @@ class MultiCallHelper:
     def prepare_calls(self, calls: List[Call]):
         grouped_data = defaultdict(list)
         for call in calls:
-            grouped_data[call.block_id].append(call)
+            grouped_data[call.block_number].append(call)
 
         to_execute_batch_calls = []
         to_execute_multi_calls = []
@@ -132,7 +126,7 @@ class MultiCallHelper:
                         calls,
                         require_success=False,
                         chain_id=self.chain_id,
-                        block_id=calls[0].block_id,
+                        block_number=calls[0].block_number,
                         gas_limit=len(calls) * GAS_LIMIT,
                     ).to_rpc_param()
                 )

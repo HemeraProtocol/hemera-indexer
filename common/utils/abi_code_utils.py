@@ -194,6 +194,9 @@ class Function:
         """
         return self._signature
 
+    def get_name(self) -> str:
+        return self.get_abi()["name"]
+
     def get_inputs_type(self) -> List[str]:
         """
         Returns the list of input types for the function.

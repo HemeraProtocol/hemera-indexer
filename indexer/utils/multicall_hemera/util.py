@@ -10,44 +10,12 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
-from mpire import WorkerPool
 
 from common.utils.format_utils import hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call
-from indexer.utils.multicall_hemera.signature import _get_signature
+from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
 
 logger = logging.getLogger(__name__)
-from contextlib import contextmanager
-
-
-class GlobalPoolManager:
-    def __init__(self, processes=None):
-        self.processes = processes or os.cpu_count()
-        self.pool = None
-
-    def get_pool(self):
-        if self.pool is None:
-            self.pool = WorkerPool(n_jobs=self.processes)
-        return self.pool
-
-    def parallel_process(self, func, data, chunk_size=10000):
-        return self.get_pool().map(func, data, chunk_size=chunk_size)
-
-    def close(self):
-        if self.pool:
-            self.pool.terminate()
-            self.pool.join()
-            self.pool = None
-
-    @contextmanager
-    def pool_context(self):
-        try:
-            yield self
-        finally:
-            self.close()
-
-
-global_pool_manager = GlobalPoolManager()
 
 
 def estimate_size(item):
@@ -106,12 +74,9 @@ def make_request_concurrent(make_request, chunks, max_workers=None):
     return results
 
 
-sig = _get_signature("tryBlockAndAggregate(bool,(address,bytes)[])(uint256,uint256,(bool,bytes)[])")
-
-
 def process_response(calls, result):
     logger.debug(f"{__name__}, calls {len(calls)}")
-    block_id, _, outputs = sig.decode_data(hex_str_to_bytes(result))
+    block_id, _, outputs = TRY_BLOCK_AND_AGGREGATE_FUNC.decode_data(hex_str_to_bytes(result))
     res = {}
     for call, (success, output) in zip(calls, outputs):
         res.update(Call.decode_output(output, call.signature, call.returns, success))
