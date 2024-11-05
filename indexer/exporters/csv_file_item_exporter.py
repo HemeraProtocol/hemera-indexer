@@ -23,7 +23,7 @@ class CSVFileItemExporter(BaseExporter):
         self.dir = direction.replace("csvfile://", "")
         self.blocks_per_file = blocks_per_file
 
-    def export_items(self, items: List[Domain]):
+    def export_items(self, items: List[Domain], **kwargs):
         start_time = datetime.now(tzlocal())
 
         try:

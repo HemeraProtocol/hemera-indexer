@@ -38,6 +38,14 @@ class AddressIndexDailyStats(HemeraModel):
     nft_transfer_out_count = Column(INTEGER)
     nft_transfer_self_count = Column(INTEGER)
 
+    nft_721_transfer_in_count = Column(INTEGER)
+    nft_721_transfer_out_count = Column(INTEGER)
+    nft_721_transfer_self_count = Column(INTEGER)
+
+    nft_1155_transfer_in_count = Column(INTEGER)
+    nft_1155_transfer_out_count = Column(INTEGER)
+    nft_1155_transfer_self_count = Column(INTEGER)
+
     contract_creation_count = Column(INTEGER)
     contract_destruction_count = Column(INTEGER)
     contract_operation_count = Column(INTEGER)
@@ -51,4 +59,7 @@ class AddressIndexDailyStats(HemeraModel):
     erc20_transfer_count = Column(
         INTEGER,
     )
+
     nft_transfer_count = Column(INTEGER)
+    nft_721_transfer_count = Column(INTEGER)
+    nft_1155_transfer_count = Column(INTEGER)

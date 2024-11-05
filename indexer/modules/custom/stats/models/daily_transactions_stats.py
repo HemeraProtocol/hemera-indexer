@@ -4,7 +4,10 @@ from sqlalchemy.dialects.postgresql import BIGINT, DATE, NUMERIC
 from common.models import HemeraModel
 
 
-class DailyTransactionsAggregates(HemeraModel):
+class DailyTransactionsStats(HemeraModel):
+
+    __tablename__ = "af_stats_na_daily_transactions"
+
     block_date = Column(DATE, primary_key=True)
     cnt = Column(BIGINT)
     total_cnt = Column(BIGINT)
@@ -16,12 +19,6 @@ class DailyTransactionsAggregates(HemeraModel):
     avg_receipt_l1_fee = Column(NUMERIC)
     max_receipt_l1_fee = Column(NUMERIC)
     min_receipt_l1_fee = Column(NUMERIC)
-    avg_receipt_l1_gas_used = Column(NUMERIC)
-    max_receipt_l1_gas_used = Column(NUMERIC)
-    min_receipt_l1_gas_used = Column(NUMERIC)
     avg_receipt_l1_gas_price = Column(NUMERIC)
     max_receipt_l1_gas_price = Column(NUMERIC)
     min_receipt_l1_gas_price = Column(NUMERIC)
-    avg_receipt_l1_fee_scalar = Column(NUMERIC)
-    max_receipt_l1_fee_scalar = Column(NUMERIC)
-    min_receipt_l1_fee_scalar = Column(NUMERIC)

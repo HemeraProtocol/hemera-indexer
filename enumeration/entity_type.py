@@ -32,7 +32,7 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
 from indexer.modules.custom.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3Pool,
     UniswapV3PoolCurrentPrice,
     UniswapV3PoolPrice,
@@ -85,10 +85,12 @@ class EntityType(IntFlag):
 
 
 ALL_ENTITY_COLLECTIONS = EntityType.__members__.keys()
-DEFAULT_COLLECTION = ["EXPLORER_BASE", "EXPLORER_TOKEN"]
+DEFAULT_COLLECTION = []
 
 
 def calculate_entity_value(entity_types):
+    if entity_types is None or entity_types == "":
+        return 0
     entities = EntityType(0)
     for entity_type in [entity.strip().upper() for entity in entity_types.split(",")]:
         if entity_type in EntityType.__members__:

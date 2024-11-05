@@ -6,7 +6,7 @@ from common.models import db
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
-from common.models.scheduled_metadata import ScheduledTokenCountMetadata, ScheduledWalletCountMetadata
+from common.models.scheduled_metadata import ScheduledMetadata
 from common.models.token_prices import TokenPrices
 from common.models.tokens import Tokens
 from common.utils.config import get_config
@@ -35,7 +35,7 @@ def type_to_token_transfer_table(type):
 
 def get_address_token_transfer_cnt(token_type, condition, address):
     # Get count last update timestamp
-    last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
 
     # Get historical count
     result = get_token_txn_cnt_by_address(token_type, address)
@@ -60,7 +60,7 @@ def get_address_token_transfer_cnt(token_type, condition, address):
 def get_token_address_token_transfer_cnt(token_type: str, address: str):
     # Get count last update timestamp
     bytes_address = hex_str_to_bytes(address)
-    last_timestamp = db.session.query(func.max(ScheduledTokenCountMetadata.last_data_timestamp)).scalar()
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
 
     # Get historical count
     result = (
@@ -71,7 +71,7 @@ def get_token_address_token_transfer_cnt(token_type: str, address: str):
         .filter(
             and_(
                 (
-                    type_to_token_transfer_table(token_type).block_timestamp >= last_timestamp.date()
+                    type_to_token_transfer_table(token_type).block_timestamp >= last_timestamp
                     if last_timestamp is not None
                     else True
                 ),
