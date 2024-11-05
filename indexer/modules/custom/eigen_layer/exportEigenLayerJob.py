@@ -8,19 +8,17 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from sqlalchemy import func
-
 from common.utils.abi_code_utils import decode_log
 from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import bytes_to_hex_str
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.eigen_layer.abi import (
     DEPOSIT_EVENT,
     SHARE_WITHDRAW_QUEUED,
     WITHDRAWAL_COMPLETED_EVENT,
+    WITHDRAWAL_QUEUED_BATCH_EVENT,
     WITHDRAWAL_QUEUED_EVENT,
-    WITHDRAWAL_QUEUED_EVENT_2,
 )
 from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import (
     EigenLayerActionD,
@@ -34,6 +32,14 @@ from indexer.specification.specification import TopicSpecification, TransactionF
 logger = logging.getLogger(__name__)
 
 
+"""
+STRATEGY_MANAGER 0x858646372cc42e1a627fce94aa7a7033e7cf075a
+deposit 
+share_withdrawal_queued -> withdrawal_queued 
+DELEGATION 0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a
+withdrawal_queued_batch -> withdrawal_completed
+"""
+
 class ExportEigenLayerJob(FilterTransactionDataJob):
     dependency_types = [Transaction]
     output_types = [EigenLayerActionD, EigenLayerAddressCurrentD]
@@ -44,30 +50,33 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
 
         self.db_service = kwargs["config"].get("db_service")
         self.chain_id = self._chain_id
-        self.eigen_layer_conf = self.user_defined_config
+        self._strategy_manager = self.user_defined_config["STRATEGY_MANAGER"]["address"]
+        self._delegation = self.user_defined_config["DELEGATION"]["address"]
 
     def get_filter(self):
-        # deposit, startWithdraw, finishWithdraw
-        topics = []
-        addresses = []
-        for k, item in self.eigen_layer_conf.items():
-            topics.append(item["topic"])
-            addresses.append(item["address"])
-
         return [
-            TransactionFilterByLogs(topics_filters=[TopicSpecification(topics=topics, addresses=addresses)]),
+            TransactionFilterByLogs(topics_filters=[TopicSpecification(topics=[
+                DEPOSIT_EVENT.get_signature(),
+                WITHDRAWAL_COMPLETED_EVENT.get_signature(),
+                WITHDRAWAL_QUEUED_BATCH_EVENT.get_signature(),
+                SHARE_WITHDRAW_QUEUED.get_signature(),
+                WITHDRAWAL_QUEUED_EVENT.get_signature()
+            ], addresses=[
+                self._strategy_manager,
+                self._delegation
+            ])]),
         ]
 
     def _collect(self, **kwargs):
         transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
-        res = []
+        eigen_actions = []
 
         for transaction in transactions:
             logs = transaction.receipt.logs
             for log in logs:
                 if (
-                    log.topic0 == self.eigen_layer_conf["DEPOSIT"]["topic"]
-                    and log.address == self.eigen_layer_conf["DEPOSIT"]["address"]
+                    log.topic0 == DEPOSIT_EVENT.get_signature()
+                    and log.address == self._strategy_manager
                 ):
                     dl = decode_log(DEPOSIT_EVENT, log)
                     staker = dl.get("staker")
@@ -75,14 +84,14 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     strategy = dl.get("strategy")
                     shares = dl.get("shares")
 
-                    kad = EigenLayerActionD(
+                    eigen_actions.append(EigenLayerActionD(
                         transaction_hash=transaction.hash,
                         log_index=log.log_index,
                         transaction_index=transaction.transaction_index,
                         block_number=log.block_number,
                         block_timestamp=log.block_timestamp,
                         method=transaction.get_method_id(),
-                        event_name=DEPOSIT_EVENT["name"],
+                        event_name=DEPOSIT_EVENT.get_name(),
                         topic0=log.topic0,
                         from_address=transaction.from_address,
                         to_address=transaction.to_address,
@@ -90,17 +99,15 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                         token=token,
                         shares=shares,
                         staker=staker,
-                    )
-                    res.append(kad)
+                    ))
                 elif (
-                    log.topic0 == self.eigen_layer_conf["START_WITHDRAW"]["topic"]
-                    and log.address == self.eigen_layer_conf["START_WITHDRAW"]["address"]
+                    log.topic0 == WITHDRAWAL_QUEUED_BATCH_EVENT.get_signature()
+                    and log.address == self._delegation
                 ):
-                    dl = decode_log(WITHDRAWAL_QUEUED_EVENT, log)
+                    dl = decode_log(WITHDRAWAL_QUEUED_BATCH_EVENT, log)
 
                     withdrawal_root = dl.get("withdrawalRoot")
                     withdrawal_struct = dl.get("withdrawal")
-
                     staker = withdrawal_struct.get("staker")
                     withdrawer = withdrawal_struct.get("withdrawer")
                     shares_lis = withdrawal_struct.get("shares")
@@ -110,7 +117,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     for idx in range(len(strategy_lis)):
                         strategy = strategy_lis[idx]
                         shares = shares_lis[idx]
-                        kad = EigenLayerActionD(
+                        eigen_actions.append(EigenLayerActionD(
                             transaction_hash=transaction.hash,
                             log_index=log.log_index,
                             internal_idx=idx,
@@ -118,7 +125,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                             block_number=log.block_number,
                             block_timestamp=log.block_timestamp,
                             method=transaction.get_method_id(),
-                            event_name=WITHDRAWAL_QUEUED_EVENT["name"],
+                            event_name=WITHDRAWAL_QUEUED_BATCH_EVENT.get_name(),
                             topic0=log.topic0,
                             from_address=transaction.from_address,
                             to_address=transaction.to_address,
@@ -127,29 +134,27 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                             withdrawer=withdrawer,
                             shares=shares,
                             withdrawroot=withdrawal_root,
-                        )
-                        res.append(kad)
+                        ))
                 elif (
-                    log.topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["topic"]
-                    and log.address == self.eigen_layer_conf["START_WITHDRAW_2"]["address"]
+                    log.topic0 == WITHDRAWAL_QUEUED_EVENT.get_signature()
+                    and log.address == self._strategy_manager
                 ):
-                    dl = decode_log(WITHDRAWAL_QUEUED_EVENT_2, log)
+                    dl = decode_log(WITHDRAWAL_QUEUED_EVENT, log)
 
                     withdrawal_root = dl.get("withdrawalRoot")
-
                     staker = dl.get("depositor")
                     withdrawer = dl.get("withdrawer")
                     nonce = dl.get("nonce")
                     internal_idx = 0
                     for lg in logs:
-                        if lg.topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["prev_topic"]:
+                        if lg.topic0 == SHARE_WITHDRAW_QUEUED.get_signature():
                             dl2 = decode_log(SHARE_WITHDRAW_QUEUED, lg)
                             dl2_nonce = dl2.get("nonce")
                             if dl2_nonce == nonce:
                                 shares = dl2.get("shares")
                                 strategy = dl2.get("strategy")
 
-                                kad = EigenLayerActionD(
+                                action = EigenLayerActionD(
                                     transaction_hash=transaction.hash,
                                     log_index=log.log_index,
                                     internal_idx=internal_idx,
@@ -157,7 +162,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                                     block_number=log.block_number,
                                     block_timestamp=log.block_timestamp,
                                     method=transaction.get_method_id(),
-                                    event_name=WITHDRAWAL_QUEUED_EVENT_2["name"],
+                                    event_name=WITHDRAWAL_QUEUED_EVENT.get_name(),
                                     topic0=log.topic0,
                                     from_address=transaction.from_address,
                                     to_address=transaction.to_address,
@@ -168,14 +173,14 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                                     withdrawroot=withdrawal_root,
                                 )
                                 internal_idx += 1
-                                res.append(kad)
+                                eigen_actions.append(action)
                 elif (
-                    log.topic0 == self.eigen_layer_conf["FINISH_WITHDRAW"]["topic"]
-                    and log.address == self.eigen_layer_conf["FINISH_WITHDRAW"]["address"]
+                    log.topic0 == WITHDRAWAL_COMPLETED_EVENT
+                    and log.address == self._delegation
                 ):
                     dl = decode_log(WITHDRAWAL_COMPLETED_EVENT, log)
                     withdrawal_root = dl.get("withdrawalRoot")
-                    res.append(
+                    eigen_actions.append(
                         EigenLayerActionD(
                             transaction_hash=transaction.hash,
                             log_index=log.log_index,
@@ -184,7 +189,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                             block_number=log.block_number,
                             block_timestamp=log.block_timestamp,
                             method=transaction.get_method_id(),
-                            event_name=WITHDRAWAL_COMPLETED_EVENT["name"],
+                            event_name=WITHDRAWAL_COMPLETED_EVENT.get_name(),
                             topic0=log.topic0,
                             from_address=transaction.from_address,
                             to_address=transaction.to_address,
@@ -196,10 +201,10 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                             withdrawroot=withdrawal_root,
                         )
                     )
-        self.enrich_complete_withdraw(res)
-        for item in res:
-            self._collect_item(item.type(), item)
-        batch_result_dic = self.calculate_batch_result(res)
+        self.enrich_complete_withdraw(eigen_actions)
+        self._collect_domains(eigen_actions)
+        
+        batch_result_dic = self.calculate_batch_result(eigen_actions)
         exists_dic = self.get_existing_address_current(list(batch_result_dic.keys()))
         for address, outer_dic in batch_result_dic.items():
             for vault, kad in outer_dic.items():
@@ -216,12 +221,12 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         if not self.db_service:
             return {}
 
-        addresses = [ad[2:] for ad in addresses if ad and ad.startswith("0x")]
+        addresses = [hex_str_to_bytes(address) for address in addresses if address]
         if not addresses:
             return {}
         with self.db_service.get_service_session() as session:
             query = session.query(AfEigenLayerAddressCurrent).filter(
-                func.encode(AfEigenLayerAddressCurrent.address, "hex").in_(addresses)
+                AfEigenLayerAddressCurrent.address.in_(addresses)
             )
             result = query.all()
         lis = []
@@ -240,7 +245,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         return create_nested_dict(lis)
 
     def enrich_complete_withdraw(self, actions: List[EigenLayerActionD]):
-        roots = [action.withdrawroot for action in actions if action.event_name == WITHDRAWAL_COMPLETED_EVENT["name"]]
+        roots = [action.withdrawroot for action in actions if action.event_name == WITHDRAWAL_COMPLETED_EVENT.get_name()]
         ac_map = dict()
         with self.db_service.get_service_session() as session:
             query = session.query(AfEigenLayerRecords).filter(
@@ -251,7 +256,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
             for rr in result:
                 ac_map[rr.withdrawroot] = rr
         for action in actions:
-            if action.event_name == WITHDRAWAL_COMPLETED_EVENT["name"]:
+            if action.event_name == WITHDRAWAL_COMPLETED_EVENT.get_name():
                 st = ac_map[action.withdrawroot]
                 action.shares = st.shares
                 action.strategy = bytes_to_hex_str(st.strategy) if st.strategy else None
@@ -259,30 +264,30 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                 action.staker = bytes_to_hex_str(st.staker) if st.staker else None
                 action.withdrawer = bytes_to_hex_str(st.withdrawer) if st.withdrawer else None
 
-    def calculate_batch_result(self, eg_actions: List[EigenLayerActionD]) -> Any:
+    def calculate_batch_result(self, eigen_actions: List[EigenLayerActionD]) -> Any:
         def nested_dict():
             return defaultdict(eigen_layer_address_current_factory)
 
         res_d = defaultdict(nested_dict)
-        for action in eg_actions:
+        for action in eigen_actions:
             staker = action.staker
             strategy = action.strategy
             token = action.token
             topic0 = action.topic0
-            if topic0 == self.eigen_layer_conf["DEPOSIT"]["topic"]:
+            if topic0 == DEPOSIT_EVENT.get_signature():
                 res_d[staker][strategy].address = staker
                 res_d[staker][strategy].token = token
                 res_d[staker][strategy].strategy = strategy
                 res_d[staker][strategy].deposit_amount += action.shares
             elif (
-                topic0 == self.eigen_layer_conf["START_WITHDRAW"]["topic"]
-                or topic0 == self.eigen_layer_conf["START_WITHDRAW_2"]["topic"]
+                topic0 == WITHDRAWAL_QUEUED_EVENT.get_signature()
+                or topic0 == WITHDRAWAL_QUEUED_BATCH_EVENT.get_signature()
             ):
                 res_d[staker][strategy].address = staker
                 res_d[staker][strategy].token = token
                 res_d[staker][strategy].strategy = strategy
                 res_d[staker][strategy].start_withdraw_amount += action.shares
-            elif topic0 == self.eigen_layer_conf["FINISH_WITHDRAW"]["topic"]:
+            elif topic0 == WITHDRAWAL_COMPLETED_EVENT.get_signature():
                 res_d[staker][strategy].address = staker
                 res_d[staker][strategy].token = token
                 res_d[staker][strategy].strategy = strategy
