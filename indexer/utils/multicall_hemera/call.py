@@ -40,7 +40,11 @@ class Call:
 
     @property
     def data(self) -> bytes:
-        return hex_str_to_bytes(self.function_abi.encode_function_call_data(self.parameters or []))
+        try:
+            return hex_str_to_bytes(self.function_abi.encode_function_call_data(self.parameters or []))
+        except Exception as e:
+            logger.error(e)
+            raise e
 
     def decode_output(self, output: Decodable) -> Any:
         try:
@@ -48,7 +52,7 @@ class Call:
             return decoded
         except Exception as e:
             logger.error(f"Failed to decode output of {self.function_abi.get_name()} data {bytes_to_hex_str(output)}")
-            raise e
+            # raise e
             return None
 
     def to_rpc_param(self):

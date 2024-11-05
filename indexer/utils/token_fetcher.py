@@ -6,7 +6,6 @@
 # @Brief use the `multicall` contract to fetch data
 
 import logging
-from dataclasses import asdict
 from typing import Dict, List, Tuple, Union
 
 from common.utils.format_utils import to_snake_case
@@ -65,7 +64,7 @@ class TokenFetcher:
                     construct_call = Call(
                         target=address,
                         function_abi=ERC721_TOKEN_URI_FUNCTION,
-                        parameters=row["token_id"],
+                        parameters=[row["token_id"]],
                         block_number=block_number,
                         user_defined_k=row[self.fixed_k],
                     )
@@ -73,7 +72,7 @@ class TokenFetcher:
                     construct_call = Call(
                         target=address,
                         function_abi=ERC721_OWNER_OF_FUNCTION,
-                        parameters=row["token_id"],
+                        parameters=[row["token_id"]],
                         block_number=block_number,
                         user_defined_k=row[self.fixed_k],
                     )
@@ -82,7 +81,7 @@ class TokenFetcher:
                     construct_call = Call(
                         target=address,
                         function_abi=ERC1155_MULTIPLE_TOKEN_URI_FUNCTION,
-                        parameters=row["token_id"],
+                        parameters=[row["token_id"]],
                         block_number=block_number,
                         user_defined_k=row[self.fixed_k],
                     )
@@ -91,7 +90,7 @@ class TokenFetcher:
                     construct_call = Call(
                         target=address,
                         function_abi=TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION,
-                        parameters=row["token_id"],
+                        parameters=[row["token_id"]],
                         block_number=block_number,
                         user_defined_k=row[self.fixed_k],
                     )
@@ -100,7 +99,7 @@ class TokenFetcher:
                 calls.append(construct_call)
         return calls
 
-    def create_token_detail(self, token_info, value, decode_flag):
+    def create_token_detail(self, token_info, value):
         common_args = {
             "token_address": token_info["address"],
             "token_id": token_info["token_id"],
@@ -135,7 +134,7 @@ class TokenFetcher:
                 dataclass=to_snake_case("token_id_info"),
                 message_type="decode_token_id_info_fail",
                 message=str(e),
-                exception_env=asdict(token_info),
+                exception_env=token_info,
                 level=RecordLevel.WARN,
             )
 
@@ -153,7 +152,8 @@ class TokenFetcher:
             bk = token_info[self.fixed_k]
             value = multicall_result[bk]
             tmp = self.create_token_detail(token_info, value)
-            return_data.extend(tmp)
+            if tmp:
+                return_data.extend(tmp)
         return return_data
 
     @calculate_execution_time
@@ -178,7 +178,7 @@ class TokenFetcher:
                 construct_call = Call(
                     target=token,
                     function_abi=ERC20_BALANCE_OF_FUNCTION,
-                    parameters=wal,
+                    parameters=[wal],
                     block_number=block_number,
                     user_defined_k=row[self.fixed_k],
                 )
@@ -197,7 +197,7 @@ class TokenFetcher:
         for item in tokens:
             bk = item[self.fixed_k]
             balance = None
-            if bk in multicall_result:
+            if bk in multicall_result and multicall_result[bk]:
                 balance = multicall_result[bk]["balance"]
             return_data.append(
                 {
