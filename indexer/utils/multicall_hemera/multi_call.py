@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, List, Optional, Union
 
 import orjson
 
@@ -9,7 +9,6 @@ from indexer.utils.multicall_hemera.abi import AGGREGATE_FUNC, TRY_BLOCK_AND_AGG
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_address, get_multicall_network
 
 logger = logging.getLogger(__name__)
-CallResponse = Tuple[Union[None, bool], bytes]
 
 
 class Multicall:

@@ -11,10 +11,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
 
-from common.utils.format_utils import hex_str_to_bytes
-from indexer.utils.multicall_hemera import Call
-from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
-
 logger = logging.getLogger(__name__)
 
 
@@ -72,12 +68,3 @@ def make_request_concurrent(make_request, chunks, max_workers=None):
             results[index] = result
 
     return results
-
-
-def process_response(calls, result):
-    logger.debug(f"{__name__}, calls {len(calls)}")
-    block_id, _, outputs = TRY_BLOCK_AND_AGGREGATE_FUNC.decode_data(hex_str_to_bytes(result))
-    res = {}
-    for call, (success, output) in zip(calls, outputs):
-        res.update(Call.decode_output(output, call.signature, call.returns, success))
-    return res
