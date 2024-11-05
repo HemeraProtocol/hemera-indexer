@@ -42,24 +42,28 @@ def upgrade() -> None:
         sa.Column("reorg", sa.BOOLEAN(), server_default=sa.text("false"), nullable=True),
         sa.Column("protocol_version", sa.VARCHAR(), server_default="1.6", nullable=True),
         sa.PrimaryKeyConstraint("address", "is_offer", "block_number", "log_index", "block_hash"),
+        if_not_exists=True,
     )
     op.create_index(
         "af_opensea__transactions_address_block_number_log_index_blo_idx",
         "af_opensea__transactions",
         ["address", sa.text("block_number DESC"), sa.text("log_index DESC"), sa.text("block_timestamp DESC")],
         unique=False,
+        if_not_exists=True,
     )
     op.create_index(
         "af_opensea__transactions_address_block_timestamp_idx",
         "af_opensea__transactions",
         ["address", sa.text("block_timestamp DESC")],
         unique=False,
+        if_not_exists=True,
     )
     op.create_index(
         "af_opensea__transactions_block_timestamp_idx",
         "af_opensea__transactions",
         [sa.text("block_timestamp DESC")],
         unique=False,
+        if_not_exists=True,
     )
     op.create_table(
         "af_opensea_daily_transactions",
@@ -80,6 +84,7 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address", "block_date"),
+        if_not_exists=True,
     )
     op.create_table(
         "af_opensea_na_crypto_token_mapping",
@@ -88,6 +93,7 @@ def upgrade() -> None:
         sa.Column("price_symbol", sa.VARCHAR(), nullable=True),
         sa.Column("decimals", sa.INTEGER(), server_default=sa.text("18"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_table(
         "af_opensea_na_orders",
@@ -107,8 +113,15 @@ def upgrade() -> None:
         sa.Column("reorg", sa.BOOLEAN(), server_default=sa.text("false"), nullable=True),
         sa.Column("protocol_version", sa.VARCHAR(), server_default="1.6", nullable=True),
         sa.PrimaryKeyConstraint("block_number", "log_index", "block_hash"),
+        if_not_exists=True,
     )
-    op.create_index("idx_order_hash", "af_opensea_na_orders", ["order_hash"], unique=False)
+    op.create_index(
+        "idx_order_hash",
+        "af_opensea_na_orders",
+        ["order_hash"],
+        unique=False,
+        if_not_exists=True,
+    )
     op.create_table(
         "af_opensea_na_scheduled_metadata",
         sa.Column("id", sa.INTEGER(), nullable=False),
@@ -116,6 +129,7 @@ def upgrade() -> None:
         sa.Column("execution_date", postgresql.TIMESTAMP(), nullable=True),
         sa.Column("last_data_timestamp", postgresql.TIMESTAMP(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
+        if_not_exists=True,
     )
     op.create_table(
         "af_opensea_profile",
@@ -152,6 +166,7 @@ def upgrade() -> None:
         ),
         sa.Column("volume_usd", sa.NUMERIC(), server_default=sa.text("0"), nullable=True),
         sa.PrimaryKeyConstraint("address"),
+        if_not_exists=True,
     )
     # ### end Alembic commands ###
 
