@@ -46,9 +46,9 @@ class ExportCoinBalancesJob(BaseExportJob):
 
     def _collect(self, **kwargs):
         coin_addresses = distinct_addresses(
-            self.dependency_collection[Block.type()],
-            self.dependency_collection[Transaction.type()],
-            self.dependency_collection[ContractInternalTransaction.type()],
+            self._data_buff[Block.type()],
+            self._data_buff[Transaction.type()],
+            self._data_buff[ContractInternalTransaction.type()],
         )
         self._batch_work_executor.execute(coin_addresses, self._collect_batch, total_items=len(coin_addresses))
         self._batch_work_executor.wait()
@@ -62,7 +62,7 @@ class ExportCoinBalancesJob(BaseExportJob):
             self._collect_item(CoinBalance.type(), CoinBalance(coin_balance))
 
     def _process(self, **kwargs):
-        self.output_collection[CoinBalance.type()].sort(key=lambda x: (x.block_number, x.address))
+        self._data_buff[CoinBalance.type()].sort(key=lambda x: (x.block_number, x.address))
 
 
 def distinct_addresses(blocks: List[Block], transactions: List[Transaction], traces: List[ContractInternalTransaction]):

@@ -40,9 +40,9 @@ class ExportTracesJob(BaseExportJob):
 
     def _collect(self, **kwargs):
         self._batch_work_executor.execute(
-            self.dependency_collection[Block.type()],
+            self._data_buff[Block.type()],
             self._collect_batch,
-            total_items=len(self.dependency_collection[Block.type()]),
+            total_items=len(self._data_buff[Block.type()]),
         )
 
         self._batch_work_executor.wait()
@@ -64,13 +64,13 @@ class ExportTracesJob(BaseExportJob):
                 )
 
     def _process(self, **kwargs):
-        self.output_collection[Trace.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
+        self._data_buff[Trace.type()].sort(key=lambda x: (x.block_number, x.transaction_index, x.trace_index))
 
-        self.output_collection[ContractInternalTransaction.type()].sort(
+        self._data_buff[ContractInternalTransaction.type()].sort(
             key=lambda x: (x.block_number, x.transaction_index, x.trace_index)
         )
 
-        for group_key, traces in groupby(self.output_collection[Trace.type()], lambda x: (x.block_number, x.block_hash)):
+        for group_key, traces in groupby(self._data_buff[Trace.type()], lambda x: (x.block_number, x.block_hash)):
             block_number, block_hash = group_key
             traces_count = len(list(traces))
             internal_transactions_count = sum(1 for trace in traces if trace.is_contract_creation())

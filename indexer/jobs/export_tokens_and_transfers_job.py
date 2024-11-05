@@ -102,7 +102,7 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
 
         filtered_logs = [
             log
-            for log in self.dependency_collection[Log.type()]
+            for log in self._data_buff[Log.type()]
             if log.topic0
             in [
                 ERC20_TRANSFER_EVENT.get_signature(),
@@ -118,11 +118,11 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
         self._batch_work_executor.execute(
             filtered_logs,
             self._extract_batch,
-            total_items=len(self.dependency_collection[Log.type()]),
+            total_items=len(self._data_buff[Log.type()]),
         )
         self._batch_work_executor.wait()
 
-        token_transfers = self.dependency_collection[TokenTransfer.type()]
+        token_transfers = self._data_buff[TokenTransfer.type()]
 
         token_dict: Dict[str, Token] = {}
         new_token_dict: Dict[str, Token] = {}
@@ -194,8 +194,8 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
 
     def _process(self, **kwargs):
         for token_transfer_type in self.output_transfer_types:
-            if token_transfer_type in self.output_collection:
-                self.output_collection[token_transfer_type.type()].sort(
+            if token_transfer_type in self._data_buff:
+                self._data_buff[token_transfer_type.type()].sort(
                     key=lambda x: (x.block_number, x.transaction_hash, x.log_index)
                 )
 

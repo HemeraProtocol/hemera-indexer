@@ -46,8 +46,8 @@ class ExportTokenIdInfosJob(BaseExportJob):
     @calculate_execution_time
     def _collect(self, **kwargs):
         token_id_info = generate_token_id_info(
-            self.dependency_collection[ERC721TokenTransfer.type()],
-            self.dependency_collection[ERC1155TokenTransfer.type()],
+            self._data_buff[ERC721TokenTransfer.type()],
+            self._data_buff[ERC1155TokenTransfer.type()],
         )
         if self._is_multi_call:
             self._collect_batch(token_id_info)
@@ -63,25 +63,25 @@ class ExportTokenIdInfosJob(BaseExportJob):
 
     @calculate_execution_time
     def _process(self, **kwargs):
-        self.output_collection[UpdateERC721TokenIdDetail.type()].sort(
+        self._data_buff[UpdateERC721TokenIdDetail.type()].sort(
             key=lambda x: (x.token_address, x.token_id, x.block_number)
         )
-        self.output_collection[UpdateERC1155TokenIdDetail.type()].sort(
+        self._data_buff[UpdateERC1155TokenIdDetail.type()].sort(
             key=lambda x: (x.token_address, x.token_id, x.block_number)
         )
 
-        self.output_collection[UpdateERC721TokenIdDetail.type()] = [
+        self._data_buff[UpdateERC721TokenIdDetail.type()] = [
             list(group)[-1]
             for key, group in groupby(
-                self.output_collection[UpdateERC721TokenIdDetail.type()],
+                self._data_buff[UpdateERC721TokenIdDetail.type()],
                 lambda x: (x.token_address, x.token_id),
             )
         ]
 
-        self.output_collection[UpdateERC1155TokenIdDetail.type()] = [
+        self._data_buff[UpdateERC1155TokenIdDetail.type()] = [
             list(group)[-1]
             for key, group in groupby(
-                self.output_collection[UpdateERC1155TokenIdDetail.type()],
+                self._data_buff[UpdateERC1155TokenIdDetail.type()],
                 lambda x: (x.token_address, x.token_id),
             )
         ]

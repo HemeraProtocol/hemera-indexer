@@ -2,8 +2,9 @@ import logging
 import threading
 from collections import defaultdict
 from datetime import datetime
-from typing import List
+from typing import List, Type, get_args, get_origin, get_type_hints
 
+from deprecated import deprecated
 from web3 import Web3
 
 from common.converter.pg_converter import domain_model_mapping
@@ -82,8 +83,6 @@ class BaseJob(metaclass=BaseJobMeta):
 
         job_name_snake = to_snake_case(self.job_name)
         self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
-        self.dependency_collection = defaultdict(list)
-        self.output_collection = defaultdict(list)
 
     def run(self, **kwargs):
         try:
@@ -94,11 +93,12 @@ class BaseJob(metaclass=BaseJobMeta):
                 self.logger.info(f"Stage _start finished. Took {datetime.now() - start_time}")
 
             if not self._reorg or self._should_reorg:
-                self.get_dependency_collection()
-                start_time = datetime.now()
-                self.logger.info(f"Stage collect starting.")
-                self._collect(**kwargs)
-                self._process(**kwargs)
+                if is_overwrite_process_function(self.__class__):
+                    parameters = self._build_process_function_parameter()
+                    self._process_function(**parameters)
+                else:
+                    self._collect(**kwargs)
+                    self._process(**kwargs)
 
             if not self._reorg:
                 self._export()
@@ -129,28 +129,31 @@ class BaseJob(metaclass=BaseJobMeta):
                 if output.type() not in self._should_reorg_type and output.type() in self._data_buff.keys():
                     self._data_buff.pop(output.type())
 
-    def get_dependency_collection(self):
-        self.dependency_collection.clear()
-        for dependency_type in self.dependency_types:
-            self.dependency_collection[dependency_type.type()] = self._get_domain(dependency_type)
-
+    # @deprecated
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # Please move your data process logic into _process_function instead.
+    @deprecated
     def _collect(self, **kwargs):
         pass
 
+    # @deprecated
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # Please move your data process batch logic into custom define function instead.
+    @deprecated
     def _collect_batch(self, iterator):
         pass
 
     def _collect_item(self, key: str, data: Domain):
         with self.locks[key]:
-            self.output_collection[key].append(data)
+            self._data_buff[key].append(data)
 
     def _collect_items(self, key, data_list: List[Domain]):
         with self.locks[key]:
-            self.output_collection[key].extend(data_list)
+            self._data_buff[key].extend(data_list)
 
     def _collect_domain(self, domain: Domain):
         with self.locks[domain.type()]:
-            self.output_collection[domain.type()].append(domain)
+            self._data_buff[domain.type()].append(domain)
 
     def _collect_domains(self, domains: List[Domain]):
         for domain in domains:
@@ -158,7 +161,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def _update_domains(self, domains: List[Domain]):
         key = domains[0].type()
-        self.output_collection[key] = domains
+        self._data_buff[key] = domains
 
     def _get_domain(self, domain):
         return self._data_buff[domain.type()] if domain.type() in self._data_buff else []
@@ -169,16 +172,31 @@ class BaseJob(metaclass=BaseJobMeta):
             res += self._data_buff[domain.type()]
         return res
 
+    # @deprecated
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # Please move your data process logic into _process_function instead.
+    @deprecated
     def _process(self, **kwargs):
+        pass
+
+    def _build_process_function_parameter(self):
+        parameters = {}
+        annotations = get_type_hints(self._process_function)
+        for param, param_type in annotations.items():
+            args_type = get_args(param_type)[0]
+            parameters[param] = self._data_buff[args_type.type()]
+
+        return parameters
+
+    def _process_function(self, **kwargs):
         pass
 
     def _export(self):
         items = []
 
         for output_type in self.output_types:
-            self._data_buff[output_type.type()] = self.output_collection[output_type.type()]
             if output_type in self._required_output_types:
-                items.extend(self.output_collection[output_type.type()])
+                items.extend(self._data_buff[output_type.type()])
 
         for item_exporter in self._item_exporters:
             item_exporter.open()
@@ -211,3 +229,45 @@ class FilterTransactionDataJob(ExtensionJob):
 
     def get_filter_transactions(self):
         return list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
+
+
+def is_overwrite_process_function(cls: Type[BaseJob]):
+    process_qualname = cls._process_function.__qualname__
+    return process_qualname.startswith(cls.__name__)
+
+
+def generate_dependency_types(cls: Type[BaseJob]):
+    if not is_overwrite_process_function(cls):
+        return
+
+    annotations = get_type_hints(cls._process_function)
+
+    dependency_types = []
+    for param, param_type in annotations.items():
+        if param == "return":
+            continue
+        origin_type = get_origin(param_type)
+        if origin_type is not list:
+            raise TypeError(
+                f'The variable "{param}" define in _process function parameter list of {cls.__name__} '
+                f"should be of type List[T] or list[T]."
+            )
+
+        args_types = get_args(param_type)
+
+        if len(args_types) != 1:
+            raise TypeError(
+                f'The variable "{param}" define in _process function parameter list of {cls.__name__} '
+                f"should only contain a single type in the list type."
+            )
+
+        args_type = args_types[0]
+        if not issubclass(args_type, Domain) and args_type is not int:
+            raise TypeError(
+                f'The variable "{param}" define in _process function parameter list of {cls.__name__} '
+                f"should have a list element type of int or a subclass of domain."
+            )
+
+        dependency_types.append(args_type)
+
+    cls.dependency_types = dependency_types

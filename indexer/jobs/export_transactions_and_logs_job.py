@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 # Exports transactions and logs
 class ExportTransactionsAndLogsJob(BaseExportJob):
-    dependency_types = [Block]
     output_types = [Transaction, Log]
     able_to_reorg = True
 
@@ -31,13 +30,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
         )
         self._is_batch = kwargs["batch_size"] > 1
 
-    def _collect(self, **kwargs):
-
-        transactions: List[Transaction] = self.dependency_collection.get(Transaction.type(), [])
-        self._batch_work_executor.execute(transactions, self._collect_batch, total_items=len(transactions))
-        self._batch_work_executor.wait()
-
-    def _collect_batch(self, transactions: List[Transaction]):
+    def request_for_receipt(self, transactions: List[Transaction]):
         transaction_hash_mapper = {transaction.hash: transaction for transaction in transactions}
         results = receipt_rpc_requests(
             self._batch_web3_provider.make_request,
@@ -58,8 +51,12 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
             for log in transaction.receipt.logs:
                 self._collect_item(Log.type(), log)
 
-    def _process(self, **kwargs):
-        self.dependency_collection[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
+    def _process_function(self, blocks: List[Block]):
+        transactions: List[Transaction] = [transaction for block in blocks for transaction in block.transactions]
+        self._batch_work_executor.execute(transactions, self.request_for_receipt, total_items=len(transactions))
+        self._batch_work_executor.wait()
+
+        self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
 
 def receipt_rpc_requests(make_request, transaction_hashes, is_batch):
