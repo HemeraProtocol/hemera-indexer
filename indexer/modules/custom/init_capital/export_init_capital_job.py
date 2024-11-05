@@ -76,11 +76,12 @@ class InitCapitalJob(FilterTransactionDataJob):
         super().__init__(**kwargs)
         self.db_service = kwargs["config"].get("db_service")
         self._pool_token_map = self.get_pool_token_maps()
+        self._init_core = self.user_defined_config.get("core_address")
 
     def get_filter(self):
         topic_filter_list = [
             TopicSpecification(
-                addresses=[INIT_CORE],
+                addresses=[self._init_core],
                 topics=[
                     INIT_DECOLLATERALIZE_EVENT.get_signature(),
                     INIT_COLLATERALIZE_EVENT.get_signature(),
