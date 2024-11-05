@@ -131,11 +131,6 @@ class AgniV3Pool(UniswapV3Pool):
 
 
 @dataclass
-class AgniV3PoolFromTokenJob(UniswapV3Pool):
-    pass
-
-
-@dataclass
 class AgniV3Token(UniswapV3Token):
     pass
 
@@ -165,11 +160,37 @@ class AgniV3SwapEvent(UniswapV3SwapEvent):
     pass
 
 
+
 @dataclass
-class AgniV3TokenUpdateLiquidity(UniswapV3TokenUpdateLiquidity):
+class PancakePool(UniswapV3Pool):
     pass
 
 
 @dataclass
-class AgniV3TokenCollectFee(UniswapV3TokenCollectFee):
+class PancakeToken(UniswapV3Token):
+    pass
+
+
+@dataclass
+class PancakePoolPrice(UniswapV3PoolPrice):
+    pass
+
+
+@dataclass
+class PancakeTokenDetail(UniswapV3TokenDetail):
+    pass
+
+
+@dataclass
+class PancakePoolCurrentPrice(UniswapV3PoolCurrentPrice):
+    pass
+
+
+@dataclass
+class PancakeTokenCurrentStatus(UniswapV3TokenCurrentStatus):
+    pass
+
+
+@dataclass
+class PancakeSwapEvent(UniswapV3SwapEvent):
     pass

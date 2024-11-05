@@ -21,6 +21,12 @@ class UniswapV3PoolCurrentPrices(HemeraModel):
     def model_domain_mapping():
         return [
             {
+                "domain": "PancakePoolCurrentPrice",
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number > af_uniswap_v3_pool_prices_current.block_number",
+                "converter": general_converter,
+            },
+            {
                 "domain": "UniswapV3PoolCurrentPrice",
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_uniswap_v3_pool_prices_current.block_number",

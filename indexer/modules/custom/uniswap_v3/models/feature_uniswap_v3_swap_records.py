@@ -46,4 +46,10 @@ class UniswapV3PoolSwapRecords(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
+            {
+                "domain": "PancakeSwapEvent",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]

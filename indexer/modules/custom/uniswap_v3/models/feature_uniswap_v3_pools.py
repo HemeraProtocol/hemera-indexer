@@ -41,6 +41,12 @@ class UniswapV3Pools(HemeraModel):
                 "converter": general_converter,
             },
             {
+                "domain": "PancakePool",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
                 "domain": "AgniV3PoolFromTokenJob",
                 "conflict_do_update": True,
                 "update_strategy": None,

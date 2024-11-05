@@ -29,6 +29,12 @@ class UniswapV3PoolPrices(HemeraModel):
                 "converter": general_converter,
             },
             {
+                "domain": "PancakePoolPrice",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
                 "domain": "AgniV3PoolPrice",
                 "conflict_do_update": True,
                 "update_strategy": None,
