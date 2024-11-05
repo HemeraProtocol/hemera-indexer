@@ -30,17 +30,14 @@ class MultiCallHelper:
         self.chain_id = self.web3.eth.chain_id
 
         self.batch_size = kwargs["batch_size"]
-        self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
         self._works = kwargs["max_workers"]
         if not self._is_multi_call:
             self.logger.info("multicall is disabled")
             self.net = None
-            self.multi_call = None
             self.deploy_block_number = 2**56
         else:
             self.net = get_multicall_network(self.chain_id)
-            self.multi_call = Multicall([], require_success=False, chain_id=self.chain_id)
             self.deploy_block_number = self.net.deploy_block_number
 
     def validate_calls(self, calls):
@@ -64,7 +61,6 @@ class MultiCallHelper:
                 if result:
                     self.logger.debug(f"{__name__}, calls {len(calls)}")
                     dic = TRY_BLOCK_AND_AGGREGATE_FUNC.decode_function_output_data(result)
-                    block_number = dic["blockNumber"]
                     outputs = dic["returnData"]
                     for call, (output) in zip(calls, outputs):
                         call.returns = call.decode_output(output["returnData"])
