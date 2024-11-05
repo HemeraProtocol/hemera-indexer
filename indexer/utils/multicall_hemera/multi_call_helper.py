@@ -81,26 +81,25 @@ class MultiCallHelper:
         """
         self.validate_calls(calls)
         to_execute_batch_calls, to_execute_multi_calls = self.prepare_calls(calls)
-        multicall_rpc = self.construct_multicall_rpc(to_execute_multi_calls)
-        chunks = list(rebatch_by_size(multicall_rpc, to_execute_multi_calls))
-        self.logger.info(f"multicall helper after chunk, got={len(chunks)}")
-        res = self.fetch_result(chunks)
-        self.decode_result(to_execute_multi_calls, res, chunks)
-        for cls in to_execute_multi_calls:
-            for cl in cls:
-                if cl.returns is None:
-                    to_execute_batch_calls.append(cl)
-        self.fetch_raw_calls(to_execute_batch_calls)
+        if len(to_execute_multi_calls) > 0:
+            multicall_rpc = self.construct_multicall_rpc(to_execute_multi_calls)
+            chunks = list(rebatch_by_size(multicall_rpc, to_execute_multi_calls))
+            self.logger.info(f"multicall helper after chunk, got={len(chunks)}")
+            res = self.fetch_result(chunks)
+            self.decode_result(to_execute_multi_calls, res, chunks)
+            for cls in to_execute_multi_calls:
+                for cl in cls:
+                    if cl.returns is None:
+                        to_execute_batch_calls.append(cl)
+        if len(to_execute_batch_calls) > 0:
+            self.fetch_raw_calls(to_execute_batch_calls)
         return calls
 
     def fetch_raw_calls(self, calls: List[Call]):
         rpc_param = []
         for call in calls:
             rpc_param.append(call.to_rpc_param())
-        if self._is_batch:
-            response = self.make_request(params=orjson.dumps(rpc_param))
-        else:
-            response = [self.make_request(params=orjson.dumps(rpc_param[0]))]
+        response = self.make_request(params=orjson.dumps(rpc_param))
         for call, data in zip(calls, response):
             result = data.get("result")
             call.returns = call.decode_output(result)
