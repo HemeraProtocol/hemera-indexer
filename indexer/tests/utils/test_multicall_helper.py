@@ -11,7 +11,7 @@ from common.utils.abi_code_utils import Function
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
-DEFAULT_ETHEREUM_RPC = "https://eth-mainnet.blastapi.io/cd2ae8f1-6328-4eee-9679-31a3979bed74"
+DEFAULT_ETHEREUM_RPC = ""
 
 
 @pytest.mark.indexer
