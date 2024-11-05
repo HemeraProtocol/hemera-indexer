@@ -131,7 +131,7 @@ class MultiCallHelper:
                         require_success=False,
                         chain_id=self.chain_id,
                         block_number=calls[0].block_number,
-                        gas_limit=len(calls) * GAS_LIMIT,
+                        gas_limit=(len(calls) * GAS_LIMIT),
                     ).to_rpc_param()
                 )
         return multicall_rpc

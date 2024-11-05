@@ -2,7 +2,7 @@ import os
 from dataclasses import dataclass
 from typing import ClassVar, Dict
 
-GAS_LIMIT: int = int(os.environ.get("GAS_LIMIT", 50_000_000))
+GAS_LIMIT: int = int(os.environ.get("GAS_LIMIT", 5_000_000))
 DEFAULT_MULTICALL_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11"
 
 
