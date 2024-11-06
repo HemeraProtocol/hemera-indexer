@@ -1,21 +1,9 @@
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Type, TypeVar
 
 from common.utils.abi_code_utils import Event
 from common.utils.web3_utils import extract_eth_address, to_checksum_address
-from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
-    AaveV2BorrowD,
-    AaveV2DepositD,
-    AaveV2FlashLoanD,
-    AaveV2LiquidationCallD,
-    AaveV2RepayD,
-    AaveV2ReserveD,
-    AaveV2ReserveDataUpdatedRecordsD,
-    AaveV2WithdrawD,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -221,62 +209,3 @@ class ReserveDataUpdateProcessor(EventProcessor):
             "liquidityIndex": decoded_log.get("liquidityIndex"),
             "variableBorrowIndex": decoded_log.get("variableBorrowIndex"),
         }
-
-
-@dataclass
-class EventConfig:
-    """Configuration for each event type"""
-
-    name: str
-    contract_address_key: str  # POOL or POOL_CONFIGURE
-    processor_class: Type[EventProcessor]
-    data_class: Type[Any]
-
-
-class AaveV2Events(Enum):
-    """Enum containing all Aave V2 events configuration"""
-
-    RESERVE_INIT = EventConfig(
-        name="ReserveInitialized",
-        contract_address_key="POOL_CONFIGURE",
-        processor_class=ReserveInitProcessor,
-        data_class=AaveV2ReserveD,
-    )
-
-    DEPOSIT = EventConfig(
-        name="Deposit", contract_address_key="POOL_V2", processor_class=DepositProcessor, data_class=AaveV2DepositD
-    )
-
-    DEPOSIT_V1 = EventConfig(
-        name="Deposit", contract_address_key="POOL_V2", processor_class=DepositProcessor, data_class=AaveV2DepositD
-    )
-    WITHDRAW = EventConfig(
-        name="Withdraw", contract_address_key="POOL_V2", processor_class=WithdrawProcessor, data_class=AaveV2WithdrawD
-    )
-
-    BORROW = EventConfig(
-        name="Borrow", contract_address_key="POOL_V2", processor_class=BorrowProcessor, data_class=AaveV2BorrowD
-    )
-
-    REPAY = EventConfig(
-        name="Repay", contract_address_key="POOL_V2", processor_class=RepayProcessor, data_class=AaveV2RepayD
-    )
-
-    FLASH_LOAN = EventConfig(
-        name="FlashLoan",
-        contract_address_key="POOL_V2",
-        processor_class=FlashLoanProcessor,
-        data_class=AaveV2FlashLoanD,
-    )
-    LIQUIDATION_CALL = EventConfig(
-        name="LiquidationCall",
-        contract_address_key="POOL_V2",
-        processor_class=LiquidationCallProcessor,
-        data_class=AaveV2LiquidationCallD,
-    )
-    RESERVE_DATA_UPDATE = EventConfig(
-        name="ReserveDataUpdated",
-        contract_address_key="POOL_V2",
-        processor_class=ReserveDataUpdateProcessor,
-        data_class=AaveV2ReserveDataUpdatedRecordsD,
-    )

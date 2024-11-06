@@ -8,6 +8,7 @@ Project : hemera_indexer
 import json
 import logging
 import os
+from functools import lru_cache
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, cast
 
@@ -66,9 +67,11 @@ class Event:
         """
         return self._event_abi
 
+    @lru_cache()
     def get_name(self) -> str:
         return self.get_abi().get("name")
 
+    @lru_cache()
     def get_signature(self) -> str:
         """
         Returns the signature of the event.
