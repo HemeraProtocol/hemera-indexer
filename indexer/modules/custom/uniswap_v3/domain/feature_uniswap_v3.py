@@ -99,3 +99,33 @@ class AgniV3PoolCurrentPrice(UniswapV3PoolCurrentPrice):
 @dataclass
 class AgniV3TokenCurrentStatus(UniswapV3TokenCurrentStatus):
     pass
+
+
+@dataclass
+class FusionxPool(UniswapV3Pool):
+    pass
+
+
+@dataclass
+class FusionxToken(UniswapV3Token):
+    pass
+
+
+@dataclass
+class FusionxPoolPrice(UniswapV3PoolPrice):
+    pass
+
+
+@dataclass
+class FusionxTokenDetail(UniswapV3TokenDetail):
+    pass
+
+
+@dataclass
+class FusionxPoolCurrentPrice(UniswapV3PoolCurrentPrice):
+    pass
+
+
+@dataclass
+class FusionxTokenCurrentStatus(UniswapV3TokenCurrentStatus):
+    pass

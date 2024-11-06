@@ -34,4 +34,11 @@ class UniswapV3PoolCurrentPrices(HemeraModel):
                 "update_strategy": "EXCLUDED.block_number > feature_uniswap_v3_pool_current_prices.block_number",
                 "converter": general_converter,
             },
+            {
+                "domain": "FusionxPoolCurrentPrice",
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number > feature_uniswap_v3_pool_current_prices.block_number",
+                "converter": general_converter,
+            },
+
         ]

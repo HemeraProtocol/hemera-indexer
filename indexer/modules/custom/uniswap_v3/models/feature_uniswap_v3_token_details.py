@@ -38,6 +38,12 @@ class UniswapV3TokenDetails(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
+            {
+                "domain": "FusionxTokenDetail",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
 
 
