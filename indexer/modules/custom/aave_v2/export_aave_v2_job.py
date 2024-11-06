@@ -6,7 +6,7 @@ from typing import Any, cast
 from sqlalchemy import func
 from web3.types import ABIEvent
 
-from common.utils.abi_code_utils import AbiReader, Event
+from common.utils.abi_code_utils import AbiReader, Event, Function
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.log import Log
@@ -35,14 +35,24 @@ from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 logger = logging.getLogger(__name__)
 
-
-class InterestRateMode(Enum):
-    STABLE = 1
-    VARIABLE = 2
-
-
-BALANCE_OF = "scaledBalanceOf(address)(uint256)"
-PRINCIPAL_BALANCE_OF = "principalBalanceOf(address)(uint256)"
+SCALED_BALANCE_OF = Function(
+    {
+        "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+        "name": "scaledBalanceOf",
+        "outputs": [{"internalType": "uint256", "name": "balance", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+PRINCIPAL_BALANCE_OF = Function(
+    {
+        "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
+        "name": "principalBalanceOf",
+        "outputs": [{"internalType": "uint256", "name": "balance", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
 
 
 class ExportAaveV2Job(FilterTransactionDataJob):
@@ -206,12 +216,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 reserve = self.reserve_dic[a_record.reserve]
                 eth_call_lis.append(
                     Call(
-                        reserve.a_token_address,
-                        [
-                            BALANCE_OF,
-                            a_record.aave_user,
-                        ],
-                        block_id=a_record.block_number,
+                        target=reserve.a_token_address,
+                        function_abi=SCALED_BALANCE_OF,
+                        parameters=[a_record.aave_user],
+                        block_number=a_record.block_number,
                     )
                 )
 
@@ -220,15 +228,17 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=reserve.stable_debt_token_address,
-                        function=[PRINCIPAL_BALANCE_OF, a_record.aave_user],
-                        block_id=a_record.block_number,
+                        function_abi=PRINCIPAL_BALANCE_OF,
+                        parameters=[a_record.aave_user],
+                        block_number=a_record.block_number,
                     )
                 )
                 eth_call_lis.append(
                     Call(
                         target=reserve.variable_debt_token_address,
-                        function=[BALANCE_OF, a_record.aave_user],
-                        block_id=a_record.block_number,
+                        function_abi=SCALED_BALANCE_OF,
+                        parameters=[a_record.aave_user],
+                        block_number=a_record.block_number,
                     )
                 )
 
@@ -239,8 +249,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=collateral_reserve.a_token_address,
-                        function=[BALANCE_OF, aave_user],
-                        block_id=a_record.block_number,
+                        function_abi=SCALED_BALANCE_OF,
+                        parameters=[aave_user],
+                        block_number=a_record.block_number,
                     )
                 )
                 debt_asset = a_record.debt_asset
@@ -249,15 +260,17 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=debt_reserve.stable_debt_token_address,
-                        function=[PRINCIPAL_BALANCE_OF, aave_user],
-                        block_id=a_record.block_number,
+                        function_abi=PRINCIPAL_BALANCE_OF,
+                        parameters=[aave_user],
+                        block_number=a_record.block_number,
                     )
                 )
                 eth_call_lis.append(
                     Call(
                         target=debt_reserve.variable_debt_token_address,
-                        function=[BALANCE_OF, aave_user],
-                        block_id=a_record.block_number,
+                        function_abi=SCALED_BALANCE_OF,
+                        parameters=[aave_user],
+                        block_number=a_record.block_number,
                     )
                 )
 
@@ -267,7 +280,12 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
         unique_set = set()
         for cl in enriched_eth_call_lis:
-            k = (cl.target.lower(), cl.block_id, cl.function, ",".join(cl.args))
+            k = (
+                cl.target.lower(),
+                cl.block_number,
+                cl.function_abi.get_name(),
+                ",".join(cl.parameters if cl.parameters else ""),
+            )
             if k in unique_set:
                 continue
             unique_set.add(k)
@@ -275,21 +293,21 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 AaveV2CallRecordsD.type(),
                 AaveV2CallRecordsD(
                     target=cl.target.lower(),
-                    params=",".join(cl.args),
-                    function=cl.function,
-                    block_number=cl.block_id,
+                    params=",".join(cl.parameters) if cl.parameters else "",
+                    function=cl.function_abi.get_name(),
+                    block_number=cl.block_number,
                     result=str(cl.returns),
                 ),
             )
             token = cl.target.lower()
-            block_number = cl.block_id
+            block_number = cl.block_number
 
-            address = cl.args[0]
+            address = cl.parameters[0]
             if address not in address_token_block_balance_dic:
                 address_token_block_balance_dic[address] = dict()
             if token not in address_token_block_balance_dic[address]:
                 address_token_block_balance_dic[address][token] = dict()
-            address_token_block_balance_dic[address][token][block_number] = cl.returns
+            address_token_block_balance_dic[address][token][block_number] = cl.returns["balance"]
 
         # enrich repay, liquidation, withdraw
         for a_record in aave_records:
@@ -353,7 +371,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 address_currents.append(kad)
         address_currents.sort(key=lambda x: (x.address, x.asset))
         self._collect_items(AaveV2AddressCurrentD.type(), address_currents)
-
+        self.merge_reserve_data_update()
         logger.info("This batch of data have processed")
 
     def get_existing_address_current(self, addresses):
@@ -392,6 +410,19 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 unique_k_set.add(k)
                 lis.append(li)
         return lis
+
+    def merge_reserve_data_update(self):
+        tmps = self._data_buff.pop(AaveV2ReserveDataCurrentD.type())
+        tmps.sort(key=lambda x: x.block_number, reverse=True)
+        lis = []
+        unique_k_set = set()
+        for li in tmps:
+            k = li.asset
+            if k not in unique_k_set:
+                unique_k_set.add(k)
+                lis.append(li)
+        if len(lis) > 0:
+            self._collect_items(AaveV2ReserveDataCurrentD.type(), lis)
 
     def calculate_new_address_current(self, exists_dic, aave_records, liquidation_lis) -> Any:
         def nested_dict():
