@@ -12,6 +12,7 @@ from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.log import Log
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.aave_v2.aave_v2_processors import AaveV2Events
+from indexer.modules.custom.aave_v2.abi.abi import PRINCIPAL_BALANCE_OF_FUNCTION, SCALED_BALANCE_OF_FUNCTION
 from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2AddressCurrentD,
     AaveV2BorrowD,
@@ -34,25 +35,6 @@ from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 logger = logging.getLogger(__name__)
-
-SCALED_BALANCE_OF = Function(
-    {
-        "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
-        "name": "scaledBalanceOf",
-        "outputs": [{"internalType": "uint256", "name": "balance", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function",
-    }
-)
-PRINCIPAL_BALANCE_OF = Function(
-    {
-        "inputs": [{"internalType": "address", "name": "user", "type": "address"}],
-        "name": "principalBalanceOf",
-        "outputs": [{"internalType": "uint256", "name": "balance", "type": "uint256"}],
-        "stateMutability": "view",
-        "type": "function",
-    }
-)
 
 
 class ExportAaveV2Job(FilterTransactionDataJob):
@@ -217,7 +199,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=reserve.a_token_address,
-                        function_abi=SCALED_BALANCE_OF,
+                        function_abi=SCALED_BALANCE_OF_FUNCTION,
                         parameters=[a_record.aave_user],
                         block_number=a_record.block_number,
                     )
@@ -228,7 +210,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=reserve.stable_debt_token_address,
-                        function_abi=PRINCIPAL_BALANCE_OF,
+                        function_abi=PRINCIPAL_BALANCE_OF_FUNCTION,
                         parameters=[a_record.aave_user],
                         block_number=a_record.block_number,
                     )
@@ -236,7 +218,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=reserve.variable_debt_token_address,
-                        function_abi=SCALED_BALANCE_OF,
+                        function_abi=SCALED_BALANCE_OF_FUNCTION,
                         parameters=[a_record.aave_user],
                         block_number=a_record.block_number,
                     )
@@ -249,7 +231,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=collateral_reserve.a_token_address,
-                        function_abi=SCALED_BALANCE_OF,
+                        function_abi=SCALED_BALANCE_OF_FUNCTION,
                         parameters=[aave_user],
                         block_number=a_record.block_number,
                     )
@@ -260,7 +242,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=debt_reserve.stable_debt_token_address,
-                        function_abi=PRINCIPAL_BALANCE_OF,
+                        function_abi=PRINCIPAL_BALANCE_OF_FUNCTION,
                         parameters=[aave_user],
                         block_number=a_record.block_number,
                     )
@@ -268,7 +250,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 eth_call_lis.append(
                     Call(
                         target=debt_reserve.variable_debt_token_address,
-                        function_abi=SCALED_BALANCE_OF,
+                        function_abi=SCALED_BALANCE_OF_FUNCTION,
                         parameters=[aave_user],
                         block_number=a_record.block_number,
                     )
