@@ -216,6 +216,7 @@ SELECT CASE
            WHEN nft_address = '\x218bf598d1453383e2f4aa7b14ffb9bfb102d637' THEN 'agni'
            WHEN nft_address = '\xaaa78e8c4241990b4ce159e105da08129345946a' THEN 'cleoexchange'
            WHEN nft_address = '\xc36442b4a4522e871399cd717abdd847ab11fe88' THEN 'uniswap_v3'
+           WHEN nft_address = '\x5752f085206ab87d8a5ef6166779658add455774' then 'fusionx'
            ELSE 'uniswap_v3'
            END AS protocol_id,
        pool_address,

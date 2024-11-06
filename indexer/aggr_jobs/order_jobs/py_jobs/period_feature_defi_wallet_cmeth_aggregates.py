@@ -10,6 +10,7 @@ from sqlalchemy import func, desc, or_, and_, text
 from common.models.token_price import TokenPrice
 from common.utils.format_utils import format_value_for_json
 from indexer.aggr_jobs.order_jobs.models.period_address_token_balances import PeriodAddressTokenBalances
+from indexer.aggr_jobs.order_jobs.models.period_feature_defi_cmeth_aggregates import PeriodFeatureDefiCmethAggregates
 from indexer.aggr_jobs.order_jobs.models.period_feature_defi_wallet_cmeth_detail import \
     PeriodFeatureDefiWalletCmethDetail
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_merchantmoe_cmeth import \
@@ -29,7 +30,64 @@ class PeriodFeatureDefiWalletCmethAggregates:
 
         self.token_address = '0xe6829d9a7ee3040e1276fa75293bde931859e8fa'
         self.token_symbol = 'cmETH'
+    
 
+    def insert_aggr_job(self, results):
+        session = self.db_service.Session()
+
+        session.query(PeriodFeatureDefiCmethAggregates).filter(
+            PeriodFeatureDefiCmethAggregates.period_date == self.start_date
+        ).delete()
+
+        session.bulk_save_objects(results)
+        session.commit()
+        print(f'insert cmeth successfully, {len(results)}')
+        session.close()
+
+    def get_pool_token_pair_aggr_by_protocol(self, orm_list, price_dict):
+        grouped_data = defaultdict(list)
+
+        for record in orm_list:
+            key = (record.period_date, record.protocol_id)
+            grouped_data[key].append(record)
+
+        results = []
+
+        for k, entity_list in grouped_data.items():
+            period_date, protocol_id = k
+            wallet_count = 0
+            protocol_balance = 0
+            protocol_usd = 0
+
+            for entity in entity_list:
+                token_usd0 = float(price_dict.get(entity.token0_symbol, 0) * entity.token0_balance)
+                token_usd1 = float(price_dict.get(entity.token1_symbol, 0) * entity.token1_balance)
+
+                wallet_count += 1
+
+                if entity.token0_symbol == self.token_symbol:
+                    protocol_balance += float(entity.token0_balance)
+                    protocol_usd += token_usd0
+                if entity.token1_symbol == self.token_symbol:
+                    protocol_usd += token_usd1
+                    protocol_balance += float(entity.token1_balance)
+
+            results.append(
+                PeriodFeatureDefiCmethAggregates(
+                    period_date=period_date,
+                    chain_name=self.chain_name,
+                    protocol_id=protocol_id,
+                    total_cmeth_balance=protocol_balance,
+                    total_cmeth_usd=protocol_usd,
+                    day_user_count=wallet_count,
+                    total_user_count=wallet_count,
+                    updated_version=self.version
+                )
+
+            )
+
+        self.results.extend(results)
+    
     def get_pool_token_pair_data(self, orm_list):
         distinct_symbol_list = []
 
@@ -49,6 +107,9 @@ class PeriodFeatureDefiWalletCmethAggregates:
                 distinct_symbol_list.append(record.token1_symbol)
 
         price_dict = self.get_latest_price(distinct_symbol_list)
+        
+        self.get_pool_token_pair_aggr_by_protocol(orm_list, price_dict)
+
 
         results = {}
         for period_date_wallet, protocol_contract_group in wallet_protocol_contract_group.items():
@@ -202,6 +263,9 @@ class PeriodFeatureDefiWalletCmethAggregates:
             wallet_protocol_contract_group[(period_date_key, wallet_key)][protocol_key][contract_key].append(record)
 
         results = {}
+        
+        self.get_token_aggr_by_protocol(orm_list, target_token_dict['price'])
+
 
         for period_date_wallet, protocol_contract_group in wallet_protocol_contract_group.items():
             period_date, wallet_address = period_date_wallet
@@ -302,6 +366,85 @@ class PeriodFeatureDefiWalletCmethAggregates:
         print(f'took {elapsed_time:.2f} seconds by {method_name}')
         return result
 
+
+    def get_token_aggr_by_protocol(self, orm_list, price):
+        grouped_data = defaultdict(list)
+        for record in orm_list:
+            key = (record.period_date, record.protocol_id)
+            grouped_data[key].append(record)
+
+        results = []
+        for k, entity_list in grouped_data.items():
+            period_date, protocol_id = k
+            protocol_balance = 0
+            protocol_usd = 0
+            wallet_count = 0
+
+            for entity in entity_list:
+                token_usd = float(price * entity.balance)
+                balance = float(entity.balance)
+                protocol_balance += balance
+                protocol_usd += token_usd
+                wallet_count += 1
+
+            results.append(
+                PeriodFeatureDefiCmethAggregates(
+                    period_date=period_date,
+                    chain_name=self.chain_name,
+                    protocol_id=protocol_id,
+                    total_cmeth_balance=protocol_balance,
+                    total_cmeth_usd=protocol_usd,
+                    day_user_count=wallet_count,
+                    total_user_count=wallet_count,
+                    updated_version=self.version
+                )
+
+            )
+
+        self.results.extend(results)
+
+    def protocol_aggregates(self, wallet_record_list):
+        results = []
+
+        protocol_dict = defaultdict(list)
+        for wallet_record in wallet_record_list:
+            protocol_dict[wallet_record.period_date, wallet_record.protocol_id].append(wallet_record)
+
+        for key, record_list in protocol_dict.items():
+            period_date, protocol_id = key
+            protocol_balance = 0
+            protocol_usd = 0
+            wallet_count = 0
+            for record in record_list:
+                protocol_balance += record.balance
+                protocol_usd += record.usd
+                wallet_count += 1
+
+            results.append(
+                PeriodFeatureDefiCmethAggregates(
+                    period_date=period_date,
+                    chain_name=self.chain_name,
+                    protocol_id=protocol_id,
+                    total_cmeth_balance=protocol_balance,
+                    total_cmeth_usd=protocol_usd,
+                    day_user_count=wallet_count,
+                    total_user_count=wallet_count,
+                    updated_version=self.version
+                )
+
+            )
+
+        session = self.db_service.Session()
+
+        session.query(PeriodFeatureDefiCmethAggregates).filter(
+            PeriodFeatureDefiCmethAggregates.period_date == self.start_date
+        ).delete()
+
+        session.bulk_save_objects(results)
+        session.commit()
+        print(f'insert cmeth successfully, {len(results)}')
+        session.close()
+
     def run(self):
         if self.chain_name == 'mantle':
             uniswap_v3_json = self.timed_call(self.get_uniswap_v3_json, 'get_uniswap_v3_json')
@@ -362,7 +505,6 @@ class PeriodFeatureDefiWalletCmethAggregates:
 
             )
             result_orm_list.append(record)
-
         result_orm_list.sort(key=attrgetter('period_date', 'total_cmeth_balance'), reverse=True)
 
         grouped = groupby(result_orm_list, key=attrgetter('period_date'))
@@ -380,3 +522,6 @@ class PeriodFeatureDefiWalletCmethAggregates:
         session.bulk_save_objects(result_orm_list)
         session.commit()
         session.close()
+
+        #     aggr by protocol
+        self.insert_aggr_job(self.results)
