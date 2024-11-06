@@ -105,7 +105,8 @@ def verify_0_address(address):
 def get_debug_trace_transaction(traces):
     def prune_delegates(trace):
         while (
-            trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0]["call_type"] == "delegatecall"
+                trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0][
+            "call_type"] == "delegatecall"
         ):
             trace = trace["calls"][0]
         if trace.get("calls"):
@@ -206,3 +207,9 @@ def get_json_from_uri_by_http(uri):
         return response.json()
     except Exception as e:
         return None
+
+
+def event_topic_to_address(topic: str) -> str:
+    if len(topic) != 66:
+        return ""
+    return Web3.to_checksum_address("0x" + topic[26:])
