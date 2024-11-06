@@ -94,11 +94,11 @@ class MultiCallHelper:
                         to_execute_batch_calls.append(cl)
         if len(to_execute_batch_calls) > 0:
             self.logger.info(f"multicall helper batch call, got={len(to_execute_batch_calls)}")
-            self._batch_work_executor.execute(
-                to_execute_batch_calls, self.fetch_raw_calls, total_items=len(to_execute_batch_calls)
-            )
-            self._batch_work_executor.wait()
-            # self.fetch_raw_calls(to_execute_batch_calls)
+            # self._batch_work_executor.execute(
+            #     to_execute_batch_calls, self.fetch_raw_calls, total_items=len(to_execute_batch_calls)
+            # )
+            # self._batch_work_executor.wait()
+            self.fetch_raw_calls(to_execute_batch_calls)
         return calls
 
     def fetch_raw_calls(self, calls: List[Call]):
