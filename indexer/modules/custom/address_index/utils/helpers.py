@@ -1,6 +1,7 @@
 import binascii
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional, Union
+from select import select
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from sqlalchemy import and_, func
 
@@ -353,6 +354,138 @@ def get_address_first_deploy_contract_time(address: Union[str, bytes]) -> dateti
         .first()
     )
     return format_to_dict(first_deploy_contract[0]) if first_deploy_contract else None
+
+
+def convert_to_developer_info(
+    first_record: AddressContractOperations, latest_record: AddressContractOperations, deployed_count: int
+) -> Dict[str, Any]:
+    """
+    Convert AddressContractOperations records to developer info model format
+
+    Args:
+        first_record: First deployment record
+        latest_record: Latest deployment record
+        deployed_count: Total number of deployed contracts
+    """
+
+    if not first_record:
+        return None
+
+    result = {
+        "address": bytes_to_hex_str(first_record.address),
+        "deployed_contracts_count": deployed_count,
+        # First contract info
+        "first_contract_deployed_address": bytes_to_hex_str(first_record.contract_address),
+        "first_contract_deployed_transaction_hash": bytes_to_hex_str(first_record.transaction_hash),
+        "first_contract_deployed_block_hash": bytes_to_hex_str(first_record.block_hash),
+        "first_contract_deployed_block_number": first_record.block_number,
+        "first_contract_deployed_block_timestamp": first_record.block_timestamp,
+        "first_contract_deployed_trace_id": first_record.trace_id,
+    }
+
+    if latest_record and latest_record != first_record:
+        result.update(
+            {
+                "latest_contract_deployed_address": bytes_to_hex_str(latest_record.contract_address),
+                "latest_contract_deployed_transaction_hash": bytes_to_hex_str(latest_record.transaction_hash),
+                "latest_contract_deployed_block_hash": bytes_to_hex_str(latest_record.block_hash),
+                "latest_contract_deployed_block_number": latest_record.block_number,
+                "latest_contract_deployed_block_timestamp": latest_record.block_timestamp,
+                "latest_contract_deployed_trace_id": latest_record.trace_id,
+            }
+        )
+    else:
+        result.update(
+            {
+                "latest_contract_deployed_address": result["first_contract_deployed_address"],
+                "latest_contract_deployed_transaction_hash": result["first_contract_deployed_transaction_hash"],
+                "latest_contract_deployed_block_hash": result["first_contract_deployed_block_hash"],
+                "latest_contract_deployed_block_number": result["first_contract_deployed_block_number"],
+                "latest_contract_deployed_block_timestamp": result["first_contract_deployed_block_timestamp"],
+                "latest_contract_deployed_trace_id": result["first_contract_deployed_trace_id"],
+            }
+        )
+
+    return result
+
+
+def get_address_contract_development_stats(address: Union[str, bytes]) -> Dict[str, Any]:
+    """
+    Get contract development statistics for a given address.
+    Calculates total transaction output count and fees for all contracts deployed by this address.
+
+    Args:
+        address: Target address in string or bytes format
+
+    Returns:
+        Dict containing contract stats including transaction counts and gas fees in ETH/USD
+    """
+    if isinstance(address, str):
+        address = hex_str_to_bytes(address)
+
+    contracts_subquery = (
+        db.session.query(Contracts.address).filter(Contracts.transaction_from_address == address).subquery()
+    )
+
+    daily_stats = (
+        db.session.query(
+            AddressIndexDailyStats.block_date,
+            func.sum(AddressIndexDailyStats.transaction_out_count).label("tx_count"),
+            func.sum(AddressIndexDailyStats.transaction_out_fee).label("tx_fee"),
+        )
+        .filter(AddressIndexDailyStats.address.in_(db.session.query(contracts_subquery.c.address)))
+        .group_by(AddressIndexDailyStats.block_date)
+        .all()
+    )
+
+    block_dates = [stat.block_date for stat in daily_stats]
+    prices = get_coin_prices(block_dates)
+    prices_dict = {x["block_date"]: x["price"] for x in prices}
+
+    total_tx_count = 0
+    total_gas_eth = 0
+    total_gas_usd = 0
+
+    for stat in daily_stats:
+        gas_fee_eth = stat.tx_fee / 10**18
+        price = prices_dict.get(stat.block_date, 0)
+        gas_fee_usd = float(gas_fee_eth) * float(price)
+
+        total_tx_count += stat.tx_count
+        total_gas_eth += gas_fee_eth
+        total_gas_usd += gas_fee_usd
+
+    return {
+        "total_transaction_count_across_contract": total_tx_count,
+        "total_gas_consumed_across_contracts_eth": total_gas_eth,
+        "total_gas_consumed_across_contracts_usd": total_gas_usd,
+    }
+
+
+def get_address_developer_info(address: Union[str, bytes]) -> Dict[str, Any]:
+    if isinstance(address, str):
+        address = hex_str_to_bytes(address)
+
+    base_query = db.session.query(AddressContractOperations).filter(
+        AddressContractOperations.address == address,
+        AddressContractOperations.trace_type.in_(["create", "create2"]),
+        AddressContractOperations.transaction_receipt_status == 1,
+    )
+
+    deployed_count = base_query.count()
+
+    if deployed_count == 0:
+        return {}
+
+    first_record = base_query.order_by(AddressContractOperations.block_timestamp).first()
+    latest_record = (
+        base_query.order_by(AddressContractOperations.block_timestamp.desc()).first()
+        if deployed_count > 1
+        else first_record
+    )
+    developer_info = convert_to_developer_info(first_record, latest_record, deployed_count)
+    address_contract_development_stats = get_address_contract_development_stats(address)
+    return developer_info | address_contract_development_stats
 
 
 def get_address_deploy_contract_count(address: Union[str, bytes]) -> int:

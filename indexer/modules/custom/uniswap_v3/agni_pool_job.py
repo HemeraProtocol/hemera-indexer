@@ -384,8 +384,6 @@ def collect_swap_new_pools(
     return need_add
 
 
-
-
 def split_logs(logs):
     log_dict = defaultdict(list)
     for data in logs:
