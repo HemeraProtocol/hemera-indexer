@@ -237,9 +237,22 @@ def test_mutlicall_helper():
         16291054: 974202650650,
         16301054: 974291227149,
     }
-    return_lis = []
-
     multicall_helper.execute_calls(calls)
     for call in calls:
         assert call.returns["who"] == expected_return[call.block_number]
-        return_lis.append({"block_number": call.block_number, "balance": call.returns["who"]})
+
+    address = "0x7974b46e7940de2c4d6458c053bdbac0bf111683"
+    start_block_number = 15311054
+    step = 100
+    times = 500
+    calls = []
+    for i in range(times):
+        calls.append(
+            Call(
+                target=aave_vary_debt_usdc,
+                function_abi=balance_of_function,
+                parameters=[address],
+                block_number=start_block_number + i * step,
+            )
+        )
+    multicall_helper.execute_calls(calls)

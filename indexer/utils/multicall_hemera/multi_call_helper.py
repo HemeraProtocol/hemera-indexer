@@ -12,6 +12,7 @@ import orjson
 
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import hex_str_to_bytes
+from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.utils.multicall_hemera import Call, Multicall
 from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_network
@@ -31,6 +32,12 @@ class MultiCallHelper:
         self.chain_id = self.web3.eth.chain_id
 
         self.batch_size = kwargs["batch_size"]
+        self._batch_work_executor = BatchWorkExecutor(
+            kwargs["batch_size"],
+            kwargs["max_workers"],
+            job_name=self.__class__.__name__,
+        )
+        self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
         self._works = kwargs["max_workers"]
         if not self._is_multi_call:
@@ -90,7 +97,11 @@ class MultiCallHelper:
                         to_execute_batch_calls.append(cl)
         if len(to_execute_batch_calls) > 0:
             self.logger.info(f"multicall helper batch call, got={len(to_execute_batch_calls)}")
-            self.fetch_raw_calls(to_execute_batch_calls)
+            self._batch_work_executor.execute(
+                to_execute_batch_calls, self.fetch_raw_calls, total_items=len(to_execute_batch_calls)
+            )
+            self._batch_work_executor.wait()
+            # self.fetch_raw_calls(to_execute_batch_calls)
         return calls
 
     def fetch_raw_calls(self, calls: List[Call]):
