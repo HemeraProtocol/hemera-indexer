@@ -31,15 +31,12 @@ class MultiCallHelper:
             self.logger = logger
         self.chain_id = self.web3.eth.chain_id
 
-        self.batch_size = kwargs["batch_size"]
         self._batch_work_executor = BatchWorkExecutor(
             kwargs["batch_size"],
             kwargs["max_workers"],
             job_name=self.__class__.__name__,
         )
-        self._is_batch = kwargs["batch_size"] > 1
         self._is_multi_call = kwargs["multicall"]
-        self._works = kwargs["max_workers"]
         if not self._is_multi_call:
             self.logger.info("multicall is disabled")
             self.net = None
@@ -59,7 +56,7 @@ class MultiCallHelper:
                 raise FastShutdownError("MultiCallHelper.validate_calls failed: block_number is None")
 
     def fetch_result(self, chunks):
-        res = list(make_request_concurrent(self.make_request, chunks, self._works))
+        res = list(make_request_concurrent(self.make_request, chunks, None))
         return res
 
     def decode_result(self, wrapped_calls, res, chunks):
