@@ -50,7 +50,7 @@ class Multicall:
 
     def prep_args(self) -> List:
         self._parameters = self.get_args(self.require_success)
-        call_data = self.multicall_func.encode_function_call_data(self.parameters if self.parameters else [])
+        call_data = self.multicall_func.encode_function_call_data(self._parameters if self._parameters else [])
         args = [{"to": self.multicall_address, "data": call_data}, format_block_id(self.block_number)]
         if self.gas_limit:
             args[0]["gas"] = self.gas_limit

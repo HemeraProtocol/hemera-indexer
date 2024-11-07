@@ -15,7 +15,7 @@ from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 DEFAULT_ETHEREUM_RPC = os.environ.get("RPC")
 web3 = Web3(Web3.HTTPProvider(DEFAULT_ETHEREUM_RPC))
-multicall_helper = MultiCallHelper(web3, {"batch_size": 100, "multicall": False, "max_workers": 10})
+multicall_helper = MultiCallHelper(web3, {"batch_size": 100, "multicall": True, "max_workers": 10})
 
 
 @pytest.mark.indexer
