@@ -13,7 +13,7 @@ from common.utils.format_utils import hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call, Multicall
 from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_network
-from indexer.utils.multicall_hemera.util import make_request_concurrent, rebatch_by_size
+from indexer.utils.multicall_hemera.util import make_request_concurrent, rebatch_by_size, calculate_execution_time
 from indexer.utils.provider import get_provider_from_uri
 
 
@@ -39,6 +39,7 @@ class MultiCallHelper:
             self.net = get_multicall_network(self.chain_id)
             self.deploy_block_number = self.net.deploy_block_number
 
+    @calculate_execution_time
     def validate_and_prepare_calls(self, calls):
         grouped_data = defaultdict(list)
         cnt = 0
@@ -61,10 +62,12 @@ class MultiCallHelper:
                 to_execute_multi_calls.append(items)
         return to_execute_batch_calls, to_execute_multi_calls
 
+    @calculate_execution_time
     def fetch_result(self, chunks):
         res = list(make_request_concurrent(self.make_request, chunks, self.max_workers))
         return res
 
+    @calculate_execution_time
     def decode_result(self, wrapped_calls, res, chunks):
         for response_chunk, (_, wrapped_calls) in zip(res, chunks):
             for calls, res in zip(wrapped_calls, response_chunk):
@@ -76,6 +79,7 @@ class MultiCallHelper:
                     for call, (output) in zip(calls, outputs):
                         call.returns = call.decode_output(output["returnData"])
 
+    @calculate_execution_time
     def execute_calls(self, calls: List[Call]) -> List[Call]:
         """Execute eth calls
         1. Validate that each call has a specified block number (required)
@@ -102,6 +106,7 @@ class MultiCallHelper:
             self.fetch_raw_calls(to_execute_batch_calls)
         return calls
 
+    @calculate_execution_time
     def fetch_raw_calls(self, calls: List[Call]):
         batch_call_list = []
         batch_rpc_param_list = []
@@ -128,6 +133,7 @@ class MultiCallHelper:
                     call.returns = None
                     self.logger.warning(f"multicall helper failed call: {call}")
 
+    @calculate_execution_time
     def construct_multicall_rpc(self, to_execute_multi_calls):
         multicall_rpc = []
         if to_execute_multi_calls:

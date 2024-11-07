@@ -17,11 +17,26 @@ import orjson
 logger = logging.getLogger(__name__)
 
 
+def calculate_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        logger.debug(f"function {func.__name__} time: {execution_time:.6f} s")
+        print(f"function {func.__name__} time: {execution_time:.6f} s")
+        return result
+
+    return wrapper
+
+
+@calculate_execution_time
 def estimate_size(item):
     """return size in bytes"""
     return len(orjson.dumps(item))
 
 
+@calculate_execution_time
 def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
     # 250KB
     current_chunk = []
@@ -41,18 +56,6 @@ def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
     if current_chunk:
         logger.debug(f"current chunk size {len(current_chunk)}")
         yield (current_chunk, calls)
-
-
-def calculate_execution_time(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        execution_time = end_time - start_time
-        logger.debug(f"function {func.__name__} time: {execution_time:.6f} s")
-        return result
-
-    return wrapper
 
 
 def make_request_concurrent(make_request, chunks, max_workers=None):
