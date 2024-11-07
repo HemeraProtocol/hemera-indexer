@@ -421,7 +421,8 @@ def decode_data(decode_type: Union[Sequence[str], List[str], str], data: bytes) 
         try:
             data = abi_codec.decode(decode_type, data)
         except Exception as e:
-            print(f"Failed to decode data: {e}")
+            logging.warning(f"Failed to decode data: {e}")
+            return None
     else:
         raise ValueError(f"Invalid decode_type: {decode_type}, it should be str or list[str]")
     return data
