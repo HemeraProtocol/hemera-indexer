@@ -9,7 +9,7 @@ from collections import defaultdict
 from typing import List
 
 from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.utils.multicall_hemera import Call, Multicall
 from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_network
