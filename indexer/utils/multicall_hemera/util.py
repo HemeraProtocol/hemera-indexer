@@ -20,8 +20,8 @@ def calculate_execution_time(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         execution_time = end_time - start_time
-        logging.info(f"function {func.__name__} time: {execution_time:.6f} s")
-        print(f"function {func.__name__} time: {execution_time:.6f} s")
+        logging.debug(f"function {func.__name__} time: {execution_time:.6f} s")
+        # print(f"function {func.__name__} time: {execution_time:.6f} s")
         return result
 
     return wrapper
@@ -92,18 +92,10 @@ class ThreadPoolManager:
             future_to_chunk = {executor.submit(func, chunk[0], i): i for i, chunk in enumerate(chunks)}
 
             for future in as_completed(future_to_chunk):
-                try:
-                    index, result = future.result(timeout=30)  # 添加超时控制
-                    results[index] = result
-                except TimeoutError:
-                    # 处理超时
-                    pass
-                except Exception as e:
-                    # 处理其他异常
-                    pass
-
+                index, result = future.result(timeout=30)
+                results[index] = result
         except Exception as e:
-            # 处理提交任务时的异常
-            pass
+            logging.error(f"ThreadPoolManager.submit_tasks error: {e}")
+            raise e
 
         return results

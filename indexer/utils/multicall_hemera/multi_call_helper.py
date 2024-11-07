@@ -65,12 +65,10 @@ class MultiCallHelper:
                 to_execute_multi_calls.append(items)
         return to_execute_batch_calls, to_execute_multi_calls
 
-    @calculate_execution_time
     def fetch_result(self, chunks):
         res = list(make_request_concurrent(self.make_request, chunks, self.max_workers))
         return res
 
-    @calculate_execution_time
     def decode_result(self, wrapped_calls, res, chunks):
         for response_chunk, (_, wrapped_calls) in zip(res, chunks):
             for calls, res in zip(wrapped_calls, response_chunk):
@@ -109,7 +107,6 @@ class MultiCallHelper:
             self.fetch_raw_calls(to_execute_batch_calls)
         return calls
 
-    @calculate_execution_time
     def fetch_raw_calls(self, calls: List[Call]):
         batch_call_list = []
         batch_rpc_param_list = []
@@ -136,7 +133,6 @@ class MultiCallHelper:
                     call.returns = None
                     self.logger.warning(f"multicall helper failed call: {call}")
 
-    @calculate_execution_time
     def construct_multicall_rpc(self, to_execute_multi_calls):
         logging.info(f"Function total multicalls: {len(to_execute_multi_calls)}")
         to_execute_multi_calls = [(calls,) for calls in to_execute_multi_calls]
