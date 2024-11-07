@@ -30,13 +30,11 @@ def calculate_execution_time(func):
     return wrapper
 
 
-@calculate_execution_time
 def estimate_size(item):
     """return size in bytes"""
     return len(orjson.dumps(item))
 
 
-@calculate_execution_time
 def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
     # 250KB
     current_chunk = []
