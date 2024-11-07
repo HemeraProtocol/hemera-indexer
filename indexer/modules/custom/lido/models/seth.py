@@ -9,7 +9,7 @@ class LidoShareBalances(HemeraModel):
 
     address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
-    balance = Column(NUMERIC(100))
+    shares = Column(NUMERIC(100))
     block_number = Column(BIGINT, primary_key=True)
 
     create_time = Column(TIMESTAMP, server_default=func.now())

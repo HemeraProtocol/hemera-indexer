@@ -87,14 +87,13 @@ class ExportLidoShareJob(FilterTransactionDataJob):
             for address in addresses:
                 if address == ZERO_ADDRESS:
                     continue
-                balance = self.seth_contract.functions.balanceOf(address).call(block_identifier=block_number)
-                share_balance = self.seth_contract.functions.getSharesByPooledEth(balance).call(
+                share_balance = self.seth_contract.functions.sharesOf(address).call(
                     block_identifier=block_number
                 )
                 share_domain = LidoShareBalance(
                     address=address,
                     token_address=log.address,
-                    balance=share_balance,
+                    shares=share_balance,
                     block_number=block_number,
                 )
                 self._collect_domain(share_domain)

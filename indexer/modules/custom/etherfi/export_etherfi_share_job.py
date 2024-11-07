@@ -88,11 +88,11 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
             for address in addresses:
                 if address == ZERO_ADDRESS:
                     continue
-                balance = self.eeth_contract.functions.shares(address).call(block_identifier=block_number)
+                shares = self.eeth_contract.functions.shares(address).call(block_identifier=block_number)
                 share_domain = EtherFiShareBalance(
                     address=address,
                     token_address=self.user_defined_config["eeth_address"],
-                    balance=balance,
+                    shares=shares,
                     block_number=block_number,
                 )
             self._collect_domain(share_domain)

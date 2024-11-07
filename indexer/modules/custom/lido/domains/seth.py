@@ -7,7 +7,7 @@ from indexer.domain import Domain
 class LidoShareBalance(Domain):
     address: str
     token_address: str
-    balance: int
+    shares: int
     block_number: int
 
 
