@@ -9,11 +9,11 @@ from collections import defaultdict
 from typing import List
 
 from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import hex_str_to_bytes
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call, Multicall
 from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_network
-from indexer.utils.multicall_hemera.util import make_request_concurrent, rebatch_by_size, calculate_execution_time
+from indexer.utils.multicall_hemera.util import calculate_execution_time, make_request_concurrent, rebatch_by_size
 from indexer.utils.provider import get_provider_from_uri
 
 
@@ -77,7 +77,7 @@ class MultiCallHelper:
                     dic = TRY_BLOCK_AND_AGGREGATE_FUNC.decode_function_output_data(result)
                     outputs = dic["returnData"]
                     for call, (output) in zip(calls, outputs):
-                        call.returns = call.decode_output(output["returnData"])
+                        call.returns = call.decode_output(bytes_to_hex_str(output["returnData"]))
 
     @calculate_execution_time
     def execute_calls(self, calls: List[Call]) -> List[Call]:
@@ -113,7 +113,7 @@ class MultiCallHelper:
 
         for call in calls:
             batch_call_list.append(call)
-            batch_rpc_param_list.append(call.to_rpc_param())
+            batch_rpc_param_list.append(call.rpc_param)
         wrapped_rpc_param_list = [
             (batch_rpc_param_list[i : i + self.batch_size], i)
             for i in range(0, len(batch_rpc_param_list), self.batch_size)
@@ -128,7 +128,7 @@ class MultiCallHelper:
             for call, data in zip(calls, batch_result):
                 result = data.get("result")
                 try:
-                    call.returns = call.decode_output(hex_str_to_bytes(result))
+                    call.returns = call.decode_output(result)
                 except Exception:
                     call.returns = None
                     self.logger.warning(f"multicall helper failed call: {call}")

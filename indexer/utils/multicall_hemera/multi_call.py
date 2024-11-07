@@ -3,7 +3,7 @@ from typing import Any, List, Optional, Union
 
 import orjson
 
-from common.utils.format_utils import format_block_id
+from common.utils.format_utils import format_block_id, hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.abi import AGGREGATE_FUNC, TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_address, get_multicall_network
@@ -36,8 +36,8 @@ class Multicall:
 
     def get_args(self, require_success: bool = True) -> List[Union[bool, List[List[Any]]]]:
         if require_success is True:
-            return [[[call.target, call.data] for call in self.calls]]
-        return [require_success, [[call.target, call.data] for call in self.calls]]
+            return [[[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
+        return [require_success, [[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
 
     def to_rpc_param(self):
         args = self.prep_args()

@@ -6,7 +6,6 @@
 # @Brief use the `multicall` contract to fetch data
 
 import logging
-from typing import Dict, List, Tuple, Union
 
 from common.utils.format_utils import to_snake_case
 from enumeration.record_level import RecordLevel
@@ -52,9 +51,10 @@ class TokenFetcher:
     @calculate_execution_time
     def _prepare_token_ids_info_parameters(self, token_info_items):
         calls = []
-
+        cnt = 0
         for row in token_info_items:
-            row[self.fixed_k] = self.build_key(row, self.token_ids_infos_k_fields)
+            row[self.fixed_k] = cnt
+            cnt += 1
 
             construct_call = None
             address = row["address"]
@@ -113,7 +113,7 @@ class TokenFetcher:
                     token_uri = value["uri"]
                 except Exception as e:
                     token_uri = None
-                    logging.error(f"decode token uri failed, token_info={token_info}, value={value}")
+                    logging.debug(f"decode token uri failed, token_info={token_info}, value={value}")
                 if token_info["token_type"] == "ERC721":
                     return [ERC721TokenIdDetail(**common_args, token_uri=token_uri)]
                 else:
@@ -159,8 +159,10 @@ class TokenFetcher:
     @calculate_execution_time
     def _prepare_token_balance_parameters(self, tokens):
         calls = []
+        cnt = 0
         for row in tokens:
-            row[self.fixed_k] = self.build_key(row, self.token_k_fields)
+            row[self.fixed_k] = cnt
+            cnt += 1
 
             token, wal = row["token_address"], row["address"]
             token_id = row["token_id"]
@@ -211,13 +213,3 @@ class TokenFetcher:
                 }
             )
         return return_data
-
-    @staticmethod
-    def build_key(record: Union[Dict, Tuple, List], fields: Tuple[str, ...]) -> str:
-        if isinstance(record, dict):
-            return "|".join(str(record.get(field, "")) for field in fields)
-        elif isinstance(record, (tuple, list)):
-            field_dict = dict(record)
-            return "|".join(str(field_dict.get(field, "")) for field in fields)
-        else:
-            raise TypeError("record must be a dict, tuple, or list")
