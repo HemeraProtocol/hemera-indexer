@@ -1,5 +1,5 @@
-from sqlalchemy import DATE, Column
-from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, NUMERIC
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, DATE, INTEGER, NUMERIC
 
 from common.models import HemeraModel
 
