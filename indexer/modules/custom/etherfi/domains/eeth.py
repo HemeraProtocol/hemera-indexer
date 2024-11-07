@@ -4,17 +4,17 @@ from indexer.domain import Domain
 
 
 @dataclass
-class LidoShareBalance(Domain):
+class EtherFiShareBalance(Domain):
     address: str
     token_address: str
     balance: int
     block_number: int
 
+
 @dataclass
-class LidoPositionValues(Domain):
+class EtherFiPositionValues(Domain):
     block_number: int
     total_share: int
-    buffered_eth: int
-    consensus_layer: int
-    deposited_validators: int
-    cl_validators: int
+    total_value_out_lp: int
+    total_value_in_lp: int
+

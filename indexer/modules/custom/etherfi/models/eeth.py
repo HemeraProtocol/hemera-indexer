@@ -3,8 +3,8 @@ from common.models import HemeraModel, general_converter
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 
-class LidoShareBalances(HemeraModel):
-    __tablename__ = "lido_seth_share_balances"
+class EtherFiShareBalances(HemeraModel):
+    __tablename__ = "ether_fi_share_balances"
 
     address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
@@ -21,7 +21,7 @@ class LidoShareBalances(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "LidoShareBalance",
+                "domain": "EtherFiShareBalance",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -29,18 +29,13 @@ class LidoShareBalances(HemeraModel):
         ]
 
 
-
-
-
-class LidoPositionValues(HemeraModel):
-    __tablename__ = "lido_position_values"
+class EtherFiPositionValues(HemeraModel):
+    __tablename__ = "ether_fi_position_values"
 
     block_number = Column(BIGINT, primary_key=True)
     total_share = Column(NUMERIC(100))
-    buffered_eth = Column(NUMERIC(100))
-    consensus_layer = Column(NUMERIC(100))
-    deposited_validators = Column(NUMERIC(100))
-    cl_validators = Column(NUMERIC(100))
+    total_value_out_lp = Column(NUMERIC(100))
+    total_value_in_lp = Column(NUMERIC(100))
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
@@ -52,10 +47,9 @@ class LidoPositionValues(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "LidoPositionValues",
+                "domain": "EtherFiPositionValues",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             }
         ]
-
