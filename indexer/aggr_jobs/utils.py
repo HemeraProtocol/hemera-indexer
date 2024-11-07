@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 import click
+import yaml
 from web3 import Web3
 
 from common.models.sync_record import SyncRecord
@@ -15,6 +16,16 @@ def get_yesterday_date():
     yesterday_str = yesterday_datetime.strftime("%Y-%m-%d")
 
     return today_str, yesterday_str
+
+def get_current_date():
+    now = datetime.now()
+
+    tomorrow_date = now + timedelta(days=1)
+
+    today_str = now.strftime("%Y-%m-%d")
+    tomorrow_str = tomorrow_date.strftime("%Y-%m-%d")
+
+    return today_str, tomorrow_str
 
 
 class DateType(click.ParamType):
@@ -77,3 +88,9 @@ def read_sync_record(db_service) -> int:
     if not record:
         record = read_sync_record_from_pg(db_service)
     return record
+
+
+def read_yaml_file(file_path: str):
+    with open(file_path, 'r') as file:
+        data = yaml.safe_load(file)
+    return data

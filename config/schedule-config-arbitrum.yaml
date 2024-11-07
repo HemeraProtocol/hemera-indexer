@@ -1,0 +1,5 @@
+schedule:
+  today:
+    0 6,12,18 * * *
+  yesterday:
+    0 1 * * *
