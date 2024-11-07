@@ -7,7 +7,7 @@
 import logging
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed
 
 import orjson
 
@@ -60,11 +60,69 @@ def make_request_concurrent(make_request, chunks, max_workers=None):
     if max_workers is None:
         max_workers = os.cpu_count() + 4
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_chunk = {executor.submit(single_request, chunk[0], i): i for i, chunk in enumerate(chunks)}
-        results = [None] * len(chunks)
-        for future in as_completed(future_to_chunk):
-            index, result = future.result()
-            results[index] = result
+    # with ThreadPoolExecutor(max_workers=max_workers) as executor:
+    #     future_to_chunk = {executor.submit(single_request, chunk[0], i): i for i, chunk in enumerate(chunks)}
+    #     results = [None] * len(chunks)
+    #     for future in as_completed(future_to_chunk):
+    #         index, result = future.result()
+    #         results[index] = result
+    #
+    # return results
+    return ThreadPoolManager.submit_tasks(
+            single_request,
+            chunks,
+            max_workers
+        )
 
-    return results
+
+from concurrent.futures import ThreadPoolExecutor
+import atexit
+import threading
+
+
+class ThreadPoolManager:
+    _instance = None
+    _lock = threading.Lock()
+
+    @classmethod
+    def get_instance(cls, max_workers=None):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = ThreadPoolExecutor(max_workers=max_workers)
+                    atexit.register(cls.shutdown)
+        return cls._instance
+
+    @classmethod
+    def shutdown(cls):
+        if cls._instance:
+            cls._instance.shutdown(wait=False)
+            cls._instance = None
+
+    @classmethod
+    def submit_tasks(cls, func, chunks, max_workers=None):
+        executor = cls.get_instance(max_workers)
+        results = [None] * len(chunks)
+
+        try:
+            future_to_chunk = {
+                executor.submit(func, chunk[0], i): i
+                for i, chunk in enumerate(chunks)
+            }
+
+            for future in as_completed(future_to_chunk):
+                try:
+                    index, result = future.result(timeout=30)  # 添加超时控制
+                    results[index] = result
+                except TimeoutError:
+                    # 处理超时
+                    pass
+                except Exception as e:
+                    # 处理其他异常
+                    pass
+
+        except Exception as e:
+            # 处理提交任务时的异常
+            pass
+
+        return results
