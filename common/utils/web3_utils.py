@@ -105,8 +105,7 @@ def verify_0_address(address):
 def get_debug_trace_transaction(traces):
     def prune_delegates(trace):
         while (
-                trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0][
-            "call_type"] == "delegatecall"
+            trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0]["call_type"] == "delegatecall"
         ):
             trace = trace["calls"][0]
         if trace.get("calls"):
