@@ -97,7 +97,7 @@ KOVAN = NetworkConfig(42, "Kovan")
 OKC = NetworkConfig(66, "OKC")
 FUSE = NetworkConfig(122, "Fuse")
 COSTON2_TESTNET = NetworkConfig(114, "Coston2Testnet")
-TAIKO_MAIN = NetworkConfig(167000, 'Taiko', 11269)
+TAIKO_MAIN = NetworkConfig(167000, "Taiko", 11269)
 
 
 def get_multicall_network(chain_id: int) -> NetworkConfig:

@@ -8,11 +8,8 @@ import logging
 from collections import defaultdict
 from typing import List
 
-import orjson
-
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import hex_str_to_bytes
-from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.utils.multicall_hemera import Call, Multicall
 from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_network
@@ -31,11 +28,8 @@ class MultiCallHelper:
             self.logger = logger
         self.chain_id = self.web3.eth.chain_id
 
-        self._batch_work_executor = BatchWorkExecutor(
-            kwargs["batch_size"],
-            kwargs["max_workers"],
-            job_name=self.__class__.__name__,
-        )
+        self.batch_size = kwargs["batch_size"]
+        self.max_workers = kwargs["max_workers"]
         self._is_multi_call = kwargs["multicall"]
         if not self._is_multi_call:
             self.logger.info("multicall is disabled")
@@ -56,7 +50,7 @@ class MultiCallHelper:
                 raise FastShutdownError("MultiCallHelper.validate_calls failed: block_number is None")
 
     def fetch_result(self, chunks):
-        res = list(make_request_concurrent(self.make_request, chunks, None))
+        res = list(make_request_concurrent(self.make_request, chunks, self.max_workers))
         return res
 
     def decode_result(self, wrapped_calls, res, chunks):
@@ -94,25 +88,34 @@ class MultiCallHelper:
                         to_execute_batch_calls.append(cl)
         if len(to_execute_batch_calls) > 0:
             self.logger.info(f"multicall helper batch call, got={len(to_execute_batch_calls)}")
-            # self._batch_work_executor.execute(
-            #     to_execute_batch_calls, self.fetch_raw_calls, total_items=len(to_execute_batch_calls)
-            # )
-            # self._batch_work_executor.wait()
             self.fetch_raw_calls(to_execute_batch_calls)
         return calls
 
     def fetch_raw_calls(self, calls: List[Call]):
-        rpc_param = []
+        batch_call_list = []
+        batch_rpc_param_list = []
+
         for call in calls:
-            rpc_param.append(call.to_rpc_param())
-        response = self.make_request(params=orjson.dumps(rpc_param))
-        for call, data in zip(calls, response):
-            result = data.get("result")
-            try:
-                call.returns = call.decode_output(hex_str_to_bytes(result))
-            except Exception:
-                call.returns = None
-                self.logger.warning(f"multicall helper failed call: {call}")
+            batch_call_list.append(call)
+            batch_rpc_param_list.append(call.to_rpc_param())
+        wrapped_rpc_param_list = [
+            (batch_rpc_param_list[i : i + self.batch_size], i)
+            for i in range(0, len(batch_rpc_param_list), self.batch_size)
+        ]
+        wrapped_call_list = [
+            (batch_call_list[i : i + self.batch_size]) for i in range(0, len(batch_call_list), self.batch_size)
+        ]
+
+        result = list(make_request_concurrent(self.make_request, wrapped_rpc_param_list, self.max_workers))
+
+        for calls, batch_result in zip(wrapped_call_list, result):
+            for call, data in zip(calls, batch_result):
+                result = data.get("result")
+                try:
+                    call.returns = call.decode_output(hex_str_to_bytes(result))
+                except Exception:
+                    call.returns = None
+                    self.logger.warning(f"multicall helper failed call: {call}")
 
     def prepare_calls(self, calls: List[Call]):
         grouped_data = defaultdict(list)
