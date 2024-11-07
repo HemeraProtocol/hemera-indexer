@@ -39,7 +39,8 @@ class MultiCallHelper:
             self.net = get_multicall_network(self.chain_id)
             self.deploy_block_number = self.net.deploy_block_number
 
-    def validate_calls(self, calls):
+    def validate_and_prepare_calls(self, calls):
+        grouped_data = defaultdict(list)
         cnt = 0
         for call in calls:
             cnt += 1
@@ -48,6 +49,17 @@ class MultiCallHelper:
             call.returns = None
             if call.block_number is None:
                 raise FastShutdownError("MultiCallHelper.validate_calls failed: block_number is None")
+            grouped_data[call.block_number].append(call)
+
+        to_execute_batch_calls = []
+        to_execute_multi_calls = []
+
+        for block_id, items in grouped_data.items():
+            if block_id < self.deploy_block_number or not self._is_multi_call:
+                to_execute_batch_calls.extend(items)
+            else:
+                to_execute_multi_calls.append(items)
+        return to_execute_batch_calls, to_execute_multi_calls
 
     def fetch_result(self, chunks):
         res = list(make_request_concurrent(self.make_request, chunks, self.max_workers))
@@ -74,8 +86,7 @@ class MultiCallHelper:
         4. Execute remaining calls directly through RPC
         5. Return all calls with their execution results attached
         """
-        self.validate_calls(calls)
-        to_execute_batch_calls, to_execute_multi_calls = self.prepare_calls(calls)
+        to_execute_batch_calls, to_execute_multi_calls = self.validate_and_prepare_calls(calls)
         if len(to_execute_multi_calls) > 0:
             multicall_rpc = self.construct_multicall_rpc(to_execute_multi_calls)
             chunks = list(rebatch_by_size(multicall_rpc, to_execute_multi_calls))
@@ -116,21 +127,6 @@ class MultiCallHelper:
                 except Exception:
                     call.returns = None
                     self.logger.warning(f"multicall helper failed call: {call}")
-
-    def prepare_calls(self, calls: List[Call]):
-        grouped_data = defaultdict(list)
-        for call in calls:
-            grouped_data[call.block_number].append(call)
-
-        to_execute_batch_calls = []
-        to_execute_multi_calls = []
-
-        for block_id, items in grouped_data.items():
-            if block_id < self.deploy_block_number or not self._is_multi_call:
-                to_execute_batch_calls.extend(items)
-            else:
-                to_execute_multi_calls.append(items)
-        return to_execute_batch_calls, to_execute_multi_calls
 
     def construct_multicall_rpc(self, to_execute_multi_calls):
         multicall_rpc = []

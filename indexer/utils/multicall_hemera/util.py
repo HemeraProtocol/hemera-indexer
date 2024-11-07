@@ -9,6 +9,9 @@ import os
 import time
 from concurrent.futures import as_completed
 
+from concurrent.futures import ThreadPoolExecutor
+import atexit
+import threading
 import orjson
 
 logger = logging.getLogger(__name__)
@@ -60,24 +63,11 @@ def make_request_concurrent(make_request, chunks, max_workers=None):
     if max_workers is None:
         max_workers = os.cpu_count() + 4
 
-    # with ThreadPoolExecutor(max_workers=max_workers) as executor:
-    #     future_to_chunk = {executor.submit(single_request, chunk[0], i): i for i, chunk in enumerate(chunks)}
-    #     results = [None] * len(chunks)
-    #     for future in as_completed(future_to_chunk):
-    #         index, result = future.result()
-    #         results[index] = result
-    #
-    # return results
     return ThreadPoolManager.submit_tasks(
             single_request,
             chunks,
             max_workers
         )
-
-
-from concurrent.futures import ThreadPoolExecutor
-import atexit
-import threading
 
 
 class ThreadPoolManager:

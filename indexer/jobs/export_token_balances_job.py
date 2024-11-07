@@ -55,11 +55,7 @@ class ExportTokenBalancesJob(BaseExportJob):
     def _collect(self, **kwargs):
         token_transfers = self._collect_all_token_transfers()
         parameters = extract_token_parameters(token_transfers)
-        if self._is_multi_call:
-            self._collect_batch(parameters)
-        else:
-            self._batch_work_executor.execute(parameters, self._collect_batch, total_items=len(parameters))
-            self._batch_work_executor.wait()
+        self._collect_batch(parameters)
 
     @calculate_execution_time
     def _collect_batch(self, parameters):
