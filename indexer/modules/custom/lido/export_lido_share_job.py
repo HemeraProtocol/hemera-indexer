@@ -73,10 +73,13 @@ class ExportLidoShareJob(FilterTransactionDataJob):
         block_to_update_position = set()
 
         for log in logs:
+            if log.address.lower() != self.user_defined_config["seth_address"]:
+                continue
             if log.topic0 == transfer_share_event.get_signature():
                 from_address = event_topic_to_address(log.topic1)
                 to_address = event_topic_to_address(log.topic2)
                 if from_address == ZERO_ADDRESS or to_address == ZERO_ADDRESS:
+                    block_to_update_position.add(log.block_number)
                     continue
                 shares_holder.setdefault(log.block_number, set()).add(from_address)
                 shares_holder.setdefault(log.block_number, set()).add(to_address)

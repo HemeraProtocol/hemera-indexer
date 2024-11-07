@@ -44,6 +44,8 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
             rebase_event.get_signature(),
         ]
 
+        self.topic_address = [self.user_defined_config["eeth_address"],self.user_defined_config["liquidity_pool_address"]],
+
     def get_filter(self):
         return [
             TransactionFilterByLogs(
@@ -69,10 +71,11 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
         # block_number -> address set
         shares_holders = {}
 
-        update_position = False
         block_to_update_position = set()
 
         for log in logs:
+            if log.address not in self.topic_address:
+                continue
             if log.topic0 == transfer_share_event.get_signature():
                 from_address = event_topic_to_address(log.topic1)
                 to_address = event_topic_to_address(log.topic2)
