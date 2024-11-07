@@ -1,5 +1,5 @@
 import logging
-from typing import Any, List, Optional, Union
+from typing import List, Optional
 
 import orjson
 
@@ -36,25 +36,19 @@ class Multicall:
         self._parameters = None
 
     @calculate_execution_time
-    def get_args(self, require_success: bool = True) -> List[Union[bool, List[List[Any]]]]:
-        if require_success is True:
-            return [[[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
-        return [require_success, [[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
-
     def to_rpc_param(self):
-        args = self.prep_args()
+        if self.require_success is True:
+            parameters = [[[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
+        else:
+            parameters = [self.require_success, [[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
+
+        call_data = self.multicall_func.encode_function_call_data(parameters)
+        args = [{"to": self.multicall_address, "data": call_data}, format_block_id(self.block_number)]
+        if self.gas_limit:
+            args[0]["gas"] = self.gas_limit
         return {
             "jsonrpc": "2.0",
             "method": "eth_call",
             "params": args,
             "id": abs(hash(orjson.dumps(args))),
         }
-
-    @calculate_execution_time
-    def prep_args(self) -> List:
-        self._parameters = self.get_args(self.require_success)
-        call_data = self.multicall_func.encode_function_call_data(self._parameters if self._parameters else [])
-        args = [{"to": self.multicall_address, "data": call_data}, format_block_id(self.block_number)]
-        if self.gas_limit:
-            args[0]["gas"] = self.gas_limit
-        return args

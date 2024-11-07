@@ -135,6 +135,7 @@ class MultiCallHelper:
 
     @calculate_execution_time
     def construct_multicall_rpc(self, to_execute_multi_calls):
+        logging.info(f"function total multicalls {len(to_execute_multi_calls)}")
         multicall_rpc = []
         if to_execute_multi_calls:
             for calls in to_execute_multi_calls:
