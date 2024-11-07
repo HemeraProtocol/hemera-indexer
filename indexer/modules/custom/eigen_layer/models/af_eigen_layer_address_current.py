@@ -21,10 +21,6 @@ class AfEigenLayerAddressCurrent(HemeraModel):
     start_withdraw_amount = Column(NUMERIC(100))
     finish_withdraw_amount = Column(NUMERIC(100))
 
-    d_s = Column(NUMERIC(100))
-    d_f = Column(NUMERIC(100))
-    s_f = Column(NUMERIC(100))
-
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
