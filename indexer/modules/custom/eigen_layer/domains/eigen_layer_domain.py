@@ -12,16 +12,12 @@ class EigenLayerActionD(FilterData):
     internal_idx: Optional[int] = 0
     block_number: Optional[int] = None
     block_timestamp: Optional[int] = None
-    method: Optional[str] = None
     event_name: Optional[str] = None
-    topic0: Optional[str] = None
-    from_address: Optional[str] = None
-    to_address: Optional[str] = None
 
     token: Optional[str] = None
     strategy: Optional[str] = None
-    shares: Optional[int] = None
     staker: Optional[str] = None
+    shares: Optional[int] = None
     withdrawer: Optional[str] = None
     withdrawroot: Optional[str] = None
 
