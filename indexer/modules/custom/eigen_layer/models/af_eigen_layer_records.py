@@ -8,6 +8,7 @@ from sqlalchemy import Column, Numeric, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import EigenLayerActionD
 
 
 class AfEigenLayerRecords(HemeraModel):
@@ -42,7 +43,7 @@ class AfEigenLayerRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "EigenLayerActionD",
+                "domain": EigenLayerActionD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

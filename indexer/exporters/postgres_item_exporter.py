@@ -9,7 +9,6 @@ from tqdm import tqdm
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
-from indexer.utils.atomic_counter import AtomicCounter
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ class PostgresItemExporter(BaseExporter):
                 item_group = items_grouped_by_type.get(item_type)
 
                 if item_group:
-                    pg_config = domain_model_mapping[item_type.__name__]
+                    pg_config = domain_model_mapping[item_type]
                     table = pg_config["table"]
                     do_update = pg_config["conflict_do_update"]
                     update_strategy = pg_config["update_strategy"]
@@ -109,7 +108,7 @@ class PostgresItemExporter(BaseExporter):
         except Exception as e:
             logger.error(f"Error exporting items: {e}")
             logger.error(f"{insert_stmt}")
-            raise Exception("Error exporting items")
+            raise e
         finally:
             self.service.release_conn(conn)
             if self.main_progress:

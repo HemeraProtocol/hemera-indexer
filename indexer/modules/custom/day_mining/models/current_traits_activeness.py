@@ -2,6 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, JSONB, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.day_mining.domain.current_traits_activeness import CurrentTraitsActiveness
 
 
 class CurrentTraitsActivenessModel(HemeraModel):
@@ -20,7 +21,7 @@ class CurrentTraitsActivenessModel(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "CurrentTraitsActiveness",
+                "domain": CurrentTraitsActiveness,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

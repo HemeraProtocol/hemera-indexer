@@ -8,6 +8,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import EigenLayerAddressCurrentD
 
 
 class AfEigenLayerAddressCurrent(HemeraModel):
@@ -31,7 +32,7 @@ class AfEigenLayerAddressCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "EigenLayerAddressCurrentD",
+                "domain": EigenLayerAddressCurrentD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
