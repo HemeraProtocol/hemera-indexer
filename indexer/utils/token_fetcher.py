@@ -110,7 +110,7 @@ class TokenFetcher:
 
             if token_info["is_get_token_uri"]:
                 try:
-                    token_uri = value["uri"]
+                    token_uri = value.get("uri")
                 except Exception as e:
                     token_uri = None
                     logging.debug(f"decode token uri failed, token_info={token_info}, value={value}")
@@ -120,13 +120,13 @@ class TokenFetcher:
                     return [ERC1155TokenIdDetail(**common_args, token_uri=token_uri)]
             else:
                 if token_info["token_type"] == "ERC721":
-                    token_owner = value["owner"]
+                    token_owner = value.get("owner")
                     return [
                         UpdateERC721TokenIdDetail(**common_args, token_owner=token_owner),
                         ERC721TokenIdChange(**common_args, token_owner=token_owner),
                     ]
                 else:
-                    total_supply = value["totalSupply"]
+                    total_supply = value.get("totalSupply")
                     return [UpdateERC1155TokenIdDetail(**common_args, token_supply=total_supply)]
         except Exception as e:
             exception_recorder.log(
