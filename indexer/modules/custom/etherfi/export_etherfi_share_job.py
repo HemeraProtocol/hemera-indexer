@@ -10,7 +10,7 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.modules.custom.etherfi.abi.contract import eeth_abi, liquidity_pool_abi
 from indexer.modules.custom.etherfi.abi.event import *
-from indexer.modules.custom.etherfi.domains.eeth import EtherFiShareBalance, EtherFiPositionValues
+from indexer.modules.custom.etherfi.domains.eeth import EtherFiPositionValues, EtherFiShareBalance
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
         self.position_events = [
             validator_approved_event.get_signature(),
             validator_registration_canceled_event.get_signature(),
-            rebase_event.get_signature()
+            rebase_event.get_signature(),
         ]
 
     def get_filter(self):
@@ -51,7 +51,7 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
                     TopicSpecification(
                         addresses=[
                             self.user_defined_config["eeth_address"],
-                            self.user_defined_config["liquidity_pool_address"]
+                            self.user_defined_config["liquidity_pool_address"],
                         ],
                         topics=self.position_events + [transfer_share_event.get_signature()],
                     )
@@ -76,7 +76,7 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
             if log.topic0 == transfer_share_event.get_signature():
                 from_address = event_topic_to_address(log.topic1)
                 to_address = event_topic_to_address(log.topic2)
-                if from_address ==  ZERO_ADDRESS or to_address == ZERO_ADDRESS:
+                if from_address == ZERO_ADDRESS or to_address == ZERO_ADDRESS:
                     block_to_update_position.add(log.block_number)
 
                 shares_holders.setdefault(log.block_number, set()).add(from_address)
@@ -100,12 +100,16 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
         for block_number in block_to_update_position:
             total_shares = self.eeth_contract.functions.totalShares().call(block_identifier=block_number)
             total_value_out_lp = self.liquidity_pool_contract.functions.totalValueOutOfLp().call(
-                block_identifier=block_number)
+                block_identifier=block_number
+            )
             total_value_in_lp = self.liquidity_pool_contract.functions.totalValueInLp().call(
-                block_identifier=block_number)
-            self._collect_domain(EtherFiPositionValues(
-                block_number=block_number,
-                total_share=total_shares,
-                total_value_out_lp=total_value_out_lp,
-                total_value_in_lp=total_value_in_lp
-            ))
+                block_identifier=block_number
+            )
+            self._collect_domain(
+                EtherFiPositionValues(
+                    block_number=block_number,
+                    total_share=total_shares,
+                    total_value_out_lp=total_value_out_lp,
+                    total_value_in_lp=total_value_in_lp,
+                )
+            )

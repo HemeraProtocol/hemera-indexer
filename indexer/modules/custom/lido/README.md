@@ -12,7 +12,7 @@ function getPooledEthByShares(uint256 _sharesAmount) public view returns (uint25
         .mul(_getTotalPooledEther())
         .div(_getTotalShares());
 }
-    
+
 function _getTotalPooledEther() internal view returns (uint256) {
     return _getBufferedEther()
         .add(CL_BALANCE_POSITION.getStorageUint256())

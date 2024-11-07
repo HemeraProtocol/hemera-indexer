@@ -1,6 +1,7 @@
 from sqlalchemy import Column, PrimaryKeyConstraint, func, text
-from common.models import HemeraModel, general_converter
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
+
+from common.models import HemeraModel, general_converter
 
 
 class LidoShareBalances(HemeraModel):
@@ -29,9 +30,6 @@ class LidoShareBalances(HemeraModel):
         ]
 
 
-
-
-
 class LidoPositionValues(HemeraModel):
     __tablename__ = "lido_position_values"
 
@@ -58,4 +56,3 @@ class LidoPositionValues(HemeraModel):
                 "converter": general_converter,
             }
         ]
-

@@ -19,11 +19,11 @@ shares_burnt_event = Event(
         "inputs": [
             {"indexed": True, "name": "account", "type": "address"},
             {"indexed": False, "name": "preRebaseTokenAmount", "type": "uint256"},
-            {"indexed": False, "name": "postRebaseTokenAmount", "type": "uint256"}, 
-            {"indexed": False, "name": "sharesAmount", "type": "uint256"}
+            {"indexed": False, "name": "postRebaseTokenAmount", "type": "uint256"},
+            {"indexed": False, "name": "sharesAmount", "type": "uint256"},
         ],
         "name": "SharesBurnt",
-        "type": "event"
+        "type": "event",
     }
 )
 
@@ -33,43 +33,37 @@ submitted_event = Event(
         "inputs": [
             {"indexed": True, "name": "sender", "type": "address"},
             {"indexed": False, "name": "amount", "type": "uint256"},
-            {"indexed": False, "name": "referral", "type": "address"}
+            {"indexed": False, "name": "referral", "type": "address"},
         ],
         "name": "Submitted",
-        "type": "event"
+        "type": "event",
     }
 )
 
 el_rewards_received_event = Event(
     {
         "anonymous": False,
-        "inputs": [
-            {"indexed": False, "name": "amount", "type": "uint256"}
-        ],
-        "name": "ELRewardsReceived", 
-        "type": "event"
+        "inputs": [{"indexed": False, "name": "amount", "type": "uint256"}],
+        "name": "ELRewardsReceived",
+        "type": "event",
     }
 )
 
 withdrawals_received_event = Event(
     {
         "anonymous": False,
-        "inputs": [
-            {"indexed": False, "name": "amount", "type": "uint256"}
-        ],
+        "inputs": [{"indexed": False, "name": "amount", "type": "uint256"}],
         "name": "WithdrawalsReceived",
-        "type": "event"
+        "type": "event",
     }
 )
 
 unbuffered_event = Event(
     {
         "anonymous": False,
-        "inputs": [
-            {"indexed": False, "name": "amount", "type": "uint256"}
-        ],
+        "inputs": [{"indexed": False, "name": "amount", "type": "uint256"}],
         "name": "Unbuffered",
-        "type": "event"
+        "type": "event",
     }
 )
 
@@ -82,10 +76,10 @@ eth_distributed_event = Event(
             {"indexed": False, "name": "postCLBalance", "type": "uint256"},
             {"indexed": False, "name": "withdrawalsWithdrawn", "type": "uint256"},
             {"indexed": False, "name": "executionLayerRewardsWithdrawn", "type": "uint256"},
-            {"indexed": False, "name": "postBufferedEther", "type": "uint256"}
+            {"indexed": False, "name": "postBufferedEther", "type": "uint256"},
         ],
         "name": "ETHDistributed",
-        "type": "event"
+        "type": "event",
     }
 )
 
@@ -95,21 +89,18 @@ cl_validators_updated_event = Event(
         "inputs": [
             {"indexed": True, "name": "reportTimestamp", "type": "uint256"},
             {"indexed": False, "name": "preCLValidators", "type": "uint256"},
-            {"indexed": False, "name": "postCLValidators", "type": "uint256"}
+            {"indexed": False, "name": "postCLValidators", "type": "uint256"},
         ],
         "name": "CLValidatorsUpdated",
-        "type": "event"
+        "type": "event",
     }
 )
 
 deposited_validators_changed_event = Event(
     {
         "anonymous": False,
-        "inputs": [
-            {"indexed": False, "name": "depositedValidators", "type": "uint256"}
-        ],
+        "inputs": [{"indexed": False, "name": "depositedValidators", "type": "uint256"}],
         "name": "DepositedValidatorsChanged",
-        "type": "event"
+        "type": "event",
     }
 )
-

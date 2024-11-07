@@ -17,4 +17,3 @@ class EtherFiPositionValues(Domain):
     total_share: int
     total_value_out_lp: int
     total_value_in_lp: int
-

@@ -1,6 +1,7 @@
 from sqlalchemy import Column, PrimaryKeyConstraint, func, text
-from common.models import HemeraModel, general_converter
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
+
+from common.models import HemeraModel, general_converter
 
 
 class EtherFiShareBalances(HemeraModel):

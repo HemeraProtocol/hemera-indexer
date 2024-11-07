@@ -71,7 +71,7 @@ class ExportLidoShareJob(FilterTransactionDataJob):
         # block_number -> address set
         shares_holder = {}
         block_to_update_position = set()
-        
+
         for log in logs:
             if log.topic0 == transfer_share_event.get_signature():
                 from_address = event_topic_to_address(log.topic1)
@@ -82,7 +82,7 @@ class ExportLidoShareJob(FilterTransactionDataJob):
                 shares_holder.setdefault(log.block_number, set()).add(to_address)
             if log.topic0 in self.position_events:
                 block_to_update_position.add(log.block_number)
-                
+
         for block_number, addresses in shares_holder.items():
             for address in addresses:
                 if address == ZERO_ADDRESS:
@@ -98,18 +98,20 @@ class ExportLidoShareJob(FilterTransactionDataJob):
                     block_number=block_number,
                 )
                 self._collect_domain(share_domain)
-        
+
         for block_number in block_to_update_position:
             total_shares = self.seth_contract.functions.getTotalShares().call(block_identifier=block_number)
             buffered_ether = self.seth_contract.functions.getBufferedEther().call(block_identifier=block_number)
-            deposited_validators, cl_validators, cl_balance = self.seth_contract.functions.getBeaconStat().call(block_identifier=block_number)
-            self._collect_domain(LidoPositionValues(
-                block_number=block_number,
-                total_share=total_shares,
-                buffered_eth=buffered_ether,
-                deposited_validators=deposited_validators,
-                consensus_layer=cl_balance,
-                cl_validators=cl_validators,
-            ))
-            
-            
+            deposited_validators, cl_validators, cl_balance = self.seth_contract.functions.getBeaconStat().call(
+                block_identifier=block_number
+            )
+            self._collect_domain(
+                LidoPositionValues(
+                    block_number=block_number,
+                    total_share=total_shares,
+                    buffered_eth=buffered_ether,
+                    deposited_validators=deposited_validators,
+                    consensus_layer=cl_balance,
+                    cl_validators=cl_validators,
+                )
+            )

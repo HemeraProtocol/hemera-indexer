@@ -10,6 +10,7 @@ class LidoShareBalance(Domain):
     balance: int
     block_number: int
 
+
 @dataclass
 class LidoPositionValues(Domain):
     block_number: int
