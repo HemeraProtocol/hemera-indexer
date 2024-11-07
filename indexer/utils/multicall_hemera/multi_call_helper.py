@@ -5,6 +5,7 @@
 # @File  multi_call_helper.py
 # @Brief
 import logging
+import os
 from collections import defaultdict
 from typing import List
 
@@ -135,37 +136,16 @@ class MultiCallHelper:
                     call.returns = None
                     self.logger.warning(f"multicall helper failed call: {call}")
 
-    # @calculate_execution_time
-    # def construct_multicall_rpc(self, to_execute_multi_calls):
-    #     logging.info(f"function total multicalls {len(to_execute_multi_calls)}")
-    #     multicall_rpc = []
-    #     if to_execute_multi_calls:
-    #         for calls in to_execute_multi_calls:
-    #             multicall_rpc.append(
-    #                 Multicall(
-    #                     calls,
-    #                     require_success=False,
-    #                     chain_id=self.chain_id,
-    #                     block_number=calls[0].block_number,
-    #                     gas_limit=(len(calls) * GAS_LIMIT),
-    #                 ).to_rpc_param()
-    #             )
-    #     return multicall_rpc
-
     @calculate_execution_time
     def construct_multicall_rpc(self, to_execute_multi_calls):
         logging.info(f"Function total multicalls: {len(to_execute_multi_calls)}")
-        to_execute_multi_calls = [(calls, ) for calls in  to_execute_multi_calls]
-        with mpire.WorkerPool() as pool:
-            multicall_rpcs = pool.map(
-                self._construct_single_multicall_rpc,
-                to_execute_multi_calls
-            )
+        to_execute_multi_calls = [(calls,) for calls in to_execute_multi_calls]
+        with mpire.WorkerPool(n_jobs=os.cpu_count()) as pool:
+            multicall_rpcs = pool.map(self._construct_single_multicall_rpc, to_execute_multi_calls)
 
         return multicall_rpcs
 
     def _construct_single_multicall_rpc(self, calls):
-
         multicall = Multicall(
             calls,
             require_success=False,
