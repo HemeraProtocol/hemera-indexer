@@ -32,7 +32,7 @@ class Multicall:
         else:
             self.multicall_func = TRY_BLOCK_AND_AGGREGATE_FUNC
         self.multicall_address = get_multicall_address(self.network)
-        self.parameters = self.get_args(self.require_success)
+        self._parameters = None
 
     def get_args(self, require_success: bool = True) -> List[Union[bool, List[List[Any]]]]:
         if require_success is True:
@@ -49,6 +49,7 @@ class Multicall:
         }
 
     def prep_args(self) -> List:
+        self._parameters = self.get_args(self.require_success)
         call_data = self.multicall_func.encode_function_call_data(self.parameters if self.parameters else [])
         args = [{"to": self.multicall_address, "data": call_data}, format_block_id(self.block_number)]
         if self.gas_limit:
