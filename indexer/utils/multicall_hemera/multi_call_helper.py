@@ -38,7 +38,6 @@ class MultiCallHelper:
         else:
             self.net = get_multicall_network(self.chain_id)
             self.deploy_block_number = self.net.deploy_block_number
-        self.multicall_class = Multicall([],require_success=False,chain_id=self.chain_id)
 
     @calculate_execution_time
     def validate_and_prepare_calls(self, calls):
@@ -139,8 +138,13 @@ class MultiCallHelper:
         multicall_rpc = []
         if to_execute_multi_calls:
             for calls in to_execute_multi_calls:
-                self.multicall_class.calls = calls
-                self.multicall_class.gas_limit = len(calls) * GAS_LIMIT
-                self.multicall_class.block_number = calls[0].block_number
-                multicall_rpc.append(self.multicall_class.to_rpc_param())
+                multicall_rpc.append(
+                    Multicall(
+                        calls,
+                        require_success=False,
+                        chain_id=self.chain_id,
+                        block_number=calls[0].block_number,
+                        gas_limit=(len(calls) * GAS_LIMIT),
+                    ).to_rpc_param()
+                )
         return multicall_rpc

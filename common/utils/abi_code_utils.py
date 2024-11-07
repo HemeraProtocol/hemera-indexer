@@ -35,7 +35,9 @@ from indexer.utils.abi import (
     codec,
     event_log_abi_to_topic,
     function_abi_to_4byte_selector_str,
-    get_types_from_abi_type_list, pad_address, uint256_to_bytes,
+    get_types_from_abi_type_list,
+    pad_address,
+    uint256_to_bytes,
 )
 
 abi_codec = ABICodec(eth_abi.registry.registry)
