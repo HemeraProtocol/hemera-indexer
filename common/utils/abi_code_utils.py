@@ -70,6 +70,9 @@ class Event:
         """
         return self._signature
 
+    def get_name(self) -> str:
+        return self._event_abi["name"]
+
     def decode_log(self, log) -> Optional[Dict[str, Any]]:
         """
         Decodes the given log using the event ABI.

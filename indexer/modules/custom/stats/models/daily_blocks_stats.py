@@ -1,10 +1,13 @@
-from sqlalchemy import Column
-from sqlalchemy.dialects.postgresql import BIGINT, DATE, NUMERIC
+from sqlalchemy import NUMERIC, Column
+from sqlalchemy.dialects.postgresql import BIGINT, DATE
 
 from common.models import HemeraModel
 
 
-class DailyBlocksAggregates(HemeraModel):
+class DailyBlocksStats(HemeraModel):
+
+    __tablename__ = "af_stats_na_daily_blocks"
+
     block_date = Column(DATE, primary_key=True)
     cnt = Column(BIGINT)
     avg_size = Column(NUMERIC)

@@ -297,7 +297,7 @@ class ExplorerContractCode(Resource):
     def get(self, contract_address):
         contract_address = contract_address.lower()
 
-        contract = Contracts.query.get(hex_string_to_bytes(contract_address))
+        contract = Contracts.query.get(hex_str_to_bytes(contract_address))
         if not contract or contract.is_verified == False:
             raise APIError("Contract not exist or contract is not verified.", code=400)
 
