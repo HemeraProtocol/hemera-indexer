@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from indexer.domain import FilterData
+from indexer.domain import Domain
 
 
 @dataclass
-class EigenLayerActionD(FilterData):
+class EigenLayerAction(Domain):
     transaction_hash: str
     log_index: int
     transaction_index: int
@@ -23,7 +23,7 @@ class EigenLayerActionD(FilterData):
 
 
 @dataclass
-class EigenLayerAddressCurrentD(FilterData):
+class EigenLayerAddressCurrent(Domain):
     address: Optional[str] = None
     strategy: Optional[str] = None
     token: Optional[str] = None
@@ -33,7 +33,7 @@ class EigenLayerAddressCurrentD(FilterData):
 
 
 def eigen_layer_address_current_factory():
-    return EigenLayerAddressCurrentD(
+    return EigenLayerAddressCurrent(
         address=None,
         strategy=None,
         token=None,

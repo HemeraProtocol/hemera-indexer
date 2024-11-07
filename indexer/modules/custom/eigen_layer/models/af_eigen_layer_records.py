@@ -42,7 +42,7 @@ class AfEigenLayerRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "EigenLayerActionD",
+                "domain": "EigenLayerAction",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

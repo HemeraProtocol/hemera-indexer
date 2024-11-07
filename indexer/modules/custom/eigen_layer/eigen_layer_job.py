@@ -20,8 +20,8 @@ from indexer.modules.custom.eigen_layer.abi import (
     WITHDRAWAL_QUEUED_EVENT,
 )
 from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import (
-    EigenLayerActionD,
-    EigenLayerAddressCurrentD,
+    EigenLayerAction,
+    EigenLayerAddressCurrent,
     eigen_layer_address_current_factory,
 )
 from indexer.modules.custom.eigen_layer.models.af_eigen_layer_address_current import AfEigenLayerAddressCurrent
@@ -40,9 +40,9 @@ withdrawal_queued_batch -> withdrawal_completed
 """
 
 
-class ExportEigenLayerJob(FilterTransactionDataJob):
+class EigenLayerJob(FilterTransactionDataJob):
     dependency_types = [Transaction]
-    output_types = [EigenLayerActionD, EigenLayerAddressCurrentD]
+    output_types = [EigenLayerAction, EigenLayerAddressCurrent]
     able_to_reorg = False
 
     def __init__(self, **kwargs):
@@ -86,7 +86,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     shares = dl.get("shares")
 
                     eigen_actions.append(
-                        EigenLayerActionD(
+                        EigenLayerAction(
                             transaction_hash=transaction.hash,
                             log_index=log.log_index,
                             transaction_index=transaction.transaction_index,
@@ -114,7 +114,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                         strategy = strategy_lis[idx]
                         shares = shares_lis[idx]
                         eigen_actions.append(
-                            EigenLayerActionD(
+                            EigenLayerAction(
                                 transaction_hash=transaction.hash,
                                 log_index=log.log_index,
                                 internal_idx=idx,
@@ -145,7 +145,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                                 shares = dl2.get("shares")
                                 strategy = dl2.get("strategy")
 
-                                action = EigenLayerActionD(
+                                action = EigenLayerAction(
                                     transaction_hash=transaction.hash,
                                     log_index=log.log_index,
                                     internal_idx=internal_idx,
@@ -165,7 +165,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                     dl = WITHDRAWAL_COMPLETED_EVENT.decode_log(log)
                     withdrawal_root = dl.get("withdrawalRoot")
                     eigen_actions.append(
-                        EigenLayerActionD(
+                        EigenLayerAction(
                             transaction_hash=transaction.hash,
                             log_index=log.log_index,
                             transaction_index=transaction.transaction_index,
@@ -210,7 +210,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         lis = []
         for rr in result:
             lis.append(
-                EigenLayerAddressCurrentD(
+                EigenLayerAddressCurrent(
                     address=bytes_to_hex_str(rr.address),
                     strategy=bytes_to_hex_str(rr.strategy),
                     token=bytes_to_hex_str(rr.token) if rr.token else None,
@@ -222,7 +222,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
 
         return create_nested_dict(lis)
 
-    def enrich_complete_withdraw(self, actions: List[EigenLayerActionD]):
+    def enrich_complete_withdraw(self, actions: List[EigenLayerAction]):
         roots = [
             action.withdrawroot for action in actions if action.event_name == WITHDRAWAL_COMPLETED_EVENT.get_name()
         ]
@@ -244,7 +244,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
                 action.staker = bytes_to_hex_str(st.staker) if st.staker else None
                 action.withdrawer = bytes_to_hex_str(st.withdrawer) if st.withdrawer else None
 
-    def calculate_batch_result(self, eigen_actions: List[EigenLayerActionD]) -> Any:
+    def calculate_batch_result(self, eigen_actions: List[EigenLayerAction]) -> Any:
         def nested_dict():
             return defaultdict(eigen_layer_address_current_factory)
 
@@ -277,7 +277,7 @@ class ExportEigenLayerJob(FilterTransactionDataJob):
         return res_d
 
 
-def create_nested_dict(data_list: List[EigenLayerAddressCurrentD]) -> Dict[str, Dict[str, EigenLayerAddressCurrentD]]:
+def create_nested_dict(data_list: List[EigenLayerAddressCurrent]) -> Dict[str, Dict[str, EigenLayerAddressCurrent]]:
     result = {}
     for item in data_list:
         if item.address and item.strategy:
