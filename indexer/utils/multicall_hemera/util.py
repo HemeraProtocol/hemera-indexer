@@ -12,6 +12,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
+logger = logging.getLogger(__name__)
 
 
 def calculate_execution_time(func):
@@ -20,7 +21,7 @@ def calculate_execution_time(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         execution_time = end_time - start_time
-        logging.debug(f"function {func.__name__} time: {execution_time:.6f} s")
+        logger.info(f"function {func.__name__} time: {execution_time:.6f} s")
         # print(f"function {func.__name__} time: {execution_time:.6f} s")
         return result
 
