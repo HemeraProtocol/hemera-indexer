@@ -6,7 +6,6 @@ Author  : xuzh
 Project : hemera_indexer
 """
 import logging
-from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import eth_abi
@@ -36,8 +35,6 @@ from indexer.utils.abi import (
     event_log_abi_to_topic,
     function_abi_to_4byte_selector_str,
     get_types_from_abi_type_list,
-    pad_address,
-    uint256_to_bytes,
 )
 
 abi_codec = ABICodec(eth_abi.registry.registry)
@@ -197,7 +194,6 @@ class Function:
         """
         return self._signature
 
-    @lru_cache()
     def get_name(self) -> str:
         return self.get_abi()["name"]
 
@@ -293,25 +289,7 @@ class Function:
         :return: The encoded function call data as a hexadecimal string.
         :rtype: str
         """
-        if arguments is None:
-            arguments = []
-
-        if len(arguments) != len(self._inputs_type):
-            raise ValueError(f"Expected {len(self._inputs_type)} arguments, got {len(arguments)}")
-
-        if len(arguments) > 2:
-            return encode_data(self._function_abi, arguments, self.get_signature())
-
-        encoded = hex_str_to_bytes(self._signature)
-        for arg, arg_type in zip(arguments, self._inputs_type):
-            if arg_type == "address":
-                encoded += pad_address(arg)
-            elif arg_type == "uint256":
-                encoded += uint256_to_bytes(arg)
-            else:
-                # cannot handle, call encode directly
-                return encode_data(self._function_abi, arguments, self.get_signature())
-        return bytes_to_hex_str(encoded)
+        return encode_data(self._function_abi, arguments, self.get_signature())
 
 
 class FunctionCollection:

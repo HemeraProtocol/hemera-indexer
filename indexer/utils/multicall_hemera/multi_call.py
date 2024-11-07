@@ -7,6 +7,7 @@ from common.utils.format_utils import format_block_id, hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.abi import AGGREGATE_FUNC, TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_address, get_multicall_network
+from indexer.utils.multicall_hemera.util import calculate_execution_time
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class Multicall:
         self.multicall_address = get_multicall_address(self.network)
         self._parameters = None
 
+    @calculate_execution_time
     def get_args(self, require_success: bool = True) -> List[Union[bool, List[List[Any]]]]:
         if require_success is True:
             return [[[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
@@ -48,6 +50,7 @@ class Multicall:
             "id": abs(hash(orjson.dumps(args))),
         }
 
+    @calculate_execution_time
     def prep_args(self) -> List:
         self._parameters = self.get_args(self.require_success)
         call_data = self.multicall_func.encode_function_call_data(self._parameters if self._parameters else [])
