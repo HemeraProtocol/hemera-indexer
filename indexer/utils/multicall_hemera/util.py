@@ -13,8 +13,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
 
-logger = logging.getLogger(__name__)
-
 
 def calculate_execution_time(func):
     def wrapper(*args, **kwargs):
@@ -22,7 +20,7 @@ def calculate_execution_time(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         execution_time = end_time - start_time
-        logger.debug(f"function {func.__name__} time: {execution_time:.6f} s")
+        logging.info(f"function {func.__name__} time: {execution_time:.6f} s")
         print(f"function {func.__name__} time: {execution_time:.6f} s")
         return result
 
@@ -42,7 +40,7 @@ def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
     for idx, item in enumerate(items):
         item_size = estimate_size(item)
         if current_size + item_size > max_size and current_chunk:
-            logger.debug(f"current chunk size {len(current_chunk)}")
+            logging.debug(f"current chunk size {len(current_chunk)}")
             yield (current_chunk, calls)
             current_chunk = []
             calls = []
@@ -51,13 +49,13 @@ def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
         calls.append(same_length_calls[idx])
         current_size += item_size
     if current_chunk:
-        logger.debug(f"current chunk size {len(current_chunk)}")
+        logging.debug(f"current chunk size {len(current_chunk)}")
         yield (current_chunk, calls)
 
 
 def make_request_concurrent(make_request, chunks, max_workers=None):
     def single_request(chunk, index):
-        logger.debug(f"single request {len(chunk)}")
+        logging.debug(f"single request {len(chunk)}")
         return index, make_request(params=orjson.dumps(chunk))
 
     if max_workers is None:

@@ -6,6 +6,7 @@ Author  : xuzh
 Project : hemera_indexer
 """
 import logging
+from functools import lru_cache
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union, cast
 
 import eth_abi
@@ -194,6 +195,7 @@ class Function:
         """
         return self._signature
 
+    @lru_cache()
     def get_name(self) -> str:
         return self.get_abi()["name"]
 
@@ -290,7 +292,7 @@ class Function:
         :rtype: str
         """
         if arguments is None:
-            args = []
+            arguments = []
 
         if len(arguments) != len(self._inputs_type):
             raise ValueError(f"Expected {len(self._inputs_type)} arguments, got {len(arguments)}")
