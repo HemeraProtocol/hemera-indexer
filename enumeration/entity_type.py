@@ -41,7 +41,8 @@ from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3TokenCollectFee,
     UniswapV3TokenCurrentStatus,
     UniswapV3TokenDetail,
-    UniswapV3TokenUpdateLiquidity,
+    UniswapV3TokenUpdateLiquidity, PancakeToken, PancakeTokenDetail, PancakeTokenCurrentStatus, PancakePool,
+    PancakePoolCurrentPrice, PancakePoolPrice, PancakeSwapEvent,
 )
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
@@ -70,6 +71,8 @@ class EntityType(IntFlag):
     KARAK = 1 << 11
 
     EIGEN_LAYER = 1 << 13
+
+    PANCAKE = 1 << 14
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -199,3 +202,13 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.EIGEN_LAYER:
         yield EigenLayerActionD
         yield EigenLayerAddressCurrentD
+
+
+    if entity_types & EntityType.PANCAKE:
+        yield PancakeToken
+        yield PancakeTokenDetail
+        yield PancakeTokenCurrentStatus
+        yield PancakePool
+        yield PancakePoolCurrentPrice
+        yield PancakePoolPrice
+        yield PancakeSwapEvent

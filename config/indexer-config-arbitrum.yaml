@@ -6,3 +6,4 @@ pancake_job:
 export_tokens_and_transfers_job:
     filter_token_address:
       - "0x46a15b0b27311cedf172ab29e4f4766fbe7f4364"
+      - "0xc96de26018a54d51c097160568752c4e3bd6c364"
