@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, TIMESTAMP
 from common.models import HemeraModel, general_converter
 
 
-class FeatureMerChantMoePoolRecords(HemeraModel):
+class FeatureMerchantMoePoolRecords(HemeraModel):
     __tablename__ = "af_merchant_moe_pool_data_hist"
     pool_address = Column(BYTEA, primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
@@ -22,7 +22,7 @@ class FeatureMerChantMoePoolRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "MerChantMoePoolRecord",
+                "domain": "MerchantMoePoolRecord",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

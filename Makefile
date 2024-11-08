@@ -43,7 +43,7 @@ endif
 
 init_db:
 	@echo "Initializing database..."
-	poetry run python -m hemera.py init_db
+	poetry run python -m hemera.py db --init
 
 development:
 	@echo "Setting up development environment..."

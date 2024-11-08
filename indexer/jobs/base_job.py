@@ -45,6 +45,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     tokens = None
 
+    is_locked = False
     is_filter = False
     dependency_types = []
     output_types = []
