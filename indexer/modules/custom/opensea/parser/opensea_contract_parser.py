@@ -1,12 +1,13 @@
 import json
 from dataclasses import dataclass
-from enum import Enum
 from typing import Dict, List, cast
 
 from web3.types import ABIEvent
 
+from common.utils.abi_code_utils import decode_log
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.transaction import Transaction
-from indexer.utils.abi import decode_log, event_log_abi_to_topic
+from indexer.utils.abi import event_log_abi_to_topic
 
 OPENSEA_EVENT_ABIS = {
     "ORDER_FULFILLED_EVENT": '{"anonymous":false,"inputs":[{"indexed":false,"internalType":"bytes32","name":"orderHash","type":"bytes32"},{"indexed":true,"internalType":"address","name":"offerer","type":"address"},{"indexed":true,"internalType":"address","name":"zone","type":"address"},{"indexed":false,"internalType":"address","name":"recipient","type":"address"},{"components":[{"internalType":"enum ItemType","name":"itemType","type":"uint8"},{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"identifier","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"}],"indexed":false,"internalType":"struct SpentItem[]","name":"offer","type":"tuple[]"},{"components":[{"internalType":"enum ItemType","name":"itemType","type":"uint8"},{"internalType":"address","name":"token","type":"address"},{"internalType":"uint256","name":"identifier","type":"uint256"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"address payable","name":"recipient","type":"address"}],"indexed":false,"internalType":"struct ReceivedItem[]","name":"consideration","type":"tuple[]"}],"name":"OrderFulfilled","type":"event"}'
@@ -53,7 +54,7 @@ def parse_opensea_transaction_order_fulfilled_event(
 
             results.append(
                 OpenseaLog(
-                    orderHash="0x" + opensea_transaction["orderHash"].hex(),
+                    orderHash=bytes_to_hex_str(opensea_transaction["orderHash"]),
                     offerer=opensea_transaction["offerer"],
                     zone=opensea_transaction["zone"],
                     recipient=opensea_transaction["recipient"],

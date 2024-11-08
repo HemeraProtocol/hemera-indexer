@@ -10,7 +10,7 @@ from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc
-from indexer.utils.utils import rpc_response_batch_to_results
+from indexer.utils.rpc_utils import rpc_response_batch_to_results
 
 logger = logging.getLogger(__name__)
 

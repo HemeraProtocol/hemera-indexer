@@ -15,7 +15,7 @@ from common.models.logs import Logs
 from common.models.transactions import Transactions
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import hex_to_bytes
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain import Domain, dict_to_dataclass
 from indexer.domain.block import Block
 from indexer.domain.log import Log
@@ -31,7 +31,7 @@ from indexer.specification.specification import (
     TransactionFilterByTransactionInfo,
     TransactionHashSpecification,
 )
-from indexer.utils.utils import distinct_collections_by_group, flatten
+from indexer.utils.collection_utils import distinct_collections_by_group, flatten
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class PGSourceJob(BaseSourceJob):
 
                     for log in logs:
                         filter_blocks.add(log.block_number)
-                        logs_transaction_hash.add("0x" + log.transaction_hash.hex())
+                        logs_transaction_hash.add(bytes_to_hex_str(log.transaction_hash))
 
                 elif isinstance(job_filter, TransactionFilterByTransactionInfo):
                     transaction_filter = defaultdict(list)
@@ -124,7 +124,7 @@ class PGSourceJob(BaseSourceJob):
                     self.pg_datas[Transactions].extend(transactions)
                     for transaction in transactions:
                         filter_blocks.add(transaction.block_number)
-                        transactions_hash.add("0x" + transaction.hash.hex())
+                        transactions_hash.add(bytes_to_hex_str(transaction.hash))
                 else:
                     raise ValueError(f"Unsupported filter type: {type(filter)}")
 
@@ -257,13 +257,13 @@ class PGSourceJob(BaseSourceJob):
 
             if len(log_filter["address"]) > 0 and len(log_filter["topics"]) > 0:
                 conditions = and_(
-                    Logs.address.in_([hex_to_bytes(address) for address in set(log_filter["address"])]),
-                    Logs.topic0.in_([hex_to_bytes(topic0) for topic0 in set(log_filter["topics"])]),
+                    Logs.address.in_([hex_str_to_bytes(address) for address in set(log_filter["address"])]),
+                    Logs.topic0.in_([hex_str_to_bytes(topic0) for topic0 in set(log_filter["topics"])]),
                 )
             elif len(log_filter["address"]) > 0:
-                conditions = Logs.address.in_([hex_to_bytes(address) for address in set(log_filter["address"])])
+                conditions = Logs.address.in_([hex_str_to_bytes(address) for address in set(log_filter["address"])])
             elif len(log_filter["topics"]) > 0:
-                conditions = Logs.topic0.in_([hex_to_bytes(topic0) for topic0 in set(log_filter["topics"])])
+                conditions = Logs.topic0.in_([hex_str_to_bytes(topic0) for topic0 in set(log_filter["topics"])])
 
             if len(log_filter["address"]) > 0 or len(log_filter["topics"]) > 0:
                 query_filter = and_(
@@ -277,7 +277,7 @@ class PGSourceJob(BaseSourceJob):
 
             if len(log_filter["transaction_hash"]) > 0:
                 conditions = Logs.transaction_hash.in_(
-                    [hex_to_bytes(transaction_hash) for transaction_hash in set(log_filter["transaction_hash"])]
+                    [hex_str_to_bytes(transaction_hash) for transaction_hash in set(log_filter["transaction_hash"])]
                 )
 
                 query_filter = and_(
@@ -301,7 +301,7 @@ class PGSourceJob(BaseSourceJob):
 
             if len(transaction_filter["hash"]) > 0:
                 conditions = Transactions.hash.in_(
-                    [hex_to_bytes(transaction_hash) for transaction_hash in set(transaction_filter["hash"])]
+                    [hex_str_to_bytes(transaction_hash) for transaction_hash in set(transaction_filter["hash"])]
                 )
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
@@ -314,7 +314,7 @@ class PGSourceJob(BaseSourceJob):
 
             if len(transaction_filter["from_address"]) > 0:
                 conditions = Transactions.from_address.in_(
-                    [hex_to_bytes(from_address) for from_address in set(transaction_filter["from_address"])]
+                    [hex_str_to_bytes(from_address) for from_address in set(transaction_filter["from_address"])]
                 )
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
@@ -327,7 +327,7 @@ class PGSourceJob(BaseSourceJob):
 
             if len(transaction_filter["to_address"]) > 0:
                 conditions = Transactions.to_address.in_(
-                    [hex_to_bytes(to_address) for to_address in set(transaction_filter["to_address"])]
+                    [hex_str_to_bytes(to_address) for to_address in set(transaction_filter["to_address"])]
                 )
                 query_filter = and_(
                     Transactions.block_timestamp >= start_timestamp,
@@ -491,7 +491,7 @@ def convert_value(value):
     elif isinstance(value, Decimal):
         return float(value)
     elif isinstance(value, bytes):
-        return "0x" + value.hex()
+        return bytes_to_hex_str(value)
     elif isinstance(value, list):
         return [convert_value(v) for v in value]
     elif isinstance(value, dict):

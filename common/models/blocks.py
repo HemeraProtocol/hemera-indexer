@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Type, Union
 
 from sqlalchemy import Column, Index, desc, func, text

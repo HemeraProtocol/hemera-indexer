@@ -1,5 +1,3 @@
-from functools import wraps
-
 from flask_restx.namespace import Namespace
 
 address_features_namespace = Namespace(

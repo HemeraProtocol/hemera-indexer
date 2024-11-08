@@ -1,7 +1,6 @@
 import pytest
 
 from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
-    BEDROCK_EVENT_ABI_SIGNATURE_MAPPING,
     parse_message_passed_event,
     parse_transaction_deposited_event,
 )

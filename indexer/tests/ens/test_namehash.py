@@ -14,7 +14,6 @@ from indexer.domain.transaction import Transaction
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.modules.custom.hemera_ens import EnsConfLoader, EnsHandler
 from indexer.modules.custom.hemera_ens.ens_hash import compute_node_label, get_label, namehash
-from indexer.modules.custom.hemera_ens.extractors import RegisterExtractor
 from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy

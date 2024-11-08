@@ -1,11 +1,11 @@
 from common.models import db
 from common.models.logs import Logs
 from common.models.transactions import Transactions
-from common.utils.db_utils import build_entities
+from common.utils.format_utils import hex_str_to_bytes
 
 
 def get_logs_with_input_by_hash(hash, columns="*"):
-    bytes_hash = bytes.fromhex(hash.lower()[2:])
+    bytes_hash = hex_str_to_bytes(hash.lower())
     # Always get FUll Logs now
 
     logs = (
@@ -20,7 +20,7 @@ def get_logs_with_input_by_hash(hash, columns="*"):
 
 
 def get_logs_with_input_by_address(address: str, limit=None, offset=None):
-    address_bytes = bytes.fromhex(address.lower()[2:])
+    address_bytes = hex_str_to_bytes(address.lower())
 
     statement = (
         db.session.query(Logs)

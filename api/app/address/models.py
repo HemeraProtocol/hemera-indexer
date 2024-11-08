@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, PrimaryKeyConstraint, func
+from sqlalchemy import Column, Integer
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP
 
 from common.models import HemeraModel
@@ -9,7 +9,7 @@ class AddressBaseProfile(HemeraModel):
 
     address = Column(BYTEA, primary_key=True, nullable=False)
     init_funding_from_address = Column(BYTEA)
-    init_funding_value = Column(NUMERIC)
+    init_funding_value = Column(NUMERIC(100))
     init_funding_transaction_hash = Column(BYTEA)
     init_funding_block_timestamp = Column(TIMESTAMP)
     init_block_hash = Column(BYTEA)

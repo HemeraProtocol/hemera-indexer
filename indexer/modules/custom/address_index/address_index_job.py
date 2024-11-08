@@ -3,6 +3,7 @@ from enum import Enum
 from itertools import groupby
 from typing import List, Union
 
+from common.utils.web3_utils import ZERO_ADDRESS
 from indexer.domain.contract_internal_transaction import ContractInternalTransaction
 from indexer.domain.token_id_infos import UpdateERC721TokenIdDetail
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
@@ -19,8 +20,8 @@ from indexer.modules.custom.address_index.domain.address_token_holder import Add
 from indexer.modules.custom.address_index.domain.address_token_transfer import AddressTokenTransfer
 from indexer.modules.custom.address_index.domain.address_transaction import AddressTransaction
 from indexer.modules.custom.address_index.domain.token_address_nft_inventory import TokenAddressNftInventory
+from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.token_fetcher import TokenFetcher
-from indexer.utils.utils import ZERO_ADDRESS, distinct_collections_by_group
 
 logger = logging.getLogger(__name__)
 

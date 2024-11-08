@@ -62,6 +62,9 @@ def check_source_load_parameter(cli_path: str, start_block=None, end_block=None,
 
 
 def generate_dataclass_type_list_from_parameter(require_types: str, generate_type: str):
+    if not require_types:
+        return []
+
     domain_dict = Domain.get_all_domain_dict()
     parse_output_types = set()
 

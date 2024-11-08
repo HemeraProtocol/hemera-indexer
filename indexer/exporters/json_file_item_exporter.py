@@ -1,4 +1,3 @@
-import collections
 import json
 import logging
 import os
@@ -24,7 +23,7 @@ class JSONFileItemExporter(BaseExporter):
         self.dir = direction.replace("jsonfile://", "")
         self.partition_size = partition_size
 
-    def export_items(self, items: List[Domain]):
+    def export_items(self, items: List[Domain], **kwargs):
         start_time = datetime.now(tzlocal())
 
         try:

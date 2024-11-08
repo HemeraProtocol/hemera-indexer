@@ -1,31 +1,16 @@
-import binascii
-import math
-import re
-from datetime import datetime, timedelta
-from decimal import Decimal, getcontext
-from operator import or_
-
-from flask import request
 from flask_restx import Resource
-from sqlalchemy import and_, asc, desc, func
 
-from api.app import explorer
-from api.app.cache import cache
-from api.app.explorer import explorer_namespace
 from common.models import db
-from common.models import db as postgres_db
 from common.models.current_token_balances import CurrentTokenBalances
 from common.models.tokens import Tokens
-from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict, format_to_dict, format_value_for_json, row_to_dict
-from common.utils.web3_utils import is_eth_address
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.modules.custom.merchant_moe.endpoints import merchant_moe_namespace
 from indexer.modules.custom.merchant_moe.models.feature_erc1155_token_current_supply import (
     FeatureErc1155TokenCurrentSupplyStatus,
 )
-from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
+from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerchantMoePools
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_token_current_bin import (
-    FeatureMerChantMoeTokenBinCurrentStatus,
+    FeatureMerchantMoeTokenBinCurrentStatus,
 )
 
 Q96 = 2**96
@@ -35,18 +20,18 @@ Q96 = 2**96
 class MerchantMoeWalletHolding(Resource):
     def get(self, wallet_address):
         pool_infos = {}
-        pool_tokens = db.session.query(FeatureMerChantMoePools).all()
+        pool_tokens = db.session.query(FeatureMerchantMoePools).all()
 
         tokens = set()
         for data in pool_tokens:
             tokens.add(data.token0_address)
             tokens.add(data.token1_address)
-            pool_infos["0x" + data.token_address.hex()] = {
-                "getTokenX": "0x" + data.token0_address.hex(),
-                "getTokenY": "0x" + data.token1_address.hex(),
+            pool_infos[bytes_to_hex_str(data.token_address)] = {
+                "getTokenX": bytes_to_hex_str(data.token0_address),
+                "getTokenY": bytes_to_hex_str(data.token1_address),
             }
         wallet_address = wallet_address.lower()
-        address_bytes = bytes.fromhex(wallet_address[2:])
+        address_bytes = hex_str_to_bytes(wallet_address)
         holdings = (
             db.session.query(CurrentTokenBalances)
             .filter(
@@ -66,8 +51,8 @@ class MerchantMoeWalletHolding(Resource):
         )
 
         token_bin_list = (
-            db.session.query(FeatureMerChantMoeTokenBinCurrentStatus)
-            .filter(FeatureMerChantMoeTokenBinCurrentStatus.token_address.in_(unique_token_addresses))
+            db.session.query(FeatureMerchantMoeTokenBinCurrentStatus)
+            .filter(FeatureMerchantMoeTokenBinCurrentStatus.token_address.in_(unique_token_addresses))
             .all()
         )
 
@@ -84,12 +69,12 @@ class MerchantMoeWalletHolding(Resource):
         erc20_datas = db.session.query(Tokens).filter(Tokens.address.in_(tokens)).all()
         erc20_infos = {}
         for data in erc20_datas:
-            erc20_infos["0x" + data.address.hex()] = data
+            erc20_infos[bytes_to_hex_str(data.address)] = data
 
         result = []
         token_total_amount = {}
         for holding in holdings:
-            nft_address = "0x" + holding.token_address.hex()
+            nft_address = bytes_to_hex_str(holding.token_address)
             if nft_address not in pool_infos:
                 continue
             token_info = pool_infos[nft_address]

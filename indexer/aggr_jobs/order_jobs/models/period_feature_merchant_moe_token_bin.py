@@ -4,7 +4,7 @@ from sqlalchemy.dialects.postgresql import BYTEA, DATE, NUMERIC, TIMESTAMP
 from common.models import HemeraModel
 
 
-class PeriodFeatureMerChantMoeTokenBinRecords(HemeraModel):
+class PeriodFeatureMerchantMoeTokenBinRecords(HemeraModel):
     __tablename__ = "af_merchant_moe_token_bin_hist_period"
 
     period_date = Column(DATE, primary_key=True)

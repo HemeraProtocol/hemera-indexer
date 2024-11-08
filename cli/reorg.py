@@ -11,8 +11,8 @@ from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.rpc_utils import pick_random_provider_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
-from indexer.utils.utils import pick_random_provider_uri
 
 exception_recorder = ExceptionRecorder()
 
@@ -21,21 +21,22 @@ exception_recorder = ExceptionRecorder()
 @click.option(
     "-p",
     "--provider-uri",
-    default="https://mainnet.infura.io",
+    default="https://ethereum-rpc.publicnode.com",
     show_default=True,
     type=str,
     envvar="PROVIDER_URI",
-    help="The URI of the web3 provider e.g. " "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
+    help="The URI of the web3 provider e.g. "
+    "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
 )
 @click.option(
     "-d",
     "--debug-provider-uri",
-    default="https://mainnet.infura.io",
+    default="https://ethereum-rpc.publicnode.com",
     show_default=True,
     type=str,
     envvar="DEBUG_PROVIDER_URI",
     help="The URI of the web3 debug provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
+    "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
 )
 @click.option(
     "-pg",

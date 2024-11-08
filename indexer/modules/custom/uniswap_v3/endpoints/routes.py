@@ -1,6 +1,5 @@
 import math
 from datetime import datetime
-from time import time
 from typing import Any, Dict, Optional
 
 from flask import request
@@ -11,7 +10,7 @@ from api.app.address.features import register_feature
 from api.app.db_service.tokens import get_token_price_map_by_symbol_list
 from common.models import db
 from common.models.tokens import Tokens
-from common.utils.exception_control import APIError
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.modules.custom.uniswap_v3.endpoints import uniswap_v3_namespace
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_liquidity_records import UniswapV3TokenLiquidityRecords
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pool_current_prices import UniswapV3PoolCurrentPrices
@@ -37,7 +36,7 @@ NATIVE_COINS = {
 @register_feature("uniswap_v3_trading", "value")
 def get_uniswap_v3_trading_value(address) -> Optional[Dict[str, Any]]:
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     swaps = db.session.execute(
         select(
             UniswapV3PoolSwapRecords.transaction_hash,
@@ -73,7 +72,7 @@ def get_uniswap_v3_trading_value(address) -> Optional[Dict[str, Any]]:
 @register_feature("uniswap_v3_trading", "events")
 def get_uniswap_v3_trading_events(address, limit=5, offset=0) -> Optional[Dict[str, Any]]:
     if isinstance(address, str):
-        address = bytes.fromhex(address[2:])
+        address = hex_str_to_bytes(address)
     total_count = UniswapV3PoolSwapRecords.query.where(
         UniswapV3PoolSwapRecords.transaction_from_address == address
     ).count()
@@ -108,15 +107,15 @@ def get_uniswap_v3_trading_events(address, limit=5, offset=0) -> Optional[Dict[s
             {
                 "block_number": swap.block_number,
                 "block_timestamp": datetime.fromtimestamp(swap.block_timestamp).isoformat("T", "seconds"),
-                "transaction_hash": "0x" + swap.transaction_hash.hex(),
-                "pool_address": "0x" + swap.pool_address.hex(),
+                "transaction_hash": bytes_to_hex_str(swap.transaction_hash),
+                "pool_address": bytes_to_hex_str(swap.pool_address),
                 "amount0": "{0:.18f}".format(abs(swap.amount0) / 10**token0.decimals).rstrip("0").rstrip("."),
                 "amount1": "{0:.18f}".format(abs(swap.amount1) / 10**token1.decimals).rstrip("0").rstrip("."),
-                "token0_address": "0x" + swap.token0_address.hex(),
+                "token0_address": bytes_to_hex_str(swap.token0_address),
                 "token0_symbol": token0.symbol,
                 "token0_name": token0.name,
                 "token0_icon_url": token0.icon_url,
-                "token1_address": "0x" + swap.token1_address.hex(),
+                "token1_address": bytes_to_hex_str(swap.token1_address),
                 "token1_symbol": token1.symbol,
                 "token1_name": token1.name,
                 "token1_icon_url": token1.icon_url,
@@ -160,7 +159,7 @@ class UniswapV3WalletTradingSummary(Resource):
 @register_feature("uniswap_v3_liquidity", "value")
 def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
     address = address.lower()
-    address_bytes = bytes.fromhex(address[2:])
+    address_bytes = hex_str_to_bytes(address)
 
     # Get all LP holdings
     holdings = (
@@ -179,7 +178,7 @@ def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
     )
     pool_price_map = {}
     for data in pool_prices:
-        pool_address = "0x" + data.pool_address.hex()
+        pool_address = bytes_to_hex_str(data.pool_address)
         pool_price_map[pool_address] = data.sqrt_price_x96
 
     # Get token id info
@@ -191,7 +190,7 @@ def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
     )
     token_id_infos = {}
     for token in tokenIds:
-        position_token_address = "0x" + token.position_token_address.hex()
+        position_token_address = bytes_to_hex_str(token.position_token_address)
         token_id = token.token_id
         key = (position_token_address, token_id)
         token_id_infos[key] = token
@@ -201,7 +200,7 @@ def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
     pool_infos = {}
     pools = db.session.query(UniswapV3Pools).filter(UniswapV3Pools.pool_address.in_(unique_pool_addresses)).all()
     for data in pools:
-        pool_address = "0x" + data.pool_address.hex()
+        pool_address = bytes_to_hex_str(data.pool_address)
         pool_infos[pool_address] = data
         erc20_tokens.add(data.token0_address)
         erc20_tokens.add(data.token1_address)
@@ -210,7 +209,7 @@ def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
     erc20_infos = {}
     token_symbol_list = []
     for data in erc20_datas:
-        erc20_infos["0x" + data.address.hex()] = data
+        erc20_infos[bytes_to_hex_str(data.address)] = data
         token_symbol_list.append(data.symbol)
 
     # Get Token Price
@@ -219,14 +218,14 @@ def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
     result = []
     total_value_usd = 0
     for holding in holdings:
-        position_token_address = "0x" + holding.position_token_address.hex()
+        position_token_address = bytes_to_hex_str(holding.position_token_address)
         token_id = holding.token_id
-        pool_address = "0x" + holding.pool_address.hex()
+        pool_address = bytes_to_hex_str(holding.pool_address)
         sqrt_price = pool_price_map[pool_address]
         token_id_info = token_id_infos[(position_token_address, token_id)]
         pool_info = pool_infos[pool_address]
-        token0_address = "0x" + pool_info.token0_address.hex()
-        token1_address = "0x" + pool_info.token1_address.hex()
+        token0_address = bytes_to_hex_str(pool_info.token0_address)
+        token1_address = bytes_to_hex_str(pool_info.token1_address)
         if token0_address in erc20_infos:
             token0_info = erc20_infos[token0_address]
         else:
@@ -279,7 +278,7 @@ def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
 @register_feature("uniswap_v3_liquidity", "events")
 def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
     address = address.lower()
-    address_bytes = bytes.fromhex(address[2:])
+    address_bytes = hex_str_to_bytes(address)
 
     # Get all LP holdings
     holdings = (
@@ -298,7 +297,7 @@ def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
     )
     pool_price_map = {}
     for data in pool_prices:
-        pool_address = "0x" + data.pool_address.hex()
+        pool_address = bytes_to_hex_str(data.pool_address)
         pool_price_map[pool_address] = data.sqrt_price_x96
 
     # Get token id info
@@ -310,7 +309,7 @@ def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
     )
     token_id_infos = {}
     for token in tokenIds:
-        position_token_address = "0x" + token.position_token_address.hex()
+        position_token_address = bytes_to_hex_str(token.position_token_address)
         token_id = token.token_id
         key = (position_token_address, token_id)
         token_id_infos[key] = token
@@ -320,7 +319,7 @@ def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
     pool_infos = {}
     pools = db.session.query(UniswapV3Pools).filter(UniswapV3Pools.pool_address.in_(unique_pool_addresses)).all()
     for data in pools:
-        pool_address = "0x" + data.pool_address.hex()
+        pool_address = bytes_to_hex_str(data.pool_address)
         pool_infos[pool_address] = data
         erc20_tokens.add(data.token0_address)
         erc20_tokens.add(data.token1_address)
@@ -329,7 +328,7 @@ def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
     erc20_infos = {}
     token_symbol_list = []
     for data in erc20_datas:
-        erc20_infos["0x" + data.address.hex()] = data
+        erc20_infos[bytes_to_hex_str(data.address)] = data
         token_symbol_list.append(data.symbol)
 
     # Get Token Price
@@ -338,14 +337,14 @@ def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
     result = []
     total_value_usd = 0
     for holding in holdings:
-        position_token_address = "0x" + holding.position_token_address.hex()
+        position_token_address = bytes_to_hex_str(holding.position_token_address)
         token_id = holding.token_id
-        pool_address = "0x" + holding.pool_address.hex()
+        pool_address = bytes_to_hex_str(holding.pool_address)
         sqrt_price = pool_price_map[pool_address]
         token_id_info = token_id_infos[(position_token_address, token_id)]
         pool_info = pool_infos[pool_address]
-        token0_address = "0x" + pool_info.token0_address.hex()
-        token1_address = "0x" + pool_info.token1_address.hex()
+        token0_address = bytes_to_hex_str(pool_info.token0_address)
+        token1_address = bytes_to_hex_str(pool_info.token1_address)
         if token0_address in erc20_infos:
             token0_info = erc20_infos[token0_address]
         else:
@@ -399,7 +398,7 @@ def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
 class UniswapV3WalletLiquidityHolding(Resource):
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
 
         # Get all LP holdings
         holdings = (
@@ -418,7 +417,7 @@ class UniswapV3WalletLiquidityHolding(Resource):
         )
         pool_price_map = {}
         for data in pool_prices:
-            pool_address = "0x" + data.pool_address.hex()
+            pool_address = bytes_to_hex_str(data.pool_address)
             pool_price_map[pool_address] = data.sqrt_price_x96
 
         # Get token id info
@@ -430,7 +429,7 @@ class UniswapV3WalletLiquidityHolding(Resource):
         )
         token_id_infos = {}
         for token in tokenIds:
-            position_token_address = "0x" + token.position_token_address.hex()
+            position_token_address = bytes_to_hex_str(token.position_token_address)
             token_id = token.token_id
             key = (position_token_address, token_id)
             token_id_infos[key] = token
@@ -440,7 +439,7 @@ class UniswapV3WalletLiquidityHolding(Resource):
         pool_infos = {}
         pools = db.session.query(UniswapV3Pools).filter(UniswapV3Pools.pool_address.in_(unique_pool_addresses)).all()
         for data in pools:
-            pool_address = "0x" + data.pool_address.hex()
+            pool_address = bytes_to_hex_str(data.pool_address)
             pool_infos[pool_address] = data
             erc20_tokens.add(data.token0_address)
             erc20_tokens.add(data.token1_address)
@@ -449,7 +448,7 @@ class UniswapV3WalletLiquidityHolding(Resource):
         erc20_infos = {}
         token_symbol_list = []
         for data in erc20_datas:
-            erc20_infos["0x" + data.address.hex()] = data
+            erc20_infos[bytes_to_hex_str(data.address)] = data
             token_symbol_list.append(data.symbol)
 
         # Get Token Price
@@ -458,14 +457,14 @@ class UniswapV3WalletLiquidityHolding(Resource):
         result = []
         total_value_usd = 0
         for holding in holdings:
-            position_token_address = "0x" + holding.position_token_address.hex()
+            position_token_address = bytes_to_hex_str(holding.position_token_address)
             token_id = holding.token_id
-            pool_address = "0x" + holding.pool_address.hex()
+            pool_address = bytes_to_hex_str(holding.pool_address)
             sqrt_price = pool_price_map[pool_address]
             token_id_info = token_id_infos[(position_token_address, token_id)]
             pool_info = pool_infos[pool_address]
-            token0_address = "0x" + pool_info.token0_address.hex()
-            token1_address = "0x" + pool_info.token1_address.hex()
+            token0_address = bytes_to_hex_str(pool_info.token0_address)
+            token1_address = bytes_to_hex_str(pool_info.token1_address)
             if token0_address in erc20_infos:
                 token0_info = erc20_infos[token0_address]
             else:
@@ -519,7 +518,7 @@ class UniswapV3WalletLiquidityHolding(Resource):
 class UniswapV3WalletLiquidityDetail(Resource):
     def get(self, address):
         address = address.lower()
-        address_bytes = bytes.fromhex(address[2:])
+        address_bytes = hex_str_to_bytes(address)
         first_holding = (
             db.session.query(UniswapV3TokenLiquidityRecords)
             .filter(UniswapV3TokenLiquidityRecords.owner == address_bytes)
@@ -577,8 +576,8 @@ def get_token_amounts(liquidity, sqrt_price_x96, tick_low, tick_high, token0_dec
 
 
 def get_swap_action_type(swap: UniswapV3PoolSwapRecords):
-    token0_address_str = "0x" + swap.token0_address.hex()
-    token1_address_str = "0x" + swap.token1_address.hex()
+    token0_address_str = bytes_to_hex_str(swap.token0_address)
+    token1_address_str = bytes_to_hex_str(swap.token1_address)
 
     if token0_address_str in STABLE_COINS and token1_address_str in STABLE_COINS:
         return "swap"

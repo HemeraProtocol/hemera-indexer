@@ -1,5 +1,3 @@
-from typing import Type
-
 from sqlalchemy import Column, Index
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 

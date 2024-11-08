@@ -9,14 +9,12 @@ from api.app.contract.contract_verify import (
     get_abi_by_chain_id_address,
     get_contract_by_address,
     get_contract_code_by_address,
-    get_contract_verification_history_by_address,
     get_creation_or_deployed_code,
     get_evm_versions,
     get_explorer_license_type,
     get_implementation_contract,
     get_solidity_version,
     get_vyper_version,
-    hex_string_to_bytes,
     send_async_verification_request,
     send_sync_verification_request,
     validate_input,
@@ -25,8 +23,8 @@ from api.app.limiter import limiter
 from common.models import db as postgres_db
 from common.models.contracts import Contracts
 from common.utils.exception_control import APIError
-from common.utils.format_utils import as_dict
-from indexer.utils.utils import ZERO_ADDRESS
+from common.utils.format_utils import as_dict, hex_str_to_bytes
+from common.utils.web3_utils import ZERO_ADDRESS
 
 
 @contract_namespace.route("/v1/explorer/verify_contract/verify")
@@ -151,7 +149,7 @@ class ExplorerVerifyContractBeforeCheck(Resource):
             raise APIError("Missing required data", code=400)
         address = address.lower()
         # Check if address exists in ContractsInfo
-        contracts = postgres_db.session.query(Contracts).filter_by(address=hex_string_to_bytes(address)).first()
+        contracts = postgres_db.session.query(Contracts).filter_by(address=hex_str_to_bytes(address)).first()
 
         if not contracts or not contracts.transaction_hash:
             raise APIError("The address is not a contract", code=400)
@@ -299,7 +297,7 @@ class ExplorerContractCode(Resource):
     def get(self, contract_address):
         contract_address = contract_address.lower()
 
-        contract = Contracts.query.get(hex_string_to_bytes(contract_address))
+        contract = Contracts.query.get(hex_str_to_bytes(contract_address))
         if not contract or contract.is_verified == False:
             raise APIError("Contract not exist or contract is not verified.", code=400)
 

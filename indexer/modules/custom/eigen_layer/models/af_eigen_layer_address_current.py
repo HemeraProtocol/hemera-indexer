@@ -4,8 +4,8 @@
 # @Author  will
 # @File  af_eigen_layer_address_current.py
 # @Brief
-from sqlalchemy import Column, PrimaryKeyConstraint, func, text
-from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
@@ -21,13 +21,8 @@ class AfEigenLayerAddressCurrent(HemeraModel):
     start_withdraw_amount = Column(NUMERIC(100))
     finish_withdraw_amount = Column(NUMERIC(100))
 
-    d_s = Column(NUMERIC(100))
-    d_f = Column(NUMERIC(100))
-    s_f = Column(NUMERIC(100))
-
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("address", "strategy"),)
 
@@ -35,7 +30,7 @@ class AfEigenLayerAddressCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "EigenLayerAddressCurrentD",
+                "domain": "EigenLayerAddressCurrent",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

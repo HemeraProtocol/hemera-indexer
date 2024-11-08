@@ -3,80 +3,19 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import List, Optional, Union
 
+from common.utils.web3_utils import ZERO_ADDRESS
 from enumeration.token_type import TokenType
 from indexer.domain import Domain
 from indexer.domain.log import Log
-from indexer.utils.abi import Event
-from indexer.utils.utils import ZERO_ADDRESS
+from indexer.utils.abi_setting import (
+    ERC20_TRANSFER_EVENT,
+    ERC1155_BATCH_TRANSFER_EVENT,
+    ERC1155_SINGLE_TRANSFER_EVENT,
+    WETH_DEPOSIT_EVENT,
+    WETH_WITHDRAW_EVENT,
+)
 
 logger = logging.getLogger(__name__)
-
-deposit_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "dst", "type": "address"},
-            {"indexed": False, "name": "wad", "type": "uint256"},
-        ],
-        "name": "Deposit",
-        "type": "event",
-    }
-)
-
-withdraw_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "src", "type": "address"},
-            {"indexed": False, "name": "wad", "type": "uint256"},
-        ],
-        "name": "Withdrawal",
-        "type": "event",
-    }
-)
-
-transfer_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "from", "type": "address"},
-            {"indexed": True, "name": "to", "type": "address"},
-            {"indexed": False, "name": "value", "type": "uint256"},
-        ],
-        "name": "Transfer",
-        "type": "event",
-    }
-)
-
-single_transfer_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "operator", "type": "address"},
-            {"indexed": True, "name": "from", "type": "address"},
-            {"indexed": True, "name": "to", "type": "address"},
-            {"indexed": False, "name": "id", "type": "uint256"},
-            {"indexed": False, "name": "value", "type": "uint256"},
-        ],
-        "name": "TransferSingle",
-        "type": "event",
-    }
-)
-
-batch_transfer_event = Event(
-    {
-        "anonymous": False,
-        "inputs": [
-            {"indexed": True, "name": "operator", "type": "address"},
-            {"indexed": True, "name": "from", "type": "address"},
-            {"indexed": True, "name": "to", "type": "address"},
-            {"indexed": False, "name": "ids", "type": "uint256[]"},
-            {"indexed": False, "name": "values", "type": "uint256[]"},
-        ],
-        "name": "TransferBatch",
-        "type": "event",
-    }
-)
 
 
 @dataclass
@@ -165,7 +104,7 @@ class ERC1155TokenTransfer(Domain):
 
 
 def handle_deposit_event(log: Log) -> List[TokenTransfer]:
-    decode_data = deposit_event.decode_log(log)
+    decode_data = WETH_DEPOSIT_EVENT.decode_log(log)
     if decode_data is None:
         return []
     wallet_address = decode_data.get("dst").lower()
@@ -190,7 +129,7 @@ def handle_deposit_event(log: Log) -> List[TokenTransfer]:
 
 
 def handle_withdraw_event(log: Log) -> List[TokenTransfer]:
-    decode_data = withdraw_event.decode_log(log)
+    decode_data = WETH_WITHDRAW_EVENT.decode_log(log)
     if decode_data is None:
         return []
     wallet_address = decode_data.get("src").lower()
@@ -215,7 +154,7 @@ def handle_withdraw_event(log: Log) -> List[TokenTransfer]:
 
 
 def handle_transfer_event(log: Log) -> List[TokenTransfer]:
-    decode_data = transfer_event.decode_log_ignore_indexed(log)
+    decode_data = ERC20_TRANSFER_EVENT.decode_log_ignore_indexed(log)
 
     from_address = decode_data.get("from").lower()
     to_address = decode_data.get("to").lower()
@@ -245,7 +184,7 @@ def handle_transfer_event(log: Log) -> List[TokenTransfer]:
 
 
 def handle_transfer_single_event(log: Log) -> List[TokenTransfer]:
-    decode_data = single_transfer_event.decode_log(log)
+    decode_data = ERC1155_SINGLE_TRANSFER_EVENT.decode_log(log)
     from_address = decode_data.get("from").lower()
     to_address = decode_data.get("to").lower()
     token_id = decode_data.get("id")
@@ -269,7 +208,7 @@ def handle_transfer_single_event(log: Log) -> List[TokenTransfer]:
 
 
 def handle_transfer_batch_event(log: Log) -> List[TokenTransfer]:
-    decode_data = batch_transfer_event.decode_log(log)
+    decode_data = ERC1155_BATCH_TRANSFER_EVENT.decode_log(log)
     from_address = decode_data["from"].lower()
     to_address = decode_data["to"].lower()
     ids = decode_data["ids"]
@@ -307,15 +246,15 @@ def extract_transfer_from_log(log: Log) -> List[TokenTransfer]:
     token_transfers = []
     topic = log.topic0
 
-    if topic == transfer_event.get_signature():
+    if topic == ERC20_TRANSFER_EVENT.get_signature():
         token_transfers = handle_transfer_event(log)
-    elif topic == deposit_event.get_signature():
+    elif topic == WETH_DEPOSIT_EVENT.get_signature():
         token_transfers = handle_deposit_event(log)
-    elif topic == withdraw_event.get_signature():
+    elif topic == WETH_WITHDRAW_EVENT.get_signature():
         token_transfers = handle_withdraw_event(log)
-    elif topic == single_transfer_event.get_signature():
+    elif topic == ERC1155_SINGLE_TRANSFER_EVENT.get_signature():
         token_transfers = handle_transfer_single_event(log)
-    elif topic == batch_transfer_event.get_signature():
+    elif topic == ERC1155_BATCH_TRANSFER_EVENT.get_signature():
         token_transfers = handle_transfer_batch_event(log)
 
     return token_transfers

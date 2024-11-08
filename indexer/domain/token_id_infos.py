@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 
+from common.utils.web3_utils import ZERO_ADDRESS
 from indexer.domain import Domain
-from indexer.utils.utils import ZERO_ADDRESS
 
 
 @dataclass

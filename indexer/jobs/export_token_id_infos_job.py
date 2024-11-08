@@ -2,6 +2,7 @@ import logging
 from itertools import groupby
 from typing import List, Optional, Union
 
+from common.utils.web3_utils import ZERO_ADDRESS
 from indexer.domain.token_id_infos import (
     ERC721TokenIdChange,
     ERC721TokenIdDetail,
@@ -14,7 +15,6 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.multicall_hemera.util import calculate_execution_time
 from indexer.utils.token_fetcher import TokenFetcher
-from indexer.utils.utils import ZERO_ADDRESS
 
 logger = logging.getLogger(__name__)
 

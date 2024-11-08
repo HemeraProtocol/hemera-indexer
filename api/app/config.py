@@ -1,5 +1,4 @@
 import os
-import re
 from configparser import ConfigParser
 from dataclasses import dataclass, field
 from enum import Enum, auto
@@ -204,6 +203,9 @@ class AppConfig(YAMLWizard):
             self.token_configuration.native_token = os.getenv("NATIVE_TOKEN", self.token_configuration.native_token)
         if os.getenv("GAS_FEE_TOKEN"):
             self.token_configuration.gas_fee_token = os.getenv("GAS_FEE_TOKEN", self.token_configuration.gas_fee_token)
+
+        if os.getenv("ROLLUP_TYPE"):
+            self.l2_config.rollup_type = os.getenv("ROLLUP_TYPE", self.l2_config.rollup_type)
 
     def get_onchain_badge_config(self):
         if "on_chain_badge" in self.extra_config:

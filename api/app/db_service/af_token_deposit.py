@@ -1,8 +1,6 @@
-from api.app.db_service.tokens import get_token_by_address
 from common.models import db
 from common.utils.db_utils import build_entities
-from common.utils.format_utils import row_to_dict
-from common.utils.web3_utils import chain_id_name_mapping
+from common.utils.format_utils import hex_str_to_bytes
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
 
@@ -36,7 +34,7 @@ def get_transactions_cnt_by_condition(filter_condition=None, columns="*"):
 
 def get_transactions_cnt_by_wallet(wallet_address):
     wallet_address = wallet_address.lower()
-    bytes_wallet_address = bytes.fromhex(wallet_address[2:])
+    bytes_wallet_address = hex_str_to_bytes(wallet_address)
 
     count = get_transactions_cnt_by_condition(
         filter_condition=AFTokenDepositsTransactions.wallet_address == bytes_wallet_address
@@ -47,7 +45,7 @@ def get_transactions_cnt_by_wallet(wallet_address):
 
 def get_deposit_chain_list(wallet_address):
     wallet_address = wallet_address.lower()
-    bytes_wallet_address = bytes.fromhex(wallet_address[2:])
+    bytes_wallet_address = hex_str_to_bytes(wallet_address)
 
     chain_list = (
         db.session.query(AFTokenDepositsTransactions.wallet_address, AFTokenDepositsTransactions.chain_id)
@@ -65,7 +63,7 @@ def get_deposit_assets_list(wallet_address):
     )
 
     wallet_address = wallet_address.lower()
-    bytes_wallet_address = bytes.fromhex(wallet_address[2:])
+    bytes_wallet_address = hex_str_to_bytes(wallet_address)
 
     assets_list = (
         db.session.query(AFTokenDepositsCurrent)

@@ -1,7 +1,5 @@
-from datetime import datetime
-
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 
@@ -38,6 +36,12 @@ class UniswapV3Pools(HemeraModel):
             },
             {
                 "domain": "AgniV3Pool",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "AgniV3PoolFromTokenJob",
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

@@ -1,4 +1,4 @@
-from indexer.utils.utils import format_block_id
+from common.utils.format_utils import format_block_id
 
 
 def generate_get_block_by_number_json_rpc(block_numbers, include_transactions):

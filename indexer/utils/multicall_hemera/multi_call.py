@@ -3,6 +3,7 @@ from typing import Any, List, Optional, Tuple, Union
 
 import orjson
 
+from common.utils.format_utils import bytes_to_hex_str
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.call import prep_args
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, MULTICALL3_ADDRESSES, Network
@@ -65,7 +66,7 @@ class Multicall:
         args = prep_args(
             self.multicall_address, _get_signature(self.multicall_sig), args, self.block_id, hex(self.gas_limit)
         )
-        args[0]["data"] = "0x" + (args[0]["data"]).hex()
+        args[0]["data"] = bytes_to_hex_str(args[0]["data"])
         return {
             "jsonrpc": "2.0",
             "method": "eth_call",

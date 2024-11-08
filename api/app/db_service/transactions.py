@@ -5,10 +5,11 @@ from sqlalchemy import and_, func, or_
 from api.app.cache import cache
 from api.app.db_service.wallet_addresses import get_txn_cnt_by_address
 from common.models import db
-from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
-from common.models.scheduled_metadata import ScheduledWalletCountMetadata
+from common.models.scheduled_metadata import ScheduledMetadata
 from common.models.transactions import Transactions
 from common.utils.db_utils import build_entities
+from common.utils.format_utils import hex_str_to_bytes
+from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
 
 
 def get_last_transaction():
@@ -22,7 +23,7 @@ def get_last_transaction():
 
 
 def get_transaction_by_hash(hash: str, columns="*"):
-    bytes_hash = bytes.fromhex(hash[2:])
+    bytes_hash = hex_str_to_bytes(hash)
     entities = build_entities(Transactions, columns)
 
     results = db.session.query(Transactions).with_entities(*entities).filter(Transactions.hash == bytes_hash).first()
@@ -31,7 +32,7 @@ def get_transaction_by_hash(hash: str, columns="*"):
 
 
 def get_transactions_by_from_address(address, columns="*"):
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     entities = build_entities(Transactions, columns)
 
     results = (
@@ -45,7 +46,7 @@ def get_transactions_by_from_address(address, columns="*"):
 
 
 def get_transactions_by_to_address(address, columns="*", limit=1):
-    bytes_address = bytes.fromhex(address[2:])
+    bytes_address = hex_str_to_bytes(address)
     entities = build_entities(Transactions, columns)
 
     results = (
@@ -62,8 +63,8 @@ def get_tps_latest_10min(timestamp):
 
 
 def get_address_transaction_cnt(address: str):
-    last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
-    bytes_address = bytes.fromhex(address[2:])
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
+    bytes_address = hex_str_to_bytes(address)
     recently_txn_count = (
         db.session.query(Transactions.hash)
         .filter(
@@ -87,11 +88,11 @@ def get_address_transaction_cnt(address: str):
 def get_total_txn_count():
     # Get the latest block date and cumulative count
     latest_record = (
-        DailyTransactionsAggregates.query.with_entities(
-            DailyTransactionsAggregates.block_date,
-            DailyTransactionsAggregates.total_cnt,
+        DailyTransactionsStats.query.with_entities(
+            DailyTransactionsStats.block_date,
+            DailyTransactionsStats.total_cnt,
         )
-        .order_by(DailyTransactionsAggregates.block_date.desc())
+        .order_by(DailyTransactionsStats.block_date.desc())
         .first()
     )
 

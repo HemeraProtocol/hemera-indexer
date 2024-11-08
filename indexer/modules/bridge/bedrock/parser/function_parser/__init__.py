@@ -4,7 +4,8 @@ from typing import Callable, List, Optional
 
 from web3.types import ABIFunction
 
-from indexer.modules.bridge.signature import function_abi_to_4byte_selector_str
+from common.utils.format_utils import bytes_to_hex_str
+from indexer.utils.abi import function_abi_to_4byte_selector_str
 
 
 class BedRockFunctionCallType(Enum):
@@ -49,7 +50,7 @@ class BedrockBridgeParser:
     def get_remote_function_call_info(self, transaction_input: bytes) -> BridgeRemoteFunctionCallInfo:
         if len(transaction_input) < 4:
             raise ValueError("Input is too short to contain a function selector")
-        selector = "0x" + transaction_input[:4].hex().lower()  # Assuming lowercase for consistency
+        selector = bytes_to_hex_str(transaction_input[:4]).lower()  # Assuming lowercase for consistency
 
         for decoder in self.remote_function_call_decoders:
             if decoder.get_4byte_selector() == selector:

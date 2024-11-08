@@ -45,6 +45,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     tokens = None
 
+    is_locked = False
     is_filter = False
     dependency_types = []
     output_types = []
@@ -90,21 +91,11 @@ class BaseJob(metaclass=BaseJobMeta):
                 self.logger.info(f"Stage _start finished. Took {datetime.now() - start_time}")
 
             if not self._reorg or self._should_reorg:
-                start_time = datetime.now()
-                self.logger.info(f"Stage collect starting.")
                 self._collect(**kwargs)
-                self.logger.info(f"Stage collect finished. Took {datetime.now() - start_time}")
-
-                start_time = datetime.now()
-                self.logger.info(f"Stage process starting.")
                 self._process(**kwargs)
-                self.logger.info(f"Stage process finished. Took {datetime.now() - start_time}")
 
             if not self._reorg:
-                start_time = datetime.now()
-                self.logger.info(f"Stage export starting.")
                 self._export()
-                self.logger.info(f"Stage export finished. Took {datetime.now() - start_time}")
 
         finally:
             self._end()
@@ -183,7 +174,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
         for item_exporter in self._item_exporters:
             item_exporter.open()
-            item_exporter.export_items(items)
+            item_exporter.export_items(items, job_name=self.job_name)
             item_exporter.close()
 
     def get_buff(self):

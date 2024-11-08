@@ -1,5 +1,6 @@
 from sqlalchemy import and_, func
 
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
     StakedFBTCCurrentStatus,
     TransferredFBTCCurrentStatus,
@@ -10,7 +11,7 @@ from indexer.modules.custom.staking_fbtc.models.feature_staked_fbtc_detail_recor
 def get_current_status_generic(db_service, contract_list, block_number, status_class):
     if not db_service:
         return {}
-    bytea_address_list = [bytes.fromhex(address[2:]) for address in contract_list]
+    bytea_address_list = [hex_str_to_bytes(address) for address in contract_list]
 
     session = db_service.get_service_session()
     try:
@@ -42,8 +43,8 @@ def get_current_status_generic(db_service, contract_list, block_number, status_c
         current_status_map = {}
         if result is not None:
             for item in result:
-                contract_address = "0x" + item.vault_address.hex()
-                wallet_address = "0x" + item.wallet_address.hex()
+                contract_address = bytes_to_hex_str(item.vault_address)
+                wallet_address = bytes_to_hex_str(item.wallet_address)
 
                 if contract_address not in current_status_map:
                     current_status_map[contract_address] = {}
