@@ -2,6 +2,10 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
+    AgniV3TokenUpdateLiquidity,
+    UniswapV3TokenUpdateLiquidity,
+)
 
 
 class UniswapV3TokenLiquidityRecords(HemeraModel):
@@ -36,13 +40,13 @@ class UniswapV3TokenLiquidityRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "UniswapV3TokenUpdateLiquidity",
+                "domain": UniswapV3TokenUpdateLiquidity,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AgniV3TokenUpdateLiquidity",
+                "domain": AgniV3TokenUpdateLiquidity,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

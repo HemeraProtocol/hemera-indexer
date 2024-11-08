@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import AgniV3Token, UniswapV3Token
 
 
 class UniswapV3Tokens(HemeraModel):
@@ -27,13 +28,13 @@ class UniswapV3Tokens(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "UniswapV3Token",
+                "domain": UniswapV3Token,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AgniV3Token",
+                "domain": AgniV3Token,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

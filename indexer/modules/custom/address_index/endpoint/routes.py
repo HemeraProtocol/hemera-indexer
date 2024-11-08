@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import flask
 from flask_restx import Resource
 
@@ -8,11 +10,13 @@ from indexer.modules.custom.address_index.schemas.api import (
     aci_score_response_model,
     address_base_info_model,
     address_base_info_response_model,
+    address_developer_info_response_model,
     validate_eth_address,
 )
 from indexer.modules.custom.address_index.utils.helpers import (
     get_address_assets,
     get_address_base_info,
+    get_address_developer_info,
     get_contract_deployed_events,
     get_contract_deployer_profile,
     get_wallet_address_volumes,
@@ -32,7 +36,25 @@ class ACIProfiles(Resource):
     @address_profile_namespace.marshal_with(address_base_info_response_model)
     @cache.cached(timeout=60)
     def get(self, address):
-        profile = get_address_base_info(address)
+        profile = get_address_base_info(address) | {"address": address.lower()}
+
+        return {"code": 200, "message": "OK", "data": profile}
+
+
+@address_profile_namespace.route("/v1/aci/<address>/developer_info")
+class ACIDeveloperProfiles(Resource):
+    @validate_eth_address
+    @address_profile_namespace.marshal_with(address_developer_info_response_model)
+    @cache.cached(timeout=60)
+    def get(self, address):
+        profile = get_address_developer_info(address) | {"address": address.lower()}
+
+        if profile.get("first_contract_deployed_block_timestamp"):
+            delta = datetime.utcnow() - profile["first_contract_deployed_block_timestamp"]
+            years = delta.days / 365
+            profile["years_since_first_contract"] = round(years, 1)
+        else:
+            profile["years_since_first_contract"] = 0.0
 
         return {"code": 200, "message": "OK", "data": profile}
 

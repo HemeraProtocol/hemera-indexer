@@ -55,11 +55,7 @@ class ExportTokenBalancesJob(BaseExportJob):
     def _collect(self, **kwargs):
         token_transfers = self._collect_all_token_transfers()
         parameters = extract_token_parameters(token_transfers)
-        if self._is_multi_call:
-            self._collect_batch(parameters)
-        else:
-            self._batch_work_executor.execute(parameters, self._collect_batch, total_items=len(parameters))
-            self._batch_work_executor.wait()
+        self._collect_batch(parameters)
 
     @calculate_execution_time
     def _collect_batch(self, parameters):
@@ -143,7 +139,7 @@ def extract_token_parameters(
                 "param_to": parameter.token_address,
                 "param_data": encode_balance_abi_parameter(parameter.address, parameter.token_type, parameter.token_id),
                 "param_number": parameter.block_number if block_number is None else block_number,
-                "block_number": parameter.block_number if block_number is None else None,
+                "block_number": parameter.block_number if block_number is None else block_number,
                 "block_timestamp": parameter.block_timestamp,
             }
         )
