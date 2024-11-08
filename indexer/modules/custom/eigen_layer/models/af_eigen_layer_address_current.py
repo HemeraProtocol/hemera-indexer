@@ -8,7 +8,9 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import EigenLayerAddressCurrentD
+from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import (
+    EigenLayerAddressCurrent as EigenLayerAddressCurrentD,
+)
 
 
 class AfEigenLayerAddressCurrent(HemeraModel):
