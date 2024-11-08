@@ -47,7 +47,7 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     aave_v2_address_current_factory,
 )
 from indexer.modules.custom.aave_v2.models.aave_v2_address_current import AaveV2AddressCurrent
-from indexer.modules.custom.aave_v2.models.aave_v2_reserve import AaveV2ReserveCurrent
+from indexer.modules.custom.aave_v2.models.aave_v2_reserve import AaveV2Reserve
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
@@ -102,7 +102,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
     def _read_reserve(self):
 
         with self.db_service.get_service_session() as session:
-            result = session.query(AaveV2ReserveCurrent).all()
+            result = session.query(AaveV2Reserve).all()
         for rr in result:
             item = AaveV2ReserveD(
                 asset=bytes_to_hex_str(rr.asset),
@@ -224,7 +224,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         eth_call_lis = []
         for a_record in aave_records:
             # when repay, liquidation, withdrawal, call rpc to get token balance
-            if a_record.type() == AaveV2WithdrawD.type():
+            if a_record.type() == AaveV2DepositD.type():
                 reserve = self.reserve_dic[a_record.reserve]
                 eth_call_lis.append(
                     Call(
@@ -234,8 +234,17 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                         block_number=a_record.block_number,
                     )
                 )
-
-            elif a_record.type() == AaveV2RepayD.type():
+            elif a_record.type() == AaveV2WithdrawD.type():
+                reserve = self.reserve_dic[a_record.reserve]
+                eth_call_lis.append(
+                    Call(
+                        target=reserve.a_token_address,
+                        function_abi=SCALED_BALANCE_OF_FUNCTION,
+                        parameters=[a_record.aave_user],
+                        block_number=a_record.block_number,
+                    )
+                )
+            elif a_record.type() == AaveV2RepayD.type() or a_record.type() == AaveV2BorrowD.type():
                 reserve = self.reserve_dic[a_record.reserve]
                 eth_call_lis.append(
                     Call(
@@ -323,14 +332,13 @@ class ExportAaveV2Job(FilterTransactionDataJob):
 
         # enrich repay, liquidation, withdraw
         for a_record in aave_records:
-            if a_record.type() == AaveV2WithdrawD.type():
+            if a_record.type() == AaveV2WithdrawD.type() or a_record.type() == AaveV2DepositD.type():
                 address = a_record.aave_user
                 reserve = self.reserve_dic[a_record.reserve]
                 block_number = a_record.block_number
-                after_withdraw = address_token_block_balance_dic[address][reserve.a_token_address][block_number]
-                a_record.after_withdraw = after_withdraw
-                a_record.force_update_current = True
-            elif a_record.type() == AaveV2RepayD.type():
+                after = address_token_block_balance_dic[address][reserve.a_token_address][block_number]
+                a_record._after = after
+            elif a_record.type() == AaveV2RepayD.type() or a_record.type() == AaveV2BorrowD.type():
                 address = a_record.aave_user
                 reserve = self.reserve_dic[a_record.reserve]
                 block_number = a_record.block_number
@@ -346,8 +354,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     if stable_token in address_token_block_balance_dic[address]:
                         stable_debt = address_token_block_balance_dic[address][stable_token][block_number]
 
-                a_record.after_repay_debt = stable_debt + vary_debt
-                a_record.force_update_current = True
+                a_record._after = stable_debt + vary_debt
             elif a_record.type() == AaveV2LiquidationCallD.type():
                 address = a_record.aave_user
                 block_number = a_record.block_number
@@ -456,9 +463,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
                 if res_d[user][reserve].supply_amount is None:
-                    res_d[user][reserve].supply_amount = action.amount
+                    res_d[user][reserve].supply_amount = action._after
                 else:
-                    res_d[user][reserve].supply_amount += action.amount
+                    res_d[user][reserve].supply_amount = action._after
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == BORROW_EVENT.get_name():
@@ -468,9 +475,9 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].borrow_rate_mode = action.borrow_rate_mode
                 if res_d[user][reserve].borrow_amount is None:
-                    res_d[user][reserve].borrow_amount = action.amount
+                    res_d[user][reserve].borrow_amount = action._after
                 else:
-                    res_d[user][reserve].borrow_amount += action.amount
+                    res_d[user][reserve].borrow_amount += action._after
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == REPAY_EVENT.get_name():
@@ -478,7 +485,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 user = action.aave_user
                 res_d[user][reserve].asset = reserve
                 res_d[user][reserve].address = user
-                res_d[user][reserve].borrow_amount = action.after_repay_debt
+                res_d[user][reserve].borrow_amount = action._after
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == WITHDRAW_EVENT.get_name():
@@ -486,7 +493,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 user = action.aave_user
                 res_d[user][reserve].address = user
                 res_d[user][reserve].asset = reserve
-                res_d[user][reserve].supply_amount = action.after_withdraw
+                res_d[user][reserve].supply_amount = action._after
                 res_d[user][reserve].block_number = action.block_number
                 res_d[user][reserve].block_timestamp = action.block_timestamp
             elif event_name == LIQUIDATION_CALL_EVENT.get_name():
