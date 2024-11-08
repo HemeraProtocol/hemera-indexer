@@ -4,25 +4,9 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIME
 from common.models import HemeraModel, general_converter
 
 
-class AaveV2Reserve(HemeraModel):
-    __tablename__ = "af_aave_v2_reserve"
+class AaveV2ReserveRates(HemeraModel):
+    __tablename__ = "af_aave_v2_reserve_rates"
     asset = Column(BYTEA, primary_key=True)
-    asset_decimals = Column(NUMERIC(100))
-    asset_symbol = Column(VARCHAR)
-
-    a_token_address = Column(BYTEA)
-    a_token_decimals = Column(NUMERIC(100))
-    a_token_symbol = Column(VARCHAR)
-
-    stable_debt_token_address = Column(BYTEA)
-    stable_debt_token_decimals = Column(NUMERIC(100))
-    stable_debt_token_symbol = Column(VARCHAR)
-
-    variable_debt_token_address = Column(BYTEA)
-    variable_debt_token_decimals = Column(NUMERIC(100))
-    variable_debt_token_symbol = Column(VARCHAR)
-
-    interest_rate_strategy_address = Column(BYTEA)
 
     liquidity_rate = Column(NUMERIC(100))
     stable_borrow_rate = Column(NUMERIC(100))
@@ -44,9 +28,9 @@ class AaveV2Reserve(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV2ReserveD",
+                "domain": "AaveV2ReserveDataCurrentD",
                 "conflict_do_update": True,
-                "update_strategy": None,
+                "update_strategy": "EXCLUDED.block_number > af_aave_v2_reserve_rates.block_number",
                 "converter": general_converter,
-            }
+            },
         ]
