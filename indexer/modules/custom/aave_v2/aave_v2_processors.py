@@ -202,10 +202,10 @@ class ReserveDataUpdateProcessor(EventProcessor):
 
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         return {
-            "reserve": extract_eth_address(log.topic1),
-            "liquidityRate": decoded_log.get("liquidityRate"),
-            "stableBorrowRate": decoded_log.get("stableBorrowRate"),
-            "variableBorrowRate": decoded_log.get("variableBorrowRate"),
-            "liquidityIndex": decoded_log.get("liquidityIndex"),
-            "variableBorrowIndex": decoded_log.get("variableBorrowIndex"),
+            "asset": extract_eth_address(log.topic1),
+            "liquidity_rate": decoded_log.get("liquidityRate"),
+            "stable_borrow_rate": decoded_log.get("stableBorrowRate"),
+            "variable_borrow_rate": decoded_log.get("variableBorrowRate"),
+            "liquidity_index": decoded_log.get("liquidityIndex"),
+            "variable_borrow_index": decoded_log.get("variableBorrowIndex"),
         }
