@@ -2,7 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
+from indexer.modules.custom.deposit_to_l2.domains.address_token_deposit import AddressTokenDeposit
 
 
 class AFTokenDepositsCurrent(HemeraModel):
