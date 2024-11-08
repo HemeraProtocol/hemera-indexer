@@ -213,6 +213,47 @@ address_base_info_model = address_features_namespace.model(
     },
 )
 
+
+address_developer_info_model = address_features_namespace.model(
+    "AddressDeveloperInfo",
+    {
+        "address": fields.String(required=True, description="User address"),
+        "deployed_contracts_count": fields.Integer(description="Total number of deployed contracts"),
+        # First contract deployment info
+        "first_contract_deployed_address": fields.String(description="First deployed contract address"),
+        "first_contract_deployed_transaction_hash": fields.String(
+            description="First contract deployment transaction hash"
+        ),
+        "first_contract_deployed_block_hash": fields.String(description="First contract deployment block hash"),
+        "first_contract_deployed_block_number": fields.Integer(description="First contract deployment block number"),
+        "first_contract_deployed_block_timestamp": fields.DateTime(
+            description="First contract deployment block timestamp"
+        ),
+        "first_contract_deployed_trace_id": fields.String(description="First contract deployment trace ID"),
+        # Latest contract deployment info
+        "latest_contract_deployed_address": fields.String(description="Latest deployed contract address"),
+        "latest_contract_deployed_transaction_hash": fields.String(
+            description="Latest contract deployment transaction hash"
+        ),
+        "latest_contract_deployed_block_hash": fields.String(description="Latest contract deployment block hash"),
+        "latest_contract_deployed_block_number": fields.Integer(description="Latest contract deployment block number"),
+        "latest_contract_deployed_block_timestamp": fields.DateTime(
+            description="Latest contract deployment block timestamp"
+        ),
+        "latest_contract_deployed_trace_id": fields.String(description="Latest contract deployment trace ID"),
+        "years_since_first_contract": fields.Float(description="Years since first contract deployment", default=0.0),
+        "total_transaction_count_across_contract": fields.Integer(
+            description="Total transaction count across contracts"
+        ),
+        "total_gas_consumed_across_contracts_eth": fields.String(
+            description="Total gas consumed across contracts in ETH"
+        ),
+        "total_gas_consumed_across_contracts_usd": fields.String(
+            description="Total gas consumed across contracts in USD"
+        ),
+    },
+)
+
 daily_volume_model = address_features_namespace.model(
     "DailyVolume",
     {
@@ -255,5 +296,7 @@ aci_score_model = address_features_namespace.model(
 )
 
 address_base_info_response_model = create_standard_response_model("AddressProfile", address_base_info_model)
-
+address_developer_info_response_model = create_standard_response_model(
+    "AddressDeveloperInfo", address_developer_info_model
+)
 aci_score_response_model = create_standard_response_model("ACIScore", aci_score_model)

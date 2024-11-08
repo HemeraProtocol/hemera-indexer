@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Numeric, PrimaryKeyConstraint, func, text
+from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
@@ -10,7 +10,7 @@ class AfKarakRecords(HemeraModel):
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
     block_number = Column(BIGINT)
-    block_timestamp = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
     method = Column(VARCHAR)
     event_name = Column(VARCHAR)
     topic0 = Column(VARCHAR)
@@ -24,7 +24,7 @@ class AfKarakRecords(HemeraModel):
     staker = Column(VARCHAR)
     operator = Column(VARCHAR)
     withdrawer = Column(VARCHAR)
-    shares = Column(Numeric(100))
+    shares = Column(NUMERIC(100))
     withdrawroot = Column(VARCHAR)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
