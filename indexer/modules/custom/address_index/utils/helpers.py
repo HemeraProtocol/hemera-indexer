@@ -59,7 +59,7 @@ def get_contract_deployed_events(address, limit=5, offset=0) -> Optional[Dict[st
 def get_wallet_address_volumes(wallet_address: Optional[Union[str, bytes]], coin_symbol: str = "ETH"):
     transaction_values = get_address_hist_stats(
         wallet_address,
-        ["transaction_in_value", "transaction_out_value", "transaction_out_fee"],
+        ["transaction_in_value", "transaction_out_value", "transaction_in_fee"],
     )
 
     block_date_list = [x["block_date"] for x in transaction_values]
@@ -76,7 +76,7 @@ def get_wallet_address_volumes(wallet_address: Optional[Union[str, bytes]], coin
     for value in transaction_values:
         date = value["block_date"]
         volume_eth = (value["transaction_in_value"] + value["transaction_out_value"]) / 10**18
-        gas_fee_used = value["transaction_out_fee"] / 10**18
+        gas_fee_used = value["transaction_in_fee"] / 10**18
         price = prices_dict.get(date, 0)
         volume_usd = volume_eth * price
         total_gas_fee_used_usd += gas_fee_used * price
