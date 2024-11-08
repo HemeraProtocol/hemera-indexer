@@ -10,7 +10,7 @@ eigenlayer operator keys create --key-type ecdsa [keyname]
 eigenlayer operator keys create --key-type bls [keyname]
 ```
 
-**💡 Please ensure you backup your private keys to a safe location. By default, the encrypted keys will be stored in ~/.eigenlayer/operator_keys/**  
+**💡 Please ensure you backup your private keys to a safe location. By default, the encrypted keys will be stored in ~/.eigenlayer/operator_keys/**
 
 
 ## Register on EigenLayer as an operator
@@ -46,7 +46,7 @@ eigenlayer operator config create
 eigenlayer operator register operator.yaml
 ```
 
-Upon successful registration, you should see 
+Upon successful registration, you should see
 
 ```
 ✅ Operator is registered successfully to EigenLayer

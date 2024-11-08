@@ -42,12 +42,16 @@ class ValidateAndAggregate(FilterTransactionDataJob):
         self._is_batch = kwargs["batch_size"] > 1
         self._filters = kwargs.get("filters", [])
         self.index_record_event = IndexRecordEvent()
-        # TODO: replace by dataclass.get_code_hash()
-        self.block_dataclass = hex_str_to_bytes("0x67a70c90")
-        self.tx_dataclass = hex_str_to_bytes("0x6048a7e2")
+        self.block_dataclass = hex_str_to_bytes(Block.get_code_hash())
+        self.tx_dataclass = hex_str_to_bytes(Transaction.get_code_hash())
 
-        self.operator_ecdsa_private_key = get_account_from_file(self.user_defined_config["operator_ecdsa_key_file"], self.user_defined_config["operator_ecdsa_password_file"])
-        self.operator_bls_private_key = get_account_from_file(self.user_defined_config["operator_bls_key_file"], self.user_defined_config["operator_bls_password_file"])
+        self.operator_ecdsa_private_key = get_account_from_file(
+            self.user_defined_config["operator_ecdsa_key_file"],
+            self.user_defined_config["operator_ecdsa_password_file"],
+        )
+        self.operator_bls_private_key = get_account_from_file(
+            self.user_defined_config["operator_bls_key_file"], self.user_defined_config["operator_bls_password_file"]
+        )
         self.operator_bls_private_key = int.from_bytes(self.operator_bls_private_key, "big")
         self.registry_coordinator_contract = self._web3.eth.contract(
             address=self.user_defined_config["avs_registry_coordinator_address"], abi=RegistryCoordinatorABI
