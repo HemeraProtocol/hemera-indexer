@@ -16,7 +16,11 @@ def bytes_to_hex_str(b: bytes) -> str:
     :return: A hexadecimal string representation of the input bytes.
     :rtype: str
     """
-    return "0x" + b.hex()
+    hex_str = b.hex()
+    if hex_str[:2] == "0x":
+        return hex_str
+    else:
+        return "0x" + b.hex()
 
 
 def hex_str_to_bytes(h: str) -> bytes:

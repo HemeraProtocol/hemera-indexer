@@ -7,6 +7,7 @@ from web3 import Web3
 
 from cli.logo import print_logo
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.integrity_checker import RuntimeCodeSignature
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.controller.stream_controller import StreamController
@@ -17,6 +18,7 @@ from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.parameter_utils import (
     check_file_exporter_parameter,
     check_source_load_parameter,
+    create_record_report_from_parameter,
     generate_dataclass_type_list_from_parameter,
 )
 from indexer.utils.provider import get_provider_from_uri
@@ -300,6 +302,24 @@ def calculate_execution_time(func):
     help="Whether to automatically run database migration scripts to update the database to the latest version.",
 )
 @click.option(
+    "--report-private-key",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="REPORT_PRIVATE_KEY",
+    help="When the progress report contract is submitted, the private-key required by the transaction is submitted. "
+    "When this parameter is not set, indexer will not report progress to the contract",
+)
+@click.option(
+    "--report-from-address",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="REPORT_FROM_ADDRESS",
+    help="When the progress report contract is submitted, the from-address required by the transaction is submitted. "
+    "When this parameter is not set, indexer will not report progress to the contract",
+)
+@click.option(
     "--log-level",
     default="INFO",
     show_default=True,
@@ -337,6 +357,8 @@ def stream(
     config_file=None,
     force_filter_mode=False,
     auto_upgrade_db=True,
+    report_private_key=None,
+    report_from_address=None,
     log_level="INFO",
 ):
     print_logo()
@@ -364,6 +386,7 @@ def stream(
         config["db_service"] = service
         exception_recorder.init_pg_service(service)
     else:
+        service = None
         logging.getLogger("ROOT").warning("No postgres url provided. Exception recorder will not be useful.")
 
     if config_file:
@@ -401,10 +424,17 @@ def stream(
     if source_path and source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
 
+    item_exporters = create_item_exporters(output, config)
+
+    integrity_checker = RuntimeCodeSignature()
+    integrity_checker.calculate_signature(__name__, ["indexer.jobs", "indexer.modules", "indexer.exporters"])
+    for exporter in item_exporters:
+        integrity_checker.calculate_signature(exporter.__class__.__module__)
+
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporters=create_item_exporters(output, config),
+        item_exporters=item_exporters,
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
@@ -415,6 +445,9 @@ def stream(
         auto_reorg=auto_reorg,
         multicall=multicall,
         force_filter_mode=force_filter_mode,
+        runtime_signature_signer=integrity_checker,
+        report_private_key=report_private_key,
+        report_from_address=report_from_address,
     )
 
     controller = StreamController(
@@ -426,6 +459,8 @@ def stream(
         ),
         retry_from_record=retry_from_record,
         delay=delay,
+        record_reporter=create_record_report_from_parameter(report_private_key, report_from_address, service),
+        runtime_signature_signer=integrity_checker,
     )
 
     controller.action(
