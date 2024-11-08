@@ -2,6 +2,13 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, JSONB, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.all_features_value_record import (
+    AllFeatureValueRecordBlueChipHolders,
+    AllFeatureValueRecordTraitsActiveness,
+    AllFeatureValueRecordUniswapV2Info,
+    AllFeatureValueRecordUniswapV3Pool,
+    AllFeatureValueRecordUniswapV3Token,
+)
 
 
 class AllFeatureValueRecords(HemeraModel):
@@ -22,31 +29,31 @@ class AllFeatureValueRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AllFeatureValueRecordUniswapV3Pool",
+                "domain": AllFeatureValueRecordUniswapV3Pool,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AllFeatureValueRecordUniswapV3Token",
+                "domain": AllFeatureValueRecordUniswapV3Token,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AllFeatureValueRecordUniswapV2Info",
+                "domain": AllFeatureValueRecordUniswapV2Info,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AllFeatureValueRecordTraitsActiveness",
+                "domain": AllFeatureValueRecordTraitsActiveness,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AllFeatureValueRecordBlueChipHolders",
+                "domain": AllFeatureValueRecordBlueChipHolders,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

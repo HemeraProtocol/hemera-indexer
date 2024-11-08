@@ -2,6 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.karak.karak_domain import KarakActionD
 
 
 class AfKarakRecords(HemeraModel):
@@ -36,7 +37,7 @@ class AfKarakRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "KarakActionD",
+                "domain": KarakActionD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

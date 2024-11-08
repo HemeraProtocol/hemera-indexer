@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.merchant_moe.domains.erc1155_token_holding import MerchantMoeErc1155TokenSupply
 
 
 class FeatureErc1155TokenSupplyRecords(HemeraModel):
@@ -23,7 +24,7 @@ class FeatureErc1155TokenSupplyRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "MerchantMoeErc1155TokenSupply",
+                "domain": MerchantMoeErc1155TokenSupply,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

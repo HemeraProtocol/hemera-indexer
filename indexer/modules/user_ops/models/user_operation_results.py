@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
 class UserOperationResult(HemeraModel):
@@ -37,7 +38,7 @@ class UserOperationResult(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "UserOperationsResult",
+                "domain": UserOperationsResult,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
