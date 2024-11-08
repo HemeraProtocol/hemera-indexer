@@ -2,6 +2,7 @@ import base64
 import json
 import re
 
+from eth_account import Account
 import requests
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
@@ -105,7 +106,8 @@ def verify_0_address(address):
 def get_debug_trace_transaction(traces):
     def prune_delegates(trace):
         while (
-            trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0]["call_type"] == "delegatecall"
+                trace.get("calls") and len(trace.get("calls")) == 1 and trace.get("calls")[0][
+            "call_type"] == "delegatecall"
         ):
             trace = trace["calls"][0]
         if trace.get("calls"):
@@ -206,3 +208,14 @@ def get_json_from_uri_by_http(uri):
         return response.json()
     except Exception as e:
         return None
+
+
+def get_account_from_file(keystore_path, password_path):
+    with open(keystore_path, "r") as keystore_file:
+        keystore_str = keystore_file.read()
+        keystore_json = json.loads(keystore_str)
+        if "version" not in keystore_json:
+            keystore_json["version"] = 3
+    with open(password_path, "r") as password_file:
+        password = password_file.read()
+    return Account.from_key(Account.decrypt(keystore_json, password))

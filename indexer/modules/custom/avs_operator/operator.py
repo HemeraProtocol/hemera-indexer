@@ -9,6 +9,7 @@ from eth_typing import BlockNumber
 from web3 import Web3
 
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from common.utils.web3_utils import get_account_from_file
 from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
@@ -55,9 +56,8 @@ class ValidateAndAggregate(FilterTransactionDataJob):
         self.operator_ecdsa_private_key = Account.from_key(
             Account.decrypt(json.loads(ecdsa_keystore_json), self.user_defined_config["operator_ecdsa_key_password"])
         )
-        self.operator_bls_private_key = Account.from_key(
-            Account.decrypt(bls_keystore_json, self.user_defined_config["operator_bls_key_password"])
-        )
+        self.operator_ecdsa_private_key = get_account_from_file(self.user_defined_config["operator_ecdsa_key_file"], self.user_defined_config["operator_ecdsa_password_file"])
+        self.operator_bls_private_key = get_account_from_file(self.user_defined_config["operator_bls_key_file"], self.user_defined_config["operator_bls_password_file"])
         self.operator_bls_private_key = int.from_bytes(self.operator_bls_private_key, "big")
         self.registry_coordinator_contract = self._web3.eth.contract(
             address=self.user_defined_config["avs_registry_coordinator_address"], abi=RegistryCoordinatorABI
