@@ -1,9 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-
 import flask
 from flask import Flask, request
 from flask_cors import CORS
+
+# from app.serializing import ma
+from flask_swagger_ui import get_swaggerui_blueprint
 
 from api.app.cache import cache, redis_db
 from api.app.limiter import limiter
@@ -11,18 +13,34 @@ from common.models import db
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
 
-# from app.serializing import ma
-
 config = get_config()
 
 import logging
 import os
 
+from flask import Flask, send_file
+
 # logging.getLogger("sqlalchemy.pool").setLevel(logging.DEBUG)
+
 
 app = Flask(__name__)
 # Get the log level from the environment variable, default to WARNING if not set
 log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
+
+SWAGGER_URL = "/api/docs"
+API_YAML_PATH = "/api/swagger.yaml"
+YAML_FILE_PATH = "/app/migrations/swagger.yaml"
+
+
+@app.route("/api/swagger.yaml")
+def serve_swagger_yaml():
+    return send_file(YAML_FILE_PATH)
+
+
+swaggerui_blueprint = get_swaggerui_blueprint(SWAGGER_URL, API_YAML_PATH, config={"app_name": "Hemera Protocol API"})
+
+app.register_blueprint(swaggerui_blueprint)
+
 
 # Convert the string log level to the corresponding numeric value
 numeric_level = getattr(logging, log_level, None)
