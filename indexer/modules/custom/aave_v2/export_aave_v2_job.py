@@ -41,8 +41,7 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2LiquidationCallD,
     AaveV2RepayD,
     AaveV2ReserveD,
-    AaveV2ReserveDataCurrentD,
-    AaveV2ReserveDataUpdatedRecordsD,
+    AaveV2ReserveDataD,
     AaveV2WithdrawD,
     aave_v2_address_current_factory,
 )
@@ -70,8 +69,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         AaveV2AddressCurrentD,
         AaveV2LiquidationAddressCurrentD,
         AaveV2CallRecordsD,
-        AaveV2ReserveDataUpdatedRecordsD,
-        AaveV2ReserveDataCurrentD,
+        AaveV2ReserveDataD,
     ]
     able_to_reorg = False
 
@@ -139,9 +137,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         repay_processor = RepayProcessor(REPAY_EVENT, AaveV2RepayD)
         flush_loan_processor = FlashLoanProcessor(FLUSH_LOAN_EVENT, AaveV2FlashLoanD)
         liquidation_call_processor = LiquidationCallProcessor(LIQUIDATION_CALL_EVENT, AaveV2LiquidationCallD)
-        reserve_data_update_processor = ReserveDataUpdateProcessor(
-            RESERVE_DATA_UPDATED_EVENT, AaveV2ReserveDataUpdatedRecordsD
-        )
+        reserve_data_update_processor = ReserveDataUpdateProcessor(RESERVE_DATA_UPDATED_EVENT, AaveV2ReserveDataD)
         lis = [
             reserve_processor,
             deposit_processor,
@@ -183,32 +179,10 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 if processed_data.type() == AaveV2ReserveD.type():
                     # update reserve
                     self.reserve_dic[processed_data.asset] = processed_data
-                elif processed_data.type() == AaveV2ReserveDataUpdatedRecordsD.type():
-                    tmp = AaveV2ReserveDataCurrentD(
-                        block_number=log.block_number,
-                        asset=processed_data.reserve,
-                        liquidityRate=processed_data.liquidityRate,
-                        stableBorrowRate=processed_data.stableBorrowRate,
-                        variableBorrowRate=processed_data.variableBorrowRate,
-                        liquidityIndex=processed_data.liquidityIndex,
-                        variableBorrowIndex=processed_data.variableBorrowIndex,
-                    )
-                    if tmp.asset not in reserve_block_index_data:
-                        reserve_block_index_data[tmp.asset] = dict()
-                    reserve_block_index_data[tmp.asset][tmp.block_number] = tmp
-
-                    self._collect_item(
-                        AaveV2ReserveDataCurrentD.type(),
-                        AaveV2ReserveDataCurrentD(
-                            block_number=log.block_number,
-                            asset=processed_data.reserve,
-                            liquidityRate=processed_data.liquidityRate,
-                            stableBorrowRate=processed_data.stableBorrowRate,
-                            variableBorrowRate=processed_data.variableBorrowRate,
-                            liquidityIndex=processed_data.liquidityIndex,
-                            variableBorrowIndex=processed_data.variableBorrowIndex,
-                        ),
-                    )
+                elif processed_data.type() == AaveV2ReserveDataD.type():
+                    if processed_data.asset not in reserve_block_index_data:
+                        reserve_block_index_data[processed_data.asset] = dict()
+                    reserve_block_index_data[processed_data.asset][processed_data.block_number] = processed_data
 
                 self._collect_item(processed_data.type(), processed_data)
                 aave_records.append(processed_data)
@@ -431,7 +405,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
         return lis
 
     def merge_reserve_data_update(self):
-        tmps = self._data_buff.pop(AaveV2ReserveDataCurrentD.type())
+        tmps = self._data_buff.pop(AaveV2ReserveDataD.type())
         tmps.sort(key=lambda x: x.block_number, reverse=True)
         lis = []
         unique_k_set = set()
@@ -441,7 +415,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 unique_k_set.add(k)
                 lis.append(li)
         if len(lis) > 0:
-            self._collect_items(AaveV2ReserveDataCurrentD.type(), lis)
+            self._collect_items(AaveV2ReserveDataD.type(), lis)
 
     def calculate_new_address_current(self, exists_dic, aave_records, liquidation_lis) -> Any:
         def nested_dict():

@@ -141,21 +141,16 @@ class AaveV2CallRecordsD(FilterData):
 
 
 @dataclass
-class AaveV2ReserveDataUpdatedRecordsD(AaveV2BaseRecord):
-    reserve: Optional[str] = None
-    liquidityRate: Optional[int] = None
-    stableBorrowRate: Optional[int] = None
-    variableBorrowRate: Optional[int] = None
-    liquidityIndex: Optional[int] = None
-    variableBorrowIndex: Optional[int] = None
-
-
-@dataclass
-class AaveV2ReserveDataCurrentD(FilterData):
+class AaveV2ReserveDataD(FilterData):
+    block_timestamp: Optional[int] = None
+    transaction_hash: Optional[str] = None
+    log_index: Optional[int] = None
+    topic0: Optional[str] = None
+    event_name: Optional[str] = None
     asset: Optional[str] = None
-    liquidityRate: Optional[int] = None
-    stableBorrowRate: Optional[int] = None
-    variableBorrowRate: Optional[int] = None
-    liquidityIndex: Optional[int] = None
-    variableBorrowIndex: Optional[int] = None
+    liquidity_rate: Optional[int] = None
+    stable_borrow_rate: Optional[int] = None
+    variable_borrow_rate: Optional[int] = None
+    liquidity_index: Optional[int] = None
+    variable_borrow_index: Optional[int] = None
     block_number: Optional[int] = None

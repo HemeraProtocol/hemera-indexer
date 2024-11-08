@@ -24,12 +24,6 @@ class AaveV2Reserve(HemeraModel):
 
     interest_rate_strategy_address = Column(BYTEA)
 
-    liquidity_rate = Column(NUMERIC(100))
-    stable_borrow_rate = Column(NUMERIC(100))
-    variable_borrow_rate = Column(NUMERIC(100))
-    liquidity_index = Column(NUMERIC(100))
-    variable_borrow_index = Column(NUMERIC(100))
-
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
     transaction_hash = Column(BYTEA)
