@@ -1,0 +1,10 @@
+chain_id: 1
+uniswap_v3_pool_job:
+  position_token_address: '0xc36442b4a4522e871399cd717abdd847ab11fe88'
+  factory_address: '0x1f98431c8ad98523631ae4a59f267346ea31f984'
+
+eigen_layer_job:
+  STRATEGY_MANAGER:
+    address: '0x858646372cc42e1a627fce94aa7a7033e7cf075a'
+  DELEGATION:
+    address: '0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a'

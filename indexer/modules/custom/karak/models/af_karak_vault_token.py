@@ -4,8 +4,8 @@
 # @Author  will
 # @File  af_karak_vault_token.py
 # @Brief
-from sqlalchemy import INT, VARCHAR, Column, PrimaryKeyConstraint, func, text
-from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, TIMESTAMP
+from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
 
@@ -17,11 +17,10 @@ class AfKarakVaultToken(HemeraModel):
     token = Column(BYTEA, primary_key=True, nullable=False)
     name = Column(VARCHAR)
     symbol = Column(VARCHAR)
-    asset_type = Column(INT)
+    asset_type = Column(INTEGER)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("vault", "token"),)
 

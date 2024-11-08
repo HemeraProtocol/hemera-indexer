@@ -423,13 +423,13 @@ Avoid specifying the same parameter from both the environment variable and the c
 
 #### `PROVIDER_URI` or `--provider-uri` or `-p`
 
-[**Default**: `https://mainnet.infura.io`]
-The URI of the web3 rpc provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`.
+[**Default**: `https://ethereum-rpc.publicnode.com`]
+The URI of the web3 rpc provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://ethereum-rpc.publicnode.com`.
 
 #### `DEBUG_PROVIDER_URI` or `--debug-provider-uri` or `-d`
 
-[**Default**: `https://mainnet.infura.io`]
-The URI of the web3 debug rpc provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://mainnet.infura.io`.
+[**Default**: `https://ethereum-rpc.publicnode.com`]
+The URI of the web3 debug rpc provider, e.g. `file://$HOME/Library/Ethereum/geth.ipc` or `https://ethereum-rpc.publicnode.com`.
 
 #### `POSTGRES_URL` or `--postgres-url` or `-pg`
 

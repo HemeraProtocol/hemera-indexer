@@ -5,6 +5,7 @@ import time
 import click
 from web3 import Web3
 
+from cli.logo import print_logo
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import DEFAULT_COLLECTION, calculate_entity_value, generate_output_types
 from indexer.controller.scheduler.job_scheduler import JobScheduler
@@ -42,11 +43,12 @@ def calculate_execution_time(func):
 @click.option(
     "-p",
     "--provider-uri",
-    default="https://mainnet.infura.io",
+    default="https://ethereum-rpc.publicnode.com",
     show_default=True,
     type=str,
     envvar="PROVIDER_URI",
-    help="The URI of the web3 provider e.g. " "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
+    help="The URI of the web3 provider e.g. "
+    "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
 )
 @click.option(
     "-pg",
@@ -59,12 +61,12 @@ def calculate_execution_time(func):
 @click.option(
     "-d",
     "--debug-provider-uri",
-    default="https://mainnet.infura.io",
+    default="https://ethereum-rpc.publicnode.com",
     show_default=True,
     type=str,
     envvar="DEBUG_PROVIDER_URI",
     help="The URI of the web3 debug provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://mainnet.infura.io",
+    "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
 )
 @click.option(
     "-o",
@@ -337,6 +339,7 @@ def stream(
     auto_upgrade_db=True,
     log_level="INFO",
 ):
+    print_logo()
     configure_logging(log_level, log_file)
     configure_signals()
     provider_uri = pick_random_provider_uri(provider_uri)
@@ -386,12 +389,14 @@ def stream(
         else:
             logging.getLogger("ROOT").info(f"Loading config from file: {config_file}, chain_id: {config['chain_id']}")
             config.update(file_based_config)
-
-    if output_types is None:
+    output_types_by_entity_type = []
+    if entity_types is not None:
         entity_types = calculate_entity_value(entity_types)
-        output_types = list(set(generate_output_types(entity_types)))
-    else:
-        output_types = generate_dataclass_type_list_from_parameter(output_types, "output")
+        output_types_by_entity_type = list(set(generate_output_types(entity_types)))
+
+    output_types = list(
+        set(generate_dataclass_type_list_from_parameter(output_types, "output") + output_types_by_entity_type)
+    )
 
     if source_path and source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")

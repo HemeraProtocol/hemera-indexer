@@ -40,4 +40,10 @@ class UniswapV3Pools(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
+            {
+                "domain": "AgniV3PoolFromTokenJob",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
