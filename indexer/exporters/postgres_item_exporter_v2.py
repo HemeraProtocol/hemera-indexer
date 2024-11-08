@@ -27,7 +27,7 @@ class PostgresItemExporterV2(BaseExporter):
     def __init__(self, service):
         self.service = service
 
-    def export_items(self, items):
+    def export_items(self, items, **kwargs):
         session = self.service.get_service_session()
         try:
             items_grouped_by_type = group_by_item_type(items)

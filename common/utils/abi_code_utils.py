@@ -35,6 +35,8 @@ from indexer.utils.abi import (
     event_log_abi_to_topic,
     function_abi_to_4byte_selector_str,
     get_types_from_abi_type_list,
+    pad_address,
+    uint256_to_bytes,
 )
 
 abi_codec = ABICodec(eth_abi.registry.registry)
@@ -69,6 +71,9 @@ class Event:
         :rtype: str
         """
         return self._signature
+
+    def get_name(self) -> str:
+        return self._event_abi["name"]
 
     def decode_log(self, log) -> Optional[Dict[str, Any]]:
         """
@@ -194,6 +199,9 @@ class Function:
         """
         return self._signature
 
+    def get_name(self) -> str:
+        return self.get_abi()["name"]
+
     def get_inputs_type(self) -> List[str]:
         """
         Returns the list of input types for the function.
@@ -273,6 +281,95 @@ class Function:
             logging.warning(f"Failed to decode transaction output data: {e}, input data: {data}")
             return None
 
+    def encode_function_call_data(self, arguments: Sequence[Any]) -> str:
+        """
+        Encodes the function call data.
+
+        :param arguments: The arguments to encode.
+        :type arguments: Sequence[Any]
+
+        :param data: Additional data to prepend to the encoded arguments (optional).
+        :type data: str
+
+        :return: The encoded function call data as a hexadecimal string.
+        :rtype: str
+        """
+        if arguments is None:
+            arguments = []
+
+        if len(arguments) != len(self._inputs_type):
+            raise ValueError(f"Expected {len(self._inputs_type)} arguments, got {len(arguments)}")
+
+        if len(arguments) > 2:
+            return encode_data(self._function_abi, arguments, self.get_signature())
+
+        encoded = hex_str_to_bytes(self._signature)
+        for arg, arg_type in zip(arguments, self._inputs_type):
+            if arg_type == "address":
+                encoded += pad_address(arg)
+            elif arg_type == "uint256":
+                encoded += uint256_to_bytes(arg)
+            else:
+                # cannot handle, call encode directly
+                return encode_data(self._function_abi, arguments, self.get_signature())
+        return bytes_to_hex_str(encoded)
+
+
+class FunctionCollection:
+    def __init__(self, functions: List[Function]):
+        """
+        Initializes a FunctionCollection object.
+
+        :param functions: A list of Function objects.
+        :type functions: List[Function]
+        """
+        self._functions = functions
+        self._function_map = {function.get_signature(): function for function in functions}
+
+    def get_function_by_signature(self, signature: str) -> Optional[Function]:
+        """
+        Returns a Function object by its signature.
+
+        :param signature: The signature of the function.
+        :type signature: str
+
+        :return: The Function object if found, otherwise None.
+        :rtype: Optional[Function]
+        """
+        for function in self._functions:
+            if function.get_signature() == signature:
+                return function
+        return None
+
+    def get_functions(self) -> List[Function]:
+        """
+        Returns the list of Function objects.
+
+        :return: A list of Function objects.
+        :rtype: List[Function]
+        """
+        return self._functions
+
+    def decode_function_input_data(self, data: str) -> Optional[Dict[str, Any]]:
+        """
+        Decodes the input data for a function given its signature.
+
+        :param signature: The signature of the function.
+        :type signature: str
+
+        :param data: The input data to decode.
+        :type data: str
+
+        :return: A dictionary containing the decoded data, or None if decoding fails.
+        :rtype: Optional[Dict[str, Any]]
+        """
+        signature = data[:10]
+        if signature not in self._function_map:
+            logging.warning(f"Function signature {signature} not found in function map.")
+            return None
+        function = self._function_map[signature]
+        return function.decode_function_input_data(data)
+
 
 def decode_transaction_data(
     fn_abi: ABIFunction,
@@ -347,7 +444,8 @@ def decode_data(decode_type: Union[Sequence[str], List[str], str], data: bytes) 
         try:
             data = abi_codec.decode(decode_type, data)
         except Exception as e:
-            print(f"Failed to decode data: {e}")
+            logging.warning(f"Failed to decode data: {e}")
+            return None
     else:
         raise ValueError(f"Invalid decode_type: {decode_type}, it should be str or list[str]")
     return data

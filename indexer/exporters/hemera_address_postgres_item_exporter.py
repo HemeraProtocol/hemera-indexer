@@ -39,7 +39,7 @@ class HemeraAddressPostgresItemExporter(BaseExporter):
         self.service = service
         self.chain_id = chain_id
 
-    def export_items(self, items):
+    def export_items(self, items, **kwargs):
         start_time = datetime.now(tzlocal())
 
         conn = self.service.get_conn()

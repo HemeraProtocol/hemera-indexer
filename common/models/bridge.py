@@ -104,6 +104,18 @@ class L1ToL2BridgeTransactions(HemeraModel):
                 "update_strategy": None,
                 "converter": general_converter,
             },
+            {
+                "domain": "MorphDepositedTransactionOnL1",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "MorphDepositedTransactionOnL2",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
 
 
@@ -169,6 +181,18 @@ class L2ToL1BridgeTransactions(HemeraModel):
             {
                 "domain": "OpL2ToL1WithdrawnTransactionProven",
                 "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "MorphWithdrawalTransactionOnL1",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": "MorphWithdrawalTransactionOnL2",
+                "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },

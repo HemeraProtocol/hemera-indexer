@@ -12,6 +12,8 @@ DODO_TESTNET_PUBLIC_NODE_RPC_URL = os.environ.get(
     "DODO_TESTNET_PUBLIC_NODE_RPC_URL", "https://dodochain-testnet.alt.technology"
 )
 
+MORPHL2_PUBLIC_NODE_RPC_URL = os.environ.get("MORPHL2_PUBLIC_NODE_RPC_URL", "https://rpc.morphl2.io")
+
 MANTLE_PUBLIC_NODE_RPC_URL = os.environ.get("MANTLE_PUBLIC_NODE_RPC_URL", "https://rpc.mantle.xyz")
 MANTLE_PUBLIC_NODE_DEBUG_RPC_URL = os.environ.get("MANTLE_PUBLIC_NODE_DEBUG_RPC_URL", "https://rpc.mantle.xyz")
 

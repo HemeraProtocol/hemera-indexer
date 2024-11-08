@@ -1,3 +1,4 @@
+from indexer.exporters.base_exporter import BaseExporter
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.exporters.csv_file_item_exporter import CSVFileItemExporter
 from indexer.exporters.hemera_address_postgres_item_exporter import HemeraAddressPostgresItemExporter
@@ -23,6 +24,8 @@ def create_item_exporter(output, config):
         item_exporter = CSVFileItemExporter(output, config)
     elif item_exporter_type == ItemExporterType.HEMERA_ADDRESS_POSTGRES:
         item_exporter = HemeraAddressPostgresItemExporter(output, config["chain_id"])
+    elif item_exporter_type == ItemExporterType.VOID:
+        item_exporter = BaseExporter()
     else:
         raise ValueError("Unable to determine item exporter type for output " + output)
 
@@ -49,13 +52,17 @@ def determine_item_exporter_type(output):
         return ItemExporterType.JSONFILE
     elif output is not None and output.startswith("csvfile://"):
         return ItemExporterType.CSVFILE
+    elif output is not None and output == "void":
+        return ItemExporterType.VOID
     elif output is None or output == "console":
         return ItemExporterType.CONSOLE
+
     else:
         return ItemExporterType.UNKNOWN
 
 
 class ItemExporterType:
+    VOID = "void"
     POSTGRES = "postgres"
     JSONFILE = "jsonfile"
     CSVFILE = "csvfile"

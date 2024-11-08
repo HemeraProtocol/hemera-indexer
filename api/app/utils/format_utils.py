@@ -17,13 +17,13 @@ def format_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
 
     if "receipt_l1_fee" in transaction_json and transaction_json["receipt_l1_fee"]:
         transaction_json["receipt_l1_fee"] = (
-            "{0:.15f}".format(transaction["receipt_l1_fee"] / 10**18).rstrip("0").rstrip(".")
+            "{0:.15f}".format(transaction["receipt_l1_fee"] or 0 / 10**18).rstrip("0").rstrip(".")
         )
         transaction_json["receipt_l1_gas_price"] = (
-            "{0:.15f}".format(transaction["receipt_l1_gas_price"] / 10**18).rstrip("0").rstrip(".")
+            "{0:.15f}".format(transaction["receipt_l1_gas_price"] or 0 / 10**18).rstrip("0").rstrip(".")
         )
         transaction_json["receipt_l1_gas_price_gwei"] = (
-            "{0:.6f}".format(transaction["receipt_l1_gas_price"] / 10**9).rstrip("0").rstrip(".")
+            "{0:.6f}".format(transaction["receipt_l1_gas_price"] or 0 / 10**9).rstrip("0").rstrip(".")
         )
 
         total_transaction_fee = transaction_fee + transaction["receipt_l1_fee"]

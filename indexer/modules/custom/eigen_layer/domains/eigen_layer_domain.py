@@ -1,33 +1,29 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from indexer.domain import FilterData
+from indexer.domain import Domain
 
 
 @dataclass
-class EigenLayerActionD(FilterData):
+class EigenLayerAction(Domain):
     transaction_hash: str
     log_index: int
     transaction_index: int
     internal_idx: Optional[int] = 0
     block_number: Optional[int] = None
     block_timestamp: Optional[int] = None
-    method: Optional[str] = None
     event_name: Optional[str] = None
-    topic0: Optional[str] = None
-    from_address: Optional[str] = None
-    to_address: Optional[str] = None
 
     token: Optional[str] = None
     strategy: Optional[str] = None
-    shares: Optional[int] = None
     staker: Optional[str] = None
+    shares: Optional[int] = None
     withdrawer: Optional[str] = None
     withdrawroot: Optional[str] = None
 
 
 @dataclass
-class EigenLayerAddressCurrentD(FilterData):
+class EigenLayerAddressCurrent(Domain):
     address: Optional[str] = None
     strategy: Optional[str] = None
     token: Optional[str] = None
@@ -37,7 +33,7 @@ class EigenLayerAddressCurrentD(FilterData):
 
 
 def eigen_layer_address_current_factory():
-    return EigenLayerAddressCurrentD(
+    return EigenLayerAddressCurrent(
         address=None,
         strategy=None,
         token=None,

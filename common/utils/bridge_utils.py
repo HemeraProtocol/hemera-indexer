@@ -318,7 +318,7 @@ def format_mantle_token_info(transaction, token_info, bridge_type="L1"):
                 {
                     "token_name": token_info["name"],
                     "token_symbol": token_info["symbol"],
-                    "token_type": token_info["type"],
+                    "token_type": token_info["token_type"],
                     "token_logo_url": token_info["icon_url"],
                     "token_address": token_info["address"],
                     "value": format_value(transaction["amount"], token_info["decimals"] or 0),
@@ -354,7 +354,7 @@ def format_linea_token_info(transaction, token_info):
             {
                 "token_name": token_info["name"],
                 "token_symbol": token_info["symbol"],
-                "token_type": token_info["type"],
+                "token_type": token_info["token_type"],
                 "token_logo_url": token_info["icon_url"],
                 "token_address": token_info["address"],
                 "value": format_value(transaction["amount"], token_info.get("decimals", 18)),
@@ -379,7 +379,7 @@ def format_bedrock_token_info(transaction, token_info, native_token="ETH"):
         token_name = (
             "ETH" if token_info["address"] == "0xdeaddeaddeaddeaddeaddeaddeaddeaddead1111" else token_info["name"]
         )
-        token_type = "COIN" if token_name == "ETH" else token_info["type"]
+        token_type = "COIN" if token_name == "ETH" else token_info["token_type"]
         token_list.append(
             {
                 "token_name": token_name,
