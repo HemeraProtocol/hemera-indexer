@@ -39,8 +39,12 @@ class MultiCallHelper:
             self.net = None
             self.deploy_block_number = 2**56
         else:
-            self.net = get_multicall_network(self.chain_id)
-            self.deploy_block_number = self.net.deploy_block_number
+            try:
+                self.net = get_multicall_network(self.chain_id)
+                self.deploy_block_number = self.net.deploy_block_number
+            except ValueError:
+                self.net = None
+                self.deploy_block_number = self.net.deploy_block_number
 
     @calculate_execution_time
     def validate_and_prepare_calls(self, calls):
@@ -59,7 +63,7 @@ class MultiCallHelper:
         to_execute_multi_calls = []
 
         for block_id, items in grouped_data.items():
-            if block_id < self.deploy_block_number or not self._is_multi_call:
+            if (isinstance(block_id, int) and block_id < self.deploy_block_number) or not self._is_multi_call:
                 to_execute_batch_calls.extend(items)
             else:
                 to_execute_multi_calls.append(items)

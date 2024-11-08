@@ -138,7 +138,7 @@ def extract_token_parameters(
                 "param_to": parameter.token_address,
                 "param_data": encode_balance_abi_parameter(parameter.address, parameter.token_type, parameter.token_id),
                 "param_number": parameter.block_number if block_number is None else block_number,
-                "block_number": parameter.block_number if block_number is None else None,
+                "block_number": parameter.block_number if block_number is None else block_number,
                 "block_timestamp": parameter.block_timestamp,
             }
         )
