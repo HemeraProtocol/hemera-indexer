@@ -188,7 +188,10 @@ class BaseJob(metaclass=BaseJobMeta):
         annotations = get_type_hints(self._process_function)
         for param, param_type in annotations.items():
             args_type = get_args(param_type)[0]
-            parameters[param] = self._data_buff[args_type.type()]
+            if args_type.type() in self._data_buff:
+                parameters[param] = self._data_buff[args_type.type()]
+            else:
+                parameters[param] = []
 
         return parameters
 
