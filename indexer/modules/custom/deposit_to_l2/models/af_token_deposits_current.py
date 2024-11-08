@@ -2,6 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 
 
 class AFTokenDepositsCurrent(HemeraModel):
@@ -24,7 +25,7 @@ class AFTokenDepositsCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AddressTokenDeposit",
+                "domain": AddressTokenDeposit,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_token_deposits_current.block_number",
                 "converter": general_converter,

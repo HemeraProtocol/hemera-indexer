@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 
 from common.models import HemeraModel
 from common.models.token_balances import token_balances_general_converter
+from indexer.domain.current_token_balance import CurrentTokenBalance
 
 
 class CurrentTokenBalances(HemeraModel):
@@ -27,7 +28,7 @@ class CurrentTokenBalances(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "CurrentTokenBalance",
+                "domain": CurrentTokenBalance,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > address_current_token_balances.block_number",
                 "converter": token_balances_general_converter,

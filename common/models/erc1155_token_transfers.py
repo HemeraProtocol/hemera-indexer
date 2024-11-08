@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.domain.token_transfer import ERC1155TokenTransfer
 
 
 class ERC1155TokenTransfers(HemeraModel):
@@ -30,7 +31,7 @@ class ERC1155TokenTransfers(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ERC1155TokenTransfer",
+                "domain": ERC1155TokenTransfer,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,

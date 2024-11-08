@@ -1,3 +1,7 @@
+import hashlib
+import importlib
+import inspect
+import sys
 from dataclasses import asdict, dataclass, fields, is_dataclass
 from typing import Any, Dict, Union, get_args, get_origin
 
@@ -13,12 +17,64 @@ model_path_patterns = [
 
 class DomainMeta(type):
     _registry = {}
+    _used_hash = set()
+    _hash_mapping = {}
+    _dataclass_mapping = {}
+    _code_integrity = {}
+
+    @classmethod
+    def _generate_code(mcs, cls) -> str:
+        cut = len(cls.__name__) % 32 // 2
+        salt = hashlib.sha1(cls.__name__.encode("utf-8")).hexdigest()
+        hash_value = hashlib.sha256(f"{cls.__name__}{salt[cut:cut + 10]}".encode("utf-8")).hexdigest()
+
+        code = hash_value[cut : cut + 8]
+
+        if code in mcs._used_hash:
+            existing_domain = mcs._hash_mapping[code]
+            raise ValueError(
+                f"\nHash collision detected!\n"
+                f"Generated hash '{code}' for '{cls.__module__}.{cls.__name__}'\n"
+                f"conflicts with existing domain '{existing_domain}'.\n"
+                f"Please manually specify a different hash code using:\n"
+                f"class {cls.__name__}(Domain):\n"
+                f"    __manual_hash__ = 'xxxxxxxx'  # Replace with a unique 8-character code"
+            )
+
+        return code
 
     def __new__(mcs, name, bases, attrs):
         new_cls = super().__new__(mcs, name, bases, attrs)
 
-        if name != "Domain" and issubclass(new_cls, Domain):
-            mcs._registry[name] = new_cls
+        if name == "Domain":
+            return new_cls
+
+        manual_hash = attrs.get("__manual_hash__")
+
+        if manual_hash:
+            if manual_hash in mcs._used_hash:
+                existing_domain = mcs._hash_mapping[manual_hash]
+
+                raise ValueError(
+                    f"\nHash collision detected!\n"
+                    f"Generated hash '{manual_hash}' for '{new_cls.__module__}.{name}'\n"
+                    f"conflicts with existing domain '{existing_domain}'.\n"
+                    f"Please manually specify a different hash code using:\n"
+                    f"class {new_cls.__name__}(Domain):\n"
+                    f"    __manual_hash__ = 'xxxxxxxx'  # Replace with a unique 8-character code"
+                )
+            dataclass_code = manual_hash
+        else:
+            dataclass_code = mcs._generate_code(new_cls)
+
+        module = sys.modules.get(new_cls.__module__) or importlib.import_module(new_cls.__module__)
+        code_hash = hashlib.sha256(inspect.getsource(module).encode("utf-8")).hexdigest()
+
+        mcs._used_hash.add(dataclass_code)
+        mcs._hash_mapping[dataclass_code] = f"{new_cls.__module__}.{name}"
+        mcs._dataclass_mapping[f"{new_cls.__module__}.{name}"] = dataclass_code
+        mcs._code_integrity[dataclass_code] = code_hash
+        setattr(new_cls, "_auto_hash", dataclass_code)
 
         return new_cls
 
@@ -26,17 +82,28 @@ class DomainMeta(type):
     def get_all_subclasses_with_type(mcs):
         def get_subclasses(cls):
             subclasses = set()
-            for subclass in cls.__subclasses__():
-                subclasses.add(subclass)
-                subclasses.update(get_subclasses(subclass))
+            for subclaz in cls.__subclasses__():
+                subclasses.add(subclaz)
+                subclasses.update(get_subclasses(subclaz))
             return subclasses
 
         all_subclasses = get_subclasses(Domain)
-        return {subclass.type(): subclass for subclass in all_subclasses if hasattr(subclass, "type")}
+
+        subclasses_dict = {}
+        for subclass in all_subclasses:
+            if hasattr(subclass, "type") and subclass.type() not in subclasses_dict:
+                subclasses_dict[subclass.type()] = subclass
+            elif hasattr(subclass, "type") and subclass.type() in subclasses_dict:
+                raise TypeError(f"Type {subclass} has name conflict with type {subclasses_dict[subclass.type()]}!")
+        return subclasses_dict
 
 
 @dataclass
 class Domain(metaclass=DomainMeta):
+    __manual_hash__ = None
+
+    def __init__(self):
+        self._auto_hash = None
 
     def __repr__(self):
         return dataclass_to_dict(self)
@@ -69,6 +136,10 @@ class Domain(metaclass=DomainMeta):
     @classmethod
     def is_filter_data(cls):
         return False
+
+    @classmethod
+    def get_code_hash(cls):
+        return cls._auto_hash
 
 
 @dataclass

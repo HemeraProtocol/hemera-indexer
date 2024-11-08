@@ -12,18 +12,38 @@ from common.utils.format_utils import hex_str_to_bytes
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.utils.exception_recorder import ExceptionRecorder
+from indexer.utils.report_to_contract import RecordReporter
 
 exception_recorder = ExceptionRecorder()
+logger = logging.getLogger(__name__)
 
 
 class ReorgController(BaseController):
 
-    def __init__(self, batch_web3_provider, job_scheduler, ranges, config, max_retries=5):
+    def __init__(
+        self,
+        batch_web3_provider,
+        job_scheduler,
+        ranges,
+        config,
+        max_retries=5,
+        record_reporter=None,
+        runtime_signature_signer=None,
+    ):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
         self.db_service = config.get("db_service")
         self.job_scheduler = job_scheduler
         self.max_retries = max_retries
+        self.chain_id = self._get_current_chain_id()
+        self.record_reporter: RecordReporter = record_reporter
+        self.runtime_signature = runtime_signature_signer
+        self._calculate_runtime_hash_code()
+
+    def _calculate_runtime_hash_code(self):
+        self.runtime_signature.calculate_signature(__name__)
+        self.runtime_signature.calculate_combined_hash()
+        self.runtime_combined_hash = self.runtime_signature.get_combined_hash()
 
     def action(self, job_id=None, block_number=None, remains=None, retry_errors=True):
         if block_number is None:
@@ -36,7 +56,7 @@ class ReorgController(BaseController):
 
         # condition can lock other thread, using this check to prevent other process going through
         if not self.check_job_runnable(job_id):
-            logging.info(
+            logger.info(
                 "Detected other process is reorging data, this process will shutdown immediately.\n"
                 "Reorging job has been submitted, it will auto running after other process complete their work.\n"
                 "Please do not re-run this process manually, it will occur some unexpected problem. "
@@ -55,10 +75,10 @@ class ReorgController(BaseController):
                 )
 
                 if fix_need:
-                    logging.info(f"Reorging block No.{block_number - offset}")
+                    logger.info(f"Reorging block No.{block_number - offset}")
                     self._do_fixing(block_number - offset, retry_errors)
                 else:
-                    logging.info(
+                    logger.info(
                         f"Block No.{block_number - offset} is verified to be correct or has not been synced. "
                         f"Skip to the next one."
                     )
@@ -85,12 +105,12 @@ class ReorgController(BaseController):
                     "job_status": "interrupt",
                 },
             )
-            logging.error(f"Reorging mission catch exception: {e}")
+            logger.error(f"Reorging mission catch exception: {e}")
             raise e
 
         self.update_job_info(job_id, job_info={"job_status": "completed"})
 
-        logging.info(f"Reorging mission start from block No.{block_number} and ranges {remains} has been completed.")
+        logger.info(f"Reorging mission start from block No.{block_number} and ranges {remains} has been completed.")
 
     def _do_fixing(self, fix_block, retry_errors=True):
         tries, tries_reset = 0, True
@@ -98,40 +118,47 @@ class ReorgController(BaseController):
             try:
                 # Main reorging logic
                 tries_reset = True
-                self.job_scheduler.run_jobs(fix_block, fix_block)
+                report_info = self.job_scheduler.run_jobs(fix_block, fix_block)
+                logger.info(f"Block No.{fix_block} and relative entities completely fixed .")
 
-                logging.info(f"Block No.{fix_block} and relative entities completely fixed .")
+                if self.record_reporter:
+                    self.record_reporter.report(
+                        self.chain_id, fix_block, fix_block, self.runtime_combined_hash, report_info, "reorg"
+                    )
                 break
 
             except HemeraBaseException as e:
-                logging.exception(f"An rpc response exception occurred while syncing block data. error: {e}")
+                logger.exception(f"An rpc response exception occurred while syncing block data. error: {e}")
                 if e.crashable:
-                    logging.exception("Mission will crash immediately.")
+                    logger.exception("Mission will crash immediately.")
+                    self.record_reporter.stop()
                     raise e
 
                 if e.retriable:
                     tries += 1
                     tries_reset = False
                     if tries >= self.max_retries:
-                        logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                        logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                        self.record_reporter.stop()
                         raise e
                     else:
-                        logging.info(f"No: {tries} retry is about to start.")
+                        logger.info(f"No: {tries} retry is about to start.")
                 else:
-                    logging.exception("Mission will not retry, and exit immediately.")
+                    logger.exception("Mission will not retry, and exit immediately.")
+                    self.record_reporter.stop()
                     raise e
 
             except Exception as e:
-                print(e)
-                logging.exception("An exception occurred while reorging block data.")
+                logger.exception("An exception occurred while reorging block data.")
                 tries += 1
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
-                    logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                    logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     exception_recorder.force_to_flush()
+                    self.record_reporter.stop()
                     raise e
                 else:
-                    logging.info("After 5 seconds will retry the job.")
+                    logger.info("After 5 seconds will retry the job.")
                     time.sleep(5)
 
             finally:
@@ -189,7 +216,7 @@ class ReorgController(BaseController):
                 .first()
             )
         except Exception as e:
-            logging.error(f"Wake up uncompleted job error: {e}.")
+            logger.error(f"Wake up uncompleted job error: {e}.")
             raise e
         finally:
             session.close()
@@ -224,3 +251,6 @@ class ReorgController(BaseController):
         finally:
             session.close()
         return result is None
+
+    def _get_current_chain_id(self):
+        return self.web3.eth.chain_id

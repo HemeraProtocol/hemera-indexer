@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 from collections import defaultdict, deque
 from typing import List, Set, Type
@@ -11,10 +13,10 @@ from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
+from indexer.jobs.source_job.csv_source_job import CSVSourceJob
 from indexer.jobs.source_job.pg_source_job import PGSourceJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 
@@ -65,6 +67,9 @@ class JobScheduler:
         multicall=None,
         auto_reorg=True,
         force_filter_mode=False,
+        runtime_signature_signer=None,
+        report_private_key=None,
+        report_from_address=None,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
@@ -75,6 +80,8 @@ class JobScheduler:
         self._is_multicall = multicall
         self.debug_batch_size = debug_batch_size
         self.max_workers = max_workers
+        self.report_private_key = report_private_key
+        self.report_from_address = report_from_address
         self.config = config
         required_output_types.sort(key=lambda x: x.type())
         self.required_output_types = required_output_types
@@ -108,9 +115,18 @@ class JobScheduler:
                     self.logger.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
                     BaseJob.init_token_cache(token_dict_from_db)
         self.instantiate_jobs()
+        self.runtime_signature = runtime_signature_signer
+        self._execute_runtime_signature()
         self.logger.info("Export output types: ")
         for output_type in self.required_output_types:
             self.logger.info(f"[*] {output_type.type()}")
+
+    def _execute_runtime_signature(self):
+        if self.runtime_signature is None:
+            return
+        self.runtime_signature.calculate_signature(__name__, ["indexer.jobs", "indexer.modules"])
+        for job in self.jobs:
+            self.runtime_signature.calculate_signature(job.__class__.__module__)
 
     def get_required_job_classes(self, output_types) -> (List[Type[BaseJob]], bool):
         required_job_classes = set()
@@ -246,6 +262,8 @@ class JobScheduler:
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
+                report_private_key=self.report_private_key,
+                report_from_address=self.report_from_address,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
@@ -259,18 +277,44 @@ class JobScheduler:
             for job in self.jobs:
                 job.run(start_block=start_block, end_block=end_block)
 
-            for output_type in self.required_output_types:
-                key = output_type.type()
-                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type()))}"
-                self.logger.info(f"{message}")
-                exception_recorder.log(
-                    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
-                )
+            report_info = []
+            output_types = {output.type(): output for output in self.required_output_types}
+            for key, value in self.get_data_buff().items():
+                message = f"{key}: {len(value)}"
+
+                if key in output_types:
+                    self.logger.info(message)
+                    exception_recorder.log(
+                        block_number=-1,
+                        dataclass=key,
+                        message_type="item_counter",
+                        message=message,
+                        level=RecordLevel.INFO,
+                    )
+
+                    base_info = {
+                        "dataClass": output_types[key].get_code_hash(),
+                        "count": len(self.get_data_buff()[key]),
+                    }
+                    data_hash = hashlib.sha256(json.dumps(base_info, sort_keys=True).encode()).hexdigest()
+                    base_info["dataHash"] = data_hash
+                    report_info.append(base_info)
+                else:
+                    self.logger.debug(message)
+                    exception_recorder.log(
+                        block_number=-1,
+                        dataclass=key,
+                        message_type="item_counter",
+                        message=f"{message} not require output",
+                        level=RecordLevel.Debug,
+                    )
 
         except Exception as e:
             raise e
         finally:
             exception_recorder.force_to_flush()
+
+        return report_info
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []

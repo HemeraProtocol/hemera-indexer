@@ -393,16 +393,16 @@ class AddressIndexerJob(ExtensionJob):
             list(group)[-1] for key, group in groupby(all_owner_parameters, lambda x: (x["address"], x["token_id"]))
         ]
 
-        if self._is_multi_call:
-            self.__collect_balance_batch(parameters)
-            self.__collect_owner_batch(owner_parameters)
-        else:
-            self._batch_work_executor.execute(parameters, self.__collect_balance_batch, total_items=len(parameters))
-            self._batch_work_executor.wait()
-            self._batch_work_executor.execute(
-                owner_parameters, self.__collect_owner_batch, total_items=len(owner_parameters)
-            )
-            self._batch_work_executor.wait()
+        # if self._is_multi_call:
+        self.__collect_balance_batch(parameters)
+        self.__collect_owner_batch(owner_parameters)
+        # else:
+        #     self._batch_work_executor.execute(parameters, self.__collect_balance_batch, total_items=len(parameters))
+        #     self._batch_work_executor.wait()
+        #     self._batch_work_executor.execute(
+        #         owner_parameters, self.__collect_owner_batch, total_items=len(owner_parameters)
+        #     )
+        #     self._batch_work_executor.wait()
 
     def _process(self, **kwargs):
         # Sort address holder

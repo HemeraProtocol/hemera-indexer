@@ -8,6 +8,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.karak.karak_domain import KarakVaultTokenD
 
 
 class AfKarakVaultToken(HemeraModel):
@@ -28,7 +29,7 @@ class AfKarakVaultToken(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "KarakVaultTokenD",
+                "domain": KarakVaultTokenD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

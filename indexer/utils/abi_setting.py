@@ -119,7 +119,7 @@ TOKEN_TOTAL_SUPPLY_FUNCTION = Function(
         "constant": True,
         "inputs": [],
         "name": "totalSupply",
-        "outputs": [{"name": "", "type": "uint256"}],
+        "outputs": [{"name": "totalSupply", "type": "uint256"}],
         "payable": False,
         "stateMutability": "view",
         "type": "function",
@@ -131,7 +131,7 @@ TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION = Function(
         "constant": True,
         "inputs": [{"name": "id", "type": "uint256"}],
         "name": "totalSupply",
-        "outputs": [{"name": "", "type": "uint256"}],
+        "outputs": [{"name": "totalSupply", "type": "uint256"}],
         "payable": False,
         "stateMutability": "view",
         "type": "function",
@@ -155,7 +155,7 @@ ERC721_TOKEN_URI_FUNCTION = Function(
         "constant": True,
         "inputs": [{"name": "tokenId", "type": "uint256"}],
         "name": "tokenURI",
-        "outputs": [{"name": "uri", "type": "address"}],
+        "outputs": [{"name": "uri", "type": "string"}],
         "payable": False,
         "stateMutability": "view",
         "type": "function",
@@ -167,7 +167,7 @@ ERC1155_MULTIPLE_TOKEN_URI_FUNCTION = Function(
         "constant": True,
         "inputs": [{"name": "tokenId", "type": "uint256"}],
         "name": "uri",
-        "outputs": [{"name": "uri", "type": "address"}],
+        "outputs": [{"name": "uri", "type": "string"}],
         "payable": False,
         "stateMutability": "view",
         "type": "function",
@@ -197,6 +197,44 @@ ERC1155_TOKEN_ID_BALANCE_OF_FUNCTION = Function(
         "outputs": [{"name": "balance", "type": "uint256"}],
         "payable": False,
         "stateMutability": "view",
+        "type": "function",
+    }
+)
+
+SUBMIT_INDEX_FUNCTION = Function(
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "chainId_", "type": "uint256"},
+            {"internalType": "uint256", "name": "startBlock_", "type": "uint256"},
+            {"internalType": "uint256", "name": "endBlock_", "type": "uint256"},
+            {"internalType": "uint256", "name": "codeHash_", "type": "bytes32"},
+            {
+                "components": [
+                    {"internalType": "bytes32", "name": "dataClass", "type": "bytes4"},
+                    {"internalType": "uint256", "name": "count", "type": "uint256"},
+                    {"internalType": "bytes32", "name": "dataHash", "type": "bytes32"},
+                ],
+                "internalType": "struct HemeraHistoryTransparency.IndexerOutput[]",
+                "name": "outputs_",
+                "type": "tuple[]",
+            },
+        ],
+        "name": "submitIndexRecord",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    }
+)
+
+REGISTER_FEATURE_FUNCTION = Function(
+    {
+        "inputs": [
+            {"internalType": "bytes4[]", "name": "dataClass_", "type": "bytes4[]"},
+            {"internalType": "bytes32[]", "name": "gitCommitHash_", "type": "bytes32[]"},
+        ],
+        "name": "registerFeature",
+        "outputs": [],
+        "stateMutability": "nonpayable",
         "type": "function",
     }
 )
