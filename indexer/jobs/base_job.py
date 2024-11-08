@@ -84,11 +84,13 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def run(self, **kwargs):
         try:
+            self._start(**kwargs)
+
             if self.able_to_reorg and self._reorg:
                 start_time = datetime.now()
-                self.logger.info(f"Stage _start starting.")
-                self._start(**kwargs)
-                self.logger.info(f"Stage _start finished. Took {datetime.now() - start_time}")
+                self.logger.info(f"Stage _pre_reorg starting.")
+                self._pre_reorg(**kwargs)
+                self.logger.info(f"Stage _pre_reorg finished. Took {datetime.now() - start_time}")
 
             if not self._reorg or self._should_reorg:
                 self._collect(**kwargs)
@@ -101,7 +103,9 @@ class BaseJob(metaclass=BaseJobMeta):
             self._end()
 
     def _start(self, **kwargs):
+        pass
 
+    def _pre_reorg(self, **kwargs):
         if self._service is None:
             raise FastShutdownError("PG Service is not set")
 

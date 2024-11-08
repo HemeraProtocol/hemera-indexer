@@ -2,6 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, SMALLINT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.address_index.domain import AddressTokenTransfer
 
 
 class AddressTokenTransfers(HemeraModel):
@@ -24,7 +25,7 @@ class AddressTokenTransfers(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AddressTokenTransfer",
+                "domain": AddressTokenTransfer,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
