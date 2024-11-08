@@ -45,17 +45,7 @@ class ValidateAndAggregate(FilterTransactionDataJob):
         # TODO: replace by dataclass.get_code_hash()
         self.block_dataclass = hex_str_to_bytes("0x67a70c90")
         self.tx_dataclass = hex_str_to_bytes("0x6048a7e2")
-        with open(self.user_defined_config["operator_ecdsa_key_file"], "r") as keystore_file:
-            ecdsa_keystore_json = keystore_file.read()
-        with open(self.user_defined_config["operator_bls_key_file"], "r") as keystore_file:
-            bls_keystore_str = keystore_file.read()
-            bls_keystore_json = json.loads(bls_keystore_str)
-            if "version" not in bls_keystore_json:
-                bls_keystore_json["version"] = 3
 
-        self.operator_ecdsa_private_key = Account.from_key(
-            Account.decrypt(json.loads(ecdsa_keystore_json), self.user_defined_config["operator_ecdsa_key_password"])
-        )
         self.operator_ecdsa_private_key = get_account_from_file(self.user_defined_config["operator_ecdsa_key_file"], self.user_defined_config["operator_ecdsa_password_file"])
         self.operator_bls_private_key = get_account_from_file(self.user_defined_config["operator_bls_key_file"], self.user_defined_config["operator_bls_password_file"])
         self.operator_bls_private_key = int.from_bytes(self.operator_bls_private_key, "big")
