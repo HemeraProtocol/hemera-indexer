@@ -1,4 +1,3 @@
-import logging
 from typing import List, Optional
 
 import orjson
@@ -8,8 +7,6 @@ from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.abi import AGGREGATE_FUNC, TRY_BLOCK_AND_AGGREGATE_FUNC
 from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_address, get_multicall_network
 from indexer.utils.multicall_hemera.util import calculate_execution_time
-
-logger = logging.getLogger(__name__)
 
 
 class Multicall:

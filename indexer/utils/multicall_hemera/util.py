@@ -12,6 +12,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,7 +42,7 @@ def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
     for idx, item in enumerate(items):
         item_size = estimate_size(item)
         if current_size + item_size > max_size and current_chunk:
-            logging.debug(f"current chunk size {len(current_chunk)}")
+            logger.debug(f"current chunk size {len(current_chunk)}")
             yield (current_chunk, calls)
             current_chunk = []
             calls = []
@@ -50,13 +51,13 @@ def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
         calls.append(same_length_calls[idx])
         current_size += item_size
     if current_chunk:
-        logging.debug(f"current chunk size {len(current_chunk)}")
+        logger.debug(f"current chunk size {len(current_chunk)}")
         yield (current_chunk, calls)
 
 
 def make_request_concurrent(make_request, chunks, max_workers=None):
     def single_request(chunk, index):
-        logging.debug(f"single request {len(chunk)}")
+        logger.debug(f"single request {len(chunk)}")
         return index, make_request(params=orjson.dumps(chunk))
 
     if max_workers is None:
@@ -96,7 +97,7 @@ class ThreadPoolManager:
                 index, result = future.result(timeout=30)
                 results[index] = result
         except Exception as e:
-            logging.error(f"ThreadPoolManager.submit_tasks error: {e}")
+            logger.error(f"ThreadPoolManager.submit_tasks error: {e}")
             raise e
 
         return results

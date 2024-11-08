@@ -134,7 +134,7 @@ class MultiCallHelper:
                     self.logger.warning(f"multicall helper failed call: {call}")
 
     def construct_multicall_rpc(self, to_execute_multi_calls):
-        logging.info(f"Function total multicalls: {len(to_execute_multi_calls)}")
+        self.logger.info(f"Function total multicalls: {len(to_execute_multi_calls)}")
         to_execute_multi_calls = [(calls,) for calls in to_execute_multi_calls]
         with mpire.WorkerPool(n_jobs=os.cpu_count()) as pool:
             multicall_rpcs = pool.map(self._construct_single_multicall_rpc, to_execute_multi_calls)
