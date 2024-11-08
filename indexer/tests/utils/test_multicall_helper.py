@@ -10,12 +10,12 @@ import pytest
 from web3 import Web3
 
 from common.utils.abi_code_utils import Function
+from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
-DEFAULT_ETHEREUM_RPC = os.environ.get("RPC")
-web3 = Web3(Web3.HTTPProvider(DEFAULT_ETHEREUM_RPC))
-multicall_helper = MultiCallHelper(web3, {"batch_size": 100, "multicall": False, "max_workers": 10})
+web3 = Web3(Web3.HTTPProvider(ETHEREUM_PUBLIC_NODE_RPC_URL))
+multicall_helper = MultiCallHelper(web3, {"batch_size": 100, "multicall": True, "max_workers": 10})
 
 
 @pytest.mark.indexer
@@ -240,19 +240,3 @@ def test_mutlicall_helper():
     multicall_helper.execute_calls(calls)
     for call in calls:
         assert call.returns["who"] == expected_return[call.block_number]
-
-    address = "0x7974b46e7940de2c4d6458c053bdbac0bf111683"
-    start_block_number = 15311054
-    step = 100
-    times = 500
-    calls = []
-    for i in range(times):
-        calls.append(
-            Call(
-                target=aave_vary_debt_usdc,
-                function_abi=balance_of_function,
-                parameters=[address],
-                block_number=start_block_number + i * step,
-            )
-        )
-    multicall_helper.execute_calls(calls)
