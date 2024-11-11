@@ -5,7 +5,7 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry]
 name = "hemera"
 description = "Tools for exporting Ethereum blockchain data to JSON/CSV file and postgresql"
-version = "0.4.0"
+version = "0.5.0"
 authors = [
     "xuzh <zihao.xu@thehemera.com>",
     "shanshuo0918 <shuo.shan@lifo.ai>"
@@ -42,7 +42,7 @@ ethereum-dasm = "0.1.5"
 requests = "*"
 sqlalchemy = "2.0.31"
 psycopg2-binary = "2.9.9"
-alembic = "*"
+alembic = "1.13.3"
 pandas = "1.5.3"
 Flask = "3.0.3"
 Flask-Caching = "2.3.0"

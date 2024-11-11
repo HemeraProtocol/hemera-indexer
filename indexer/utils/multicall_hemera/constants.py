@@ -1,149 +1,110 @@
 import os
-from enum import Enum
+from dataclasses import dataclass
+from typing import ClassVar, Dict
 
-GAS_LIMIT: int = int(os.environ.get("GAS_LIMIT", 50_000_000))
+GAS_LIMIT: int = int(os.environ.get("GAS_LIMIT", 5_000_000))
+DEFAULT_MULTICALL_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11"
 
 
-class Network(Enum):
-    Mainnet = (1, 14353601)
-    Ropsten = (3, 0)
-    Rinkeby = (4, 0)
-    Gorli = (5, 0)
-    Optimism = (10, 4286263)
-    CostonTestnet = (16, 0)
-    ThundercoreTestnet = (18, 0)
-    SongbirdCanaryNetwork = (19, 0)
-    Cronos = (25, 0)
-    RSK = (30, 0)
-    RSKTestnet = (31, 0)
-    Kovan = (42, 0)
-    Bsc = (56, 0)
-    OKC = (66, 0)
-    OptimismKovan = (69, 0)
-    BscTestnet = (97, 0)
-    Gnosis = (100, 0)
-    Velas = (106, 0)
-    Thundercore = (108, 0)
-    Coston2Testnet = (114, 0)
-    Fuse = (122, 0)
-    Heco = (128, 0)
-    Polygon = (137, 25770160)
-    Fantom = (250, 0)
-    Boba = (288, 0)
-    KCC = (321, 0)
-    ZkSync = (324, 0)
-    OptimismGorli = (420, 0)
-    Astar = (592, 0)
-    Metis = (1088, 0)
-    Moonbeam = (1284, 0)
-    Moonriver = (1285, 0)
-    MoonbaseAlphaTestnet = (1287, 0)
-    Milkomeda = (2001, 0)
-    Kava = (2222, 0)
-    FantomTestnet = (4002, 0)
-    ZetaMainnet = (7000, 1632781)
-    Canto = (7700, 0)
-    Klaytn = (8217, 0)
-    Base = (8453, 5022)
-    EvmosTestnet = (9000, 0)
-    Evmos = (9001, 0)
-    Holesky = (17000, 77)
-    Arbitrum = (42161, 7654707)
-    Celo = (42220, 0)
-    Oasis = (42262, 0)
-    AvalancheFuji = (43113, 0)
-    Avax = (43114, 0)
-    GodwokenTestnet = (71401, 0)
-    Godwoken = (71402, 0)
-    Mumbai = (80001, 0)
-    ArbitrumRinkeby = (421611, 0)
-    ArbitrumGorli = (421613, 0)
-    Sepolia = (11155111, 0)
-    Aurora = (1313161554, 0)
-    Harmony = (1666600000, 0)
-    PulseChain = (369, 0)
-    PulseChainTestnet = (943, 0)
-    MANTLE = (5000, 304717)
-    Linea = (59144, 42)
+@dataclass(frozen=True)
+class NetworkConfig:
+    chain_id: int
+    name: str
+    deploy_block_number: int = 2**56
+    multicall_address: str = DEFAULT_MULTICALL_ADDRESS
 
-    def __init__(self, value, deploy_block_number=0):
-        self._value = value
-        self._deploy_block_number = deploy_block_number
+    _networks: ClassVar[Dict[int, "NetworkConfig"]] = {}
 
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def deploy_block_number(self):
-        return self._deploy_block_number
+    def __post_init__(self):
+        NetworkConfig._networks[self.chain_id] = self
 
     @classmethod
-    def from_value(cls, value):
-        for network in cls:
-            if network.value == value:
-                return network
-        raise ValueError(f"Invalid network value: {value}")
+    def from_chain_id(cls, chain_id: int) -> "NetworkConfig":
+        if chain_id not in cls._networks:
+            raise ValueError(f"Unsupported network chain ID: {chain_id}")
+        return cls._networks[chain_id]
+
+    @classmethod
+    def get_all_networks(cls) -> Dict[int, "NetworkConfig"]:
+        """Get all registered networks."""
+        return cls._networks.copy()
 
 
-MULTICALL3_ADDRESSES = {
-    Network.Mainnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Ropsten: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Rinkeby: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Gorli: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Optimism: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.CostonTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.ThundercoreTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.SongbirdCanaryNetwork: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Cronos: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.RSK: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.RSKTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Kovan: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Bsc: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.OKC: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.OptimismKovan: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.BscTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Gnosis: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Velas: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Thundercore: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Coston2Testnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Fuse: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Heco: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Polygon: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Fantom: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Boba: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.KCC: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.ZkSync: "0x47898B2C52C957663aE9AB46922dCec150a2272c",
-    Network.OptimismGorli: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Astar: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Metis: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Moonbeam: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Moonriver: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.MoonbaseAlphaTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Milkomeda: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.FantomTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.ZetaMainnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Canto: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Klaytn: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.EvmosTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Evmos: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Arbitrum: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Celo: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Oasis: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.AvalancheFuji: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Avax: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.GodwokenTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Godwoken: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Mumbai: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.ArbitrumRinkeby: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.ArbitrumGorli: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Sepolia: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Aurora: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Harmony: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.PulseChain: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.PulseChainTestnet: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Base: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Holesky: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.MANTLE: "0xcA11bde05977b3631167028862bE2a173976CA11",
-    Network.Linea: "0xcA11bde05977b3631167028862bE2a173976CA11",
-}
+MAINNET = NetworkConfig(1, "Mainnet", 14353601)
+ROPSTEN = NetworkConfig(3, "Ropsten")
+RINKEBY = NetworkConfig(4, "Rinkeby")
+GOERLI = NetworkConfig(5, "Goerli")
+SEPOLIA = NetworkConfig(11155111, "Sepolia")
+HOLESKY = NetworkConfig(17000, "Holesky", 77)
+
+OPTIMISM = NetworkConfig(10, "Optimism", 4286263)
+ARBITRUM = NetworkConfig(42161, "Arbitrum", 7654707)
+BASE = NetworkConfig(8453, "Base", 5022)
+ZKSYNC = NetworkConfig(324, "zkSync", 0, "0x47898B2C52C957663aE9AB46922dCec150a2272c")
+MANTLE = NetworkConfig(5000, "Mantle", 304717)
+LINEA = NetworkConfig(59144, "Linea", 42)
+
+OPTIMISM_KOVAN = NetworkConfig(69, "OptimismKovan")
+OPTIMISM_GOERLI = NetworkConfig(420, "OptimismGoerli")
+ARBITRUM_RINKEBY = NetworkConfig(421611, "ArbitrumRinkeby")
+ARBITRUM_GOERLI = NetworkConfig(421613, "ArbitrumGoerli")
+
+BSC = NetworkConfig(56, "BSC")
+BSC_TESTNET = NetworkConfig(97, "BSCTestnet")
+
+POLYGON = NetworkConfig(137, "Polygon", 25770160)
+MUMBAI = NetworkConfig(80001, "Mumbai")
+FANTOM = NetworkConfig(250, "Fantom")
+FANTOM_TESTNET = NetworkConfig(4002, "FantomTestnet")
+GNOSIS = NetworkConfig(100, "Gnosis")
+AVALANCHE = NetworkConfig(43114, "Avalanche")
+AVALANCHE_FUJI = NetworkConfig(43113, "AvalancheFuji")
+AURORA = NetworkConfig(1313161554, "Aurora")
+CELO = NetworkConfig(42220, "Celo")
+
+METIS = NetworkConfig(1088, "Metis")
+MOONBEAM = NetworkConfig(1284, "Moonbeam")
+MOONRIVER = NetworkConfig(1285, "Moonriver")
+MOONBASE_ALPHA = NetworkConfig(1287, "MoonbaseAlphaTestnet")
+HARMONY = NetworkConfig(1666600000, "Harmony")
+CRONOS = NetworkConfig(25, "Cronos")
+PULSECHAIN = NetworkConfig(369, "PulseChain")
+PULSECHAIN_TESTNET = NetworkConfig(943, "PulseChainTestnet")
+
+THUNDERCORE = NetworkConfig(108, "Thundercore")
+THUNDERCORE_TESTNET = NetworkConfig(18, "ThundercoreTestnet")
+VELAS = NetworkConfig(106, "Velas")
+HECO = NetworkConfig(128, "Heco")
+BOBA = NetworkConfig(288, "Boba")
+KCC = NetworkConfig(321, "KCC")
+ASTAR = NetworkConfig(592, "Astar")
+MILKOMEDA = NetworkConfig(2001, "Milkomeda")
+KAVA = NetworkConfig(2222, "Kava")
+ZETA = NetworkConfig(7000, "ZetaMainnet", 1632781)
+CANTO = NetworkConfig(7700, "Canto")
+KLAYTN = NetworkConfig(8217, "Klaytn")
+EVMOS = NetworkConfig(9001, "Evmos")
+EVMOS_TESTNET = NetworkConfig(9000, "EvmosTestnet")
+OASIS = NetworkConfig(42262, "Oasis")
+GODWOKEN = NetworkConfig(71402, "Godwoken")
+GODWOKEN_TESTNET = NetworkConfig(71401, "GodwokenTestnet")
+
+COSTON_TESTNET = NetworkConfig(16, "CostonTestnet")
+SONGBIRD = NetworkConfig(19, "SongbirdCanaryNetwork")
+RSK = NetworkConfig(30, "RSK")
+RSK_TESTNET = NetworkConfig(31, "RSKTestnet")
+KOVAN = NetworkConfig(42, "Kovan")
+OKC = NetworkConfig(66, "OKC")
+FUSE = NetworkConfig(122, "Fuse")
+COSTON2_TESTNET = NetworkConfig(114, "Coston2Testnet")
+TAIKO_MAIN = NetworkConfig(167000, "Taiko", 11269)
+CYBER_TESTNET = NetworkConfig(111557560, "CyberTestnet")
+CYBER = NetworkConfig(7560, "Cyber", 3413302)
+
+
+def get_multicall_network(chain_id: int) -> NetworkConfig:
+    return NetworkConfig.from_chain_id(chain_id)
+
+
+def get_multicall_address(network: NetworkConfig) -> str:
+    return network.multicall_address

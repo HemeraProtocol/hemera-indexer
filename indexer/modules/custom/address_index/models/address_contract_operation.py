@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
 
 
 class AddressContractOperations(HemeraModel):
@@ -32,7 +33,7 @@ class AddressContractOperations(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AddressContractOperation",
+                "domain": AddressContractOperation,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

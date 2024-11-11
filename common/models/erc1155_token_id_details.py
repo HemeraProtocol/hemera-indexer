@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERI
 
 from common.models import HemeraModel, general_converter
 from common.models.erc721_token_id_details import token_uri_format_converter
+from indexer.domain.token_id_infos import ERC1155TokenIdDetail, UpdateERC1155TokenIdDetail
 
 
 class ERC1155TokenIdDetails(HemeraModel):
@@ -27,13 +28,13 @@ class ERC1155TokenIdDetails(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ERC1155TokenIdDetail",
+                "domain": ERC1155TokenIdDetail,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": token_uri_format_converter,
             },
             {
-                "domain": "UpdateERC1155TokenIdDetail",
+                "domain": UpdateERC1155TokenIdDetail,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number >= erc1155_token_id_details.block_number",
                 "converter": general_converter,

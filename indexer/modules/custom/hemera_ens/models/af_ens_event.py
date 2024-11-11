@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
+from indexer.modules.custom.hemera_ens.ens_domain import ENSMiddleD
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
 
 
@@ -52,7 +53,7 @@ class ENSMiddle(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ENSMiddleD",
+                "domain": ENSMiddleD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": ens_general_converter,
