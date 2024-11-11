@@ -189,7 +189,6 @@ class ExportAaveV2Job(FilterTransactionDataJob):
             return defaultdict(aave_v2_address_current_factory)
 
         res_d = defaultdict(nested_dict)
-        # enrich repay, liquidation, withdraw
         for a_record in aave_records:
             if a_record.type() == AaveV2WithdrawD.type() or a_record.type() == AaveV2DepositD.type():
                 reserve = self.reserve_dic[a_record.reserve]
@@ -261,59 +260,42 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                 res_d[address][debt_asset].block_timestamp = a_record.block_timestamp
 
                 # record last liquidation time and amount
-                liquidation_lis.append(
+                self._collect_item(
+                    AaveV2LiquidationAddressCurrentD.type(),
                     AaveV2LiquidationAddressCurrentD(
                         address=address,
                         asset=collateral_asset,
                         last_liquidation_time=a_record.block_timestamp,
                         last_total_value_of_liquidation=a_record.liquidated_collateral_amount,
-                    )
+                        block_number=a_record.block_number,
+                    ),
                 )
-        liquidation_lis = []
-        liquidation_lis = self.merge_liquidation_lis(liquidation_lis)
-        self._collect_items(AaveV2LiquidationAddressCurrentD.type(), liquidation_lis)
         address_currents = []
         for address, outer_dic in res_d.items():
             for reserve, kad in outer_dic.items():
                 address_currents.append(kad)
         self._collect_items(AaveV2AddressCurrentD.type(), address_currents)
-        self.merge_reserve_data_update()
+        self._merge_dataclasses(AaveV2ReserveDataD, ["asset"])
+        self._merge_dataclasses(AaveV2ReserveDataCurrentD, ["asset"])
+        self._merge_dataclasses(AaveV2LiquidationAddressCurrentD, ["address", "asset"])
+
         logger.info("This batch of data have processed")
 
-    def merge_liquidation_lis(self, liquidation_lis):
-        # keep the newest one
-        liquidation_lis.sort(key=lambda x: x.last_liquidation_time, reverse=True)
-        lis = []
-        unique_k_set = set()
-        for li in liquidation_lis:
-            k = (li.address, li.asset)
-            if k not in unique_k_set:
-                unique_k_set.add(k)
-                lis.append(li)
-        return lis
-
-    def merge_reserve_data_update(self):
-        tmps = self._data_buff.pop(AaveV2ReserveDataD.type())
+    def _merge_dataclasses(self, data_class, attributes):
+        """sort dataclass by block_number, then keep the newest data"""
+        if data_class.type() not in self._data_buff:
+            return
+        tmps = self._data_buff.pop(data_class.type())
         tmps.sort(key=lambda x: x.block_number, reverse=True)
         lis = []
         unique_k_set = set()
         for li in tmps:
-            k = li.asset
+            k = tuple([getattr(li, at) for at in attributes])
             if k not in unique_k_set:
                 unique_k_set.add(k)
                 lis.append(li)
         if len(lis) > 0:
-            self._collect_items(AaveV2ReserveDataD.type(), lis)
-        tmps = self._data_buff.pop(AaveV2ReserveDataCurrentD.type())
-        lis = []
-        unique_k_set = set()
-        for li in tmps:
-            k = li.asset
-            if k not in unique_k_set:
-                unique_k_set.add(k)
-                lis.append(li)
-        if len(lis) > 0:
-            self._collect_items(AaveV2ReserveDataCurrentD.type(), lis)
+            self._collect_items(data_class.type(), lis)
 
     def _enrich_records(self, aave_records):
         eth_call_lis = []
