@@ -16,7 +16,7 @@ def get_version():
 
 
 @click.group()
-# @click.version_option(version=get_version())
+@click.version_option(version=get_version())
 @click.pass_context
 def cli(ctx):
     pass
