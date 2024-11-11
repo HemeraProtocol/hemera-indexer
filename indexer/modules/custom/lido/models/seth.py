@@ -29,6 +29,31 @@ class LidoShareBalances(HemeraModel):
             }
         ]
 
+class CurrentLidoShareBalances(HemeraModel):
+    __tablename__ = "lido_seth_share_balances_current"
+
+    address = Column(BYTEA, primary_key=True)
+    token_address = Column(BYTEA, primary_key=True)
+    shares = Column(NUMERIC(100))
+    block_number = Column(BIGINT)
+
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
+    reorg = Column(BOOLEAN, server_default=text("false"))
+
+    __table_args__ = (PrimaryKeyConstraint("address", "token_address"),)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                "domain": "LidoShareBalance",
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            }
+        ]
+
 
 class LidoPositionValues(HemeraModel):
     __tablename__ = "lido_position_values"
