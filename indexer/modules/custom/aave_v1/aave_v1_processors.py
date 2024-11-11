@@ -1,20 +1,11 @@
 import logging
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Type, TypeVar
 
 from common.utils.abi_code_utils import Event
-from common.utils.web3_utils import extract_eth_address, to_checksum_address
-from indexer.modules.custom.aave_v1.domains.aave_v1_domain import (
-    AaveV1BorrowD,
-    AaveV1DepositD,
-    AaveV1FlashLoanD,
-    AaveV1LiquidationCallD,
-    AaveV1RepayD,
-    AaveV1ReserveD,
-    AaveV1WithdrawD,
-)
+from common.utils.web3_utils import extract_eth_address
+from indexer.modules.custom.aave_v1.abi.abi import DECIMALS_FUNCTIOIN, SYMBOL_FUNCTIOIN
+from indexer.utils.multicall_hemera import Call
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +15,13 @@ T = TypeVar("T")
 class EventProcessor(ABC):
     """Abstract base processor for handling different event types"""
 
-    def __init__(self, event: Event, data_class: Type[T], web3=None):
+    def __init__(self, event: Event, data_class: Type[T], multicall_helper=None):
         self.event = event
         self.data_class = data_class
-        self.web3 = web3
+        self.multicall_helper = multicall_helper
 
     def process(self, log: Any) -> T:
+        """Process log data with common field handling and custom processing"""
         try:
             decoded_log = self.event.decode_log(log)
             common_fields = self._extract_common_fields(log, self.event)
@@ -40,6 +32,7 @@ class EventProcessor(ABC):
             raise
 
     def _extract_common_fields(self, log: Any, event: Any) -> dict:
+        """Extract common fields present in all events"""
         return {
             "block_number": log.block_number,
             "block_timestamp": log.block_timestamp,
@@ -51,80 +44,18 @@ class EventProcessor(ABC):
 
     @abstractmethod
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
+        """Process event-specific fields - to be implemented by concrete processors"""
         pass
 
 
-class BaseReserveProcessor(EventProcessor):
-
-    def __init__(self, event: Event, data_class: Type[T], web3=None):
-        super().__init__(event, data_class, web3)
-        self.abi = [
-            {
-                "constant": True,
-                "inputs": [],
-                "name": "decimals",
-                "outputs": [{"name": "", "type": "uint8"}],
-                "payable": False,
-                "stateMutability": "view",
-                "type": "function",
-            },
-            {
-                "constant": True,
-                "inputs": [],
-                "name": "symbol",
-                "outputs": [{"name": "", "type": "string"}],
-                "payable": False,
-                "stateMutability": "view",
-                "type": "function",
-            },
-        ]
+class ReserveInitProcessor(EventProcessor):
 
     def _get_token_info(self, address: str) -> dict:
-        """Get token decimals and symbol"""
-        contract = self.web3.eth.contract(abi=self.abi, address=to_checksum_address(address))
-        return {"decimals": contract.functions.decimals().call(), "symbol": contract.functions.symbol().call()}
+        decimals_call = Call(target=address, function_abi=DECIMALS_FUNCTIOIN)
+        symbol_call = Call(target=address, function_abi=SYMBOL_FUNCTIOIN)
+        self.multicall_helper.execute_multicall([decimals_call, symbol_call])
+        return {"decimals": decimals_call.returns["decimals"], "symbol": symbol_call.returns["symbol"]}
 
-
-class ReserveInitProcessor(BaseReserveProcessor):
-    """0x3a0ca721fc364424566385a1aa271ed508cc2c0949c2272575fb3013a163a45f"""
-
-    def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
-        asset = extract_eth_address(log.topic1)
-        if asset == "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2":
-            asset_info = {
-                "symbol": "MKR",
-                "decimals": 18,
-            }
-        else:
-            asset_info = self._get_token_info(asset)
-
-        a_token = extract_eth_address(log.topic2)
-        a_token_info = self._get_token_info(a_token)
-
-        stable_debt_token = decoded_log.get("stableDebtToken")
-        stable_debt_info = self._get_token_info(stable_debt_token)
-
-        variable_debt_token = decoded_log.get("variableDebtToken")
-        variable_debt_info = self._get_token_info(variable_debt_token)
-
-        return {
-            "asset": asset,
-            "asset_symbol": asset_info["symbol"],
-            "asset_decimals": asset_info["decimals"],
-            "a_token_address": a_token,
-            "a_token_symbol": a_token_info["symbol"],
-            "a_token_decimals": a_token_info["decimals"],
-            "stable_debt_token_address": stable_debt_token,
-            "stable_debt_token_decimals": stable_debt_info["decimals"],
-            "stable_debt_token_symbol": stable_debt_info["symbol"],
-            "variable_debt_token_address": variable_debt_token,
-            "variable_debt_token_symbol": variable_debt_info["symbol"],
-            "variable_debt_token_decimals": variable_debt_info["decimals"],
-            "interest_rate_strategy_address": decoded_log.get("interestRateStrategyAddress"),
-        }
-
-
-class ReserveInitProcessorV1(BaseReserveProcessor):
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         asset = extract_eth_address(log.topic1)
         if asset == "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee":
@@ -229,55 +160,3 @@ class LiquidationCallProcessor(EventProcessor):
             "liquidator": decoded_log.get("_liquidator"),
             "receive_atoken": decoded_log.get("_receiveAToken"),
         }
-
-
-@dataclass
-class EventConfig:
-    """Configuration for each event type"""
-
-    name: str
-    contract_address_key: str
-    processor_class: Type[EventProcessor]
-    data_class: Type[Any]
-
-
-class AaveV1Events(Enum):
-    """Enum containing all Aave V2 events configuration"""
-
-    RESERVE_INIT = EventConfig(
-        name="ReserveInitialized",
-        contract_address_key="INIT_PROXY",
-        processor_class=ReserveInitProcessor,
-        data_class=AaveV1ReserveD,
-    )
-
-    DEPOSIT = EventConfig(
-        name="Deposit", contract_address_key="POOL_V1", processor_class=DepositProcessor, data_class=AaveV1DepositD
-    )
-
-    WITHDRAW = EventConfig(
-        name="RedeemUnderlying",
-        contract_address_key="POOL_V1",
-        processor_class=WithdrawProcessor,
-        data_class=AaveV1WithdrawD,
-    )
-
-    BORROW = EventConfig(
-        name="Borrow", contract_address_key="POOL_V1", processor_class=BorrowProcessor, data_class=AaveV1BorrowD
-    )
-
-    REPAY = EventConfig(
-        name="Repay", contract_address_key="POOL_V1", processor_class=RepayProcessor, data_class=AaveV1RepayD
-    )
-    FLASH_LOAN = EventConfig(
-        name="FlashLoan",
-        contract_address_key="POOL_V1",
-        processor_class=FlashLoanProcessor,
-        data_class=AaveV1FlashLoanD,
-    )
-    LIQUIDATION_CALL = EventConfig(
-        name="LiquidationCall",
-        contract_address_key="POOL_V1",
-        processor_class=LiquidationCallProcessor,
-        data_class=AaveV1LiquidationCallD,
-    )
