@@ -1,16 +1,31 @@
 import logging
 from collections import defaultdict
-from typing import Any, cast
+from typing import Any
 
 from sqlalchemy import func
-from web3.types import ABIEvent
 
-from common.utils.abi_code_utils import AbiReader, Event
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.log import Log
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.aave_v1.aave_v1_processors import AaveV1Events
+from indexer.modules.custom.aave_v1.aave_v1_processors import (
+    BorrowProcessor,
+    DepositProcessor,
+    FlashLoanProcessor,
+    LiquidationCallProcessor,
+    RepayProcessor,
+    ReserveInitProcessor,
+    WithdrawProcessor,
+)
+from indexer.modules.custom.aave_v1.abi.abi import (
+    BORROW_EVENT,
+    DEPOSIT_EVENT,
+    FLUSH_LOAN_EVENT,
+    LIQUIDATION_CALL_EVENT,
+    REDEEM_EVENT,
+    REPAY_EVENT,
+    RESERVE_INITIALIZED_EVENT,
+)
 from indexer.modules.custom.aave_v1.domains.aave_v1_domain import (
     AaveV1AddressCurrentD,
     AaveV1BorrowD,
@@ -58,20 +73,15 @@ class ExportAaveV1Job(FilterTransactionDataJob):
         super().__init__(**kwargs)
         self.db_service = kwargs["config"].get("db_service")
 
-        self.job_conf = self.user_defined_config
-        self.abi_reader = AbiReader(__file__)
-
         self.contract_addresses = {
-            "POOL_V1": self.job_conf["POOL_V1"],
-            "INIT_PROXY": self.job_conf["INIT_PROXY"],
-            "POOL": self.job_conf["POOL"],
-            "POOL_V1_CORE": self.job_conf["POOL_V1_CORE"],
+            "POOL_V1": self.user_defined_config["POOL_V1"],
+            "INIT_PROXY": self.user_defined_config["INIT_PROXY"],
+            "POOL": self.user_defined_config["POOL"],
+            "POOL_V1_CORE": self.user_defined_config["POOL_V1_CORE"],
         }
 
         self.address_set = set(self.contract_addresses.values())
 
-        # event_name -> Event
-        self.events = {}
         # sig -> processor
         self._event_processors = {}
         self._initialize_events_and_processors()
@@ -105,14 +115,16 @@ class ExportAaveV1Job(FilterTransactionDataJob):
             self.reserve_dic[item.asset] = item
 
     def _initialize_events_and_processors(self):
-        for event_type in AaveV1Events:
-            config = event_type.value
-            contract_address = self.contract_addresses[config.contract_address_key]
-            abi = self.abi_reader.get_event_abi(contract_address, config.name)
-            event = Event(cast(ABIEvent, abi))
-            self.events[event_type] = event
-            signature = event.get_signature()
-            self._event_processors[signature] = config.processor_class(event, config.data_class, self._web3)
+        processors = [
+            ReserveInitProcessor(RESERVE_INITIALIZED_EVENT, AaveV2ReserveD, multicall_helper=self.multicall_helper),
+            DepositProcessor(DEPOSIT_EVENT, AaveV2DepositD),
+            WithdrawProcessor(REDEEM_EVENT, AaveV2WithdrawD),
+            BorrowProcessor(BORROW_EVENT, AaveV2BorrowD),
+            RepayProcessor(REPAY_EVENT, AaveV2RepayD),
+            FlashLoanProcessor(FLUSH_LOAN_EVENT, AaveV2FlashLoanD),
+            LiquidationCallProcessor(LIQUIDATION_CALL_EVENT, AaveV2LiquidationCallD),
+        ]
+        self._event_processors[signature] = config.processor_class(event, config.data_class, self._web3)
 
     def get_filter(self):
         topics = [event.get_signature() for event in self.events.values()]
