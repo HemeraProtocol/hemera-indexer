@@ -5,7 +5,7 @@ from common.models import HemeraModel, general_converter
 
 
 class AaveV2Reserve(HemeraModel):
-    __tablename__ = "af_aave_v2_reserve"
+    __tablename__ = "af_aave_v2_reserve_current"
     asset = Column(BYTEA, primary_key=True)
     asset_decimals = Column(NUMERIC(100))
     asset_symbol = Column(VARCHAR)
@@ -24,6 +24,12 @@ class AaveV2Reserve(HemeraModel):
 
     interest_rate_strategy_address = Column(BYTEA)
 
+    liquidity_rate = Column(NUMERIC(100))
+    stable_borrow_rate = Column(NUMERIC(100))
+    variable_borrow_rate = Column(NUMERIC(100))
+    liquidity_index = Column(NUMERIC(100))
+    variable_borrow_index = Column(NUMERIC(100))
+
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
     transaction_hash = Column(BYTEA)
@@ -40,7 +46,13 @@ class AaveV2Reserve(HemeraModel):
             {
                 "domain": "AaveV2ReserveD",
                 "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number >= af_aave_v2_reserve_current.block_number",
+                "converter": general_converter,
+            },
+            {
+                "domain": "AaveV2ReserveDataCurrentD",
+                "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            }
+            },
         ]

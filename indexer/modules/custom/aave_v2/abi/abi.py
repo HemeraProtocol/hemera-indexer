@@ -19,6 +19,30 @@ PRINCIPAL_BALANCE_OF_FUNCTION = Function(
     }
 )
 
+DECIMALS_FUNCTIOIN = Function(
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{"name": "decimals", "type": "uint8"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
+SYMBOL_FUNCTIOIN = Function(
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "symbol",
+        "outputs": [{"name": "symbol", "type": "string"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
 RESERVE_INITIALIZED_EVENT = Event(
     {
         "anonymous": False,

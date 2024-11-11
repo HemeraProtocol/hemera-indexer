@@ -154,3 +154,14 @@ class AaveV2ReserveDataD(FilterData):
     liquidity_index: Optional[int] = None
     variable_borrow_index: Optional[int] = None
     block_number: Optional[int] = None
+
+
+@dataclass
+class AaveV2ReserveDataCurrentD(FilterData):
+    asset: Optional[str] = None
+    block_number: Optional[int] = None
+    liquidity_rate: Optional[int] = None
+    stable_borrow_rate: Optional[int] = None
+    variable_borrow_rate: Optional[int] = None
+    liquidity_index: Optional[int] = None
+    variable_borrow_index: Optional[int] = None
