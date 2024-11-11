@@ -121,6 +121,7 @@ class AaveV2AddressCurrentD(FilterData):
 class AaveV2LiquidationAddressCurrentD(FilterData):
     address: Optional[str] = None
     asset: Optional[str] = None
+    block_number: Optional[int] = None
     last_total_value_of_liquidation: Optional[int] = None
     last_liquidation_time: Optional[int] = None
 
