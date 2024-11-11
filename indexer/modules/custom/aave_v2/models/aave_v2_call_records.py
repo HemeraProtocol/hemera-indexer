@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # @Time  2024/10/25 16:12
 # @Author  will
-# @File  aave_v2_address_balance_records.py
 # @Brief
 from sqlalchemy import BOOLEAN, VARCHAR, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.mysql import BIGINT
