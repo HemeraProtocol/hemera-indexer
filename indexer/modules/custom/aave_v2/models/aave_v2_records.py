@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # @Time  2024/10/22 14:24
 # @Author  will
-# @File  aave_v2_lending_records.py
 # @Brief
 from sqlalchemy import BIGINT, BOOLEAN, INT, INTEGER, NUMERIC, VARCHAR, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP

@@ -35,7 +35,7 @@ class AaveV2AddressCurrent(HemeraModel):
             {
                 "domain": "AaveV2AddressCurrentD",
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > af_aave_v2_address_current.block_number",
+                "update_strategy": "EXCLUDED.block_number >= af_aave_v2_address_current.block_number",
                 "converter": general_converter,
             },
             {
