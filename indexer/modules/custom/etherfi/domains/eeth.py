@@ -4,7 +4,7 @@ from indexer.domain import Domain
 
 
 @dataclass
-class EtherFiShareBalance(Domain):
+class EtherFiShareBalanceD(Domain):
     address: str
     token_address: str
     shares: int
@@ -12,7 +12,15 @@ class EtherFiShareBalance(Domain):
 
 
 @dataclass
-class EtherFiPositionValues(Domain):
+class EtherFiShareBalanceCurrentD(Domain):
+    address: str
+    token_address: str
+    shares: int
+    block_number: int
+
+
+@dataclass
+class EtherFiPositionValuesD(Domain):
     block_number: int
     total_share: int
     total_value_out_lp: int

@@ -1,4 +1,5 @@
 import logging
+from itertools import groupby
 from typing import List
 
 from web3 import Web3
@@ -10,15 +11,22 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
 from indexer.modules.custom.etherfi.abi.contract import eeth_abi, liquidity_pool_abi
 from indexer.modules.custom.etherfi.abi.event import *
-from indexer.modules.custom.etherfi.domains.eeth import EtherFiPositionValues, EtherFiShareBalance
+from indexer.modules.custom.etherfi.abi.functions import *
+from indexer.modules.custom.etherfi.domains.eeth import (
+    EtherFiPositionValuesD,
+    EtherFiShareBalanceCurrentD,
+    EtherFiShareBalanceD,
+)
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
+from indexer.utils.multicall_hemera import Call
+from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 logger = logging.getLogger(__name__)
 
 
 class ExportEtherFiShareJob(FilterTransactionDataJob):
     dependency_types = [Transaction]
-    output_types = [EtherFiShareBalance, EtherFiPositionValues]
+    output_types = [EtherFiShareBalanceD, EtherFiPositionValuesD, EtherFiShareBalanceCurrentD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -49,6 +57,10 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
             self.user_defined_config["liquidity_pool_address"],
         ]
 
+        self.multicall_helper = MultiCallHelper(
+            self._web3, {"batch_size": kwargs["batch_size"], "multicall": True, "max_workers": kwargs["max_workers"]}
+        )
+
     def get_filter(self):
         return [
             TransactionFilterByLogs(
@@ -70,7 +82,6 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
             return
         # block_number -> address set
         shares_holders = {}
-
         block_to_update_position = set()
 
         for log in logs:
@@ -87,32 +98,82 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
             if log.topic0 in self.position_events:
                 block_to_update_position.add(log.block_number)
 
+        self._collect_shares(shares_holders)
+        self._collect_positions(block_to_update_position)
+
+    def _collect_shares(self, shares_holders):
+        share_calls = []
         for block_number, addresses in shares_holders.items():
             for address in addresses:
                 if address == ZERO_ADDRESS:
                     continue
-                shares = self.eeth_contract.functions.shares(address).call(block_identifier=block_number)
-                share_domain = EtherFiShareBalance(
-                    address=address,
-                    token_address=self.user_defined_config["eeth_address"],
-                    shares=shares,
+                share_call = Call(
+                    target=self.user_defined_config["eeth_address"],
+                    function_abi=get_shares_func,
                     block_number=block_number,
+                    parameters=[address],
                 )
-            self._collect_domain(share_domain)
+                share_calls.append(share_call)
 
-        for block_number in block_to_update_position:
-            total_shares = self.eeth_contract.functions.totalShares().call(block_identifier=block_number)
-            total_value_out_lp = self.liquidity_pool_contract.functions.totalValueOutOfLp().call(
-                block_identifier=block_number
-            )
-            total_value_in_lp = self.liquidity_pool_contract.functions.totalValueInLp().call(
-                block_identifier=block_number
-            )
+        self.multicall_helper.execute_calls(share_calls)
+        shares_current = []
+        for call in share_calls:
             self._collect_domain(
-                EtherFiPositionValues(
-                    block_number=block_number,
-                    total_share=total_shares,
-                    total_value_out_lp=total_value_out_lp,
-                    total_value_in_lp=total_value_in_lp,
+                EtherFiShareBalanceD(
+                    address=call.parameters[0],
+                    token_address=call.target,
+                    shares=call.returns["shares"],
+                    block_number=call.block_number,
                 )
             )
+            shares_current.append(
+                EtherFiShareBalanceCurrentD(
+                    address=call.parameters[0],
+                    token_address=call.target,
+                    shares=call.returns["shares"],
+                    block_number=call.block_number,
+                )
+            )
+        shares_current.sort(key=lambda x: (x.address, x.token_address, x.block_number))
+        self._data_buff[EtherFiShareBalanceCurrentD.type()] = [
+            list(group)[-1] for key, group in groupby(shares_current, key=lambda x: (x.address, x.token_address))
+        ]
+
+    def _collect_positions(self, block_to_update_position):
+        position_calls = []
+        for block_number in block_to_update_position:
+            total_shares_call = Call(
+                target=self.user_defined_config["eeth_address"],
+                function_abi=total_shares_func,
+                block_number=block_number,
+            )
+            total_value_out_lp_call = Call(
+                target=self.user_defined_config["liquidity_pool_address"],
+                function_abi=total_value_out_lp_func,
+                block_number=block_number,
+            )
+            total_value_in_lp_call = Call(
+                target=self.user_defined_config["liquidity_pool_address"],
+                function_abi=total_value_in_lp_func,
+                block_number=block_number,
+            )
+            position_calls.extend([total_shares_call, total_value_out_lp_call, total_value_in_lp_call])
+
+        self.multicall_helper.execute_calls(position_calls)
+        position_domains = {}
+        for call in position_calls:
+            if call.block_number not in position_domains:
+                position_domains[call.block_number] = EtherFiPositionValuesD(
+                    block_number=call.block_number,
+                    total_share=0,
+                    total_value_out_lp=0,
+                    total_value_in_lp=0,
+                )
+            if call.data == total_shares_func.get_signature():
+                position_domains[call.block_number].total_share = call.returns["totalShares"]
+            if call.data == total_value_out_lp_func.get_signature():
+                position_domains[call.block_number].total_value_out_lp = call.returns["totalValueOutOfLp"]
+            if call.data == total_value_in_lp_func.get_signature():
+                position_domains[call.block_number].total_value_in_lp = call.returns["totalValueInLp"]
+        for block_number, domain in position_domains.items():
+            self._collect_domain(domain)

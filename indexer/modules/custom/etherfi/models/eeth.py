@@ -2,6 +2,11 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.etherfi.domains.eeth import (
+    EtherFiPositionValuesD,
+    EtherFiShareBalanceCurrentD,
+    EtherFiShareBalanceD,
+)
 
 
 class EtherFiShareBalances(HemeraModel):
@@ -22,7 +27,7 @@ class EtherFiShareBalances(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "EtherFiShareBalance",
+                "domain": EtherFiShareBalanceD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -48,7 +53,7 @@ class CurrentEtherFiShareBalances(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "EtherFiShareBalance",
+                "domain": EtherFiShareBalanceCurrentD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -74,7 +79,7 @@ class EtherFiPositionValues(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "EtherFiPositionValues",
+                "domain": EtherFiPositionValuesD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

@@ -2,6 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.lido.domains.seth import LidoPositionValuesD, LidoShareBalanceCurrentD, LidoShareBalanceD
 
 
 class LidoShareBalances(HemeraModel):
@@ -22,12 +23,13 @@ class LidoShareBalances(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "LidoShareBalance",
+                "domain": LidoShareBalanceD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             }
         ]
+
 
 class CurrentLidoShareBalances(HemeraModel):
     __tablename__ = "lido_seth_share_balances_current"
@@ -47,7 +49,7 @@ class CurrentLidoShareBalances(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "LidoShareBalance",
+                "domain": LidoShareBalanceCurrentD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -75,7 +77,7 @@ class LidoPositionValues(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "LidoPositionValues",
+                "domain": LidoPositionValuesD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
