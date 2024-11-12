@@ -7,7 +7,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from common.services.postgresql_service import PostgreSQLService
-from indexer.aggr_jobs.aggr_jobs import run_aggregate_job
+from indexer.aggr_jobs.aggr_jobs import run_aggregate_job, run_today_or_yesterday_aggregate_job
 from indexer.aggr_jobs.utils import DateType, check_data_completeness, get_yesterday_date, read_yaml_file, \
     get_current_date
 from indexer.controller.aggregates_controller import AggregatesController
@@ -88,14 +88,9 @@ def aggregates(chain_name, postgres_url, provider_uri, start_date, end_date, dat
     if schedule_dict:
         scheduler = BlockingScheduler()
         for day_str, crontab in schedule_dict.items():
-            if day_str == 'today':
-                start_date, end_date = get_current_date()
-            elif day_str == 'yesterday':
-                start_date, end_date = get_yesterday_date()
-
-            job_args = (chain_name, postgres_url, start_date, end_date)
+            job_args = (chain_name, postgres_url, day_str)
             trigger = CronTrigger.from_crontab(crontab)
-            scheduler.add_job(func=run_aggregate_job, trigger=trigger, args=job_args)
+            scheduler.add_job(func=run_today_or_yesterday_aggregate_job, trigger=trigger, args=job_args)
         scheduler.start()
 
     else:
