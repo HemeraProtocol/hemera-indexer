@@ -13,6 +13,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
 
+from indexer.utils.multicall_hemera.constants import RPC_PAYLOAD_SIZE
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +24,7 @@ def calculate_execution_time(func):
         result = func(*args, **kwargs)
         end_time = time.time()
         execution_time = end_time - start_time
-        logger.info(f"function {func.__name__} time: {execution_time:.6f} s")
+        logger.debug(f"function {func.__name__} time: {execution_time:.6f} s")
         # print(f"function {func.__name__} time: {execution_time:.6f} s")
         return result
 
@@ -34,7 +36,7 @@ def estimate_size(item):
     return len(orjson.dumps(item))
 
 
-def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
+def rebatch_by_size(items, same_length_calls, max_size=1024 * RPC_PAYLOAD_SIZE):
     # 250KB
     current_chunk = []
     calls = []
