@@ -212,36 +212,17 @@ class GetRegisterFeatures(Resource):
         return response, 200
 
 
-@validator_namespace.route("/v1/validator/register_operators")
+@validator_namespace.route("/v1/validator/operator_status")
 class GetRegisterOperators(Resource):
-
-    def get(self):
-        # get_operator_function = None
-        # operators = get_operator_function().call()
-        response = {"operators": ["aaaa", "bbbbb", "ccccc"], "operator_count": 3}
-
-        return response, 200
-
-
-@validator_namespace.route("/v1/validator/register_stakers")
-class GetRegisterOperators(Resource):
-
-    def get(self):
-        # get_operator_function = None
-        # operators = get_operator_function().call()
-        response = {"operators": ["aaaa", "bbbbb", "ccccc"], "operator_count": 3}
-
-        return response, 200
-
-
-@validator_namespace.route("/v1/validator/eth_staked")
-class GetEthStaked(Resource):
 
     def get(self):
         # get_operator_function = None
         # operators = get_operator_function().call()
         response = {
-            "eth_staked": 10000000000,
+            "operators": ["aaaa", "bbbbb", "ccccc"],
+            "operator_count": 3,
+            "staker_count": 2,
+            "eth_staked": "120342345",
         }
 
         return response, 200
