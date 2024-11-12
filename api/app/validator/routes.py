@@ -189,7 +189,6 @@ class AggregatorStatus(Resource):
 
     def get(self):
         success_count = db.session.query(AggregatorTask).filter(AggregatorTask.tx_hash != "").count()
-        # 获取当前时间并设置为 UTC 时区
         current_time_utc = datetime.now(timezone.utc)
 
         fail_count = (
