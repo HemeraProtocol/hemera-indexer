@@ -13,6 +13,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
 
+from indexer.utils.multicall_hemera.constants import RPC_PAYLOAD_SIZE
+
 logger = logging.getLogger(__name__)
 
 
@@ -34,7 +36,7 @@ def estimate_size(item):
     return len(orjson.dumps(item))
 
 
-def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
+def rebatch_by_size(items, same_length_calls, max_size=1024 * RPC_PAYLOAD_SIZE):
     # 250KB
     current_chunk = []
     calls = []

@@ -25,21 +25,26 @@ def test_mutlicall_mantle():
     mweb3 = Web3(Web3.HTTPProvider("https://rpc.mantle.xyz"))
     multicall_helper_mantle = MultiCallHelper(mweb3, {"batch_size": 100, "multicall": True, "max_workers": 10})
     POSITIONS_FUNCTION = Function(
-        {'inputs': [{'internalType': 'uint256', 'name': 'tokenId', 'type': 'uint256'}], 'name': 'positions',
-         'outputs': [{'internalType': 'uint96', 'name': 'nonce', 'type': 'uint96'},
-                     {'internalType': 'address', 'name': 'operator', 'type': 'address'},
-                     {'internalType': 'address', 'name': 'token0', 'type': 'address'},
-                     {'internalType': 'address', 'name': 'token1', 'type': 'address'},
-                     {'internalType': 'uint24', 'name': 'tickLower', 'type': 'uint24'},
-                     {'internalType': 'int24', 'name': 'tickUpper', 'type': 'int24'},
-                     {'internalType': 'int24', 'name': 'liquidity', 'type': 'int24'},
-                     {'internalType': 'uint128', 'name': 'feeGrowthInside0LastX128', 'type': 'uint128'},
-                     {'internalType': 'uint256', 'name': 'feeGrowthInside1LastX128', 'type': 'uint256'},
-                     {'internalType': 'uint256', 'name': 'tokensOwed0', 'type': 'uint256'},
-                     {'internalType': 'uint128', 'name': 'tokensOwed1', 'type': 'uint128'},
-                     {"internalType": "uint128","name": "tokensOwed2", "type": "uint128"}
-                     ], 'stateMutability': 'view',
-         'type': 'function'}
+        {
+            "inputs": [{"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
+            "name": "positions",
+            "outputs": [
+                {"internalType": "uint96", "name": "nonce", "type": "uint96"},
+                {"internalType": "address", "name": "operator", "type": "address"},
+                {"internalType": "address", "name": "token0", "type": "address"},
+                {"internalType": "address", "name": "token1", "type": "address"},
+                {"internalType": "uint24", "name": "tickLower", "type": "uint24"},
+                {"internalType": "int24", "name": "tickUpper", "type": "int24"},
+                {"internalType": "int24", "name": "liquidity", "type": "int24"},
+                {"internalType": "uint128", "name": "feeGrowthInside0LastX128", "type": "uint128"},
+                {"internalType": "uint256", "name": "feeGrowthInside1LastX128", "type": "uint256"},
+                {"internalType": "uint256", "name": "tokensOwed0", "type": "uint256"},
+                {"internalType": "uint128", "name": "tokensOwed1", "type": "uint128"},
+                {"internalType": "uint128", "name": "tokensOwed2", "type": "uint128"},
+            ],
+            "stateMutability": "view",
+            "type": "function",
+        }
     )
     target = "0xAAA78E8C4241990B4ce159E105dA08129345946A"
     call = Call(target=target, function_abi=POSITIONS_FUNCTION, parameters=[44296], block_number=70617618)
