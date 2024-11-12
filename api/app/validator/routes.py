@@ -10,6 +10,7 @@ from datetime import datetime, time, timedelta, timezone
 import flask
 from flask_restx import Resource
 from sqlalchemy import and_, or_
+from web3 import Web3
 
 from api.app.db_service.blocks import get_blocks_by_condition
 from api.app.db_service.report_record import get_report_record, get_report_record_by_condition
@@ -23,10 +24,16 @@ from common.utils.exception_control import APIError
 from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain import DomainMeta
 from indexer.modules.custom.avs_operator.models.task import AggregatorTask
+from indexer.utils.abi_setting import GET_INDEXER_FUNCTION
+from indexer.utils.report_to_contract import CONTRACT_ADDRESS, REQUEST_RPC
 
 PAGE_SIZE = 25
 MAX_RECORDS = 10000
-dataclass_mapping = {key.split(".")[-1].lower(): value for key, value in DomainMeta._dataclass_mapping.items()}
+DATACLASS_MAPPING = {key.split(".")[-1].lower(): value for key, value in DomainMeta._dataclass_mapping.items()}
+AVS_CONTRACT = Web3(Web3.HTTPProvider(REQUEST_RPC)).eth.contract(
+    address=CONTRACT_ADDRESS,
+    abi=[GET_INDEXER_FUNCTION.get_abi()],
+)
 
 
 @validator_namespace.route("/v1/validator/block/<number_or_hash>")
@@ -156,8 +163,8 @@ class CheckReportBlock(Resource):
             dataclasses = dataclasses.split(",")
             dataclasses_code = []
             for dataclass in dataclasses:
-                if dataclass.lower() in dataclass_mapping:
-                    dataclasses_code.append(dataclass_mapping[dataclass.lower()])
+                if dataclass.lower() in DATACLASS_MAPPING:
+                    dataclasses_code.append(DATACLASS_MAPPING[dataclass.lower()])
 
         records = get_report_record_by_condition(
             number,
@@ -179,6 +186,46 @@ class CheckReportBlock(Resource):
         format_records = report_record_builder(records)
 
         return format_records, 200
+
+
+@validator_namespace.route("/v1/validator/register_indexers")
+class GetRegisterIndexers(Resource):
+
+    def get(self):
+        get_indexer_function = AVS_CONTRACT.functions["getIndexer"]
+        indexers = get_indexer_function().call()
+        response = {
+            "indexers": indexers,
+            "indexer_count": len(indexers),
+        }
+        return response, 200
+
+
+@validator_namespace.route("/v1/validator/register_features")
+class GetRegisterFeatures(Resource):
+
+    def get(self):
+        # get_feature_function = None
+        # features = get_feature_function().call()
+        response = {"features": ["block", "transaction", "log"], "feature_count": 3}
+
+        return response, 200
+
+
+@validator_namespace.route("/v1/validator/operator_status")
+class GetRegisterOperators(Resource):
+
+    def get(self):
+        # get_operator_function = None
+        # operators = get_operator_function().call()
+        response = {
+            "operators": ["aaaa", "bbbbb", "ccccc"],
+            "operator_count": 3,
+            "staker_count": 2,
+            "eth_staked": "120342345",
+        }
+
+        return response, 200
 
 
 @validator_namespace.route("/v1/validator/aggregator_status")

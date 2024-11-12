@@ -201,6 +201,16 @@ ERC1155_TOKEN_ID_BALANCE_OF_FUNCTION = Function(
     }
 )
 
+GET_INDEXER_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "getIndexer",
+        "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
 SUBMIT_INDEX_FUNCTION = Function(
     {
         "inputs": [
