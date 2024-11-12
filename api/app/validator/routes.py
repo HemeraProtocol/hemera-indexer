@@ -221,9 +221,8 @@ class GetRegisterOperators(Resource):
         response = {
             "operators": ["aaaa", "bbbbb", "ccccc"],
             "operator_count": 3,
-            "staker_count":2,
+            "staker_count": 2,
             "eth_staked": "120342345",
-
         }
 
         return response, 200
