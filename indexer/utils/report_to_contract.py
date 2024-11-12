@@ -22,6 +22,9 @@ from common.utils.web3_utils import to_checksum_address
 from indexer.domain import DomainMeta
 from indexer.utils.abi_setting import REGISTER_FEATURE_FUNCTION, SUBMIT_INDEX_FUNCTION
 
+REQUEST_RPC = "https://1rpc.io/holesky"
+CONTRACT_ADDRESS = to_checksum_address("0xB0c42250F0A3D141aD25e5B6A162ddbd5CAE7ec5")
+
 
 class AsyncTransactionSubmitter:
 
@@ -251,12 +254,12 @@ class AsyncTransactionSubmitter:
 class RecordReporter:
 
     def __init__(self, private_key, from_address, service):
-        self.web3 = Web3(Web3.HTTPProvider("https://1rpc.io/holesky"))
+        self.web3 = Web3(Web3.HTTPProvider(REQUEST_RPC))
         self.private_key = private_key
         self.account = Account.from_key(private_key)
         self.from_address = from_address
         self.contract = self.web3.eth.contract(
-            address=to_checksum_address("0xB0c42250F0A3D141aD25e5B6A162ddbd5CAE7ec5"),
+            address=CONTRACT_ADDRESS,
             abi=[SUBMIT_INDEX_FUNCTION.get_abi()],
         )
         self.transaction_submitter = AsyncTransactionSubmitter(web3=self.web3, account=self.account, service=service)
@@ -324,12 +327,12 @@ class RecordReporter:
 
 class FeatureRegister:
     def __init__(self, private_key, from_address):
-        self.web3 = Web3(Web3.HTTPProvider("https://1rpc.io/holesky"))
+        self.web3 = Web3(Web3.HTTPProvider(REQUEST_RPC))
         self.private_key = private_key
         self.account = Account.from_key(private_key)
         self.from_address = from_address
         self.contract = self.web3.eth.contract(
-            address=to_checksum_address("0xB0c42250F0A3D141aD25e5B6A162ddbd5CAE7ec5"),
+            address=CONTRACT_ADDRESS,
             abi=[REGISTER_FEATURE_FUNCTION.get_abi()],
         )
         self.nonce = self.web3.eth.get_transaction_count(self.account.address)
