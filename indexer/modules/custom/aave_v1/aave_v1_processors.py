@@ -91,7 +91,7 @@ class DepositProcessor(EventProcessor):
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         return {
             "reserve": extract_eth_address(log.topic1),
-            "on_behalf_of": extract_eth_address(log.topic2),
+            "aave_user": extract_eth_address(log.topic2),
             "referral": log.topic3,
             "amount": decoded_log.get("_amount"),
         }
@@ -114,7 +114,7 @@ class BorrowProcessor(EventProcessor):
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         return {
             "reserve": extract_eth_address(log.topic1),
-            "on_behalf_of": extract_eth_address(log.topic2),
+            "aave_user": extract_eth_address(log.topic2),
             "referral": log.topic3,
             "amount": decoded_log.get("_amount"),
             "borrow_rate_mode": decoded_log.get("_borrowRateMode"),
@@ -153,10 +153,22 @@ class LiquidationCallProcessor(EventProcessor):
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         return {
             "collateral_asset": extract_eth_address(log.topic1),
-            # a little uncertain
             "debt_asset": extract_eth_address(log.topic2),
             "aave_user": extract_eth_address(log.topic3),
             "liquidated_collateral_amount": decoded_log.get("_liquidatedCollateralAmount"),
             "liquidator": decoded_log.get("_liquidator"),
             "receive_atoken": decoded_log.get("_receiveAToken"),
+        }
+
+
+class ReserveUpdatedProcessor(EventProcessor):
+
+    def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
+        return {
+            "asset": extract_eth_address(log.topic1),
+            "liquidity_rate": decoded_log.get("liquidityRate"),
+            "stable_borrow_rate": decoded_log.get("stableBorrowRate"),
+            "variable_borrow_rate": decoded_log.get("variableBorrowRate"),
+            "liquidity_index": decoded_log.get("liquidityIndex"),
+            "variable_borrow_index": decoded_log.get("variableBorrowIndex"),
         }

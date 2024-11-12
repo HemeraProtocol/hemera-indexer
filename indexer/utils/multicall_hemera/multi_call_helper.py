@@ -44,7 +44,7 @@ class MultiCallHelper:
                 self.deploy_block_number = self.net.deploy_block_number
             except ValueError:
                 self.net = None
-                self.deploy_block_number = self.net.deploy_block_number
+                self.deploy_block_number = 2**56
 
     @calculate_execution_time
     def validate_and_prepare_calls(self, calls):
