@@ -192,8 +192,7 @@ class AsyncTransactionSubmitter:
                                 "Reporter will retry to submit the transaction with another nonce. "
                                 f"Now nonce: {self.nonce}"
                             )
-                            async with self.nonce_lock:
-                                self.nonce += 1
+                            self.nonce += 1
 
                     except Exception as e:
                         self.logger.error(
