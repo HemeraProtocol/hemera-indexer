@@ -191,11 +191,12 @@ class AggregatorStatus(Resource):
         success_count = db.session.query(AggregatorTask).filter(AggregatorTask.tx_hash != "").count()
         current_time_utc = datetime.now(timezone.utc)
 
+        # aggregator will wait 15 block, about 225s
         fail_count = (
             db.session.query(AggregatorTask)
             .filter(
                 or_(AggregatorTask.tx_hash.is_(None), AggregatorTask.tx_hash == ""),
-                AggregatorTask.created_at <= current_time_utc - timedelta(seconds=225),  # 使用 UTC 当前时间
+                AggregatorTask.created_at <= current_time_utc - timedelta(seconds=225),
             )
             .count()
         )
