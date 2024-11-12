@@ -8,9 +8,17 @@ from sqlalchemy import BIGINT, BOOLEAN, INT, INTEGER, NUMERIC, VARCHAR, Column, 
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.aave_v1.domains.aave_v1_domain import (
+    AaveV1BorrowD,
+    AaveV1DepositD,
+    AaveV1FlashLoanD,
+    AaveV1LiquidationCallD,
+    AaveV1RepayD,
+    AaveV1WithdrawD,
+)
 
 
-class AaveV1LendingRecords(HemeraModel):
+class AaveV1Events(HemeraModel):
     __tablename__ = "af_aave_v1_records"
 
     transaction_hash = Column(BYTEA, primary_key=True)
@@ -52,37 +60,37 @@ class AaveV1LendingRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV1DepositD",
+                "domain": AaveV1DepositD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV1WithdrawD",
+                "domain": AaveV1WithdrawD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV1BorrowD",
+                "domain": AaveV1BorrowD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV1RepayD",
+                "domain": AaveV1RepayD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV1FlashLoanD",
+                "domain": AaveV1FlashLoanD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV1LiquidationCallD",
+                "domain": AaveV1LiquidationCallD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
