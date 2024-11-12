@@ -113,6 +113,7 @@ SELECT CASE
            WHEN position_token_address = '\xc36442b4a4522e871399cd717abdd847ab11fe88' THEN 'uniswap_v3'
            WHEN position_token_address = '\x5752f085206ab87d8a5ef6166779658add455774' then 'fusionx'
            WHEN position_token_address = '\x46a15b0b27311cedf172ab29e4f4766fbe7f4364' then 'pancake'
+           WHEN position_token_address = '\x7d24de60a68ae47be4e852cf03dd4d8588b489ec' then 'swapsicle'
            ELSE 'uniswap_v3'
            END AS protocol_id,
        pool_address,
