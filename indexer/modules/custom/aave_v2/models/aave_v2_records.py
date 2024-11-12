@@ -7,6 +7,14 @@ from sqlalchemy import BIGINT, BOOLEAN, INT, INTEGER, NUMERIC, VARCHAR, Column, 
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
+    AaveV2BorrowD,
+    AaveV2DepositD,
+    AaveV2FlashLoanD,
+    AaveV2LiquidationCallD,
+    AaveV2RepayD,
+    AaveV2WithdrawD,
+)
 
 
 class AaveV2Events(HemeraModel):
@@ -51,37 +59,37 @@ class AaveV2Events(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV2DepositD",
+                "domain": AaveV2DepositD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV2WithdrawD",
+                "domain": AaveV2WithdrawD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV2BorrowD",
+                "domain": AaveV2BorrowD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV2RepayD",
+                "domain": AaveV2RepayD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV2FlashLoanD",
+                "domain": AaveV2FlashLoanD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV2LiquidationCallD",
+                "domain": AaveV2LiquidationCallD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

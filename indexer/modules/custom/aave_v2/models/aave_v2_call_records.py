@@ -8,6 +8,7 @@ from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.aave_v2.domains.aave_v2_domain import AaveV2CallRecordsD
 
 
 class AaveV2CallRecords(HemeraModel):
@@ -28,7 +29,7 @@ class AaveV2CallRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV2CallRecordsD",
+                "domain": AaveV2CallRecordsD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
