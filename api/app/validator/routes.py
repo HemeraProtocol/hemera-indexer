@@ -5,20 +5,24 @@ Time    : 2024/10/22 下午4:55
 Author  : xuzh
 Project : hemera_indexer
 """
+from datetime import datetime, time, timedelta, timezone
+
 import flask
 from flask_restx import Resource
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 
 from api.app.db_service.blocks import get_blocks_by_condition
 from api.app.db_service.report_record import get_report_record, get_report_record_by_condition
 from api.app.db_service.transactions import get_transactions_by_condition
 from api.app.validator import validator_namespace
 from api.app.validator.parse import report_record_builder, validate_block_builder
+from common.models import db
 from common.models.blocks import Blocks
 from common.models.transactions import Transactions
 from common.utils.exception_control import APIError
 from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain import DomainMeta
+from indexer.modules.custom.avs_operator.models.task import AggregatorTask
 
 PAGE_SIZE = 25
 MAX_RECORDS = 10000
@@ -175,3 +179,29 @@ class CheckReportBlock(Resource):
         format_records = report_record_builder(records)
 
         return format_records, 200
+
+
+@validator_namespace.route("/v1/validator/aggregator_status")
+class AggregatorStatus(Resource):
+    """
+    Get the aggregator status
+    """
+
+    def get(self):
+        success_count = db.session.query(AggregatorTask).filter(AggregatorTask.tx_hash != "").count()
+        # 获取当前时间并设置为 UTC 时区
+        current_time_utc = datetime.now(timezone.utc)
+
+        fail_count = (
+            db.session.query(AggregatorTask)
+            .filter(
+                or_(AggregatorTask.tx_hash.is_(None), AggregatorTask.tx_hash == ""),
+                AggregatorTask.created_at <= current_time_utc - timedelta(seconds=225),  # 使用 UTC 当前时间
+            )
+            .count()
+        )
+
+        return {
+            "success_count": success_count,
+            "fail_count": fail_count,
+        }, 200
