@@ -14,6 +14,7 @@ class HemeraAvsOperatorLog(HemeraModel):
     code_hash = Column(BYTEA)
     data_hash = Column(BYTEA)
     msg_hash = Column(BYTEA)
+    tx_hash = Column(BYTEA)
     count = Column(BIGINT)
     verify_status = Column(BOOLEAN)
     confirm_status = Column(BOOLEAN)

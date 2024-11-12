@@ -13,6 +13,7 @@ class HemeraHistoryTransparency(FilterData):
     code_hash: bytes
     data_hash: bytes
     msg_hash: bytes
+    tx_hash: str
     count: int
     verify_status: bool
     confirm_status: bool

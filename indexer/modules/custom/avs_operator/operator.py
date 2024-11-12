@@ -197,6 +197,7 @@ class ValidateAndAggregate(FilterTransactionDataJob):
             data_class=decode_data["outputs"]["dataClass"],
             data_hash=decode_data["outputs"]["dataHash"],
             msg_hash=None,
+            tx_hash=log.log.transaction_hash,
             count=decode_data["outputs"]["count"],
             verify_status=log.verified,
             confirm_status=False,
