@@ -2,6 +2,7 @@ from sqlalchemy import NUMERIC, VARCHAR, Column, PrimaryKeyConstraint, func, tex
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.aave_v2.domains.aave_v2_domain import AaveV2ReserveD, AaveV2ReserveDataCurrentD
 
 
 class AaveV2Reserve(HemeraModel):
@@ -44,13 +45,13 @@ class AaveV2Reserve(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV2ReserveD",
+                "domain": AaveV2ReserveD,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number >= af_aave_v2_reserve_current.block_number",
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV2ReserveDataCurrentD",
+                "domain": AaveV2ReserveDataCurrentD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

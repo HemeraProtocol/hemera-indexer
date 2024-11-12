@@ -8,6 +8,10 @@ from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
+    AaveV2AddressCurrentD,
+    AaveV2LiquidationAddressCurrentD,
+)
 
 
 class AaveV2AddressCurrent(HemeraModel):
@@ -33,13 +37,13 @@ class AaveV2AddressCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AaveV2AddressCurrentD",
+                "domain": AaveV2AddressCurrentD,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number >= af_aave_v2_address_current.block_number",
                 "converter": general_converter,
             },
             {
-                "domain": "AaveV2LiquidationAddressCurrentD",
+                "domain": AaveV2LiquidationAddressCurrentD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
