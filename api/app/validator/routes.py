@@ -5,9 +5,11 @@ Time    : 2024/10/22 下午4:55
 Author  : xuzh
 Project : hemera_indexer
 """
+from datetime import datetime, time, timedelta, timezone
+
 import flask
 from flask_restx import Resource
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from web3 import Web3
 
 from api.app.db_service.blocks import get_blocks_by_condition
@@ -15,11 +17,13 @@ from api.app.db_service.report_record import get_report_record, get_report_recor
 from api.app.db_service.transactions import get_transactions_by_condition
 from api.app.validator import validator_namespace
 from api.app.validator.parse import report_record_builder, validate_block_builder
+from common.models import db
 from common.models.blocks import Blocks
 from common.models.transactions import Transactions
 from common.utils.exception_control import APIError
 from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain import DomainMeta
+from indexer.modules.custom.avs_operator.models.task import AggregatorTask
 from indexer.utils.abi_setting import GET_INDEXER_FUNCTION
 from indexer.utils.report_to_contract import CONTRACT_ADDRESS, REQUEST_RPC
 
@@ -224,3 +228,28 @@ class GetRegisterOperators(Resource):
 
         return response, 200
 
+
+@validator_namespace.route("/v1/validator/aggregator_status")
+class AggregatorStatus(Resource):
+    """
+    Get the aggregator status
+    """
+
+    def get(self):
+        success_count = db.session.query(AggregatorTask).filter(AggregatorTask.tx_hash != "").count()
+        current_time_utc = datetime.now(timezone.utc)
+
+        # aggregator will wait 15 block, about 225s
+        fail_count = (
+            db.session.query(AggregatorTask)
+            .filter(
+                or_(AggregatorTask.tx_hash.is_(None), AggregatorTask.tx_hash == ""),
+                AggregatorTask.created_at <= current_time_utc - timedelta(seconds=225),
+            )
+            .count()
+        )
+
+        return {
+            "success_count": success_count,
+            "fail_count": fail_count,
+        }, 200
