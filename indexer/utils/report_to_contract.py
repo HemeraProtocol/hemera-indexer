@@ -162,8 +162,8 @@ class AsyncTransactionSubmitter:
         self.logger.info(f"Processing transaction with parameters: {parameters}")
 
         for entire_retry in range(self.max_retries):
-            for submit_retry in range(self.max_retries):
-                async with self.nonce_lock:
+            async with self.nonce_lock:
+                for submit_retry in range(self.max_retries):
                     try:
                         parameters["nonce"] = await self._get_next_nonce()
 
