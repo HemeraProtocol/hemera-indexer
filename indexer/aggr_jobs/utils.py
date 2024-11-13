@@ -15,7 +15,7 @@ def get_yesterday_date():
     today_str = now.strftime("%Y-%m-%d")
     yesterday_str = yesterday_datetime.strftime("%Y-%m-%d")
 
-    return today_str, yesterday_str
+    return yesterday_str, today_str
 
 def get_current_date():
     now = datetime.now()
@@ -91,6 +91,8 @@ def read_sync_record(db_service) -> int:
 
 
 def read_yaml_file(file_path: str):
+    if not file_path:
+        return {}
     with open(file_path, 'r') as file:
         data = yaml.safe_load(file)
     return data

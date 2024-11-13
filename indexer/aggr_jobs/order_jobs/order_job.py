@@ -1,3 +1,5 @@
+import time
+
 from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_aggregates import \
     PeriodFeatureDefiWalletFbtcAggregates
 from sqlalchemy import text
@@ -25,8 +27,11 @@ class AggrOrderJob(AggrBaseJob):
             start_date, end_date = date_pair
             for job_name in self.job_list:
                 sql_content = self.get_sql_content(job_name, start_date, end_date)
+                start_time = time.time()
                 session.execute(text(sql_content))
                 session.commit()
+                execution_time = time.time() - start_time
+                print(f'----------- executed in {execution_time:.2f} seconds: SQL {job_name}')
 
             period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates('arbitrum',
                                                                                                    self.db_service,
@@ -35,3 +40,4 @@ class AggrOrderJob(AggrBaseJob):
                                                                                                    self.version
                                                                                                    )
             period_feature_defi_wallet_fbtc_aggregates_job.run()
+            print('======== finished date', start_date)
