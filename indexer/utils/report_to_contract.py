@@ -148,11 +148,8 @@ class AsyncTransactionSubmitter:
             self.web3.eth.get_transaction_count,
             self.account.address,
         )
-        if self.nonce == online_nonce:
-            self.nonce -= 1
-        current_nonce = max(self.nonce, online_nonce)
-        self.nonce = current_nonce + 1 if current_nonce == online_nonce else self.nonce
-        return current_nonce
+
+        return max(self.nonce, online_nonce)
 
     async def _process_transaction(self, info: dict) -> bool:
         txn_hash, report_id = None, None
@@ -181,12 +178,13 @@ class AsyncTransactionSubmitter:
                         report_id = await self.submit_record_to_db(
                             parameters, transaction_hash=txn_hash, report_from=report_from
                         )
+                        self.nonce += 1
                         break
 
                     except ValueError as e:
                         if (
-                                str(e).find("nonce too low") != -1
-                                or str(e).find("replacement transaction underpriced") != -1
+                            str(e).find("nonce too low") != -1
+                            or str(e).find("replacement transaction underpriced") != -1
                         ):
                             self.logger.error(e)
                             self.logger.warning(
@@ -211,7 +209,7 @@ class AsyncTransactionSubmitter:
                     report_id,
                     ReportStatus.NO_RECEIPT,
                     exception=f"Transaction is not in the chain after "
-                              f"{self.receipt_timeout * self.max_retries} seconds.",
+                    f"{self.receipt_timeout * self.max_retries} seconds.",
                 )
             elif receipt["status"] == 1:
                 self.logger.info(f"Transaction {bytes_to_hex_str(txn_hash)} had been receipted.")
@@ -228,7 +226,9 @@ class AsyncTransactionSubmitter:
 
             await asyncio.sleep(self.retry_delay)
 
-        raise FastShutdownError("The number of reporter's retries reached the upper limit, and the task will exit soon.")
+        raise FastShutdownError(
+            "The number of reporter's retries reached the upper limit, and the task will exit soon."
+        )
 
     async def _wait_for_receipt(self, txn_hash):
         receipt = None
@@ -274,16 +274,16 @@ class RecordReporter:
         self.transaction_submitter.stop()
 
     def report(
-            self,
-            chain_id: int,
-            start_block: int,
-            end_block: int,
-            runtime_code_hash: str,
-            indexed_data: dict,
-            report_from: str,
+        self,
+        chain_id: int,
+        start_block: int,
+        end_block: int,
+        runtime_code_hash: str,
+        indexed_data: dict,
+        report_from: str,
     ):
         def transaction_builder(
-                chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict, nonce: int
+            chain_id: int, start_block: int, end_block: int, runtime_code_hash: str, indexed_data: dict, nonce: int
         ):
             code_hash = hex_str_to_bytes(runtime_code_hash).rjust(32, b"\x00")
 
