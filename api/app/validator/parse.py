@@ -55,8 +55,11 @@ def report_record_builder(records: List[dict]) -> List[dict]:
                 {
                     "dataclass": dataclass,
                     "count": detail["count"],
+                    "data_hash": "0x" + detail["dataHash"],
                 }
             )
+
+        validate_status = record.status if record.status else "unverified"
 
         formated_records.append(
             {
@@ -68,6 +71,7 @@ def report_record_builder(records: List[dict]) -> List[dict]:
                 "report_details": report_details,
                 "transaction_hash": bytes_to_hex_str(record.transaction_hash),
                 "report_status": record.report_status.value,
+                "validate_status": validate_status,
                 "exception": record.exception,
                 "report_time": int(record.create_time.timestamp()),
             }
