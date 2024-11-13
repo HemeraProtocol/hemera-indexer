@@ -2,6 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.avs_operator.domains.domain import HemeraHistoryTransparency
 
 
 class HemeraAvsOperatorLog(HemeraModel):
@@ -13,6 +14,7 @@ class HemeraAvsOperatorLog(HemeraModel):
     code_hash = Column(BYTEA)
     data_hash = Column(BYTEA)
     msg_hash = Column(BYTEA)
+    tx_hash = Column(BYTEA)
     count = Column(BIGINT)
     verify_status = Column(BOOLEAN)
     confirm_status = Column(BOOLEAN)
@@ -24,7 +26,7 @@ class HemeraAvsOperatorLog(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "HemeraHistoryTransparency",
+                "domain": HemeraHistoryTransparency,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,

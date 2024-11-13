@@ -91,6 +91,10 @@ postgresql://postgres:123456@localhost:5432/hemera_indexer --config-file ./confi
 ```
 
 ** Run by docker **
+
+copy key store files to config directory, config directory is mounted to /app/config in docker container, so the key store files will be at /app/config.
+if you want to store the key store files in a different directory, you can modify the `avs.env` and `avs-operator.yaml` file.
+
 ```commandline
 cd hemera_indexer
 cd docker-compose

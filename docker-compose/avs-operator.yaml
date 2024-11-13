@@ -8,15 +8,16 @@ x-common-settings: &common-settings
     - hemera
   volumes:
     - hemera-output:/app/output
+    - ./config:/app/config
   depends_on:
     postgresql:
       condition: service_healthy
 
 
 services:
-  hemera-main-indexer:
+  hemera-avs-operator:
     <<: *common-settings
-    container_name: indexer
+    container_name: hemera-avs-operator
     environment:
       - AUTO_UPGRADE_DB=true
       - ENTITY_TYPES=EXPLORER_BASE

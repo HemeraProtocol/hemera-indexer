@@ -192,6 +192,7 @@ class ValidateAndAggregate(FilterTransactionDataJob):
             data_class=decode_data["outputs"]["dataClass"],
             data_hash=decode_data["outputs"]["dataHash"],
             msg_hash=None,
+            tx_hash=log.log.transaction_hash,
             count=decode_data["outputs"]["count"],
             verify_status=log.verified,
             confirm_status=False,
@@ -203,7 +204,7 @@ class ValidateAndAggregate(FilterTransactionDataJob):
 
         try:
             task_resp: AlertTaskInfo = self.aggregator_client.create_alert_task(bytes_to_hex_str(hs.msg_hash))
-        except ValueError as e:
+        except Exception as e:
             logger.error(f"Failed to create alert task for {hs}: {e}")
             return hs
         bls_hash = sign_message(self.operator_bls_private_key, task_resp.sign_hash())
