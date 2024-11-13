@@ -12,6 +12,11 @@ def get_last_block(columns="*"):
     return latest_block
 
 
+def get_total_blocks_cnt():
+    count = db.session.query(Blocks).count()
+    return count
+
+
 def get_block_by_number(block_number: int, columns="*"):
     entities = build_entities(Blocks, columns)
 

@@ -5,15 +5,17 @@ Time    : 2024/10/29 下午4:50
 Author  : xuzh
 Project : hemera_indexer
 """
-from sqlalchemy import desc, text
+from sqlalchemy import case, desc, text
 from sqlalchemy.sql import and_
 
 from common.models import db
 from common.models.report_records import ReportRecords
 from common.utils.db_utils import build_entities
+from indexer.modules.custom.avs_operator.models.hemera_avs_log import HemeraAvsOperatorLog
+from indexer.modules.custom.avs_operator.models.task import AggregatorTask
 
 
-def get_report_record(columns="*", conditions=None, limit=None, offset=None):
+def get_report_record(columns="*", conditions=None, limit=None, offset=None, fill_with_status=False):
     entities = build_entities(ReportRecords, columns)
 
     statement = db.session.query(ReportRecords).with_entities(*entities).order_by(desc(ReportRecords.create_time))
@@ -26,8 +28,35 @@ def get_report_record(columns="*", conditions=None, limit=None, offset=None):
     if offset:
         statement = statement.offset(offset)
 
-    records = statement.all()
+    if fill_with_status:
+        page_query = statement.subquery("paged_records")
+        status_table = (
+            db.session.query(
+                HemeraAvsOperatorLog.tx_hash,
+                case((AggregatorTask.tx_hash is not None, "Pass"), else_="Failed").label("status"),
+            )
+            .outerjoin(AggregatorTask, HemeraAvsOperatorLog.msg_hash == AggregatorTask.alert_hash)
+            .subquery("status_table")
+        )
+
+        records = (
+            db.session.query(page_query, status_table.c.status.label("status"))
+            .outerjoin(status_table, page_query.c.transaction_hash == status_table.c.tx_hash)
+            .all()
+        )
+    else:
+        records = statement.all()
     return records
+
+
+def get_report_record_cnt(conditions=None):
+    statement = db.session.query(ReportRecords)
+
+    if conditions is not None:
+        statement = statement.filter(conditions)
+
+    count = statement.count()
+    return count
 
 
 def get_report_record_by_condition(block_number, dataclass, columns="*", limit=None, offset=None):

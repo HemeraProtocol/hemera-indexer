@@ -5,16 +5,16 @@ Time    : 2024/10/22 下午4:55
 Author  : xuzh
 Project : hemera_indexer
 """
-from datetime import datetime, time, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 import flask
 from flask_restx import Resource
 from sqlalchemy import and_, or_
 from web3 import Web3
 
-from api.app.db_service.blocks import get_blocks_by_condition
-from api.app.db_service.report_record import get_report_record, get_report_record_by_condition
-from api.app.db_service.transactions import get_transactions_by_condition
+from api.app.db_service.blocks import get_blocks_by_condition, get_last_block, get_total_blocks_cnt
+from api.app.db_service.report_record import get_report_record, get_report_record_by_condition, get_report_record_cnt
+from api.app.db_service.transactions import get_total_txn_count, get_transactions_by_condition
 from api.app.validator import validator_namespace
 from api.app.validator.parse import report_record_builder, validate_block_builder
 from common.models import db
@@ -34,6 +34,20 @@ AVS_CONTRACT = Web3(Web3.HTTPProvider(REQUEST_RPC)).eth.contract(
     address=CONTRACT_ADDRESS,
     abi=[GET_INDEXER_FUNCTION.get_abi()],
 )
+
+
+@validator_namespace.route("/v1/validator/indexed_status")
+class IndexedStatus(Resource):
+    def get(self):
+        last_block = get_last_block()
+        indexed_blocks = get_total_blocks_cnt()
+        indexed_transactions = get_total_txn_count()
+
+        return {
+            "last_block": last_block.number,
+            "indexed_blocks": indexed_blocks,
+            "indexed_transactions": indexed_transactions,
+        }, 200
 
 
 @validator_namespace.route("/v1/validator/block/<number_or_hash>")
@@ -75,7 +89,7 @@ class ValidateBlock(Resource):
 
 
 @validator_namespace.route("/v1/validator/report_history")
-class CheckReportBlock(Resource):
+class ReportHistory(Resource):
     """
     Get the contract reporting record and status by given block number.
 
@@ -117,9 +131,17 @@ class CheckReportBlock(Resource):
             ],
             limit=page_size,
             offset=(page_index - 1) * page_size,
+            fill_with_status=True,
         )
 
-        return report_record_builder(records), 200
+        total = get_report_record_cnt()
+
+        return {
+            "total": total,
+            "page_size": page_size,
+            "page_index": page_index,
+            "report_history": report_record_builder(records),
+        }, 200
 
 
 @validator_namespace.route("/v1/validator/check_report")
