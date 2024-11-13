@@ -339,6 +339,8 @@ def stream(
     auto_upgrade_db=True,
     log_level="INFO",
 ):
+    from multiprocessing import Manager
+    _shared_data_buff = Manager().dict()
     print_logo()
     configure_logging(log_level, log_file)
     configure_signals()
@@ -415,6 +417,7 @@ def stream(
         auto_reorg=auto_reorg,
         multicall=multicall,
         force_filter_mode=force_filter_mode,
+        _shared_data_buff=_shared_data_buff
     )
 
     controller = StreamController(

@@ -39,9 +39,12 @@ class BaseJobMeta(type):
         return get_subclasses(bases)
 
 
+from multiprocessing import Manager
+
 class BaseJob(metaclass=BaseJobMeta):
     _data_buff = defaultdict(list)
     locks = defaultdict(threading.Lock)
+    _shared_data_buff = None
 
     tokens = None
 
@@ -82,7 +85,7 @@ class BaseJob(metaclass=BaseJobMeta):
         job_name_snake = to_snake_case(self.job_name)
         self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
 
-    def run(self, **kwargs):
+    def run(self, _shared_data_buff, kwargs):
         try:
             self._start(**kwargs)
 
@@ -136,14 +139,26 @@ class BaseJob(metaclass=BaseJobMeta):
     def _collect_item(self, key, data):
         with self.locks[key]:
             self._data_buff[key].append(data)
+            if key in self._shared_data_buff:
+                self._shared_data_buff[key].append(data)
+            else:
+                self._shared_data_buff[key] = [data]
 
     def _collect_items(self, key, data_list):
         with self.locks[key]:
             self._data_buff[key].extend(data_list)
+            if key in self._shared_data_buff:
+                self._shared_data_buff[key].extend(data_list)
+            else:
+                self._shared_data_buff[key] = data_list
 
     def _collect_domain(self, domain):
         with self.locks[domain.type()]:
             self._data_buff[domain.type()].append(domain)
+            if domain.type() in self._shared_data_buff:
+                self._shared_data_buff[domain.type()].append(domain)
+            else:
+                self._shared_data_buff[domain.type()] = [domain]
 
     def _collect_domains(self, domains):
         for domain in domains:
@@ -176,10 +191,16 @@ class BaseJob(metaclass=BaseJobMeta):
             if output_type in self._required_output_types:
                 items.extend(self._extract_from_buff([output_type.type()]))
 
+        from multiprocessing import Lock
+        l = Lock()
         for item_exporter in self._item_exporters:
-            item_exporter.open()
-            item_exporter.export_items(items, job_name=self.job_name)
-            item_exporter.close()
+            try:
+                l.acquire()
+                item_exporter.open()
+                item_exporter.export_items(items, job_name=self.job_name)
+                item_exporter.close()
+            finally:
+                l.release()
 
     def get_buff(self):
         return self._data_buff
