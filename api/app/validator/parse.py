@@ -46,6 +46,7 @@ def validate_block_builder(block: Blocks, transactions: List[Transactions]) -> d
 
 def report_record_builder(records: List[dict]) -> List[dict]:
     formated_records = []
+    merged_record_status = {}
     for record in records:
 
         report_details = []
@@ -59,10 +60,19 @@ def report_record_builder(records: List[dict]) -> List[dict]:
                 }
             )
 
+        transaction_hash = bytes_to_hex_str(record.transaction_hash)
         validate_status = record.status if record.status else "unverified"
 
-        formated_records.append(
-            {
+        if transaction_hash in merged_record_status:
+            formated_record = merged_record_status[transaction_hash]
+            if validate_status != formated_record["validate_status"]:
+                if validate_status == "Pass" or formated_record["validate_status"] == "Pass":
+                    formated_record["validate_status"] = "Partially Pass"
+                else:
+                    formated_record["validate_status"] = "Failed"
+
+        else:
+            merged_record_status[transaction_hash] = {
                 "chain_id": record.chain_id,
                 "mission_type": record.mission_type,
                 "start_block_number": record.start_block_number,
@@ -75,6 +85,10 @@ def report_record_builder(records: List[dict]) -> List[dict]:
                 "exception": record.exception,
                 "report_time": int(record.create_time.timestamp()),
             }
-        )
+
+    for transaction_hash in merged_record_status.keys():
+        formated_records.append(merged_record_status[transaction_hash])
+
+    formated_records.sort(key=lambda x: x["report_time"], reverse=True)
 
     return formated_records
