@@ -33,7 +33,7 @@ def get_report_record(columns="*", conditions=None, limit=None, offset=None, fil
         status_table = (
             db.session.query(
                 HemeraAvsOperatorLog.tx_hash,
-                case((AggregatorTask.tx_hash is not None, "Pass"), else_="Failed").label("status"),
+                case((AggregatorTask.tx_hash is not None, "pass"), else_="failed").label("status"),
             )
             .outerjoin(AggregatorTask, HemeraAvsOperatorLog.msg_hash == AggregatorTask.alert_hash)
             .subquery("status_table")
