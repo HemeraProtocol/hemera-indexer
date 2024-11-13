@@ -66,10 +66,10 @@ def report_record_builder(records: List[dict]) -> List[dict]:
         if transaction_hash in merged_record_status:
             formated_record = merged_record_status[transaction_hash]
             if validate_status != formated_record["validate_status"]:
-                if validate_status == "Pass" or formated_record["validate_status"] == "Pass":
-                    formated_record["validate_status"] = "Partially Pass"
+                if validate_status == "Pass" or formated_record["validate_status"] == "pass":
+                    formated_record["validate_status"] = "partially pass"
                 else:
-                    formated_record["validate_status"] = "Failed"
+                    formated_record["validate_status"] = "failed"
 
         else:
             merged_record_status[transaction_hash] = {
