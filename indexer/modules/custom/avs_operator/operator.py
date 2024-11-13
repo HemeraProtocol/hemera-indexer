@@ -119,7 +119,6 @@ class ValidateAndAggregate(FilterTransactionDataJob):
 
         # request block data from api
         for block_num in block_nums:
-            continue
             api_block = self._get_block_api(block_num)
             if not api_block:
                 continue
@@ -132,8 +131,6 @@ class ValidateAndAggregate(FilterTransactionDataJob):
             block_data[block_num] = api_block
 
         for log in block_log:
-            log.verified = True
-            continue
             count = 0
             for block_num in range(log.decode_data["startBlock"], log.decode_data["endBlock"] + 1):
                 if block_num in block_data:
@@ -142,8 +139,6 @@ class ValidateAndAggregate(FilterTransactionDataJob):
                 log.verified = True
 
         for log in tx_log:
-            log.verified = True
-            continue
             count = 0
             for block_num in range(log.decode_data["startBlock"], log.decode_data["endBlock"] + 1):
                 api_block = block_data.get(block_num)
