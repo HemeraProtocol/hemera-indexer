@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 COMMIT_BATCH_SIZE = 500
 
 from multiprocessing import RLock
+
 lock = RLock()
 
 
@@ -38,7 +39,7 @@ class PostgresItemExporter(BaseExporter):
         self.sub_progress = None
 
     def export_items(self, items, **kwargs):
-        if lock.acquire(timeout=3):
+        if lock.acquire(timeout=10):
             try:
 
                 start_time = datetime.now(tzlocal())
@@ -100,7 +101,9 @@ class PostgresItemExporter(BaseExporter):
                                 columns = list(data[0].keys())
                                 values = [tuple(d.values()) for d in data]
 
-                                insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
+                                insert_stmt = sql_insert_statement(
+                                    table, do_update, columns, where_clause=update_strategy
+                                )
 
                                 # Execute in batches with progress tracking
                                 for i in range(0, len(values), COMMIT_BATCH_SIZE):
@@ -126,8 +129,7 @@ class PostgresItemExporter(BaseExporter):
             finally:
                 lock.release()
         else:
-            logger.error('Lock acquired but not released')
-
+            logger.error("Lock acquired but not released")
 
 
 def sql_insert_statement(model: Type[HemeraModel], do_update: bool, columns, where_clause=None):

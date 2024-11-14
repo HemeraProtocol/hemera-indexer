@@ -1,7 +1,6 @@
 import logging
 import os
 import time
-from collections import defaultdict
 
 import mpire
 
@@ -10,7 +9,6 @@ from common.utils.file_utils import delete_file, write_to_file
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
-from indexer.jobs.base_job import BaseJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
@@ -41,7 +39,6 @@ class StreamController(BaseController):
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
         self.delay = delay
-        self._manager = _manager
 
     def action(
         self,
@@ -108,15 +105,9 @@ class StreamController(BaseController):
                 if synced_blocks != 0:
                     # ETL program's main logic
                     splits = self.split_blocks(last_synced_block + 1, target_block, 100)
-                    BaseJob._manager = self._manager
-                    BaseJob._shared_data_buff = self._manager.dict()
 
-                    def shared_lock_factory():
-                        return self._manager.Lock()
-
-                    BaseJob._shared_data_buff_lock = defaultdict(shared_lock_factory)
                     with mpire.WorkerPool(n_jobs=4, use_dill=True) as pool:
-                        pool.map(func=self.job_scheduler.run_jobs, iterable_of_args=splits, task_timeout=10)
+                        pool.map(func=self.job_scheduler.run_jobs, iterable_of_args=splits, task_timeout=20)
                     # self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
 
                     logger.info("Writing last synced block {}".format(target_block))

@@ -33,8 +33,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
 
     def _collect(self, **kwargs):
 
-        # transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
-        transactions: List[Transaction] = self._shared_data_buff.get(Transaction.type(), [])
+        transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
 
         self._batch_work_executor.execute(transactions, self._collect_batch, total_items=len(transactions))
         self._batch_work_executor.wait()

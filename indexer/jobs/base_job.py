@@ -42,9 +42,6 @@ class BaseJobMeta(type):
 class BaseJob(metaclass=BaseJobMeta):
     _data_buff = defaultdict(list)
     _data_buff_lock = defaultdict(threading.Lock)
-    _manager = None
-    _shared_data_buff = None
-    _shared_data_buff_lock = None
 
     tokens = None
 
@@ -140,29 +137,13 @@ class BaseJob(metaclass=BaseJobMeta):
         with self._data_buff_lock[key]:
             self._data_buff[key].append(data)
 
-    def _collect_shared_item(self, key, data):
-        with self._shared_data_buff_lock[key]:
-            if key not in self._shared_data_buff:
-                self._shared_data_buff[key] = self._manager.list()
-            self._shared_data_buff[key].append(data)
-
     def _collect_items(self, key, data_list):
         with self._data_buff_lock[key]:
             self._data_buff[key].extend(data_list)
 
-    def _collect_shared_items(self, key, data_list):
-        with self._shared_data_buff_lock[key]:
-            if key not in self._shared_data_buff:
-                self._shared_data_buff[key] = self._manager.list()
-            self._shared_data_buff[key].extend(data_list)
-
     def _collect_domain(self, domain):
         with self._data_buff_lock[domain.type()]:
             self._data_buff[domain.type()].append(domain)
-            if domain.type() in self._shared_data_buff:
-                self._shared_data_buff[domain.type()].append(domain)
-            else:
-                self._shared_data_buff[domain.type()] = [domain]
 
     def _collect_domains(self, domains):
         for domain in domains:
