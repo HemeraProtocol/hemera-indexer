@@ -41,10 +41,13 @@ class BaseJobMeta(type):
 
 from multiprocessing import Manager
 
+
 class BaseJob(metaclass=BaseJobMeta):
     _data_buff = defaultdict(list)
     locks = defaultdict(threading.Lock)
+    _manager = None
     _shared_data_buff = None
+    _shared_data_buff_lock = None
 
     tokens = None
 
@@ -139,18 +142,18 @@ class BaseJob(metaclass=BaseJobMeta):
     def _collect_item(self, key, data):
         with self.locks[key]:
             self._data_buff[key].append(data)
-            if key in self._shared_data_buff:
-                self._shared_data_buff[key].append(data)
-            else:
-                self._shared_data_buff[key] = [data]
+        with self._shared_data_buff_lock:
+            if key not in self._shared_data_buff:
+                self._shared_data_buff[key] = self._manager.list()
+            self._shared_data_buff[key].append(data)
 
     def _collect_items(self, key, data_list):
         with self.locks[key]:
             self._data_buff[key].extend(data_list)
-            if key in self._shared_data_buff:
-                self._shared_data_buff[key].extend(data_list)
-            else:
-                self._shared_data_buff[key] = data_list
+        with self._shared_data_buff_lock:
+            if key not in self._shared_data_buff:
+                self._shared_data_buff[key] = self._manager.list()
+            self._shared_data_buff[key].extend(data_list)
 
     def _collect_domain(self, domain):
         with self.locks[domain.type()]:
@@ -179,8 +182,10 @@ class BaseJob(metaclass=BaseJobMeta):
     def _extract_from_buff(self, keys=None):
         items = []
         for key in keys:
-            with self.locks[key]:
-                items.extend(self._data_buff[key])
+            # with self.locks[key]:
+            #     items.extend(self._data_buff[key])
+            with self._shared_data_buff_lock:
+                items.extend(self._shared_data_buff[key])
 
         return items
 
@@ -191,16 +196,11 @@ class BaseJob(metaclass=BaseJobMeta):
             if output_type in self._required_output_types:
                 items.extend(self._extract_from_buff([output_type.type()]))
 
-        from multiprocessing import Lock
-        l = Lock()
         for item_exporter in self._item_exporters:
-            try:
-                l.acquire()
+            with self._shared_data_buff_lock:
                 item_exporter.open()
                 item_exporter.export_items(items, job_name=self.job_name)
                 item_exporter.close()
-            finally:
-                l.release()
 
     def get_buff(self):
         return self._data_buff

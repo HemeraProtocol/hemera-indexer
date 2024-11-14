@@ -66,7 +66,7 @@ class JobScheduler:
         multicall=None,
         auto_reorg=True,
         force_filter_mode=False,
-        _shared_data_buff=None
+        _manager=None,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
@@ -87,7 +87,7 @@ class JobScheduler:
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
         self.pg_service = config.get("db_service") if "db_service" in config else None
-        self._shared_data_buff = _shared_data_buff
+        self._manager = _manager
 
         self.discover_and_register_job_classes()
         self.required_job_classes, self.is_pipeline_filter = self.get_required_job_classes(required_output_types)
@@ -223,7 +223,6 @@ class JobScheduler:
                 config=self.config,
                 is_filter=self.is_pipeline_filter,
                 filters=filters,
-                _shared_data_buff=self._shared_data_buff
             )
             self.jobs.insert(0, export_blocks_job)
         else:
@@ -260,19 +259,22 @@ class JobScheduler:
     def split_blocks(self, start_block, end_block, step):
         blocks = []
         for i in range(start_block, end_block + 1, step):
-            blocks.append([{'start_block': i, 'end_block': min(i + step - 1, end_block)}])
+            blocks.append([{"start_block": i, "end_block": min(i + step - 1, end_block)}])
         return blocks
 
     def run_jobs(self, start_block, end_block):
         self.clear_data_buff()
-        BaseJob._shared_data_buff = self._shared_data_buff
+        BaseJob._manager = self._manager
+        BaseJob._shared_data_buff = self._manager.dict()
+        BaseJob._shared_data_buff_lock = self._manager.Lock()
+
         try:
             splits = self.split_blocks(start_block, end_block, 10)
 
             for job in self.jobs:
                 # job.run(start_block=start_block, end_block=end_block)
-                with mpire.WorkerPool(n_jobs=8, shared_objects=BaseJob._shared_data_buff) as pool:
-                    pool.map(func=job.run, iterable_of_args=splits, task_timeout=20)
+                with mpire.WorkerPool(n_jobs=1, shared_objects=BaseJob._shared_data_buff) as pool:
+                    pool.map(func=job.run, iterable_of_args=splits, task_timeout=2000)
 
             for output_type in self.required_output_types:
                 key = output_type.type()

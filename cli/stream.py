@@ -339,8 +339,6 @@ def stream(
     auto_upgrade_db=True,
     log_level="INFO",
 ):
-    from multiprocessing import Manager
-    _shared_data_buff = Manager().dict()
     print_logo()
     configure_logging(log_level, log_file)
     configure_signals()
@@ -403,6 +401,10 @@ def stream(
     if source_path and source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
 
+    from multiprocessing import Manager
+
+    manager = Manager()
+    # _shared_data_buff = Manager().dict()
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
@@ -417,7 +419,7 @@ def stream(
         auto_reorg=auto_reorg,
         multicall=multicall,
         force_filter_mode=force_filter_mode,
-        _shared_data_buff=_shared_data_buff
+        _manager=manager,
     )
 
     controller = StreamController(
