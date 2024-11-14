@@ -8,6 +8,8 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List
 
+from sqlalchemy import func
+
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.transaction import Transaction
@@ -161,7 +163,7 @@ class EigenLayerJob(FilterTransactionDataJob):
                                 )
                                 internal_idx += 1
                                 eigen_actions.append(action)
-                elif log.topic0 == WITHDRAWAL_COMPLETED_EVENT and log.address == self._delegation:
+                elif log.topic0 == WITHDRAWAL_COMPLETED_EVENT.get_signature() and log.address == self._delegation:
                     dl = WITHDRAWAL_COMPLETED_EVENT.decode_log(log)
                     withdrawal_root = dl.get("withdrawalRoot")
                     eigen_actions.append(
