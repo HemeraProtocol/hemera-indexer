@@ -85,6 +85,11 @@ def get_address_transaction_cnt(address: str):
     return total_count
 
 
+def get_total_txn_cnt():
+    count = db.session.query(Transactions).filter(Transactions.block_timestamp > "2024-11-14 00:00:00").count()
+    return count + 29589024
+
+
 def get_total_txn_count():
     # Get the latest block date and cumulative count
     latest_record = (
