@@ -6,7 +6,7 @@ from indexer.modules.custom.lido.domains.seth import LidoPositionValuesD, LidoSh
 
 
 class LidoShareBalances(HemeraModel):
-    __tablename__ = "lido_seth_share_balances"
+    __tablename__ = "af_lido_seth_share_balances"
 
     address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
@@ -32,7 +32,7 @@ class LidoShareBalances(HemeraModel):
 
 
 class CurrentLidoShareBalances(HemeraModel):
-    __tablename__ = "lido_seth_share_balances_current"
+    __tablename__ = "af_lido_seth_share_balances_current"
 
     address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
@@ -58,7 +58,7 @@ class CurrentLidoShareBalances(HemeraModel):
 
 
 class LidoPositionValues(HemeraModel):
-    __tablename__ = "lido_position_values"
+    __tablename__ = "af_lido_position_values"
 
     block_number = Column(BIGINT, primary_key=True)
     total_share = Column(NUMERIC(100))

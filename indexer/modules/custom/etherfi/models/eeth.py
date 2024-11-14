@@ -10,7 +10,7 @@ from indexer.modules.custom.etherfi.domains.eeth import (
 
 
 class EtherFiShareBalances(HemeraModel):
-    __tablename__ = "ether_fi_share_balances"
+    __tablename__ = "af_ether_fi_share_balances"
 
     address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
@@ -36,7 +36,7 @@ class EtherFiShareBalances(HemeraModel):
 
 
 class CurrentEtherFiShareBalances(HemeraModel):
-    __tablename__ = "ether_fi_share_balances_current"
+    __tablename__ = "af_ether_fi_share_balances_current"
 
     address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
@@ -62,7 +62,7 @@ class CurrentEtherFiShareBalances(HemeraModel):
 
 
 class EtherFiPositionValues(HemeraModel):
-    __tablename__ = "ether_fi_position_values"
+    __tablename__ = "af_ether_fi_position_values"
 
     block_number = Column(BIGINT, primary_key=True)
     total_share = Column(NUMERIC(100))

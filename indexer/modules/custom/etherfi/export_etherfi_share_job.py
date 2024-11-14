@@ -9,7 +9,6 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import FilterTransactionDataJob
-from indexer.modules.custom.etherfi.abi.contract import eeth_abi, liquidity_pool_abi
 from indexer.modules.custom.etherfi.abi.event import *
 from indexer.modules.custom.etherfi.abi.functions import *
 from indexer.modules.custom.etherfi.domains.eeth import (
@@ -39,12 +38,6 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
         )
         self._is_batch = kwargs["batch_size"] > 1
         self._filters = kwargs.get("filters", [])
-        self.eeth_contract = self._web3.eth.contract(
-            address=Web3.to_checksum_address(self.user_defined_config["eeth_address"]), abi=eeth_abi
-        )
-        self.liquidity_pool_contract = self._web3.eth.contract(
-            address=Web3.to_checksum_address(self.user_defined_config["liquidity_pool_address"]), abi=liquidity_pool_abi
-        )
 
         self.position_events = [
             validator_approved_event.get_signature(),
