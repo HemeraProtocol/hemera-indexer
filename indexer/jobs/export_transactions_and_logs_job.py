@@ -61,9 +61,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
                 self._collect_item(Log.type(), log)
 
     def _process(self, **kwargs):
-        log_list = list(self._shared_data_buff[Log.type()])
-        log_list.sort(key=lambda x: (x.block_number, x.log_index))
-        self._shared_data_buff[Log.type()] = self._manager.list(log_list)
+        self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
 
 def receipt_rpc_requests(make_request, transaction_hashes, is_batch):

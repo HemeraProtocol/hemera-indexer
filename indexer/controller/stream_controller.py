@@ -115,8 +115,8 @@ class StreamController(BaseController):
                         return self._manager.Lock()
 
                     BaseJob._shared_data_buff_lock = defaultdict(shared_lock_factory)
-                    with mpire.WorkerPool(n_jobs=1, shared_objects=BaseJob._shared_data_buff, use_dill=True) as pool:
-                        pool.map(func=self.job_scheduler.run_jobs, iterable_of_args=splits, task_timeout=300)
+                    with mpire.WorkerPool(n_jobs=4, use_dill=True) as pool:
+                        pool.map(func=self.job_scheduler.run_jobs, iterable_of_args=splits, task_timeout=10)
                     # self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
 
                     logger.info("Writing last synced block {}".format(target_block))

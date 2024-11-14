@@ -254,7 +254,7 @@ class JobScheduler:
             )
             self.jobs.append(check_job)
 
-    def run_jobs(self, shared_objects, args):
+    def run_jobs(self, args):
         self.clear_data_buff()
         try:
             start_block = args["start_block"]
