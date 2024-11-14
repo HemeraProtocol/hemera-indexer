@@ -7,6 +7,7 @@ from flask_cors import CORS
 
 from api.app.cache import cache, redis_db
 from api.app.limiter import limiter
+from api.app.limiter_v2.limiter import limiter_v2
 from common.models import db
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
@@ -59,6 +60,7 @@ cache.init_app(app, config.cache_config.get_cache_config(redis_db))
 
 # Rate limit
 limiter.init_app(app)
+limiter_v2.init_app(app)
 
 # ma.init_app(app)
 CORS(app)
