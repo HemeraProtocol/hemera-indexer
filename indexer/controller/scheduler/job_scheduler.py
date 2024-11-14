@@ -66,7 +66,6 @@ class JobScheduler:
         multicall=None,
         auto_reorg=True,
         force_filter_mode=False,
-        _manager=None,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
@@ -87,7 +86,6 @@ class JobScheduler:
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
         self.pg_service = config.get("db_service") if "db_service" in config else None
-        self._manager = _manager
 
         self.discover_and_register_job_classes()
         self.required_job_classes, self.is_pipeline_filter = self.get_required_job_classes(required_output_types)
@@ -256,26 +254,13 @@ class JobScheduler:
             )
             self.jobs.append(check_job)
 
-    def split_blocks(self, start_block, end_block, step):
-        blocks = []
-        for i in range(start_block, end_block + 1, step):
-            blocks.append([{"start_block": i, "end_block": min(i + step - 1, end_block)}])
-        return blocks
-
-    def run_jobs(self, start_block, end_block):
+    def run_jobs(self, shared_objects, args):
         self.clear_data_buff()
-        BaseJob._manager = self._manager
-        BaseJob._shared_data_buff = self._manager.dict()
-        BaseJob._shared_data_buff_lock = defaultdict(self._manager.Lock())
-
         try:
-            splits = self.split_blocks(start_block, end_block, 300)
-
+            start_block = args["start_block"]
+            end_block = args["end_block"]
             for job in self.jobs:
-                # job.run(start_block=start_block, end_block=end_block)
-                with mpire.WorkerPool(n_jobs=1, shared_objects=BaseJob._shared_data_buff, use_dill=True) as pool:
-                    pool.map(func=job.run, iterable_of_args=splits, task_timeout=300)
-
+                job.run(start_block=start_block, end_block=end_block)
             for output_type in self.required_output_types:
                 key = output_type.type()
                 message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"

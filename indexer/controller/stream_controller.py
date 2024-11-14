@@ -1,12 +1,16 @@
 import logging
 import os
 import time
+from collections import defaultdict
+
+import mpire
 
 from common.utils.exception_control import FastShutdownError, HemeraBaseException
 from common.utils.file_utils import delete_file, write_to_file
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
+from indexer.jobs.base_job import BaseJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
@@ -27,6 +31,7 @@ class StreamController(BaseController):
         max_retries=1,
         retry_from_record=False,
         delay=0,
+        _manager=None,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
@@ -36,6 +41,7 @@ class StreamController(BaseController):
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
         self.delay = delay
+        self._manager = _manager
 
     def action(
         self,
@@ -60,6 +66,12 @@ class StreamController(BaseController):
 
     def _shutdown(self):
         pass
+
+    def split_blocks(self, start_block, end_block, step):
+        blocks = []
+        for i in range(start_block, end_block + 1, step):
+            blocks.append([{"start_block": i, "end_block": min(i + step - 1, end_block)}])
+        return blocks
 
     def _do_stream(self, start_block, end_block, steps, retry_errors, period_seconds):
         last_synced_block = self.sync_recorder.get_last_synced_block()
@@ -95,7 +107,17 @@ class StreamController(BaseController):
 
                 if synced_blocks != 0:
                     # ETL program's main logic
-                    self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
+                    splits = self.split_blocks(last_synced_block + 1, target_block, 100)
+                    BaseJob._manager = self._manager
+                    BaseJob._shared_data_buff = self._manager.dict()
+
+                    def shared_lock_factory():
+                        return self._manager.Lock()
+
+                    BaseJob._shared_data_buff_lock = defaultdict(shared_lock_factory)
+                    with mpire.WorkerPool(n_jobs=1, shared_objects=BaseJob._shared_data_buff, use_dill=True) as pool:
+                        pool.map(func=self.job_scheduler.run_jobs, iterable_of_args=splits, task_timeout=300)
+                    # self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
 
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)

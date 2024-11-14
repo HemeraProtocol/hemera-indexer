@@ -85,7 +85,7 @@ class BaseJob(metaclass=BaseJobMeta):
         job_name_snake = to_snake_case(self.job_name)
         self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
 
-    def run(self, _shared_data_buff, kwargs):
+    def run(self, **kwargs):
         try:
             self._start(**kwargs)
 
@@ -196,10 +196,9 @@ class BaseJob(metaclass=BaseJobMeta):
                 items.extend(self._extract_from_buff([output_type.type()]))
 
         for item_exporter in self._item_exporters:
-            with self._shared_data_buff_lock:
-                item_exporter.open()
-                item_exporter.export_items(items, job_name=self.job_name)
-                item_exporter.close()
+            item_exporter.open()
+            item_exporter.export_items(items, job_name=self.job_name)
+            item_exporter.close()
 
     def get_buff(self):
         return self._data_buff

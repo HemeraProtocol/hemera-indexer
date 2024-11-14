@@ -419,7 +419,6 @@ def stream(
         auto_reorg=auto_reorg,
         multicall=multicall,
         force_filter_mode=force_filter_mode,
-        _manager=manager,
     )
 
     controller = StreamController(
@@ -431,6 +430,7 @@ def stream(
         ),
         retry_from_record=retry_from_record,
         delay=delay,
+        _manager=manager,
     )
 
     controller.action(
