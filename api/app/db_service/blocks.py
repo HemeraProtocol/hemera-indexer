@@ -13,8 +13,8 @@ def get_last_block(columns="*"):
 
 
 def get_total_blocks_cnt():
-    count = db.session.query(Blocks).count()
-    return count
+    count = db.session.query(Blocks).filter(Blocks.timestamp > "2024-11-14 00:00:00").count()
+    return count + 193328
 
 
 def get_block_by_number(block_number: int, columns="*"):

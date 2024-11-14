@@ -14,7 +14,7 @@ from web3 import Web3
 
 from api.app.db_service.blocks import get_blocks_by_condition, get_last_block, get_total_blocks_cnt
 from api.app.db_service.report_record import get_report_record, get_report_record_by_condition, get_report_record_cnt
-from api.app.db_service.transactions import get_total_txn_count, get_transactions_by_condition
+from api.app.db_service.transactions import get_total_txn_cnt, get_total_txn_count, get_transactions_by_condition
 from api.app.validator import validator_namespace
 from api.app.validator.parse import report_record_builder, validate_block_builder
 from common.models import db
@@ -41,7 +41,7 @@ class IndexedStatus(Resource):
     def get(self):
         last_block = get_last_block()
         indexed_blocks = get_total_blocks_cnt()
-        indexed_transactions = get_total_txn_count()
+        indexed_transactions = get_total_txn_cnt()
 
         return {
             "last_block": last_block.number,
