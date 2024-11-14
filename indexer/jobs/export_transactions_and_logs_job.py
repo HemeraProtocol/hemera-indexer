@@ -33,7 +33,9 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
 
     def _collect(self, **kwargs):
 
-        transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
+        # transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
+        transactions: List[Transaction] = self._shared_data_buff.get(Transaction.type(), [])
+
         self._batch_work_executor.execute(transactions, self._collect_batch, total_items=len(transactions))
         self._batch_work_executor.wait()
 
@@ -59,7 +61,9 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
                 self._collect_item(Log.type(), log)
 
     def _process(self, **kwargs):
-        self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
+        log_list = list(self._shared_data_buff[Log.type()])
+        log_list.sort(key=lambda x: (x.block_number, x.log_index))
+        self._shared_data_buff[Log.type()] = self._manager.list(log_list)
 
 
 def receipt_rpc_requests(make_request, transaction_hashes, is_batch):

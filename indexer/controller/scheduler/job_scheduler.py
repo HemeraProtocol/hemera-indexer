@@ -266,15 +266,15 @@ class JobScheduler:
         self.clear_data_buff()
         BaseJob._manager = self._manager
         BaseJob._shared_data_buff = self._manager.dict()
-        BaseJob._shared_data_buff_lock = self._manager.Lock()
+        BaseJob._shared_data_buff_lock = defaultdict(self._manager.Lock())
 
         try:
-            splits = self.split_blocks(start_block, end_block, 10)
+            splits = self.split_blocks(start_block, end_block, 300)
 
             for job in self.jobs:
                 # job.run(start_block=start_block, end_block=end_block)
-                with mpire.WorkerPool(n_jobs=1, shared_objects=BaseJob._shared_data_buff) as pool:
-                    pool.map(func=job.run, iterable_of_args=splits, task_timeout=2000)
+                with mpire.WorkerPool(n_jobs=1, shared_objects=BaseJob._shared_data_buff, use_dill=True) as pool:
+                    pool.map(func=job.run, iterable_of_args=splits, task_timeout=300)
 
             for output_type in self.required_output_types:
                 key = output_type.type()

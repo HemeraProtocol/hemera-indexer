@@ -102,8 +102,15 @@ class ExportBlocksJob(BaseExportJob):
         self._data_buff[Block.type()].sort(key=lambda x: x.number)
         self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
 
+        block_list = list(self._shared_data_buff[Block.type()])
+        block_list.sort(key=lambda x: x.number)
+        self._shared_data_buff[Block.type()] = self._manager.list(block_list)
+
+        tx_list = list(self._shared_data_buff[Transaction.type()])
+        tx_list.sort(key=lambda x: (x.block_number, x.transaction_index))
+        self._shared_data_buff[Transaction.type()] = self._manager.list(tx_list)
         ts_dict = {}
-        for block in self._data_buff[Block.type()]:
+        for block in self._shared_data_buff[Block.type()]:
             timestamp = block.timestamp // 3600 * 3600
             block_number = block.number
 

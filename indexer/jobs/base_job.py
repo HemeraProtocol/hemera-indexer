@@ -39,12 +39,9 @@ class BaseJobMeta(type):
         return get_subclasses(bases)
 
 
-from multiprocessing import Manager
-
-
 class BaseJob(metaclass=BaseJobMeta):
     _data_buff = defaultdict(list)
-    locks = defaultdict(threading.Lock)
+    _data_buff_lock = defaultdict(threading.Lock)
     _manager = None
     _shared_data_buff = None
     _shared_data_buff_lock = None
@@ -140,23 +137,27 @@ class BaseJob(metaclass=BaseJobMeta):
         pass
 
     def _collect_item(self, key, data):
-        with self.locks[key]:
+        with self._data_buff_lock[key]:
             self._data_buff[key].append(data)
-        with self._shared_data_buff_lock:
+
+    def _collect_shared_item(self, key, data):
+        with self._shared_data_buff_lock[key]:
             if key not in self._shared_data_buff:
                 self._shared_data_buff[key] = self._manager.list()
             self._shared_data_buff[key].append(data)
 
     def _collect_items(self, key, data_list):
-        with self.locks[key]:
+        with self._data_buff_lock[key]:
             self._data_buff[key].extend(data_list)
-        with self._shared_data_buff_lock:
+
+    def _collect_shared_items(self, key, data_list):
+        with self._shared_data_buff_lock[key]:
             if key not in self._shared_data_buff:
                 self._shared_data_buff[key] = self._manager.list()
             self._shared_data_buff[key].extend(data_list)
 
     def _collect_domain(self, domain):
-        with self.locks[domain.type()]:
+        with self._data_buff_lock[domain.type()]:
             self._data_buff[domain.type()].append(domain)
             if domain.type() in self._shared_data_buff:
                 self._shared_data_buff[domain.type()].append(domain)
@@ -182,10 +183,8 @@ class BaseJob(metaclass=BaseJobMeta):
     def _extract_from_buff(self, keys=None):
         items = []
         for key in keys:
-            # with self.locks[key]:
-            #     items.extend(self._data_buff[key])
-            with self._shared_data_buff_lock:
-                items.extend(self._shared_data_buff[key])
+            with self._data_buff_lock[key]:
+                items.extend(self._data_buff[key])
 
         return items
 
