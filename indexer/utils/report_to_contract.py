@@ -17,6 +17,7 @@ from web3 import Web3
 from web3.exceptions import TimeExhausted
 
 from common.models.report_records import ReportRecords, ReportStatus
+from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from common.utils.web3_utils import to_checksum_address
 from indexer.domain import DomainMeta
@@ -147,11 +148,8 @@ class AsyncTransactionSubmitter:
             self.web3.eth.get_transaction_count,
             self.account.address,
         )
-        if self.nonce == online_nonce:
-            self.nonce -= 1
-        current_nonce = max(self.nonce, online_nonce)
-        self.nonce = current_nonce + 1 if current_nonce == online_nonce else self.nonce
-        return current_nonce
+
+        return max(self.nonce, online_nonce)
 
     async def _process_transaction(self, info: dict) -> bool:
         txn_hash, report_id = None, None
@@ -162,8 +160,8 @@ class AsyncTransactionSubmitter:
         self.logger.info(f"Processing transaction with parameters: {parameters}")
 
         for entire_retry in range(self.max_retries):
-            for submit_retry in range(self.max_retries):
-                async with self.nonce_lock:
+            async with self.nonce_lock:
+                for submit_retry in range(self.max_retries):
                     try:
                         parameters["nonce"] = await self._get_next_nonce()
 
@@ -180,6 +178,7 @@ class AsyncTransactionSubmitter:
                         report_id = await self.submit_record_to_db(
                             parameters, transaction_hash=txn_hash, report_from=report_from
                         )
+                        self.nonce += 1
                         break
 
                     except ValueError as e:
@@ -192,8 +191,7 @@ class AsyncTransactionSubmitter:
                                 "Reporter will retry to submit the transaction with another nonce. "
                                 f"Now nonce: {self.nonce}"
                             )
-                            async with self.nonce_lock:
-                                self.nonce += 1
+                            self.nonce += 1
 
                     except Exception as e:
                         self.logger.error(
@@ -228,7 +226,9 @@ class AsyncTransactionSubmitter:
 
             await asyncio.sleep(self.retry_delay)
 
-        return False
+        raise FastShutdownError(
+            "The number of reporter's retries reached the upper limit, and the task will exit soon."
+        )
 
     async def _wait_for_receipt(self, txn_hash):
         receipt = None
