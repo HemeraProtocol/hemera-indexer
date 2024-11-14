@@ -8,8 +8,6 @@ import logging
 from collections import defaultdict
 from typing import Any, Dict, List
 
-from sqlalchemy import func
-
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.transaction import Transaction
