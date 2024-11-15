@@ -2,12 +2,10 @@ import logging
 from collections import defaultdict, deque
 from typing import List, Set, Type
 
-import mpire
 from pottery import RedisDict
 from redis.client import Redis
 
 from common.models.tokens import Tokens
-from common.services.postgresql_service import session_scope
 from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
@@ -23,8 +21,8 @@ import_submodules("indexer.modules")
 exception_recorder = ExceptionRecorder()
 
 
-def get_tokens_from_db(session):
-    with session_scope(session) as s:
+def get_tokens_from_db(service):
+    with service.session_scope() as s:
         dict = {}
         result = s.query(Tokens).all()
         if result is not None:
@@ -96,7 +94,7 @@ class JobScheduler:
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
         token_dict_from_db = defaultdict()
         if self.pg_service is not None:
-            token_dict_from_db = get_tokens_from_db(self.pg_service.get_service_session())
+            token_dict_from_db = get_tokens_from_db(self.pg_service)
         if cache is None or cache == "memory":
             BaseJob.init_token_cache(token_dict_from_db)
         else:
