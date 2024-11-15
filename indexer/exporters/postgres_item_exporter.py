@@ -10,27 +10,12 @@ from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 500
-
-
-class TqdmExtraFormat(tqdm):
-    """Provides both estimated and actual total time format parameters"""
-
-    @property
-    def format_dict(self):
-        d = super().format_dict
-        d.update(
-            total_time=self.format_interval(d["total"] / (d["n"] / d["elapsed"]) if d["elapsed"] and d["n"] else 0),
-            current_total_time=self.format_interval(d["elapsed"]),
-        )
-        return d
+COMMIT_BATCH_SIZE = 100
 
 
 class PostgresItemExporter(BaseExporter):
     def __init__(self, service):
         self.service = service
-        self.main_progress = None
-        self.sub_progress = None
 
     def export_items(self, items, **kwargs):
         # Initialize main progress bar
@@ -39,14 +24,6 @@ class PostgresItemExporter(BaseExporter):
             desc = f"{job_name}(PG)"
         else:
             desc = "Exporting items"
-        self.main_progress = TqdmExtraFormat(
-            total=len(items),
-            desc=desc.ljust(35),
-            unit="items",
-            position=0,
-            ncols=90,
-            bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] Est: {total_time}",
-        )
         with self.service.cursor_scope() as cur:
 
             try:
@@ -66,24 +43,11 @@ class PostgresItemExporter(BaseExporter):
                         converter = pg_config["converter"]
 
                         # Initialize sub-progress bar for current table
-                        self.sub_progress = TqdmExtraFormat(
-                            total=len(item_group),
-                            desc=f"Processing {table.__tablename__}".ljust(35),
-                            unit="items",
-                            position=1,
-                            leave=False,
-                            ncols=90,
-                            bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
-                        )
-
                         data = []
-
                         # Process items with progress tracking
                         for item in item_group:
                             converted_item = converter(table, item, do_update)
                             data.append(converted_item)
-                            self.sub_progress.update(1)
-                            self.main_progress.update(1)
 
                         if data:
                             columns = list(data[0].keys())
@@ -98,17 +62,12 @@ class PostgresItemExporter(BaseExporter):
                                 cur.connection.commit()
 
                         tables.append(table.__tablename__)
-                        self.sub_progress.close()
 
             except Exception as e:
                 logger.error(f"Error exporting items: {e}")
                 logger.error(f"{insert_stmt}")
-                raise e
-            finally:
-                if self.main_progress:
-                    self.main_progress.close()
-                if self.sub_progress:
-                    self.sub_progress.close()
+                pass
+                # raise e
 
 
 def sql_insert_statement(model: Type[HemeraModel], do_update: bool, columns, where_clause=None):
