@@ -67,5 +67,6 @@ class ExceptionRecorder(object):
             try:
                 statement = insert(ExceptionRecords).values(logs)
                 session.execute(statement)
+                session.commit()
             except Exception as e:
                 print(e)
