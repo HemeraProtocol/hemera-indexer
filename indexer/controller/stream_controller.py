@@ -142,7 +142,7 @@ class StreamController(BaseController):
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
                     logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
-                    exception_recorder.force_to_flush()
+                    # exception_recorder.force_to_flush()
                     raise e
 
                 else:
