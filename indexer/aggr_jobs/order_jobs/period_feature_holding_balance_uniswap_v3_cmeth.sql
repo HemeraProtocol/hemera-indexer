@@ -1,41 +1,12 @@
 delete
-from af_uniswap_v3_token_data_period
-where period_date >= '{start_date}'
-  and period_date < '{end_date}';
-insert into af_uniswap_v3_token_data_period(position_token_address, period_date, token_id, wallet_address, pool_address,
-                                            liquidity)
-select position_token_address,
-       date('{start_date}')       as period_date,
-       token_id,
-       wallet_address,
-       COALESCE(pool_address, '') as pool_address,
-       liquidity
-from (select *, row_number() over (partition by position_token_address, token_id order by block_number desc) rn
-      from af_uniswap_v3_token_data_hist
-      where to_timestamp(block_timestamp) < '{end_date}') t
-where rn = 1;
-
-delete
-from af_uniswap_v3_pool_prices_period
-where period_date >= '{start_date}'
-  and period_date < '{end_date}';
-
-insert into af_uniswap_v3_pool_prices_period(pool_address, period_date, sqrt_price_x96)
-select pool_address, date('{start_date}') as period_date, sqrt_price_x96
-from (select *, row_number() over (partition by pool_address order by block_number desc) rn
-      from af_uniswap_v3_pool_prices_hist
-      where to_timestamp(block_timestamp) < '{end_date}') t
-where rn = 1;
-
-delete
-from af_holding_balance_uniswap_v3_period
+from af_holding_balance_uniswap_v3_period_cmeth
 where period_date >= '{start_date}'
   and period_date < '{end_date}';
 WITH pool_prices_table AS (SELECT d1.pool_address,
                                   sqrt_price_x96,
                                   case
-                                      when (d5.symbol = 'FBTC' and d6.symbol = 'WETH') or
-                                           (d6.symbol = 'FBTC' and d5.symbol = 'WETH')
+                                      when (d5.symbol = 'cmETH' and d6.symbol = 'WETH') or
+                                           (d6.symbol = 'cmETH' and d5.symbol = 'WETH')
                                           then 0.03
                                       else 0.2 end as rate_limit,
 
@@ -56,16 +27,16 @@ WITH pool_prices_table AS (SELECT d1.pool_address,
      upper_lower_table as (select *,
                                   -- upperSqrtPrice
                                   CASE
-                                      WHEN token1_address = '\xc96de26018a54d51c097160568752c4e3bd6c364' THEN
-                                          sqrt_price_x96 * (1 / POWER((1 + rate_limit), 0.5)) * 100000 / 100000 -- FBTC: sqrtPriceDividedChangeRate
+                                      WHEN token1_address = '\xe6829d9a7ee3040e1276fa75293bde931859e8fa' THEN
+                                          sqrt_price_x96 * (1 / POWER((1 + rate_limit), 0.5)) * 100000 / 100000 -- cmETH: sqrtPriceDividedChangeRate
                                       ELSE
                                           sqrt_price_x96 * POWER((1 + rate_limit), 0.5) * 100000 / 100000 --  token: sqrtPriceChangeRate
                                       END AS sqrt_price_x96_upper,
 
                                   -- lowerSqrtPrice
                                   CASE
-                                      WHEN token1_address = '\xc96de26018a54d51c097160568752c4e3bd6c364' THEN
-                                          sqrt_price_x96 * (1 / POWER((1 - rate_limit), 0.5)) * 100000 / 100000 -- FBTC: sqrtPriceDividedChangeRate
+                                      WHEN token1_address = '\xe6829d9a7ee3040e1276fa75293bde931859e8fa' THEN
+                                          sqrt_price_x96 * (1 / POWER((1 - rate_limit), 0.5)) * 100000 / 100000 -- cmETH: sqrtPriceDividedChangeRate
                                       ELSE
                                           sqrt_price_x96 * POWER((1 - rate_limit), 0.5) * 100000 / 100000 --  token: sqrtPriceChangeRate
                                       END AS sqrt_price_x96_lower
@@ -175,7 +146,7 @@ WITH pool_prices_table AS (SELECT d1.pool_address,
                     FROM detail_table)
 
 insert
-into af_holding_balance_uniswap_v3_period(protocol_id,
+into af_holding_balance_uniswap_v3_period_cmeth(protocol_id,
                                                     pool_address,
                                                     period_date,
                                                     token_id,
@@ -199,7 +170,6 @@ SELECT CASE
            WHEN position_token_address = '\x5752f085206ab87d8a5ef6166779658add455774' then 'fusionx'
            WHEN position_token_address = '\x46a15b0b27311cedf172ab29e4f4766fbe7f4364' then 'pancake'
            WHEN position_token_address = '\x7d24de60a68ae47be4e852cf03dd4d8588b489ec' then 'swapsicle'
-           WHEN position_token_address = '\x743e03cceb4af2efa3cc76838f6e8b50b63f184c' then 'oku'
            ELSE 'uniswap_v3'
            END AS protocol_id,
        pool_address,

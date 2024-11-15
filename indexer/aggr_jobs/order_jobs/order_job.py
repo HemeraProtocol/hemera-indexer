@@ -15,6 +15,7 @@ class AggrOrderJob(AggrBaseJob):
         self.db_service = config["db_service"]
         self.job_list = ['period_address_token_balances.sql', 'period_feature_holding_balance_uniswap_v3.sql']
         self.version = config["version"]
+        self.chain_name = config["chain_name"]
 
     def run(self, **kwargs):
         start_date = kwargs["start_date"]
@@ -33,11 +34,15 @@ class AggrOrderJob(AggrBaseJob):
                 execution_time = time.time() - start_time
                 print(f'----------- executed in {execution_time:.2f} seconds: SQL {job_name}')
 
-            period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates('arbitrum',
+            period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates(self.chain_name,
                                                                                                    self.db_service,
                                                                                                    start_date,
                                                                                                    end_date,
                                                                                                    self.version
                                                                                                    )
+            start_time = time.time()
             period_feature_defi_wallet_fbtc_aggregates_job.run()
+            execution_time = time.time() - start_time
+            print(f'----------- executed in {execution_time:.2f} seconds: FBTC')
+
             print('======== finished date', start_date)
