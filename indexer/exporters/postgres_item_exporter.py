@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 from typing import Type
 
@@ -8,7 +9,6 @@ from tqdm import tqdm
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
-from indexer.controller.stream_controller import M_LOCK_TIME
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,9 @@ class TqdmExtraFormat(tqdm):
             current_total_time=self.format_interval(d["elapsed"]),
         )
         return d
+
+
+M_LOCK_TIME: int = int(os.environ.get("M_LOCK_TIME", 20))
 
 
 class PostgresItemExporter(BaseExporter):

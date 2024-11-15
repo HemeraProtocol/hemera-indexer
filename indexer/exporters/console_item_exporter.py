@@ -1,12 +1,14 @@
 import logging
+import os
 
-from indexer.controller.stream_controller import M_LOCK_TIME
 from indexer.exporters.base_exporter import BaseExporter
 
 logger = logging.getLogger(__name__)
 from multiprocessing import RLock
 
 lock = RLock()
+
+M_LOCK_TIME: int = int(os.environ.get("M_LOCK_TIME", 20))
 
 
 class ConsoleItemExporter(BaseExporter):

@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 M_JOBS: int = int(os.environ.get("M_JOBS", 4))
 M_TIMEOUT: int = int(os.environ.get("M_TIMEOUT", 30))
 M_SIZE: int = int(os.environ.get("M_SIZE", 1000))
-M_LOCK_TIME: int = int(os.environ.get("M_LOCK_TIME", 20))
+
 
 class StreamController(BaseController):
 
