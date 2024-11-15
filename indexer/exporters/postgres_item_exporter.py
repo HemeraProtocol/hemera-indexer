@@ -6,6 +6,7 @@ from tqdm import tqdm
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
+from common.services.postgresql_service import PostgreSQLService
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
@@ -14,8 +15,11 @@ COMMIT_BATCH_SIZE = 1000
 
 
 class PostgresItemExporter(BaseExporter):
-    def __init__(self, service):
-        self.service = service
+    def __init__(self, **service):
+        self.postgres_url = service['postgres_url']
+        self.db_version = service.get('db_version')
+        self.init_schema = service.get('init_schema')
+        # self.service = service
 
     def export_items(self, items, **kwargs):
         # Initialize main progress bar
@@ -24,7 +28,9 @@ class PostgresItemExporter(BaseExporter):
             desc = f"{job_name}(PG)"
         else:
             desc = "Exporting items"
-        with self.service.cursor_scope() as cur:
+        service = PostgreSQLService(self.postgres_url, db_version=self.db_version, init_schema=self.init_schema)
+
+        with service.cursor_scope() as cur:
 
             try:
                 insert_stmt = ""
