@@ -123,6 +123,8 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
         self.get_token_aggr_by_protocol(orm_list, self.price)
         results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
                                                             self.end_date)
+        results = self.get_token_data_old(orm_list)
+
         return results
 
     def get_filter_start_date_orm(self, orm_class):
@@ -141,14 +143,14 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
             if orm.protocol_id != 'init_capital':
                 filter_orm_list.append(orm)
         if self.chain_name == 'mantle':
-            results = self.get_token_data(filter_orm_list)
+            results = self.get_token_data_old(filter_orm_list)
         else:
-            results = self.get_token_data(orm_list)
+            results = self.get_token_data_old(orm_list)
         return results
 
     def get_eigenlayer_json(self):
         orm_list = get_eigenlayer_orms(self.start_date)
-        results = self.get_token_data(orm_list)
+        results = self.get_token_data_old(orm_list)
         return results
 
     def get_lendle_json(self):

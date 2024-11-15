@@ -116,3 +116,62 @@ class PeriodFeatureDefiWalletAggregates:
         session.close()
 
         return results
+
+
+    def get_token_data_old(self, orm_list):
+
+        wallet_protocol_contract_group = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+
+        for record in orm_list:
+            period_date_key = record.period_date
+            wallet_key = format_value_for_json(record.wallet_address)
+            protocol_key = record.protocol_id
+            contract_key = record.contract_address
+
+            wallet_protocol_contract_group[(period_date_key, wallet_key)][protocol_key][contract_key].append(record)
+
+        self.get_token_aggr_by_protocol(orm_list, self.price)
+
+        results = {}
+        fbtc_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
+
+        for period_date_wallet, protocol_contract_group in wallet_protocol_contract_group.items():
+            period_date, wallet_address = period_date_wallet
+
+            wallet_address_json = []
+            total_balance = 0
+            total_usd = 0
+
+            for protocol_id, contract_group in protocol_contract_group.items():
+                protocol_json = {'pool_data': [],
+                                 'protocol_id': protocol_id}
+                for contract_address, records in contract_group.items():
+                    contract_token_balance = 0
+                    contract_token_usd = 0
+
+                    for record in records:
+                        token0_used = float(self.price * record.balance)
+
+                        contract_token_balance += float(record.balance)
+                        contract_token_usd += token0_used
+
+                        total_balance += float(record.balance)
+                        total_usd += token0_used
+
+                    token_json = {
+                        "token_data": [
+                            {
+                                "token_symbol": 'FBTC',
+                                "token_address": fbtc_address,
+                                "token_balance": contract_token_balance,
+                                "token_balance_usd": contract_token_usd}
+                        ],
+                        "contract_address": format_value_for_json(record.contract_address),
+                    }
+
+                    protocol_json['pool_data'].append(token_json)
+                wallet_address_json.append(protocol_json)
+
+            results[(period_date, wallet_address)] = {'contract_json': wallet_address_json, 'balance': total_balance,
+                                                      'usd': total_usd}
+        return results
