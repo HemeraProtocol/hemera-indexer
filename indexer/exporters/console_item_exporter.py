@@ -1,5 +1,6 @@
 import logging
 
+from indexer.controller.stream_controller import M_LOCK_TIME
 from indexer.exporters.base_exporter import BaseExporter
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ class ConsoleItemExporter(BaseExporter):
             self.export_item(item, **kwargs)
 
     def export_item(self, item, **kwargs):
-        if lock.acquire(timeout=10):
+        if lock.acquire(timeout=M_LOCK_TIME):
             try:
                 print(item)
             finally:

@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
+from indexer.controller.stream_controller import M_LOCK_TIME
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ class PostgresItemExporter(BaseExporter):
         self.sub_progress = None
 
     def export_items(self, items, **kwargs):
-        if lock.acquire(timeout=10):
+        if lock.acquire(timeout=M_LOCK_TIME):
             try:
 
                 start_time = datetime.now(tzlocal())

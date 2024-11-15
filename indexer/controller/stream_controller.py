@@ -17,6 +17,10 @@ exception_recorder = ExceptionRecorder()
 
 logger = logging.getLogger(__name__)
 
+M_JOBS: int = int(os.environ.get("M_JOBS", 4))
+M_TIMEOUT: int = int(os.environ.get("M_TIMEOUT", 30))
+M_SIZE: int = int(os.environ.get("M_SIZE", 1000))
+M_LOCK_TIME: int = int(os.environ.get("M_LOCK_TIME", 20))
 
 class StreamController(BaseController):
 
@@ -104,10 +108,10 @@ class StreamController(BaseController):
 
                 if synced_blocks != 0:
                     # ETL program's main logic
-                    splits = self.split_blocks(last_synced_block + 1, target_block, 100)
+                    splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
 
-                    with mpire.WorkerPool(n_jobs=4, use_dill=True) as pool:
-                        pool.map(func=self.job_scheduler.run_jobs, iterable_of_args=splits, task_timeout=20)
+                    with mpire.WorkerPool(n_jobs=M_JOBS, use_dill=True) as pool:
+                        pool.map(func=self.job_scheduler.run_jobs, iterable_of_args=splits, task_timeout=M_TIMEOUT)
                     # self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
 
                     logger.info("Writing last synced block {}".format(target_block))
