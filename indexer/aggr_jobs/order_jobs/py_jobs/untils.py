@@ -25,17 +25,15 @@ def format_value_for_json(value):
         return value
 
 
-def get_engine():
-    # 获取当前脚本所在目录
+def get_engine(link_name):
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # 配置文件的相对路径
     config_file_path = os.path.join(current_dir, 'config.ini')
 
     config = configparser.ConfigParser()
     config.read(config_file_path)
 
-    POSTGRES_URL = config['database']['POSTGRES_URL']
+    POSTGRES_URL = config['database'][link_name]
 
     engine = create_engine(POSTGRES_URL)
 
@@ -43,9 +41,57 @@ def get_engine():
     return Session
 
 
+def get_eigenlayer_orms(period_date):
+    Session = get_engine('ETH_POSTGRES_URL')
+    session = Session()
+    sql = f"""
+    with filter_detail_table as (select d1.shares / pow(10, d2.decimals) as balance,
+                                    d2.symbol,
+                                    d1.staker                        as wallet_address,
+                                    d1.token,
+                                    d1.event_name,
+                                    d1.withdrawroot
+                             from af_eigen_layer_records d1
+                                      inner join tokens d2 on d1.token = d2.address
+                             where to_timestamp(block_timestamp)::date < '{period_date}'),
+
+     deposit_detail_table as (select wallet_address, token, balance, symbol, withdrawroot
+                              from filter_detail_table
+                              where token = decode('c96de26018a54d51c097160568752c4e3bd6c364', 'hex')
+                                and event_name = 'Deposit'),
+
+     withdraw_detail_table as (select d2.wallet_address, d2.token, d1.balance
+                               from filter_detail_table d1
+                                        inner join deposit_detail_table d2 on d1.withdrawroot = d2.withdrawroot
+                               where d1.event_name = 'WithdrawalCompleted'),
+
+     deposit_balance_table as (select wallet_address, token, symbol, sum(balance) as blance
+                               from deposit_detail_table
+                               group by wallet_address, token, symbol),
+
+     withdraw_balance_table as (select wallet_address, token, sum(balance) as blance
+                                from withdraw_detail_table
+                                group by wallet_address, token)
+    select 
+            date('{period_date}') as period_date,
+            'eigenlayer' as protocol_id,
+            s1.wallet_address,
+           '0x858646372cc42e1a627fce94aa7a7033e7cf075a' as contract_address,
+           s1.token as token_address,
+           s1.symbol as token_symbol,
+           s1.blance - coalesce(s2.blance, 0) as balance
+    from deposit_balance_table s1
+             left join withdraw_balance_table s2
+                       on s1.wallet_address = s2.wallet_address and s1.token = s2.token
+    """
+    cursor = session.execute(text(sql))
+    results = cursor.fetchall()
+    return results
+
+
 def get_new_uniswap_v3_orms(period_date):
     # swapsicle
-    Session = get_engine()
+    Session = get_engine('MANTLE_POSTGRES_URL')
     session = Session()
     sql = f"""
     select pool_address as contract_address,
