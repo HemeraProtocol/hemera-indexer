@@ -18,7 +18,7 @@ from indexer.jobs.source_job.pg_source_job import PGSourceJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 
 import_submodules("indexer.modules")
-exception_recorder = ExceptionRecorder()
+# exception_recorder = ExceptionRecorder()
 
 
 def get_tokens_from_db(service):
@@ -263,14 +263,15 @@ class JobScheduler:
                 key = output_type.type()
                 message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
                 self.logger.info(f"{message}")
-                exception_recorder.log(
-                    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
-                )
+                # exception_recorder.log(
+                #    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
+                #)
 
         except Exception as e:
             raise e
         finally:
-            exception_recorder.force_to_flush()
+            pass
+            # exception_recorder.force_to_flush()
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []
