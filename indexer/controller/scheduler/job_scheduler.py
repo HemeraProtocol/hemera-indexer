@@ -252,20 +252,19 @@ class JobScheduler:
             )
             self.jobs.append(check_job)
 
-    def run_jobs(self, args):
+    def run_jobs(self, start_block, end_block):
         self.clear_data_buff()
         try:
-            start_block = args["start_block"]
-            end_block = args["end_block"]
             for job in self.jobs:
                 job.run(start_block=start_block, end_block=end_block)
+
             for output_type in self.required_output_types:
                 key = output_type.type()
                 message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
                 self.logger.info(f"{message}")
                 # exception_recorder.log(
                 #    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
-                #)
+                # )
 
         except Exception as e:
             raise e
