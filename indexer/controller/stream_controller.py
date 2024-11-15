@@ -13,7 +13,7 @@ from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
 
-exception_recorder = ExceptionRecorder()
+# exception_recorder = ExceptionRecorder()
 
 logger = logging.getLogger(__name__)
 

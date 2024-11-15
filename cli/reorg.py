@@ -14,7 +14,7 @@ from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.rpc_utils import pick_random_provider_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
-exception_recorder = ExceptionRecorder()
+# exception_recorder = ExceptionRecorder()
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
@@ -153,7 +153,7 @@ def reorg(
     if postgres_url:
         service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
         config = {"db_service": service}
-        exception_recorder.init_pg_service(service)
+        # exception_recorder.init_pg_service(service)
     else:
         logging.error("No postgres url provided. Exception recorder will not be useful.")
         exit(1)
