@@ -10,7 +10,7 @@ from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 100
+COMMIT_BATCH_SIZE = 1000
 
 
 class PostgresItemExporter(BaseExporter):
