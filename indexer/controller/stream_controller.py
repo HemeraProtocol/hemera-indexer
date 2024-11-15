@@ -13,13 +13,13 @@ from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
 
-exception_recorder = ExceptionRecorder()
+# exception_recorder = ExceptionRecorder()
 
 logger = logging.getLogger(__name__)
 
 M_JOBS: int = int(os.environ.get("M_JOBS", 4))
 M_TIMEOUT: int = int(os.environ.get("M_TIMEOUT", 30))
-M_SIZE: int = int(os.environ.get("M_SIZE", 1000))
+M_SIZE: int = int(os.environ.get("M_SIZE", 100))
 
 
 class StreamController(BaseController):
@@ -142,7 +142,7 @@ class StreamController(BaseController):
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
                     logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
-                    exception_recorder.force_to_flush()
+                    # exception_recorder.force_to_flush()
                     raise e
 
                 else:

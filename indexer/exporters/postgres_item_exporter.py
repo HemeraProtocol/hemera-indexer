@@ -1,9 +1,6 @@
 import logging
-import os
-from datetime import datetime
 from typing import Type
 
-from dateutil.tz import tzlocal
 from psycopg2.extras import execute_values
 from tqdm import tqdm
 
@@ -13,127 +10,64 @@ from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 500
-
-from multiprocessing import RLock
-
-lock = RLock()
-
-
-class TqdmExtraFormat(tqdm):
-    """Provides both estimated and actual total time format parameters"""
-
-    @property
-    def format_dict(self):
-        d = super().format_dict
-        d.update(
-            total_time=self.format_interval(d["total"] / (d["n"] / d["elapsed"]) if d["elapsed"] and d["n"] else 0),
-            current_total_time=self.format_interval(d["elapsed"]),
-        )
-        return d
-
-
-M_LOCK_TIME: int = int(os.environ.get("M_LOCK_TIME", 20))
+COMMIT_BATCH_SIZE = 1000
 
 
 class PostgresItemExporter(BaseExporter):
     def __init__(self, service):
         self.service = service
-        self.main_progress = None
-        self.sub_progress = None
 
     def export_items(self, items, **kwargs):
-        if lock.acquire(timeout=M_LOCK_TIME):
-            try:
-
-                start_time = datetime.now(tzlocal())
-
-                # Initialize main progress bar
-                if kwargs.get("job_name"):
-                    job_name = kwargs.get("job_name")
-                    desc = f"{job_name}(PG)"
-                else:
-                    desc = "Exporting items"
-                self.main_progress = TqdmExtraFormat(
-                    total=len(items),
-                    desc=desc.ljust(35),
-                    unit="items",
-                    position=0,
-                    ncols=90,
-                    bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] Est: {total_time}",
-                )
-
-                conn = self.service.get_conn()
-                try:
-                    insert_stmt = ""
-                    items_grouped_by_type = group_by_item_type(items)
-                    tables = []
-
-                    # Process each item type
-                    for item_type in items_grouped_by_type.keys():
-                        item_group = items_grouped_by_type.get(item_type)
-
-                        if item_group:
-                            pg_config = domain_model_mapping[item_type]
-                            table = pg_config["table"]
-                            do_update = pg_config["conflict_do_update"]
-                            update_strategy = pg_config["update_strategy"]
-                            converter = pg_config["converter"]
-
-                            # Initialize sub-progress bar for current table
-                            self.sub_progress = TqdmExtraFormat(
-                                total=len(item_group),
-                                desc=f"Processing {table.__tablename__}".ljust(35),
-                                unit="items",
-                                position=1,
-                                leave=False,
-                                ncols=90,
-                                bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
-                            )
-
-                            cur = conn.cursor()
-                            data = []
-
-                            # Process items with progress tracking
-                            for item in item_group:
-                                converted_item = converter(table, item, do_update)
-                                data.append(converted_item)
-                                self.sub_progress.update(1)
-                                self.main_progress.update(1)
-
-                            if data:
-                                columns = list(data[0].keys())
-                                values = [tuple(d.values()) for d in data]
-
-                                insert_stmt = sql_insert_statement(
-                                    table, do_update, columns, where_clause=update_strategy
-                                )
-
-                                # Execute in batches with progress tracking
-                                for i in range(0, len(values), COMMIT_BATCH_SIZE):
-                                    batch = values[i : i + COMMIT_BATCH_SIZE]
-                                    execute_values(cur, insert_stmt, batch)
-                                    conn.commit()
-
-                            tables.append(table.__tablename__)
-                            self.sub_progress.close()
-
-                except Exception as e:
-                    logger.error(f"Error exporting items: {e}")
-                    logger.error(f"{insert_stmt}")
-                    raise e
-                finally:
-                    self.service.release_conn(conn)
-                    if self.main_progress:
-                        self.main_progress.close()
-                    if self.sub_progress:
-                        self.sub_progress.close()
-
-                end_time = datetime.now(tzlocal())
-            finally:
-                lock.release()
+        # Initialize main progress bar
+        if kwargs.get("job_name"):
+            job_name = kwargs.get("job_name")
+            desc = f"{job_name}(PG)"
         else:
-            logger.error("Lock acquired but not released")
+            desc = "Exporting items"
+        with self.service.cursor_scope() as cur:
+
+            try:
+                insert_stmt = ""
+                items_grouped_by_type = group_by_item_type(items)
+                tables = []
+
+                # Process each item type
+                for item_type in items_grouped_by_type.keys():
+                    item_group = items_grouped_by_type.get(item_type)
+
+                    if item_group:
+                        pg_config = domain_model_mapping[item_type]
+                        table = pg_config["table"]
+                        do_update = pg_config["conflict_do_update"]
+                        update_strategy = pg_config["update_strategy"]
+                        converter = pg_config["converter"]
+
+                        # Initialize sub-progress bar for current table
+                        data = []
+                        # Process items with progress tracking
+                        for item in item_group:
+                            converted_item = converter(table, item, do_update)
+                            data.append(converted_item)
+
+                        if data:
+                            columns = list(data[0].keys())
+                            values = [tuple(d.values()) for d in data]
+
+                            insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
+
+                            # Execute in batches with progress tracking
+                            for i in range(0, len(values), COMMIT_BATCH_SIZE):
+                                batch = values[i : i + COMMIT_BATCH_SIZE]
+                                execute_values(cur, insert_stmt, batch)
+                                cur.connection.commit()
+
+                        tables.append(table.__tablename__)
+
+            except Exception as e:
+                logger.error(f"Error exporting items: {e}")
+                logger.error(f"{insert_stmt}")
+                pass
+                # raise e
 
 
 def sql_insert_statement(model: Type[HemeraModel], do_update: bool, columns, where_clause=None):

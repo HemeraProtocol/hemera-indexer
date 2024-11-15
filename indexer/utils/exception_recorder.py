@@ -1,4 +1,3 @@
-import os
 import threading
 from queue import Queue
 
@@ -7,13 +6,6 @@ from sqlalchemy.dialects.postgresql import insert
 from common.models.exception_records import ExceptionRecords
 
 LOG_BUFFER_SIZE = 5000
-
-
-from multiprocessing import RLock
-
-lock = RLock()
-
-M_LOCK_TIME: int = int(os.environ.get("M_LOCK_TIME", 20))
 
 
 class ExceptionRecorder(object):
@@ -71,17 +63,10 @@ class ExceptionRecorder(object):
                         self._flush_logs_to_db(logs)
 
     def _flush_logs_to_db(self, logs):
-        if lock.acquire(timeout=M_LOCK_TIME):
-            session = self._service.get_service_session()
-
+        with self._service.session_scope() as session:
             try:
                 statement = insert(ExceptionRecords).values(logs)
                 session.execute(statement)
                 session.commit()
             except Exception as e:
                 print(e)
-                raise e
-            finally:
-                session.close()
-        else:
-            print("failed to get lock,  flush logs to db")

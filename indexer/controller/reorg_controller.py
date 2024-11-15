@@ -11,9 +11,9 @@ from common.utils.exception_control import HemeraBaseException
 from common.utils.format_utils import hex_str_to_bytes
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
-from indexer.utils.exception_recorder import ExceptionRecorder
+# from indexer.utils.exception_recorder import ExceptionRecorder
 
-exception_recorder = ExceptionRecorder()
+# exception_recorder = ExceptionRecorder()
 
 
 class ReorgController(BaseController):
@@ -128,7 +128,7 @@ class ReorgController(BaseController):
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
                     logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
-                    exception_recorder.force_to_flush()
+                    # exception_recorder.force_to_flush()
                     raise e
                 else:
                     logging.info("After 5 seconds will retry the job.")
