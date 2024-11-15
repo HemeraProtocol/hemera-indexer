@@ -11,6 +11,7 @@ from common.utils.exception_control import HemeraBaseException
 from common.utils.format_utils import hex_str_to_bytes
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
+
 # from indexer.utils.exception_recorder import ExceptionRecorder
 
 # exception_recorder = ExceptionRecorder()

@@ -9,6 +9,7 @@ from common.utils.file_utils import delete_file, write_to_file
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
+from indexer.executors.concurrent_job_executor import ConcurrentJobExecutor
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
@@ -27,6 +28,7 @@ class StreamController(BaseController):
     def __init__(
         self,
         batch_web3_provider,
+        max_processors,
         sync_recorder: BaseRecorder,
         job_scheduler: JobScheduler,
         limit_reader: LimitReader,
@@ -36,8 +38,9 @@ class StreamController(BaseController):
         _manager=None,
     ):
         self.entity_types = 1
-        self.sync_recorder = sync_recorder
         self.web3 = build_web3(batch_web3_provider)
+        self.job_executor = ConcurrentJobExecutor(max_processors=max_processors)
+        self.sync_recorder = sync_recorder
         self.job_scheduler = job_scheduler
         self.limit_reader = limit_reader
         self.max_retries = max_retries
@@ -58,7 +61,48 @@ class StreamController(BaseController):
                 logger.info("Creating pid file {}".format(pid_file))
                 write_to_file(pid_file, str(os.getpid()))
 
-            self._do_stream(start_block, end_block, block_batch_size, retry_errors, period_seconds)
+            last_synced_block = self.sync_recorder.get_last_synced_block()
+
+            if start_block is not None:
+                if (
+                    not self.retry_from_record
+                    or last_synced_block < start_block
+                    or (end_block is not None and last_synced_block > end_block)
+                ):
+                    last_synced_block = start_block - 1
+
+            while True and (end_block is None or last_synced_block < end_block):
+                synced_blocks = 0
+
+                current_block = self.limit_reader.get_current_block_number()
+                if current_block is None:
+                    raise FastShutdownError(
+                        "Can't get current limit block number from limit reader."
+                        "If you're using PGLimitReader, please confirm blocks table has one record at least."
+                    )
+
+                target_block = self._calculate_target_block(
+                    current_block, last_synced_block, end_block, block_batch_size
+                )
+                synced_blocks = max(target_block - last_synced_block, 0)
+
+                logger.info(
+                    "Current block {}, target block {}, last synced block {}, blocks to sync {}".format(
+                        current_block, target_block, last_synced_block, synced_blocks
+                    )
+                )
+
+                if synced_blocks != 0:
+                    # submit job and concurrent running
+                    self.job_executor.submit(self._do_stream, start_block=last_synced_block + 1, end_block=target_block)
+
+                    logger.info("Writing last synced block {}".format(target_block))
+                    self.sync_recorder.set_last_synced_block(target_block)
+                    last_synced_block = target_block
+
+                if synced_blocks <= 0:
+                    logger.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
+                    time.sleep(period_seconds)
 
         finally:
             if pid_file is not None:
@@ -74,49 +118,13 @@ class StreamController(BaseController):
             blocks.append([{"start_block": i, "end_block": min(i + step - 1, end_block)}])
         return blocks
 
-    def _do_stream(self, start_block, end_block, steps, retry_errors, period_seconds):
-        last_synced_block = self.sync_recorder.get_last_synced_block()
-        if start_block is not None:
-            if (
-                not self.retry_from_record
-                or last_synced_block < start_block
-                or (end_block is not None and last_synced_block > end_block)
-            ):
-                last_synced_block = start_block - 1
+    def _do_stream(self, start_block, end_block):
 
-        tries, tries_reset = 0, True
-        while True and (end_block is None or last_synced_block < end_block):
-            synced_blocks = 0
-
+        for retry in range(self.max_retries):
             try:
-                tries_reset = True
-                current_block = self.limit_reader.get_current_block_number()
-                if current_block is None:
-                    raise FastShutdownError(
-                        "Can't get current limit block number from limit reader."
-                        "If you're using PGLimitReader, please confirm blocks table has one record at least."
-                    )
-
-                target_block = self._calculate_target_block(current_block, last_synced_block, end_block, steps)
-                synced_blocks = max(target_block - last_synced_block, 0)
-
-                logger.info(
-                    "Current block {}, target block {}, last synced block {}, blocks to sync {}".format(
-                        current_block, target_block, last_synced_block, synced_blocks
-                    )
-                )
-
-                if synced_blocks != 0:
-                    # ETL program's main logic
-                    splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
-
-                    with mpire.WorkerPool(n_jobs=M_JOBS, use_dill=True) as pool:
-                        pool.map(func=self.job_scheduler.run_jobs, iterable_of_args=splits, task_timeout=M_TIMEOUT)
-                    # self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
-
-                    logger.info("Writing last synced block {}".format(target_block))
-                    self.sync_recorder.set_last_synced_block(target_block)
-                    last_synced_block = target_block
+                # ETL program's main logic
+                self.job_scheduler.run_jobs(start_block, end_block)
+                return
 
             except HemeraBaseException as e:
                 logger.error(f"An rpc response exception occurred while syncing block data. error: {e}")
@@ -125,35 +133,20 @@ class StreamController(BaseController):
                     raise e
 
                 if e.retriable:
-                    tries += 1
-                    tries_reset = False
-                    if tries >= self.max_retries:
-                        logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
-                        raise e
-                    else:
-                        logger.info(f"No: {tries} retry is about to start.")
+                    logger.info(f"No: {retry} retry is about to start.")
                 else:
                     logger.error("Mission will not retry, and exit immediately.")
                     raise e
 
             except Exception as e:
-                logger.error("An exception occurred while syncing block data.")
-                tries += 1
-                tries_reset = False
-                if not retry_errors or tries >= self.max_retries:
-                    logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
-                    # exception_recorder.force_to_flush()
-                    raise e
+                logger.error(f"An unknown exception occurred while syncing block data. error: {e}")
+                raise e
 
-                else:
-                    logger.info(f"No: {tries} retry is about to start.")
-            finally:
-                if tries_reset:
-                    tries = 0
-
-            if synced_blocks <= 0:
-                logger.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
-                time.sleep(period_seconds)
+        logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+        raise FastShutdownError(
+            f"The job with parameters start_block:{start_block}, end_block:{end_block}"
+            f"can't be automatically resumed after reached out limit of retries. Program will exit."
+        )
 
     def _get_current_block_number(self):
         return int(self.web3.eth.block_number)
@@ -162,3 +155,10 @@ class StreamController(BaseController):
         target_block = min(current_block - self.delay, last_synced_block + steps)
         target_block = min(target_block, end_block) if end_block is not None else target_block
         return target_block
+
+    def handle_success(self, processor: str, start_block: int, end_block: int):
+        # self.sync_recorder.set_last_synced_block(target_block)
+        pass
+
+    def handle_failure(self, processor: str, start_block: int, end_block: int):
+        pass

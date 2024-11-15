@@ -16,9 +16,9 @@ COMMIT_BATCH_SIZE = 1000
 
 class PostgresItemExporter(BaseExporter):
     def __init__(self, **service):
-        self.postgres_url = service['postgres_url']
-        self.db_version = service.get('db_version')
-        self.init_schema = service.get('init_schema')
+        self.postgres_url = service["postgres_url"]
+        self.db_version = service.get("db_version")
+        self.init_schema = service.get("init_schema")
         # self.service = service
 
     def export_items(self, items, **kwargs):
