@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
-
+from multiprocessing import current_process
 
 class PostgreSQLService:
     """
@@ -19,19 +19,21 @@ class PostgreSQLService:
     """
 
     _instances: dict = {}
-    _initialized: set = set()
+    _initialized: dict = {}
     _lock: threading.Lock = threading.Lock()
 
     def __new__(cls, jdbc_url: str, *args, **kwargs) -> "PostgreSQLService":
         """
         Ensures only one instance exists per JDBC URL.
         """
-        if jdbc_url not in cls._instances:
+        p_name = current_process().name
+
+        if (p_name, jdbc_url) not in cls._instances:
             with cls._lock:
-                if jdbc_url not in cls._instances:
+                if (p_name, jdbc_url) not in cls._instances:
                     instance = super().__new__(cls)
-                    cls._instances[jdbc_url] = instance
-        return cls._instances[jdbc_url]
+                    cls._instances[(p_name, jdbc_url)] = instance
+        return cls._instances[(p_name, jdbc_url)]
 
     def __init__(
         self,
@@ -50,7 +52,8 @@ class PostgreSQLService:
         """
         Initialize the PostgreSQL service with connection pooling.
         """
-        if jdbc_url in self._initialized:
+        p_name = current_process().name
+        if (p_name, jdbc_url) in self._initialized:
             return
 
         self.jdbc_url: str = jdbc_url
@@ -92,7 +95,7 @@ class PostgreSQLService:
         if init_schema:
             self._init_schema(script_location)
 
-        self._initialized.add(jdbc_url)
+        self._initialized[(p_name, jdbc_url)] =True
 
     def _init_schema(self, script_location: str) -> None:
         """

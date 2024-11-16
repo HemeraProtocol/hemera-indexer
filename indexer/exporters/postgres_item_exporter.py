@@ -12,6 +12,7 @@ from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 logger = logging.getLogger(__name__)
 
 COMMIT_BATCH_SIZE = 1000
+from multiprocessing import current_process
 
 
 class PostgresItemExporter(BaseExporter):
@@ -29,7 +30,7 @@ class PostgresItemExporter(BaseExporter):
         else:
             desc = "Exporting items"
         service = PostgreSQLService(self.postgres_url, db_version=self.db_version, init_schema=self.init_schema)
-
+        print(current_process().name, service)
         with service.cursor_scope() as cur:
 
             try:
