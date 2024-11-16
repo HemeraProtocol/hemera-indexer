@@ -1,6 +1,7 @@
 import os
 import threading
 from contextlib import contextmanager
+from multiprocessing import current_process
 from typing import Optional
 
 from alembic import command
@@ -10,7 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
-from multiprocessing import current_process
+
 
 class PostgreSQLService:
     """
@@ -95,7 +96,7 @@ class PostgreSQLService:
         if init_schema:
             self._init_schema(script_location)
 
-        self._initialized[(p_name, jdbc_url)] =True
+        self._initialized[(p_name, jdbc_url)] = True
 
     def _init_schema(self, script_location: str) -> None:
         """
