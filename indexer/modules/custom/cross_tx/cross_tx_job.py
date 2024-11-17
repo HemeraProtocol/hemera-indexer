@@ -93,13 +93,17 @@ class CrossTXJob(FilterTransactionDataJob):
         for tnx in transactions:
             token_address = ""
             token_id = "ETH"
+            amount = 0
             for log in tnx.receipt.logs:
                 if log.topic0 == TOKENRECEIVED_EVENT.get_signature():
                     data_0 = TOKENRECEIVED_EVENT.decode_log(log)
                     token_address = data_0['token']
                     token_id = get_token(self._web3, self._abi_list, token_address)
+                    amount = data_0['amount']
                 if log.topic0 == MESSAGEPROCESSED_EVENT.get_signature():
                     data_0 = MESSAGEPROCESSED_EVENT.decode_log(log)
+                    if amount == 0:
+                        amount = data_0['message']['value']
                     dt = L1toL2TxOnL2(transaction_hash=tnx.hash,
                                       fee=data_0['message']['fee'],
                                       src_chain_id=data_0['message']['srcChainId'],
@@ -108,7 +112,7 @@ class CrossTXJob(FilterTransactionDataJob):
                                       dest_owner=data_0['message']['destOwner'],
                                       token_id=token_id,
                                       token_address=token_address,
-                                      amount = data_0['message']['value'],
+                                      amount = amount,
                                       block_number=tnx.block_number, 
                                       block_timestamp=tnx.block_timestamp)
                     l1tol2.append(dt)
