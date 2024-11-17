@@ -5,19 +5,18 @@ from indexer.domain import FilterData
 
 # todo: 
 @dataclass
-class L1ToL2(FilterData):
-    token_id: int
-    amount: int
-    sender: str
-    srcChainId:int
+class L1toL2TxOnL2(FilterData):
     srcOwner: str
-    destChainId:int
     destOwner: str
     transaction_hash: str
+    srcChainId: int
+    destChainId: int
+    token_id: int
+    amount: int
     fee: int
     block_number: int
     block_timestamp: int
 
 @dataclass
-class L2ToL1(FilterData):
+class L2ToL1TxOnL2(FilterData):
     pass

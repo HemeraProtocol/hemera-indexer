@@ -52,7 +52,7 @@ BURN_EVENT = Event(
     }
 )
 
-TOKENRSENT_EVENT = Event(
+TOKENSENT_EVENT = Event(
     {
         "anonymous": False,
         "inputs": [
@@ -93,7 +93,68 @@ MESSAGESENT_EVENT = Event(
         "anonymous": False,
         "inputs": [
             {"indexed": True, "internalType": "bytes32", "name": "msgHash", "type": "bytes32"},
-            {"indexed": False, "internalType": "tuple", "name": "message", "type": "tuple"},   
+            {"components": [
+          {
+            "internalType": "uint64",
+            "name": "id",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "fee",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint32",
+            "name": "gasLimit",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "from",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "srcChainId",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "srcOwner",
+            "type": "address"
+          },
+          {
+            "internalType": "uint64",
+            "name": "destChainId",
+            "type": "uint64"
+          },
+          {
+            "internalType": "address",
+            "name": "destOwner",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "to",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bytes",
+            "name": "data",
+            "type": "bytes"
+          }
+        ],
+        "indexed": False,
+        "internalType": "struct IBridge.Message",
+        "name": "message",
+        "type": "tuple"
+      }
         ],
         "name": "MessageSent",
         "type": "event",
@@ -106,7 +167,7 @@ MESSAGESTATUSCHANGED_EVENT = Event(
         "anonymous": False,
         "inputs": [
             {"indexed": True, "internalType": "bytes32", "name": "msgHash", "type": "bytes32"},
-            {"indexed": False, "internalType": "uint8", "name": "status", "type": "uint8"},
+            {"indexed": False, "internalType": "enum IBridge.Status", "name": "status", "type": "uint8"},
         ],
         "name": "MessageStatusChanged",
         "type": "event",
@@ -119,8 +180,83 @@ MESSAGEPROCESSED_EVENT = Event(
         "anonymous": False,
         "inputs": [
             {"indexed": True, "internalType": "bytes32", "name": "msgHash", "type": "bytes32"},
-            {"indexed": False, "internalType": "tuple", "name": "message", "type": "tuple"},
-            {"indexed": False, "internalType": "tuple", "name": "stats", "type": "tuple"},    
+            {"components": [{
+                "internalType": "uint64",
+                "name": "id",
+                "type": "uint64"
+            },
+            {
+                "internalType": "uint64",
+                "name": "fee",
+                "type": "uint64"
+            },
+            {
+                "internalType": "uint32",
+                "name": "gasLimit",
+                "type": "uint32"
+            },
+            {
+                "internalType": "address",
+                "name": "from",
+                "type": "address"
+            },
+            {
+                "internalType": "uint64",
+                "name": "srcChainId",
+                "type": "uint64"
+            },
+            {
+                "internalType": "address",
+                "name": "srcOwner",
+                "type": "address"
+            },
+            {
+                "internalType": "uint64",
+                "name": "destChainId",
+                "type": "uint64"
+            },
+            {
+                "internalType": "address",
+                "name": "destOwner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "to",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "value",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "data",
+                "type": "bytes"
+            }], "indexed": False, "internalType": "struct IBridge.Message", "name": "message", "type": "tuple"},
+            {
+                "components": [
+                {
+                    "internalType": "uint32",
+                    "name": "gasUsedInFeeCalc",
+                    "type": "uint32"
+                },
+                {
+                    "internalType": "uint32",
+                    "name": "proofSize",
+                    "type": "uint32"
+                },
+                {
+                    "internalType": "uint32",
+                    "name": "numCacheOps",
+                    "type": "uint32"
+                },
+                {
+                    "internalType": "bool",
+                    "name": "processedByRelayer",
+                    "type": "bool"
+                }],"indexed": False, "internalType": "struct Bridge.ProcessingStats","name": "stats","type": "tuple"}
         ],
         "name": "MessageProcessed",
         "type": "event",

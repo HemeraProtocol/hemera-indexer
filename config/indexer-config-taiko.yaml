@@ -1,0 +1,5 @@
+chain_id: 167000
+cross_tx_job:
+  position_token_address: '0xc36442b4a4522e871399cd717abdd847ab11fe88'
+  factory_address: '0x1f98431c8ad98523631ae4a59f267346ea31f984'
+# todo: contract address
