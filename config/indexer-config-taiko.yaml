@@ -1,0 +1,3 @@
+chain_id: 167000
+cross_tx_job:
+  contract_dict : {'MessageProcessed' : '0x8580f507761043ecdd2bdca084d6fb0109150b3d9842d854d34e3dea6d69387d'}

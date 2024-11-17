@@ -43,6 +43,9 @@ from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3TokenDetail,
     UniswapV3TokenUpdateLiquidity,
 )
+from indexer.modules.custom.cross_tx.domains.feature_cross_tx import (
+    L1toL2TxOnL2
+)
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
@@ -71,6 +74,8 @@ class EntityType(IntFlag):
 
     EIGEN_LAYER = 1 << 13
 
+    CROSS_TX = 1 << 14
+    
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
     @staticmethod
@@ -145,6 +150,9 @@ def generate_output_types(entity_types):
         yield UniswapV3TokenDetail
         yield UniswapV3TokenCurrentStatus
 
+    if entity_types & EntityType.CROSS_TX:
+        yield L1toL2TxOnL2
+    
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult
 
