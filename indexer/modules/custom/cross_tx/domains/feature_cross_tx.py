@@ -6,12 +6,12 @@ from indexer.domain import FilterData
 # todo: 
 @dataclass
 class L1toL2TxOnL2(FilterData):
-    srcOwner: str
-    destOwner: str
+    src_owner: str
+    dest_owner: str
     transaction_hash: str
     token_address: str
-    srcChainId: int
-    destChainId: int
+    src_chain_id: int
+    dest_chain_id: int
     token_id: str
     amount: int
     fee: int
