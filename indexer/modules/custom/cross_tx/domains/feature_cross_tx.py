@@ -9,9 +9,10 @@ class L1toL2TxOnL2(FilterData):
     srcOwner: str
     destOwner: str
     transaction_hash: str
+    token_address: str
     srcChainId: int
     destChainId: int
-    token_id: int
+    token_id: str
     amount: int
     fee: int
     block_number: int
