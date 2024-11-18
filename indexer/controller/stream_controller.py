@@ -58,12 +58,6 @@ class StreamController(BaseController):
         pid_file=None,
     ):
         try:
-            import cProfile
-            import pstats
-
-            profiler = cProfile.Profile()
-            profiler.enable()
-
             if pid_file is not None:
                 logger.info("Creating pid file {}".format(pid_file))
                 write_to_file(pid_file, str(os.getpid()))
@@ -118,17 +112,6 @@ class StreamController(BaseController):
                 logger.info("Deleting pid file {}".format(pid_file))
                 delete_file(pid_file)
 
-            profiler.disable()
-            stats = pstats.Stats(profiler)
-            # 按累计时间排序
-            stats.sort_stats("cumulative")
-            # 保存到文件
-            stats.dump_stats("output.prof")  # 二进制格式
-            # 保存可读文本
-            with open("output.txt", "w") as f:
-                stats.stream = f
-                stats.print_stats()
-
     def _shutdown(self):
         pass
 
@@ -139,11 +122,26 @@ class StreamController(BaseController):
         return blocks
 
     def _do_stream(self, start_block, end_block):
+        import cProfile
+        import pstats
+
+        profiler = cProfile.Profile()
+        profiler.enable()
 
         for retry in range(self.max_retries):
             try:
                 # ETL program's main logic
                 self.job_scheduler.run_jobs(start_block, end_block)
+                profiler.disable()
+                stats = pstats.Stats(profiler)
+                # 按累计时间排序
+                stats.sort_stats("cumulative")
+                # 保存到文件
+                stats.dump_stats("output.prof")  # 二进制格式
+                # 保存可读文本
+                with open("output.txt", "w") as f:
+                    stats.stream = f
+                    stats.print_stats()
                 return
 
             except HemeraBaseException as e:
