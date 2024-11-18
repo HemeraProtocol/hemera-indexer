@@ -102,10 +102,10 @@ class StreamController(BaseController):
                 if synced_blocks != 0:
                     # submit job and concurrent running
                     # self.job_executor.submit(self._do_stream, start_block=last_synced_block + 1, end_block=target_block)
-                    # splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
-                    # with mpire.WorkerPool(n_jobs=M_JOBS, use_dill=True) as pool:
-                    #     self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=M_TIMEOUT)
-                    self._do_stream(start_block, end_block)
+                    splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
+                    with mpire.WorkerPool(n_jobs=M_JOBS, use_dill=True) as pool:
+                        self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=M_TIMEOUT)
+                    # self._do_stream(start_block, end_block)
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
                     last_synced_block = target_block
