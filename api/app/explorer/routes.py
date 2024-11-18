@@ -52,6 +52,7 @@ from api.app.db_service.transactions import (
 )
 from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
 from api.app.explorer import explorer_namespace
+from api.app.limiter_v2.limiter import get_limits, limiter_v2, require_api_key
 from api.app.utils.fill_info import (
     fill_address_display_to_transactions,
     fill_is_contract_to_transactions,
@@ -130,6 +131,8 @@ class ExplorerHealthCheck(Resource):
 
 @explorer_namespace.route("/v1/explorer/stats")
 class ExplorerMainStats(Resource):
+    @require_api_key
+    @limiter_v2.limit(get_limits)
     @cache.cached(timeout=10, query_string=True)
     def get(self):
         # Get total transactions count.

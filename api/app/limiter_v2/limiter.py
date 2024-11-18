@@ -8,12 +8,12 @@ from common.models import db
 from common.models.limiter import ApiKey
 
 
-def get_api_key():
+def get_header_api_key():
     return request.headers.get("X-API-KEY", "")
 
 
 limiter_v2 = Limiter(
-    key_func=get_api_key,
+    key_func=get_header_api_key,
     default_limits=["1800 per hour"],
     storage_uri="memory://",
 )
@@ -22,15 +22,15 @@ limiter_v2 = Limiter(
 def require_api_key(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        api_key = get_api_key()
-        if not get_api_key_model(api_key):
+        api_key = get_header_api_key()
+        if not get_api_key(api_key):
             return make_response(jsonify({"error": "Invalid API key"}), 403)
         return f(*args, **kwargs)
 
     return decorated
 
 
-def get_api_key_model(api_key):
+def get_api_key(api_key):
     cache_key = f"ak_{api_key}"
     api_key_from_cache = cache.cache.get(cache_key)
     if api_key_from_cache:
@@ -48,8 +48,8 @@ def get_api_key_model(api_key):
 
 
 def get_limits():
-    api_key = get_api_key()
-    api_key_model = get_api_key_model(api_key)
+    api_key = get_header_api_key()
+    api_key_model = get_api_key(api_key)
 
     if api_key_model:
         return api_key_model.limits
