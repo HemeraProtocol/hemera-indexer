@@ -354,7 +354,7 @@ def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, 
                         total_usd += token_pair_data[1].get('token_balance_usd')
 
                 token_json = {
-                    'token_date': token_pair_data,
+                    'token_data': token_pair_data,
                     'contract_address': format_value_for_json(contract_address)}
 
                 if pool_type == 'uniswapv3':
