@@ -131,8 +131,6 @@ class ExplorerHealthCheck(Resource):
 
 @explorer_namespace.route("/v1/explorer/stats")
 class ExplorerMainStats(Resource):
-    @require_api_key
-    @limiter_v2.limit(get_limits)
     @cache.cached(timeout=10, query_string=True)
     def get(self):
         # Get total transactions count.

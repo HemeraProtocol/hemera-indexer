@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from functools import wraps
 
 from flask import jsonify, make_response, request
@@ -38,10 +39,17 @@ def get_api_key(api_key):
         if api_key_from_cache.id == -1:
             return None
         return api_key_from_cache
-    api_key_from_db = db.session.query(ApiKey).filter(ApiKey.api_key == api_key).first()
+
+    api_key_from_db = (
+        db.session.query(ApiKey)
+        .filter(ApiKey.api_key == api_key, ApiKey.expires_at > datetime.now(timezone.utc))
+        .first()
+    )
+
     if api_key_from_db:
         cache.cache.set(cache_key, api_key_from_db, 600)
         return api_key_from_db
+
     # if api key not found in db, set it in cache to avoid future db hits
     cache.cache.set(cache_key, ApiKey(id=-1), 300)
     return None
