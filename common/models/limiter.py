@@ -1,4 +1,4 @@
-from sqlalchemy import Column, func, TEXT
+from sqlalchemy import TEXT, Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, JSONB, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
