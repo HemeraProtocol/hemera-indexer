@@ -63,7 +63,7 @@ class ConcurrentJobExecutor:
                 try:
                     processor = self._allocate_processor()
 
-                    self.pool.apply(
+                    self.pool.apply_async(
                         task["func"],
                         task["args"],
                         task["kwargs"],

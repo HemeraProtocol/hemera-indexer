@@ -40,7 +40,7 @@ class BatchWorkExecutor:
         self.max_workers = max_workers
         # Using bounded executor prevents unlimited queue growth
         # and allows monitoring in-progress futures and failing fast in case of errors.
-        self.executor = BoundedExecutor(1, self.max_workers)
+        self.executor = BoundedExecutor(100, self.max_workers)
         self._futures = []
         self.retry_exceptions = retry_exceptions
         self.max_retries = max_retries

@@ -1,8 +1,6 @@
-import os
 import threading
 from contextlib import contextmanager
 from multiprocessing import current_process
-from typing import Optional
 
 from alembic import command
 from alembic.config import Config
@@ -25,7 +23,7 @@ class PostgreSQLService:
 
     def __new__(cls, jdbc_url: str, *args, **kwargs) -> "PostgreSQLService":
         """
-        Ensures only one instance exists per JDBC URL.
+        Ensures only one instance exists per progress and JDBC URL.
         """
         p_name = current_process().name
 
@@ -39,8 +37,8 @@ class PostgreSQLService:
     def __init__(
         self,
         jdbc_url: str,
-        min_connections: int = 5,
-        max_connections: int = 20,
+        min_connections: int = 2,
+        max_connections: int = 10,
         pool_size: int = 10,
         max_overflow: int = 10,
         pool_timeout: int = 30,

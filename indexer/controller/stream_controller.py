@@ -19,7 +19,7 @@ from indexer.utils.sync_recorder import BaseRecorder
 logger = logging.getLogger(__name__)
 
 M_JOBS: int = int(os.environ.get("M_JOBS", 4))
-M_TIMEOUT: int = int(os.environ.get("M_TIMEOUT", 30))
+M_TIMEOUT: int = int(os.environ.get("M_TIMEOUT", 100))
 M_SIZE: int = int(os.environ.get("M_SIZE", 100))
 
 
@@ -58,6 +58,12 @@ class StreamController(BaseController):
         pid_file=None,
     ):
         try:
+            import cProfile
+            import pstats
+
+            profiler = cProfile.Profile()
+            profiler.enable()
+
             if pid_file is not None:
                 logger.info("Creating pid file {}".format(pid_file))
                 write_to_file(pid_file, str(os.getpid()))
@@ -96,10 +102,10 @@ class StreamController(BaseController):
                 if synced_blocks != 0:
                     # submit job and concurrent running
                     # self.job_executor.submit(self._do_stream, start_block=last_synced_block + 1, end_block=target_block)
-                    splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
+                    # splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
                     # with mpire.WorkerPool(n_jobs=M_JOBS, use_dill=True) as pool:
-                    self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=M_TIMEOUT)
-                    # self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
+                    #     self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=M_TIMEOUT)
+                    self._do_stream(start_block, end_block)
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
                     last_synced_block = target_block
@@ -112,6 +118,17 @@ class StreamController(BaseController):
             if pid_file is not None:
                 logger.info("Deleting pid file {}".format(pid_file))
                 delete_file(pid_file)
+
+            profiler.disable()
+            stats = pstats.Stats(profiler)
+            # 按累计时间排序
+            stats.sort_stats("cumulative")
+            # 保存到文件
+            stats.dump_stats("output.prof")  # 二进制格式
+            # 保存可读文本
+            with open("output.txt", "w") as f:
+                stats.stream = f
+                stats.print_stats()
 
     def _shutdown(self):
         pass
