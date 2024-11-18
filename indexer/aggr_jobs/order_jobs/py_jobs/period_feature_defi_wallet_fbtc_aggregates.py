@@ -119,13 +119,13 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
         results = self.get_pool_token_pair_data(orm_list)
         return results
 
-    def get_token_data(self, orm_list):
-        self.get_token_aggr_by_protocol(orm_list, self.price)
-        results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
-                                                            self.end_date)
-        results = self.get_token_data_old(orm_list)
-
-        return results
+    # def get_token_data(self, orm_list):
+    #     self.get_token_aggr_by_protocol(orm_list, self.price)
+    #     results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
+    #                                                         self.end_date)
+    #     results = self.get_token_data_old(orm_list)
+    #
+    #     return results
 
     def get_filter_start_date_orm(self, orm_class):
         session = self.db_service.Session()
@@ -155,14 +155,16 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
 
     def get_lendle_json(self):
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceLendle)
-        self.get_token_aggr_by_protocol(orm_list, self.price)
+        filter_orm_list = [r for r in orm_list if r.token_symbol == self.token_symbol]
+        self.get_token_aggr_by_protocol(filter_orm_list, self.price)
         results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
                                                             self.end_date)
         return results
 
     def get_init_capital_json(self):
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceInitCapital)
-        self.get_token_aggr_by_protocol(orm_list, self.price)
+        filter_orm_list = [r for r in orm_list if r.token_symbol == self.token_symbol]
+        self.get_token_aggr_by_protocol(filter_orm_list, self.price)
         results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
                                                             self.end_date)
         return results
