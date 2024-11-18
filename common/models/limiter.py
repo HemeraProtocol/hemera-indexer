@@ -1,4 +1,4 @@
-from sqlalchemy import Column, func
+from sqlalchemy import Column, func, TEXT
 from sqlalchemy.dialects.postgresql import BIGINT, JSONB, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
@@ -9,7 +9,7 @@ class ApiKey(HemeraModel):
 
     id = Column(BIGINT, primary_key=True, autoincrement=True)
     api_key = Column(VARCHAR(255), unique=True)
-    limits = Column(JSONB)
+    limits = Column(TEXT)
     expires_at = Column(TIMESTAMP)
     description = Column(VARCHAR(255))
     created_at = Column(TIMESTAMP, default=func.now())

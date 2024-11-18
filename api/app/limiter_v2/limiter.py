@@ -15,7 +15,7 @@ def get_header_api_key():
 
 limiter_v2 = Limiter(
     key_func=get_header_api_key,
-    default_limits=["1800 per hour"],
+    default_limits=["100 per hour"],
     storage_uri="memory://",
 )
 
