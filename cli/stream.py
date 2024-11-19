@@ -371,7 +371,7 @@ def stream(
 
     if postgres_url:
         service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
-        config["db_service"] = service
+        config["db_service"] = postgres_url
         exception_recorder.init_pg_service(service)
     else:
         logging.getLogger("ROOT").warning("No postgres url provided. Exception recorder will not be useful.")
@@ -412,8 +412,8 @@ def stream(
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
 
     job_scheduler = JobScheduler(
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
+        web3_provider_uri=provider_uri,
+        web3_debug_provider_uri=debug_provider_uri,
         item_exporters=create_item_exporters(output, config),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
@@ -430,7 +430,7 @@ def stream(
     controller = StreamController(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         max_processors=max_processors,
-        job_scheduler=job_scheduler,
+        scheduled_jobs=job_scheduler.get_scheduled_jobs(),
         sync_recorder=create_recorder(sync_recorder, config),
         limit_reader=create_limit_reader(
             source_path, ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False))

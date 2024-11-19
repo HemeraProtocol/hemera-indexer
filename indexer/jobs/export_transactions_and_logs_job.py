@@ -12,8 +12,6 @@ from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc
 from indexer.utils.rpc_utils import rpc_response_batch_to_results
 
-logger = logging.getLogger(__name__)
-
 
 # Exports transactions and logs
 class ExportTransactionsAndLogsJob(BaseExportJob):
@@ -24,12 +22,14 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+    def _start(self, **kwargs):
+        super()._start(**kwargs)
+
         self._batch_work_executor = BatchWorkExecutor(
-            kwargs["batch_size"],
-            kwargs["max_workers"],
+            self._batch_size,
+            self._max_workers,
             job_name=self.__class__.__name__,
         )
-        self._is_batch = kwargs["batch_size"] > 1
 
     def _collect(self, **kwargs):
 

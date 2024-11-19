@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from typing import List
 
 import mpire
 
@@ -10,6 +11,7 @@ from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.executors.concurrent_job_executor import ConcurrentJobExecutor
+from indexer.jobs.base_job import BaseJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
@@ -30,7 +32,7 @@ class StreamController(BaseController):
         batch_web3_provider,
         max_processors,
         sync_recorder: BaseRecorder,
-        job_scheduler: JobScheduler,
+        scheduled_jobs: List[BaseJob],
         limit_reader: LimitReader,
         max_retries=1,
         retry_from_record=False,
@@ -41,7 +43,7 @@ class StreamController(BaseController):
         self.web3 = build_web3(batch_web3_provider)
         self.job_executor = ConcurrentJobExecutor(max_processors=max_processors)
         self.sync_recorder = sync_recorder
-        self.job_scheduler = job_scheduler
+        self.scheduled_jobs = scheduled_jobs
         self.limit_reader = limit_reader
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
@@ -95,9 +97,9 @@ class StreamController(BaseController):
 
                 if synced_blocks != 0:
                     # submit job and concurrent running
-                    # self.job_executor.submit(self._do_stream, start_block=last_synced_block + 1, end_block=target_block)
-                    splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
-                    self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=M_TIMEOUT)
+                    self.job_executor.submit(do_stream, start_block=last_synced_block + 1, end_block=target_block)
+                    # splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
+                    # self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=M_TIMEOUT)
                     # self._do_stream(start_block, end_block)
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
@@ -121,54 +123,6 @@ class StreamController(BaseController):
             blocks.append((i, min(i + step - 1, end_block)))
         return blocks
 
-    def _do_stream(self, start_block, end_block):
-        import cProfile
-        import pstats
-
-        profiler = cProfile.Profile()
-        profiler.enable()
-
-        for retry in range(self.max_retries):
-            try:
-                # ETL program's main logic
-                self.job_scheduler.run_jobs(start_block, end_block)
-                profiler.disable()
-                stats = pstats.Stats(profiler)
-                # 按累计时间排序
-                stats.sort_stats("cumulative")
-                # 保存到文件
-                stats.dump_stats("output.prof")  # 二进制格式
-                # 保存可读文本
-                with open("output.txt", "w") as f:
-                    stats.stream = f
-                    stats.print_stats()
-                return
-
-            except HemeraBaseException as e:
-                logger.error(f"An rpc response exception occurred while syncing block data. error: {e}")
-                if e.crashable:
-                    logger.error("Mission will crash immediately.")
-                    raise e
-
-                if e.retriable:
-                    logger.info(f"No: {retry} retry is about to start.")
-                else:
-                    logger.error("Mission will not retry, and exit immediately.")
-                    raise e
-
-            except Exception as e:
-                logger.error(f"An unknown exception occurred while syncing block data. error: {e}")
-                raise e
-
-        logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
-        raise FastShutdownError(
-            f"The job with parameters start_block:{start_block}, end_block:{end_block}"
-            f"can't be automatically resumed after reached out limit of retries. Program will exit."
-        )
-
-    def _get_current_block_number(self):
-        return int(self.web3.eth.block_number)
-
     def _calculate_target_block(self, current_block, last_synced_block, end_block, steps):
         target_block = min(current_block - self.delay, last_synced_block + steps)
         target_block = min(target_block, end_block) if end_block is not None else target_block
@@ -186,3 +140,42 @@ class StreamController(BaseController):
             self.pool.terminate()
         except Exception:
             pass
+
+
+def do_stream(jobs, start_block, end_block, max_retries):
+    for retry in range(max_retries):
+        try:
+            # ETL program's main logic
+            run_jobs(jobs, start_block, end_block)
+
+        except HemeraBaseException as e:
+            logger.error(f"An rpc response exception occurred while syncing block data. error: {e}")
+            if e.crashable:
+                logger.error("Mission will crash immediately.")
+                raise e
+
+            if e.retriable:
+                logger.info(f"No: {retry} retry is about to start.")
+            else:
+                logger.error("Mission will not retry, and exit immediately.")
+                raise e
+
+        except Exception as e:
+            logger.error(f"An unknown exception occurred while syncing block data. error: {e}")
+            raise e
+
+    logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+    raise FastShutdownError(
+        f"The job with parameters start_block:{start_block}, end_block:{end_block}"
+        f"can't be automatically resumed after reached out limit of retries. Program will exit."
+    )
+
+
+def run_jobs(jobs, start_block, end_block):
+    try:
+        for job in jobs:
+            job.run(start_block=start_block, end_block=end_block)
+    except Exception as e:
+        raise e
+    finally:
+        pass

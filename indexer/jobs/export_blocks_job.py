@@ -20,8 +20,6 @@ from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rp
 from indexer.utils.reorg import set_reorg_sign
 from indexer.utils.rpc_utils import rpc_response_batch_to_results
 
-logger = logging.getLogger(__name__)
-
 
 # Exports blocks and block number <-> timestamp mapping
 class ExportBlocksJob(BaseExportJob):
@@ -32,16 +30,20 @@ class ExportBlocksJob(BaseExportJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._batch_work_executor = BatchWorkExecutor(
-            kwargs["batch_size"],
-            kwargs["max_workers"],
-            job_name=self.__class__.__name__,
-        )
         self._is_batch = kwargs["batch_size"] > 1
         self._filters = flatten(kwargs.get("filters", []))
         self._is_filter = kwargs.get("is_filter", False)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
         self._reorg_jobs = kwargs.get("reorg_jobs", [])
+
+    def _start(self, **kwargs):
+        super()._start(**kwargs)
+
+        self._batch_work_executor = BatchWorkExecutor(
+            self._batch_size,
+            self._max_workers,
+            job_name=self.__class__.__name__,
+        )
 
     def _pre_reorg(self, **kwargs):
         if self._service is None:

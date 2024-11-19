@@ -51,8 +51,8 @@ def get_source_job_type(source_path: str):
 class JobScheduler:
     def __init__(
         self,
-        batch_web3_provider,
-        batch_web3_debug_provider,
+        web3_provider_uri,
+        web3_debug_provider_uri,
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -67,8 +67,8 @@ class JobScheduler:
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
-        self.batch_web3_provider = batch_web3_provider
-        self.batch_web3_debug_provider = batch_web3_debug_provider
+        self.web3_provider_uri = web3_provider_uri
+        self.web3_debug_provider_uri = web3_debug_provider_uri
         self.item_exporters = item_exporters
         self.batch_size = batch_size
         self._is_multicall = multicall
@@ -192,8 +192,8 @@ class JobScheduler:
                 continue
             job = job_class(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
@@ -209,8 +209,8 @@ class JobScheduler:
         if ExportBlocksJob in self.resolved_job_classes:
             export_blocks_job = ExportBlocksJob(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
@@ -224,8 +224,8 @@ class JobScheduler:
         else:
             pg_source_job = PGSourceJob(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
@@ -240,8 +240,8 @@ class JobScheduler:
         if self.auto_reorg:
             check_job = CheckBlockConsensusJob(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
@@ -298,3 +298,6 @@ class JobScheduler:
             raise Exception("Dependency cycle detected")
 
         return sorted_order
+
+    def get_scheduled_jobs(self):
+        return self.jobs

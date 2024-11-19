@@ -6,6 +6,7 @@ Author  : xuzh
 Project : hemera_indexer
 """
 import logging
+from collections import deque
 from queue import Empty, Queue
 from threading import Event, Semaphore, Thread
 
@@ -15,7 +16,7 @@ from mpire import WorkerPool
 class ConcurrentJobExecutor:
 
     def __init__(self, max_processors=1, call_back=None, error_callback=None):
-        self.pool = WorkerPool(n_jobs=max_processors, use_dill=True)
+        self.pool = WorkerPool(n_jobs=max_processors, use_dill=True, start_method="spawn")
         self.call_back = call_back
         self.error_callback = error_callback
 
@@ -24,6 +25,7 @@ class ConcurrentJobExecutor:
         self.task_count = 0
 
         self.processors = {f"processor-{i}": True for i in range(max_processors)}
+        self.available_processors = deque(f"processor-{i}" for i in range(max_processors))
         self.processor_semaphore = Semaphore(max_processors)
         self.shutdown_event = Event()
 
@@ -35,15 +37,9 @@ class ConcurrentJobExecutor:
 
         self.logger = logging.getLogger(__name__)
 
-    def _find_available_processor(self):
-        for processor in self.processors.keys():
-            if self.processors[processor]:
-                return processor
-        return None
-
     def _allocate_processor(self):
-        processor = self._find_available_processor()
-        if processor:
+        if len(self.available_processors) > 1:
+            processor = self.available_processors.popleft()
             self.processors[processor] = False
             return processor
         return None
@@ -51,6 +47,7 @@ class ConcurrentJobExecutor:
     def _release_processor(self, processor):
         self.processors[processor] = True
         self.processor_semaphore.release()
+        self.available_processors.append(processor)
 
     def _process_tasks(self):
         while not self.shutdown_event.is_set():

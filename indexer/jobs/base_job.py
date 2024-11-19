@@ -10,7 +10,9 @@ from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import to_snake_case
 from indexer.domain import Domain
 from indexer.domain.transaction import Transaction
+from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.reorg import should_reorg
+from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
 
 class BaseJobMeta(type):
@@ -67,13 +69,15 @@ class BaseJob(metaclass=BaseJobMeta):
 
         self._required_output_types = kwargs["required_output_types"]
         self._item_exporters = kwargs["item_exporters"]
-        self._batch_web3_provider = kwargs["batch_web3_provider"]
-        self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
-        self.logger = logging.getLogger(self.__class__.__name__)
+        self._web3_provider_uri = kwargs["web3_provider_uri"]
+        self._web3_debug_provider_uri = kwargs["web3_debug_provider_uri"]
+        # self._batch_web3_provider = kwargs["batch_web3_provider"]
+        self._batch_size = kwargs["batch_size"]
+        self._max_workers = kwargs["max_workers"]
         self._is_batch = kwargs["batch_size"] > 1 if kwargs.get("batch_size") else False
         self._reorg = kwargs["reorg"] if kwargs.get("reorg") else False
 
-        self._chain_id = kwargs.get("chain_id") or (self._web3.eth.chain_id if self._batch_web3_provider else None)
+        self._chain_id = kwargs.get("chain_id", None)
 
         self._should_reorg = False
         self._should_reorg_type = set()
@@ -103,7 +107,14 @@ class BaseJob(metaclass=BaseJobMeta):
             self._end()
 
     def _start(self, **kwargs):
-        pass
+        self.logger = logging.getLogger(self.__class__.__name__)
+        self._batch_web3_provider = ThreadLocalProxy(lambda: get_provider_from_uri(self._web3_provider_uri, batch=True))
+        self._web3 = Web3(Web3.HTTPProvider(self._web3_provider_uri))
+        self._chain_id = (
+            (self._web3.eth.chain_id if self._batch_web3_provider else None)
+            if self._chain_id is None
+            else self._chain_id
+        )
 
     def _pre_reorg(self, **kwargs):
         if self._service is None:
