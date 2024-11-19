@@ -46,7 +46,7 @@ class StreamController(BaseController):
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
         self.delay = delay
-        self.pool = mpire.WorkerPool(n_jobs=M_JOBS, use_dill=True)
+        self.pool = mpire.WorkerPool(n_jobs=M_JOBS, use_dill=True, keep_alive=True)
 
     def action(
         self,
