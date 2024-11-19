@@ -131,11 +131,6 @@ class AgniV3Pool(UniswapV3Pool):
 
 
 @dataclass
-class AgniV3PoolFromTokenJob(UniswapV3Pool):
-    pass
-
-
-@dataclass
 class AgniV3Token(UniswapV3Token):
     pass
 
@@ -172,4 +167,55 @@ class AgniV3TokenUpdateLiquidity(UniswapV3TokenUpdateLiquidity):
 
 @dataclass
 class AgniV3TokenCollectFee(UniswapV3TokenCollectFee):
+    pass
+
+
+@dataclass
+class IzumiPool(UniswapV3Pool):
+    pool_id: int
+
+@dataclass
+class IzumiPoolId(FilterData):
+    position_token_address: str
+    pool_address: str
+    pool_id: int
+
+
+@dataclass
+class IzumiToken(UniswapV3Token):
+    pass
+
+
+@dataclass
+class IzumiPoolPrice(UniswapV3PoolPrice):
+    pass
+
+
+@dataclass
+class IzumiTokenDetail(UniswapV3TokenDetail):
+    pass
+
+
+@dataclass
+class IzumiPoolCurrentPrice(UniswapV3PoolCurrentPrice):
+    pass
+
+
+@dataclass
+class IzumiTokenCurrentStatus(UniswapV3TokenCurrentStatus):
+    pass
+
+
+@dataclass
+class IzumiSwapEvent(UniswapV3SwapEvent):
+    pass
+
+
+@dataclass
+class IzumiTokenUpdateLiquidity(UniswapV3TokenUpdateLiquidity):
+    pass
+
+
+@dataclass
+class IzumiTokenCollectFee(UniswapV3TokenCollectFee):
     pass
