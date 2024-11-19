@@ -15,12 +15,15 @@ from common.models.contracts import Contracts
 from common.models.tokens import Tokens
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, format_value_for_json, hex_str_to_bytes
+from enumeration.token_type import TokenType
 from indexer.modules.custom.address_index.address_index_job import AddressTransactionType, InternalTransactionType
 from indexer.modules.custom.address_index.models.address_contract_operation import AddressContractOperations
 from indexer.modules.custom.address_index.models.address_index_daily_stats import AddressIndexDailyStats
 from indexer.modules.custom.address_index.models.address_internal_transaciton import AddressInternalTransactions
+from indexer.modules.custom.address_index.models.address_nft_1155_holders import AddressNftTokenHolders
 from indexer.modules.custom.address_index.models.address_token_holders import AddressTokenHolders
 from indexer.modules.custom.address_index.models.address_transactions import AddressTransactions
+from indexer.modules.custom.address_index.models.token_address_nft_inventories import TokenAddressNftInventories
 from indexer.modules.custom.address_index.schemas.api import address_base_info_model, filter_and_fill_dict_by_model
 
 PAGE_SIZE = 10
@@ -110,6 +113,101 @@ def get_wallet_address_volumes(wallet_address: Optional[Union[str, bytes]], coin
     }
 
 
+def get_wallet_address_nft_holdings(wallet_address: Optional[Union[str, bytes]]):
+    if isinstance(wallet_address, str):
+        address_bytes = hex_str_to_bytes(wallet_address)
+    else:
+        address_bytes = wallet_address
+
+    query_721 = db.session.query(
+        TokenAddressNftInventories.token_address,
+        func.array_agg(TokenAddressNftInventories.token_id).label("token_ids"),
+        func.count(TokenAddressNftInventories.token_id).label("nft_count"),
+    )
+    query_721 = query_721.filter(TokenAddressNftInventories.wallet_address == address_bytes)
+    query_721 = query_721.group_by(TokenAddressNftInventories.token_address)
+
+    query_1155 = db.session.query(
+        AddressNftTokenHolders.token_address,
+        func.array_agg(AddressNftTokenHolders.token_id).label("token_ids"),
+        func.array_agg(AddressNftTokenHolders.balance_of).label("token_amounts"),
+        func.count(AddressNftTokenHolders.balance_of).label("nft_count"),
+    )
+    query_1155 = query_1155.filter(AddressNftTokenHolders.address == address_bytes).filter(
+        AddressNftTokenHolders.balance_of > 0
+    )
+    query_1155 = query_1155.group_by(AddressNftTokenHolders.token_address)
+
+    holdings_721 = query_721.all()
+    holdings_1155 = query_1155.all()
+
+    nft_holders = []
+    for row in holdings_721:
+        token_address, token_ids, nft_count = row
+        nft_holders.append(
+            {
+                "token_address": token_address,
+                "token_ids": [str(token_id) for token_id in token_ids],
+                "amounts": ["1" for _ in range(len(token_ids))],
+                "balance": str(nft_count),
+                "token_type": TokenType.ERC721.value,
+            }
+        )
+
+    for row in holdings_1155:
+        token_address, token_ids, token_amounts, nft_count = row
+        total_balance = sum(int(amount) for amount in token_amounts)
+        nft_holders.append(
+            {
+                "token_address": token_address,
+                "token_ids": [str(token_id) for token_id in token_ids],
+                "amounts": [str(amount) for amount in token_amounts],
+                "balance": str(total_balance),
+                "token_type": TokenType.ERC1155.value,
+            }
+        )
+
+    token_addresses = [holder["token_address"] for holder in nft_holders]
+    tokens = Tokens.query.filter(
+        and_(
+            Tokens.address.in_(token_addresses),
+            Tokens.token_type.in_([TokenType.ERC1155.value, TokenType.ERC721.value]),
+            Tokens.is_verified == True,
+        )
+    ).all()
+
+    token_map = {}
+    for token in tokens:
+        token_map[token.address] = token
+
+    res = []
+    for holder in nft_holders:
+        if holder["token_address"] in token_map:
+            token = token_map[holder["token_address"]]
+            estimated_value = float(token.price or 0) * float(holder["balance"])
+
+            res.append(
+                format_value_for_json(
+                    {
+                        "token": {
+                            "address": holder["token_address"],
+                            "token_name": token.name,
+                            "token_symbol": token.symbol,
+                            "token_logo_url": token.icon_url,
+                            "token_type": holder["token_type"],
+                            "extra_info": {"floor_price": token.price},
+                        },
+                        "balance": sum([int(amount) for amount in holder["amounts"]]),
+                        "token_ids": holder["token_ids"],
+                        "amounts": holder["amounts"],
+                        "estimated_value_usd": estimated_value,
+                    }
+                )
+            )
+
+    return res
+
+
 def get_wallet_address_token_holdings(wallet_address: Optional[Union[str, bytes]]):
     if isinstance(wallet_address, str):
         address_bytes = hex_str_to_bytes(wallet_address)
@@ -127,6 +225,7 @@ def get_wallet_address_token_holdings(wallet_address: Optional[Union[str, bytes]
     tokens = Tokens.query.filter(
         and_(
             Tokens.address.in_(token_addresses),
+            Tokens.token_type == TokenType.ERC20.value,
             Tokens.is_verified == True,
         )
     ).all()
@@ -159,7 +258,8 @@ def get_wallet_address_token_holdings(wallet_address: Optional[Union[str, bytes]
                                 "gecko_id": token.gecko_id,
                             },
                         },
-                        "tvl": float(int(holder.balance_of) / (10**token.decimals or 0)) * float(token.price or 0),
+                        "estimated_value_usd": float(int(holder.balance_of) / (10**token.decimals or 0))
+                        * float(token.price or 0),
                     }
                 )
             )
@@ -677,11 +777,22 @@ def get_address_hist_stats(
 
 def get_address_assets(address: Union[str, bytes]) -> dict:
     coin_balance = format_coin_value(get_balance(address))
-    token_holding = get_wallet_address_token_holdings(address)
-    tvl = float(get_balance(address) / 10**18) * get_latest_coin_prices() + sum([x["tvl"] for x in token_holding])
+    token_holdings = get_wallet_address_token_holdings(address)
+    nft_holdings = get_wallet_address_nft_holdings(address)
+    token_estimated_value_usd = sum([x["estimated_value_usd"] for x in token_holdings])
+    nft_estimated_value_usd = sum([x["estimated_value_usd"] for x in nft_holdings])
+    tvl = (
+        float(get_balance(address) / 10**18) * get_latest_coin_prices()
+        + token_estimated_value_usd
+        + nft_estimated_value_usd
+    )
 
     return {
         "total_asset_value_usd": tvl,
         "coin_balance": coin_balance,
-        "holdings": token_holding,
+        "holdings": token_holdings,
+        "token_holdings": token_holdings,
+        "nft_holdings": nft_holdings,
+        "token_estimated_value_usd": token_estimated_value_usd,
+        "nft_estimated_value_usd": nft_estimated_value_usd,
     }
