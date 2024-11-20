@@ -70,7 +70,7 @@ class FilterJob(FilterTransactionDataJob):
             [
                 TopicSpecification(
                     # topics=['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef']
-                    addresses=['0x326b1129a3ec2ad5c4016d2bb4b912687890ae6c']
+                    addresses=self.address_list
                     # ,addresses=['0xdef3542bb1b2969c1966dd91ebc504f4b37462fe']
                 ),
             ]
