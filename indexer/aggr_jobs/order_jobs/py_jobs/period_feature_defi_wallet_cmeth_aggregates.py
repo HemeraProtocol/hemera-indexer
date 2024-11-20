@@ -140,6 +140,16 @@ where token_address = decode('dee7cb1d08ec5e35c4792856f86dd0584db29cfe', 'hex')
                balance / pow(10, 18)                        as balance
         from period_address_token_balances
 where token_address = decode('872b6ff825da431c941d12630754036278ad7049', 'hex')
+union all 
+select date('2024-11-19')                           as period_date,
+       'hourglass'                                      as protocol_id,
+       '0x37e3ac623b488bb075ce8f3199ae93f8cac727f2' as contract_address,
+       address                                      as wallet_address,
+        '0xe6829d9a7ee3040e1276fa75293bde931859e8fa' as token_address,
+       'cmETH'                                      as token_symbol,
+       balance / pow(10, 18)                        as balance
+from period_address_token_balances
+where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
         """
         session = self.db_service.Session()
         stmt = session.execute(text(sql))
@@ -294,8 +304,6 @@ where token_address = decode('872b6ff825da431c941d12630754036278ad7049', 'hex')
                                                    'uniswapv3')
         self.get_pool_token_pair_aggr_by_protocol(results1, self.price)
         return results
-
-        pass
 
     def run(self):
         if self.chain_name == 'mantle':
