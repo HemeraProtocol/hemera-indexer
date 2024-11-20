@@ -141,7 +141,7 @@ where token_address = decode('dee7cb1d08ec5e35c4792856f86dd0584db29cfe', 'hex')
         from period_address_token_balances
 where token_address = decode('872b6ff825da431c941d12630754036278ad7049', 'hex')
 union all 
-select date('2024-11-19')                           as period_date,
+        select date('{self.start_date}')                           as period_date,
        'hourglass'                                      as protocol_id,
        '0x37e3ac623b488bb075ce8f3199ae93f8cac727f2' as contract_address,
        address                                      as wallet_address,
