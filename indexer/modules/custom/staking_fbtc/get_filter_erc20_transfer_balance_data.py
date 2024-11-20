@@ -40,7 +40,11 @@ class FilterJob(FilterTransactionDataJob):
         # 0xdee7cb1d08ec5e35c4792856f86dd0584db29cfe
         # woofi
         # 0x872b6ff825Da431C941d12630754036278AD7049
-        token_list = ['0xdee7cb1d08ec5e35c4792856f86dd0584db29cfe', '0x872b6ff825da431c941d12630754036278ad7049']
+        # hourglass
+        # 0x22bdbbec06611cfca7bfe3a53e9e574771851176
+
+        token_list = ['0xdee7cb1d08ec5e35c4792856f86dd0584db29cfe', '0x872b6ff825da431c941d12630754036278ad7049',
+                      '0x22bdbbec06611cfca7bfe3a53e9e574771851176']
         self.address_list.extend(token_list)
 
     def _get_lv_tokens(self):
