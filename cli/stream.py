@@ -153,7 +153,7 @@ def calculate_execution_time(func):
     "--period-seconds",
     default=10,
     show_default=True,
-    type=int,
+    type=float,
     envvar="PERIOD_SECONDS",
     help="How many seconds to sleep between syncs",
 )
