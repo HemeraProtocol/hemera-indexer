@@ -43,7 +43,7 @@ class BufferService:
 
         self.submit_export_pool = ThreadPoolExecutor(max_workers=export_workers)
         self._flush_thread = Thread(target=self._flush_loop)
-        self._flush_thread.daemon = True
+        self._flush_thread.daemon = False
         self._flush_thread.start()
 
         self._setup_signal_handlers()
@@ -71,7 +71,7 @@ class BufferService:
     def write(self, records: Dict):
         with self.buffer_lock:
             for dataclass in records.keys():
-                if dataclass in self.required_output_types:
+                if dataclass in self.required_output_types or dataclass == "block":
                     self.buffer[dataclass].extend(records[dataclass])
 
         if len(self.buffer["block"]) >= self.max_buffer_size:
@@ -97,7 +97,8 @@ class BufferService:
 
             flush_items = []
             for key in self.buffer:
-                flush_items.extend(self.buffer[key])
+                if key in self.required_output_types:
+                    flush_items.extend(self.buffer[key])
 
             self.buffer.clear()
 

@@ -455,3 +455,5 @@ def stream(
         period_seconds=period_seconds,
         pid_file=pid_file,
     )
+
+    controller.shutdown()

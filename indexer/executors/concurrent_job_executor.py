@@ -33,7 +33,7 @@ class ConcurrentJobExecutor:
         self.task_queue = Queue()
 
         self.task_processor = Thread(target=self._process_tasks)
-        self.task_processor.daemon = True
+        self.task_processor.daemon = False
         self.task_processor.start()
 
         self.logger = logging.getLogger(__name__)
@@ -82,7 +82,7 @@ class ConcurrentJobExecutor:
     def _handle_task_completion(self, result, processor, param):
         self.buffer_service.write(result)
 
-        self.logger.info(f"Task with parameter:{param} completed successfully by processor: {processor}")
+        self.logger.debug(f"Task with parameter:{param} completed successfully by processor: {processor}")
         self._release_processor(processor)
 
         if self.call_back:
@@ -113,8 +113,11 @@ class ConcurrentJobExecutor:
             self.processor_semaphore.release()
             raise e
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def shutdown(self):
         self.shutdown_event.set()
         self.task_processor.join()
         self.pool.terminate()
         self.pool.join()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.shutdown()

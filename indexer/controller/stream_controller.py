@@ -134,8 +134,9 @@ class StreamController(BaseController):
                 logger.info("Deleting pid file {}".format(pid_file))
                 delete_file(pid_file)
 
-    def _shutdown(self):
-        pass
+    def shutdown(self):
+        self.job_executor.shutdown()
+        self.buffer_service.shutdown()
 
     def split_blocks(self, start_block, end_block, step):
         blocks = []
