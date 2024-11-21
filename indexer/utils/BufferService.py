@@ -12,7 +12,9 @@ import time
 from collections import defaultdict
 from concurrent.futures import Future, ThreadPoolExecutor
 from threading import Event, Thread
-from typing import Dict, Set
+from typing import Callable, Dict
+
+from common.utils.exception_control import get_exception_details
 
 
 class BufferService:
@@ -25,6 +27,8 @@ class BufferService:
         linger_ms: int = 5000,
         max_buffer_size: int = 10000,
         export_workers: int = 5,
+        success_callback: Callable = None,
+        exception_callback: Callable = None,
     ):
         self.block_size = block_size
         self.linger_ms = linger_ms
@@ -35,7 +39,7 @@ class BufferService:
 
         self.buffer = defaultdict(list)
         self.buffer_lock = threading.Lock()
-        self.pending_futures: Set[Future] = set()
+        self.pending_futures: dict[Future, (int, int)] = dict()
         self.futures_lock = threading.Lock()
 
         self._shutdown_event = Event()
@@ -47,6 +51,9 @@ class BufferService:
         self._flush_thread.start()
 
         self._setup_signal_handlers()
+
+        self.success_callback = success_callback
+        self.exception_callback = exception_callback
 
         self.logger = logging.getLogger(__name__)
 
@@ -61,12 +68,21 @@ class BufferService:
 
     def _handle_export_completion(self, future: Future):
         with self.futures_lock:
-            self.pending_futures.discard(future)
+            start_block, end_block = self.pending_futures[future]
+            self.pending_futures.pop(future)
 
         try:
             future.result()
+
+            try:
+                self.success_callback(end_block)
+            except Exception as e:
+                self.logger.error(f"Writing last synced block number {end_block} error.")
+
         except Exception as e:
-            raise e
+            exception_details = get_exception_details(e)
+            self.exception_callback(self.required_output_types, start_block, end_block, "export", exception_details)
+            self.logger.error(f"Exporting items error: {exception_details}")
 
     def write(self, records: Dict):
         with self.buffer_lock:
@@ -94,7 +110,8 @@ class BufferService:
         with self.buffer_lock:
             if len(self.buffer["block"]) == 0:
                 return
-
+            self.buffer["block"].sort(key=lambda x: x.number)
+            block_range = (self.buffer["block"][0].number, self.buffer["block"][-1].number)
             flush_items = []
             for key in self.buffer:
                 if key in self.required_output_types:
@@ -106,7 +123,7 @@ class BufferService:
         future.add_done_callback(self._handle_export_completion)
 
         with self.futures_lock:
-            self.pending_futures.add(future)
+            self.pending_futures[future] = block_range
 
         self._last_flush_time = time.time()
 

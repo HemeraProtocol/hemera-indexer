@@ -1,4 +1,6 @@
 import logging
+import sys
+import traceback
 
 from werkzeug.exceptions import HTTPException
 
@@ -118,3 +120,15 @@ def decode_response_error(error):
         raise RetriableError(message)
     else:
         return None
+
+
+def get_exception_details(e: Exception) -> dict:
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+
+    return {
+        "type": exc_type.__name__,
+        "module": exc_type.__module__,
+        "message": str(exc_value),
+        "traceback": traceback.format_exc(),
+        "line_number": exc_traceback.tb_lineno,
+    }

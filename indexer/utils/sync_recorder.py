@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 
+from common.models.failures_records import FailuresRecords
 from common.models.sync_record import SyncRecord
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.file_utils import smart_open, write_to_file
@@ -14,6 +15,9 @@ class BaseRecorder(object):
         pass
 
     def get_last_synced_block(self):
+        pass
+
+    def set_failures_record(self, output_types, start_block, end_block, exception_stage, exception):
         pass
 
 
@@ -31,6 +35,9 @@ class FileSyncRecorder(BaseRecorder):
             return 0
         with smart_open(self.file_name, "r") as last_synced_block_file:
             return int(last_synced_block_file.read())
+
+    def set_failures_record(self, output_types, start_block, end_block, exception_stage, exception):
+        pass
 
 
 class PGSyncRecorder(BaseRecorder):
@@ -58,6 +65,7 @@ class PGSyncRecorder(BaseRecorder):
                         "last_block_number": last_synced_block,
                         "update_time": update_time,
                     },
+                    where=(SyncRecord.last_block_number <= last_synced_block),
                 )
             )
             session.execute(statement)
@@ -78,6 +86,32 @@ class PGSyncRecorder(BaseRecorder):
         if result is not None:
             return result
         return 0
+
+    def set_failures_record(self, output_types, start_block, end_block, exception_stage, exception):
+        session = self.service.get_service_session()
+        try:
+            crash_time = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
+
+            statement = insert(FailuresRecords).values(
+                {
+                    "mission_sign": self.key,
+                    "output_types": ",".join(output_types),
+                    "start_block_number": start_block,
+                    "end_block_number": end_block,
+                    "exception_stage": exception_stage,
+                    "exception": exception,
+                    "crash_time": crash_time,
+                }
+            )
+
+            session.execute(statement)
+            session.commit()
+
+        except Exception as e:
+            raise e
+
+        finally:
+            session.close()
 
 
 def create_recorder(sync_recorder: str, config: dict) -> BaseRecorder:

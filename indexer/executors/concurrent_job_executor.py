@@ -12,6 +12,8 @@ from threading import Event, Semaphore, Thread
 
 from mpire import WorkerPool
 
+from common.utils.exception_control import get_exception_details
+
 
 class ConcurrentJobExecutor:
 
@@ -96,11 +98,16 @@ class ConcurrentJobExecutor:
         if self.error_callback:
             try:
                 param["processor"] = processor
-                self.error_callback(**param)
+                error_details = get_exception_details(error)
+                self.error_callback(
+                    output_types=self.buffer_service.required_output_types,
+                    start_block=param["start_block"],
+                    end_block=param["end_block"],
+                    exception_stage="Job Running",
+                    exception=error_details,
+                )
             except Exception as e:
                 self.logger.error(f"An exception occurred while execute call back function. error: {e}")
-
-        raise error
 
     def submit(self, func, *args, **kwargs):
         self.processor_semaphore.acquire()
@@ -116,8 +123,8 @@ class ConcurrentJobExecutor:
     def shutdown(self):
         self.shutdown_event.set()
         self.task_processor.join()
+        self.pool.join(keep_alive=True)
         self.pool.terminate()
-        self.pool.join()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.shutdown()

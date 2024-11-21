@@ -43,10 +43,17 @@ class StreamController(BaseController):
         self.web3 = build_web3(batch_web3_provider)
         self.required_output_types = [output.type() for output in required_output_types]
         self.buffer_service = BufferService(
-            item_exporters, self.required_output_types, export_workers=max_processors, block_size=100
+            item_exporters=item_exporters,
+            required_output_types=self.required_output_types,
+            export_workers=max_processors,
+            block_size=100,
+            success_callback=self.handle_success,
+            exception_callback=self.handle_failure,
         )
         self.job_executor = (
-            ConcurrentJobExecutor(buffer_service=self.buffer_service, max_processors=max_processors)
+            ConcurrentJobExecutor(
+                buffer_service=self.buffer_service, max_processors=max_processors, error_callback=self.handle_failure
+            )
             if max_processors > 1
             else None
         )
@@ -56,6 +63,15 @@ class StreamController(BaseController):
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
         self.delay = delay
+
+    def handle_success(self, last_block_number):
+        self.sync_recorder.set_last_synced_block(last_block_number)
+        logger.info("Writing last synced block {}".format(last_block_number))
+
+    def handle_failure(
+        self, output_types: List[str], start_block: int, end_block: int, exception_stage: str, exception: str
+    ):
+        self.sync_recorder.set_failures_record(output_types, start_block, end_block, exception_stage, exception)
 
     def action(
         self,
@@ -68,7 +84,7 @@ class StreamController(BaseController):
     ):
         try:
             if pid_file is not None:
-                logger.info("Creating pid file {}".format(pid_file))
+                logger.debug("Creating pid file {}".format(pid_file))
                 write_to_file(pid_file, str(os.getpid()))
 
             last_synced_block = self.sync_recorder.get_last_synced_block()
@@ -126,12 +142,12 @@ class StreamController(BaseController):
                     last_synced_block = target_block
 
                 if synced_blocks <= 0:
-                    logger.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
+                    logger.debug("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
                     time.sleep(period_seconds)
 
         finally:
             if pid_file is not None:
-                logger.info("Deleting pid file {}".format(pid_file))
+                logger.debug("Deleting pid file {}".format(pid_file))
                 delete_file(pid_file)
 
     def shutdown(self):
@@ -176,7 +192,7 @@ def job_with_retires(job, start_block, end_block, max_retries, processor=None):
                 raise e
 
             if e.retriable:
-                logger.info(f"No: {retry} retry is about to start.")
+                logger.debug(f"No: {retry} retry is about to start.")
             else:
                 logger.error("Mission will not retry, and exit immediately.")
                 raise e
@@ -185,17 +201,8 @@ def job_with_retires(job, start_block, end_block, max_retries, processor=None):
             logger.error(f"An unknown exception occurred while running {job.__class__.__name__}. error: {e}")
             raise e
 
-    logger.info(f"The number of retry is reached limit {max_retries}. Program will exit.")
+    logger.debug(f"The number of retry is reached limit {max_retries}. Program will exit.")
     raise FastShutdownError(
         f"The {job} with parameters start_block:{start_block}, end_block:{end_block} "
         f"can't be automatically resumed after reached out limit of retries. Program will exit."
     )
-
-
-def handle_success(processor: str, start_block: int, end_block: int):
-    # self.sync_recorder.set_last_synced_block(target_block)
-    pass
-
-
-def handle_failure(processor: str, start_block: int, end_block: int):
-    pass
