@@ -8,3 +8,7 @@ eigen_layer_job:
     address: '0x858646372cc42e1a627fce94aa7a7033e7cf075a'
   DELEGATION:
     address: '0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a'
+
+pendle_pools_job:
+  pendle_market_factory_address: '0x6fcf753f2c67b83f7b09746bbc4fa0047b35d050'
+  pendle_deploy_helper_address: '0x4df98410c95737fd646d2413ac6cafc1c04834b9'
