@@ -21,8 +21,8 @@ class BufferService:
         self,
         item_exporters,
         required_output_types,
-        block_size: int = 1000,
-        linger_ms: int = 50000000,
+        block_size: int = 100,
+        linger_ms: int = 5000,
         max_buffer_size: int = 10000,
         export_workers: int = 5,
     ):
