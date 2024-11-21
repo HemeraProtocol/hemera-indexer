@@ -121,8 +121,8 @@ class StreamController(BaseController):
                         )
                         self.buffer_service.write(export_data)
 
-                    logger.info("Writing last synced block {}".format(target_block))
-                    self.sync_recorder.set_last_synced_block(target_block)
+                    # logger.info("Writing last synced block {}".format(target_block))
+                    # self.sync_recorder.set_last_synced_block(target_block)
                     last_synced_block = target_block
 
                 if synced_blocks <= 0:
@@ -169,7 +169,7 @@ def job_with_retires(job, start_block, end_block, max_retries, processor=None):
             return job.run(start_block=start_block, end_block=end_block, processor=processor)
 
         except HemeraBaseException as e:
-            logger.error(f"An rpc response exception occurred while running {job.__name__}. error: {e}")
+            logger.error(f"An rpc response exception occurred while running {job.__class__.__name__}. error: {e}")
             if e.crashable:
                 logger.error("Mission will crash immediately.")
                 raise e
@@ -181,7 +181,7 @@ def job_with_retires(job, start_block, end_block, max_retries, processor=None):
                 raise e
 
         except Exception as e:
-            logger.error(f"An unknown exception occurred while running {job.__name__}. error: {e}")
+            logger.error(f"An unknown exception occurred while running {job.__class__.__name__}. error: {e}")
             raise e
 
     logger.info(f"The number of retry is reached limit {max_retries}. Program will exit.")
