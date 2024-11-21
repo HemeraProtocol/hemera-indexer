@@ -61,6 +61,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
             )
             transaction.fill_with_receipt(receipt_entity)
 
+            self._collect_item(Transaction.type(), transaction)
             for log in transaction.receipt.logs:
                 self._collect_item(Log.type(), log)
 
