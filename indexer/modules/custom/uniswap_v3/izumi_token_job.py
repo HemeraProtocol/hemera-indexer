@@ -87,7 +87,7 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
             self._exist_token_ids,
         )
         # call owners
-        token_id_block_owner = get_token_id_block_owner(
+        token_id_block_owner = self.get_token_id_block_owner(
             tokens_to_update_states,
             self._position_token_address,
         )
@@ -95,8 +95,8 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
         # call positions
         # token_infos -> [{"token_id": "111", "block_number": 222, "liquidity": 333, "tickerLower", "tickerUpper","poolId"}]
         # Need to fill pool address to token_infos
-        token_id_block_positions = get_token_id_block_position(
-            token_id_block_owner,
+        token_id_block_positions = self.get_token_id_block_position(
+            tokens_to_update_states,
             self._position_token_address,
             self._exist_pools,
         )
@@ -162,6 +162,75 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
         self._data_buff[IzumiToken.type()].sort(key=lambda x: x.block_number)
         self._data_buff[IzumiTokenState.type()].sort(key=lambda x: x.block_number)
         self._data_buff[IzumiTokenCurrentState.type()].sort(key=lambda x: x.block_number)
+
+        
+    def get_token_id_block_owner(self, tokens_to_update_states, position_token_address):
+        owner_of_calls = []
+        for token in tokens_to_update_states:
+            token_id = token["token_id"]
+            block_number = token["block_number"]
+            owner_of_calls.append(
+                Call(
+                    target=position_token_address,
+                    function_abi=OWNER_OF_FUNCTION,
+                    parameters=[token_id],
+                    block_number=block_number,
+                )
+            )
+        self._multicall_helper.execute_calls(owner_of_calls)
+
+        token_id_block_owner = {}
+        for call in owner_of_calls:
+            token_id = call.parameters[0]
+            if token_id not in token_id_block_owner:
+                token_id_block_owner[token_id] = {}
+            token_id_block_owner[token_id][call.block_number] = call.returns["owner"]
+        return token_id_block_owner
+
+
+    def get_token_id_block_position(self, tokens_to_update_states, position_token_address, exist_pools):
+        position_calls = []
+        for token in tokens_to_update_states:
+            token_id = token["token_id"]
+            block_number = token["block_number"]
+            position_calls.append(
+                Call(
+                    target=position_token_address,
+                    function_abi=POSITIONS_FUNCTION,
+                    parameters=[token_id],
+                    block_number=block_number
+                )
+            )
+        self._multicall_helper.execute_calls(position_calls)
+
+        token_id_block_positions = []
+        for call in position_calls:
+            token["token_id"] = call.parameters[0]
+            token["block_number"] = call.block_number
+
+            token["tickLower"] = call.returns["leftPt"]
+            token["tickUpper"] = call.returns["rightPt"]
+            token["liquidity"] = call.returns["liquidity"]
+            token["feeGrowthInside0LastX128"] = call.returns["lastFeeScaleX_128"]
+            token["feeGrowthInside1LastX128"] = call.returns["lastFeeScaleY_128"]
+            token["tokensOwed0"] = call.returns["remainTokenX"]
+            token["tokensOwed1"] = call.returns["remainTokenY"]
+            token["poolId"] = call.returns["poolId"]
+
+            if token["poolId"] in exist_pools:
+                token["token0"] = exist_pools[token["poolId"]]["token0_address"]
+                token["token1"] = exist_pools[token["poolId"]]["token1_address"]
+                token["fee"] = exist_pools[token["poolId"]]["fee"]
+                token["pool_address"] = exist_pools[token["poolId"]]["pool_address"]
+
+            # token["nonce"] = decoded_data[0]
+            # token["operator"] = decoded_data[1]
+            # token["token0"] = decoded_data[2]
+            # token["token1"] = decoded_data[3]
+            # token["fee"] = decoded_data[4]
+
+            token_id_block_positions.append(token)
+        return token_id_block_positions
 
 
 def parse_token_records(
@@ -248,69 +317,6 @@ def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_t
         if token_id not in exist_token_ids:
             tokens_to_update_info.add((token_id, block_number))
     return tokens_to_update_states, tokens_to_update_info
-
-
-def get_token_id_block_owner(tokens_to_update_states, position_token_address):
-    owner_of_calls = []
-    for token in tokens_to_update_states:
-        (token_id, block_number) = token
-        owner_of_calls.append(
-            Call(
-                target=position_token_address,
-                function_abi=OWNER_OF_FUNCTION,
-                parameters=[token_id],
-                block_number=block_number,
-            )
-        )
-
-    token_id_block_owner = {}
-    for call in owner_of_calls:
-        token_id = call.parameters[0]
-        if token_id not in token_id_block_owner:
-            token_id_block_owner[token_id] = {}
-        token_id_block_owner[token_id][call.block_number] = call.returns["owner"]
-    return token_id_block_owner
-
-
-def get_token_id_block_position(tokens_to_update_states, position_token_address, exist_pools):
-    position_calls = []
-    for token in tokens_to_update_states:
-        (token_id, block_number) = token
-        position_calls.append(
-            target=position_token_address,
-            function_abi=POSITIONS_FUNCTION,
-            parameters=[token_id],
-            block_number=block_number,
-        )
-
-    token_id_block_positions = []
-    for call in position_calls:
-        token["token_id"] = call.parameters[0]
-        token["block_number"] = call.block_number
-
-        token["tickLower"] = call.returns["leftPt"]
-        token["tickUpper"] = call.returns["rightPt"]
-        token["liquidity"] = call.returns["liquidity"]
-        token["feeGrowthInside0LastX128"] = call.returns["lastFeeScaleX_128"]
-        token["feeGrowthInside1LastX128"] = call.returns["lastFeeScaleY_128"]
-        token["tokensOwed0"] = call.returns["remainTokenX"]
-        token["tokensOwed1"] = call.returns["remainTokenY"]
-        token["poolId"] = call.returns["poolId"]
-
-        if token["poolId"] in exist_pools:
-            token["token0"] = exist_pools[token["poolId"]]["token0_address"]
-            token["token1"] = exist_pools[token["poolId"]]["token1_address"]
-            token["fee"] = exist_pools[token["poolId"]]["fee"]
-            token["pool_address"] = exist_pools[token["poolId"]]["pool_address"]
-
-        # token["nonce"] = decoded_data[0]
-        # token["operator"] = decoded_data[1]
-        # token["token0"] = decoded_data[2]
-        # token["token1"] = decoded_data[3]
-        # token["fee"] = decoded_data[4]
-
-        token_id_block_positions.append(token)
-    return token_id_block_positions
 
 
 def get_new_nfts(
