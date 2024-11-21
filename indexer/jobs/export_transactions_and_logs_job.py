@@ -1,4 +1,3 @@
-import logging
 from typing import List
 
 import orjson
@@ -18,22 +17,28 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
     dependency_types = [Block]
     output_types = [Transaction, Log]
     able_to_reorg = True
+    able_to_multi_process = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        if not self._multiprocess:
+            self._batch_work_executor = BatchWorkExecutor(
+                self._batch_size, self._max_workers, job_name=self.logger_name
+            )
 
     def _start(self, **kwargs):
         super()._start(**kwargs)
 
-        self._batch_work_executor = BatchWorkExecutor(
-            self._batch_size,
-            self._max_workers,
-            job_name=self.__class__.__name__,
-        )
+        if self._multiprocess:
+            self._batch_work_executor = BatchWorkExecutor(
+                self._batch_size, self._max_workers, job_name=self.logger_name
+            )
 
     def _collect(self, **kwargs):
 
-        transactions: List[Transaction] = self._data_buff.get(Transaction.type(), [])
+        transactions: List[Transaction] = [
+            transaction for block in self._data_buff.get(Block.type(), []) for transaction in block.transactions
+        ]
 
         self._batch_work_executor.execute(transactions, self._collect_batch, total_items=len(transactions))
         self._batch_work_executor.wait()
@@ -60,6 +65,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
                 self._collect_item(Log.type(), log)
 
     def _process(self, **kwargs):
+        self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
         self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
 

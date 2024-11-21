@@ -17,7 +17,7 @@ def create_item_exporter(output, config):
     if item_exporter_type == ItemExporterType.CONSOLE:
         item_exporter = ConsoleItemExporter()
     elif item_exporter_type == ItemExporterType.POSTGRES:
-        item_exporter = PostgresItemExporter(postgres_url=config["db_service"].jdbc_url)
+        item_exporter = PostgresItemExporter(config["db_service"])
     elif item_exporter_type == ItemExporterType.JSONFILE:
         item_exporter = JSONFileItemExporter(output, config)
     elif item_exporter_type == ItemExporterType.CSVFILE:

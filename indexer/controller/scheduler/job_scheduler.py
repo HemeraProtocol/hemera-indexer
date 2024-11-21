@@ -6,6 +6,7 @@ from pottery import RedisDict
 from redis.client import Redis
 
 from common.models.tokens import Tokens
+from common.services.postgresql_service import PostgreSQLService
 from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
@@ -57,11 +58,11 @@ class JobScheduler:
         debug_batch_size=1,
         max_workers=5,
         config={},
-        item_exporters=[ConsoleItemExporter()],
         required_output_types=[],
         required_source_types=[],
         cache="memory",
         multicall=None,
+        multiprocess=False,
         auto_reorg=True,
         force_filter_mode=False,
     ):
@@ -69,9 +70,9 @@ class JobScheduler:
         self.auto_reorg = auto_reorg
         self.web3_provider_uri = web3_provider_uri
         self.web3_debug_provider_uri = web3_debug_provider_uri
-        self.item_exporters = item_exporters
         self.batch_size = batch_size
         self._is_multicall = multicall
+        self._is_multiprocess = multiprocess
         self.debug_batch_size = debug_batch_size
         self.max_workers = max_workers
         self.config = config
@@ -83,7 +84,8 @@ class JobScheduler:
         self.job_classes = []
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
-        self.pg_service = config.get("db_service") if "db_service" in config else None
+        service_url = config.get("db_service") if "db_service" in config else None
+        self.pg_service = PostgreSQLService(service_url) if service_url is not None else None
 
         self.discover_and_register_job_classes()
         self.required_job_classes, self.is_pipeline_filter = self.get_required_job_classes(required_output_types)
@@ -194,9 +196,9 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 web3_provider_uri=self.web3_provider_uri,
                 web3_debug_provider_uri=self.web3_debug_provider_uri,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
+                multiprocess=self._is_multiprocess,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
@@ -211,9 +213,9 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 web3_provider_uri=self.web3_provider_uri,
                 web3_debug_provider_uri=self.web3_debug_provider_uri,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
+                multiprocess=self._is_multiprocess,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
@@ -226,9 +228,9 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 web3_provider_uri=self.web3_provider_uri,
                 web3_debug_provider_uri=self.web3_debug_provider_uri,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
+                multiprocess=self._is_multiprocess,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
@@ -236,21 +238,6 @@ class JobScheduler:
                 filters=filters,
             )
             self.jobs.insert(0, pg_source_job)
-
-        if self.auto_reorg:
-            check_job = CheckBlockConsensusJob(
-                required_output_types=self.required_output_types,
-                web3_provider_uri=self.web3_provider_uri,
-                web3_debug_provider_uri=self.web3_debug_provider_uri,
-                item_exporters=self.item_exporters,
-                batch_size=self.batch_size,
-                multicall=self._is_multicall,
-                debug_batch_size=self.debug_batch_size,
-                max_workers=self.max_workers,
-                config=self.config,
-                filters=filters,
-            )
-            self.jobs.append(check_job)
 
     def run_jobs(self, start_block, end_block):
         self.clear_data_buff()

@@ -356,6 +356,12 @@ def stream(
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.getLogger("ROOT").info("Using provider " + provider_uri)
     logging.getLogger("ROOT").info("Using debug provider " + debug_provider_uri)
+    logging.getLogger("ROOT").info(
+        f"Indexer will run in {'multi' if max_processors > 1 else 'single'}-process mode "
+        f"{'with ' if max_processors > 1 else ''}"
+        f"{max_processors if max_processors > 1 else ''}"
+        f" {'processor' if max_processors > 1 else ''} "
+    )
 
     # parameter logic checking
     if source_path:
@@ -407,6 +413,7 @@ def stream(
     output_types = list(
         set(generate_dataclass_type_list_from_parameter(output_types, "output") + output_types_by_entity_type)
     )
+    output_types.sort(key=lambda x: x.type())
 
     if source_path and source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
@@ -414,7 +421,6 @@ def stream(
     job_scheduler = JobScheduler(
         web3_provider_uri=provider_uri,
         web3_debug_provider_uri=debug_provider_uri,
-        item_exporters=create_item_exporters(output, config),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
@@ -424,6 +430,7 @@ def stream(
         cache=cache,
         auto_reorg=auto_reorg,
         multicall=multicall,
+        multiprocess=max_processors > 1,
         force_filter_mode=force_filter_mode,
     )
 
@@ -431,6 +438,8 @@ def stream(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         max_processors=max_processors,
         scheduled_jobs=job_scheduler.get_scheduled_jobs(),
+        item_exporters=create_item_exporters(output, config),
+        required_output_types=output_types,
         sync_recorder=create_recorder(sync_recorder, config),
         limit_reader=create_limit_reader(
             source_path, ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False))

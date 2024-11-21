@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 
 from common.models.sync_record import SyncRecord
+from common.services.postgresql_service import PostgreSQLService
 from common.utils.file_utils import smart_open, write_to_file
 
 
@@ -34,9 +35,9 @@ class FileSyncRecorder(BaseRecorder):
 
 class PGSyncRecorder(BaseRecorder):
 
-    def __init__(self, key, service):
+    def __init__(self, key, service_url):
         self.key = key
-        self.service = service
+        self.service = PostgreSQLService(service_url)
 
     def set_last_synced_block(self, last_synced_block):
         session = self.service.get_service_session()

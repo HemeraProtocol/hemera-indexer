@@ -52,6 +52,7 @@ class BaseJob(metaclass=BaseJobMeta):
     dependency_types = []
     output_types = []
     able_to_reorg = False
+    able_to_multi_process = False
 
     @classmethod
     def discover_jobs(cls):
@@ -67,8 +68,8 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def __init__(self, **kwargs):
 
+        self._multiprocess = kwargs["multiprocess"]
         self._required_output_types = kwargs["required_output_types"]
-        self._item_exporters = kwargs["item_exporters"]
         self._web3_provider_uri = kwargs["web3_provider_uri"]
         self._web3_debug_provider_uri = kwargs["web3_debug_provider_uri"]
         # self._batch_web3_provider = kwargs["batch_web3_provider"]
@@ -86,6 +87,25 @@ class BaseJob(metaclass=BaseJobMeta):
         job_name_snake = to_snake_case(self.job_name)
         self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
 
+        if not self.able_to_multi_process and self._multiprocess:
+            raise FastShutdownError(
+                f"Job: {self.__class__.__name__} can not run in multiprocessing mode, "
+                f"please check runtime parameter or modify job code."
+            )
+
+        if not self._multiprocess:
+            self.logger_name = self.__class__.__name__
+            self.logger = logging.getLogger(self.logger_name)
+            self._batch_web3_provider = ThreadLocalProxy(
+                lambda: get_provider_from_uri(self._web3_provider_uri, batch=True)
+            )
+            self._web3 = Web3(Web3.HTTPProvider(self._web3_provider_uri))
+            self._chain_id = (
+                (self._web3.eth.chain_id if self._batch_web3_provider else None)
+                if self._chain_id is None
+                else self._chain_id
+            )
+
     def run(self, **kwargs):
         try:
             self._start(**kwargs)
@@ -100,21 +120,27 @@ class BaseJob(metaclass=BaseJobMeta):
                 self._collect(**kwargs)
                 self._process(**kwargs)
 
-            if not self._reorg:
-                self._export()
-
         finally:
             self._end()
 
+        return {dataclass.type(): self._data_buff[dataclass.type()] for dataclass in self.output_types}
+
     def _start(self, **kwargs):
-        self.logger = logging.getLogger(self.__class__.__name__)
-        self._batch_web3_provider = ThreadLocalProxy(lambda: get_provider_from_uri(self._web3_provider_uri, batch=True))
-        self._web3 = Web3(Web3.HTTPProvider(self._web3_provider_uri))
-        self._chain_id = (
-            (self._web3.eth.chain_id if self._batch_web3_provider else None)
-            if self._chain_id is None
-            else self._chain_id
-        )
+        if self._multiprocess:
+            self.logger_name = f"{self.__class__.__name__}-{kwargs['processor']}"
+            self.logger = logging.getLogger(self.logger_name)
+            self._batch_web3_provider = ThreadLocalProxy(
+                lambda: get_provider_from_uri(self._web3_provider_uri, batch=True)
+            )
+            self._web3 = Web3(Web3.HTTPProvider(self._web3_provider_uri))
+            self._chain_id = (
+                (self._web3.eth.chain_id if self._batch_web3_provider else None)
+                if self._chain_id is None
+                else self._chain_id
+            )
+
+        for dataclass in self.output_types:
+            self._data_buff[dataclass.type()].clear()
 
     def _pre_reorg(self, **kwargs):
         if self._service is None:
@@ -179,18 +205,6 @@ class BaseJob(metaclass=BaseJobMeta):
                 items.extend(self._data_buff[key])
 
         return items
-
-    def _export(self):
-        items = []
-
-        for output_type in self.output_types:
-            if output_type in self._required_output_types:
-                items.extend(self._extract_from_buff([output_type.type()]))
-
-        for item_exporter in self._item_exporters:
-            item_exporter.open()
-            item_exporter.export_items(items, job_name=self.job_name)
-            item_exporter.close()
 
     def get_buff(self):
         return self._data_buff

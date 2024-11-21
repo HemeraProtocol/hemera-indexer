@@ -26,6 +26,7 @@ class ExportBlocksJob(BaseExportJob):
     dependency_types = []
     output_types = [Block, BlockTsMapper]
     able_to_reorg = True
+    able_to_multi_process = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -36,14 +37,22 @@ class ExportBlocksJob(BaseExportJob):
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
         self._reorg_jobs = kwargs.get("reorg_jobs", [])
 
+        if not self._multiprocess:
+            self._batch_work_executor = BatchWorkExecutor(
+                self._batch_size,
+                self._max_workers,
+                job_name=self.logger_name,
+            )
+
     def _start(self, **kwargs):
         super()._start(**kwargs)
 
-        self._batch_work_executor = BatchWorkExecutor(
-            self._batch_size,
-            self._max_workers,
-            job_name=self.__class__.__name__,
-        )
+        if self._multiprocess:
+            self._batch_work_executor = BatchWorkExecutor(
+                self._batch_size,
+                self._max_workers,
+                job_name=self.logger_name,
+            )
 
     def _pre_reorg(self, **kwargs):
         if self._service is None:
@@ -96,13 +105,16 @@ class ExportBlocksJob(BaseExportJob):
         for block_rpc_dict in results:
             block_entity = Block.from_rpc(block_rpc_dict)
             self._collect_item(Block.type(), block_entity)
+
+            satisfied_transactions = []
             for transaction_entity in block_entity.transactions:
                 if self._specification.is_satisfied_by(transaction_entity):
-                    self._collect_item(Transaction.type(), transaction_entity)
+                    satisfied_transactions.append(transaction_entity)
+
+            block_entity.transactions = satisfied_transactions
 
     def _process(self, **kwargs):
         self._data_buff[Block.type()].sort(key=lambda x: x.number)
-        self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
 
         # block_list = list(self._shared_data_buff[Block.type()])
         # block_list.sort(key=lambda x: x.number)

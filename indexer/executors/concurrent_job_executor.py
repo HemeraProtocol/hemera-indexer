@@ -15,7 +15,8 @@ from mpire import WorkerPool
 
 class ConcurrentJobExecutor:
 
-    def __init__(self, max_processors=1, call_back=None, error_callback=None):
+    def __init__(self, buffer_service, max_processors=1, call_back=None, error_callback=None):
+        self.buffer_service = buffer_service
         self.pool = WorkerPool(n_jobs=max_processors, use_dill=True, start_method="spawn")
         self.call_back = call_back
         self.error_callback = error_callback
@@ -38,7 +39,7 @@ class ConcurrentJobExecutor:
         self.logger = logging.getLogger(__name__)
 
     def _allocate_processor(self):
-        if len(self.available_processors) > 1:
+        if len(self.available_processors) > 0:
             processor = self.available_processors.popleft()
             self.processors[processor] = False
             return processor
@@ -59,7 +60,7 @@ class ConcurrentJobExecutor:
 
                 try:
                     processor = self._allocate_processor()
-
+                    task["kwargs"]["processor"] = processor
                     self.pool.apply_async(
                         task["func"],
                         task["args"],
@@ -67,7 +68,7 @@ class ConcurrentJobExecutor:
                         callback=lambda result, p=processor, param=task["kwargs"]: self._handle_task_completion(
                             result, p, param
                         ),
-                        error_callback=lambda error, p=processor, param=task["kwargs"]: self._handle_task_completion(
+                        error_callback=lambda error, p=processor, param=task["kwargs"]: self._handle_task_failed(
                             error, p, param
                         ),
                     )
@@ -79,6 +80,8 @@ class ConcurrentJobExecutor:
                 self.logger.error(f"Unexpected error in task processor: {e}")
 
     def _handle_task_completion(self, result, processor, param):
+        self.buffer_service.write(result)
+
         self.logger.info(f"Task with parameter:{param} completed successfully by processor: {processor}")
         self._release_processor(processor)
 
