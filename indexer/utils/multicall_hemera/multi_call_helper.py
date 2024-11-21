@@ -46,7 +46,6 @@ class MultiCallHelper:
                 self.net = None
                 self.deploy_block_number = self.net.deploy_block_number
 
-    @calculate_execution_time
     def validate_and_prepare_calls(self, calls):
         grouped_data = defaultdict(list)
         cnt = 0
@@ -84,7 +83,6 @@ class MultiCallHelper:
                     for call, (output) in zip(calls, outputs):
                         call.returns = call.decode_output(bytes_to_hex_str(output["returnData"]))
 
-    @calculate_execution_time
     def execute_calls(self, calls: List[Call]) -> List[Call]:
         """Execute eth calls
         1. Validate that each call has a specified block number (required)
@@ -99,7 +97,7 @@ class MultiCallHelper:
         if len(to_execute_multi_calls) > 0:
             multicall_rpc = self.construct_multicall_rpc(to_execute_multi_calls)
             chunks = list(rebatch_by_size(multicall_rpc, to_execute_multi_calls))
-            self.logger.info(f"multicall helper after chunk, got={len(chunks)}")
+            self.logger.debug(f"multicall helper after chunk, got={len(chunks)}")
             res = self.fetch_result(chunks)
             self.decode_result(to_execute_multi_calls, res, chunks)
             for cls in to_execute_multi_calls:
@@ -107,7 +105,7 @@ class MultiCallHelper:
                     if cl.returns is None:
                         to_execute_batch_calls.append(cl)
         if len(to_execute_batch_calls) > 0:
-            self.logger.info(f"multicall helper batch call, got={len(to_execute_batch_calls)}")
+            self.logger.debug(f"multicall helper batch call, got={len(to_execute_batch_calls)}")
             self.fetch_raw_calls(to_execute_batch_calls)
         return calls
 
@@ -138,7 +136,7 @@ class MultiCallHelper:
                     self.logger.warning(f"multicall helper failed call: {call}")
 
     def construct_multicall_rpc(self, to_execute_multi_calls):
-        self.logger.info(f"Function total multicalls: {len(to_execute_multi_calls)}")
+        self.logger.debug(f"Function total multicalls: {len(to_execute_multi_calls)}")
         to_execute_multi_calls = [(calls,) for calls in to_execute_multi_calls]
         with mpire.WorkerPool(n_jobs=os.cpu_count()) as pool:
             multicall_rpcs = pool.map(self._construct_single_multicall_rpc, to_execute_multi_calls)
