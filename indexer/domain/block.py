@@ -36,7 +36,7 @@ class Block(Domain):
         transactions = [
             Transaction.from_rpc(
                 transaction,
-                block_timestamp=to_int(hexstr=block_dict["timestamp"]),
+                block_timestamp=to_int(hexstr=block_dict["timestamp"]) // 1000,
                 block_hash=block_dict["hash"],
                 block_number=to_int(hexstr=block_dict["number"]),
             )
@@ -46,7 +46,7 @@ class Block(Domain):
 
         return Block(
             number=to_int(hexstr=block_dict["number"]),
-            timestamp=to_int(hexstr=block_dict["timestamp"]),
+            timestamp=to_int(hexstr=block_dict["timestamp"]) // 1000,
             hash=block_dict["hash"],
             parent_hash=block_dict["parentHash"],
             nonce=block_dict["nonce"],

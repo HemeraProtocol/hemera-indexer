@@ -10,8 +10,11 @@ def pick_random_provider_uri(provider_uri):
 
 
 def rpc_response_batch_to_results(response):
-    for response_item in response:
-        yield rpc_response_to_result(response_item)
+    if not isinstance(response, list):
+        yield rpc_response_to_result(response)
+    else:
+        for response_item in response:
+            yield rpc_response_to_result(response_item)
 
 
 def rpc_response_to_result(response):
@@ -32,6 +35,8 @@ def rpc_response_to_result(response):
 
 def zip_rpc_response(requests, responses, index="request_id"):
     response_dict = {}
+    if not isinstance(responses, list):
+        responses = [responses]
     for response in responses:
         response_dict[response["id"]] = response
 

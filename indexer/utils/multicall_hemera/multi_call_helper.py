@@ -126,7 +126,9 @@ class MultiCallHelper:
             (batch_call_list[i : i + self.batch_size]) for i in range(0, len(batch_call_list), self.batch_size)
         ]
 
-        result = list(make_request_concurrent(self.make_request, wrapped_rpc_param_list, self.max_workers))
+        result = make_request_concurrent(self.make_request, wrapped_rpc_param_list, self.max_workers)
+        if not isinstance(result[0], list):
+            result = [result]
 
         for calls, batch_result in zip(wrapped_call_list, result):
             for call, data in zip(calls, batch_result):
