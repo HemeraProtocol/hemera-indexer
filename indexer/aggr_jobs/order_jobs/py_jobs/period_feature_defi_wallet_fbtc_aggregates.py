@@ -23,7 +23,7 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_
     PeriodFeatureHoldingBalanceUniswapV3
 from indexer.aggr_jobs.order_jobs.py_jobs.PeriodFeatureDefiWalletAggregates import PeriodFeatureDefiWalletAggregates
 from indexer.aggr_jobs.order_jobs.py_jobs.untils import get_latest_price, get_token_data_for_lendle_au_init_capital, \
-    get_eigenlayer_orms, get_pool_token_pair_data
+    get_eigenlayer_orms, get_pool_token_pair_data, get_last_block_number_before_end_date
 
 
 class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
@@ -154,6 +154,7 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
         return results
 
     def get_lendle_json(self):
+        # all tokens
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceLendle)
         filter_orm_list = [r for r in orm_list if r.token_symbol == self.token_symbol]
         self.get_token_aggr_by_protocol(filter_orm_list, self.price)
@@ -162,6 +163,7 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
         return results
 
     def get_init_capital_json(self):
+        # all tokens
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceInitCapital)
         filter_orm_list = [r for r in orm_list if r.token_symbol == self.token_symbol]
         self.get_token_aggr_by_protocol(filter_orm_list, self.price)
@@ -178,6 +180,9 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
         return result
 
     def run(self):
+        # close
+        last_block_number = get_last_block_number_before_end_date(self.chain_name, self.end_date)
+
         init_capital = {}
         lendle_json = {}
         eigenlayer_json = {}
@@ -218,13 +223,13 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
 
             protocol_holding_detail = []
 
-            address_token_balances_value = address_token_balances.get(key, '')
+            address_token_balances_value = address_token_balances.get(key)
             if address_token_balances_value:
                 wallet_holding_fbtc_balance += address_token_balances_value[0]
                 wallet_holding_fbtc_usd += address_token_balances_value[1]
 
             for protocol in protocols:
-                protocol_value = protocol.get(key, '')
+                protocol_value = protocol.get(key)
                 if protocol_value:
                     protocol_holding_detail.extend(protocol_value.get('contract_json'))
                     total_protocol_fbtc_balance += protocol_value.get('balance')
@@ -244,8 +249,8 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
                 wallet_holding_fbtc_usd=wallet_holding_fbtc_usd,
                 total_fbtc_balance=total_protocol_fbtc_balance + wallet_holding_fbtc_balance,
                 total_fbtc_usd=total_protocol_fbtc_usd + wallet_holding_fbtc_usd,
-                rank=0
-
+                rank=0,
+                block_number=last_block_number,
             )
             result_orm_list.append(record)
 

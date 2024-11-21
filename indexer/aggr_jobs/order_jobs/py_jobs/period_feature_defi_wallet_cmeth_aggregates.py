@@ -23,7 +23,7 @@ from indexer.aggr_jobs.order_jobs.py_jobs.uniswapv3_job import get_detail_df, ca
     get_uniswap_v3_orms_from_old_mantle, get_uniswap_v3_orms_from_new_mantle
 from indexer.aggr_jobs.order_jobs.py_jobs.untils import format_value_for_json, get_new_uniswap_v3_orms, \
     get_latest_price, get_token_data_for_lendle_au_init_capital, get_filter_start_date_orm, get_pool_token_pair_data, \
-    get_pool_token_pair_data_with_lp, timed_call
+    get_pool_token_pair_data_with_lp, timed_call, get_last_block_number_before_end_date
 
 import warnings
 
@@ -221,8 +221,10 @@ where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
         return orm_result
 
     def get_staked_json(self):
+        # all tokens are cmeth
         orm_list = self.get_staked_detail_orm_list()
 
+        # all tokens are cmeth
         staked_token_orm_list = self.get_staked_data_from_address_token_balance()
         orm_list.extend(staked_token_orm_list)
 
@@ -270,6 +272,7 @@ where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
         self.results.extend(results)
 
     def get_lendle_json(self):
+        # all tokens
         orm_list = get_filter_start_date_orm(PeriodFeatureHoldingBalanceLendle, self.db_service, self.start_date)
         results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
                                                             self.end_date)
@@ -280,6 +283,7 @@ where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
         return results
 
     def get_init_capital_json(self):
+        # all tokens
         orm_list = get_filter_start_date_orm(PeriodFeatureHoldingBalanceInitCapital, self.db_service, self.start_date)
         results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
                                                             self.end_date)
@@ -306,19 +310,23 @@ where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
         return results
 
     def run(self):
+        #  close
+        last_block_number = get_last_block_number_before_end_date(self.chain_name, self.end_date)
+
+        lendle_json = {}
+        init_capital_json = {}
+        uniswap_v3_json = {}
+        staked_json = {}
+        merchantmoe_json = {}
+
         if self.chain_name == 'mantle':
             staked_json = timed_call(self.get_staked_json, 'get_staked_json')
+            lendle_json = timed_call(self.get_lendle_json, 'get_lendle_json')
+
             uniswap_v3_json = timed_call(self.get_uniswapv3_token_data, 'get_uniswap_v3_json')
             merchantmoe_json = timed_call(self.get_merchantmoe_json, 'get_merchantmoe_json')
-            lendle_json = timed_call(self.get_lendle_json, 'get_lendle_json')
             init_capital_json = timed_call(self.get_init_capital_json, 'get_init_capital_json')
 
-        else:
-            lendle_json = {}
-            init_capital_json = {}
-            uniswap_v3_json = {}
-            staked_json = {}
-            merchantmoe_json = {}
         # period_date can be removed from the key
         protocols = [staked_json, merchantmoe_json, uniswap_v3_json, lendle_json, init_capital_json]
 
@@ -339,13 +347,13 @@ where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
 
             protocol_holding_detail = []
 
-            address_token_balances_value = address_token_balances.get(key, '')
+            address_token_balances_value = address_token_balances.get(key)
             if address_token_balances_value:
                 wallet_holding_cmeth_balance += address_token_balances_value[0]
                 wallet_holding_cmeth_usd += address_token_balances_value[1]
 
             for protocol in protocols:
-                protocol_value = protocol.get(key, '')
+                protocol_value = protocol.get(key)
                 if protocol_value:
                     protocol_holding_detail.extend(protocol_value.get('contract_json'))
                     total_protocol_cmeth_balance += protocol_value.get('balance')
@@ -365,8 +373,8 @@ where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
                 wallet_holding_cmeth_usd=wallet_holding_cmeth_usd,
                 total_cmeth_balance=total_protocol_cmeth_balance + wallet_holding_cmeth_balance,
                 total_cmeth_usd=total_protocol_cmeth_usd + wallet_holding_cmeth_usd,
-                rank=0
-
+                rank=0,
+                block_number=last_block_number,
             )
             result_orm_list.append(record)
         result_orm_list.sort(key=attrgetter('period_date', 'total_cmeth_balance'), reverse=True)

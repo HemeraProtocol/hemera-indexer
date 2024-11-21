@@ -25,6 +25,29 @@ def format_value_for_json(value):
         return value
 
 
+def get_block_number_sql(end_date):
+    get_block_number_sql = f"""
+    select number from blocks
+                    WHERE  timestamp < '{end_date}'
+    order by 1 desc limit 1;
+    """
+    return get_block_number_sql
+
+
+def get_last_block_number_before_end_date(chain_name ,end_date):
+    # temp solution because no blocks sync in the dev env.
+    if chain_name == 'eth':
+        Session = get_engine('ETH_POSTGRES_URL')
+    else:
+        Session = get_engine('MANTLE_POSTGRES_URL')
+    session = Session()
+    sql = get_block_number_sql(end_date)
+    result = session.execute(text(sql))
+    row = result.fetchone()
+    number = row.number
+    return number
+
+
 def get_engine(link_name):
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -187,35 +210,38 @@ def get_token_data_for_lendle_au_init_capital(orm_list, target_token_address, db
                              'protocol_id': protocol_id}
 
             for contract_address, token_group in contract_token_group.items():
-                token_data_list = []
-                for token_address, records in token_group.items():
-                    token_group_balance = 0
-                    token_group_usd = 0
+                if target_token_address in token_group.keys():
+                    token_data_list = []
+                    for token_address, records in token_group.items():
+                        token_group_balance = 0
+                        token_group_usd = 0
 
-                    for record in records:
-                        symbol = format_value_for_json(record.token_symbol)
-                        token0_used = float(price_dict.get(symbol, 0) * record.balance)
+                        for record in records:
+                            symbol = format_value_for_json(record.token_symbol)
+                            token0_used = float(price_dict.get(symbol, 0) * record.balance)
 
-                        token_group_balance += float(record.balance)
-                        token_group_usd += token0_used
+                            token_group_balance += float(record.balance)
+                            token_group_usd += token0_used
 
-                        if token_address == target_token_address:
-                            total_balance += float(record.balance)
-                            total_usd += token0_used
+                            if token_address == target_token_address:
+                                total_balance += float(record.balance)
+                                total_usd += token0_used
 
-                    token_data_list.append({
-                        "token_symbol": symbol,
-                        "token_address": token_address,
-                        "token_balance": token_group_balance,
-                        "token_balance_usd": token_group_usd})
+                        token_data_list.append({
+                            "token_symbol": symbol,
+                            "token_address": token_address,
+                            "token_balance": token_group_balance,
+                            "token_balance_usd": token_group_usd})
 
-                contract_json = {
-                    "token_data": token_data_list,
-                    "contract_address": contract_address,
-                }
+                    contract_json = {
+                        "token_data": token_data_list,
+                        "contract_address": contract_address,
+                    }
 
-                protocol_json['pool_data'].append(contract_json)
-            wallet_address_json.append(protocol_json)
+                    protocol_json['pool_data'].append(contract_json)
+
+            if protocol_json.get('pool_data'):
+                wallet_address_json.append(protocol_json)
 
             results[(period_date, wallet_address)] = {'contract_json': wallet_address_json, 'balance': total_balance,
                                                       'usd': total_usd}
@@ -305,6 +331,7 @@ def get_pool_token_pair_data(orm_list, target_token_symbol, db_service, end_date
                                                   'usd': total_usd}
     return results
 
+
 # get token pair data with lp
 def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, end_date, pool_type=''):
     distinct_symbol_list = []
@@ -359,9 +386,9 @@ def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, 
 
                 if pool_type == 'uniswapv3':
                     token_pair_data_upper = calculate_contract_token_balance(records, price_dict,
-                                                                                  'upper')
+                                                                             'upper')
                     token_pair_data_lower = calculate_contract_token_balance(records, price_dict,
-                                                                                  'lower')
+                                                                             'lower')
 
                     token_json['liquidity_data'] = {
                         'token_data_lower': token_pair_data_lower,
@@ -387,6 +414,8 @@ def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, 
 
 def bytes_to_hex_str(b: bytes) -> str:
     return "0x" + b.hex()
+
+
 def get_merchant_moe_bin_step_active_id(db_service, end_date):
     session = db_service.Session()
 
@@ -401,7 +430,7 @@ def get_merchant_moe_bin_step_active_id(db_service, end_date):
     result = session.execute(text(sql_query), {'end_date': end_date})
 
     rows = result.fetchall()
-    results = {bytes_to_hex_str(row.pool_address) : [row.bin_step, row.active_id] for row in rows}
+    results = {bytes_to_hex_str(row.pool_address): [row.bin_step, row.active_id] for row in rows}
     return results
 
 
@@ -476,10 +505,12 @@ def calculate_merchant_moe_range_data(records, bin_step_active_id):
     results = [record for record in records if lower_token_id <= record.token_id <= upper_token_id]
     return results
 
+
 def calculate_token_id(bin_step, active_id, rate):
     factor = 1 + (bin_step / 10000)
     token_id = active_id + math.log(rate) / math.log(factor)
     return token_id
+
 
 def timed_call(method, method_name):
     start_time = time.time()

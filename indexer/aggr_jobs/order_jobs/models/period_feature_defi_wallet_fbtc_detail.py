@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DATE, TIMESTAMP, Column, Computed, Index, String, func
+from sqlalchemy import DATE, TIMESTAMP, Column, Computed, Index, String, func, BIGINT
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, JSONB, NUMERIC
 
 from common.models import HemeraModel
@@ -22,6 +22,8 @@ class PeriodFeatureDefiWalletFbtcDetail(HemeraModel):
     total_protocol_fbtc_balance = Column(NUMERIC)
     total_protocol_fbtc_usd = Column(NUMERIC)
     rank = Column(INTEGER)
+    block_number = Column(BIGINT)
+
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
