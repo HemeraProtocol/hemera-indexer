@@ -10,5 +10,5 @@ eigen_layer_job:
     address: '0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a'
 
 pendle_pools_job:
-  pendle_market_factory_address: '0x6fcf753f2c67b83f7b09746bbc4fa0047b35d050'
-  pendle_deploy_helper_address: '0x4df98410c95737fd646d2413ac6cafc1c04834b9'
+  pendle_market_factory_address: '0x27b1dacd74688af24a64bd3c9c1b143118740784'
+  pendle_market_factory_v3_address: '0x6fcf753f2c67b83f7b09746bbc4fa0047b35d050'

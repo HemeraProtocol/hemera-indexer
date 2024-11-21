@@ -7,7 +7,7 @@ from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.pendle.abi.event import create_market_event
+from indexer.modules.custom.pendle.abi.event import *
 from indexer.modules.custom.pendle.abi.function import *
 from indexer.modules.custom.pendle.domains.market import PendlePoolD
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -43,6 +43,7 @@ class PendlePoolsJob(FilterTransactionDataJob):
                     TopicSpecification(
                         addresses=[
                             self.user_defined_config["pendle_market_factory_address"],
+                            self.user_defined_config["pendle_market_factory_v3_address"],
                         ],
                         topics=[create_market_event.get_signature()],
                     )
@@ -60,9 +61,12 @@ class PendlePoolsJob(FilterTransactionDataJob):
         calls = []
         pools = {}
         for log in logs:
-            if log.address != self.user_defined_config["pendle_market_factory_address"]:
+            if log.address not in [
+                self.user_defined_config["pendle_market_factory_address"],
+                self.user_defined_config["pendle_market_factory_v3_address"],
+            ]:
                 continue
-            if log.topic0 != create_market_event.get_signature():
+            if log.topic0 not in [create_market_event.get_signature(), create_market_event_v3.get_signature()]:
                 continue
             market_address = Web3.to_checksum_address("0x" + log.topic1[26:])
             pt_address = Web3.to_checksum_address("0x" + log.topic2[26:])
