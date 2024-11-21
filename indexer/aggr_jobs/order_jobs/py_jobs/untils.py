@@ -53,7 +53,7 @@ def get_eigenlayer_orms(period_date):
                                     d1.withdrawroot
                              from af_eigen_layer_records d1
                                       inner join tokens d2 on d1.token = d2.address
-                             where to_timestamp(block_timestamp)::date < '{period_date}'),
+                             where block_timestamp < '{period_date}'),
 
      deposit_detail_table as (select wallet_address, token, balance, symbol, withdrawroot
                               from filter_detail_table
