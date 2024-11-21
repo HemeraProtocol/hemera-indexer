@@ -78,7 +78,7 @@ Follow [alt-research](https://github.com/alt-research/mach-avs/blob/m2-dev/scrip
 
 ### Configuration
 
-Edit the configuration file `indexer-config-avs-holesky.yaml` in the config directory, the configuration item that must be updated is `operator_ecdsa_key_file` and `operator_bls_key_file`.
+Edit the configuration file `indexer-config-avs-holesky.yaml` in the config directory, the configuration item that must be updated is `operator_ecdsa_address` and `operator_bls_key_file`.
 
 ### RUN
 

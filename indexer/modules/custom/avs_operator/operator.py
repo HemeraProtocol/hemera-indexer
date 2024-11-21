@@ -9,7 +9,7 @@ from eth_typing import BlockNumber
 from web3 import Web3
 
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from common.utils.web3_utils import get_account_from_file
+from common.utils.web3_utils import get_account_from_file, to_checksum_address
 from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
@@ -45,10 +45,7 @@ class ValidateAndAggregate(FilterTransactionDataJob):
         self.block_dataclass = hex_str_to_bytes(Block.get_code_hash())
         self.tx_dataclass = hex_str_to_bytes(Transaction.get_code_hash())
 
-        self.operator_ecdsa_private_key = get_account_from_file(
-            self.user_defined_config["operator_ecdsa_key_file"],
-            self.user_defined_config["operator_ecdsa_password_file"],
-        )
+        self.operator_ecdsa_address = to_checksum_address(self.user_defined_config["operator_ecdsa_address"])
         self.operator_bls_private_key = get_account_from_file(
             self.user_defined_config["operator_bls_key_file"], self.user_defined_config["operator_bls_password_file"]
         )
@@ -67,15 +64,11 @@ class ValidateAndAggregate(FilterTransactionDataJob):
         self.verify_rpc_client = Web3(Web3.HTTPProvider(self.user_defined_config["verify_rpc"]))
 
     def _check_operator_is_registered(self) -> bool:
-        status = self.registry_coordinator_contract.functions.getOperatorStatus(
-            self.operator_ecdsa_private_key.address
-        ).call()
+        status = self.registry_coordinator_contract.functions.getOperatorStatus(self.operator_ecdsa_address).call()
         return status == 1
 
     def _get_operator_id(self) -> bytes:
-        operator_id = self.registry_coordinator_contract.functions.getOperatorId(
-            self.operator_ecdsa_private_key.address
-        ).call()
+        operator_id = self.registry_coordinator_contract.functions.getOperatorId(self.operator_ecdsa_address).call()
         return bytes_to_hex_str(operator_id)
 
     def get_filter(self):
