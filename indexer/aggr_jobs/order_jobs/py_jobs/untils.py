@@ -34,8 +34,8 @@ def get_block_number_sql(end_date):
     return get_block_number_sql
 
 
-def get_last_block_number_before_end_date(chain_name ,end_date):
-    # temp solution because no blocks sync in the dev env.
+def get_last_block_number_before_end_date_(chain_name, end_date):
+    # temp solution because no blocks sync in the dev env
     if chain_name == 'eth':
         Session = get_engine('ETH_POSTGRES_URL')
     else:
@@ -45,6 +45,20 @@ def get_last_block_number_before_end_date(chain_name ,end_date):
     result = session.execute(text(sql))
     row = result.fetchone()
     number = row.number
+    if chain_name == 'bsc':
+        number = None
+    return number
+
+
+def get_last_block_number_before_end_date(db_service, end_date):
+    sql = f"""select block_number from address_current_token_balances where block_timestamp < '{end_date}' 
+    order by block_number desc limit 1;
+    """
+
+    session = db_service.Session()
+    result = session.execute(text(sql))
+    row = result.fetchone()
+    number = row.block_number
     return number
 
 

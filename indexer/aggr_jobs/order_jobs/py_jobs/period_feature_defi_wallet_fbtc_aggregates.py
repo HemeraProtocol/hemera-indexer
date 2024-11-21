@@ -139,13 +139,16 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
         # exclude init_capital
         filter_orm_list = []
         for orm in orm_list:
-            orm.token_symbol = self.token_symbol
-            if orm.protocol_id != 'init_capital':
+            if self.chain_name == 'mantle':
+                if orm.protocol_id != 'init_capital':
+                    filter_orm_list.append(orm)
+            elif self.chain_name == 'bsc':
+                if orm.protocol_id != 'satlayer':
+                    filter_orm_list.append(orm)
+            else:
                 filter_orm_list.append(orm)
-        if self.chain_name == 'mantle':
-            results = self.get_token_data_old(filter_orm_list)
-        else:
-            results = self.get_token_data_old(orm_list)
+        results = self.get_token_data_old(filter_orm_list)
+
         return results
 
     def get_eigenlayer_json(self):
@@ -181,7 +184,7 @@ class PeriodFeatureDefiWalletFbtcAggregates(PeriodFeatureDefiWalletAggregates):
 
     def run(self):
         # close
-        last_block_number = get_last_block_number_before_end_date(self.chain_name, self.end_date)
+        last_block_number = get_last_block_number_before_end_date(self.db_service, self.end_date)
 
         init_capital = {}
         lendle_json = {}

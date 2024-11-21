@@ -311,7 +311,7 @@ where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
 
     def run(self):
         #  close
-        last_block_number = get_last_block_number_before_end_date(self.chain_name, self.end_date)
+        last_block_number = get_last_block_number_before_end_date(self.db_service, self.end_date)
 
         lendle_json = {}
         init_capital_json = {}
