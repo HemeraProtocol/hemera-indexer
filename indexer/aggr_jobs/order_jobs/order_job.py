@@ -11,9 +11,8 @@ from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_fbtc_aggreg
 job_list = [
     'period_address_token_balances',
     'period_feature_holding_balance_uniswap_v3.sql',
-    # 'period_feature_holding_balance_uniswap_v3_cmeth.sql',
     'period_feature_staked_fbtc_detail_records.sql',
-    'period_feature_holding_balance_staked_fbtc_detail.sql',
+    'period_feature_holding_balance_staked_fbtc_detail.sql', # maybe can be removed
     'period_feature_holding_balance_staked_transferred_fbtc_detail.sql',
     'period_feature_erc1155_token_supply_records.sql',
     'period_feature_holding_balance_merchantmoe.sql',
@@ -75,17 +74,19 @@ class AggrOrderJob(AggrBaseJob):
             execution_time = time.time() - start_time
             print(f'----------- executed in {execution_time:.2f} seconds: FBTC')
 
-            start_time = time.time()
-            period_feature_defi_wallet_cmeth_aggregates_job = PeriodFeatureDefiWalletCmethAggregates(self.chain_name,
-                                                                                                     self.db_service,
-                                                                                                     start_date,
-                                                                                                     end_date,
-                                                                                                     self.version
-                                                                                                     )
-            period_feature_defi_wallet_cmeth_aggregates_job.run()
-            execution_time = time.time() - start_time
-            print(f'----------- executed in {execution_time:.2f} seconds: CMETH')
 
-            print('======== finished date', start_date)
+            if self.chain_name == 'mantle':
+                start_time = time.time()
+                period_feature_defi_wallet_cmeth_aggregates_job = PeriodFeatureDefiWalletCmethAggregates(self.chain_name,
+                                                                                                         self.db_service,
+                                                                                                         start_date,
+                                                                                                         end_date,
+                                                                                                         self.version
+                                                                                                         )
+                period_feature_defi_wallet_cmeth_aggregates_job.run()
+                execution_time = time.time() - start_time
+                print(f'----------- executed in {execution_time:.2f} seconds: CMETH')
+
+                print('======== finished date', start_date)
 
         session.close()
