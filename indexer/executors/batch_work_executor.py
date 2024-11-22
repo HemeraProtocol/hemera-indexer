@@ -48,7 +48,7 @@ class BatchWorkExecutor:
         self.progress_logger = ProgressLogger(name=job_name, logger=self.logger)
 
     def execute(self, work_iterable, work_handler, total_items=None, split_method=None):
-        self.progress_logger.start(total_items=total_items)
+        # self.progress_logger.start(total_items=total_items)
         submit_batches = (
             dynamic_batch_iterator(work_iterable, lambda: self.batch_size)
             if split_method is None
@@ -80,7 +80,7 @@ class BatchWorkExecutor:
                     retry_exceptions=self.retry_exceptions,
                 )
 
-        self.progress_logger.track(len(batch))
+        # self.progress_logger.track(len(batch))
 
     # Some acceptable race conditions are possible
     def _try_decrease_batch_size(self, current_batch_size):
@@ -110,7 +110,7 @@ class BatchWorkExecutor:
         if len(self._futures) != 0:
             raise FastShutdownError("Futures failed to complete successfully.")
 
-        self.progress_logger.finish()
+        # self.progress_logger.finish()
 
     def shutdown(self):
         self.executor.shutdown(wait=10)
@@ -118,7 +118,7 @@ class BatchWorkExecutor:
         if len(self._futures) != 0:
             raise FastShutdownError("Futures failed to complete successfully.")
 
-        self.progress_logger.finish()
+        # self.progress_logger.finish()
 
     def _check_completed_futures(self):
         """Fail safe in this case means fail fast. TODO: Add retry logic"""

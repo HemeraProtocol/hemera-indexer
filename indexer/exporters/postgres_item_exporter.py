@@ -33,14 +33,14 @@ class PostgresItemExporter(BaseExporter):
             desc = f"{job_name}(PG)"
         else:
             desc = "Exporting items"
-        self.main_progress = TqdmExtraFormat(
-            total=len(items),
-            desc=desc.ljust(35),
-            unit="items",
-            position=0,
-            ncols=90,
-            bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] Est: {total_time}",
-        )
+        # self.main_progress = TqdmExtraFormat(
+        #     total=len(items),
+        #     desc=desc.ljust(35),
+        #     unit="items",
+        #     position=0,
+        #     ncols=90,
+        #     bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] Est: {total_time}",
+        # )
 
         conn = self.service.get_connection()
         try:
@@ -60,15 +60,15 @@ class PostgresItemExporter(BaseExporter):
                     converter = pg_config["converter"]
 
                     # Initialize sub-progress bar for current table
-                    self.sub_progress = TqdmExtraFormat(
-                        total=len(item_group),
-                        desc=f"Processing {table.__tablename__}".ljust(35),
-                        unit="items",
-                        position=1,
-                        leave=False,
-                        ncols=90,
-                        bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
-                    )
+                    # self.sub_progress = TqdmExtraFormat(
+                    #     total=len(item_group),
+                    #     desc=f"Processing {table.__tablename__}".ljust(35),
+                    #     unit="items",
+                    #     position=1,
+                    #     leave=False,
+                    #     ncols=90,
+                    #     bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+                    # )
 
                     cur = conn.cursor()
                     data = []
@@ -77,8 +77,8 @@ class PostgresItemExporter(BaseExporter):
                     for item in item_group:
                         converted_item = converter(table, item, do_update)
                         data.append(converted_item)
-                        self.sub_progress.update(1)
-                        self.main_progress.update(1)
+                        # self.sub_progress.update(1)
+                        # self.main_progress.update(1)
 
                     if data:
                         columns = list(data[0].keys())
@@ -93,7 +93,7 @@ class PostgresItemExporter(BaseExporter):
                             conn.commit()
 
                     tables.append(table.__tablename__)
-                    self.sub_progress.close()
+                    # self.sub_progress.close()
 
         except Exception as e:
             logger.error(f"Error exporting items: {e}")
@@ -101,10 +101,10 @@ class PostgresItemExporter(BaseExporter):
             raise e
         finally:
             self.service.release_connection(conn)
-            if self.main_progress:
-                self.main_progress.close()
-            if self.sub_progress:
-                self.sub_progress.close()
+            # if self.main_progress:
+            #     self.main_progress.close()
+            # if self.sub_progress:
+            #     self.sub_progress.close()
 
         end_time = datetime.now(tzlocal())
 
