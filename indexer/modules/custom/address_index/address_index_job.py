@@ -377,8 +377,7 @@ class AddressIndexerJob(ExtensionJob):
     def _collect(self, **kwargs):
         # Get all token transfers
         if not (
-            set(self._required_output_types)
-            & set(list[TokenAddressNftInventory, AddressTokenHolder, AddressNft1155Holder])
+            set(self._required_output_types) & set([TokenAddressNftInventory, AddressTokenHolder, AddressNft1155Holder])
         ):
             return
 
@@ -404,9 +403,7 @@ class AddressIndexerJob(ExtensionJob):
 
     def _process(self, **kwargs):
         # Sort address holder
-        if set(self._required_output_types) & set(
-            list[TokenAddressNftInventory, AddressTokenHolder, AddressNft1155Holder]
-        ):
+        if set(self._required_output_types) & set([TokenAddressNftInventory, AddressTokenHolder, AddressNft1155Holder]):
             self._data_buff[AddressTokenHolder.type()] = distinct_collections_by_group(
                 [
                     AddressTokenHolder(
