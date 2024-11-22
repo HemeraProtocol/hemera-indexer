@@ -74,14 +74,14 @@ class PGSyncRecorder(BaseRecorder):
         update_time = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
         try:
             conflict_args = {
-                'index_elements': [SyncRecord.mission_sign],
-                'set_': {
+                "index_elements": [SyncRecord.mission_sign],
+                "set_": {
                     "last_block_number": last_synced_block,
                     "update_time": update_time,
                 },
             }
             if multiprocess:
-                conflict_args['where'] = (SyncRecord.last_block_number <= last_synced_block)
+                conflict_args["where"] = SyncRecord.last_block_number <= last_synced_block
 
             statement = (
                 insert(SyncRecord)
