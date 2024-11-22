@@ -4,8 +4,8 @@ from sqlalchemy.dialects.postgresql import BIGINT, JSON, TIMESTAMP, VARCHAR
 from common.models import HemeraModel
 
 
-class FailuresRecords(HemeraModel):
-    __tablename__ = "failures_records"
+class FailureRecords(HemeraModel):
+    __tablename__ = "failure_records"
     record_id = Column(BIGINT, primary_key=True, autoincrement=True)
     mission_sign = Column(VARCHAR)
     output_types = Column(VARCHAR)

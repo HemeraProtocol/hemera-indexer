@@ -9,7 +9,7 @@ from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.executors.concurrent_job_executor import ConcurrentJobExecutor
 from indexer.jobs.base_job import BaseJob
-from indexer.utils.BufferService import BufferService
+from indexer.utils.buffer_service import BufferService
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
@@ -17,10 +17,6 @@ from indexer.utils.sync_recorder import BaseRecorder
 # exception_recorder = ExceptionRecorder()
 
 logger = logging.getLogger(__name__)
-
-M_JOBS: int = int(os.environ.get("M_JOBS", 4))
-M_TIMEOUT: int = int(os.environ.get("M_TIMEOUT", 100))
-M_SIZE: int = int(os.environ.get("M_SIZE", 100))
 
 
 class StreamController(BaseController):
@@ -65,13 +61,13 @@ class StreamController(BaseController):
         self.delay = delay
 
     def handle_success(self, last_block_number):
-        self.sync_recorder.set_last_synced_block(last_block_number)
+        self.sync_recorder.set_last_synced_block(last_block_number, multiprocess=self.job_executor is not None)
         logger.info("Writing last synced block {}".format(last_block_number))
 
     def handle_failure(
         self, output_types: List[str], start_block: int, end_block: int, exception_stage: str, exception: str
     ):
-        self.sync_recorder.set_failures_record(output_types, start_block, end_block, exception_stage, exception)
+        self.sync_recorder.set_failure_record(output_types, start_block, end_block, exception_stage, exception)
 
     def action(
         self,
@@ -144,6 +140,9 @@ class StreamController(BaseController):
                 if synced_blocks <= 0:
                     logger.debug("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
                     time.sleep(period_seconds)
+        except Exception as e:
+            self.shutdown()
+            raise e
 
         finally:
             if pid_file is not None:
@@ -151,7 +150,8 @@ class StreamController(BaseController):
                 delete_file(pid_file)
 
     def shutdown(self):
-        self.job_executor.shutdown()
+        if self.job_executor:
+            self.job_executor.shutdown()
         self.buffer_service.shutdown()
 
     def split_blocks(self, start_block, end_block, step):

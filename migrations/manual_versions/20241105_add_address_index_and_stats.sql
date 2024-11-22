@@ -1,6 +1,6 @@
 BEGIN;
 
--- Running upgrade bc23aa19668e -> 872094559593
+-- Running upgrade bc23aa19668e -> 3bd2e3099bae
 
 CREATE TABLE IF NOT EXISTS address_contract_operations (
     address BYTEA NOT NULL,
@@ -287,6 +287,6 @@ DROP TABLE IF EXISTS daily_transactions_aggregates;
 
 DROP TABLE IF EXISTS statistics_wallet_addresses;
 
-UPDATE alembic_version SET version_num='872094559593' WHERE alembic_version.version_num = 'bc23aa19668e';
+UPDATE alembic_version SET version_num='3bd2e3099bae' WHERE alembic_version.version_num = 'bc23aa19668e';
 
 COMMIT;

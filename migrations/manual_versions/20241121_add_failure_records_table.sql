@@ -2,7 +2,7 @@ BEGIN;
 
 -- Running upgrade 3bd2e3099bae -> f846e3abeb18
 
-CREATE TABLE IF NOT EXISTS failures_records (
+CREATE TABLE IF NOT EXISTS failure_records (
     record_id BIGSERIAL NOT NULL,
     mission_sign VARCHAR,
     output_types VARCHAR,
