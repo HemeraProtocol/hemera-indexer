@@ -51,8 +51,12 @@ def get_last_block_number_before_end_date_(chain_name, end_date):
 
 
 def get_last_block_number_before_end_date(db_service, end_date):
-    sql = f"""select block_number from address_current_token_balances where block_timestamp < '{end_date}' 
-    order by block_number desc limit 1;
+    sql = f"""select block_number
+from address_token_balances
+where block_timestamp < '{end_date}'
+  and block_timestamp > (date('{end_date}') - INTERVAL '1 day')
+order by block_number desc
+limit 1;
     """
 
     session = db_service.Session()
@@ -399,15 +403,9 @@ def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, 
                     'contract_address': format_value_for_json(contract_address)}
 
                 if pool_type == 'uniswapv3':
-                    token_pair_data_upper = calculate_contract_token_balance(records, price_dict,
-                                                                             'upper')
-                    token_pair_data_lower = calculate_contract_token_balance(records, price_dict,
-                                                                             'lower')
-
-                    token_json['liquidity_data'] = {
-                        'token_data_lower': token_pair_data_lower,
-                        'token_data_upper': token_pair_data_upper,
-                    }
+                    liquidity_data = concat_liquidity_token_data(records, price_dict)
+                    token_json['liquidity_data'] = liquidity_data
+                    pass
                 elif pool_type == 'merchantmoe':
                     bin_step_active_id = merchant_moe_bin_step_active_id_records.get(contract_address)
 
@@ -532,3 +530,38 @@ def timed_call(method, method_name):
     elapsed_time = time.time() - start_time
     print(f'took {elapsed_time:.2f} seconds by {method_name}')
     return result
+
+
+def get_token_data_dict(symbol, address, balance, price_dict):
+    d = {
+        "token_symbol": symbol,
+        "token_address": address,
+        "token_balance": format_value_for_json(balance),
+        "token_balance_usd": format_value_for_json(balance * price_dict.get(symbol, 0)),
+    }
+    return d
+
+
+def concat_liquidity_token_data(records, price_dict):
+    liquidity_data_list = []
+    for record in records:
+        liquidity_data = {
+            "token_id": record.token_id,
+            "token_data": [
+                get_token_data_dict(record.token0_symbol, record.token0_address, record.token0_balance, price_dict),
+                get_token_data_dict(record.token1_symbol, record.token1_address, record.token1_balance, price_dict)],
+            "token_data_lower": [
+                get_token_data_dict(record.token0_symbol, record.token0_address, record.token0_balance_lower,
+                                    price_dict),
+                get_token_data_dict(record.token1_symbol, record.token1_address, record.token1_balance_lower,
+                                    price_dict),
+            ],
+            "token_data_upper": [
+                get_token_data_dict(record.token0_symbol, record.token0_address, record.token0_balance_upper,
+                                    price_dict),
+                get_token_data_dict(record.token1_symbol, record.token1_address, record.token1_balance_upper,
+                                    price_dict)
+            ]
+        }
+        liquidity_data_list.append(liquidity_data)
+    return liquidity_data_list
