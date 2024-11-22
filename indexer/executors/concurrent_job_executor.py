@@ -35,7 +35,7 @@ class ConcurrentJobExecutor:
         self.task_queue = Queue()
 
         self.task_processor = Thread(target=self._process_tasks)
-        self.task_processor.daemon = False
+        self.task_processor.daemon = True
         self.task_processor.start()
 
         self.logger = logging.getLogger(__name__)

@@ -47,7 +47,7 @@ class BufferService:
 
         self.submit_export_pool = ThreadPoolExecutor(max_workers=export_workers)
         self._flush_thread = Thread(target=self._flush_loop)
-        self._flush_thread.daemon = False
+        self._flush_thread.daemon = True
         self._flush_thread.start()
 
         self._setup_signal_handlers()
