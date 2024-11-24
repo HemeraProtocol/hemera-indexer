@@ -77,6 +77,7 @@ class PendlePoolsJob(FilterTransactionDataJob):
                 chain_id=self._chain_id,
                 yt_address="",
                 sy_address="",
+                underlying_asset="",
             )
             calls.append(
                 Call(
@@ -94,13 +95,30 @@ class PendlePoolsJob(FilterTransactionDataJob):
                     parameters=[],
                 )
             )
+
         if len(calls) == 0:
             return
         self.multicall_helper.execute_calls(calls)
+        yield_asset_calls = []
         for call in calls:
             if "yt" in call.returns:
                 pools[call.target].yt_address = call.returns["yt"]
             if "sy" in call.returns:
                 pools[call.target].sy_address = call.returns["sy"]
+                yield_asset_calls.append(
+                    Call(
+                        target=pools[call.target].sy_address,
+                        function_abi=yield_token_function,
+                        block_number=call.block_number,
+                        parameters=[],
+                    )
+                )
+
+        self.multicall_helper.execute_calls(yield_asset_calls)
+        sy_to_yield = {}
+        for call in yield_asset_calls:
+            sy_to_yield[call.target.lower()] = call.returns["yield_token"]
+
         for pool in pools.values():
+            pool.underlying_asset = sy_to_yield[pool.sy_address.lower()]
             self._collect_domain(pool)

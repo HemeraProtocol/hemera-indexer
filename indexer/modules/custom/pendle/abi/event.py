@@ -28,3 +28,15 @@ create_market_event = Event(
         "type": "event",
     }
 )
+
+redeem_rewards_event = Event(
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "internalType": "address", "name": "user", "type": "address"},
+            {"indexed": False, "internalType": "uint256[]", "name": "amountRewardsOut", "type": "uint256[]"},
+        ],
+        "name": "RedeemRewards",
+        "type": "event",
+    }
+)
