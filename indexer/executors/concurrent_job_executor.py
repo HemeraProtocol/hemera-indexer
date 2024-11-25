@@ -82,10 +82,10 @@ class ConcurrentJobExecutor:
                 self.logger.error(f"Unexpected error in task processor: {e}")
 
     def _handle_task_completion(self, result, processor, param):
-        self.buffer_service.write(result)
-
-        self.logger.debug(f"Task with parameter:{param} completed successfully by processor: {processor}")
         self._release_processor(processor)
+        self.logger.info(f"Task with parameter:{param} completed successfully by processor: {processor}")
+
+        self.buffer_service.write(result)
 
         if self.call_back:
             param["processor"] = processor

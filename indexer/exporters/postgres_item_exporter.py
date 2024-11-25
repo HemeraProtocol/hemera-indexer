@@ -14,7 +14,7 @@ from indexer.utils.progress_logger import TqdmExtraFormat
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 1000
+COMMIT_BATCH_SIZE = 50000
 
 
 class PostgresItemExporter(BaseExporter):

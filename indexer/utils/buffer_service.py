@@ -118,7 +118,7 @@ class BufferService:
                     flush_items.extend(self.buffer[key])
 
             self.buffer.clear()
-
+        self.logger.info(f"Flush data between block range: {block_range}")
         future = self.submit_export_pool.submit(self.export_items, flush_items)
         future.add_done_callback(self._handle_export_completion)
 
