@@ -69,7 +69,7 @@ def get_address_transaction_cnt(address: str):
         db.session.query(Transactions.hash)
         .filter(
             and_(
-                (Transactions.block_timestamp >= last_timestamp.date() if last_timestamp is not None else True),
+                (Transactions.block_timestamp >= last_timestamp if last_timestamp is not None else True),
                 or_(
                     Transactions.from_address == bytes_address,
                     Transactions.to_address == bytes_address,
