@@ -168,8 +168,10 @@ class StreamController(BaseController):
 
 def run_jobs(jobs, start_block, end_block, max_retries, processor=None):
     try:
-        if processor:
+        if processor and processor != 'None':
             logger.info(f"Task in {processor} begin, run block range between {start_block} and {end_block}")
+        else:
+            logger.info(f"Task begin, run block range between {start_block} and {end_block}")
         jobs_export_data = {}
         for job in jobs:
             job_export_data = job_with_retires(

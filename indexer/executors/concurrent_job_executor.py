@@ -92,8 +92,8 @@ class ConcurrentJobExecutor:
             self.call_back(**param)
 
     def _handle_task_failed(self, error, processor, param):
-        self.logger.error(f"with parameter:{param} failed in processor:{processor} error: {error}")
         self._release_processor(processor)
+        self.logger.error(f"with parameter:{param} failed in processor:{processor} error: {error}")
 
         if self.error_callback:
             try:
