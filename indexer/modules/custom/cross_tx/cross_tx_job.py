@@ -13,7 +13,8 @@ from indexer.jobs import FilterTransactionDataJob
 
 from indexer.modules.custom import common_utils
 from indexer.modules.custom.cross_tx.domains.feature_cross_tx import (
-    L1toL2TxOnL2
+    L1toL2TxOnL2,
+    L2toL1TxOnL2
 )
 from indexer.modules.custom.cross_tx.cross_tx_abi import (
     MINT_EVENT,
@@ -51,7 +52,7 @@ CROSS_TX_ABI = [fe.get_abi() for fe in FUNCTION_EVENT_LIST]
 
 class CrossTXJob(FilterTransactionDataJob):
     dependency_types = [Log]
-    output_types = [L1toL2TxOnL2]
+    output_types = [L1toL2TxOnL2, L2toL1TxOnL2]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -77,7 +78,8 @@ class CrossTXJob(FilterTransactionDataJob):
             [
                 TopicSpecification(
                     topics=[
-                        MESSAGEPROCESSED_EVENT.get_signature()
+                        MESSAGEPROCESSED_EVENT.get_signature(),
+                        MESSAGESENT_EVENT.get_signature()
                     # todo: filter the cross tx
                     ]
                 ),
@@ -90,6 +92,7 @@ class CrossTXJob(FilterTransactionDataJob):
         transactions = list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
         result = []
         l1tol2 = []
+        l2tol1 = []
         for tnx in transactions:
             token_address = ""
             token_id = "ETH"
@@ -100,6 +103,14 @@ class CrossTXJob(FilterTransactionDataJob):
                     token_address = data_0['token']
                     token_id = get_token(self._web3, self._abi_list, token_address)
                     amount = data_0['amount']
+                    
+                if log.topic0 == TOKENSENT_EVENT.get_signature():
+                    data_0 = TOKENSENT_EVENT.decode_log(log)
+                    token_address = data_0['token']
+                    token_id = get_token(self._web3, self._abi_list, token_address)
+                    amount = data_0['amount']
+            
+            for log in tnx.receipt.logs:
                 if log.topic0 == MESSAGEPROCESSED_EVENT.get_signature():
                     data_0 = MESSAGEPROCESSED_EVENT.decode_log(log)
                     if amount == 0:
@@ -116,14 +127,34 @@ class CrossTXJob(FilterTransactionDataJob):
                                       block_number=tnx.block_number, 
                                       block_timestamp=tnx.block_timestamp)
                     l1tol2.append(dt)
+                
+                if log.topic0 == MESSAGESENT_EVENT.get_signature():
+                    data_0 = MESSAGESENT_EVENT.decode_log(log)
+                    if amount == 0:
+                        amount = data_0['message']['value']
+                    dt = L2toL1TxOnL2(transaction_hash=tnx.hash,
+                                      fee=data_0['message']['fee'],
+                                      src_chain_id=data_0['message']['srcChainId'],
+                                      dest_chain_id=data_0['message']['destChainId'],
+                                      src_owner=data_0['message']['srcOwner'],
+                                      dest_owner=data_0['message']['destOwner'],
+                                      token_id=token_id,
+                                      token_address=token_address,
+                                      amount = amount,
+                                      block_number=tnx.block_number, 
+                                      block_timestamp=tnx.block_timestamp)
+                    l2tol1.append(dt)
         # todo: l1tol2
         result += l1tol2
+        result += l2tol1
         for data in result:
             #print(data.type(), data)
             self._collect_item(data.type(), data)
             
     def _process(self, **kwargs):
         self._data_buff[L1toL2TxOnL2.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[L2toL1TxOnL2.type()].sort(key=lambda x: x.block_number)
+                
 
         
 def get_token(web3, abi_list, token_address) :
