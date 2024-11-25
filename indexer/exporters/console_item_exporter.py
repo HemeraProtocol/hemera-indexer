@@ -14,6 +14,8 @@ M_LOCK_TIME: int = int(os.environ.get("M_LOCK_TIME", 20))
 class ConsoleItemExporter(BaseExporter):
 
     def export_items(self, items, **kwargs):
+        print(f"Items exported: {len(items)}")
+        return
         for item in items:
             self.export_item(item, **kwargs)
 

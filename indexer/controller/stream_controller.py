@@ -168,6 +168,8 @@ class StreamController(BaseController):
 
 def run_jobs(jobs, start_block, end_block, max_retries, processor=None):
     try:
+        if processor:
+            logger.info(f"Task in {processor} begin, run block range between {start_block} and {end_block}")
         jobs_export_data = {}
         for job in jobs:
             job_export_data = job_with_retires(
@@ -183,6 +185,7 @@ def run_jobs(jobs, start_block, end_block, max_retries, processor=None):
 def job_with_retires(job, start_block, end_block, max_retries, processor=None):
     for retry in range(max_retries):
         try:
+            logger.info(f"Task in {processor} run {job.__class__.__name__}")
             return job.run(start_block=start_block, end_block=end_block, processor=processor)
 
         except HemeraBaseException as e:
