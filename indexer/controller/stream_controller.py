@@ -187,7 +187,10 @@ def run_jobs(jobs, start_block, end_block, max_retries, processor=None):
 def job_with_retires(job, start_block, end_block, max_retries, processor=None):
     for retry in range(max_retries):
         try:
-            logger.info(f"Task in {processor} run {job.__class__.__name__}")
+            if processor and processor != 'None':
+                logger.info(f"Task in {processor} run {job.__class__.__name__}")
+            else:
+                logger.info(f"Task run {job.__class__.__name__}")
             return job.run(start_block=start_block, end_block=end_block, processor=processor)
 
         except HemeraBaseException as e:
