@@ -5,8 +5,8 @@ from eth_typing import HexStr
 from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIEvent, ABIFunction
 
-from indexer.domain.transaction import Transaction
-from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
+from custom_jobs.deposit_to_l2.domains.token_deposit_transaction import TokenDepositTransaction
+from indexer.domains.transaction import Transaction
 from indexer.utils.abi import event_log_abi_to_topic, function_abi_to_4byte_selector_str
 
 ETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"

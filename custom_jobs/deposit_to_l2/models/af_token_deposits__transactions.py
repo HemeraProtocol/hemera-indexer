@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
+from custom_jobs.deposit_to_l2.domains.token_deposit_transaction import TokenDepositTransaction
 
 
 class AFTokenDepositsTransactions(HemeraModel):

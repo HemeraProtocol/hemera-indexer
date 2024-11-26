@@ -19,8 +19,8 @@ from common.utils.config import get_config
 from common.utils.exception_control import APIError
 from common.utils.format_utils import hex_str_to_bytes, row_to_dict
 from common.utils.web3_utils import SUPPORT_CHAINS, chain_id_name_mapping
-from indexer.modules.custom.deposit_to_l2.endpoint import token_deposit_namespace
-from indexer.modules.custom.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
+from custom_jobs.deposit_to_l2.endpoint import token_deposit_namespace
+from custom_jobs.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
 
 PAGE_SIZE = 10
 MAX_TRANSACTION = 500000
