@@ -103,7 +103,7 @@ def get_total_txn_count():
     block_date, cumulate_count = latest_record
 
     # Count transactions since the latest block date
-    cnt = Transactions.query.filter(Transactions.block_timestamp >= (block_date + timedelta(days=1))).count()
+    cnt = Transactions.query.filter(Transactions.block_timestamp >= (block_date)).count()
 
     return cnt + cumulate_count
 
