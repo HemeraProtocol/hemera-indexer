@@ -101,10 +101,10 @@ def decode_response_error(error):
 
     if code == -32000:
         if (
-            message == "execution reverted"
-            or message == "out of gas"
-            or message == "gas uint64 overflow"
-            or message == "invalid jump destination"
+            "execution reverted" in message
+            or "out of gas" in message
+            or "gas uint64 overflow" in message
+            or "invalid jump destination" in message
             or message.lower().find("stack underflow") != -1
         ):
             return None
