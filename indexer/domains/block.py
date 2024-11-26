@@ -3,8 +3,8 @@ from typing import List, Optional, Union
 
 from eth_utils import to_int, to_normalized_address
 
-from indexer.domain import Domain
-from indexer.domain.transaction import Transaction
+from indexer.domains import Domain
+from indexer.domains.transaction import Transaction
 
 
 @dataclass

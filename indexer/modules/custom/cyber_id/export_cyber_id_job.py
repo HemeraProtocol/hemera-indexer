@@ -2,8 +2,8 @@ import logging
 from itertools import groupby
 from typing import List
 
-from indexer.domain.log import Log
-from indexer.domain.transaction import Transaction
+from indexer.domains.log import Log
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.cyber_id.abi.event import AddressChangedEvent, CyberEvent, NameChangedEvent, RegisterEvent

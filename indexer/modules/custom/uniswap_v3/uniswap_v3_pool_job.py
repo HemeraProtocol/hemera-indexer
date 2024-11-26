@@ -4,8 +4,8 @@ from collections import defaultdict
 
 import eth_abi
 
-from indexer.domain.log import Log
-from indexer.domain.transaction import Transaction
+from indexer.domains.log import Log
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils

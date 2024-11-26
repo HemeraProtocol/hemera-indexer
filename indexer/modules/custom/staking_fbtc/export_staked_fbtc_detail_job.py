@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Any, Dict, List, Tuple
 
 from common.utils.abi_code_utils import decode_log
-from indexer.domain.log import Log
+from indexer.domains.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils

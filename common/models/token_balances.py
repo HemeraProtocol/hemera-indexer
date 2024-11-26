@@ -4,7 +4,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from indexer.domain.token_balance import TokenBalance
+from indexer.domains.token_balance import TokenBalance
 
 
 def token_balances_general_converter(table: Type[HemeraModel], data: TokenBalance, is_update=False):

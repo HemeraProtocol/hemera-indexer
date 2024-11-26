@@ -3,8 +3,8 @@ from typing import List, Optional
 
 from eth_utils import to_int, to_normalized_address
 
-from indexer.domain import Domain
-from indexer.domain.log import Log
+from indexer.domains import Domain
+from indexer.domains.log import Log
 
 
 @dataclass

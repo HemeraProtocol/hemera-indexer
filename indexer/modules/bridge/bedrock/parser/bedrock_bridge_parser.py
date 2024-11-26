@@ -8,7 +8,7 @@ from web3.types import ABIEvent, ABIFunction
 
 from common.utils.abi_code_utils import decode_log
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 from indexer.modules.bridge.bedrock.parser.function_parser import (
     BedrockBridgeParser,
     BedRockFunctionCallType,

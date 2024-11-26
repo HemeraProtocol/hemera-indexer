@@ -3,7 +3,7 @@ from typing import Optional
 
 from eth_utils import to_int, to_normalized_address
 
-from indexer.domain import Domain
+from indexer.domains import Domain
 
 
 @dataclass

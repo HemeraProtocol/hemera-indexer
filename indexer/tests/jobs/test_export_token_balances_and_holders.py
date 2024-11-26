@@ -1,8 +1,8 @@
 import pytest
 
 from indexer.controller.scheduler.job_scheduler import JobScheduler
-from indexer.domain.current_token_balance import CurrentTokenBalance
-from indexer.domain.token_balance import TokenBalance
+from indexer.domains.current_token_balance import CurrentTokenBalance
+from indexer.domains.token_balance import TokenBalance
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.tests import LINEA_PUBLIC_NODE_RPC_URL, MANTLE_PUBLIC_NODE_DEBUG_RPC_URL, MANTLE_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri

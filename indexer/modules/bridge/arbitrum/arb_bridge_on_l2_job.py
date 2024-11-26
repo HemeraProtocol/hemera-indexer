@@ -1,4 +1,4 @@
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.arbitrum.arb_parser import *
 from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL2, ArbitrumL2ToL1TransactionOnL2

@@ -9,8 +9,8 @@ import eth_abi
 
 from common.utils.abi_code_utils import decode_log
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.domain import dict_to_dataclass
-from indexer.domain.log import Log
+from indexer.domains import dict_to_dataclass
+from indexer.domains.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV2Info

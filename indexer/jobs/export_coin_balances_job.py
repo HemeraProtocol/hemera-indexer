@@ -7,10 +7,10 @@ from eth_utils import to_int
 
 from common.utils.exception_control import RPCNotReachable
 from enumeration.record_level import RecordLevel
-from indexer.domain.block import Block
-from indexer.domain.coin_balance import CoinBalance
-from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.domain.transaction import Transaction
+from indexer.domains.block import Block
+from indexer.domains.coin_balance import CoinBalance
+from indexer.domains.contract_internal_transaction import ContractInternalTransaction
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.exception_recorder import ExceptionRecorder

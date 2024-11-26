@@ -2,7 +2,7 @@ import pytest
 
 from common.utils.web3_utils import ZERO_ADDRESS
 from indexer.controller.scheduler.job_scheduler import JobScheduler
-from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
+from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.tests import ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL, ETHEREUM_PUBLIC_NODE_RPC_URL, LINEA_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri

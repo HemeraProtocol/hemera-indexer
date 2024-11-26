@@ -1,7 +1,7 @@
 from dataclasses import asdict, dataclass
 from typing import Dict, Optional
 
-from indexer.domain import FilterData
+from indexer.domains import FilterData
 
 
 @dataclass

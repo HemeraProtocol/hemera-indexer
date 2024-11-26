@@ -5,7 +5,7 @@ import os
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
-from indexer.domain.token_transfer import ERC20TokenTransfer
+from indexer.domains.token_transfer import ERC20TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils

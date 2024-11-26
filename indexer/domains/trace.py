@@ -3,7 +3,7 @@ from typing import List
 
 from eth_utils import to_int
 
-from indexer.domain import Domain
+from indexer.domains import Domain
 
 
 @dataclass

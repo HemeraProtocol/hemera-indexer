@@ -4,10 +4,10 @@ from itertools import groupby
 from typing import List, Union
 
 from common.utils.web3_utils import ZERO_ADDRESS
-from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.domain.token_id_infos import UpdateERC721TokenIdDetail
-from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
-from indexer.domain.transaction import Transaction
+from indexer.domains.contract_internal_transaction import ContractInternalTransaction
+from indexer.domains.token_id_infos import UpdateERC721TokenIdDetail
+from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import ExtensionJob
 from indexer.jobs.export_token_balances_job import extract_token_parameters

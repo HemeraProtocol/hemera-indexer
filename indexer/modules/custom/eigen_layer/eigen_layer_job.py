@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.eigen_layer.abi import (
     DEPOSIT_EVENT,

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
-from indexer.domain import FilterData
+from indexer.domains import FilterData
 
 
 @dataclass

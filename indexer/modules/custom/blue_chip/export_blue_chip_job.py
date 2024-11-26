@@ -2,8 +2,8 @@ import logging
 from collections import defaultdict
 
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain.block_ts_mapper import BlockTsMapper
-from indexer.domain.token_balance import TokenBalance
+from indexer.domains.block_ts_mapper import BlockTsMapper
+from indexer.domains.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordBlueChipHolders

@@ -16,11 +16,11 @@ from common.models.transactions import Transactions
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.domain import Domain, dict_to_dataclass
-from indexer.domain.block import Block
-from indexer.domain.log import Log
-from indexer.domain.receipt import Receipt
-from indexer.domain.transaction import Transaction
+from indexer.domains import Domain, dict_to_dataclass
+from indexer.domains.block import Block
+from indexer.domains.log import Log
+from indexer.domains.receipt import Receipt
+from indexer.domains.transaction import Transaction
 from indexer.jobs.base_job import BaseSourceJob
 from indexer.specification.specification import (
     AlwaysFalseSpecification,

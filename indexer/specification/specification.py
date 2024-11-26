@@ -3,7 +3,7 @@ from typing import List
 from eth_utils import to_checksum_address
 from web3 import Web3
 
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 
 
 class Specification:

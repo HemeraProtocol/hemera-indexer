@@ -6,9 +6,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import eth_abi
 from web3 import Web3
 
-from indexer.domain.block import Block
-from indexer.domain.log import Log
-from indexer.domain.token_transfer import ERC721TokenTransfer
+from indexer.domains.block import Block
+from indexer.domains.log import Log
+from indexer.domains.token_transfer import ERC721TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils

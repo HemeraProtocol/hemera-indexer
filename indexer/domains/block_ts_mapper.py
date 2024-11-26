@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Tuple
 
-from indexer.domain import Domain
+from indexer.domains import Domain
 
 
 @dataclass

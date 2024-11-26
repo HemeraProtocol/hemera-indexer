@@ -19,6 +19,7 @@ from indexer.jobs.source_job.pg_source_job import PGSourceJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 
 import_submodules("indexer.modules")
+import_submodules("custom_jobs")
 exception_recorder = ExceptionRecorder()
 
 

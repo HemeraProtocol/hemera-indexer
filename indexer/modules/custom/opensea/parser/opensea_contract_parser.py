@@ -6,7 +6,7 @@ from web3.types import ABIEvent
 
 from common.utils.abi_code_utils import decode_log
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 from indexer.utils.abi import event_log_abi_to_topic
 
 OPENSEA_EVENT_ABIS = {

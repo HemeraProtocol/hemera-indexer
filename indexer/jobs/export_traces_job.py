@@ -7,10 +7,10 @@ from eth_utils import to_int
 
 from common.utils.exception_control import HistoryUnavailableError
 from enumeration.record_level import RecordLevel
-from indexer.domain import dataclass_to_dict
-from indexer.domain.block import Block, UpdateBlockInternalCount
-from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.domain.trace import Trace
+from indexer.domains import dataclass_to_dict
+from indexer.domains.block import Block, UpdateBlockInternalCount
+from indexer.domains.contract_internal_transaction import ContractInternalTransaction
+from indexer.domains.trace import Trace
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.exception_recorder import ExceptionRecorder

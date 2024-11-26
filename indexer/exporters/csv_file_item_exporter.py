@@ -7,7 +7,7 @@ from typing import List
 from dateutil.tz import tzlocal
 
 from common.utils.file_utils import smart_open
-from indexer.domain import Domain, dataclass_to_dict
+from indexer.domains import Domain, dataclass_to_dict
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)

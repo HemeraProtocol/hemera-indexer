@@ -1,7 +1,7 @@
 import logging
 
 from common.utils.exception_control import FastShutdownError
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
     BEDROCK_EVENT_ABI_SIGNATURE_MAPPING,

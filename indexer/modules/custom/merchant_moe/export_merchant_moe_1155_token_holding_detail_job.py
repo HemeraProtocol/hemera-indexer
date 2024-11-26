@@ -4,8 +4,8 @@ from collections import defaultdict
 
 from common.utils.abi_code_utils import decode_data
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.domain.log import Log
-from indexer.domain.token_balance import TokenBalance
+from indexer.domains.log import Log
+from indexer.domains.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils

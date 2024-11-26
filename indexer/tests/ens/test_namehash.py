@@ -9,8 +9,8 @@ from dataclasses import asdict
 import pytest
 
 from indexer.controller.scheduler.job_scheduler import JobScheduler
-from indexer.domain.log import Log
-from indexer.domain.transaction import Transaction
+from indexer.domains.log import Log
+from indexer.domains.transaction import Transaction
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.modules.custom.hemera_ens import EnsConfLoader, EnsHandler
 from indexer.modules.custom.hemera_ens.ens_hash import compute_node_label, get_label, namehash

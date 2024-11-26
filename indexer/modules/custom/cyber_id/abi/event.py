@@ -2,7 +2,7 @@ from web3.types import ABIEvent
 
 from common.utils.abi_code_utils import Event
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain.log import Log
+from indexer.domains.log import Log
 from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberAddressChangedD, CyberIDRegisterD
 from indexer.modules.custom.cyber_id.utils import get_node
 

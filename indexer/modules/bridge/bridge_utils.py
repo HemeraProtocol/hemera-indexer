@@ -6,7 +6,7 @@ from rlp.sedes import big_endian_int, binary, boolean
 from web3 import Web3 as w3
 
 from common.utils.format_utils import hex_str_to_bytes
-from indexer.domain.log import Log
+from indexer.domains.log import Log
 
 
 class OpBedrockDepositTx(Serializable):

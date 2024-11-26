@@ -1,7 +1,7 @@
 import pytest
 
 from indexer.controller.scheduler.job_scheduler import JobScheduler
-from indexer.domain.token_id_infos import *
+from indexer.domains.token_id_infos import *
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.tests import CYBER_PUBLIC_NODE_RPC_URL, LINEA_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri

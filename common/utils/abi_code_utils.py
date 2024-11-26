@@ -116,7 +116,7 @@ def decode_log_ignore_indexed(
     :return: A dictionary containing the decoded log data, or raise exception if decoding fails.
     :rtype: Optional[Dict[str, Any]]
     """
-    from indexer.domain.log import Log
+    from indexer.domains.log import Log
 
     if not isinstance(log, Log):
         raise ValueError(f"log: {log} is not a Log instance")
@@ -143,7 +143,7 @@ def decode_log(
     :return: A dictionary containing the decoded log data, or None if decoding fails.
     :rtype: Optional[Dict[str, Any]]
     """
-    from indexer.domain.log import Log
+    from indexer.domains.log import Log
 
     if not isinstance(log, Log):
         raise ValueError(f"log: {log} is not a Log instance")

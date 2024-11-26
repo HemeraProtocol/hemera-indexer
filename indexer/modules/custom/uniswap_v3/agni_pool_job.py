@@ -5,8 +5,8 @@ from collections import defaultdict
 import eth_abi
 
 from common.utils.abi_code_utils import decode_log
-from indexer.domain import dict_to_dataclass
-from indexer.domain.log import Log
+from indexer.domains import dict_to_dataclass
+from indexer.domains.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom import common_utils

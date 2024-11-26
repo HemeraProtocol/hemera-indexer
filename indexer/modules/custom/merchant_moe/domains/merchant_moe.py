@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from indexer.domain import Domain, FilterData
+from indexer.domains import FilterData
 
 
 @dataclass

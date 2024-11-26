@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from eth_utils import to_int
 
-from indexer.domain import Domain
+from indexer.domains import Domain
 
 
 @dataclass

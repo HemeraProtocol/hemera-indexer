@@ -6,8 +6,8 @@ from sqlalchemy import and_
 
 from common.models.blocks import Blocks
 from common.utils.format_utils import as_dict
-from indexer.domain import dict_to_dataclass
-from indexer.domain.block import Block
+from indexer.domains import dict_to_dataclass
+from indexer.domains.block import Block
 from indexer.jobs.base_job import BaseJob
 
 logger = logging.getLogger(__name__)

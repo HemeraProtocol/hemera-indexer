@@ -1,26 +1,26 @@
 from enum import IntFlag
 from functools import reduce
 
-from indexer.domain.block import Block, UpdateBlockInternalCount
-from indexer.domain.block_ts_mapper import BlockTsMapper
-from indexer.domain.contract import Contract
-from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.domain.current_token_balance import CurrentTokenBalance
-from indexer.domain.log import Log
-from indexer.domain.token import *
-from indexer.domain.token_balance import TokenBalance
-from indexer.domain.token_id_infos import *
-from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
-from indexer.domain.trace import Trace
-from indexer.domain.transaction import Transaction
+from custom_jobs.deposit_to_l2.domains.address_token_deposit import AddressTokenDeposit
+from custom_jobs.deposit_to_l2.domains.token_deposit_transaction import TokenDepositTransaction
+from indexer.domains.block import Block, UpdateBlockInternalCount
+from indexer.domains.block_ts_mapper import BlockTsMapper
+from indexer.domains.contract import Contract
+from indexer.domains.contract_internal_transaction import ContractInternalTransaction
+from indexer.domains.current_token_balance import CurrentTokenBalance
+from indexer.domains.log import Log
+from indexer.domains.token import *
+from indexer.domains.token_balance import TokenBalance
+from indexer.domains.token_id_infos import *
+from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
+from indexer.domains.trace import Trace
+from indexer.domains.transaction import Transaction
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
 from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
 from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordBlueChipHolders
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
-from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import EigenLayerAction, EigenLayerAddressCurrent
 from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSAddressChangeD,

@@ -4,26 +4,26 @@ from collections import defaultdict
 
 import pandas
 
-from indexer.domain import dict_to_dataclass, domains_mapping
-from indexer.domain.block import Block, UpdateBlockInternalCount
-from indexer.domain.block_ts_mapper import BlockTsMapper
-from indexer.domain.coin_balance import CoinBalance
-from indexer.domain.contract import Contract
-from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.domain.current_token_balance import CurrentTokenBalance
-from indexer.domain.log import Log
-from indexer.domain.token import Token, UpdateToken
-from indexer.domain.token_balance import TokenBalance
-from indexer.domain.token_id_infos import (
+from indexer.domains import dict_to_dataclass, domains_mapping
+from indexer.domains.block import Block, UpdateBlockInternalCount
+from indexer.domains.block_ts_mapper import BlockTsMapper
+from indexer.domains.coin_balance import CoinBalance
+from indexer.domains.contract import Contract
+from indexer.domains.contract_internal_transaction import ContractInternalTransaction
+from indexer.domains.current_token_balance import CurrentTokenBalance
+from indexer.domains.log import Log
+from indexer.domains.token import Token, UpdateToken
+from indexer.domains.token_balance import TokenBalance
+from indexer.domains.token_id_infos import (
     ERC721TokenIdChange,
     ERC721TokenIdDetail,
     ERC1155TokenIdDetail,
     UpdateERC721TokenIdDetail,
     UpdateERC1155TokenIdDetail,
 )
-from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
-from indexer.domain.trace import Trace
-from indexer.domain.transaction import Transaction
+from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
+from indexer.domains.trace import Trace
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseSourceJob
 from indexer.utils.parameter_utils import extract_path_from_parameter

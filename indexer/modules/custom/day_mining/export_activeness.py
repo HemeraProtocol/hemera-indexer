@@ -2,8 +2,8 @@ from collections import defaultdict
 
 from common.models.contracts import Contracts
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain.contract import Contract
-from indexer.domain.transaction import Transaction
+from indexer.domains.contract import Contract
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import ExtensionJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordTraitsActiveness

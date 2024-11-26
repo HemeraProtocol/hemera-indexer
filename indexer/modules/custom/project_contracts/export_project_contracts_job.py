@@ -2,8 +2,8 @@ import logging
 from collections import defaultdict
 from typing import List
 
-from indexer.domain.contract_internal_transaction import ContractInternalTransaction
-from indexer.domain.transaction import Transaction
+from indexer.domains.contract_internal_transaction import ContractInternalTransaction
+from indexer.domains.transaction import Transaction
 from indexer.jobs.base_job import ExtensionJob
 from indexer.modules.custom.project_contracts.domain.project_contract_domain import ProjectContractD
 from indexer.modules.custom.project_contracts.models.project_contract import AfProjectContracts

@@ -1,6 +1,6 @@
 import logging
 
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.domain.morph import MorphDepositedTransactionOnL1, MorphWithdrawalTransactionOnL1
 from indexer.modules.bridge.morphl2.abi.event import QueueTransactionEvent, RelayedMessageEvent

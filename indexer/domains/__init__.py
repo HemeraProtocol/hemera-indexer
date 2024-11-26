@@ -5,9 +5,10 @@ from common.utils.format_utils import to_snake_case
 from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 
 model_path_patterns = [
-    "indexer/domain",
+    "indexer/domains",
     "indexer/modules/*/domain",
     "indexer/modules/custom/*/domain",
+    "custom_jobs/*/domains",
 ]
 
 

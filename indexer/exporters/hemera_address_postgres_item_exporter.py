@@ -8,7 +8,7 @@ from psycopg2.extras import execute_values
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
 from common.services.hemera_postgresql_service import HemeraPostgreSQLService
-from indexer.domain.token import Token
+from indexer.domains.token import Token
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation

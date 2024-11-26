@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from web3 import Web3
 
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import RelayedMessageTransaction
 from indexer.modules.bridge.bridge_utils import get_version_and_index_from_nonce
 from indexer.modules.bridge.morphl2.abi.event import QueueTransactionEvent, RelayedMessageEvent, SentMessageEvent

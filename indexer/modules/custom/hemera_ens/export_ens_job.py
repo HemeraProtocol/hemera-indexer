@@ -10,8 +10,8 @@ from dataclasses import asdict, fields, is_dataclass
 from typing import Any, Dict, List
 
 from common.utils.exception_control import FastShutdownError
-from indexer.domain.log import Log
-from indexer.domain.transaction import Transaction
+from indexer.domains.log import Log
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler

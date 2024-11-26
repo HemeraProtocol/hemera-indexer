@@ -1,6 +1,6 @@
 import logging
 
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.bridge.arbitrum.arb_parser import *
 from indexer.modules.bridge.arbitrum.arb_rlp import calculate_deposit_tx_id, calculate_submit_retryable_id

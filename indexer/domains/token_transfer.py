@@ -5,8 +5,8 @@ from typing import List, Optional, Union
 
 from common.utils.web3_utils import ZERO_ADDRESS
 from enumeration.token_type import TokenType
-from indexer.domain import Domain
-from indexer.domain.log import Log
+from indexer.domains import Domain
+from indexer.domains.log import Log
 from indexer.utils.abi_setting import (
     ERC20_TRANSFER_EVENT,
     ERC1155_BATCH_TRANSFER_EVENT,

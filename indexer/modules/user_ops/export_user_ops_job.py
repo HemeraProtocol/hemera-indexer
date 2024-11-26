@@ -6,8 +6,8 @@ from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.types import ABIEvent, ABIFunction
 
 from common.utils.abi_code_utils import decode_log
-from indexer.domain.log import Log
-from indexer.domain.transaction import Transaction
+from indexer.domains.log import Log
+from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs

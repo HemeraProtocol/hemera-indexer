@@ -5,7 +5,7 @@ from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BOOLEAN, BYTEA, INTEGE
 
 from common.models import HemeraModel, general_converter
 from common.utils.format_utils import hex_str_to_bytes
-from indexer.domain.transaction import Transaction
+from indexer.domains.transaction import Transaction
 
 
 class Transactions(HemeraModel):
