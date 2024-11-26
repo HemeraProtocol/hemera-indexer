@@ -49,11 +49,11 @@ class AggrOrderJob(AggrBaseJob):
         self.job_list = self.get_period_jobs_from_jobs_dict(jobs_dict)
 
         fbtc = jobs_dict.get('FBTC', {})
-        self.fbtc_jobs = fbtc.get('py_jobs')
+        self.fbtc_jobs = fbtc.get('py_jobs', [])
         self.fbtc_generator_wallet_table = fbtc.get('generator_wallet_table', False)
 
         cmeth = jobs_dict.get('cmETH', {})
-        self.cmeth_jobs = cmeth.get('py_jobs')
+        self.cmeth_jobs = cmeth.get('py_jobs', [])
         self.cmeth_generator_wallet_table = cmeth.get('generator_wallet_table', False)
         pass
 
