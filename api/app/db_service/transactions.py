@@ -71,7 +71,7 @@ def get_address_transaction_cnt_v2(address: str):
         .filter(
             and_(
                 (AddressTransactions.block_timestamp >= last_timestamp if last_timestamp is not None else True),
-                or_(AddressTransactions.address == bytes_address),
+                AddressTransactions.address == bytes_address,
             )
         )
         .count()
