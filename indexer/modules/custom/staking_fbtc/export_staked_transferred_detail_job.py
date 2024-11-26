@@ -46,7 +46,11 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
         try:
             transferred_protocol_dict_str = config.get(str(chain_id), "TRANSFERRED_CONTRACTS_DICT")
             self._transferred_protocol_dict = ast.literal_eval(transferred_protocol_dict_str)
-            self._staked_address_list = config.get(str(chain_id), "STAKED_BTC_ADDRESS").split(',')  # remember to remove the last one
+            # add woofi
+            self._transferred_protocol_dict.update({'0x82fde5086784e348aed03eb7b19ded97652db7a8': 'woofi'})
+
+            self._staked_address_list = config.get(str(chain_id), "STAKED_BTC_ADDRESS").split(
+                ',')  # remember to remove the last one
 
             self._fbtc_address = config.get(str(chain_id), "FBTC_ADDRESS")
             self._cmeth_address = config.get(str(chain_id), "CMETH_ADDRESS")
@@ -55,8 +59,12 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
             raise ValueError(f"Missing required configuration in {filename}: {str(e)}")
 
     def get_filter(self):
-        filer_address_list = list(set(self._staked_address_list + [self._fbtc_address, self._cmeth_address]))
+        # add woofi
+        wecmeth_address = '0x872b6ff825da431c941d12630754036278ad7049'
+        # filer_address = [wecmeth_address]
 
+        filer_address = self._staked_address_list + [self._fbtc_address, self._cmeth_address, wecmeth_address]
+        filer_address_list = list(set(filer_address))
         return TransactionFilterByLogs(
             [
                 TopicSpecification(addresses=filer_address_list),
