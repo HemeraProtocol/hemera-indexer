@@ -6,6 +6,7 @@ from datetime import datetime
 from web3 import Web3
 
 from common.converter.pg_converter import domain_model_mapping
+from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import to_snake_case
 from indexer.domain import Domain
@@ -68,7 +69,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def __init__(self, **kwargs):
 
-        self._multiprocess = kwargs["multiprocess"]
+        self._multiprocess = kwargs.get("multiprocess", False)
         self._required_output_types = kwargs["required_output_types"]
         self._web3_provider_uri = kwargs["web3_provider_uri"]
         self._web3_debug_provider_uri = kwargs["web3_debug_provider_uri"]
@@ -82,7 +83,7 @@ class BaseJob(metaclass=BaseJobMeta):
 
         self._should_reorg = False
         self._should_reorg_type = set()
-        self._service = kwargs["config"].get("db_service", None)
+        self._service_url = kwargs["config"].get("db_service", None)
 
         job_name_snake = to_snake_case(self.job_name)
         self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
@@ -143,18 +144,19 @@ class BaseJob(metaclass=BaseJobMeta):
             self._data_buff[dataclass.type()].clear()
 
     def _pre_reorg(self, **kwargs):
-        if self._service is None:
+        if self._service_url is None:
             raise FastShutdownError("PG Service is not set")
 
+        service = PostgreSQLService(self._service_url)
         reorg_block = int(kwargs["start_block"])
 
         output_table = {}
         for domain in self.output_types:
-            output_table[domain_model_mapping[domain.__name__]["table"]] = domain.type()
+            output_table[domain_model_mapping[domain]["table"]] = domain.type()
             # output_table.add(domain_model_mapping[domain.__name__]["table"])
 
         for table in output_table.keys():
-            if should_reorg(reorg_block, table, self._service):
+            if should_reorg(reorg_block, table, service):
                 self._should_reorg_type.add(output_table[table])
                 self._should_reorg = True
 

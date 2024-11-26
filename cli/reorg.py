@@ -11,6 +11,7 @@ from indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.logging_utils import configure_logging, configure_signals
 from indexer.utils.provider import get_provider_from_uri
+from indexer.utils.reorg import check_reorg
 from indexer.utils.rpc_utils import pick_random_provider_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
@@ -47,18 +48,6 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
     help="The required postgres connection url." "e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum",
 )
 @click.option(
-    "-v",
-    "--db-version",
-    default="head",
-    show_default=True,
-    type=str,
-    envvar="DB_VERSION",
-    help="The database version to initialize the database. using the alembic script's revision ID to "
-    "specify a version."
-    " e.g. head, indicates the latest version."
-    "or base, indicates the empty database without any table.",
-)
-@click.option(
     "-b",
     "--batch-size",
     default=10,
@@ -77,6 +66,7 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
 )
 @click.option(
     "--block-number",
+    default=None,
     show_default=True,
     type=int,
     envvar="BLOCK_NUMBER",
@@ -85,11 +75,19 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
 @click.option(
     "-r",
     "--ranges",
-    default=1000,
+    default=10,
     show_default=True,
     type=int,
     envvar="RANGES",
     help="Specify the range limit for data fixing.",
+)
+@click.option(
+    "--check-ranges",
+    default=None,
+    show_default=True,
+    type=int,
+    envvar="CHECK_RANGES",
+    help="Specify the range for block continuous checking.",
 )
 @click.option(
     "--log-file",
@@ -110,14 +108,6 @@ from indexer.utils.thread_local_proxy import ThreadLocalProxy
 )
 @click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE", help="Cache")
 @click.option(
-    "--auto-upgrade-db",
-    default=True,
-    show_default=True,
-    type=bool,
-    envvar="AUTO_UPGRADE_DB",
-    help="Whether to automatically run database migration scripts to update the database to the latest version.",
-)
-@click.option(
     "--log-level",
     default="INFO",
     show_default=True,
@@ -131,14 +121,13 @@ def reorg(
     postgres_url,
     block_number,
     ranges,
+    check_ranges,
     batch_size,
     debug_batch_size,
-    db_version="head",
     multicall=True,
     log_file=None,
     cache=None,
     config_file=None,
-    auto_upgrade_db=True,
     log_level="INFO",
 ):
     configure_logging(log_level=log_level, log_file=log_file)
@@ -151,8 +140,8 @@ def reorg(
 
     # build postgresql service
     if postgres_url:
-        service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
-        config = {"db_service": service}
+        service = PostgreSQLService(postgres_url)
+        config = {"db_service": postgres_url}
         # exception_recorder.init_pg_service(service)
     else:
         logging.error("No postgres url provided. Exception recorder will not be useful.")
@@ -177,11 +166,9 @@ def reorg(
     output_types = list(generate_output_types(entity_types))
 
     job_scheduler = ReorgScheduler(
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporters=PostgresItemExporter(
-            postgres_url=postgres_url, db_version=db_version, init_schema=auto_upgrade_db
-        ),
+        web3_provider_uri=provider_uri,
+        web3_debug_provider_uri=debug_provider_uri,
+        item_exporters=PostgresItemExporter(service_url=postgres_url),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         required_output_types=output_types,
@@ -194,23 +181,29 @@ def reorg(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_scheduler=job_scheduler,
         ranges=ranges,
-        config=config,
+        service=service,
     )
 
-    job = None
-    while True:
-        if job:
-            controller.action(
-                job_id=job.job_id,
-                block_number=job.last_fixed_block_number - 1,
-                remains=job.remain_process,
-            )
-        else:
-            controller.action(block_number=block_number)
+    current_block = controller.get_current_block_number()
+    if check_ranges:
+        check_begin = current_block - check_ranges
+        check_reorg(service, check_begin)
+    else:
+        check_reorg(service)
 
-        job = controller.wake_up_next_job()
-        if job:
-            logging.info(f"Waking up uncompleted job: {job.job_id}.")
+    while True:
+        if block_number:
+            controller.action(block_number=block_number)
         else:
-            logging.info("No more uncompleted jobs to wake-up, reorg process will terminate.")
-            break
+            job = controller.wake_up_next_job()
+            if job:
+                logging.info(f"Waking up uncompleted job: {job.job_id}.")
+
+                controller.action(
+                    job_id=job.job_id,
+                    block_number=job.last_fixed_block_number - 1,
+                    remains=job.remain_process,
+                )
+            else:
+                logging.info("No more uncompleted jobs to wake-up, reorg process will terminate.")
+                break

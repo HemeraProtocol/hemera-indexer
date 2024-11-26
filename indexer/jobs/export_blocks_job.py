@@ -2,6 +2,7 @@ import logging
 
 import orjson
 
+from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
 from indexer.domain.block_ts_mapper import BlockTsMapper
@@ -55,11 +56,12 @@ class ExportBlocksJob(BaseExportJob):
             )
 
     def _pre_reorg(self, **kwargs):
-        if self._service is None:
+        if self._service_url is None:
             raise FastShutdownError("PG Service is not set")
 
+        service = PostgreSQLService(self._service_url)
         reorg_block = int(kwargs["start_block"])
-        set_reorg_sign(self._reorg_jobs, reorg_block, self._service)
+        set_reorg_sign(self._reorg_jobs, reorg_block, service)
         self._should_reorg_type.add(Block.type())
         self._should_reorg = True
 

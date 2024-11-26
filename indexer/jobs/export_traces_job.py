@@ -15,7 +15,9 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.json_rpc_requests import generate_trace_block_by_number_json_rpc
+from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
+from indexer.utils.thread_local_proxy import ThreadLocalProxy
 
 logger = logging.getLogger(__name__)
 exception_recorder = ExceptionRecorder()
@@ -26,17 +28,35 @@ class ExportTracesJob(BaseExportJob):
     dependency_types = [Block]
     output_types = [Trace, ContractInternalTransaction, UpdateBlockInternalCount]
     able_to_reorg = True
+    able_to_multi_process = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._batch_web3_provider = kwargs["batch_web3_debug_provider"]
-        self._batch_work_executor = BatchWorkExecutor(
-            kwargs["debug_batch_size"],
-            kwargs["max_workers"],
-            job_name=self.__class__.__name__,
-        )
-        self._is_batch = kwargs["debug_batch_size"] > 1
+        if not self._multiprocess:
+            self._batch_work_provider = ThreadLocalProxy(
+                lambda: get_provider_from_uri(self._web3_debug_provider_uri, batch=True)
+            )
+
+            self._batch_work_executor = BatchWorkExecutor(
+                self._batch_size,
+                self._max_workers,
+                job_name=self.logger_name,
+            )
+
+    def _start(self, **kwargs):
+        super()._start(**kwargs)
+
+        if self._multiprocess:
+            self._batch_work_provider = ThreadLocalProxy(
+                lambda: get_provider_from_uri(self._web3_debug_provider_uri, batch=True)
+            )
+
+            self._batch_work_executor = BatchWorkExecutor(
+                self._batch_size,
+                self._max_workers,
+                job_name=self.logger_name,
+            )
 
     def _collect(self, **kwargs):
         self._batch_work_executor.execute(
