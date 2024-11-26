@@ -168,7 +168,7 @@ class StreamController(BaseController):
 
 def run_jobs(jobs, start_block, end_block, max_retries, processor=None):
     try:
-        if processor and processor != 'None':
+        if processor and processor != "None":
             logger.info(f"Task in {processor} begin, run block range between {start_block} and {end_block}")
         else:
             logger.info(f"Task begin, run block range between {start_block} and {end_block}")
@@ -187,7 +187,7 @@ def run_jobs(jobs, start_block, end_block, max_retries, processor=None):
 def job_with_retires(job, start_block, end_block, max_retries, processor=None):
     for retry in range(max_retries):
         try:
-            if processor and processor != 'None':
+            if processor and processor != "None":
                 logger.info(f"Task in {processor} run {job.__class__.__name__}")
             else:
                 logger.info(f"Task run {job.__class__.__name__}")
