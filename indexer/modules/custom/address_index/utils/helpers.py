@@ -702,6 +702,7 @@ def get_address_transactions(address: str, columns="*", limit=25, offset=0):
         .filter(
             AddressTransactions.address == bytes_address,
         )
+        .order_by(AddressTransactions.block_timestamp.desc())
         .limit(limit)
         .offset(offset)
         .all()
@@ -720,6 +721,7 @@ def format_address_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
     transaction_fee = transaction["transaction_fee"]
 
     transaction_json["transaction_fee"] = "{0:.15f}".format(transaction_fee / 10**18).rstrip("0").rstrip(".")
+    transaction_json["total_transaction_fee"] = transaction_json["transaction_fee"]
 
     return transaction_json
 
@@ -738,6 +740,7 @@ def parse_address_transactions(transactions: list[AddressTransactions]):
         bytea_address_list.append(transaction.related_address)
 
         transaction_json = format_to_dict(transaction)
+        transaction_json["hash"] = transaction_json["transaction_hash"]
         transaction_json["method_id"] = "0x" + transaction_json["method"]
         transaction_json["method"] = transaction_json["method_id"]
         transaction_json["is_contract"] = False
