@@ -152,16 +152,6 @@ class PeriodWalletProtocolJsonProcessCmeth:
        balance / pow(10, 18)                        as balance
         from period_address_token_balances
 where token_address = decode('dee7cb1d08ec5e35c4792856f86dd0584db29cfe', 'hex')
-        union all
-        select date('{self.start_date}')                           as period_date,
-               'woofi'                                      as protocol_id,
-               '0x872b6ff825da431c941d12630754036278ad7049' as contract_address,
-               address                                      as wallet_address,
-        '0xe6829d9a7ee3040e1276fa75293bde931859e8fa' as token_address,
-               'cmETH'                                      as token_symbol,
-               balance / pow(10, 18)                        as balance
-        from period_address_token_balances
-where token_address = decode('872b6ff825da431c941d12630754036278ad7049', 'hex')
 union all 
         select date('{self.start_date}')                           as period_date,
        'hour_glass'                                      as protocol_id,
@@ -172,6 +162,35 @@ union all
        balance / pow(10, 18)                        as balance
 from period_address_token_balances
 where token_address = decode('326b1129a3ec2ad5c4016d2bb4b912687890ae6c', 'hex')
+
+-- woofi
+        union all
+        select date('{self.start_date}')                           as period_date,
+               'woofi'                                      as protocol_id,
+               '0x82fde5086784e348aed03eb7b19ded97652db7a8' as contract_address,
+               address                                      as wallet_address,
+        '0xe6829d9a7ee3040e1276fa75293bde931859e8fa' as token_address,
+               'cmETH'                                      as token_symbol,
+               balance / pow(10, 18)                        as balance
+        from period_address_token_balances
+where token_address = decode('872b6ff825da431c941d12630754036278ad7049', 'hex')
+union all 
+
+select  date('{self.start_date}')                           as period_date,
+       protocol_id,
+       '0x82fde5086784e348aed03eb7b19ded97652db7a8' as contract_address,
+       wallet_address,
+       '0xe6829d9a7ee3040e1276fa75293bde931859e8fa' as token_address,
+       'cmETH'                                      as token_symbol,
+       block_cumulative_value / pow(10, 18)         as balance
+from (select *,
+             row_number()
+             over (partition by contract_address, wallet_address, token_address order by block_number desc) rn
+      from feature_staked_transfer_detail_records
+      where protocol_id = 'woofi'
+        and token_address = decode('872b6ff825da431c941d12630754036278ad7049', 'hex')
+        and to_timestamp(block_timestamp) < '{self.end_date}') t
+where rn = 1;
         """
         session = self.db_service.Session()
         stmt = session.execute(text(sql))
