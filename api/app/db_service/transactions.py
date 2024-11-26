@@ -9,6 +9,7 @@ from common.models.scheduled_metadata import ScheduledMetadata
 from common.models.transactions import Transactions
 from common.utils.db_utils import build_entities
 from common.utils.format_utils import hex_str_to_bytes
+from indexer.modules.custom.address_index.models.address_transactions import AddressTransactions
 from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
 
 
@@ -60,6 +61,26 @@ def get_transactions_by_to_address(address, columns="*", limit=1):
 def get_tps_latest_10min(timestamp):
     cnt = Transactions.query.filter(Transactions.block_timestamp >= (timestamp - timedelta(minutes=10))).count()
     return float(cnt / 600)
+
+
+def get_address_transaction_cnt_v2(address: str):
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
+    bytes_address = hex_str_to_bytes(address)
+    recently_txn_count = (
+        db.session.query(AddressTransactions.address)
+        .filter(
+            and_(
+                (AddressTransactions.block_timestamp >= last_timestamp if last_timestamp is not None else True),
+                or_(AddressTransactions.address == bytes_address),
+            )
+        )
+        .count()
+    )
+
+    result = get_txn_cnt_by_address(address)
+    past_txn_count = 0 if not result else result[0]
+    total_count = past_txn_count + recently_txn_count
+    return total_count
 
 
 def get_address_transaction_cnt(address: str):

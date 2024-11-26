@@ -1,18 +1,23 @@
 import binascii
+import copy
 from datetime import date, datetime
 from select import select
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, re
 
 from sqlalchemy import and_, func
 
 from api.app.address.features import register_feature
 from api.app.address.models import AddressBaseProfile, ScheduledMetadata
-from api.app.utils.format_utils import format_coin_value
-from api.app.utils.token_utils import get_coin_prices, get_latest_coin_prices
+from api.app.contract.contract_verify import get_names_from_method_or_topic_list
+from api.app.db_service.contracts import get_contracts_by_addresses
+from api.app.utils.fill_info import fill_address_display_to_transactions
+from api.app.utils.format_utils import format_coin_value, format_transaction
+from api.app.utils.token_utils import get_coin_prices, get_latest_coin_prices, get_token_price
 from api.app.utils.web3_utils import get_balance
 from common.models import db
 from common.models.contracts import Contracts
 from common.models.tokens import Tokens
+from common.utils.db_utils import app_config, build_entities
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, format_value_for_json, hex_str_to_bytes
 from indexer.modules.custom.address_index.address_index_job import AddressTransactionType, InternalTransactionType
@@ -685,3 +690,109 @@ def get_address_assets(address: Union[str, bytes]) -> dict:
         "coin_balance": coin_balance,
         "holdings": token_holding,
     }
+
+
+def get_address_transactions(address: str, columns="*", limit=25, offset=0):
+    bytes_address = hex_str_to_bytes(address)
+    entities = build_entities(AddressTransactions, columns)
+
+    address_transactions = (
+        db.session.query(AddressTransactions)
+        .with_entities(*entities)
+        .filter(
+            AddressTransactions.address == bytes_address,
+        )
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
+
+    return address_transactions
+
+
+def format_address_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
+    transaction_json = copy.copy(transaction)
+    transaction_json["gas_fee_token_price"] = "{0:.2f}".format(GAS_FEE_TOKEN_PRICE)
+
+    transaction_json["value"] = format_coin_value(int(transaction["value"]))
+    transaction_json["value_dollar"] = "{0:.2f}".format(transaction["value"] * GAS_FEE_TOKEN_PRICE / 10**18)
+
+    transaction_fee = transaction["transaction_fee"]
+
+    transaction_json["transaction_fee"] = "{0:.15f}".format(transaction_fee / 10**18).rstrip("0").rstrip(".")
+
+    return transaction_json
+
+
+def parse_address_transactions(transactions: list[AddressTransactions]):
+    transaction_list = []
+    if len(transactions) <= 0:
+        return transaction_list
+
+    GAS_FEE_TOKEN_PRICE = get_token_price(app_config.token_configuration.gas_fee_token, transactions[0].block_timestamp)
+
+    to_address_list = []
+    bytea_address_list = []
+    for transaction in transactions:
+        bytea_address_list.append(transaction.address)
+        bytea_address_list.append(transaction.related_address)
+
+        transaction_json = format_to_dict(transaction)
+        transaction_json["method_id"] = "0x" + transaction_json["method"]
+        transaction_json["method"] = transaction_json["method_id"]
+        transaction_json["is_contract"] = False
+        transaction_json["contract_name"] = None
+
+        if transaction.txn_type == AddressTransactionType.RECEIVER.value:
+            transaction_json["from_address"] = bytes_to_hex_str(transaction.related_address)
+            transaction_json["to_address"] = bytes_to_hex_str(transaction.address)
+            to_address_list.append(transaction.address)
+        elif transaction.txn_type == AddressTransactionType.SENDER.value:
+            transaction_json["from_address"] = bytes_to_hex_str(transaction.address)
+            transaction_json["to_address"] = bytes_to_hex_str(transaction.related_address)
+            to_address_list.append(transaction.related_address)
+        elif transaction.txn_type == AddressTransactionType.SELF_CALL.value:
+            transaction_json["from_address"] = bytes_to_hex_str(transaction.address)
+            transaction_json["to_address"] = bytes_to_hex_str(transaction.address)
+        elif transaction.txn_type == AddressTransactionType.CREATOR.value:
+            transaction_json["from_address"] = bytes_to_hex_str(transaction.address)
+            transaction_json["to_address"] = bytes_to_hex_str(transaction.related_address)
+            transaction_json["method"] = "Contract Creation"
+        elif transaction.txn_type == AddressTransactionType.BEEN_CREATED.value:
+            transaction_json["from_address"] = bytes_to_hex_str(transaction.related_address)
+            transaction_json["to_address"] = bytes_to_hex_str(transaction.address)
+            transaction_json["method"] = "Contract Creation"
+        else:
+            pass
+
+        transaction_list.append(format_address_transaction(float(GAS_FEE_TOKEN_PRICE), transaction_json))
+
+    # Doing this early so we don't need to query contracts twice
+    fill_address_display_to_transactions(transaction_list, bytea_address_list)
+
+    # Find contract
+    contracts = get_contracts_by_addresses(address_list=to_address_list, columns=["address"])
+    contract_list = set(map(lambda x: bytes_to_hex_str(x.address), contracts))
+
+    method_list = []
+    for transaction_json in transaction_list:
+        if transaction_json["to_address"] in contract_list:
+            transaction_json["is_contract"] = True
+            method_list.append(transaction_json["method"])
+        else:
+            transaction_json["method"] = "Transfer"
+
+    contract_function_abis = get_names_from_method_or_topic_list(method_list)
+
+    for transaction_json in transaction_list:
+        for function_abi in contract_function_abis:
+            if transaction_json["method"] == function_abi.get("signed_prefix"):
+                transaction_json["method"] = " ".join(
+                    re.sub(
+                        "([A-Z][a-z]+)",
+                        r" \1",
+                        re.sub("([A-Z]+)", r" \1", function_abi.get("function_name")),
+                    ).split()
+                ).title()
+
+    return transaction_list

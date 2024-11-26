@@ -42,6 +42,7 @@ from api.app.db_service.tokens import (
 from api.app.db_service.traces import get_traces_by_condition, get_traces_by_transaction_hash
 from api.app.db_service.transactions import (
     get_address_transaction_cnt,
+    get_address_transaction_cnt_v2,
     get_total_txn_count,
     get_tps_latest_10min,
     get_transaction_by_hash,
@@ -85,6 +86,7 @@ from common.utils.web3_utils import (
     to_checksum_address,
 )
 from indexer.modules.custom.address_index.models.address_index_stats import AddressIndexStats
+from indexer.modules.custom.address_index.utils.helpers import get_address_transactions, parse_address_transactions
 from indexer.modules.custom.stats.models.daily_addresses_stats import DailyAddressesStats
 from indexer.modules.custom.stats.models.daily_blocks_stats import DailyBlocksStats
 from indexer.modules.custom.stats.models.daily_tokens_stats import DailyTokensStats
@@ -1368,23 +1370,17 @@ class ExplorerAddressTransactions(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
         address = address.lower()
-        address_bytes = hex_str_to_bytes(address)
 
-        transactions = get_transactions_by_condition(
-            columns=TRANSACTION_LIST_COLUMNS,
-            filter_condition=or_(
-                Transactions.from_address == address_bytes,
-                Transactions.to_address == address_bytes,
-            ),
-            limit=PAGE_SIZE,
+        transactions = get_address_transactions(
+            address=address,
         )
 
         if len(transactions) < PAGE_SIZE:
             total_count = len(transactions)
         else:
-            total_count = get_address_transaction_cnt(address)
+            total_count = get_address_transaction_cnt_v2(address)
 
-        transaction_list = parse_transactions(transactions)
+        transaction_list = parse_address_transactions(transactions)
 
         return {
             "data": transaction_list,
