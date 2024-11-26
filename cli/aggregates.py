@@ -3,7 +3,7 @@ from datetime import datetime
 import click
 
 from common.services.postgresql_service import PostgreSQLService
-from indexer.aggr_jobs.utils import DateType, check_data_completeness, get_yesterday_date
+from indexer.aggr_jobs.utils import DateType, check_data_completeness, get_yesterday_date, read_yaml_file
 from indexer.controller.aggregates_controller import AggregatesController
 from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispatcher
 
@@ -73,18 +73,29 @@ from indexer.controller.dispatcher.aggregates_dispatcher import AggregatesDispat
     envvar="DBLINK_URL",
     help="dblink to take token price, maybe moved to other replace later",
 )
-def aggregates(chain_name, postgres_url, provider_uri, start_date, end_date, date_batch_size, dblink_url):
+@click.option(
+    "-cf",
+    "--config-file",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="CONFIG_FILE",
+    help="",
+)
+def aggregates(chain_name, postgres_url, provider_uri, start_date, end_date, date_batch_size, dblink_url, config_file):
     if not start_date and not end_date:
         start_date, end_date = get_yesterday_date()
     elif not end_date:
         _, end_date = get_yesterday_date()
+
+    jobs_dict = read_yaml_file(config_file)
 
     db_service = PostgreSQLService(postgres_url)
 
     # check_data_completeness(db_service, provider_uri, end_date)
     version = int(datetime.now().timestamp())
 
-    config = {"db_service": db_service, "chain_name": chain_name, 'dblink_url': dblink_url, 'version': version}
+    config = {"db_service": db_service, "chain_name": chain_name, 'dblink_url': dblink_url, 'version': version, 'jobs_dict': jobs_dict}
     dispatcher = AggregatesDispatcher(config)
 
     controller = AggregatesController(job_dispatcher=dispatcher)

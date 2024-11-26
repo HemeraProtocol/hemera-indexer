@@ -1,0 +1,76 @@
+chain_name: mantle
+
+FBTC:
+  generator_wallet_table:
+    true
+
+  daily_sqls:
+    address_token_balance:
+      - daily_address_token_balances
+    dodo:
+      - daily_feature_erc20_token_supply_records
+    staked:
+      - daily_feature_holding_balance_staked_fbtc_detail
+    uniswapv3:
+      - daily_feature_holding_balance_uniswap_v3
+
+
+  period_sqls:
+    address_token_balance:
+      - period_address_token_balances
+
+    uniswapv3:
+      - period_feature_holding_balance_uniswap_v3
+    merchantmoe:
+      - period_feature_erc1155_token_supply_records
+      - period_feature_holding_balance_merchantmoe
+    init_capital:
+      - period_feature_holding_balance_init_capital
+    lendle:
+      - period_feature_holding_balance_lendle_au
+    staked:
+      - period_feature_staked_fbtc_detail_records
+      - period_feature_holding_balance_staked_transferred_fbtc_detail
+
+    dodo:
+      - period_feature_erc20_token_supply_records
+      - period_feature_holding_balance_dodo
+
+  py_jobs:
+    - address_token_balance
+    - uniswapv3
+    - merchantmoe
+    - init_capital
+    - lendle
+    - staked
+    - dodo
+
+cmETH:
+  generator_wallet_table:
+    true
+
+  daily_sqls:
+    address_token_balance:
+      - daily_address_token_balances
+    uniswapv3:
+      - daily_feature_holding_balance_uniswap_v3
+
+  period_sqls:
+    address_token_balance:
+      - period_address_token_balances
+
+    merchantmoe:
+      - period_feature_erc1155_token_supply_records
+      - period_feature_holding_balance_merchantmoe_cmeth
+    init_capital:
+      - period_feature_holding_balance_init_capital
+    lendle:
+      - period_feature_holding_balance_lendle_au
+
+  py_jobs:
+    - address_token_balance
+    - uniswapv3
+    - merchantmoe
+    - init_capital
+    - lendle
+    - staked

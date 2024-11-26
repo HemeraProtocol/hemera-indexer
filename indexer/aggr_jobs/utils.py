@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 import click
+import yaml
 from web3 import Web3
 
 from common.models.sync_record import SyncRecord
@@ -88,3 +89,11 @@ def read_sync_record(db_service) -> int:
     if not record:
         record = read_sync_record_from_pg(db_service)
     return record
+
+
+def read_yaml_file(file_path: str):
+    if not file_path:
+        return {}
+    with open(file_path, 'r') as file:
+        data = yaml.safe_load(file)
+    return data

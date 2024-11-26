@@ -1,4 +1,5 @@
 import configparser
+import inspect
 import math
 import os
 import time
@@ -405,7 +406,7 @@ def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, 
                 if pool_type == 'uniswapv3':
                     liquidity_data = concat_liquidity_token_data(records, price_dict)
                     token_json['liquidity_data'] = liquidity_data
-                    pass
+
                 elif pool_type == 'merchantmoe':
                     bin_step_active_id = merchant_moe_bin_step_active_id_records.get(contract_address)
 
@@ -529,6 +530,21 @@ def timed_call(method, method_name):
     result = method()
     elapsed_time = time.time() - start_time
     print(f'took {elapsed_time:.2f} seconds by {method_name}')
+    return result
+
+
+def timed_call_(method, method_name=None):
+    if method_name is None:
+        # 尝试获取方法变量名
+        frame = inspect.currentframe().f_back  # 获取调用栈上一帧
+        method_names = [name for name, val in frame.f_locals.items() if val is method]
+        # 如果没找到方法变量名，使用默认名称
+        method_name = method_names[0] if method_names else method.__name__  # 回退到方法名
+
+    start_time = time.time()
+    result = method()
+    elapsed_time = time.time() - start_time
+    print(f'Took {elapsed_time:.2f} seconds by {method_name}')
     return result
 
 

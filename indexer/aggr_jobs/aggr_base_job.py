@@ -42,3 +42,18 @@ class AggrBaseJob:
             current_date = next_date
 
         return date_pairs
+
+    @staticmethod
+    def extract_sqls_in_order(jobs_dict, key, sql_type, existing_sqls):
+        """
+        从 jobs_dict 中提取指定 key 的 sql_type（daily_sqls 或 period_sqls），按顺序添加到 existing_sqls 并去重。
+        """
+        if key in jobs_dict:
+            sqls_dict = jobs_dict[key].get(sql_type, {})
+            for sql_list in sqls_dict.values():
+                for sql in sql_list:
+                    if sql not in existing_sqls:
+                        existing_sqls.append(sql)
+
+
+

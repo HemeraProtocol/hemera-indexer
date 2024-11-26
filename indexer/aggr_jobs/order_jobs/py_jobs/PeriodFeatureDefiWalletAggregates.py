@@ -2,7 +2,13 @@ from collections import defaultdict
 from datetime import datetime
 
 from indexer.aggr_jobs.order_jobs.models.period_address_token_balances import PeriodAddressTokenBalances
+from indexer.aggr_jobs.order_jobs.models.period_feature_defi_cmeth_aggregates import PeriodFeatureDefiCmethAggregates
 from indexer.aggr_jobs.order_jobs.models.period_feature_defi_fbtc_aggregates import PeriodFeatureDefiFbtcAggregates
+from indexer.aggr_jobs.order_jobs.models.period_feature_defi_wallet_cmeth_detail import \
+    PeriodFeatureDefiWalletCmethDetail
+from indexer.aggr_jobs.order_jobs.models.period_feature_defi_wallet_fbtc_detail import PeriodFeatureDefiWalletFbtcDetail
+from indexer.aggr_jobs.order_jobs.models.period_wallet_protocol_json_cmeth import PeriodWalletProtocolJsonCmeth
+from indexer.aggr_jobs.order_jobs.models.period_wallet_protocol_json_fbtc import PeriodWalletProtocolJsonFbtc
 from indexer.aggr_jobs.order_jobs.py_jobs.untils import format_value_for_json
 
 
@@ -17,6 +23,7 @@ class PeriodFeatureDefiWalletAggregates:
         self.token_symbol = None
         self.decimals = None
         self.price = None
+        self.token_address = None
 
     def get_token_aggr_by_protocol(self, orm_list, price):
         grouped_data = defaultdict(list)
@@ -104,19 +111,17 @@ class PeriodFeatureDefiWalletAggregates:
     def get_period_address_token_balances(self):
         address = bytes.fromhex(self.token_address.lower()[2:])
 
-        the_period_date = datetime.strptime(self.start_date, '%Y-%m-%d').date()
         session = self.db_service.Session()
 
         period_addresses = session.query(PeriodAddressTokenBalances).filter(
             PeriodAddressTokenBalances.token_address == address).all()
         results = {
-            (the_period_date, format_value_for_json(r.address)): [float(r.balance / self.decimals),
-                                                                  float(r.balance * self.price / self.decimals)]
+            format_value_for_json(r.address): [float(r.balance / self.decimals),
+                                               float(r.balance * self.price / self.decimals)]
             for r in period_addresses}
         session.close()
 
         return results
-
 
     def get_token_data_old(self, orm_list):
 
@@ -175,3 +180,136 @@ class PeriodFeatureDefiWalletAggregates:
             results[(period_date, wallet_address)] = {'contract_json': wallet_address_json, 'balance': total_balance,
                                                       'usd': total_usd}
         return results
+
+    # add step to store json data
+    def get_protocol_json(self):
+        if self.token_symbol == 'cmETH':
+            ORM = PeriodWalletProtocolJsonCmeth
+        elif self.token_symbol == 'FBTC':
+            ORM = PeriodWalletProtocolJsonFbtc
+        else:
+            return {}
+
+        session = self.db_service.Session()
+        orms = session.query(ORM).filter(
+            ORM.period_date == self.start_date,
+            ORM.chain_name == self.chain_name,
+            ORM.token_symbol == self.token_symbol).all()
+
+        results = defaultdict(dict)
+
+        for orm in orms:
+            results[orm.wallet_address][orm.protocol_id] = {'contract_json': orm.contracts,
+                                                            'balance': format_value_for_json(
+                                                                orm.total_protocol_balance),
+                                                            'usd': format_value_for_json(orm.total_protocol_usd)}
+        session.close()
+        return results
+
+    def insert_protocol_json(self, protocol_id, protocol_json):
+        if self.token_symbol == 'cmETH':
+            ORM = PeriodWalletProtocolJsonCmeth
+        elif self.token_symbol == 'FBTC':
+            ORM = PeriodWalletProtocolJsonFbtc
+        else:
+            return {}
+
+        session = self.db_service.Session()
+        results = []
+
+        for period_date_wallet_address, json_dict in protocol_json.items():
+            period_date, wallet_address = period_date_wallet_address
+            total_balance = json_dict.get('balance')
+            total_usd = json_dict.get('usd')
+            contract_json = json_dict.get('contract_json')
+
+            period_wallet_protocol_json = ORM(period_date=period_date,
+                                              wallet_address=wallet_address,
+                                              chain_name=self.chain_name,
+                                              token_symbol=self.token_symbol,
+                                              total_protocol_balance=total_balance,
+                                              total_protocol_usd=total_usd,
+                                              contracts=contract_json,
+                                              protocol_id=protocol_id,
+                                              updated_version=self.version
+                                              )
+
+            results.append(period_wallet_protocol_json)
+
+        session.query(ORM).filter(
+            ORM.period_date == self.start_date,
+            ORM.chain_name == self.chain_name,
+            ORM.token_symbol == self.token_symbol,
+            ORM.protocol_id == protocol_id
+        ).delete()
+
+        session.bulk_save_objects(results)
+        session.commit()
+        print(f'insert {protocol_id} successfully, {len(results)}')
+        session.close()
+
+    def get_protocol_aggr(self):
+        if self.token_symbol == 'cmETH':
+            ORM = PeriodFeatureDefiCmethAggregates
+        elif self.token_symbol == 'FBTC':
+            ORM = PeriodFeatureDefiFbtcAggregates
+
+        session = self.db_service.Session()
+        orms = session.query(ORM).filter(
+            ORM.period_date == self.start_date,
+            ORM.chain_name == self.chain_name,
+        ).all()
+        session.close()
+        return orms
+
+    def insert_wallet_detail(self, result_orm_list):
+        if self.token_symbol == 'cmETH':
+            ORM = PeriodFeatureDefiWalletCmethDetail
+        elif self.token_symbol == 'FBTC':
+            ORM = PeriodFeatureDefiWalletFbtcDetail
+
+        session = self.db_service.Session()
+        session.query(ORM).filter(
+            ORM.period_date == self.start_date
+        ).delete()
+
+        session.bulk_save_objects(result_orm_list)
+        session.commit()
+        session.close()
+
+    def insert_aggr_job(self):
+        if self.token_symbol == 'cmETH':
+            ORM = PeriodFeatureDefiCmethAggregates
+        elif self.token_symbol == 'FBTC':
+            ORM = PeriodFeatureDefiFbtcAggregates
+
+        existing_results = self.get_protocol_aggr()
+        results_protocol_id_list = [r.protocol_id for r in self.results]
+
+        existing_results_copy = [ORM(**self.filter_instance_data(r)) for r in
+                                 existing_results]
+
+        for existing_result in existing_results_copy:
+            if existing_result.protocol_id not in results_protocol_id_list:
+                self.results.append(existing_result)
+
+        session = self.db_service.Session()
+
+        session.query(ORM).filter(
+            ORM.period_date == self.start_date
+        ).delete()
+
+        session.bulk_save_objects(self.results)
+        session.commit()
+        print(f'insert {self.token_symbol} successfully, {len(self.results)}')
+        session.close()
+
+    @staticmethod
+    def filter_instance_data(instance):
+        """
+        从 SQLAlchemy 实例中提取模型字段的字典表示。
+        """
+        return {
+            column.name: getattr(instance, column.name)
+            for column in instance.__table__.columns
+        }

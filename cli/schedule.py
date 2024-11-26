@@ -36,7 +36,16 @@ from indexer.schedule_jobs.aggregates_jobs import aggregates_yesterday_job, aggr
     envvar="DBLINK_URL",
     help="dblink to take token price, maybe moved to other replace later",
 )
-def schedule(chain_name: str, postgres_url: str, dblink_url: str) -> None:
+@click.option(
+    "-cf",
+    "--config-file",
+    default=None,
+    show_default=True,
+    type=str,
+    envvar="CONFIG_FILE",
+    help="",
+)
+def schedule(chain_name: str, postgres_url: str, dblink_url: str, config_file) -> None:
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', buffering=1)  # Line-buffered stdout
     sys.stderr = os.fdopen(sys.stderr.fileno(), 'w', buffering=1)  # Line-buffered stderr
 
@@ -45,7 +54,7 @@ def schedule(chain_name: str, postgres_url: str, dblink_url: str) -> None:
     minute = 0
 
     scheduler = BlockingScheduler()
-    job_args = (chain_name, postgres_url, dblink_url)
+    job_args = (chain_name, postgres_url, dblink_url, config_file)
     scheduler.add_job(aggregates_yesterday_job, 'cron', hour=hour, minute=minute, args=job_args)
 
     current_crontab_time = "0 6,12,18 * * *"
