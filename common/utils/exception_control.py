@@ -32,7 +32,11 @@ class HemeraBaseException(Exception):
         self.crashable = None
         self.retriable = None
         self.message = message
+        self.detail = None
         super().__init__(message)
+
+    def update_detail(self, detail):
+        self.detail = detail
 
 
 class RetriableError(HemeraBaseException):

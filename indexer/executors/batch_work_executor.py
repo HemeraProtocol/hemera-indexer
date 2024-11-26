@@ -7,7 +7,7 @@ from requests.exceptions import Timeout as RequestsTimeout
 from requests.exceptions import TooManyRedirects
 from web3._utils.threads import Timeout as Web3Timeout
 
-from common.utils.exception_control import FastShutdownError, RetriableError
+from common.utils.exception_control import FastShutdownError, RetriableError, get_exception_details
 from indexer.executors.bounded_executor import BoundedExecutor
 from indexer.utils.progress_logger import ProgressLogger
 
@@ -73,12 +73,23 @@ class BatchWorkExecutor:
                 for sub_batch in dynamic_batch_iterator(batch, lambda: self.batch_size):
                     self._fail_safe_execute(work_handler, sub_batch, custom_splitting)
             else:
-                execute_with_retries(
-                    work_handler,
-                    batch,
-                    max_retries=self.max_retries,
-                    retry_exceptions=self.retry_exceptions,
-                )
+                try:
+                    execute_with_retries(
+                        work_handler,
+                        batch,
+                        max_retries=self.max_retries,
+                        retry_exceptions=self.retry_exceptions,
+                    )
+                except Exception as e:
+                    error_details = get_exception_details(e)
+                    warped_exception = FastShutdownError(str(e))
+                    warped_exception.update_detail(error_details)
+                    raise warped_exception
+        except Exception as e:
+            error_details = get_exception_details(e)
+            warped_exception = FastShutdownError(str(e))
+            warped_exception.update_detail(error_details)
+            raise warped_exception
 
         # self.progress_logger.track(len(batch))
 

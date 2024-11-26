@@ -99,6 +99,7 @@ class ConcurrentJobExecutor:
             try:
                 param["processor"] = processor
                 error_details = get_exception_details(error)
+                error_details = error_details if error_details["type"] or not hasattr(error, "detail") else error.detail
                 self.error_callback(
                     output_types=self.buffer_service.required_output_types,
                     start_block=param["start_block"],
