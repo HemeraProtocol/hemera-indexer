@@ -188,8 +188,8 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
             results = func()
             self.insert_protocol_json(protocol_id, results)
 
-        elapsed_time = time.time() - start_time
-        print(f'took {elapsed_time:.2f} seconds by {protocol_id}')
+            elapsed_time = time.time() - start_time
+            print(f'took {elapsed_time:.2f} seconds by {protocol_id}')
 
     def process_wallet_record(self):
         wallet_protocols = self.get_protocol_json()

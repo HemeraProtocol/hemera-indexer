@@ -24,7 +24,7 @@ FBTC:
       - period_feature_holding_balance_staked_transferred_fbtc_detail
     dodo:
       - period_feature_erc20_token_supply_records
-      - period_feature_holding_balance_dodo
+      - period_feature_holding_balance_dodo_eth
 
   py_jobs:
     - address_token_balance
