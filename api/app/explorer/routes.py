@@ -1503,7 +1503,6 @@ class ExplorerTokenProfile(Resource):
     def get(self, address):
         address = address.lower()
         token = get_token_by_address(address)
-
         if not token:
             raise APIError("Token not found", code=400)
 
@@ -1568,8 +1567,6 @@ class ExplorerTokenTokenTransfers(Resource):
         token_transfers, total_count = get_raw_token_transfers(
             token.token_type, condition, 1, PAGE_SIZE, is_count=False
         )
-
-        total_count = get_token_address_token_transfer_cnt(token.token_type, address)
 
         token_transfer_list = parse_token_transfers(token_transfers, token.token_type)
         return {

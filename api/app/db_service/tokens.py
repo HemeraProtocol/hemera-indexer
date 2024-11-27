@@ -66,6 +66,8 @@ def get_token_address_token_transfer_cnt(token_type: str, address: str):
     result = (
         db.session.query(Tokens).with_entities(Tokens.transfer_count).filter(Tokens.address == bytes_address).first()
     )
+    if result and result[0]:
+        return result[0]
     return (
         db.session.query(type_to_token_transfer_table(token_type))
         .filter(
