@@ -4,14 +4,10 @@ from itertools import groupby
 from typing import List, Union
 
 from common.utils.web3_utils import ZERO_ADDRESS
+from custom_jobs.address_index.domains import *
 from custom_jobs.address_index.domains.address_contract_operation import AddressContractOperation
 from custom_jobs.address_index.domains.address_internal_transaction import AddressInternalTransaction
 from custom_jobs.address_index.domains.address_nft_1155_holders import AddressNft1155Holder
-from custom_jobs.address_index.domains.address_nft_transfer import AddressNftTransfer
-from custom_jobs.address_index.domains.address_token_holder import AddressTokenHolder
-from custom_jobs.address_index.domains.address_token_transfer import AddressTokenTransfer
-from custom_jobs.address_index.domains.address_transaction import AddressTransaction
-from custom_jobs.address_index.domains.token_address_nft_inventory import TokenAddressNftInventory
 from indexer.domains.contract_internal_transaction import ContractInternalTransaction
 from indexer.domains.token_id_infos import UpdateERC721TokenIdDetail
 from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer

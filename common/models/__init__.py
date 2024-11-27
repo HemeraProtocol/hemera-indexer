@@ -14,7 +14,6 @@ from indexer.domains import Domain
 model_path_patterns = [
     "common/models",
     "indexer/modules/*/models",
-    "indexer/modules/custom/*/models",
     "indexer/aggr_jobs/*/models",
     "custom_jobs/*/models",
 ]

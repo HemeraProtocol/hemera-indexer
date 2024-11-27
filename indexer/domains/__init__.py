@@ -6,8 +6,7 @@ from common.utils.module_loading import import_string, scan_subclass_by_path_pat
 
 model_path_patterns = [
     "indexer/domains",
-    "indexer/modules/*/domain",
-    "indexer/modules/custom/*/domain",
+    # "indexer/modules/*/domain",
     "custom_jobs/*/domains",
 ]
 

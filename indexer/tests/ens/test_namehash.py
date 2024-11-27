@@ -8,12 +8,12 @@ from dataclasses import asdict
 
 import pytest
 
+from custom_jobs.hemera_ens import EnsConfLoader, EnsHandler
+from custom_jobs.hemera_ens.ens_hash import compute_node_label, get_label, namehash
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.domains.log import Log
 from indexer.domains.transaction import Transaction
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.modules.custom.hemera_ens import EnsConfLoader, EnsHandler
-from indexer.modules.custom.hemera_ens.ens_hash import compute_node_label, get_label, namehash
 from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
