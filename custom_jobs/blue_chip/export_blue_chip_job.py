@@ -2,6 +2,8 @@ import logging
 from collections import defaultdict
 
 from common.utils.format_utils import bytes_to_hex_str
+from custom_jobs.blue_chip import constants
+from custom_jobs.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from custom_jobs.blue_chip.models.feature_blue_chip_holders import FeatureBlueChipHolders
 from enumeration.feature_type import FeatureType
 from indexer.domains.all_features_value_record import AllFeatureValueRecordBlueChipHolders
@@ -9,8 +11,6 @@ from indexer.domains.block_ts_mapper import BlockTsMapper
 from indexer.domains.token_balance import TokenBalance
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from custom_jobs.blue_chip import constants
-from custom_jobs.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)

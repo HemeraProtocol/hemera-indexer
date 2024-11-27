@@ -3,8 +3,8 @@ from web3.types import ABIEvent
 from common.utils.abi_code_utils import Event
 from common.utils.format_utils import bytes_to_hex_str
 from custom_jobs.cyber_id.domains.cyber_domain import CyberAddressChangedD, CyberIDRegisterD
-from indexer.domains.log import Log
 from custom_jobs.cyber_id.utils import get_node
+from indexer.domains.log import Log
 
 
 class CyberEvent(Event):

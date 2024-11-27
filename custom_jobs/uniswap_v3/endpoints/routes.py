@@ -14,7 +14,6 @@ from common.models import db
 from common.models.token_hourly_price import TokenHourlyPrices
 from common.models.tokens import Tokens
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from custom_jobs.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from custom_jobs.opensea.endpoint.routes import get_token_daily_price
 from custom_jobs.uniswap_v3.endpoints import uniswap_v3_namespace
 from custom_jobs.uniswap_v3.models.feature_uniswap_v3_liquidity_records import UniswapV3TokenLiquidityRecords
@@ -22,6 +21,7 @@ from custom_jobs.uniswap_v3.models.feature_uniswap_v3_pool_current_prices import
 from custom_jobs.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from custom_jobs.uniswap_v3.models.feature_uniswap_v3_swap_records import UniswapV3PoolSwapRecords
 from custom_jobs.uniswap_v3.models.feature_uniswap_v3_token_current_status import UniswapV3TokenCurrentStatus
+from custom_jobs.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 
 Q96 = 2**96
 PAGE_SIZE = 10

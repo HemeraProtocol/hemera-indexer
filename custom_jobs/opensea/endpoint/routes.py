@@ -12,10 +12,10 @@ from common.models import db
 from common.models.token_hourly_price import TokenHourlyPrices
 from common.models.tokens import Tokens
 from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, hex_str_to_bytes
-from custom_jobs.opensea.models.opensea_crypto_mapping import OpenseaCryptoTokenMapping
 from custom_jobs.opensea.endpoint import opensea_namespace
 from custom_jobs.opensea.models.address_opensea_profile import AddressOpenseaProfile
 from custom_jobs.opensea.models.address_opensea_transaction import AddressOpenseaTransactions
+from custom_jobs.opensea.models.opensea_crypto_mapping import OpenseaCryptoTokenMapping
 from custom_jobs.opensea.models.opensea_order import OpenseaOrders
 from custom_jobs.opensea.models.scheduled_metadata import ScheduledMetadata
 from custom_jobs.opensea.opensea_job import (

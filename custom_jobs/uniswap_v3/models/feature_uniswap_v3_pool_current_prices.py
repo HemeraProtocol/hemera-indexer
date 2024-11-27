@@ -2,10 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import (
-    AgniV3PoolCurrentPrice,
-    UniswapV3PoolCurrentPrice,
-)
+from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import AgniV3PoolCurrentPrice, UniswapV3PoolCurrentPrice
 
 
 class UniswapV3PoolCurrentPrices(HemeraModel):

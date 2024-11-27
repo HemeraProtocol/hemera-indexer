@@ -7,11 +7,7 @@ import eth_abi
 from web3 import Web3
 
 from custom_jobs.uniswap_v3 import constants
-from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import (
-    UniswapV3Token,
-    UniswapV3TokenCurrentStatus,
-    UniswapV3TokenDetail,
-)
+from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import AgniV3Token, AgniV3TokenCurrentStatus, AgniV3TokenDetail
 from custom_jobs.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.domains.block import Block
 from indexer.domains.log import Log
@@ -25,7 +21,7 @@ from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
-from custom_jobs.uniswap_v3.uniswapv3_abi import (
+from custom_jobs.uniswap_v3.agni_abi import (
     BURN_EVENT,
     DECREASE_LIQUIDITY_EVENT,
     FACTORY_FUNCTION,
@@ -62,15 +58,16 @@ FUNCTION_EVENT_LIST = [
     DECREASE_LIQUIDITY_EVENT,
     MINT_EVENT,
 ]
-UNISWAP_V3_ABI = [fe.get_abi() for fe in FUNCTION_EVENT_LIST]
+
+AGNI_ABI = [fe.get_abi() for fe in FUNCTION_EVENT_LIST]
 
 liquidity_event_list = [INCREASE_LIQUIDITY_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT]
 LIQUIDITY_EVENT_TOPIC0_DICT = {e.get_signature(): e for e in liquidity_event_list}
 
 
-class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
+class ExportAgniV3TokensJob(FilterTransactionDataJob):
     dependency_types = [Log, ERC721TokenTransfer, Block]
-    output_types = [UniswapV3Token, UniswapV3TokenDetail, UniswapV3TokenCurrentStatus]
+    output_types = [AgniV3Token, AgniV3TokenDetail, AgniV3TokenCurrentStatus]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -81,11 +78,12 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
+        self._chain_id = self._web3.eth.chain_id
         self._service = kwargs["config"].get("db_service")
-        self._abi_list = UNISWAP_V3_ABI
+        self._abi_list = AGNI_ABI
         self._liquidity_token_id_blocks = queue.Queue()
 
-        config = kwargs["config"]["uniswap_v3_pool_job"]
+        config = kwargs.get("config")["agni_pool_job"]
         self._position_token_address = config.get("position_token_address").lower()
         self._factory_address = config.get("factory_address").lower()
 
@@ -108,6 +106,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         self._block_infos = {}
         for data in blocks:
             self._block_infos[data.number] = data.timestamp
+
         # collect the nft_ids which were minted or burned
         mint_token_ids, burn_token_ids, all_token_dict = extract_changed_tokens(
             self._data_buff[ERC721TokenTransfer.type()], self._position_token_address
@@ -160,21 +159,20 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         )
         self._exist_token_ids.update(update_exist_tokens)
         for data in new_nft_info:
-            self._collect_item(UniswapV3Token.type(), data)
+            self._collect_item(AgniV3Token.type(), data)
             self._exist_token_ids[data.token_id] = data.pool_address
         token_result, current_statuses = parse_token_records(
             self._position_token_address, self._exist_token_ids, owner_dict, token_infos, self._block_infos
         )
 
         for data in token_result:
-            self._collect_item(UniswapV3TokenDetail.type(), data)
+            self._collect_item(AgniV3TokenDetail.type(), data)
         for data in current_statuses:
-            self._collect_item(UniswapV3TokenCurrentStatus.type(), data)
-
+            self._collect_item(AgniV3TokenCurrentStatus.type(), data)
         for token_id, block_number in burn_token_ids.items():
             self._collect_item(
-                UniswapV3TokenDetail.type(),
-                UniswapV3TokenDetail(
+                AgniV3TokenDetail.type(),
+                AgniV3TokenDetail(
                     position_token_address=self._position_token_address,
                     pool_address=self._exist_token_ids.get(token_id, ""),
                     token_id=token_id,
@@ -185,8 +183,8 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 ),
             )
             self._collect_item(
-                UniswapV3TokenCurrentStatus.type(),
-                UniswapV3TokenCurrentStatus(
+                AgniV3TokenCurrentStatus.type(),
+                AgniV3TokenCurrentStatus(
                     position_token_address=self._position_token_address,
                     pool_address=self._exist_token_ids.get(token_id, ""),
                     token_id=token_id,
@@ -197,16 +195,16 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 ),
             )
 
-        self._data_buff[UniswapV3TokenCurrentStatus.type()] = distinct_collections_by_group(
-            self._data_buff[UniswapV3TokenCurrentStatus.type()], ["position_token_address", "token_id"], "block_number"
+        self._data_buff[AgniV3TokenCurrentStatus.type()] = distinct_collections_by_group(
+            self._data_buff[AgniV3TokenCurrentStatus.type()], ["position_token_address", "token_id"], "block_number"
         )
 
         self._block_infos = {}
 
     def _process(self, **kwargs):
-        self._data_buff[UniswapV3Token.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[UniswapV3TokenDetail.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[UniswapV3TokenCurrentStatus.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AgniV3Token.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AgniV3TokenDetail.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[AgniV3TokenCurrentStatus.type()].sort(key=lambda x: x.block_number)
 
 
 def parse_token_records(position_token_address, token_pool_dict, owner_dict, token_infos, block_info):
@@ -224,7 +222,7 @@ def parse_token_records(position_token_address, token_pool_dict, owner_dict, tok
         pool_address = token_pool_dict[token_id]
 
         token_result.append(
-            UniswapV3TokenDetail(
+            AgniV3TokenDetail(
                 position_token_address=position_token_address,
                 pool_address=pool_address,
                 token_id=token_id,
@@ -244,7 +242,7 @@ def parse_token_records(position_token_address, token_pool_dict, owner_dict, tok
         pool_address = token_pool_dict[token_id]
 
         current_statuses.append(
-            UniswapV3TokenCurrentStatus(
+            AgniV3TokenCurrentStatus(
                 position_token_address=position_token_address,
                 token_id=token_id,
                 pool_address=pool_address,
@@ -254,6 +252,7 @@ def parse_token_records(position_token_address, token_pool_dict, owner_dict, tok
                 block_timestamp=block_info[max_block_number],
             )
         )
+
     return token_result, current_statuses
 
 
@@ -335,7 +334,7 @@ def get_new_nfts(
         update_exist_tokens[token_id] = pool_address
 
         result.append(
-            UniswapV3Token(
+            AgniV3Token(
                 position_token_address=position_token_address,
                 token_id=token_id,
                 pool_address=pool_address,

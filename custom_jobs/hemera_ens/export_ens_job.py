@@ -10,19 +10,13 @@ from dataclasses import asdict, fields, is_dataclass
 from typing import Any, Dict, List
 
 from common.utils.exception_control import FastShutdownError
+from custom_jobs.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler
+from custom_jobs.hemera_ens.ens_domain import ENSAddressChangeD, ENSAddressD, ENSMiddleD, ENSNameRenewD, ENSRegisterD
+from custom_jobs.hemera_ens.extractors import BaseExtractor
 from indexer.domains.log import Log
 from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from custom_jobs.hemera_ens import CONTRACT_NAME_MAP, EnsConfLoader, EnsHandler
-from custom_jobs.hemera_ens.ens_domain import (
-    ENSAddressChangeD,
-    ENSAddressD,
-    ENSMiddleD,
-    ENSNameRenewD,
-    ENSRegisterD,
-)
-from custom_jobs.hemera_ens.extractors import BaseExtractor
 from indexer.specification.specification import (
     ToAddressSpecification,
     TopicSpecification,

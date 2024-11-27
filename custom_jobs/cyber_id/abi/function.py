@@ -2,8 +2,8 @@ from web3.types import ABIFunction
 
 from common.utils.abi_code_utils import Function
 from custom_jobs.cyber_id.domains.cyber_domain import CyberAddressD
-from indexer.domains.transaction import Transaction
 from custom_jobs.cyber_id.utils import get_reverse_node
+from indexer.domains.transaction import Transaction
 
 
 class CyberFunction(Function):

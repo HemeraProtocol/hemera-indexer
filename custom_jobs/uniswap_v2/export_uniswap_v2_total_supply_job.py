@@ -9,16 +9,16 @@ import eth_abi
 
 from common.utils.abi_code_utils import decode_log
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from custom_jobs.uniswap_v2.constants import UNISWAP_V2_ABI, ThreadSafeList
+from custom_jobs.uniswap_v2.domain.feature_uniswap_v2 import UniswapV2Pool
+from custom_jobs.uniswap_v2.models.feature_uniswap_v2_pools import UniswapV2Pools
+from custom_jobs.uniswap_v3.util import build_no_input_method_data
 from enumeration.feature_type import FeatureType
 from indexer.domains import dict_to_dataclass
 from indexer.domains.all_features_value_record import AllFeatureValueRecordUniswapV2Info
 from indexer.domains.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from custom_jobs.uniswap_v2.constants import UNISWAP_V2_ABI, ThreadSafeList
-from custom_jobs.uniswap_v2.domain.feature_uniswap_v2 import UniswapV2Pool
-from custom_jobs.uniswap_v2.models.feature_uniswap_v2_pools import UniswapV2Pools
-from custom_jobs.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
 from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
@@ -293,7 +293,7 @@ def simple_get_rpc_requests(web3, make_requests, requests, is_batch, abi_list, f
     outputs = function_abi["outputs"]
     output_types = [output["type"] for output in outputs]
 
-    parameters = build_no_input_method_data(web3, requests, fn_name, abi_list, contract_address_key)
+    parameters = build_no_input_method_data(requests, fn_name, abi_list, contract_address_key)
 
     token_name_rpc = list(generate_eth_call_json_rpc(parameters))
     if is_batch:

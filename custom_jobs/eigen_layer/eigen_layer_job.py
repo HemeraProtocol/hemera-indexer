@@ -10,6 +10,13 @@ from typing import Any, Dict, List
 
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from custom_jobs.eigen_layer.abi import (
+    DEPOSIT_EVENT,
+    SHARE_WITHDRAW_QUEUED,
+    WITHDRAWAL_COMPLETED_EVENT,
+    WITHDRAWAL_QUEUED_BATCH_EVENT,
+    WITHDRAWAL_QUEUED_EVENT,
+)
 from custom_jobs.eigen_layer.domains.eigen_layer_domain import (
     EigenLayerAction,
     EigenLayerAddressCurrent,
@@ -19,13 +26,6 @@ from custom_jobs.eigen_layer.models import AfEigenLayerRecords
 from custom_jobs.eigen_layer.models.af_eigen_layer_address_current import AfEigenLayerAddressCurrent
 from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
-from custom_jobs.eigen_layer.abi import (
-    DEPOSIT_EVENT,
-    SHARE_WITHDRAW_QUEUED,
-    WITHDRAWAL_COMPLETED_EVENT,
-    WITHDRAWAL_QUEUED_BATCH_EVENT,
-    WITHDRAWAL_QUEUED_EVENT,
-)
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)

@@ -2,10 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import (
-    AgniV3TokenUpdateLiquidity,
-    UniswapV3TokenUpdateLiquidity,
-)
+from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import AgniV3TokenUpdateLiquidity, UniswapV3TokenUpdateLiquidity
 
 
 class UniswapV3TokenLiquidityRecords(HemeraModel):

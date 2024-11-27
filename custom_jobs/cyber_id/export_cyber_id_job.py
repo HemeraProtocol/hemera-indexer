@@ -2,13 +2,13 @@ import logging
 from itertools import groupby
 from typing import List
 
+from custom_jobs.cyber_id.abi.event import AddressChangedEvent, CyberEvent, NameChangedEvent, RegisterEvent
+from custom_jobs.cyber_id.abi.function import CyberFunction, SetNameForAddrFunction, SetNameFunction
 from custom_jobs.cyber_id.domains.cyber_domain import CyberAddressChangedD, CyberAddressD, CyberIDRegisterD
 from indexer.domains.log import Log
 from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-from custom_jobs.cyber_id.abi.event import AddressChangedEvent, CyberEvent, NameChangedEvent, RegisterEvent
-from custom_jobs.cyber_id.abi.function import CyberFunction, SetNameForAddrFunction, SetNameFunction
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)

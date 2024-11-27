@@ -4,7 +4,14 @@ from itertools import groupby
 from typing import List, Union
 
 from common.utils.web3_utils import ZERO_ADDRESS
+from custom_jobs.address_index.domain.address_contract_operation import AddressContractOperation
+from custom_jobs.address_index.domain.address_internal_transaction import AddressInternalTransaction
+from custom_jobs.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 from custom_jobs.address_index.domain.address_nft_transfer import AddressNftTransfer
+from custom_jobs.address_index.domain.address_token_holder import AddressTokenHolder
+from custom_jobs.address_index.domain.address_token_transfer import AddressTokenTransfer
+from custom_jobs.address_index.domain.address_transaction import AddressTransaction
+from custom_jobs.address_index.domain.token_address_nft_inventory import TokenAddressNftInventory
 from indexer.domains.contract_internal_transaction import ContractInternalTransaction
 from indexer.domains.token_id_infos import UpdateERC721TokenIdDetail
 from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
@@ -13,13 +20,6 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import ExtensionJob
 from indexer.jobs.export_token_balances_job import extract_token_parameters
 from indexer.jobs.export_token_id_infos_job import generate_token_id_info
-from custom_jobs.address_index.domain.address_contract_operation import AddressContractOperation
-from custom_jobs.address_index.domain.address_internal_transaction import AddressInternalTransaction
-from custom_jobs.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
-from custom_jobs.address_index.domain.address_token_holder import AddressTokenHolder
-from custom_jobs.address_index.domain.address_token_transfer import AddressTokenTransfer
-from custom_jobs.address_index.domain.address_transaction import AddressTransaction
-from custom_jobs.address_index.domain.token_address_nft_inventory import TokenAddressNftInventory
 from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.token_fetcher import TokenFetcher
 

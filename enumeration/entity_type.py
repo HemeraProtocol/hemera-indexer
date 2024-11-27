@@ -1,10 +1,29 @@
 from enum import IntFlag
 from functools import reduce
 
+from custom_jobs.address_index.domain import *
+from custom_jobs.address_index.domain.address_contract_operation import AddressContractOperation
+from custom_jobs.address_index.domain.address_internal_transaction import AddressInternalTransaction
+from custom_jobs.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
+from custom_jobs.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from custom_jobs.deposit_to_l2.domains.address_token_deposit import AddressTokenDeposit
 from custom_jobs.deposit_to_l2.domains.token_deposit_transaction import TokenDepositTransaction
 from custom_jobs.eigen_layer.domains.eigen_layer_domain import EigenLayerAction, EigenLayerAddressCurrent
+from custom_jobs.hemera_ens.ens_domain import ENSAddressChangeD, ENSAddressD, ENSMiddleD, ENSNameRenewD, ENSRegisterD
+from custom_jobs.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
 from custom_jobs.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
+from custom_jobs.opensea.domain.opensea_order import OpenseaOrder
+from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import (
+    UniswapV3Pool,
+    UniswapV3PoolCurrentPrice,
+    UniswapV3PoolPrice,
+    UniswapV3SwapEvent,
+    UniswapV3Token,
+    UniswapV3TokenCollectFee,
+    UniswapV3TokenCurrentStatus,
+    UniswapV3TokenDetail,
+    UniswapV3TokenUpdateLiquidity,
+)
 from indexer.domains.all_features_value_record import AllFeatureValueRecordBlueChipHolders
 from indexer.domains.block import Block, UpdateBlockInternalCount
 from indexer.domains.block_ts_mapper import BlockTsMapper
@@ -18,31 +37,6 @@ from indexer.domains.token_id_infos import *
 from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domains.trace import Trace
 from indexer.domains.transaction import Transaction
-from custom_jobs.address_index.domain import *
-from custom_jobs.address_index.domain.address_contract_operation import AddressContractOperation
-from custom_jobs.address_index.domain.address_internal_transaction import AddressInternalTransaction
-from custom_jobs.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
-from custom_jobs.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from custom_jobs.hemera_ens.ens_domain import (
-    ENSAddressChangeD,
-    ENSAddressD,
-    ENSMiddleD,
-    ENSNameRenewD,
-    ENSRegisterD,
-)
-from custom_jobs.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
-from custom_jobs.opensea.domain.opensea_order import OpenseaOrder
-from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import (
-    UniswapV3Pool,
-    UniswapV3PoolCurrentPrice,
-    UniswapV3PoolPrice,
-    UniswapV3SwapEvent,
-    UniswapV3Token,
-    UniswapV3TokenCollectFee,
-    UniswapV3TokenCurrentStatus,
-    UniswapV3TokenDetail,
-    UniswapV3TokenUpdateLiquidity,
-)
 from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 

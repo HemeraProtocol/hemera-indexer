@@ -17,8 +17,8 @@ from common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from common.utils.config import get_config
 from common.utils.exception_control import APIError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from custom_jobs.hemera_ens.endpoint.action_types import OperationType
 from custom_jobs.hemera_ens.endpoint import af_ens_namespace
+from custom_jobs.hemera_ens.endpoint.action_types import OperationType
 from custom_jobs.hemera_ens.models.af_ens_address_current import ENSAddress
 from custom_jobs.hemera_ens.models.af_ens_event import ENSMiddle
 from custom_jobs.hemera_ens.models.af_ens_node_current import ENSRecord

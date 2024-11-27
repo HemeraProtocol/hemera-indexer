@@ -3,15 +3,15 @@ from enum import Enum
 from typing import List
 
 from custom_jobs.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
-from indexer.domains.transaction import Transaction
-from indexer.executors.batch_work_executor import BatchWorkExecutor
-from indexer.jobs import FilterTransactionDataJob
 from custom_jobs.opensea.domain.opensea_order import OpenseaOrder
 from custom_jobs.opensea.parser.opensea_contract_parser import (
     OPENSEA_EVENT_ABI_SIGNATURE_MAPPING,
     OpenseaLog,
     parse_opensea_transaction_order_fulfilled_event,
 )
+from indexer.domains.transaction import Transaction
+from indexer.executors.batch_work_executor import BatchWorkExecutor
+from indexer.jobs import FilterTransactionDataJob
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)

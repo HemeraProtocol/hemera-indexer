@@ -2,11 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import (
-    AgniV3Pool,
-    AgniV3PoolFromTokenJob,
-    UniswapV3Pool,
-)
+from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import AgniV3Pool, AgniV3PoolFromTokenJob, UniswapV3Pool
 
 
 class UniswapV3Pools(HemeraModel):

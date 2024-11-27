@@ -13,16 +13,10 @@ from typing import List
 from eth_abi.codec import ABICodec
 from web3 import Web3
 
+from custom_jobs.hemera_ens import lifo_registry
 from custom_jobs.hemera_ens.ens_abi import abi_map
 from custom_jobs.hemera_ens.ens_conf import CONTRACT_NAME_MAP, ENS_CONTRACT_CREATED_BLOCK, REVERSE_BASE_NODE
-from custom_jobs.hemera_ens import lifo_registry
-from custom_jobs.hemera_ens.ens_domain import (
-    ENSAddressChangeD,
-    ENSAddressD,
-    ENSMiddleD,
-    ENSNameRenewD,
-    ENSRegisterD,
-)
+from custom_jobs.hemera_ens.ens_domain import ENSAddressChangeD, ENSAddressD, ENSMiddleD, ENSNameRenewD, ENSRegisterD
 from custom_jobs.hemera_ens.ens_hash import namehash
 from custom_jobs.hemera_ens.extractors import BaseExtractor, RegisterExtractor
 from custom_jobs.hemera_ens.util import convert_str_ts
