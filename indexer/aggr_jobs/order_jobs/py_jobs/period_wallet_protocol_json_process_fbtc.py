@@ -45,6 +45,7 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
             'lendle': self.get_lendle_json,
             'staked': self.get_staked_json,
             'dodo': self.get_dodo_json,
+            'eigenlayer': self.get_eigenlayer_json,
         }
 
     def get_pool_token_pair_data(self, orm_list):
