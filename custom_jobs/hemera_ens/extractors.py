@@ -9,8 +9,8 @@ import logging
 from web3 import Web3
 
 from common.utils.format_utils import hex_str_to_bytes
+from custom_jobs.hemera_ens.domains.ens_domain import ENSMiddleD
 from custom_jobs.hemera_ens.ens_conf import BASE_NODE, REVERSE_BASE_NODE
-from custom_jobs.hemera_ens.ens_domain import ENSMiddleD
 from custom_jobs.hemera_ens.ens_hash import compute_node_label, namehash
 from custom_jobs.hemera_ens.util import convert_str_ts
 

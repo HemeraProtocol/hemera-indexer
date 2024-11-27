@@ -1,18 +1,24 @@
 from enum import IntFlag
 from functools import reduce
 
-from custom_jobs.address_index.domain import *
-from custom_jobs.address_index.domain.address_contract_operation import AddressContractOperation
-from custom_jobs.address_index.domain.address_internal_transaction import AddressInternalTransaction
-from custom_jobs.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
-from custom_jobs.blue_chip.domain.feature_blue_chip import BlueChipHolder
+from custom_jobs.address_index.domains import *
+from custom_jobs.address_index.domains.address_contract_operation import AddressContractOperation
+from custom_jobs.address_index.domains.address_internal_transaction import AddressInternalTransaction
+from custom_jobs.address_index.domains.address_nft_1155_holders import AddressNft1155Holder
+from custom_jobs.blue_chip.domains.feature_blue_chip import BlueChipHolder
 from custom_jobs.deposit_to_l2.domains.address_token_deposit import AddressTokenDeposit
 from custom_jobs.deposit_to_l2.domains.token_deposit_transaction import TokenDepositTransaction
 from custom_jobs.eigen_layer.domains.eigen_layer_domain import EigenLayerAction, EigenLayerAddressCurrent
-from custom_jobs.hemera_ens.ens_domain import ENSAddressChangeD, ENSAddressD, ENSMiddleD, ENSNameRenewD, ENSRegisterD
-from custom_jobs.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
-from custom_jobs.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
-from custom_jobs.opensea.domain.opensea_order import OpenseaOrder
+from custom_jobs.hemera_ens.domains.ens_domain import (
+    ENSAddressChangeD,
+    ENSAddressD,
+    ENSMiddleD,
+    ENSNameRenewD,
+    ENSRegisterD,
+)
+from custom_jobs.karak.domains.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
+from custom_jobs.opensea.domains.address_opensea_transactions import AddressOpenseaTransaction
+from custom_jobs.opensea.domains.opensea_order import OpenseaOrder
 from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3Pool,
     UniswapV3PoolCurrentPrice,

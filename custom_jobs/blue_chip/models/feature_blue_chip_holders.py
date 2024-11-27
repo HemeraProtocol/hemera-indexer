@@ -2,7 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, JSONB, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.blue_chip.domain.feature_blue_chip import BlueChipHolder
+from custom_jobs.blue_chip.domains.feature_blue_chip import BlueChipHolder
 
 
 class FeatureBlueChipHolders(HemeraModel):

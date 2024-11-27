@@ -8,7 +8,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.karak.karak_domain import KarakVaultTokenD
+from custom_jobs.karak.domains.karak_domain import KarakVaultTokenD
 
 
 class AfKarakVaultToken(HemeraModel):

@@ -3,7 +3,7 @@ from collections import defaultdict
 
 from common.utils.format_utils import bytes_to_hex_str
 from custom_jobs.blue_chip import constants
-from custom_jobs.blue_chip.domain.feature_blue_chip import BlueChipHolder
+from custom_jobs.blue_chip.domains.feature_blue_chip import BlueChipHolder
 from custom_jobs.blue_chip.models.feature_blue_chip_holders import FeatureBlueChipHolders
 from enumeration.feature_type import FeatureType
 from indexer.domains.all_features_value_record import AllFeatureValueRecordBlueChipHolders

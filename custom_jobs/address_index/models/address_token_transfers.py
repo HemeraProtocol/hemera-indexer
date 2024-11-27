@@ -2,7 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, SMALLINT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.address_index.domain import AddressTokenTransfer
+from custom_jobs.address_index.domains import AddressTokenTransfer
 
 
 class AddressTokenTransfers(HemeraModel):

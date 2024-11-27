@@ -2,7 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.karak.karak_domain import KarakActionD
+from custom_jobs.karak.domains.karak_domain import KarakActionD
 
 
 class AfKarakRecords(HemeraModel):

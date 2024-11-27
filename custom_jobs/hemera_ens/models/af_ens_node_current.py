@@ -8,7 +8,7 @@ from sqlalchemy.sql import func
 
 from common.models import HemeraModel, get_column_type
 from common.utils.format_utils import hex_str_to_bytes
-from custom_jobs.hemera_ens.ens_domain import ENSAddressChangeD, ENSNameRenewD, ENSRegisterD
+from custom_jobs.hemera_ens.domains.ens_domain import ENSAddressChangeD, ENSNameRenewD, ENSRegisterD
 from indexer.domains import Domain
 
 

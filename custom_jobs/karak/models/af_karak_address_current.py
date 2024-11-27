@@ -5,11 +5,11 @@
 # @File  af_karak_address_current.py
 # @Brief
 
-from sqlalchemy import Column, PrimaryKeyConstraint, func, text
-from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.karak.karak_domain import KarakAddressCurrentD
+from custom_jobs.karak.domains.karak_domain import KarakAddressCurrentD
 
 
 class AfKarakAddressCurrent(HemeraModel):

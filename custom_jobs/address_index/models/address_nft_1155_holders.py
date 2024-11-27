@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
+from custom_jobs.address_index.domains.address_nft_1155_holders import AddressNft1155Holder
 
 
 class AddressNftTokenHolders(HemeraModel):

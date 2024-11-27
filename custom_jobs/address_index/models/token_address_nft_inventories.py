@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.address_index.domain import TokenAddressNftInventory
+from custom_jobs.address_index.domains import TokenAddressNftInventory
 
 
 class TokenAddressNftInventories(HemeraModel):

@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, SMALLINT, TEXT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.address_index.domain import AddressTransaction
+from custom_jobs.address_index.domains import AddressTransaction
 
 
 class AddressTransactions(HemeraModel):

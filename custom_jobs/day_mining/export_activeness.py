@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from common.models.contracts import Contracts
 from common.utils.format_utils import bytes_to_hex_str
-from custom_jobs.day_mining.domain.current_traits_activeness import CurrentTraitsActiveness
+from custom_jobs.day_mining.domains.current_traits_activeness import CurrentTraitsActiveness
 from custom_jobs.day_mining.models.current_traits_activeness import CurrentTraitsActivenessModel
 from enumeration.feature_type import FeatureType
 from indexer.domains.all_features_value_record import AllFeatureValueRecordTraitsActiveness

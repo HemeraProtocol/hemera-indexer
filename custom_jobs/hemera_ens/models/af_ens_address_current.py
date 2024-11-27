@@ -2,7 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
-from custom_jobs.hemera_ens.ens_domain import ENSAddressD
+from custom_jobs.hemera_ens.domains.ens_domain import ENSAddressD
 from custom_jobs.hemera_ens.models.af_ens_node_current import ens_general_converter
 
 

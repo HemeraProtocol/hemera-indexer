@@ -2,7 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, JSONB, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.day_mining.domain.current_traits_activeness import CurrentTraitsActiveness
+from custom_jobs.day_mining.domains.current_traits_activeness import CurrentTraitsActiveness
 
 
 class CurrentTraitsActivenessModel(HemeraModel):
