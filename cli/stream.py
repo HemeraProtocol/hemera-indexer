@@ -184,15 +184,6 @@ def calculate_execution_time(func):
     help="How many blocks to batch in single sync round",
 )
 @click.option(
-    "-P",
-    "--max-processors",
-    default=1,
-    show_default=True,
-    type=int,
-    help="How many sync round to concurrently execute.",
-    envvar="MAX_PROCESSOR",
-)
-@click.option(
     "-w",
     "--max-workers",
     default=5,
@@ -334,7 +325,6 @@ def stream(
     batch_size=10,
     debug_batch_size=1,
     block_batch_size=1,
-    max_processors=1,
     max_workers=5,
     log_file=None,
     pid_file=None,
@@ -429,7 +419,6 @@ def stream(
 
     controller = StreamController(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
-        max_processors=max_processors,
         job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
         limit_reader=create_limit_reader(

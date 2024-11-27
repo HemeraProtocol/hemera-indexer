@@ -9,8 +9,6 @@ from common.utils.file_utils import delete_file, write_to_file
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
-from indexer.executors.concurrent_job_executor import ConcurrentJobExecutor
-from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
 
@@ -28,7 +26,6 @@ class StreamController(BaseController):
     def __init__(
         self,
         batch_web3_provider,
-        max_processors,
         sync_recorder: BaseRecorder,
         job_scheduler: JobScheduler,
         limit_reader: LimitReader,
@@ -39,7 +36,6 @@ class StreamController(BaseController):
     ):
         self.entity_types = 1
         self.web3 = build_web3(batch_web3_provider)
-        self.job_executor = ConcurrentJobExecutor(max_processors=max_processors)
         self.sync_recorder = sync_recorder
         self.job_scheduler = job_scheduler
         self.limit_reader = limit_reader
@@ -94,11 +90,8 @@ class StreamController(BaseController):
                 )
 
                 if synced_blocks != 0:
-                    # submit job and concurrent running
-                    # self.job_executor.submit(self._do_stream, start_block=last_synced_block + 1, end_block=target_block)
                     splits = self.split_blocks(last_synced_block + 1, target_block, M_SIZE)
                     self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=M_TIMEOUT)
-                    # self._do_stream(start_block, end_block)
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
                     last_synced_block = target_block

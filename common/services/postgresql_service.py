@@ -66,7 +66,7 @@ class PostgreSQLService:
             max_overflow=max_overflow,
             pool_timeout=pool_timeout,
             pool_recycle=pool_recycle,
-            pool_pre_ping=True,  # Enable connection health checks
+            pool_pre_ping=True,
             connect_args={
                 "application_name": application_name,
                 "keepalives": 1,
