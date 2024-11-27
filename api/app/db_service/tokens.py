@@ -96,6 +96,7 @@ def get_raw_token_transfers(type, condition, page_index, page_size, is_count=Tru
                 db.select(token_trasfer_table)
                 .where(condition)
                 .order_by(
+                    token_trasfer_table.block_timestamp.desc(),
                     token_trasfer_table.block_number.desc(),
                     token_trasfer_table.log_index.desc(),
                 )
