@@ -6,7 +6,7 @@ from collections import defaultdict
 from typing import Dict, List, Tuple
 
 from custom_jobs.staking_fbtc import utils
-from custom_jobs.staking_fbtc.domain.feature_staked_fbtc_detail import (
+from custom_jobs.staking_fbtc.domains.feature_staked_fbtc_detail import (
     TransferredFBTCCurrentStatus,
     TransferredFBTCDetail,
 )

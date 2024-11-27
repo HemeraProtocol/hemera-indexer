@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from typing import List
 
-from custom_jobs.project_contracts.domain.project_contract_domain import ProjectContractD
+from custom_jobs.project_contracts.domains.project_contract_domain import ProjectContractD
 from custom_jobs.project_contracts.models.project_contract import AfProjectContracts
 from custom_jobs.project_contracts.models.projects import AfProjects
 from indexer.domains.contract_internal_transaction import ContractInternalTransaction

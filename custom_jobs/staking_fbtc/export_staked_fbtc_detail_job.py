@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Tuple
 
 from common.utils.abi_code_utils import decode_log
 from custom_jobs.staking_fbtc import utils
-from custom_jobs.staking_fbtc.domain.feature_staked_fbtc_detail import StakedFBTCCurrentStatus, StakedFBTCDetail
+from custom_jobs.staking_fbtc.domains.feature_staked_fbtc_detail import StakedFBTCCurrentStatus, StakedFBTCDetail
 from indexer.domains.log import Log
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob

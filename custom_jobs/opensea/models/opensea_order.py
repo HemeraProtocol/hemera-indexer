@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSON, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.opensea.domain.opensea_order import OpenseaOrder
+from custom_jobs.opensea.domains.opensea_order import OpenseaOrder
 
 
 class OpenseaOrders(HemeraModel):

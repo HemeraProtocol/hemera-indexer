@@ -1,7 +1,7 @@
 from sqlalchemy import and_, func
 
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from custom_jobs.staking_fbtc.domain.feature_staked_fbtc_detail import (
+from custom_jobs.staking_fbtc.domains.feature_staked_fbtc_detail import (
     StakedFBTCCurrentStatus,
     TransferredFBTCCurrentStatus,
 )

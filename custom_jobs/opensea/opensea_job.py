@@ -2,8 +2,8 @@ import logging
 from enum import Enum
 from typing import List
 
-from custom_jobs.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
-from custom_jobs.opensea.domain.opensea_order import OpenseaOrder
+from custom_jobs.opensea.domains.address_opensea_transactions import AddressOpenseaTransaction
+from custom_jobs.opensea.domains.opensea_order import OpenseaOrder
 from custom_jobs.opensea.parser.opensea_contract_parser import (
     OPENSEA_EVENT_ABI_SIGNATURE_MAPPING,
     OpenseaLog,

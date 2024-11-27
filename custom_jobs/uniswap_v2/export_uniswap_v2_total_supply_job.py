@@ -10,7 +10,7 @@ import eth_abi
 from common.utils.abi_code_utils import decode_log
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from custom_jobs.uniswap_v2.constants import UNISWAP_V2_ABI, ThreadSafeList
-from custom_jobs.uniswap_v2.domain.feature_uniswap_v2 import UniswapV2Pool
+from custom_jobs.uniswap_v2.domains.feature_uniswap_v2 import UniswapV2Pool
 from custom_jobs.uniswap_v2.models.feature_uniswap_v2_pools import UniswapV2Pools
 from custom_jobs.uniswap_v3.util import build_no_input_method_data
 from enumeration.feature_type import FeatureType

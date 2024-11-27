@@ -22,8 +22,8 @@ from custom_jobs.eigen_layer.domains.eigen_layer_domain import (
     EigenLayerAddressCurrent,
     eigen_layer_address_current_factory,
 )
-from custom_jobs.eigen_layer.models import AfEigenLayerRecords
 from custom_jobs.eigen_layer.models.af_eigen_layer_address_current import AfEigenLayerAddressCurrent
+from custom_jobs.eigen_layer.models.af_eigen_layer_records import AfEigenLayerRecords
 from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs

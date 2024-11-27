@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.address_index.domains import AddressTokenHolder
+from custom_jobs.address_index.domains.address_token_holder import AddressTokenHolder
 
 
 class AddressTokenHolders(HemeraModel):

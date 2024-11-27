@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, SMALLINT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
+from custom_jobs.opensea.domains.address_opensea_transactions import AddressOpenseaTransaction
 
 
 class AddressOpenseaTransactions(HemeraModel):

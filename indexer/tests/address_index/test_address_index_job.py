@@ -1,8 +1,12 @@
 import pytest
 
+from custom_jobs.address_index.domains.address_nft_transfer import AddressNftTransfer
+from custom_jobs.address_index.domains.address_token_holder import AddressTokenHolder
+from custom_jobs.address_index.domains.address_token_transfer import AddressTokenTransfer
+from custom_jobs.address_index.domains.address_transaction import AddressTransaction
+from custom_jobs.address_index.domains.token_address_nft_inventory import TokenAddressNftInventory
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.modules.custom.address_index.domain import *
 from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy

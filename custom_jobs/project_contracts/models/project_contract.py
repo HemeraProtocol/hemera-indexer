@@ -8,7 +8,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.project_contracts.domain.project_contract_domain import ProjectContractD
+from custom_jobs.project_contracts.domains.project_contract_domain import ProjectContractD
 
 
 class AfProjectContracts(HemeraModel):

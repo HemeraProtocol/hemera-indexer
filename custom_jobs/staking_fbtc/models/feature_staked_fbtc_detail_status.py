@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from custom_jobs.staking_fbtc.domain.feature_staked_fbtc_detail import (
+from custom_jobs.staking_fbtc.domains.feature_staked_fbtc_detail import (
     StakedFBTCCurrentStatus,
     TransferredFBTCCurrentStatus,
 )

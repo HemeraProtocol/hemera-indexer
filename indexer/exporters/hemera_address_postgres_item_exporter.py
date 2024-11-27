@@ -8,12 +8,16 @@ from psycopg2.extras import execute_values
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
 from common.services.hemera_postgresql_service import HemeraPostgreSQLService
+from custom_jobs.address_index.domains.address_contract_operation import AddressContractOperation
+from custom_jobs.address_index.domains.address_internal_transaction import AddressInternalTransaction
+from custom_jobs.address_index.domains.address_nft_1155_holders import AddressNft1155Holder
+from custom_jobs.address_index.domains.address_nft_transfer import AddressNftTransfer
+from custom_jobs.address_index.domains.address_token_holder import AddressTokenHolder
+from custom_jobs.address_index.domains.address_token_transfer import AddressTokenTransfer
+from custom_jobs.address_index.domains.address_transaction import AddressTransaction
+from custom_jobs.address_index.domains.token_address_nft_inventory import TokenAddressNftInventory
 from indexer.domains.token import Token
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
-from indexer.modules.custom.address_index.domain import *
-from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
-from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
-from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 
 logger = logging.getLogger(__name__)
 
