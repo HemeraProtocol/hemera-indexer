@@ -6,7 +6,7 @@ from common.models.contracts import Contracts
 from common.models.tokens import Tokens
 from common.utils.config import get_config
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.modules.custom.address_index.models.address_index_stats import AddressIndexStats
+from custom_jobs.address_index.models.address_index_stats import AddressIndexStats
 
 app_config = get_config()
 

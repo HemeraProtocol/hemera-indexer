@@ -1,6 +1,6 @@
 ## To set up custom jobs, follow these steps:
 
-1. Add feature_id to the `FeatureType` class in `indexer.modules.custom.feature_type` following the indexing guidelines.
+1. Add feature_id to the `FeatureType` class in `custom_jobs.feature_type` following the indexing guidelines.
 2. Create a package for your jobs within `indexer/modules/custom`.
 3. If needed, define your intermediary table model in `indexer/modules/custom/{yourPackage}/models`, naming it with the
    prefix 'feature_'.

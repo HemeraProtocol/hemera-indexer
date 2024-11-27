@@ -1,8 +1,8 @@
 import pytest
 
 from indexer.controller.scheduler.job_scheduler import JobScheduler
+from indexer.domains.all_features_value_record import AllFeatureValueRecordTraitsActiveness
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordTraitsActiveness
 from indexer.tests import CYBER_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy
