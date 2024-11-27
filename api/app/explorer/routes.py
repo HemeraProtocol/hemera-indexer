@@ -1564,13 +1564,11 @@ class ExplorerTokenTokenTransfers(Resource):
         else:
             raise APIError("Invalid type", code=400)
 
-        token_transfers, total_count = get_raw_token_transfers(
-            token.token_type, condition, 1, PAGE_SIZE, is_count=False
-        )
+        token_transfers, _ = get_raw_token_transfers(token.token_type, condition, 1, PAGE_SIZE, is_count=False)
 
         token_transfer_list = parse_token_transfers(token_transfers, token.token_type)
         return {
-            "total": total_count,
+            "total": get_token_address_token_transfer_cnt(token.token_type, address),
             "data": token_transfer_list,
             "type": token.token_type,
         }, 200
