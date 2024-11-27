@@ -159,7 +159,7 @@ def get_wallet_address_token_holdings(wallet_address: Optional[Union[str, bytes]
                                 "gecko_id": token.gecko_id,
                             },
                         },
-                        "tvl": float(int(holder.balance_of) / (10**token.decimals or 0)) * float(token.price or 0),
+                        "tvl": float(int(holder.balance_of) / (10 ** (token.decimals or 0))) * float(token.price or 0),
                     }
                 )
             )
