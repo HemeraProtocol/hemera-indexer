@@ -86,7 +86,13 @@ from common.utils.web3_utils import (
     to_checksum_address,
 )
 from indexer.modules.custom.address_index.models.address_index_stats import AddressIndexStats
-from indexer.modules.custom.address_index.utils.helpers import get_address_transactions, parse_address_transactions
+from indexer.modules.custom.address_index.utils.helpers import (
+    get_address_erc20_token_transfer_cnt,
+    get_address_token_transfers,
+    get_address_transactions,
+    parse_address_token_transfers,
+    parse_address_transactions,
+)
 from indexer.modules.custom.stats.models.daily_addresses_stats import DailyAddressesStats
 from indexer.modules.custom.stats.models.daily_blocks_stats import DailyBlocksStats
 from indexer.modules.custom.stats.models.daily_tokens_stats import DailyTokensStats
@@ -1397,10 +1403,15 @@ class ExplorerAddressTokenTransfers(Resource):
         type = flask.request.args.get("type", "").lower()
 
         if type in ["tokentxns", "erc20"]:
-            condition = or_(
-                ERC20TokenTransfers.from_address == bytea_address,
-                ERC20TokenTransfers.to_address == bytea_address,
-            )
+            token_transfers = get_address_token_transfers(address)
+            token_transfer_list = parse_address_token_transfers(token_transfers)
+            total_count = get_address_erc20_token_transfer_cnt(bytea_address)
+            return {
+                "total": total_count,
+                "data": token_transfer_list,
+                "type": type,
+            }, 200
+
         elif type in ["tokentxns-nft", "erc721"]:
             condition = or_(
                 ERC721TokenTransfers.from_address == bytea_address,

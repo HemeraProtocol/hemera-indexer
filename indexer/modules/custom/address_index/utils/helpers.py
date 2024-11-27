@@ -1,30 +1,38 @@
 import binascii
 import copy
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from select import select
-from typing import Any, Dict, List, Optional, Tuple, Union, re
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from sqlalchemy import and_, func
 
 from api.app.address.features import register_feature
-from api.app.address.models import AddressBaseProfile, ScheduledMetadata
+from api.app.address.models import AddressBaseProfile
 from api.app.contract.contract_verify import get_names_from_method_or_topic_list
 from api.app.db_service.contracts import get_contracts_by_addresses
-from api.app.utils.fill_info import fill_address_display_to_transactions
+from api.app.db_service.wallet_addresses import get_token_txn_cnt_by_address
+from api.app.utils.fill_info import fill_address_display_to_transactions, fill_is_contract_to_transactions
 from api.app.utils.format_utils import format_coin_value, format_transaction
 from api.app.utils.token_utils import get_coin_prices, get_latest_coin_prices, get_token_price
 from api.app.utils.web3_utils import get_balance
 from common.models import db
 from common.models.contracts import Contracts
+from common.models.scheduled_metadata import ScheduledMetadata
 from common.models.tokens import Tokens
 from common.utils.db_utils import app_config, build_entities
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, format_value_for_json, hex_str_to_bytes
-from indexer.modules.custom.address_index.address_index_job import AddressTransactionType, InternalTransactionType
+from common.utils.web3_utils import ZERO_ADDRESS
+from indexer.modules.custom.address_index.address_index_job import (
+    AddressTokenTransferType,
+    AddressTransactionType,
+    InternalTransactionType,
+)
 from indexer.modules.custom.address_index.models.address_contract_operation import AddressContractOperations
 from indexer.modules.custom.address_index.models.address_index_daily_stats import AddressIndexDailyStats
 from indexer.modules.custom.address_index.models.address_internal_transaciton import AddressInternalTransactions
 from indexer.modules.custom.address_index.models.address_token_holders import AddressTokenHolders
+from indexer.modules.custom.address_index.models.address_token_transfers import AddressTokenTransfers
 from indexer.modules.custom.address_index.models.address_transactions import AddressTransactions
 from indexer.modules.custom.address_index.schemas.api import address_base_info_model, filter_and_fill_dict_by_model
 
@@ -692,6 +700,59 @@ def get_address_assets(address: Union[str, bytes]) -> dict:
     }
 
 
+def get_address_erc20_token_transfer_cnt(address):
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
+
+    # Get historical count
+    result = get_token_txn_cnt_by_address("erc20", address)
+    base_count = result[0] if result and result[0] else 0
+
+    # Get transfer table and condition
+    # Calculate recent activity using last 10 minutes
+    current_time = datetime.utcnow()
+    ten_minutes_ago = current_time - timedelta(minutes=10)
+
+    # Get transfers in last 10 minutes
+    recent_transfers = (
+        db.session.query(AddressTokenTransfers)
+        .filter(
+            and_(
+                AddressTokenTransfers.block_timestamp >= ten_minutes_ago,
+            )
+        )
+        .count()
+    )
+
+    transfer_rate = recent_transfers / 10  # transfers per minute
+
+    if last_timestamp:
+        minutes_since_update = int((current_time - last_timestamp).total_seconds() / 60)
+        estimated_new_transfers = int(transfer_rate * minutes_since_update)
+    else:
+        estimated_new_transfers = 0
+
+    return base_count + estimated_new_transfers
+
+
+def get_address_token_transfers(address: str, columns="*", limit=25, offset=0):
+    bytes_address = hex_str_to_bytes(address)
+    entities = build_entities(AddressTokenTransfers, columns)
+
+    address_transactions = (
+        db.session.query(AddressTokenTransfers)
+        .with_entities(*entities)
+        .filter(
+            AddressTokenTransfers.address == bytes_address,
+        )
+        .order_by(AddressTokenTransfers.block_timestamp.desc())
+        .limit(limit)
+        .offset(offset)
+        .all()
+    )
+
+    return address_transactions
+
+
 def get_address_transactions(address: str, columns="*", limit=25, offset=0):
     bytes_address = hex_str_to_bytes(address)
     entities = build_entities(AddressTransactions, columns)
@@ -724,6 +785,91 @@ def format_address_transaction(GAS_FEE_TOKEN_PRICE, transaction: dict):
     transaction_json["total_transaction_fee"] = transaction_json["transaction_fee"]
 
     return transaction_json
+
+
+def parse_address_token_transfers(token_transfers: list[AddressTokenTransfers]):
+    """
+    Parse address token transfers and format them with additional information.
+
+    Args:
+        token_transfers: List of token transfer records
+
+    Returns:
+        list: Formatted token transfer list with additional details
+    """
+    transfer_list = []
+    if len(token_transfers) <= 0:
+        return transfer_list
+
+    # Collect addresses for batch processing
+    bytea_address_list = []
+    bytea_token_address_list = []
+    for transfer in token_transfers:
+        bytea_token_address_list.append(transfer.token_address)
+        bytea_address_list.append(transfer.address)
+        bytea_address_list.append(transfer.related_address)
+
+    # Remove duplicates
+    bytea_token_address_list = list(set(bytea_token_address_list))
+    bytea_address_list = list(set(bytea_address_list))
+
+    # Query ERC20 tokens
+    tokens = (
+        db.session.query(Tokens)
+        .filter(and_(Tokens.address.in_(bytea_token_address_list), Tokens.token_type == "ERC20"))
+        .all()
+    )
+
+    # Create token lookup map
+    token_map = {token.address: token for token in tokens}
+
+    # Process each transfer
+    for transfer in token_transfers:
+        transfer_json = format_to_dict(transfer)
+        token = token_map.get(transfer.token_address)
+
+        # Format value with token decimals
+        decimals = token.decimals if token else 18
+        transfer_json["value"] = "{0:.15f}".format(transfer.value / 10**decimals).rstrip("0").rstrip(".")
+
+        # Add token information
+        if token:
+            transfer_json["token_symbol"] = token.symbol or "UNKNOWN"
+            transfer_json["token_name"] = token.name or "Unknown Token"
+            transfer_json["token_logo_url"] = token.icon_url
+        else:
+            transfer_json["token_symbol"] = "UNKNOWN"
+            transfer_json["token_name"] = "Unknown Token"
+            transfer_json["token_logo_url"] = None
+
+        # Handle different transfer types
+        if transfer.transfer_type == AddressTokenTransferType.RECEIVER.value:
+            transfer_json["from_address"] = bytes_to_hex_str(transfer.related_address)
+            transfer_json["to_address"] = bytes_to_hex_str(transfer.address)
+        elif transfer.transfer_type == AddressTokenTransferType.SENDER.value:
+            transfer_json["from_address"] = bytes_to_hex_str(transfer.address)
+            transfer_json["to_address"] = bytes_to_hex_str(transfer.related_address)
+        elif transfer.transfer_type == AddressTokenTransferType.SELF_CALL.value:
+            transfer_json["from_address"] = bytes_to_hex_str(transfer.address)
+            transfer_json["to_address"] = bytes_to_hex_str(transfer.address)
+        elif transfer.transfer_type == AddressTokenTransferType.DEPOSITOR.value:
+            transfer_json["from_address"] = bytes_to_hex_str(transfer.address)
+            transfer_json["to_address"] = ZERO_ADDRESS
+        elif transfer.transfer_type == AddressTokenTransferType.WITHDRAWER.value:
+            transfer_json["from_address"] = ZERO_ADDRESS
+            transfer_json["to_address"] = bytes_to_hex_str(transfer.address)
+
+        transfer_json["token_address"] = bytes_to_hex_str(transfer.token_address)
+        transfer_json["hash"] = transfer_json["transaction_hash"]
+        transfer_json["is_contract"] = False
+
+        transfer_list.append(transfer_json)
+
+    # Fill additional information for addresses
+    fill_is_contract_to_transactions(transfer_list, bytea_address_list)
+    fill_address_display_to_transactions(transfer_list, bytea_address_list)
+
+    return transfer_list
 
 
 def parse_address_transactions(transactions: list[AddressTransactions]):
