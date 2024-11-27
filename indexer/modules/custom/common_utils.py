@@ -19,63 +19,7 @@ def get_chain_id(web3):
     return web3.eth.chain_id
 
 
-def simple_get_rpc_requests(
-    web3, make_requests, requests, is_batch, abi_list, fn_name, contract_address_key, batch_size, max_worker
-):
-    if len(requests) == 0:
-        return []
-
-    function_abi = next((abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"), None)
-    outputs = function_abi["outputs"]
-    output_types = [output["type"] for output in outputs]
-
-    def process_batch(batch):
-        parameters = build_no_input_method_data(web3, batch, fn_name, abi_list, contract_address_key)
-        token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-
-        if is_batch:
-            response = make_requests(params=json.dumps(token_name_rpc))
-        else:
-            response = [make_requests(params=json.dumps(token_name_rpc[0]))]
-
-        token_infos = []
-        for data in list(zip_rpc_response(parameters, response)):
-            result = rpc_response_to_result(data[1])
-            token = data[0]
-            value = result[2:] if result is not None else None
-            try:
-                decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-                token[fn_name] = decoded_data[0]
-            except Exception as e:
-                logger.error(
-                    f"Decoding {fn_name} failed. "
-                    f"token: {token}. "
-                    f"fn: {fn_name}. "
-                    f"rpc response: {result}. "
-                    f"exception: {e}"
-                )
-            token_infos.append(token)
-        return token_infos
-
-    executor = BatchWorkExecutor(
-        starting_batch_size=batch_size,
-        max_workers=max_worker,
-        job_name=f"simple_get_rpc_requests_{fn_name}",
-    )
-
-    all_token_infos = []
-
-    def work_handler(batch):
-        nonlocal all_token_infos
-        batch_results = process_batch(batch)
-        all_token_infos.extend(batch_results)
-
-    executor.execute(requests, work_handler, total_items=len(requests))
-    executor.wait()
-
-    return all_token_infos
-
-
+# todo: remove later
 def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_key="pool_address", arguments=None):
     arguments = arguments or []
 
