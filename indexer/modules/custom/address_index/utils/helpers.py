@@ -159,7 +159,7 @@ def get_wallet_address_token_holdings(wallet_address: Optional[Union[str, bytes]
                                 "gecko_id": token.gecko_id,
                             },
                         },
-                        "tvl": float(int(holder.balance_of) / (10**token.decimals or 0)) * float(token.price or 0),
+                        "tvl": float(int(holder.balance_of) / (10 ** (token.decimals or 0))) * float(token.price or 0),
                     }
                 )
             )
@@ -430,8 +430,8 @@ def get_address_contract_development_stats(address: Union[str, bytes]) -> Dict[s
     daily_stats = (
         db.session.query(
             AddressIndexDailyStats.block_date,
-            func.sum(AddressIndexDailyStats.transaction_out_count).label("tx_count"),
-            func.sum(AddressIndexDailyStats.transaction_out_fee).label("tx_fee"),
+            func.sum(AddressIndexDailyStats.transaction_in_count).label("tx_count"),
+            func.sum(AddressIndexDailyStats.transaction_in_fee).label("tx_fee"),
         )
         .filter(AddressIndexDailyStats.address.in_(db.session.query(contracts_subquery.c.address)))
         .group_by(AddressIndexDailyStats.block_date)
