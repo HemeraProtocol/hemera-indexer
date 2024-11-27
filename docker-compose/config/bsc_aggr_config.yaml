@@ -1,0 +1,28 @@
+chain_name: eth
+
+FBTC:
+  generator_wallet_table:
+    true
+
+  daily_sqls:
+    address_token_balance:
+      - daily_address_token_balances
+    dodo:
+      - daily_feature_erc20_token_supply_records
+    staked:
+      - daily_feature_holding_balance_staked_fbtc_detail
+
+  period_sqls:
+    address_token_balance:
+      - period_address_token_balances
+    staked:
+      - period_feature_staked_fbtc_detail_records
+      - period_feature_holding_balance_staked_transferred_fbtc_detail
+    dodo:
+      - period_feature_erc20_token_supply_records
+      - period_feature_holding_balance_dodo_bsc
+
+  py_jobs:
+    - address_token_balance
+    - staked
+    - dodo
