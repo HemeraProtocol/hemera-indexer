@@ -1,4 +1,4 @@
-chain_name: eth
+chain_name: bsc
 
 FBTC:
   generator_wallet_table:

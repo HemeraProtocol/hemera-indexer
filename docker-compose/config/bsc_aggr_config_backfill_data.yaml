@@ -1,12 +1,10 @@
 chain_name: bsc
-if_init_balance:
-  true
 
 FBTC:
   period_sqls:
     address_token_balance:
       - period_address_token_balances
-      -
+
   py_jobs:
     - address_token_balance
     - staked
