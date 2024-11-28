@@ -2,7 +2,9 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.staking_fbtc.domain.af_staked_transferred_balance import AfStakedTransferredBalanceHistDomain
+from indexer.modules.custom.staking_fbtc.domain.af_staked_transferred_balance import (
+    AfStakedTransferredBalanceHistDomain,
+)
 
 
 class AfStakedTransferredBalanceHist(HemeraModel):
@@ -21,7 +23,8 @@ class AfStakedTransferredBalanceHist(HemeraModel):
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
-        PrimaryKeyConstraint("contract_address", "wallet_address", "token_address", "block_timestamp", "block_number"),)
+        PrimaryKeyConstraint("contract_address", "wallet_address", "token_address", "block_timestamp", "block_number"),
+    )
 
     @staticmethod
     def model_domain_mapping():
