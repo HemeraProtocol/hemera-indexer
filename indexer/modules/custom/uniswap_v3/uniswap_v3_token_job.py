@@ -34,7 +34,9 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         config = kwargs["config"]["uniswap_v3_job"]
         # only index selected position_token_address
         data = config["position_token_address"]
-        self._position_token_address_dict = {address: pool for pool, addresses in data.items() for address in addresses}
+        self._position_token_address_dict = {
+            address: uniswapv3_type_str for uniswapv3_type_str, addresses in data.items() for address in addresses
+        }
 
         self.multi_call_helper = MultiCallHelper(self._web3, kwargs, logger)
         self._existing_tokens = self.get_existing_tokens()
