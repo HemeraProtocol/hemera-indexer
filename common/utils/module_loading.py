@@ -22,8 +22,8 @@ def import_string(dotted_path: str):
     try:
         return getattr(module, class_name)
     except AttributeError as e:
-        raise e
-        raise ImportError(f'Module "{module_path}" does not define a "{class_name}" attribute/class')
+        return None
+        # raise ImportError(f'Module "{module_path}" does not define a "{class_name}" attribute/class')
 
 
 def scan_subclass_by_path_patterns(
@@ -55,7 +55,7 @@ def scan_subclass_by_path_patterns(
                             dot_path = full_class_path.replace(os.path.sep, ".")
                             module = import_string(dot_path)
 
-                            if not issubclass(module, base_class):
+                            if module and not issubclass(module, base_class):
                                 continue
                             mapping[cls] = {
                                 "module_import_path": module_import_path[:-3],
