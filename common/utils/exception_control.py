@@ -99,21 +99,20 @@ def decode_response_error(error):
     if "InvalidJump" in message:
         return None
 
-    if code == -32000:
-        if (
-            message == "execution reverted"
-            or message == "out of gas"
-            or message == "gas uint64 overflow"
-            or message == "invalid jump destination"
-            or message.lower().find("stack underflow") != -1
-        ):
-            return None
-        elif message.find("required historical state unavailable") != -1:
-            raise HistoryUnavailableError(message)
-        else:
-            # print(error)
-            logging.error(error)
-            raise RPCNotReachable(message)
+    if (
+        message == "execution reverted"
+        or message == "out of gas"
+        or message == "gas uint64 overflow"
+        or message == "invalid jump destination"
+        or message.lower().find("stack underflow") != -1
+    ):
+        return None
+    elif message.find("required historical state unavailable") != -1:
+        raise HistoryUnavailableError(message)
+    elif code == -32000:
+        logging.error(error)
+        raise RPCNotReachable(message)
+
     elif code == -32700 or code == -32600 or code == -32602:
         raise FastShutdownError(message)
     elif (-32000 > code >= -32099) or code == -32603:
