@@ -2,7 +2,7 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import ARRAY, BOOLEAN, BYTEA, INTEGER, JSON, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.bridge.domain.arbitrum import (
+from custom_jobs.bridge.domains.arbitrum import (
     ArbitrumL1ToL2TransactionOnL1,
     ArbitrumL1ToL2TransactionOnL2,
     ArbitrumL2ToL1TransactionOnL1,
@@ -12,13 +12,13 @@ from indexer.modules.bridge.domain.arbitrum import (
     ArbitrumTransactionBatch,
     BridgeToken,
 )
-from indexer.modules.bridge.domain.morph import (
+from custom_jobs.bridge.domains.morph import (
     MorphDepositedTransactionOnL1,
     MorphDepositedTransactionOnL2,
     MorphWithdrawalTransactionOnL1,
     MorphWithdrawalTransactionOnL2,
 )
-from indexer.modules.bridge.domain.op_bedrock import (
+from custom_jobs.bridge.domains.op_bedrock import (
     OpL1ToL2DepositedTransaction,
     OpL1ToL2DepositedTransactionOnL2,
     OpL2ToL1WithdrawnTransactionFinalized,

@@ -2,9 +2,9 @@ import pytest
 
 from common.utils.abi_code_utils import Event, Function, decode_data
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.domain.log import Log
-from indexer.domain.receipt import Receipt
-from indexer.domain.transaction import Transaction
+from indexer.domains.log import Log
+from indexer.domains.receipt import Receipt
+from indexer.domains.transaction import Transaction
 
 
 @pytest.mark.indexer

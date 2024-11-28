@@ -3,9 +3,9 @@ import logging
 import orjson
 
 from common.utils.exception_control import FastShutdownError
-from indexer.domain.block import Block
-from indexer.domain.block_ts_mapper import BlockTsMapper
-from indexer.domain.transaction import Transaction
+from indexer.domains.block import Block
+from indexer.domains.block_ts_mapper import BlockTsMapper
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.specification.specification import (

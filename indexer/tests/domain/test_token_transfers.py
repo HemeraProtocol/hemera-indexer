@@ -1,8 +1,8 @@
 import pytest
 
 from common.utils.web3_utils import ZERO_ADDRESS
-from indexer.domain.log import Log
-from indexer.domain.token_transfer import extract_transfer_from_log
+from indexer.domains.log import Log
+from indexer.domains.token_transfer import extract_transfer_from_log
 
 
 @pytest.mark.indexer

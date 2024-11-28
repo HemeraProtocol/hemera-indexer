@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from indexer.domain.contract_internal_transaction import ContractInternalTransaction
+from indexer.domains.contract_internal_transaction import ContractInternalTransaction
 
 
 class ContractInternalTransactions(HemeraModel):

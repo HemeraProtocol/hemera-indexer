@@ -84,11 +84,11 @@ from common.utils.web3_utils import (
     is_eth_transaction_hash,
     to_checksum_address,
 )
-from indexer.modules.custom.address_index.models.address_index_stats import AddressIndexStats
-from indexer.modules.custom.stats.models.daily_addresses_stats import DailyAddressesStats
-from indexer.modules.custom.stats.models.daily_blocks_stats import DailyBlocksStats
-from indexer.modules.custom.stats.models.daily_tokens_stats import DailyTokensStats
-from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
+from custom_jobs.address_index.models.address_index_stats import AddressIndexStats
+from custom_jobs.stats.models.daily_addresses_stats import DailyAddressesStats
+from custom_jobs.stats.models.daily_blocks_stats import DailyBlocksStats
+from custom_jobs.stats.models.daily_tokens_stats import DailyTokensStats
+from custom_jobs.stats.models.daily_transactions_stats import DailyTransactionsStats
 
 PAGE_SIZE = 25
 MAX_TRANSACTION = 500000

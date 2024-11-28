@@ -1,7 +1,7 @@
 import collections
 from typing import List
 
-from indexer.domain import Domain
+from indexer.domains import Domain
 
 
 class BaseExporter(object):

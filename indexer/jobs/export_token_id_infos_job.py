@@ -3,14 +3,14 @@ from itertools import groupby
 from typing import List, Optional, Union
 
 from common.utils.web3_utils import ZERO_ADDRESS
-from indexer.domain.token_id_infos import (
+from indexer.domains.token_id_infos import (
     ERC721TokenIdChange,
     ERC721TokenIdDetail,
     ERC1155TokenIdDetail,
     UpdateERC721TokenIdDetail,
     UpdateERC1155TokenIdDetail,
 )
-from indexer.domain.token_transfer import ERC721TokenTransfer, ERC1155TokenTransfer
+from indexer.domains.token_transfer import ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.multicall_hemera.util import calculate_execution_time

@@ -5,7 +5,7 @@ import re
 import click
 
 from common.utils.format_utils import to_snake_case
-from indexer.domain import Domain
+from indexer.domains import Domain
 from indexer.exporters.item_exporter import ItemExporterType, check_exporter_in_chosen
 
 

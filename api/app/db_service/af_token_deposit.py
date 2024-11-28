@@ -1,8 +1,8 @@
 from common.models import db
 from common.utils.db_utils import build_entities
 from common.utils.format_utils import hex_str_to_bytes
-from indexer.modules.custom.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
-from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
+from custom_jobs.deposit_to_l2.models.af_token_deposits__transactions import AFTokenDepositsTransactions
+from custom_jobs.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
 
 
 def get_transactions_by_condition(filter_condition=None, columns="*", limit=None, offset=None):

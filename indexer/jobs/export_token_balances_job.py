@@ -6,10 +6,10 @@ from eth_utils import to_hex
 from hexbytes import HexBytes
 
 from common.utils.web3_utils import ZERO_ADDRESS
-from indexer.domain import dict_to_dataclass
-from indexer.domain.current_token_balance import CurrentTokenBalance
-from indexer.domain.token_balance import TokenBalance
-from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
+from indexer.domains import dict_to_dataclass
+from indexer.domains.current_token_balance import CurrentTokenBalance
+from indexer.domains.token_balance import TokenBalance
+from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.abi import pad_address, uint256_to_bytes

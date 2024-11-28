@@ -1,8 +1,8 @@
 import pytest
 
+from custom_jobs.address_index.domains import *
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.modules.custom.address_index.domain import *
 from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy

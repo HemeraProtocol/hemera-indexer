@@ -10,7 +10,7 @@ import logging
 from common.utils.format_utils import to_snake_case
 from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
-from indexer.domain.token_id_infos import (
+from indexer.domains.token_id_infos import (
     ERC721TokenIdChange,
     ERC721TokenIdDetail,
     ERC1155TokenIdDetail,

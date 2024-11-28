@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from indexer.domain.trace import Trace
+from indexer.domains.trace import Trace
 
 
 class Traces(HemeraModel):

@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 
 from common.models import HemeraModel
 from common.models.token_balances import token_balances_general_converter
-from indexer.domain.current_token_balance import CurrentTokenBalance
+from indexer.domains.current_token_balance import CurrentTokenBalance
 
 
 class CurrentTokenBalances(HemeraModel):

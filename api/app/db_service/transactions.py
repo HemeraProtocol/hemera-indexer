@@ -9,7 +9,7 @@ from common.models.scheduled_metadata import ScheduledMetadata
 from common.models.transactions import Transactions
 from common.utils.db_utils import build_entities
 from common.utils.format_utils import hex_str_to_bytes
-from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
+from custom_jobs.stats.models.daily_transactions_stats import DailyTransactionsStats
 
 
 def get_last_transaction():

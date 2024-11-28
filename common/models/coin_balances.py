@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.domain.coin_balance import CoinBalance
+from indexer.domains.coin_balance import CoinBalance
 
 
 class CoinBalances(HemeraModel):

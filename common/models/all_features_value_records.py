@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, JSONB, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.all_features_value_record import (
+from indexer.domains.all_features_value_record import (
     AllFeatureValueRecordBlueChipHolders,
     AllFeatureValueRecordTraitsActiveness,
     AllFeatureValueRecordUniswapV2Info,

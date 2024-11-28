@@ -3,10 +3,10 @@ from typing import List
 
 import orjson
 
-from indexer.domain.block import Block
-from indexer.domain.log import Log
-from indexer.domain.receipt import Receipt
-from indexer.domain.transaction import Transaction
+from indexer.domains.block import Block
+from indexer.domains.log import Log
+from indexer.domains.receipt import Receipt
+from indexer.domains.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob
 from indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc

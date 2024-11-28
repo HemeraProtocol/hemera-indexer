@@ -1,10 +1,10 @@
 import pytest
 
-from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
+from custom_jobs.bridge.bedrock.parser.bedrock_bridge_parser import (
     parse_message_passed_event,
     parse_transaction_deposited_event,
 )
-from indexer.modules.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
+from custom_jobs.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
 from indexer.tests.json_rpc_to_dataclass import get_transaction_from_rpc
 
 DEFAULT_ETHEREUM_RPC = "https://ethereum-rpc.publicnode.com"

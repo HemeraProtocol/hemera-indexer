@@ -8,8 +8,8 @@ from web3 import Web3
 from common.converter.pg_converter import domain_model_mapping
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import to_snake_case
-from indexer.domain import Domain
-from indexer.domain.transaction import Transaction
+from indexer.domains import Domain
+from indexer.domains.transaction import Transaction
 from indexer.utils.reorg import should_reorg
 
 

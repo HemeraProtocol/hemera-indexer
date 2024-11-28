@@ -18,7 +18,7 @@ from common.utils.config import get_config
 from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
 from common.utils.format_utils import format_value_for_json, hex_str_to_bytes
-from indexer.modules.user_ops.models.user_operation_results import UserOperationResult
+from custom_jobs.user_ops.models.user_operation_results import UserOperationResult
 
 PAGE_SIZE = 25
 MAX_TRANSACTION = 500000

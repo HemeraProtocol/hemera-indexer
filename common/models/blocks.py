@@ -4,7 +4,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.domain.block import Block, UpdateBlockInternalCount
+from indexer.domains.block import Block, UpdateBlockInternalCount
 
 
 class Blocks(HemeraModel):

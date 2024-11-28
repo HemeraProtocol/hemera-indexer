@@ -8,19 +8,19 @@ from dataclasses import asdict
 
 import pytest
 
-from indexer.controller.scheduler.job_scheduler import JobScheduler
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.modules.bridge.arbitrum.arb_parser import (
+from custom_jobs.bridge.arbitrum.arb_parser import (
     ArbitrumStateBatchConfirmed,
     ArbitrumStateBatchCreated,
     ArbitrumTransactionBatch,
 )
-from indexer.modules.bridge.domain.arbitrum import (
+from custom_jobs.bridge.domains.arbitrum import (
     ArbitrumL1ToL2TransactionOnL1,
     ArbitrumL1ToL2TransactionOnL2,
     ArbitrumL2ToL1TransactionOnL1,
     ArbitrumL2ToL1TransactionOnL2,
 )
+from indexer.controller.scheduler.job_scheduler import JobScheduler
+from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.tests import ARBITRUM_PUBLIC_NODE_RPC_URL, ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL, ETHEREUM_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy

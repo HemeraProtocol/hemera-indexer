@@ -5,7 +5,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from indexer.domain.token_id_infos import ERC721TokenIdDetail, UpdateERC721TokenIdDetail
+from indexer.domains.token_id_infos import ERC721TokenIdDetail, UpdateERC721TokenIdDetail
 
 
 def token_uri_format_converter(table: Type[HemeraModel], data, is_update=False):

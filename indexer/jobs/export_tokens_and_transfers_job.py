@@ -8,10 +8,10 @@ from common.utils.abi_code_utils import decode_data, encode_data
 from common.utils.format_utils import to_snake_case
 from enumeration.record_level import RecordLevel
 from enumeration.token_type import TokenType
-from indexer.domain import dataclass_to_dict, dict_to_dataclass
-from indexer.domain.log import Log
-from indexer.domain.token import Token, UpdateToken
-from indexer.domain.token_transfer import (
+from indexer.domains import dataclass_to_dict, dict_to_dataclass
+from indexer.domains.log import Log
+from indexer.domains.token import Token, UpdateToken
+from indexer.domains.token_transfer import (
     ERC20TokenTransfer,
     ERC721TokenTransfer,
     ERC1155TokenTransfer,
