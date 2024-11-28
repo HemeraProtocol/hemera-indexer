@@ -1,13 +1,13 @@
 import pytest
 
-from indexer.controller.scheduler.job_scheduler import JobScheduler
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
-from indexer.modules.bridge.domain.morph import (
+from custom_jobs.bridge.domains.morph import (
     MorphDepositedTransactionOnL1,
     MorphDepositedTransactionOnL2,
     MorphWithdrawalTransactionOnL1,
     MorphWithdrawalTransactionOnL2,
 )
+from indexer.controller.scheduler.job_scheduler import JobScheduler
+from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.tests import ETHEREUM_PUBLIC_NODE_RPC_URL, MORPHL2_PUBLIC_NODE_RPC_URL
 from indexer.utils.provider import get_provider_from_uri
 from indexer.utils.thread_local_proxy import ThreadLocalProxy

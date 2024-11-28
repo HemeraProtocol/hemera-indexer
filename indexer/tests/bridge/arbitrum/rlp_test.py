@@ -7,7 +7,7 @@
 import pytest
 from web3 import Web3
 
-from indexer.modules.bridge.arbitrum.arb_rlp import calculate_deposit_tx_id, calculate_submit_retryable_id
+from custom_jobs.bridge.arbitrum.arb_rlp import calculate_deposit_tx_id, calculate_submit_retryable_id
 
 
 @pytest.mark.indexer

@@ -1,12 +1,12 @@
 import pytest
 
-from indexer.modules.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
+from custom_jobs.bridge.bedrock.parser.function_parser import BedRockFunctionCallType
 
 
 @pytest.mark.indexer
 @pytest.mark.indexer_bridge
 def test_bedrock_finalize_bridge_erc721_decoder():
-    from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_erc721 import decode_function
+    from custom_jobs.bridge.bedrock.parser.function_parser.finalize_bridge_erc721 import decode_function
 
     bridge_info = decode_function(
         bytearray.fromhex(

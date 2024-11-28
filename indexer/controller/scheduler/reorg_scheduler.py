@@ -14,7 +14,7 @@ from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.export_reorg_job import ExportReorgJob
 
-import_submodules("indexer.modules")
+import_submodules("custom_jobs")
 
 
 def get_tokens_from_db(session):
