@@ -10,7 +10,6 @@ from common.services.postgresql_service import session_scope
 from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
@@ -58,7 +57,6 @@ class JobScheduler:
         debug_batch_size=1,
         max_workers=5,
         config={},
-        item_exporters=[ConsoleItemExporter()],
         required_output_types=[],
         required_source_types=[],
         cache="memory",
@@ -70,7 +68,6 @@ class JobScheduler:
         self.auto_reorg = auto_reorg
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
-        self.item_exporters = item_exporters
         self.batch_size = batch_size
         self._is_multicall = multicall
         self.debug_batch_size = debug_batch_size
@@ -195,7 +192,6 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
@@ -212,7 +208,6 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
@@ -227,7 +222,6 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
@@ -243,7 +237,6 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
@@ -298,3 +291,6 @@ class JobScheduler:
             raise Exception("Dependency cycle detected")
 
         return sorted_order
+
+    def get_scheduled_jobs(self):
+        return self.jobs

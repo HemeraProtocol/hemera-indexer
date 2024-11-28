@@ -66,7 +66,6 @@ class BaseJob(metaclass=BaseJobMeta):
     def __init__(self, **kwargs):
 
         self._required_output_types = kwargs["required_output_types"]
-        self._item_exporters = kwargs["item_exporters"]
         self._batch_web3_provider = kwargs["batch_web3_provider"]
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -96,14 +95,14 @@ class BaseJob(metaclass=BaseJobMeta):
                 self._collect(**kwargs)
                 self._process(**kwargs)
 
-            if not self._reorg:
-                self._export()
-
         finally:
             self._end()
 
+        return {dataclass.type(): self._data_buff[dataclass.type()] for dataclass in self.output_types}
+
     def _start(self, **kwargs):
-        pass
+        for dataclass in self.output_types:
+            self._data_buff[dataclass.type()].clear()
 
     def _pre_reorg(self, **kwargs):
         if self._service is None:
@@ -168,18 +167,6 @@ class BaseJob(metaclass=BaseJobMeta):
                 items.extend(self._data_buff[key])
 
         return items
-
-    def _export(self):
-        items = []
-
-        for output_type in self.output_types:
-            if output_type in self._required_output_types:
-                items.extend(self._extract_from_buff([output_type.type()]))
-
-        for item_exporter in self._item_exporters:
-            item_exporter.open()
-            item_exporter.export_items(items, job_name=self.job_name)
-            item_exporter.close()
 
     def get_buff(self):
         return self._data_buff
