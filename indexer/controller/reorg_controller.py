@@ -11,23 +11,25 @@ from common.utils.exception_control import HemeraBaseException
 from common.utils.format_utils import hex_str_to_bytes
 from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
-from indexer.utils.exception_recorder import ExceptionRecorder
 
-exception_recorder = ExceptionRecorder()
+# from indexer.utils.exception_recorder import ExceptionRecorder
+
+# exception_recorder = ExceptionRecorder()
 
 
 class ReorgController(BaseController):
 
-    def __init__(self, batch_web3_provider, job_scheduler, ranges, config, max_retries=5):
+    def __init__(self, batch_web3_provider, job_scheduler, ranges, service, max_retries=5):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
-        self.db_service = config.get("db_service")
+        self.db_service = service
         self.job_scheduler = job_scheduler
         self.max_retries = max_retries
 
+    def get_current_block_number(self):
+        return int(self.web3.eth.block_number)
+
     def action(self, job_id=None, block_number=None, remains=None, retry_errors=True):
-        if block_number is None:
-            raise ValueError("Reorging mission must provide a block_number.")
         if remains is None:
             remains = self.ranges
 
@@ -128,7 +130,7 @@ class ReorgController(BaseController):
                 tries_reset = False
                 if not retry_errors or tries >= self.max_retries:
                     logging.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
-                    exception_recorder.force_to_flush()
+                    # exception_recorder.force_to_flush()
                     raise e
                 else:
                     logging.info("After 5 seconds will retry the job.")

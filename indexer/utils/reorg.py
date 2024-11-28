@@ -1,22 +1,24 @@
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import and_
+from sqlalchemy import and_, func, insert, literal, select
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
+from common.models.blocks import Blocks
+from common.models.fix_record import FixRecord
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import RetriableError
 
 
 def set_reorg_sign(jobs, block_number, service):
-    conn = service.get_conn()
+    conn = service.get_connection()
     cur = conn.cursor()
     try:
         table_done = set()
         for job in jobs:
             for output in job.output_types:
-                model = domain_model_mapping[output.__name__]
+                model = domain_model_mapping[output]
                 table = model["table"]
                 if table.__name__ in table_done:
                     continue
@@ -47,7 +49,7 @@ def set_reorg_sign(jobs, block_number, service):
         logging.error(e)
         raise RetriableError(e)
     finally:
-        service.release_conn(conn)
+        service.release_connection(conn)
 
 
 def should_reorg(block_number: int, table: HemeraModel, service: PostgreSQLService):
@@ -67,3 +69,44 @@ def should_reorg(block_number: int, table: HemeraModel, service: PostgreSQLServi
     finally:
         session.close()
     return result is not None
+
+
+def check_reorg(service: PostgreSQLService, check_range: int = None):
+    check_where = and_(Blocks.reorg == False, Blocks.number >= check_range) if check_range else Blocks.reorg == False
+
+    inner_query = (
+        select(
+            Blocks.number,
+            Blocks.hash,
+            Blocks.parent_hash,
+            func.lag(Blocks.number, 1).over(order_by=Blocks.number).label("parent_number"),
+            func.lag(Blocks.hash, 1).over(order_by=Blocks.number).label("lag_hash"),
+        )
+        .where(check_where)
+        .alias("align_table")
+    )
+
+    select_stmt = select(
+        inner_query.c.number.label("start_block_number"),
+        (inner_query.c.number + 1).label("last_fixed_block_number"),
+        literal(5).label("remain_process"),
+        literal("submitted").label("job_status"),
+    ).where(
+        and_(
+            inner_query.c.parent_hash != inner_query.c.lag_hash, inner_query.c.number == inner_query.c.parent_number + 1
+        )
+    )
+
+    insert_stmt = insert(FixRecord).from_select(
+        ["start_block_number", "last_fixed_block_number", "remain_process", "job_status"], select_stmt
+    )
+
+    db_session = service.get_service_session()
+    db_session.execute(insert_stmt)
+    db_session.commit()
+    db_session.close()
+
+
+if __name__ == "__main__":
+    service = PostgreSQLService("postgresql://postgres:admin@localhost:5432/hemera_indexer")
+    check_reorg(service)

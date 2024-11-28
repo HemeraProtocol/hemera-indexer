@@ -3,6 +3,7 @@ import logging
 from psycopg2.extras import execute_values
 
 from common.converter.pg_converter import domain_model_mapping
+from common.services.postgresql_service import PostgreSQLService
 from indexer.exporters.postgres_item_exporter import sql_insert_statement
 from indexer.jobs.base_job import BaseJob
 
@@ -14,10 +15,11 @@ class ExportReorgJob(BaseJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._should_reorg = True
+        self._service = PostgreSQLService(self._service_url)
 
     def _process(self, **kwargs):
         block_number = int(kwargs["start_block"])
-        conn = self._service.get_conn()
+        conn = self._service.get_connection()
         cur = conn.cursor()
 
         try:
@@ -57,7 +59,7 @@ class ExportReorgJob(BaseJob):
             # print(item_type, insert_stmt, [i[-1] for i in data])
             raise Exception("Reorg chain data error")
         finally:
-            self._service.release_conn(conn)
+            self._service.release_connection(conn)
         self._data_buff.clear()
 
     @staticmethod

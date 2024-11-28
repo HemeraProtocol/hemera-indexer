@@ -2,6 +2,7 @@ import logging
 
 import orjson
 
+from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import FastShutdownError
 from indexer.domain.block import Block
 from indexer.domain.block_ts_mapper import BlockTsMapper
@@ -20,35 +21,47 @@ from indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rp
 from indexer.utils.reorg import set_reorg_sign
 from indexer.utils.rpc_utils import rpc_response_batch_to_results
 
-logger = logging.getLogger(__name__)
-
 
 # Exports blocks and block number <-> timestamp mapping
 class ExportBlocksJob(BaseExportJob):
     dependency_types = []
     output_types = [Block, BlockTsMapper]
     able_to_reorg = True
+    able_to_multi_process = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._batch_work_executor = BatchWorkExecutor(
-            kwargs["batch_size"],
-            kwargs["max_workers"],
-            job_name=self.__class__.__name__,
-        )
         self._is_batch = kwargs["batch_size"] > 1
         self._filters = flatten(kwargs.get("filters", []))
         self._is_filter = kwargs.get("is_filter", False)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
         self._reorg_jobs = kwargs.get("reorg_jobs", [])
 
+        if not self._multiprocess:
+            self._batch_work_executor = BatchWorkExecutor(
+                self._batch_size,
+                self._max_workers,
+                job_name=self.logger_name,
+            )
+
+    def _start(self, **kwargs):
+        super()._start(**kwargs)
+
+        if self._multiprocess:
+            self._batch_work_executor = BatchWorkExecutor(
+                self._batch_size,
+                self._max_workers,
+                job_name=self.logger_name,
+            )
+
     def _pre_reorg(self, **kwargs):
-        if self._service is None:
+        if self._service_url is None:
             raise FastShutdownError("PG Service is not set")
 
+        service = PostgreSQLService(self._service_url)
         reorg_block = int(kwargs["start_block"])
-        set_reorg_sign(self._reorg_jobs, reorg_block, self._service)
+        set_reorg_sign(self._reorg_jobs, reorg_block, service)
         self._should_reorg_type.add(Block.type())
         self._should_reorg = True
 
@@ -94,14 +107,24 @@ class ExportBlocksJob(BaseExportJob):
         for block_rpc_dict in results:
             block_entity = Block.from_rpc(block_rpc_dict)
             self._collect_item(Block.type(), block_entity)
+
+            satisfied_transactions = []
             for transaction_entity in block_entity.transactions:
                 if self._specification.is_satisfied_by(transaction_entity):
-                    self._collect_item(Transaction.type(), transaction_entity)
+                    satisfied_transactions.append(transaction_entity)
+
+            block_entity.transactions = satisfied_transactions
 
     def _process(self, **kwargs):
         self._data_buff[Block.type()].sort(key=lambda x: x.number)
-        self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
 
+        # block_list = list(self._shared_data_buff[Block.type()])
+        # block_list.sort(key=lambda x: x.number)
+        # self._shared_data_buff[Block.type()] = self._manager.list(block_list)
+        #
+        # tx_list = list(self._shared_data_buff[Transaction.type()])
+        # tx_list.sort(key=lambda x: (x.block_number, x.transaction_index))
+        # self._shared_data_buff[Transaction.type()] = self._manager.list(tx_list)
         ts_dict = {}
         for block in self._data_buff[Block.type()]:
             timestamp = block.timestamp // 3600 * 3600

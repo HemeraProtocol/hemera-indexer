@@ -62,15 +62,17 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
     dependency_types = [Log]
     output_types = output_transfer_types + output_token_types
     able_to_reorg = True
+    able_to_multi_process = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self._batch_work_executor = BatchWorkExecutor(
-            kwargs["batch_size"],
-            kwargs["max_workers"],
-            job_name=self.__class__.__name__,
-        )
+        if not self._multiprocess:
+            self._batch_work_executor = BatchWorkExecutor(
+                kwargs["batch_size"],
+                kwargs["max_workers"],
+                job_name=self.logger_name,
+            )
 
         self._is_batch = kwargs["batch_size"] > 1
         self.weth_address = self.user_defined_config.get("weth_address")
@@ -97,6 +99,15 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
                 ),
             )
         return TransactionFilterByLogs(filters)
+
+    def _start(self, **kwargs):
+        super()._start(**kwargs)
+        if self._multiprocess:
+            self._batch_work_executor = BatchWorkExecutor(
+                kwargs["batch_size"],
+                kwargs["max_workers"],
+                job_name=self.logger_name,
+            )
 
     def _collect(self, **kwargs):
 

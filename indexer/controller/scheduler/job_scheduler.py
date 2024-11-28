@@ -6,24 +6,22 @@ from pottery import RedisDict
 from redis.client import Redis
 
 from common.models.tokens import Tokens
-from common.services.postgresql_service import session_scope
+from common.services.postgresql_service import PostgreSQLService
 from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from enumeration.record_level import RecordLevel
-from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
-from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.source_job.pg_source_job import PGSourceJob
 from indexer.utils.exception_recorder import ExceptionRecorder
 
 import_submodules("indexer.modules")
-exception_recorder = ExceptionRecorder()
+# exception_recorder = ExceptionRecorder()
 
 
-def get_tokens_from_db(session):
-    with session_scope(session) as s:
+def get_tokens_from_db(service):
+    with service.session_scope() as s:
         dict = {}
         result = s.query(Tokens).all()
         if result is not None:
@@ -52,27 +50,27 @@ def get_source_job_type(source_path: str):
 class JobScheduler:
     def __init__(
         self,
-        batch_web3_provider,
-        batch_web3_debug_provider,
+        web3_provider_uri,
+        web3_debug_provider_uri,
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
         config={},
-        item_exporters=[ConsoleItemExporter()],
         required_output_types=[],
         required_source_types=[],
         cache="memory",
         multicall=None,
+        multiprocess=False,
         auto_reorg=True,
         force_filter_mode=False,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
-        self.batch_web3_provider = batch_web3_provider
-        self.batch_web3_debug_provider = batch_web3_debug_provider
-        self.item_exporters = item_exporters
+        self.web3_provider_uri = web3_provider_uri
+        self.web3_debug_provider_uri = web3_debug_provider_uri
         self.batch_size = batch_size
         self._is_multicall = multicall
+        self._is_multiprocess = multiprocess
         self.debug_batch_size = debug_batch_size
         self.max_workers = max_workers
         self.config = config
@@ -84,7 +82,8 @@ class JobScheduler:
         self.job_classes = []
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
-        self.pg_service = config.get("db_service") if "db_service" in config else None
+        service_url = config.get("db_service") if "db_service" in config else None
+        self.pg_service = PostgreSQLService(service_url) if service_url is not None else None
 
         self.discover_and_register_job_classes()
         self.required_job_classes, self.is_pipeline_filter = self.get_required_job_classes(required_output_types)
@@ -95,7 +94,7 @@ class JobScheduler:
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
         token_dict_from_db = defaultdict()
         if self.pg_service is not None:
-            token_dict_from_db = get_tokens_from_db(self.pg_service.get_service_session())
+            token_dict_from_db = get_tokens_from_db(self.pg_service)
         if cache is None or cache == "memory":
             BaseJob.init_token_cache(token_dict_from_db)
         else:
@@ -193,11 +192,11 @@ class JobScheduler:
                 continue
             job = job_class(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
+                multiprocess=self._is_multiprocess,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
@@ -210,11 +209,11 @@ class JobScheduler:
         if ExportBlocksJob in self.resolved_job_classes:
             export_blocks_job = ExportBlocksJob(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
+                multiprocess=self._is_multiprocess,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
@@ -225,11 +224,11 @@ class JobScheduler:
         else:
             pg_source_job = PGSourceJob(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
+                multiprocess=self._is_multiprocess,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
                 config=self.config,
@@ -237,21 +236,6 @@ class JobScheduler:
                 filters=filters,
             )
             self.jobs.insert(0, pg_source_job)
-
-        if self.auto_reorg:
-            check_job = CheckBlockConsensusJob(
-                required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
-                batch_size=self.batch_size,
-                multicall=self._is_multicall,
-                debug_batch_size=self.debug_batch_size,
-                max_workers=self.max_workers,
-                config=self.config,
-                filters=filters,
-            )
-            self.jobs.append(check_job)
 
     def run_jobs(self, start_block, end_block):
         self.clear_data_buff()
@@ -261,16 +245,17 @@ class JobScheduler:
 
             for output_type in self.required_output_types:
                 key = output_type.type()
-                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type()))}"
+                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
                 self.logger.info(f"{message}")
-                exception_recorder.log(
-                    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
-                )
+                # exception_recorder.log(
+                #    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
+                # )
 
         except Exception as e:
             raise e
         finally:
-            exception_recorder.force_to_flush()
+            pass
+            # exception_recorder.force_to_flush()
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []
@@ -298,3 +283,6 @@ class JobScheduler:
             raise Exception("Dependency cycle detected")
 
         return sorted_order
+
+    def get_scheduled_jobs(self):
+        return self.jobs

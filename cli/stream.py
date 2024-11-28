@@ -184,12 +184,21 @@ def calculate_execution_time(func):
     help="How many blocks to batch in single sync round",
 )
 @click.option(
+    "-P",
+    "--max-processors",
+    default=1,
+    show_default=True,
+    type=int,
+    help="How many sync round to concurrently execute.",
+    envvar="MAX_PROCESSOR",
+)
+@click.option(
     "-w",
     "--max-workers",
     default=5,
     show_default=True,
     type=int,
-    help="The number of workers",
+    help="The number of workers during a request to rpc.",
     envvar="MAX_WORKERS",
 )
 @click.option(
@@ -325,6 +334,7 @@ def stream(
     batch_size=10,
     debug_batch_size=1,
     block_batch_size=1,
+    max_processors=1,
     max_workers=5,
     log_file=None,
     pid_file=None,
@@ -346,6 +356,12 @@ def stream(
     debug_provider_uri = pick_random_provider_uri(debug_provider_uri)
     logging.getLogger("ROOT").info("Using provider " + provider_uri)
     logging.getLogger("ROOT").info("Using debug provider " + debug_provider_uri)
+    logging.getLogger("ROOT").info(
+        f"Indexer will run in {'multi' if max_processors > 1 else 'single'}-process mode "
+        f"{'with ' if max_processors > 1 else ''}"
+        f"{max_processors if max_processors > 1 else ''}"
+        f" {'processor' if max_processors > 1 else ''} "
+    )
 
     # parameter logic checking
     if source_path:
@@ -361,7 +377,7 @@ def stream(
 
     if postgres_url:
         service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
-        config["db_service"] = service
+        config["db_service"] = postgres_url
         exception_recorder.init_pg_service(service)
     else:
         logging.getLogger("ROOT").warning("No postgres url provided. Exception recorder will not be useful.")
@@ -397,14 +413,14 @@ def stream(
     output_types = list(
         set(generate_dataclass_type_list_from_parameter(output_types, "output") + output_types_by_entity_type)
     )
+    output_types.sort(key=lambda x: x.type())
 
     if source_path and source_path.startswith("postgresql://"):
         source_types = generate_dataclass_type_list_from_parameter(source_types, "source")
 
     job_scheduler = JobScheduler(
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporters=create_item_exporters(output, config),
+        web3_provider_uri=provider_uri,
+        web3_debug_provider_uri=debug_provider_uri,
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
@@ -414,12 +430,16 @@ def stream(
         cache=cache,
         auto_reorg=auto_reorg,
         multicall=multicall,
+        multiprocess=max_processors > 1,
         force_filter_mode=force_filter_mode,
     )
 
     controller = StreamController(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
-        job_scheduler=job_scheduler,
+        max_processors=max_processors,
+        scheduled_jobs=job_scheduler.get_scheduled_jobs(),
+        item_exporters=create_item_exporters(output, config),
+        required_output_types=output_types,
         sync_recorder=create_recorder(sync_recorder, config),
         limit_reader=create_limit_reader(
             source_path, ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False))
@@ -435,3 +455,5 @@ def stream(
         period_seconds=period_seconds,
         pid_file=pid_file,
     )
+
+    controller.shutdown()

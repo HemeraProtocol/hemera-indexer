@@ -7,7 +7,7 @@ from requests.exceptions import Timeout as RequestsTimeout
 from requests.exceptions import TooManyRedirects
 from web3._utils.threads import Timeout as Web3Timeout
 
-from common.utils.exception_control import FastShutdownError, RetriableError
+from common.utils.exception_control import FastShutdownError, RetriableError, get_exception_details
 from indexer.executors.bounded_executor import BoundedExecutor
 from indexer.utils.progress_logger import ProgressLogger
 
@@ -40,7 +40,7 @@ class BatchWorkExecutor:
         self.max_workers = max_workers
         # Using bounded executor prevents unlimited queue growth
         # and allows monitoring in-progress futures and failing fast in case of errors.
-        self.executor = BoundedExecutor(1, self.max_workers)
+        self.executor = BoundedExecutor(100, self.max_workers)
         self._futures = []
         self.retry_exceptions = retry_exceptions
         self.max_retries = max_retries
@@ -48,7 +48,7 @@ class BatchWorkExecutor:
         self.progress_logger = ProgressLogger(name=job_name, logger=self.logger)
 
     def execute(self, work_iterable, work_handler, total_items=None, split_method=None):
-        self.progress_logger.start(total_items=total_items)
+        # self.progress_logger.start(total_items=total_items)
         submit_batches = (
             dynamic_batch_iterator(work_iterable, lambda: self.batch_size)
             if split_method is None
@@ -73,14 +73,25 @@ class BatchWorkExecutor:
                 for sub_batch in dynamic_batch_iterator(batch, lambda: self.batch_size):
                     self._fail_safe_execute(work_handler, sub_batch, custom_splitting)
             else:
-                execute_with_retries(
-                    work_handler,
-                    batch,
-                    max_retries=self.max_retries,
-                    retry_exceptions=self.retry_exceptions,
-                )
+                try:
+                    execute_with_retries(
+                        work_handler,
+                        batch,
+                        max_retries=self.max_retries,
+                        retry_exceptions=self.retry_exceptions,
+                    )
+                except Exception as e:
+                    error_details = get_exception_details(e)
+                    warped_exception = FastShutdownError(str(e))
+                    warped_exception.update_detail(error_details)
+                    raise warped_exception
+        except Exception as e:
+            error_details = get_exception_details(e)
+            warped_exception = FastShutdownError(str(e))
+            warped_exception.update_detail(error_details)
+            raise warped_exception
 
-        self.progress_logger.track(len(batch))
+        # self.progress_logger.track(len(batch))
 
     # Some acceptable race conditions are possible
     def _try_decrease_batch_size(self, current_batch_size):
@@ -110,7 +121,7 @@ class BatchWorkExecutor:
         if len(self._futures) != 0:
             raise FastShutdownError("Futures failed to complete successfully.")
 
-        self.progress_logger.finish()
+        # self.progress_logger.finish()
 
     def shutdown(self):
         self.executor.shutdown(wait=10)
@@ -118,7 +129,7 @@ class BatchWorkExecutor:
         if len(self._futures) != 0:
             raise FastShutdownError("Futures failed to complete successfully.")
 
-        self.progress_logger.finish()
+        # self.progress_logger.finish()
 
     def _check_completed_futures(self):
         """Fail safe in this case means fail fast. TODO: Add retry logic"""

@@ -6,7 +6,7 @@ from pottery import RedisDict
 from redis.client import Redis
 
 from common.models.tokens import Tokens
-from common.services.postgresql_service import session_scope
+from common.services.postgresql_service import PostgreSQLService
 from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from indexer.jobs import FilterTransactionDataJob
@@ -17,8 +17,8 @@ from indexer.jobs.export_reorg_job import ExportReorgJob
 import_submodules("indexer.modules")
 
 
-def get_tokens_from_db(session):
-    with session_scope(session) as s:
+def get_tokens_from_db(service):
+    with service.session_scope() as s:
         dict = {}
         result = s.query(Tokens).all()
         if result is not None:
@@ -38,8 +38,8 @@ def get_tokens_from_db(session):
 class ReorgScheduler:
     def __init__(
         self,
-        batch_web3_provider,
-        batch_web3_debug_provider,
+        web3_provider_uri,
+        web3_debug_provider_uri,
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -49,8 +49,8 @@ class ReorgScheduler:
         cache="memory",
         multicall=None,
     ):
-        self.batch_web3_provider = batch_web3_provider
-        self.batch_web3_debug_provider = batch_web3_debug_provider
+        self.web3_provider_uri = web3_provider_uri
+        self.web3_debug_provider_uri = web3_debug_provider_uri
         self.item_exporters = item_exporters
         self.batch_size = batch_size
         self.debug_batch_size = debug_batch_size
@@ -61,7 +61,7 @@ class ReorgScheduler:
         self.job_classes = []
         self.job_map = defaultdict(list)
         self.dependency_map = defaultdict(list)
-        self.pg_service = config.get("db_service") if "db_service" in config else None
+        self.pg_service = PostgreSQLService(config.get("db_service")) if "db_service" in config else None
         self._is_multicall = multicall
 
         self.discover_and_register_job_classes()
@@ -69,7 +69,7 @@ class ReorgScheduler:
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
         token_dict_from_db = defaultdict()
         if self.pg_service is not None:
-            token_dict_from_db = get_tokens_from_db(self.pg_service.get_service_session())
+            token_dict_from_db = get_tokens_from_db(self.pg_service)
         if cache is None or cache == "memory":
             BaseJob.init_token_cache(token_dict_from_db)
         else:
@@ -113,9 +113,8 @@ class ReorgScheduler:
                 continue
             job = job_class(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 batch_size=self.batch_size,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
@@ -131,9 +130,8 @@ class ReorgScheduler:
         if ExportBlocksJob in self.resolved_job_classes:
             export_blocks_job = ExportBlocksJob(
                 required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
+                web3_provider_uri=self.web3_provider_uri,
+                web3_debug_provider_uri=self.web3_debug_provider_uri,
                 batch_size=self.batch_size,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
@@ -147,9 +145,8 @@ class ReorgScheduler:
 
         export_reorg_job = ExportReorgJob(
             required_output_types=self.required_output_types,
-            batch_web3_provider=self.batch_web3_provider,
-            batch_web3_debug_provider=self.batch_web3_debug_provider,
-            item_exporters=self.item_exporters,
+            web3_provider_uri=self.web3_provider_uri,
+            web3_debug_provider_uri=self.web3_debug_provider_uri,
             batch_size=self.batch_size,
             debug_batch_size=self.debug_batch_size,
             max_workers=self.max_workers,
