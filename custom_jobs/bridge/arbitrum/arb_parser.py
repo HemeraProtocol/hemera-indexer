@@ -14,8 +14,8 @@ from web3._utils.contracts import decode_transaction_data
 from web3.types import ABIEvent, ABIFunction
 
 from common.utils.abi_code_utils import decode_log
-from indexer.modules.bridge.arbitrum.arb_network import Network
-from indexer.modules.bridge.domain.arbitrum import (
+from custom_jobs.bridge.arbitrum.arb_network import Network
+from custom_jobs.bridge.domains.arbitrum import (
     ArbitrumStateBatchConfirmed,
     ArbitrumStateBatchCreated,
     ArbitrumTransactionBatch,

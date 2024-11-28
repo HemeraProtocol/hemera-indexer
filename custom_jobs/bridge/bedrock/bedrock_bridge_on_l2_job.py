@@ -1,14 +1,14 @@
 import logging
 
 from common.utils.exception_control import FastShutdownError
-from indexer.domains.transaction import Transaction
-from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import (
+from custom_jobs.bridge.bedrock.parser.bedrock_bridge_parser import (
     BEDROCK_EVENT_ABI_SIGNATURE_MAPPING,
     parse_message_passed_event,
     parse_relayed_message,
 )
-from indexer.modules.bridge.domain.op_bedrock import *
+from custom_jobs.bridge.domains.op_bedrock import *
+from indexer.domains.transaction import Transaction
+from indexer.jobs import FilterTransactionDataJob
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)

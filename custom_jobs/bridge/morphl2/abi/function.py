@@ -5,7 +5,7 @@ from web3.types import ABIFunction
 
 from common.utils.abi_code_utils import Function, FunctionCollection
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.modules.bridge.morphl2.parser.deposited_transaction import DepositedTransaction
+from custom_jobs.bridge.morphl2.parser.deposited_transaction import DepositedTransaction
 
 
 class MorphFunction(Function):

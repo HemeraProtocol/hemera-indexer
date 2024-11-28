@@ -1,6 +1,6 @@
 from common.models import db
 from common.utils.db_utils import build_entities
-from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
+from custom_jobs.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
 
 
 def get_daily_transactions_cnt(columns="*", limit=10):

@@ -8,21 +8,21 @@ from web3.types import ABIEvent, ABIFunction
 
 from common.utils.abi_code_utils import decode_log
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domains.transaction import Transaction
-from indexer.modules.bridge.bedrock.parser.function_parser import (
+from custom_jobs.bridge.bedrock.parser.function_parser import (
     BedrockBridgeParser,
     BedRockFunctionCallType,
     BridgeRemoteFunctionCallInfo,
 )
-from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_erc20 import FINALIZE_BRIDGE_ERC20_DECODER
-from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_erc721 import FINALIZE_BRIDGE_ERC721_DECODER
-from indexer.modules.bridge.bedrock.parser.function_parser.finalize_bridge_eth import FINALIZE_BRIDGE_ETH_DECODER
-from indexer.modules.bridge.bridge_utils import (
+from custom_jobs.bridge.bedrock.parser.function_parser.finalize_bridge_erc20 import FINALIZE_BRIDGE_ERC20_DECODER
+from custom_jobs.bridge.bedrock.parser.function_parser.finalize_bridge_erc721 import FINALIZE_BRIDGE_ERC721_DECODER
+from custom_jobs.bridge.bedrock.parser.function_parser.finalize_bridge_eth import FINALIZE_BRIDGE_ETH_DECODER
+from custom_jobs.bridge.bridge_utils import (
     deposit_event_to_op_bedrock_transaction,
     get_version_and_index_from_nonce,
     unmarshal_deposit_version0,
     unmarshal_deposit_version1,
 )
+from indexer.domains.transaction import Transaction
 from indexer.utils.abi import event_log_abi_to_topic
 
 bedrockBridgeParser = BedrockBridgeParser(

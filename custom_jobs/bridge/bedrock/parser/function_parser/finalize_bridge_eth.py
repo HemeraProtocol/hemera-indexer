@@ -6,7 +6,7 @@ from web3.types import ABIFunction
 
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.modules.bridge.bedrock.parser.function_parser import (
+from custom_jobs.bridge.bedrock.parser.function_parser import (
     BedRockFunctionCallType,
     BridgeRemoteFunctionCallInfo,
     RemoteFunctionCallDecoder,

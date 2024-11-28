@@ -1,10 +1,10 @@
 import logging
 
+from custom_jobs.bridge.arbitrum.arb_parser import *
+from custom_jobs.bridge.arbitrum.arb_rlp import calculate_deposit_tx_id, calculate_submit_retryable_id
+from custom_jobs.bridge.domains.arbitrum import ArbitrumL1ToL2TransactionOnL1, ArbitrumL2ToL1TransactionOnL1
 from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.bridge.arbitrum.arb_parser import *
-from indexer.modules.bridge.arbitrum.arb_rlp import calculate_deposit_tx_id, calculate_submit_retryable_id
-from indexer.modules.bridge.domain.arbitrum import ArbitrumL1ToL2TransactionOnL1, ArbitrumL2ToL1TransactionOnL1
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)

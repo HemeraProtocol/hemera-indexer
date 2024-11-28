@@ -6,10 +6,10 @@ from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
 from web3.types import ABIEvent, ABIFunction
 
 from common.utils.abi_code_utils import decode_log
+from custom_jobs.user_ops.domains.user_operations import UserOperationsResult
 from indexer.domains.log import Log
 from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 CONTRACT_ADDRESS = "0x5ff137d4b0fdcd49dca30c7cf57e578a026d2789"

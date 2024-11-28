@@ -30,6 +30,7 @@ from custom_jobs.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3TokenDetail,
     UniswapV3TokenUpdateLiquidity,
 )
+from custom_jobs.user_ops.domains.user_operations import UserOperationsResult
 from indexer.domains.all_features_value_record import AllFeatureValueRecordBlueChipHolders
 from indexer.domains.block import Block, UpdateBlockInternalCount
 from indexer.domains.block_ts_mapper import BlockTsMapper
@@ -43,7 +44,6 @@ from indexer.domains.token_id_infos import *
 from indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domains.trace import Trace
 from indexer.domains.transaction import Transaction
-from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
 
 
 class EntityType(IntFlag):

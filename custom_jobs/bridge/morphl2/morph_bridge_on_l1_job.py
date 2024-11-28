@@ -1,10 +1,10 @@
 import logging
 
+from custom_jobs.bridge.domains.morph import MorphDepositedTransactionOnL1, MorphWithdrawalTransactionOnL1
+from custom_jobs.bridge.morphl2.abi.event import QueueTransactionEvent, RelayedMessageEvent
+from custom_jobs.bridge.morphl2.parser.parser import parse_relayed_message_event, parse_transaction_deposited_event
 from indexer.domains.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.bridge.domain.morph import MorphDepositedTransactionOnL1, MorphWithdrawalTransactionOnL1
-from indexer.modules.bridge.morphl2.abi.event import QueueTransactionEvent, RelayedMessageEvent
-from indexer.modules.bridge.morphl2.parser.parser import parse_relayed_message_event, parse_transaction_deposited_event
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)

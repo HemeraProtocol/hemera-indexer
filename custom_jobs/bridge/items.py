@@ -3,7 +3,7 @@ from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm import declarative_base
 
 from common.utils.format_utils import hex_str_to_bytes
-from indexer.modules.bridge.arbitrum.arb_parser import (
+from custom_jobs.bridge.arbitrum.arb_parser import (
     ArbitrumStateBatchConfirmed,
     ArbitrumStateBatchCreated,
     ArbitrumTransactionBatch,

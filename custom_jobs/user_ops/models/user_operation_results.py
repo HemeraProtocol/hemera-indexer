@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.user_ops.domain.user_operations import UserOperationsResult
+from custom_jobs.user_ops.domains.user_operations import UserOperationsResult
 
 
 class UserOperationResult(HemeraModel):

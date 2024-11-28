@@ -2,13 +2,13 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from indexer.domains import FilterData
+from indexer.domains import Domain
 
 """for ens_middle"""
 
 
 @dataclass
-class ENSMiddleD(FilterData):
+class ENSMiddleD(Domain):
     transaction_hash: str
     log_index: int
     transaction_index: int
@@ -45,7 +45,7 @@ class ENSMiddleD(FilterData):
 
 
 @dataclass
-class ENSRegisterD(FilterData):
+class ENSRegisterD(Domain):
 
     registration: Optional[datetime] = None
     expires: Optional[datetime] = None
@@ -60,7 +60,7 @@ class ENSRegisterD(FilterData):
 
 
 @dataclass
-class ENSNameRenewD(FilterData):
+class ENSNameRenewD(Domain):
 
     node: Optional[str] = None
     expires: Optional[datetime] = None
@@ -68,7 +68,7 @@ class ENSNameRenewD(FilterData):
 
 
 @dataclass
-class ENSAddressChangeD(FilterData):
+class ENSAddressChangeD(Domain):
 
     node: Optional[str] = None
     address: Optional[str] = None
@@ -79,7 +79,7 @@ class ENSAddressChangeD(FilterData):
 
 
 @dataclass
-class ENSAddressD(FilterData):
+class ENSAddressD(Domain):
 
     address: Optional[str] = None
     reverse_node: Optional[str] = None

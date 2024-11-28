@@ -3,11 +3,10 @@ from typing import Any, Dict, List, Optional
 from web3 import Web3
 
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domains.transaction import Transaction
-from indexer.modules.bridge.bedrock.parser.bedrock_bridge_parser import RelayedMessageTransaction
-from indexer.modules.bridge.bridge_utils import get_version_and_index_from_nonce
-from indexer.modules.bridge.morphl2.abi.event import QueueTransactionEvent, RelayedMessageEvent, SentMessageEvent
-from indexer.modules.bridge.morphl2.abi.function import (
+from custom_jobs.bridge.bedrock.parser.bedrock_bridge_parser import RelayedMessageTransaction
+from custom_jobs.bridge.bridge_utils import get_version_and_index_from_nonce
+from custom_jobs.bridge.morphl2.abi.event import QueueTransactionEvent, RelayedMessageEvent, SentMessageEvent
+from custom_jobs.bridge.morphl2.abi.function import (
     MorphFunctionCollection,
     finalizeBatchDepositERC721Function,
     finalizeBatchDepositERC1155Function,
@@ -23,7 +22,8 @@ from indexer.modules.bridge.morphl2.abi.function import (
     finalizeWithdrawETHFunction,
     relayMessageFunction,
 )
-from indexer.modules.bridge.morphl2.parser.deposited_transaction import DepositedTransaction
+from custom_jobs.bridge.morphl2.parser.deposited_transaction import DepositedTransaction
+from indexer.domains.transaction import Transaction
 
 
 def parse_relayed_message_event(transaction: Transaction, contract_address) -> List[RelayedMessageTransaction]:
