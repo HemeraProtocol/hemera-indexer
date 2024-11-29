@@ -18,12 +18,15 @@ exception_recorder = ExceptionRecorder()
 
 class ReorgController(BaseController):
 
-    def __init__(self, batch_web3_provider, job_scheduler, ranges, config, max_retries=5):
+    def __init__(self, batch_web3_provider, job_scheduler, ranges, service, max_retries=5):
         self.ranges = ranges
         self.web3 = build_web3(batch_web3_provider)
-        self.db_service = config.get("db_service")
+        self.db_service = service
         self.job_scheduler = job_scheduler
         self.max_retries = max_retries
+
+    def get_current_block_number(self):
+        return int(self.web3.eth.block_number)
 
     def action(self, job_id=None, block_number=None, remains=None, retry_errors=True):
         if block_number is None:

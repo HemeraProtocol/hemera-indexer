@@ -1,10 +1,13 @@
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import and_
+from numpy import insert
+from sqlalchemy import and_, func, select, literal
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
+from common.models.blocks import Blocks
+from common.models.fix_record import FixRecord
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.exception_control import RetriableError
 
@@ -24,8 +27,8 @@ def set_reorg_sign(jobs, block_number, service):
                 table_done.add(table.__name__)
                 if hasattr(table, "reorg"):
                     update_stmt = (
-                        f"UPDATE {table.__tablename__} "
-                        + f"SET reorg=TRUE, update_time='{datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())}'"
+                            f"UPDATE {table.__tablename__} "
+                            + f"SET reorg=TRUE, update_time='{datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())}'"
                     )
 
                     if hasattr(table, "number"):
@@ -67,3 +70,39 @@ def should_reorg(block_number: int, table: HemeraModel, service: PostgreSQLServi
     finally:
         session.close()
     return result is not None
+
+
+def check_reorg(service: PostgreSQLService, check_range: int = None):
+    check_where = and_(Blocks.reorg == False, Blocks.number >= check_range) if check_range else Blocks.reorg == False
+
+    inner_query = (
+        select(
+            Blocks.number,
+            Blocks.hash,
+            Blocks.parent_hash,
+            func.lag(Blocks.number, 1).over(order_by=Blocks.number).label("parent_number"),
+            func.lag(Blocks.hash, 1).over(order_by=Blocks.number).label("lag_hash"),
+        )
+        .where(check_where)
+        .alias("align_table")
+    )
+
+    select_stmt = select(
+        inner_query.c.number.label("start_block_number"),
+        (inner_query.c.number + 1).label("last_fixed_block_number"),
+        literal(5).label("remain_process"),
+        literal("submitted").label("job_status"),
+    ).where(
+        and_(
+            inner_query.c.parent_hash != inner_query.c.lag_hash, inner_query.c.number == inner_query.c.parent_number + 1
+        )
+    )
+
+    insert_stmt = insert(FixRecord).from_select(
+        ["start_block_number", "last_fixed_block_number", "remain_process", "job_status"], select_stmt
+    )
+
+    db_session = service.get_service_session()
+    db_session.execute(insert_stmt)
+    db_session.commit()
+    db_session.close()
