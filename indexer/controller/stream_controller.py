@@ -135,16 +135,13 @@ class StreamController(BaseController):
         return target_block
 
 
-def run_jobs(jobs, start_block, end_block, max_retries, processor=None):
+def run_jobs(jobs, start_block, end_block, max_retries):
     try:
-        if processor and processor != "None":
-            logger.info(f"Task in {processor} begin, run block range between {start_block} and {end_block}")
-        else:
-            logger.info(f"Task begin, run block range between {start_block} and {end_block}")
+        logger.info(f"Task begin, run block range between {start_block} and {end_block}")
         jobs_export_data = {}
         for job in jobs:
             job_export_data = job_with_retires(
-                job, start_block=start_block, end_block=end_block, max_retries=max_retries, processor=processor
+                job, start_block=start_block, end_block=end_block, max_retries=max_retries
             )
             jobs_export_data.update(job_export_data)
     except Exception as e:
@@ -153,14 +150,11 @@ def run_jobs(jobs, start_block, end_block, max_retries, processor=None):
     return jobs_export_data
 
 
-def job_with_retires(job, start_block, end_block, max_retries, processor=None):
+def job_with_retires(job, start_block, end_block, max_retries):
     for retry in range(max_retries):
         try:
-            if processor and processor != "None":
-                logger.info(f"Task in {processor} run {job.__class__.__name__}")
-            else:
-                logger.info(f"Task run {job.__class__.__name__}")
-            return job.run(start_block=start_block, end_block=end_block, processor=processor)
+            logger.info(f"Task run {job.__class__.__name__}")
+            return job.run(start_block=start_block, end_block=end_block)
 
         except HemeraBaseException as e:
             logger.error(f"An rpc response exception occurred while running {job.__class__.__name__}. error: {e}")

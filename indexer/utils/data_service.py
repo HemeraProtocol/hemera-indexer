@@ -21,8 +21,8 @@ BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 100)
 BUFFER_LINGER_MS = os.environ.get("BUFFER_LINGER_MS", 5000)
 MAX_BUFFER_SIZE = os.environ.get("BUFFER_LINGER_MS", 1000)
 ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
+CONCURRENT_SUBMITTERS = os.environ.get("CONCURRENT_SUBMITTERS", 1)
 CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
-
 
 class BufferService:
 
@@ -33,7 +33,7 @@ class BufferService:
         block_size: int = BUFFER_BLOCK_SIZE,
         linger_ms: int = BUFFER_LINGER_MS,
         max_buffer_size: int = MAX_BUFFER_SIZE,
-        export_workers: int = 5,
+        export_workers: int = CONCURRENT_SUBMITTERS,
         success_callback: Callable = None,
         exception_callback: Callable = None,
     ):

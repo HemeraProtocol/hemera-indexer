@@ -9,16 +9,13 @@ from common.models.tokens import Tokens
 from common.services.postgresql_service import session_scope
 from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
-from enumeration.record_level import RecordLevel
 from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.source_job.pg_source_job import PGSourceJob
-from indexer.utils.exception_recorder import ExceptionRecorder
 
 import_submodules("indexer.modules")
-exception_recorder = ExceptionRecorder()
 
 
 def get_tokens_from_db(session):
@@ -144,12 +141,6 @@ class JobScheduler:
                         output_type_queue.append(dependency)
         return required_job_classes, is_filter
 
-    def clear_data_buff(self):
-        BaseJob._data_buff.clear()
-
-    def get_data_buff(self):
-        return BaseJob._data_buff
-
     def discover_and_register_job_classes(self):
         if self.load_from_source:
             source_job = get_source_job_type(source_path=self.load_from_source)
@@ -245,25 +236,6 @@ class JobScheduler:
                 filters=filters,
             )
             self.jobs.append(check_job)
-
-    def run_jobs(self, start_block, end_block):
-        self.clear_data_buff()
-        try:
-            for job in self.jobs:
-                job.run(start_block=start_block, end_block=end_block)
-
-            for output_type in self.required_output_types:
-                key = output_type.type()
-                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type()))}"
-                self.logger.info(f"{message}")
-                exception_recorder.log(
-                    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
-                )
-
-        except Exception as e:
-            raise e
-        finally:
-            exception_recorder.force_to_flush()
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []
