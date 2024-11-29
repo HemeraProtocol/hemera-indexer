@@ -57,7 +57,7 @@ class Block(Domain):
             excess_blob_gas=to_int(hexstr=block_dict.get("excessBlobGas", "0")),
             difficulty=to_int(hexstr=block_dict["difficulty"]),
             total_difficulty=to_int(hexstr=block_dict.get("totalDifficulty", "0")),
-            size=to_int(hexstr=block_dict["size"]),
+            size=to_int(hexstr=block_dict["size"]) if "size" in block_dict else 0,
             miner=to_normalized_address(block_dict["miner"]),
             sha3_uncles=block_dict["sha3Uncles"],
             transactions_root=block_dict["transactionsRoot"],
