@@ -47,19 +47,19 @@ def get_source_job_type(source_path: str):
 
 class JobScheduler:
     def __init__(
-        self,
-        batch_web3_provider,
-        batch_web3_debug_provider,
-        batch_size=100,
-        debug_batch_size=1,
-        max_workers=5,
-        config={},
-        required_output_types=[],
-        required_source_types=[],
-        cache="memory",
-        multicall=None,
-        auto_reorg=True,
-        force_filter_mode=False,
+            self,
+            batch_web3_provider,
+            batch_web3_debug_provider,
+            batch_size=100,
+            debug_batch_size=1,
+            max_workers=5,
+            config={},
+            required_output_types=[],
+            required_source_types=[],
+            cache="memory",
+            multicall=None,
+            auto_reorg=True,
+            force_filter_mode=False,
     ):
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
@@ -140,6 +140,12 @@ class JobScheduler:
                     for dependency in job_class.dependency_types:
                         output_type_queue.append(dependency)
         return required_job_classes, is_filter
+
+    def clear_data_buff(self):
+        BaseJob._data_buff.clear()
+
+    def get_data_buff(self):
+        return BaseJob._data_buff
 
     def discover_and_register_job_classes(self):
         if self.load_from_source:
@@ -236,6 +242,19 @@ class JobScheduler:
                 filters=filters,
             )
             self.jobs.append(check_job)
+
+    def run_jobs(self, start_block, end_block):
+        self.clear_data_buff()
+        try:
+            for job in self.jobs:
+                job.run(start_block=start_block, end_block=end_block)
+
+            for output_type in self.required_output_types:
+                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type()))}"
+                self.logger.info(f"{message}")
+
+        except Exception as e:
+            raise e
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []
