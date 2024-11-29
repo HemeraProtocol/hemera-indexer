@@ -168,7 +168,6 @@ def reorg(
     job_scheduler = ReorgScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporters=PostgresItemExporter(config["db_service"]),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         required_output_types=output_types,
