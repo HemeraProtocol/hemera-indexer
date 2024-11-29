@@ -8,17 +8,14 @@ from redis.client import Redis
 from common.models.tokens import Tokens
 from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
-from enumeration.record_level import RecordLevel
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs import CSVSourceJob
 from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.source_job.pg_source_job import PGSourceJob
-from indexer.utils.exception_recorder import ExceptionRecorder
 
 import_submodules("indexer.modules")
-# exception_recorder = ExceptionRecorder()
 
 
 def get_tokens_from_db(service):
@@ -259,18 +256,13 @@ class JobScheduler:
                 job.run(start_block=start_block, end_block=end_block)
 
             for output_type in self.required_output_types:
-                key = output_type.type()
                 message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
                 self.logger.info(f"{message}")
-                # exception_recorder.log(
-                #    block_number=-1, dataclass=key, message_type="item_counter", message=message, level=RecordLevel.INFO
-                # )
 
         except Exception as e:
             raise e
         finally:
             pass
-            # exception_recorder.force_to_flush()
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []
