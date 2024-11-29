@@ -196,13 +196,13 @@ class PostgreSQLService:
     def get_service_session(self) -> Session:
         return self.Session()
 
-    def get_connection(self):
+    def get_conn(self):
         """
         @deprecated Use connection_scope instead
         """
         return self.connection_pool.getconn()
 
-    def release_connection(self, conn) -> None:
+    def release_conn(self, conn) -> None:
         """
         @deprecated Use connection_scope instead
         """
