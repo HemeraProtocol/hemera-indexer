@@ -6,6 +6,7 @@ Author  : xuzh
 Project : hemera_indexer
 """
 import logging
+import os
 import signal
 import threading
 import time
@@ -16,6 +17,12 @@ from typing import Callable, Dict
 
 from common.utils.exception_control import get_exception_details
 
+BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 100)
+BUFFER_LINGER_MS = os.environ.get("BUFFER_LINGER_MS", 5000)
+MAX_BUFFER_SIZE = os.environ.get("BUFFER_LINGER_MS", 1000)
+ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
+CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
+
 
 class BufferService:
 
@@ -23,9 +30,9 @@ class BufferService:
         self,
         item_exporters,
         required_output_types,
-        block_size: int = 100,
-        linger_ms: int = 5000,
-        max_buffer_size: int = 10000,
+        block_size: int = BUFFER_BLOCK_SIZE,
+        linger_ms: int = BUFFER_LINGER_MS,
+        max_buffer_size: int = MAX_BUFFER_SIZE,
         export_workers: int = 5,
         success_callback: Callable = None,
         exception_callback: Callable = None,
@@ -83,6 +90,7 @@ class BufferService:
             exception_details = get_exception_details(e)
             self.exception_callback(self.required_output_types, start_block, end_block, "export", exception_details)
             self.logger.error(f"Exporting items error: {exception_details}")
+            self.shutdown()
 
     def write(self, records: Dict):
         with self.buffer_lock:
@@ -90,7 +98,7 @@ class BufferService:
                 if dataclass in self.required_output_types or dataclass == "block":
                     self.buffer[dataclass].extend(records[dataclass])
 
-        if len(self.buffer["block"]) >= self.max_buffer_size:
+        if len(self.buffer["block"]) >= self.max_buffer_size or not ASYNC_SUBMIT:
             self.flush_buffer()
 
     def _should_flush(self) -> bool:
@@ -124,6 +132,9 @@ class BufferService:
 
         with self.futures_lock:
             self.pending_futures[future] = block_range
+
+        if not ASYNC_SUBMIT:
+            future.result()
 
         self._last_flush_time = time.time()
 
