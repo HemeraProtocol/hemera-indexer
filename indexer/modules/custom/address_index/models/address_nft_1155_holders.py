@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 
 
 class AddressNftTokenHolders(HemeraModel):
@@ -18,7 +19,7 @@ class AddressNftTokenHolders(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AddressNft1155Holder",
+                "domain": AddressNft1155Holder,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

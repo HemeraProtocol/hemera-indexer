@@ -71,5 +71,5 @@ class Call:
         call_data = self.data
         args = [{"to": self.target, "data": call_data}, format_block_id(self.block_number)]
         if self.gas_limit:
-            args[0]["gas"] = self.gas_limit
+            args[0]["gas"] = format_block_id(self.gas_limit)
         return args

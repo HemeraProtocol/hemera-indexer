@@ -2,6 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import UniswapV2Pool
 
 
 class UniswapV2Pools(HemeraModel):
@@ -25,7 +26,7 @@ class UniswapV2Pools(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "UniswapV2Pool",
+                "domain": UniswapV2Pool,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

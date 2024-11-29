@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, asc, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.merchant_moe.domains.merchant_moe import MerchantMoeTokenCurrentBin
 
 
 class FeatureMerchantMoeTokenBinCurrentStatus(HemeraModel):
@@ -22,7 +23,7 @@ class FeatureMerchantMoeTokenBinCurrentStatus(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "MerchantMoeTokenCurrentBin",
+                "domain": MerchantMoeTokenCurrentBin,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_merchant_moe_token_bin_current.block_number",
                 "converter": general_converter,
