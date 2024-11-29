@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 from numpy import insert
-from sqlalchemy import and_, func, select, literal
+from sqlalchemy import and_, func, literal, select
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
@@ -27,8 +27,8 @@ def set_reorg_sign(jobs, block_number, service):
                 table_done.add(table.__name__)
                 if hasattr(table, "reorg"):
                     update_stmt = (
-                            f"UPDATE {table.__tablename__} "
-                            + f"SET reorg=TRUE, update_time='{datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())}'"
+                        f"UPDATE {table.__tablename__} "
+                        + f"SET reorg=TRUE, update_time='{datetime.utcfromtimestamp(datetime.now(timezone.utc).timestamp())}'"
                     )
 
                     if hasattr(table, "number"):
