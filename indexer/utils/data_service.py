@@ -24,6 +24,7 @@ ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
 CONCURRENT_SUBMITTERS = os.environ.get("CONCURRENT_SUBMITTERS", 1)
 CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
 
+
 class BufferService:
 
     def __init__(
