@@ -133,6 +133,15 @@ def calculate_execution_time(func):
     envvar="END_BLOCK",
 )
 @click.option(
+    "-nb",
+    "--noncontinuous-blocks",
+    default=None,
+    show_default=True,
+    type=str,
+    help="a list of noncontinuous blocks. eg: 1,11,122",
+    envvar="",
+)
+@click.option(
     "--retry-from-record",
     default=True,
     show_default=True,
@@ -316,6 +325,7 @@ def stream(
     db_version,
     start_block,
     end_block,
+    noncontinuous_blocks,
     entity_types,
     output_types,
     source_types,
@@ -427,11 +437,21 @@ def stream(
         retry_from_record=retry_from_record,
         delay=delay,
     )
-
-    controller.action(
-        start_block=start_block,
-        end_block=end_block,
-        block_batch_size=block_batch_size,
-        period_seconds=period_seconds,
-        pid_file=pid_file,
-    )
+    if noncontinuous_blocks:
+        block_ids = sorted(set(map(int, noncontinuous_blocks.split(","))))
+        for block_id in block_ids:
+            controller.action(
+                start_block=block_id,
+                end_block=block_id,
+                block_batch_size=block_batch_size,
+                period_seconds=period_seconds,
+                pid_file=pid_file,
+            )
+    else:
+        controller.action(
+            start_block=start_block,
+            end_block=end_block,
+            block_batch_size=block_batch_size,
+            period_seconds=period_seconds,
+            pid_file=pid_file,
+        )
