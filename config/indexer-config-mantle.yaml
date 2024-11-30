@@ -6,3 +6,11 @@ agni_pool_job:
 uniswap_v3_pool_job:
   position_token_address: '0xaaa78e8c4241990b4ce159e105da08129345946a'
   factory_address: '0xaaa32926fce6be95ea2c51cb4fcb60836d320c42'
+
+izumi_pool_job:
+  position_token_address: '0x611575ee1fbd4f7915d0eabcc518ed396ff78f0c'
+  factory_address: '0x45e5f26451cdb01b0fa1f8582e0aad9a6f27c218'
+
+export_tokens_and_transfers_job:
+  filter_token_address:
+    - "0x611575ee1fbd4f7915d0eabcc518ed396ff78f0c"

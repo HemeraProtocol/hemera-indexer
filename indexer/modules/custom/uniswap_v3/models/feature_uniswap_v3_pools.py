@@ -1,10 +1,11 @@
 from sqlalchemy import Column, PrimaryKeyConstraint, func
-from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     AgniV3Pool,
-    AgniV3PoolFromTokenJob,
+    IzumiPool,
+    IzumiPoolId,
     UniswapV3Pool,
 )
 
@@ -24,6 +25,9 @@ class UniswapV3Pools(HemeraModel):
 
     block_number = Column(BIGINT)
     block_timestamp = Column(BIGINT)
+
+    # For Izumi
+    pool_id = Column(INTEGER)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
@@ -46,7 +50,13 @@ class UniswapV3Pools(HemeraModel):
                 "converter": general_converter,
             },
             {
-                "domain": AgniV3PoolFromTokenJob,
+                "domain": IzumiPool,
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": IzumiPoolId,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
