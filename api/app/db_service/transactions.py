@@ -85,6 +85,11 @@ def get_address_transaction_cnt(address: str):
     return total_count
 
 
+def get_total_txn_cnt():
+    count = db.session.query(Transactions).filter(Transactions.block_timestamp > "2024-11-14 00:00:00").count()
+    return count + 29589024
+
+
 def get_total_txn_count():
     # Get the latest block date and cumulative count
     latest_record = (
@@ -108,10 +113,10 @@ def get_total_txn_count():
     return cnt + cumulate_count
 
 
-def get_transactions_by_condition(filter_condition=None, columns="*", limit=1, offset=0):
+def get_transactions_by_condition(filter_condition=None, columns="*", limit=None, offset=None):
     entities = build_entities(Transactions, columns)
 
-    transactions = (
+    statement = (
         db.session.query(Transactions)
         .with_entities(*entities)
         .order_by(
@@ -119,10 +124,14 @@ def get_transactions_by_condition(filter_condition=None, columns="*", limit=1, o
             Transactions.transaction_index.desc(),
         )
         .filter(filter_condition)
-        .limit(limit)
-        .offset(offset)
-        .all()
     )
+    if limit is not None:
+        statement = statement.limit(limit)
+
+    if offset is not None:
+        statement = statement.offset(offset)
+
+    transactions = statement.all()
 
     return transactions
 

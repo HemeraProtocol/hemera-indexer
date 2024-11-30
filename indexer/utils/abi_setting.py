@@ -200,3 +200,51 @@ ERC1155_TOKEN_ID_BALANCE_OF_FUNCTION = Function(
         "type": "function",
     }
 )
+
+GET_INDEXER_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "getIndexer",
+        "outputs": [{"internalType": "address[]", "name": "", "type": "address[]"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
+SUBMIT_INDEX_FUNCTION = Function(
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "chainId_", "type": "uint256"},
+            {"internalType": "uint256", "name": "startBlock_", "type": "uint256"},
+            {"internalType": "uint256", "name": "endBlock_", "type": "uint256"},
+            {"internalType": "uint256", "name": "codeHash_", "type": "bytes32"},
+            {
+                "components": [
+                    {"internalType": "bytes32", "name": "dataClass", "type": "bytes4"},
+                    {"internalType": "uint256", "name": "count", "type": "uint256"},
+                    {"internalType": "bytes32", "name": "dataHash", "type": "bytes32"},
+                ],
+                "internalType": "struct HemeraHistoryTransparency.IndexerOutput[]",
+                "name": "outputs_",
+                "type": "tuple[]",
+            },
+        ],
+        "name": "submitIndexRecord",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    }
+)
+
+REGISTER_FEATURE_FUNCTION = Function(
+    {
+        "inputs": [
+            {"internalType": "bytes4[]", "name": "dataClass_", "type": "bytes4[]"},
+            {"internalType": "bytes32[]", "name": "gitCommitHash_", "type": "bytes32[]"},
+        ],
+        "name": "registerFeature",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    }
+)

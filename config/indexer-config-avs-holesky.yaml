@@ -1,0 +1,12 @@
+chain_id: 17000
+
+validate_and_aggregate:
+  history_transparency_address: "0xb0c42250f0a3d141ad25e5b6a162ddbd5cae7ec5"
+  avs_registry_coordinator_address: "0x90093e7DadE164546E6351073b0eF8D3DA9D7ce9"
+  operator_state_retriever_address: "0x843B79b1D3927D426CD6cDDb4aCE4f6D550097C2"
+  operator_ecdsa_address: ""
+  operator_bls_key_file: "/config/test.bls.key.json"
+  operator_bls_password_file: "/config/test.bls.password.txt"
+  aggregator_host: "http://ec2-44-201-128-209.compute-1.amazonaws.com:8290"
+  verify_api: "https://dnzfasn6qv.us-east-1.awsapprunner.com/v1/validator/block/"
+  verify_rpc: "https://eth.llamarpc.com"

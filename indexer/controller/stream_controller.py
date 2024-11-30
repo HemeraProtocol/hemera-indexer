@@ -9,6 +9,7 @@ from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
+from indexer.utils.report_to_contract import RecordReporter
 from indexer.utils.sync_recorder import BaseRecorder
 
 exception_recorder = ExceptionRecorder()
@@ -27,6 +28,8 @@ class StreamController(BaseController):
         max_retries=5,
         retry_from_record=False,
         delay=0,
+        record_reporter=None,
+        runtime_signature_signer=None,
     ):
         self.entity_types = 1
         self.sync_recorder = sync_recorder
@@ -36,6 +39,15 @@ class StreamController(BaseController):
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
         self.delay = delay
+        self.chain_id = self._get_current_chain_id()
+        self.record_reporter: RecordReporter = record_reporter
+        self.runtime_signature = runtime_signature_signer
+        self._calculate_runtime_hash_code()
+
+    def _calculate_runtime_hash_code(self):
+        self.runtime_signature.calculate_signature(__name__)
+        self.runtime_signature.calculate_combined_hash()
+        self.runtime_combined_hash = self.runtime_signature.get_combined_hash()
 
     def action(
         self,
@@ -95,16 +107,25 @@ class StreamController(BaseController):
 
                 if synced_blocks != 0:
                     # ETL program's main logic
-                    self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
-
+                    report_info = self.job_scheduler.run_jobs(last_synced_block + 1, target_block)
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
+                    if self.record_reporter:
+                        self.record_reporter.report(
+                            self.chain_id,
+                            last_synced_block + 1,
+                            target_block,
+                            self.runtime_combined_hash,
+                            report_info,
+                            "stream",
+                        )
                     last_synced_block = target_block
 
             except HemeraBaseException as e:
                 logger.error(f"An rpc response exception occurred while syncing block data. error: {e}")
                 if e.crashable:
                     logger.error("Mission will crash immediately.")
+                    self.record_reporter.stop()
                     raise e
 
                 if e.retriable:
@@ -112,11 +133,13 @@ class StreamController(BaseController):
                     tries_reset = False
                     if tries >= self.max_retries:
                         logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
+                        self.record_reporter.stop()
                         raise e
                     else:
                         logger.info(f"No: {tries} retry is about to start.")
                 else:
                     logger.error("Mission will not retry, and exit immediately.")
+                    self.record_reporter.stop()
                     raise e
 
             except Exception as e:
@@ -126,6 +149,7 @@ class StreamController(BaseController):
                 if not retry_errors or tries >= self.max_retries:
                     logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
                     exception_recorder.force_to_flush()
+                    self.record_reporter.stop()
                     raise e
 
                 else:
@@ -140,6 +164,9 @@ class StreamController(BaseController):
 
     def _get_current_block_number(self):
         return int(self.web3.eth.block_number)
+
+    def _get_current_chain_id(self):
+        return self.web3.eth.chain_id
 
     def _calculate_target_block(self, current_block, last_synced_block, end_block, steps):
         target_block = min(current_block - self.delay, last_synced_block + steps)

@@ -3,6 +3,7 @@ import json
 import re
 
 import requests
+from eth_account import Account
 from web3 import Web3
 from web3.middleware import geth_poa_middleware
 
@@ -206,3 +207,14 @@ def get_json_from_uri_by_http(uri):
         return response.json()
     except Exception as e:
         return None
+
+
+def get_account_from_file(keystore_path, password_path):
+    with open(keystore_path, "r") as keystore_file:
+        keystore_str = keystore_file.read()
+        keystore_json = json.loads(keystore_str)
+        if "version" not in keystore_json:
+            keystore_json["version"] = 3
+    with open(password_path, "r") as password_file:
+        password = password_file.read()
+    return Account.from_key(Account.decrypt(keystore_json, password))

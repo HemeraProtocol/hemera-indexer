@@ -1,3 +1,5 @@
+import hashlib
+import json
 import logging
 from collections import defaultdict, deque
 from typing import List, Set, Type
@@ -48,6 +50,7 @@ class ReorgScheduler:
         required_output_types=[],
         cache="memory",
         multicall=None,
+        runtime_signature_signer=None,
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
@@ -82,6 +85,15 @@ class ReorgScheduler:
                     logging.warning(f"Error connecting to redis cache: {e}, using memory cache instead")
                     BaseJob.init_token_cache(token_dict_from_db)
         self.instantiate_jobs()
+        self.runtime_signature = runtime_signature_signer
+        self._execute_runtime_signature()
+
+    def _execute_runtime_signature(self):
+        if self.runtime_signature is None:
+            return
+        self.runtime_signature.calculate_signature(__name__, exclude_package=["indexer.jobs", "indexer.modules"])
+        for job in self.jobs:
+            self.runtime_signature.calculate_signature(job.__class__.__module__)
 
     @staticmethod
     def get_data_buff():
@@ -162,6 +174,18 @@ class ReorgScheduler:
         self.clear_data_buff()
         for job in self.jobs:
             job.run(start_block=start_block, end_block=end_block)
+
+        report_info = []
+        for dataclass in self.required_output_types:
+            base_info = {
+                "dataClass": dataclass.get_code_hash(),
+                "count": len(self.get_data_buff()[dataclass.type()]),
+            }
+            data_hash = hashlib.sha256(json.dumps(base_info, sort_keys=True).encode()).hexdigest()
+            base_info["dataHash"] = data_hash
+            report_info.append(base_info)
+
+        return report_info
 
     def get_required_job_classes(self, output_types):
         required_job_classes = set()
