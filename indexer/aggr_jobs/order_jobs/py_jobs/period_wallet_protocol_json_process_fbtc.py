@@ -6,7 +6,6 @@ from operator import attrgetter
 
 from sqlalchemy import func, desc, or_, and_
 
-from common.models.token_price import TokenPrice
 from common.utils.format_utils import format_value_for_json
 from indexer.aggr_jobs.order_jobs.models.period_address_token_balances import PeriodAddressTokenBalances
 from indexer.aggr_jobs.order_jobs.models.period_feature_defi_fbtc_aggregates import PeriodFeatureDefiFbtcAggregates
@@ -52,36 +51,6 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
         results = get_pool_token_pair_data(orm_list, self.token_symbol, self.db_service, self.end_date)
         self.get_pool_token_pair_aggr_by_protocol(orm_list, self.price)
         return results
-
-    def get_latest_price(self, symbol_list):
-        session = self.db_service.Session()
-
-        price_date_limit = max(self.end_date, '2024-07-12')
-
-        subquery = (
-            session.query(
-                TokenPrice.symbol,
-                TokenPrice.price,
-                func.row_number().over(
-                    partition_by=TokenPrice.symbol,
-                    order_by=desc(TokenPrice.timestamp)
-                ).label('row_number')
-            )
-            .filter(
-                TokenPrice.timestamp < price_date_limit)
-            .filter(TokenPrice.symbol.in_(symbol_list))
-            .subquery()
-        )
-
-        latest_per_address = (
-            session.query(subquery)
-            .filter(subquery.c.row_number == 1)
-            .all()
-        )
-
-        latest_per_address_dict = {tp.symbol: tp.price for tp in latest_per_address}
-        session.close()
-        return latest_per_address_dict
 
     def get_filter_fbtc_orm(self, orm_class):
         session = self.db_service.Session()

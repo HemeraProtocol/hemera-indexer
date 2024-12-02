@@ -10,7 +10,7 @@ from decimal import Decimal
 from sqlalchemy import create_engine, text, func, desc
 from sqlalchemy.orm import sessionmaker
 
-from common.models.token_price import TokenPrice
+from api.app.token.token_prices import TokenPrices
 
 
 def format_value_for_json(value):
@@ -174,16 +174,16 @@ def get_latest_price(symbol_list, db_service, end_date):
     price_date_limit = max(end_date, '2024-07-12')
     subquery = (
         session.query(
-            TokenPrice.symbol,
-            TokenPrice.price,
+            TokenPrices.symbol,
+            TokenPrices.price,
             func.row_number().over(
-                partition_by=TokenPrice.symbol,
-                order_by=desc(TokenPrice.timestamp)
+                partition_by=TokenPrices.symbol,
+                order_by=desc(TokenPrices.timestamp)
             ).label('row_number')
         )
         .filter(
-            TokenPrice.timestamp < price_date_limit)
-        .filter(TokenPrice.symbol.in_(symbol_list))
+            TokenPrices.timestamp < price_date_limit)
+        .filter(TokenPrices.symbol.in_(symbol_list))
         .subquery()
     )
 
