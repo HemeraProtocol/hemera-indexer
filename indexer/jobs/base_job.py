@@ -40,6 +40,14 @@ class Collector(Generic[T]):
         with self.job._data_buff_lock[key]:
             self.job._data_buff[key].extend(datas)
 
+    def collect_domain(self, domain: Domain):
+        self.check_collect_type(type(domain))
+        self.collect(domain)
+
+    def collect_domains(self, domains: List[Domain]):
+        self.check_collect_type(type(domains[0]))
+        self.collects(domains)
+
     def collect(self, domain: Domain):
         self.check_collect_type(type(domain))
         with self.job._data_buff_lock[domain.type()]:
