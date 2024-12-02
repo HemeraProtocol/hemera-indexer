@@ -454,7 +454,7 @@ def stream(
         process_time_out = 300 * process_size
 
     controller = StreamController(
-        scheduled_jobs=job_scheduler.get_scheduled_jobs(),
+        job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
         item_exporters=create_item_exporters(output, config),
         required_output_types=output_types,

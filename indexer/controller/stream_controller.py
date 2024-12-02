@@ -1,15 +1,16 @@
 import logging
 import os
 import time
+from collections import defaultdict
 from typing import List
 
 import mpire
 
-from common.utils.exception_control import FastShutdownError, HemeraBaseException
+from common.utils.exception_control import FastShutdownError
 from common.utils.file_utils import delete_file, write_to_file
 from indexer.controller.base_controller import BaseController
-from indexer.jobs.base_job import BaseJob
-from indexer.utils.data_service import BufferService
+from indexer.controller.scheduler.job_scheduler import JobScheduler
+from indexer.utils.buffer_service import BufferService
 from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
@@ -24,7 +25,7 @@ class StreamController(BaseController):
     def __init__(
         self,
         sync_recorder: BaseRecorder,
-        scheduled_jobs: List[BaseJob],
+        job_scheduler: JobScheduler,
         item_exporters,
         required_output_types,
         limit_reader: LimitReader,
@@ -47,7 +48,7 @@ class StreamController(BaseController):
         )
 
         self.sync_recorder = sync_recorder
-        self.scheduled_jobs = scheduled_jobs
+        self.job_scheduler = job_scheduler
         self.limit_reader = limit_reader
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
@@ -116,20 +117,15 @@ class StreamController(BaseController):
                 if synced_blocks != 0:
                     # submit job and concurrent running
 
-                    # splits = self.split_blocks(last_synced_block + 1, target_block, self.process_size)
-                    # self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
-                    # logger.info("Writing last synced block {}".format(target_block))
-                    # self.sync_recorder.set_last_synced_block(target_block)
-                    # last_synced_block = target_block
+                    splits = self.split_blocks(last_synced_block + 1, target_block, self.process_size)
+                    export_data = defaultdict(list)
+                    for result in list(
+                        self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
+                    ):
+                        for key in result:
+                            export_data[key].extend(result[key])
 
-                    export_data = run_jobs(
-                        jobs=self.scheduled_jobs,
-                        start_block=last_synced_block + 1,
-                        end_block=target_block,
-                        max_retries=self.max_retries,
-                    )
                     self.buffer_service.write(export_data)
-
                     last_synced_block = target_block
 
                 if synced_blocks <= 0:
@@ -153,54 +149,13 @@ class StreamController(BaseController):
             blocks.append((i, min(i + step - 1, end_block)))
         return blocks
 
+    def _do_stream(self, start_block, end_block):
+        return self.job_scheduler.run_jobs(start_block, end_block)
+
     def _calculate_target_block(self, current_block, last_synced_block, end_block, steps):
         target_block = min(current_block - self.delay, last_synced_block + steps)
         target_block = min(target_block, end_block) if end_block is not None else target_block
         return target_block
-
-
-def run_jobs(jobs, start_block, end_block, max_retries):
-    try:
-        logger.info(f"Task begin, run block range between {start_block} and {end_block}")
-        jobs_export_data = {}
-        for job in jobs:
-            job_export_data = job_with_retires(
-                job, start_block=start_block, end_block=end_block, max_retries=max_retries
-            )
-            jobs_export_data.update(job_export_data)
-    except Exception as e:
-        raise e
-
-    return jobs_export_data
-
-
-def job_with_retires(job, start_block, end_block, max_retries):
-    for retry in range(max_retries):
-        try:
-            logger.info(f"Task run {job.__class__.__name__}")
-            return job.run(start_block=start_block, end_block=end_block)
-
-        except HemeraBaseException as e:
-            logger.error(f"An rpc response exception occurred while running {job.__class__.__name__}. error: {e}")
-            if e.crashable:
-                logger.error("Mission will crash immediately.")
-                raise e
-
-            if e.retriable:
-                logger.debug(f"No: {retry} retry is about to start.")
-            else:
-                logger.error("Mission will not retry, and exit immediately.")
-                raise e
-
-        except Exception as e:
-            logger.error(f"An unknown exception occurred while running {job.__class__.__name__}. error: {e}")
-            raise e
-
-    logger.debug(f"The number of retry is reached limit {max_retries}. Program will exit.")
-    raise FastShutdownError(
-        f"The {job} with parameters start_block:{start_block}, end_block:{end_block} "
-        f"can't be automatically resumed after reached out limit of retries. Program will exit."
-    )
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         try:
