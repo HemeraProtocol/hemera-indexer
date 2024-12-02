@@ -32,3 +32,7 @@ FBTC:
     - staked
     - dodo
     - eigenlayer
+
+cmETH:
+  generator_wallet_table:
+    true
