@@ -15,7 +15,7 @@ from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.utils.multicall_hemera import Call, Multicall
 from indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
-from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_network
+from indexer.utils.multicall_hemera.constants import CALLS_LIMIT, GAS_LIMIT, get_multicall_network
 from indexer.utils.multicall_hemera.util import calculate_execution_time, make_request_concurrent, rebatch_by_size
 from indexer.utils.provider import get_provider_from_uri
 
@@ -44,7 +44,7 @@ class MultiCallHelper:
                 self.deploy_block_number = self.net.deploy_block_number
             except ValueError:
                 self.net = None
-                self.deploy_block_number = self.net.deploy_block_number
+                self.deploy_block_number = 2**56
 
     @calculate_execution_time
     def validate_and_prepare_calls(self, calls):
@@ -66,8 +66,11 @@ class MultiCallHelper:
             if (isinstance(block_id, int) and block_id < self.deploy_block_number) or not self._is_multi_call:
                 to_execute_batch_calls.extend(items)
             else:
-                to_execute_multi_calls.append(items)
+                to_execute_multi_calls.extend(self.split_list(items))
         return to_execute_batch_calls, to_execute_multi_calls
+
+    def split_list(self, lst, chunk_size=CALLS_LIMIT):
+        return [lst[i : i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
     def fetch_result(self, chunks):
         res = list(make_request_concurrent(self.make_request, chunks, self.max_workers))

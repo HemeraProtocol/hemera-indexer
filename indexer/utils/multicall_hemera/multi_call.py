@@ -42,7 +42,7 @@ class Multicall:
         call_data = self.multicall_func.encode_function_call_data(parameters)
         args = [{"to": self.multicall_address, "data": call_data}, format_block_id(self.block_number)]
         if self.gas_limit:
-            args[0]["gas"] = self.gas_limit
+            args[0]["gas"] = format_block_id(self.gas_limit)
         return {
             "jsonrpc": "2.0",
             "method": "eth_call",
