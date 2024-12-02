@@ -153,7 +153,7 @@ def calculate_execution_time(func):
     "--period-seconds",
     default=10,
     show_default=True,
-    type=int,
+    type=float,
     envvar="PERIOD_SECONDS",
     help="How many seconds to sleep between syncs",
 )
@@ -189,8 +189,35 @@ def calculate_execution_time(func):
     default=5,
     show_default=True,
     type=int,
-    help="The number of workers",
+    help="The number of workers during a request to rpc.",
     envvar="MAX_WORKERS",
+)
+@click.option(
+    "-pn",
+    "--process-numbers",
+    default=1,
+    show_default=True,
+    type=int,
+    help="The processor numbers to ues.",
+    envvar="PROCESS_NUMBERS",
+)
+@click.option(
+    "-ps",
+    "--process-size",
+    default=None,
+    show_default=True,
+    type=int,
+    help="The data size for every process to handle. Default to {B}/{pn} ,see above",
+    envvar="PROCESS_SIZE",
+)
+@click.option(
+    "-pto",
+    "--process-time-out",
+    default=None,
+    show_default=True,
+    type=int,
+    help="Timeout for every processor, default to {ps} * 300 , see above",
+    envvar="PROCESS_TIME_OUT",
 )
 @click.option(
     "--delay",
@@ -326,6 +353,9 @@ def stream(
     debug_batch_size=1,
     block_batch_size=1,
     max_workers=5,
+    process_numbers=1,
+    process_size=None,
+    process_time_out=None,
     log_file=None,
     pid_file=None,
     source_path=None,
@@ -416,6 +446,13 @@ def stream(
         force_filter_mode=force_filter_mode,
     )
 
+    if process_numbers is None:
+        process_numbers = 1
+    if process_size is None:
+        process_size = int(block_batch_size / process_numbers)
+    if process_time_out is None:
+        process_time_out = 300 * process_size
+
     controller = StreamController(
         scheduled_jobs=job_scheduler.get_scheduled_jobs(),
         sync_recorder=create_recorder(sync_recorder, config),
@@ -426,6 +463,9 @@ def stream(
         ),
         retry_from_record=retry_from_record,
         delay=delay,
+        process_numbers=process_numbers,
+        process_size=process_size,
+        process_time_out=process_time_out,
     )
 
     controller.action(

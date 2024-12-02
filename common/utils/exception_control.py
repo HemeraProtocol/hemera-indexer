@@ -114,7 +114,6 @@ def decode_response_error(error):
     elif code == -32000:
         logging.error(error)
         raise RPCNotReachable(message)
-
     elif code == -32700 or code == -32600 or code == -32602:
         raise FastShutdownError(message)
     elif (-32000 > code >= -32099) or code == -32603:

@@ -6,7 +6,6 @@ from pottery import RedisDict
 from redis.client import Redis
 
 from common.models.tokens import Tokens
-from common.services.postgresql_service import session_scope
 from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from indexer.jobs import CSVSourceJob
@@ -18,8 +17,8 @@ from indexer.jobs.source_job.pg_source_job import PGSourceJob
 import_submodules("indexer.modules")
 
 
-def get_tokens_from_db(session):
-    with session_scope(session) as s:
+def get_tokens_from_db(service):
+    with service.session_scope() as s:
         dict = {}
         result = s.query(Tokens).all()
         if result is not None:
@@ -89,7 +88,7 @@ class JobScheduler:
         self.resolved_job_classes = self.resolve_dependencies(self.required_job_classes)
         token_dict_from_db = defaultdict()
         if self.pg_service is not None:
-            token_dict_from_db = get_tokens_from_db(self.pg_service.get_service_session())
+            token_dict_from_db = get_tokens_from_db(self.pg_service)
         if cache is None or cache == "memory":
             BaseJob.init_token_cache(token_dict_from_db)
         else:
@@ -250,7 +249,7 @@ class JobScheduler:
                 job.run(start_block=start_block, end_block=end_block)
 
             for output_type in self.required_output_types:
-                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type()))}"
+                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
                 self.logger.info(f"{message}")
 
         except Exception as e:

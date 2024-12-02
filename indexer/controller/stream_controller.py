@@ -3,6 +3,8 @@ import os
 import time
 from typing import List
 
+import mpire
+
 from common.utils.exception_control import FastShutdownError, HemeraBaseException
 from common.utils.file_utils import delete_file, write_to_file
 from indexer.controller.base_controller import BaseController
@@ -29,6 +31,9 @@ class StreamController(BaseController):
         max_retries=5,
         retry_from_record=False,
         delay=0,
+        process_numbers=1,
+        process_size=None,
+        process_time_out=None,
     ):
         self.entity_types = 1
         self.required_output_types = [output.type() for output in required_output_types]
@@ -47,6 +52,12 @@ class StreamController(BaseController):
         self.max_retries = max_retries
         self.retry_from_record = retry_from_record
         self.delay = delay
+
+        self.process_numbers = process_numbers
+        self.process_size = process_size
+        self.process_time_out = process_time_out
+
+        self.pool = mpire.WorkerPool(n_jobs=self.process_numbers, use_dill=True, keep_alive=True)
 
     def handle_success(self, last_block_number):
         self.sync_recorder.set_last_synced_block(last_block_number)
@@ -104,6 +115,13 @@ class StreamController(BaseController):
 
                 if synced_blocks != 0:
                     # submit job and concurrent running
+
+                    # splits = self.split_blocks(last_synced_block + 1, target_block, self.process_size)
+                    # self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
+                    # logger.info("Writing last synced block {}".format(target_block))
+                    # self.sync_recorder.set_last_synced_block(target_block)
+                    # last_synced_block = target_block
+
                     export_data = run_jobs(
                         jobs=self.scheduled_jobs,
                         start_block=last_synced_block + 1,
@@ -128,6 +146,12 @@ class StreamController(BaseController):
 
     def _shutdown(self):
         self.buffer_service.shutdown()
+
+    def split_blocks(self, start_block, end_block, step):
+        blocks = []
+        for i in range(start_block, end_block + 1, step):
+            blocks.append((i, min(i + step - 1, end_block)))
+        return blocks
 
     def _calculate_target_block(self, current_block, last_synced_block, end_block, steps):
         target_block = min(current_block - self.delay, last_synced_block + steps)
@@ -177,3 +201,9 @@ def job_with_retires(job, start_block, end_block, max_retries):
         f"The {job} with parameters start_block:{start_block}, end_block:{end_block} "
         f"can't be automatically resumed after reached out limit of retries. Program will exit."
     )
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            self.pool.terminate()
+        except Exception:
+            pass

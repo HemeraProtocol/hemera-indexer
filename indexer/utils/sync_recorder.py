@@ -81,7 +81,6 @@ class PGSyncRecorder(BaseRecorder):
             session.execute(statement)
             session.commit()
         except Exception as e:
-            print(e)
             raise e
         finally:
             session.close()
@@ -91,7 +90,6 @@ class PGSyncRecorder(BaseRecorder):
         try:
             result = session.query(SyncRecord.last_block_number).filter(SyncRecord.mission_sign == self.key).scalar()
         except Exception as e:
-            print(e)
             raise e
         finally:
             session.close()
