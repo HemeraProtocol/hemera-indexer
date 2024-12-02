@@ -49,7 +49,6 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
 
             for log in transaction.receipt.logs:
                 out.collect(log)
-                # self._collect_item(Log.type(), log)
 
     def _udf(self, blocks: List[Block], out: Collector[Union[Transaction, Log]]):
         transactions: List[Transaction] = [transaction for block in blocks for transaction in block.transactions]

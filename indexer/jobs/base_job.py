@@ -32,22 +32,22 @@ class Collector(Generic[T]):
 
     def collect_item(self, key: str, data: Domain):
         self.check_collect_type(type(data))
-        with self.job.locks[key]:
+        with self.job._data_buff_lock[key]:
             self.job._data_buff[key].append(data)
 
     def collect_items(self, key, datas: List[Domain]):
         self.check_collect_type(type(datas[0]))
-        with self.job.locks[key]:
+        with self.job._data_buff_lock[key]:
             self.job._data_buff[key].extend(datas)
 
     def collect(self, domain: Domain):
         self.check_collect_type(type(domain))
-        with self.job.locks[domain.type()]:
+        with self.job._data_buff_lock[domain.type()]:
             self.job._data_buff[domain.type()].append(domain)
 
     def collects(self, domains: List[Domain]):
         self.check_collect_type(type(domains[0]))
-        with self.job.locks[domains[0].type()]:
+        with self.job._data_buff_lock[domains[0].type()]:
             self.job._data_buff[domains[0].type()].extend(domains)
 
 
@@ -79,7 +79,7 @@ class BaseJobMeta(type):
 
 class BaseJob(metaclass=BaseJobMeta):
     _data_buff = defaultdict(list)
-    locks = defaultdict(threading.Lock)
+    _data_buff_lock = defaultdict(threading.Lock)
 
     tokens = None
 
@@ -183,16 +183,16 @@ class BaseJob(metaclass=BaseJobMeta):
     def _collect_batch(self, iterator):
         pass
 
-    def _collect_item(self, key: str, data: Domain):
-        with self.locks[key]:
+    def _collect_item(self, key, data: Domain):
+        with self._data_buff_lock[key]:
             self._data_buff[key].append(data)
 
     def _collect_items(self, key, data_list: List[Domain]):
-        with self.locks[key]:
+        with self._data_buff_lock[key]:
             self._data_buff[key].extend(data_list)
 
     def _collect_domain(self, domain: Domain):
-        with self.locks[domain.type()]:
+        with self._data_buff_lock[domain.type()]:
             self._data_buff[domain.type()].append(domain)
 
     def _collect_domains(self, domains: List[Domain]):
