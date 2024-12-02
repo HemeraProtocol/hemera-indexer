@@ -1,0 +1,5 @@
+PyYAML
+requests
+apscheduler
+sqlalchemy
+psycopg2-binary
