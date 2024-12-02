@@ -41,7 +41,7 @@ class BaseJobMeta(type):
 
 class BaseJob(metaclass=BaseJobMeta):
     _data_buff = defaultdict(list)
-    locks = defaultdict(threading.Lock)
+    _data_buff_lock = defaultdict(threading.Lock)
 
     tokens = None
 
@@ -134,15 +134,15 @@ class BaseJob(metaclass=BaseJobMeta):
         pass
 
     def _collect_item(self, key, data):
-        with self.locks[key]:
+        with self._data_buff_lock[key]:
             self._data_buff[key].append(data)
 
     def _collect_items(self, key, data_list):
-        with self.locks[key]:
+        with self._data_buff_lock[key]:
             self._data_buff[key].extend(data_list)
 
     def _collect_domain(self, domain):
-        with self.locks[domain.type()]:
+        with self._data_buff_lock[domain.type()]:
             self._data_buff[domain.type()].append(domain)
 
     def _collect_domains(self, domains):
@@ -164,7 +164,7 @@ class BaseJob(metaclass=BaseJobMeta):
     def _extract_from_buff(self, keys=None):
         items = []
         for key in keys:
-            with self.locks[key]:
+            with self._data_buff_lock[key]:
                 items.extend(self._data_buff[key])
 
         return items
