@@ -1349,6 +1349,7 @@ class ExplorerAddressTokenHoldingsV2(Resource):
                     "token_name": token_holder.name or "Unknown Token",
                     "token_symbol": token_holder.symbol or "UNKNOWN",
                     "token_logo_url": token_holder.logo or None,
+                    "token_type": token_holder.token_type,
                     "type": {
                         "ERC20": "tokentxns",
                         "ERC721": "tokentxns-nft",
