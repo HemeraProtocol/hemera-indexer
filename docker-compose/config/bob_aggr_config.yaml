@@ -1,0 +1,19 @@
+chain_name: bob
+
+FBTC:
+  generator_wallet_table:
+    true
+
+  daily_sqls:
+    address_token_balance:
+      - daily_address_token_balances
+
+  period_sqls:
+    address_token_balance:
+      - period_address_token_balances
+    uniswapv3:
+      - period_feature_holding_balance_uniswap_v3_new_schema
+
+  py_jobs:
+    - address_token_balance
+    - uniswapv3
