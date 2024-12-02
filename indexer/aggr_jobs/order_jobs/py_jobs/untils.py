@@ -55,7 +55,7 @@ def get_last_block_number_before_end_date(db_service, end_date):
     sql = f"""select block_number
 from address_token_balances
 where block_timestamp < '{end_date}'
-  and block_timestamp > (date('{end_date}') - INTERVAL '1 day')
+--   and block_timestamp > (date('{end_date}') - INTERVAL '1 day')
 order by block_number desc
 limit 1;
     """
@@ -63,8 +63,9 @@ limit 1;
     session = db_service.Session()
     result = session.execute(text(sql))
     row = result.fetchone()
-    number = row.block_number
-    return number
+    if row is not None:
+        number = row.block_number
+        return number
 
 
 def get_engine(link_name):
