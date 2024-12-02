@@ -29,7 +29,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
         )
         self._is_batch = kwargs["batch_size"] > 1
 
-    def request_for_receipt(self, transactions: List[Transaction], out: Collector):
+    def request_for_receipt(self, transactions: List[Transaction], output: Collector):
         transaction_hash_mapper = {transaction.hash: transaction for transaction in transactions}
         results = receipt_rpc_requests(
             self._batch_web3_provider.make_request,
@@ -48,12 +48,12 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
             transaction.fill_with_receipt(receipt_entity)
 
             for log in transaction.receipt.logs:
-                out.collect(log)
+                output.collect(log)
 
-    def _udf(self, blocks: List[Block], out: Collector[Union[Transaction, Log]]):
+    def _udf(self, blocks: List[Block], output: Collector[Union[Transaction, Log]]):
         transactions: List[Transaction] = [transaction for block in blocks for transaction in block.transactions]
         self._batch_work_executor.execute(
-            transactions, self.request_for_receipt, collector=out, total_items=len(transactions)
+            transactions, self.request_for_receipt, collector=output, total_items=len(transactions)
         )
         self._batch_work_executor.wait()
 

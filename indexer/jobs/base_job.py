@@ -223,7 +223,7 @@ class BaseJob(metaclass=BaseJobMeta):
         parameters = {}
         annotations = get_type_hints(self._udf)
         for param, param_type in annotations.items():
-            if param == "out":
+            if param == "output":
                 continue
             args_type = get_args(param_type)[0]
             if args_type.type() in self._data_buff:
@@ -231,7 +231,7 @@ class BaseJob(metaclass=BaseJobMeta):
             else:
                 parameters[param] = []
 
-        parameters["out"] = Collector(self, self.output_types)
+        parameters["output"] = Collector(self, self.output_types)
         return parameters
 
     def _udf(self, **kwargs):
@@ -288,8 +288,8 @@ def generate_dependency_types(cls: Type[BaseJob]):
 
     annotations = get_type_hints(cls._udf)
 
-    if "out" not in annotations:
-        raise TypeError(f"Missing output collector: out in _udf function parameter list of {cls.__name__}.")
+    if "output" not in annotations:
+        raise TypeError(f"Missing output collector: output in _udf function parameter list of {cls.__name__}.")
 
     dependency_types = []
     output_types = []
@@ -297,7 +297,7 @@ def generate_dependency_types(cls: Type[BaseJob]):
         if param == "return":
             continue
 
-        if param == "out":
+        if param == "output":
             output_types = varify_output_hints(cls.__name__, param_type)
         else:
             args_type = varify_input_hints(cls.__name__, param, param_type)
@@ -339,7 +339,7 @@ def varify_output_hints(job_name, param_type):
     origin_type = get_origin(param_type)
     if origin_type is not Collector:
         raise TypeError(
-            f'The variable "out" define in {job_name}\'s _udf function parameter list '
+            f'The variable "output" define in {job_name}\'s _udf function parameter list '
             f"should be of type indexer.jobs.base_job.Collector. \n"
             f"Now it is of type {origin_type}."
         )
@@ -347,7 +347,7 @@ def varify_output_hints(job_name, param_type):
     arg_types = get_args(param_type)
     if get_origin(arg_types[0]) is not Union and not issubclass(arg_types[0], Domain):
         raise TypeError(
-            f'The variable "out" define in {job_name}\'s _udf function parameter list '
+            f'The variable "output" define in {job_name}\'s _udf function parameter list '
             f"should be Collector[Domain] or Collector[Union[DomainA, DomainB]]. \n"
         )
 
@@ -355,7 +355,7 @@ def varify_output_hints(job_name, param_type):
         for arg_type in get_args(arg_types[0]):
             if not issubclass(arg_type, Domain):
                 raise TypeError(
-                    f'The collector "out" define in {job_name}\'s _udf function parameter list '
+                    f'The collector "output" define in {job_name}\'s _udf function parameter list '
                     f"only collects data of type domain subclass."
                 )
             output_types.append(arg_type)
