@@ -182,3 +182,23 @@ class UniswapV3PoolFromSwapEvent(UniswapV3Pool):
 
 class UniswapV3PoolFromToken(UniswapV3Pool):
     pass
+
+@dataclass
+class TeahouseLiquidityHist(FilterData):
+    position_token_address: str
+    pool_address: str
+    liquidity: int
+    tick_lower: int
+    tick_upper: int
+    block_number: int
+    block_timestamp: int
+
+@dataclass
+class TeahouseLiquidityCurrent(FilterData):
+    position_token_address: str
+    pool_address: str
+    liquidity: int
+    tick_lower: int
+    tick_upper: int
+    block_number: int
+    block_timestamp: int

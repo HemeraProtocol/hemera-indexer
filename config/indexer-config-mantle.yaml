@@ -13,6 +13,12 @@ uniswap_v3_job:
   # empty means no filter
   factory_address:
   pool_address:
+    - "0xcfef46bc49c7502edd960850264b9c2dfe4d75d7"
+
+teahouse_job:
+  '0xfc3861c04c5ce0883d9f79308e5a65402141df85': "0x8b4e2134d1f3da64f9cc044152bf8ee121bb24ce"
+  "0x4ddd37f662871fb49ebbc88a58897961e2c12a60": "0xcfef46bc49c7502edd960850264b9c2dfe4d75d7"
+
 
 export_tokens_and_transfers_job:
   filter_token_address:
