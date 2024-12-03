@@ -21,19 +21,22 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_staked_f
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_v3 import \
     PeriodFeatureHoldingBalanceUniswapV3
 from indexer.aggr_jobs.order_jobs.py_jobs.PeriodFeatureDefiWalletAggregates import PeriodFeatureDefiWalletAggregates
-from indexer.aggr_jobs.order_jobs.py_jobs.untils import get_latest_price, get_token_data_for_lendle_au_init_capital, \
+from indexer.aggr_jobs.order_jobs.py_jobs.untils import get_token_data_for_lendle_au_init_capital, \
     get_eigenlayer_orms, get_pool_token_pair_data, get_last_block_number_before_end_date, timed_call_
 
 
 class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
-    def __init__(self, chain_name, db_service, start_date, end_date, version, job_list, generator_wallet_table=False):
+    def __init__(self, chain_name, db_service, start_date, end_date, version, job_list, common_dict,
+                 generator_wallet_table=False):
         super().__init__(chain_name, db_service, start_date, end_date, version)
 
         self.token_address = '0xc96de26018a54d51c097160568752c4e3bd6c364'
         self.token_symbol = 'FBTC'
         self.decimals = 10 ** 8
-        price_dict = get_latest_price([self.token_symbol], self.db_service, self.end_date)
-        self.price = price_dict.get(self.token_symbol, 0)
+        self.price_dict = common_dict.get('price_dict')
+        self.last_block_number = common_dict.get('last_block_number')
+        self.price = self.price_dict.get(self.token_symbol, 0)
+
         self.job_list = job_list
         self.generator_wallet_table = generator_wallet_table
 
@@ -48,7 +51,7 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
         }
 
     def get_pool_token_pair_data(self, orm_list):
-        results = get_pool_token_pair_data(orm_list, self.token_symbol, self.db_service, self.end_date)
+        results = get_pool_token_pair_data(orm_list, self.token_symbol, self.price_dict)
         self.get_pool_token_pair_aggr_by_protocol(orm_list, self.price)
         return results
 
@@ -129,8 +132,7 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceLendle)
         filter_orm_list = [r for r in orm_list if r.token_symbol == self.token_symbol]
         self.get_token_aggr_by_protocol(filter_orm_list, self.price)
-        results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
-                                                            self.end_date)
+        results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.price_dict)
         return results
 
     def get_init_capital_json(self):
@@ -138,8 +140,7 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
         orm_list = self.get_filter_start_date_orm(PeriodFeatureHoldingBalanceInitCapital)
         filter_orm_list = [r for r in orm_list if r.token_symbol == self.token_symbol]
         self.get_token_aggr_by_protocol(filter_orm_list, self.price)
-        results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
-                                                            self.end_date)
+        results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.price_dict)
         return results
 
     @staticmethod
@@ -162,7 +163,6 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
 
     def process_wallet_record(self):
         wallet_protocols = self.get_protocol_json()
-        last_block_number = get_last_block_number_before_end_date(self.db_service, self.end_date)
 
         address_token_balances = timed_call_(self.get_period_address_token_balances)
 
@@ -207,7 +207,7 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
                 total_fbtc_balance=total_protocol_fbtc_balance + wallet_holding_fbtc_balance,
                 total_fbtc_usd=total_protocol_fbtc_usd + wallet_holding_fbtc_usd,
                 rank=0,
-                block_number=last_block_number,
+                block_number=self.last_block_number,
             )
             result_orm_list.append(record)
         result_orm_list.sort(key=attrgetter('period_date', 'total_fbtc_balance'), reverse=True)

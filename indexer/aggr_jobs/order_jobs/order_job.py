@@ -3,35 +3,13 @@ import time
 from sqlalchemy import text
 
 from indexer.aggr_jobs.aggr_base_job import AggrBaseJob
-from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_cmeth_aggregates import \
-    PeriodFeatureDefiWalletCmethAggregates
-from indexer.aggr_jobs.order_jobs.py_jobs.period_feature_defi_wallet_fbtc_aggregates import \
-    PeriodFeatureDefiWalletFbtcAggregates
 
-from indexer.aggr_jobs.order_jobs.py_jobs.period_wallet_protocol_json_process_cmeth import PeriodWalletProtocolJsonProcessCmeth
-from indexer.aggr_jobs.order_jobs.py_jobs.period_wallet_protocol_json_process_fbtc import PeriodWalletProtocolJsonProcessFbtc
-
-
-# job_list = [
-#     'period_address_token_balances',
-#     'period_feature_holding_balance_uniswap_v3.sql',
-#     'period_feature_staked_fbtc_detail_records.sql',
-#     'period_feature_holding_balance_staked_fbtc_detail.sql',  # maybe can be removed
-#     'period_feature_holding_balance_staked_transferred_fbtc_detail.sql',
-#     'period_feature_erc1155_token_supply_records.sql',
-#     'period_feature_holding_balance_merchantmoe.sql',
-#     'period_feature_erc20_token_supply_records.sql', 'period_feature_holding_balance_dodo.sql'
-# ]
-#
-# if self.chain_name == 'mantle':
-#     if 'period_feature_holding_balance_merchantmoe_cmeth.sql' not in job_list:
-#         job_list.append('period_feature_holding_balance_merchantmoe_cmeth.sql')
-#
-#     if 'period_feature_holding_balance_lendle_au.sql' not in job_list:
-#         job_list.append('period_feature_holding_balance_lendle_au.sql')
-#
-#     if 'period_feature_holding_balance_init_capital.sql' not in job_list:
-#         job_list.append('period_feature_holding_balance_init_capital.sql')
+from indexer.aggr_jobs.order_jobs.py_jobs.period_wallet_protocol_json_process_cmeth import \
+    PeriodWalletProtocolJsonProcessCmeth
+from indexer.aggr_jobs.order_jobs.py_jobs.period_wallet_protocol_json_process_fbtc import \
+    PeriodWalletProtocolJsonProcessFbtc
+from indexer.aggr_jobs.order_jobs.py_jobs.untils import get_last_block_number_before_end_date, \
+    get_latest_price_dict_for_end_date
 
 
 class AggrOrderJob(AggrBaseJob):
@@ -56,6 +34,10 @@ class AggrOrderJob(AggrBaseJob):
         self.cmeth_jobs = cmeth.get('py_jobs', [])
         self.cmeth_generator_wallet_table = cmeth.get('generator_wallet_table', False)
         pass
+
+
+
+
 
     def get_period_jobs_from_jobs_dict(self, jobs_dict):
         period_sqls = []
@@ -84,11 +66,16 @@ class AggrOrderJob(AggrBaseJob):
                 execution_time = time.time() - start_time
                 print(f'----------- executed in {execution_time:.2f} seconds: SQL {sql_name}')
 
+            last_block_number = get_last_block_number_before_end_date(self.db_service, end_date)
+            price_dict = get_latest_price_dict_for_end_date(self.db_service, end_date)
+            common_dict = {'price_dict': price_dict, "last_block_number": last_block_number}
+
             if self.fbtc_jobs or self.fbtc_generator_wallet_table:
                 start_time = time.time()
                 period_wallet_protocol_json_fbtc = PeriodWalletProtocolJsonProcessFbtc(self.chain_name, self.db_service,
                                                                                        start_date, end_date,
                                                                                        self.version, self.fbtc_jobs,
+                                                                                       common_dict,
                                                                                        self.fbtc_generator_wallet_table)
 
                 period_wallet_protocol_json_fbtc.run()
@@ -102,6 +89,7 @@ class AggrOrderJob(AggrBaseJob):
                                                                                                  start_date, end_date,
                                                                                                  self.version,
                                                                                                  self.cmeth_jobs,
+                                                                                                 common_dict,
                                                                                                  self.cmeth_generator_wallet_table)
 
                 period_wallet_protocol_json_process_cmeth.run()
@@ -109,34 +97,3 @@ class AggrOrderJob(AggrBaseJob):
                 print(f'----------- executed in {execution_time:.2f} seconds: cmETH')
 
             print(f'==============   finish_job {start_date}')
-
-
-        #     # todo: improve the logic between sql and py jobs
-        #     period_feature_defi_wallet_fbtc_aggregates_job = PeriodFeatureDefiWalletFbtcAggregates(self.chain_name,
-        #                                                                                            self.db_service,
-        #                                                                                            start_date,
-        #                                                                                            end_date,
-        #                                                                                            self.version
-        #                                                                                            )
-        #
-        #     start_time = time.time()
-        #     # period_feature_defi_wallet_fbtc_aggregates_job.run()
-        #     execution_time = time.time() - start_time
-        #     print(f'----------- executed in {execution_time:.2f} seconds: FBTC')
-        #
-        #     if self.chain_name == 'mantle':
-        #         start_time = time.time()
-        #         period_feature_defi_wallet_cmeth_aggregates_job = PeriodFeatureDefiWalletCmethAggregates(
-        #             self.chain_name,
-        #             self.db_service,
-        #             start_date,
-        #             end_date,
-        #             self.version
-        #         )
-        #         # period_feature_defi_wallet_cmeth_aggregates_job.run()
-        #         execution_time = time.time() - start_time
-        #         print(f'----------- executed in {execution_time:.2f} seconds: CMETH')
-        #
-        #         print('======== finished date', start_date)
-        #
-        # session.close()

@@ -10,7 +10,7 @@ from decimal import Decimal
 from sqlalchemy import create_engine, text, func, desc
 from sqlalchemy.orm import sessionmaker
 
-from api.app.token.token_prices import TokenPrices
+from api.app.token.token_prices import TokenPrices, TokenHourlyPrices
 
 
 def format_value_for_json(value):
@@ -55,7 +55,7 @@ def get_last_block_number_before_end_date(db_service, end_date):
     sql = f"""select block_number
 from address_token_balances
 where block_timestamp < '{end_date}'
---   and block_timestamp > (date('{end_date}') - INTERVAL '1 day')
+  and block_timestamp > (date('{end_date}') - INTERVAL '1 day')
 order by block_number desc
 limit 1;
     """
@@ -63,6 +63,8 @@ limit 1;
     session = db_service.Session()
     result = session.execute(text(sql))
     row = result.fetchone()
+    session.close()
+
     if row is not None:
         number = row.block_number
         return number
@@ -169,7 +171,32 @@ def get_filter_start_date_orm(orm_class, db_service, start_date):
     return orm_list
 
 
-def get_latest_price(symbol_list, db_service, end_date):
+def get_latest_price_dict_for_end_date(db_service, end_date):
+    session = db_service.Session()
+    subquery = (
+        session.query(
+            TokenHourlyPrices.symbol,
+            TokenHourlyPrices.price,
+            func.row_number().over(
+                partition_by=TokenHourlyPrices.symbol,
+                order_by=desc(TokenHourlyPrices.timestamp)
+            ).label('row_number')
+        )
+        .filter(
+            TokenHourlyPrices.timestamp < end_date)
+        .subquery()
+    )
+
+    latest_per_address = (
+        session.query(subquery)
+        .filter(subquery.c.row_number == 1)
+        .all()
+    )
+    latest_per_address_dict = {tp.symbol: tp.price for tp in latest_per_address}
+    session.close()
+    return latest_per_address_dict
+
+def get_latest_price_(symbol_list, db_service, end_date):
     session = db_service.Session()
 
     price_date_limit = max(end_date, '2024-07-12')
@@ -199,11 +226,7 @@ def get_latest_price(symbol_list, db_service, end_date):
     return latest_per_address_dict
 
 
-def get_token_data_for_lendle_au_init_capital(orm_list, target_token_address, db_service, end_date):
-    token_symbol_list = list({r.token_symbol for r in orm_list})
-
-    price_dict = get_latest_price(token_symbol_list, db_service, end_date)
-
+def get_token_data_for_lendle_au_init_capital(orm_list, target_token_address, price_dict):
     wallet_protocol_contract_token_group = defaultdict(
         lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
 
@@ -268,9 +291,7 @@ def get_token_data_for_lendle_au_init_capital(orm_list, target_token_address, db
     return results
 
 
-def get_pool_token_pair_data(orm_list, target_token_symbol, db_service, end_date):
-    distinct_symbol_list = []
-
+def get_pool_token_pair_data(orm_list, target_token_symbol, price_dict):
     wallet_protocol_contract_group = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
 
     for record in orm_list:
@@ -281,14 +302,7 @@ def get_pool_token_pair_data(orm_list, target_token_symbol, db_service, end_date
 
         wallet_protocol_contract_group[(period_date_key, wallet_key)][protocol_key][contract_key].append(record)
 
-        if record.token0_symbol not in distinct_symbol_list:
-            distinct_symbol_list.append(record.token0_symbol)
-        if record.token1_symbol not in distinct_symbol_list:
-            distinct_symbol_list.append(record.token1_symbol)
 
-    price_dict = get_latest_price(distinct_symbol_list, db_service, end_date)
-
-    # self.get_pool_token_pair_aggr_by_protocol(orm_list, price_dict)
 
     results = {}
     for period_date_wallet, protocol_contract_group in wallet_protocol_contract_group.items():
@@ -353,7 +367,7 @@ def get_pool_token_pair_data(orm_list, target_token_symbol, db_service, end_date
 
 
 # get token pair data with lp
-def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, end_date, pool_type=''):
+def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, end_date, price_dict,pool_type=''):
     distinct_symbol_list = []
 
     wallet_protocol_contract_group = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
@@ -370,8 +384,6 @@ def get_pool_token_pair_data_with_lp(orm_list, target_token_symbol, db_service, 
             distinct_symbol_list.append(record.token0_symbol)
         if record.token1_symbol not in distinct_symbol_list:
             distinct_symbol_list.append(record.token1_symbol)
-
-    price_dict = get_latest_price(distinct_symbol_list, db_service, end_date)
 
     if pool_type == 'merchantmoe':
         merchant_moe_bin_step_active_id_records = get_merchant_moe_bin_step_active_id(db_service, end_date)

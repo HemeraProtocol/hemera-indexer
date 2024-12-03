@@ -21,14 +21,14 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_
 from indexer.aggr_jobs.order_jobs.py_jobs.uniswapv3_job import get_detail_df, calculate_liquidity, change_df_to_obj, \
     get_uniswap_v3_orms_from_old_mantle, get_uniswap_v3_orms_from_new_mantle
 from indexer.aggr_jobs.order_jobs.py_jobs.untils import format_value_for_json, get_new_uniswap_v3_orms, \
-    get_latest_price, get_token_data_for_lendle_au_init_capital, get_filter_start_date_orm, \
+    get_token_data_for_lendle_au_init_capital, get_filter_start_date_orm, \
     get_pool_token_pair_data_with_lp, timed_call, get_last_block_number_before_end_date, timed_call_
 
 warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 class PeriodWalletProtocolJsonProcessCmeth:
-    def __init__(self, chain_name, db_service, start_date, end_date, version, job_list, generator_wallet_table=False):
+    def __init__(self, chain_name, db_service, start_date, end_date, version, job_list, common_dict, generator_wallet_table=False):
         self.chain_name = chain_name
         self.db_service = db_service
         self.start_date = start_date
@@ -42,8 +42,9 @@ class PeriodWalletProtocolJsonProcessCmeth:
         self.token_symbol = 'cmETH'
         self.decimals = 10 ** 18
 
-        price_dict = get_latest_price([self.token_symbol], self.db_service, self.end_date)
-        self.price = price_dict.get(self.token_symbol, 0)
+        self.price_dict = common_dict.get('price_dict')
+        self.last_block_number = common_dict.get('last_block_number')
+        self.price = self.price_dict.get(self.token_symbol, 0)
 
         # self._new_session = get_engine()
 
@@ -217,7 +218,7 @@ where rn = 1;
         if protocol_id in self.job_list:
             orm_list = self.get_filter_cmeth_orm(PeriodFeatureHoldingBalanceMerchantmoeCmeth)
             # results = get_pool_token_pair_data(orm_list, self.token_symbol, self.db_service, self.end_date)
-            results = get_pool_token_pair_data_with_lp(orm_list, self.token_symbol, self.db_service, self.end_date,
+            results = get_pool_token_pair_data_with_lp(orm_list, self.token_symbol, self.db_service, self.end_date, self.price_dict,
                                                        'merchantmoe')
             self.insert_protocol_json(protocol_id, results)
 
@@ -228,7 +229,7 @@ where rn = 1;
         orms = get_new_uniswap_v3_orms(self.start_date)
         uniswapV3_list.extend(orms)
         # results = get_pool_token_pair_data(uniswapV3_list, self.token_symbol, self.db_service, self.end_date)
-        results = get_pool_token_pair_data_with_lp(uniswapV3_list, self.token_symbol, self.db_service, self.end_date,
+        results = get_pool_token_pair_data_with_lp(uniswapV3_list, self.token_symbol, self.db_service, self.end_date,self.price_dict,
                                                    'uniswapv3')
         self.get_pool_token_pair_aggr_by_protocol(uniswapV3_list, self.price)
         return results
@@ -271,8 +272,7 @@ where rn = 1;
             orm_list.extend(staked_token_orm_list)
 
             # need to filter the only token in some cases
-            results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
-                                                                self.end_date)
+            results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.price_dict)
 
             self.insert_protocol_json(protocol_id, results)
             self.get_token_aggr_by_protocol(orm_list, self.price)
@@ -318,8 +318,7 @@ where rn = 1;
         if protocol_id in self.job_list:
             # all tokens
             orm_list = get_filter_start_date_orm(PeriodFeatureHoldingBalanceLendle, self.db_service, self.start_date)
-            results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
-                                                                self.end_date)
+            results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.price_dict)
 
             self.insert_protocol_json(protocol_id, results)
 
@@ -333,8 +332,7 @@ where rn = 1;
             # all tokens
             orm_list = get_filter_start_date_orm(PeriodFeatureHoldingBalanceInitCapital, self.db_service,
                                                  self.start_date)
-            results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.db_service,
-                                                                self.end_date)
+            results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.price_dict)
             self.insert_protocol_json(protocol_id, results)
 
             cmeth_orm_list = [r for r in orm_list if r.token_address.hex() == self.token_address[2:]]
@@ -354,7 +352,7 @@ where rn = 1;
             results2 = change_df_to_obj(liquidity_df)
             results1.extend(results2)
 
-            results = get_pool_token_pair_data_with_lp(results1, self.token_symbol, self.db_service, self.end_date,
+            results = get_pool_token_pair_data_with_lp(results1, self.token_symbol, self.db_service, self.end_date,self.price_dict,
                                                        'uniswapv3')
 
             self.insert_protocol_json(protocol_id, results)
@@ -450,7 +448,6 @@ where rn = 1;
 
     def process_wallet_record(self):
         wallet_protocols = self.get_protocol_json()
-        last_block_number = get_last_block_number_before_end_date(self.db_service, self.end_date)
 
         address_token_balances = timed_call(self.get_period_address_token_balances,
                                             'get_period_address_token_balances')
@@ -496,7 +493,7 @@ where rn = 1;
                 total_cmeth_balance=total_protocol_cmeth_balance + wallet_holding_cmeth_balance,
                 total_cmeth_usd=total_protocol_cmeth_usd + wallet_holding_cmeth_usd,
                 rank=0,
-                block_number=last_block_number,
+                block_number=self.last_block_number,
             )
             result_orm_list.append(record)
         result_orm_list.sort(key=attrgetter('period_date', 'total_cmeth_balance'), reverse=True)
