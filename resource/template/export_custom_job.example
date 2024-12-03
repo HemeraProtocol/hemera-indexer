@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from indexer.jobs.base_job import BaseExportJob, Collector
+from indexer.jobs.base_job import ExtensionJob, Collector
 from indexer.utils.collection_utils import distinct_collections_by_group
 
 
