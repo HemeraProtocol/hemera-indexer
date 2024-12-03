@@ -3,6 +3,7 @@ import click
 from cli.aggregates import aggregates
 from cli.api import api
 from cli.db import db
+from cli.init import init
 from cli.reorg import reorg
 from cli.stream import stream
 from indexer.utils.logging_utils import logging_basic_config
@@ -28,3 +29,4 @@ cli.add_command(api, "api")
 cli.add_command(aggregates, "aggregates")
 cli.add_command(reorg, "reorg")
 cli.add_command(db, "db")
+cli.add_command(init, "init")
