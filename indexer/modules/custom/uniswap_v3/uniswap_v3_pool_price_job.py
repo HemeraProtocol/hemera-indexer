@@ -38,6 +38,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
 
         self._pool_address = config.get("pool_address")
         self.multi_call_helper = MultiCallHelper(self._web3, kwargs, logger)
+        self.pools_requested_by_rpc = []
 
     def get_filter(self):
         address_list = self._pool_address if self._pool_address else []
@@ -58,28 +59,29 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             ]
         )
 
-    def _process(self, **kwargs):
-        self._exist_pools = self.get_existing_pools()
-
-        transactions = self._data_buff["transaction"]
-        current_price_dict = {}
-        price_dict = {}
-
+    def get_missing_pools_by_rpc(self):
         # pool_logs
         missing_pool_address_dict = {}
         #  fee/factory/token0/token1
+        transactions = self._data_buff["transaction"]
 
         for transaction in transactions:
             logs = transaction.receipt.logs
             for log in logs:
                 abi_module = None
-
                 if log.topic0 == uniswapv3_abi.SWAP_EVENT.get_signature() and log.address not in self._exist_pools:
-                    abi_module = uniswapv3_abi
+                    if log.address not in self.pools_requested_by_rpc:
+                        abi_module = uniswapv3_abi
+                        self.pools_requested_by_rpc.append(log.address)
                 elif log.topic0 == swapsicle_abi.SWAP_EVENT.get_signature() and log.address not in self._exist_pools:
-                    abi_module = swapsicle_abi
+                    if log.address not in self.pools_requested_by_rpc:
+                        abi_module = swapsicle_abi
+                        self.pools_requested_by_rpc.append(log.address)
                 elif log.topic0 == agni_abi.SWAP_EVENT.get_signature() and log.address not in self._exist_pools:
-                    abi_module = agni_abi
+                    if log.address not in self.pools_requested_by_rpc:
+                        abi_module = agni_abi
+                        self.pools_requested_by_rpc.append(log.address)
+
                 if abi_module:
                     call_dict = {
                         "abi_module": abi_module,
@@ -141,6 +143,15 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
                         "factory_address": factory_address,
                     }
                     self._collect_domain(uniswap_v_pool_from_swap_event)
+
+    def _process(self, **kwargs):
+        self._exist_pools = self.get_existing_pools()
+
+        self.get_missing_pools_by_rpc()
+
+        transactions = self._data_buff["transaction"]
+        current_price_dict = {}
+        price_dict = {}
 
         for transaction in transactions:
             logs = transaction.receipt.logs

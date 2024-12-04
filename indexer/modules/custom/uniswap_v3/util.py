@@ -1,20 +1,27 @@
-import json
 import logging
-import os
 
 from web3 import Web3
 
 logger = logging.getLogger(__name__)
 
 
-def load_abi(filename):
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    full_path = os.path.join(base_path, filename)
-    with open(full_path, "r") as file:
-        data = json.load(file)
-    return data
+class BiDirectionalDict:
+    def __init__(self, initial_dict=None):
+        self.forward = initial_dict or {}
+        self.backward = {v: k for k, v in self.forward.items()}
+
+    def add(self, key, value):
+        self.forward[key] = value
+        self.backward[value] = key
+
+    def get_forward(self, key):
+        return self.forward.get(key)
+
+    def get_backward(self, value):
+        return self.backward.get(value)
 
 
+# todo: remove
 def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_key="pool_address"):
     parameters = []
 
@@ -40,20 +47,3 @@ def build_no_input_method_data(web3, requests, fn, abi_list, contract_address_ke
 
         parameters.append(token)
     return parameters
-
-
-def parse_hex_to_address(hex_string):
-    hex_string = hex_string.lower().replace("0x", "")
-
-    if len(hex_string) > 40:
-        hex_string = hex_string[-40:]
-
-    hex_string = hex_string.zfill(40)
-    return Web3.to_checksum_address(hex_string).lower()
-
-
-def parse_hex_to_int256(hex_string):
-    value = Web3.to_int(hexstr=hex_string)
-    if value >= 2**255:
-        value -= 2**256
-    return value

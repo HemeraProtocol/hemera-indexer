@@ -180,5 +180,6 @@ class UniswapV3PoolFromSwapEvent(UniswapV3Pool):
     pass
 
 
+@dataclass
 class UniswapV3PoolFromToken(UniswapV3Pool):
     pass

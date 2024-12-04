@@ -7,12 +7,14 @@ from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
+    UniswapV3PoolFromToken,
     UniswapV3Token,
     UniswapV3TokenCurrentStatus,
     UniswapV3TokenDetail,
 )
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
+from indexer.modules.custom.uniswap_v3.util import BiDirectionalDict
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
@@ -34,9 +36,14 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         config = kwargs["config"]["uniswap_v3_job"]
         # only index selected position_token_address
         data = config["position_token_address"]
-        self._position_token_address_dict = {
-            address: uniswapv3_type_str for uniswapv3_type_str, addresses in data.items() for address in addresses
-        }
+        self._position_token_address_dict = {}
+        factory_position_dict = {}
+        for uniswapv3_type_str, factory_position_kv in data.items():
+            factory_position_dict.update(factory_position_kv)
+            for factory, position in factory_position_kv.items():
+                self._position_token_address_dict[position] = uniswapv3_type_str
+
+        self._factory_position_dict = BiDirectionalDict(factory_position_dict)
 
         self.multi_call_helper = MultiCallHelper(self._web3, kwargs, logger)
         self._existing_tokens = self.get_existing_tokens()
@@ -50,7 +57,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         )
 
     def _process(self, **kwargs):
-        existing_pools = self.get_existing_pools()
+        self.existing_pools = self.get_existing_pools()
         token_detail_list = []
         call_default_dict = defaultdict()
 
@@ -62,6 +69,8 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             if tt.token_address in self._position_token_address_dict
         ]
         logs = self._data_buff["log"]
+
+        erc721_token_transfers.sort(key=lambda x: x.block_number)
 
         for erc721_token_transfer in erc721_token_transfers:
             position_token_address = erc721_token_transfer.token_address
@@ -84,13 +93,15 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 burn_tokens_dict[position_token_address, token_id] = block_number
             #  add the token to the list that need to eth call
             else:
-                call_dict = {
-                    "target": position_token_address,
-                    "parameters": [token_id],
-                    "block_number": block_number,
-                    "user_defined_k": block_timestamp,
-                }
-                call_default_dict[position_token_address, token_id, block_number] = call_dict
+                # if the position was burned, not need to call
+                if (position_token_address, token_id) not in burn_tokens_dict:
+                    call_dict = {
+                        "target": position_token_address,
+                        "parameters": [token_id],
+                        "block_number": block_number,
+                        "user_defined_k": block_timestamp,
+                    }
+                    call_default_dict[position_token_address, token_id, block_number] = call_dict
         # 2. find out the events that lp change
         for log in logs:
             if log.address in self._position_token_address_dict:
@@ -113,13 +124,25 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                         "block_number": block_number,
                         "user_defined_k": log.block_timestamp,
                     }
-                    not_burn_token_flag = (position_token_address, token_id) not in burn_tokens_dict
-                    before_burn_token_flag = (
-                        position_token_address,
-                        token_id,
-                    ) in burn_tokens_dict and block_number < burn_tokens_dict[position_token_address, token_id]
+
+                    key = (position_token_address, token_id)
+                    not_burn_token_flag = key not in burn_tokens_dict
+                    before_burn_token_flag = key in burn_tokens_dict and block_number < burn_tokens_dict[key]
                     if not_burn_token_flag or before_burn_token_flag:
                         call_default_dict[position_token_address, token_id, block_number] = call_dict
+
+        # maybe just add this logic only
+        keys_to_remove = []
+
+        for key in call_default_dict.keys():
+            position_token_address, token_id, block_number = key
+            if (position_token_address, token_id) in burn_tokens_dict:
+                if block_number >= burn_tokens_dict[position_token_address, token_id]:
+                    keys_to_remove.append(key)
+
+        for key in keys_to_remove:
+            call_default_dict.pop(key)
+
         # the list that have the call list from #1 and #2
         call_dict_list = list(call_default_dict.values())
 
@@ -136,6 +159,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             positions_call_list.append(Call(function_abi=abi_module.POSITIONS_FUNCTION, **call_dict))
         self.multi_call_helper.execute_calls(positions_call_list)
 
+        positions_data_list = []
         # decode data
         for owner_call, positions_call in zip(owner_call_list, positions_call_list):
             position_token_address = owner_call.target.lower()
@@ -148,8 +172,41 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             token0, token1, tick_lower, tick_upper, liquidity, fee = self.decode_positions_data(
                 position_token_address, positions
             )
-            # pool_address can be uniquely determined by position_token_address, token0, token1, fee
-            pool_address = existing_pools.get((position_token_address, token0, token1, fee))
+            data_dict = {
+                "owner": owner_call.returns["owner"],
+                "position_token_address": position_token_address,
+                "token_id": token_id,
+                "block_number": block_number,
+                "block_timestamp": block_timestamp,
+                "token0": token0,
+                "token1": token1,
+                "tick_lower": tick_lower,
+                "tick_upper": tick_upper,
+                "liquidity": liquidity,
+                "fee": fee,
+            }
+            positions_data_list.append(data_dict)
+        self.get_pool_address_by_rpc(positions_data_list)
+
+        for positions_data in positions_data_list:
+            # pool_address can be uniquely determined by position_token_address/factory_address, token0, token1, fee
+            position_token_address = positions_data.get("position_token_address")
+            token_id = positions_data.get("token_id")
+            tick_lower = positions_data.get("tick_lower")
+            tick_upper = positions_data.get("tick_upper")
+            fee = positions_data.get("fee")
+            block_number = positions_data.get("block_number")
+            block_timestamp = positions_data.get("block_timestamp")
+            liquidity = positions_data.get("liquidity")
+
+            pool_address = self.existing_pools.get(
+                (
+                    position_token_address,
+                    positions_data.get("token0"),
+                    positions_data.get("token1"),
+                    positions_data.get("fee"),
+                )
+            )
             if not pool_address:
                 continue
 
@@ -167,7 +224,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 )
                 self._collect_domain(token)
             # original abi has no owner
-            wallet_address = owner_call.returns["owner"]
+            wallet_address = positions_data.get("owner")
             uniswap_v3_token_detail = UniswapV3TokenDetail(
                 position_token_address=position_token_address,
                 pool_address=pool_address,
@@ -189,7 +246,75 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         self._collect_domains(token_detail_list)
         self._collect_domains(current_token_detail_dict.values())
 
-        pass
+    def get_pool_address_by_rpc(self, positions_data_list):
+        missing_pool_positions_data_dict = {}
+        for positions_data in positions_data_list:
+            key = (
+                positions_data.get("position_token_address"),
+                positions_data.get("token0"),
+                positions_data.get("token1"),
+                positions_data.get("fee"),
+            )
+            pool_address = self.existing_pools.get(key)
+            if not pool_address:
+                missing_pool_positions_data_dict[key] = positions_data
+
+        call_list = []
+        for positions_data in missing_pool_positions_data_dict.values():
+            position_token_address = positions_data.get("position_token_address")
+            factory_address = self._factory_position_dict.get_backward(position_token_address)
+            abi_module = self.position_token_address_to_abi_module(position_token_address)
+
+            uniswapv3_type_str = self._position_token_address_dict.get(position_token_address)
+            parameters = [positions_data.get("token0"), positions_data.get("token1")]
+            if uniswapv3_type_str in ("uniswapv3", "agni"):
+                parameters.append(positions_data.get("fee"))
+            call = Call(
+                target=factory_address,
+                parameters=parameters,
+                function_abi=abi_module.GET_POOL_FUNCTION,
+                block_number=positions_data.get("block_number"),
+                user_defined_k=positions_data.get("block_timestamp"),
+            )
+            call_list.append(call)
+        self.multi_call_helper.execute_calls(call_list)
+
+        for call in call_list:
+            returns = call.returns
+            if returns:
+                pool_address = returns.get("")
+                factory_address = call.target.lower()
+                position_token_address = self._factory_position_dict.get_forward(factory_address)
+
+                parameters = call.parameters
+                token0 = parameters[0]
+                token1 = parameters[1]
+                if parameters.__len__() == 3:
+                    fee = parameters[2]
+                else:
+                    fee = 0
+
+                uniswap_v_pool_from_token_positions = UniswapV3PoolFromToken(
+                    position_token_address=position_token_address,
+                    factory_address=factory_address,
+                    pool_address=pool_address,
+                    fee=fee,
+                    token0_address=token0,
+                    token1_address=token1,
+                    block_number=call.block_number,
+                    block_timestamp=call.user_defined_k,
+                    tick_spacing=0,
+                )
+                self._collect_domain(uniswap_v_pool_from_token_positions)
+                pool = {
+                    (
+                        position_token_address,
+                        token0,
+                        token1,
+                        fee,
+                    ): pool_address
+                }
+                self.existing_pools.update(pool)
 
     def decode_positions_data(self, position_token_address, positions):
         """

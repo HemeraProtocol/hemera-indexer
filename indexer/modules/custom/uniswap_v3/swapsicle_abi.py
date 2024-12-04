@@ -91,3 +91,43 @@ SWAP_EVENT = Event(
         "type": "event",
     }
 )
+FACTORY_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "factory",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+TOKEN0_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "token0",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+TOKEN1_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "token1",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
+GET_POOL_FUNCTION = Function(
+    {
+        "inputs": [
+            {"internalType": "address", "name": "", "type": "address"},
+            {"internalType": "address", "name": "", "type": "address"},
+        ],
+        "name": "poolByPair",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
