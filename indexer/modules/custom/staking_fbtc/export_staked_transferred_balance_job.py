@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 
+from common.utils.format_utils import bytes_to_hex_str
 from sqlalchemy import text
 
 from indexer.domain.token_transfer import ERC20TokenTransfer
@@ -54,9 +55,9 @@ class ExportTransferredBalanceJob(FilterTransactionDataJob):
         current_holdings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 
         for record in result:
-            contract_address = "0x" + record.contract_address.hex()
-            wallet_address = "0x" + record.wallet_address.hex()
-            token_address = "0x" + record.token_address.hex()
+            contract_address = bytes_to_hex_str(record.contract_address)
+            wallet_address = bytes_to_hex_str(record.wallet_address)
+            token_address = bytes_to_hex_str(record.token_address)
             current_holdings[contract_address][wallet_address][token_address] = record.block_cumulative_value
         session.close()
 
