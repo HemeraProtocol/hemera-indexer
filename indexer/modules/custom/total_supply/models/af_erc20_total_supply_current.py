@@ -4,6 +4,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20CurrentTotalSupply
 
 
 class AfErc20TotalSupplyCurrent(HemeraModel):
@@ -21,7 +22,7 @@ class AfErc20TotalSupplyCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "Erc20CurrentTotalSupply",
+                "domain": Erc20CurrentTotalSupply,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_erc20_total_supply_current.block_number",
                 "converter": general_converter,
