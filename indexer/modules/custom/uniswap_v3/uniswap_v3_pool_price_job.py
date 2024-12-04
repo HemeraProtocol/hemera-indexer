@@ -32,9 +32,10 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         position_token_address = config.get("position_token_address")
         self.factory_position_pair = {}
 
-        for d_list in position_token_address.values():
-            for d in d_list:
-                self.factory_position_pair.update(d)
+        if position_token_address:
+            for d_list in position_token_address.values():
+                for d in d_list:
+                    self.factory_position_pair.update(d)
 
         self._pool_address = config.get("pool_address")
         self.multi_call_helper = MultiCallHelper(self._web3, kwargs, logger)
@@ -58,12 +59,8 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             ]
         )
 
-    def _process(self, **kwargs):
-        self._exist_pools = self.get_existing_pools()
-
+    def collect_not_existing_pools(self):
         transactions = self._data_buff["transaction"]
-        current_price_dict = {}
-        price_dict = {}
 
         # pool_logs
         missing_pool_address_dict = {}
@@ -110,7 +107,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self.multi_call_helper.execute_calls(tick_spacing_list)
 
         for factory_call, fee_call, token0_call, token1_call, tick_spacing_call in zip(
-            factory_list, fee_list, token0_list, token1_list, tick_spacing_list
+                factory_list, fee_list, token0_list, token1_list, tick_spacing_list
         ):
             factory_address = factory_call.returns.get("")
             if factory_address:
@@ -141,6 +138,16 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
                         "factory_address": factory_address,
                     }
                     self._collect_domain(uniswap_v_pool_from_swap_event)
+
+    def _process(self, **kwargs):
+        self._exist_pools = self.get_existing_pools()
+
+        if not self._pool_address:
+            self.collect_not_existing_pools()
+
+        transactions = self._data_buff["transaction"]
+        current_price_dict = {}
+        price_dict = {}
 
         for transaction in transactions:
             logs = transaction.receipt.logs

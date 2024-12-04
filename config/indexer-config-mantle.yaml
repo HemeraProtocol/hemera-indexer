@@ -1,32 +1,25 @@
 chain_id: 5000
 uniswap_v3_job:
-  position_token_address:
-    # factory address: position_token_address
-    swapsicle:
-      - '0xc848bc597903b4200b9427a3d7f61e3ff0553913': '0x7d24de60a68ae47be4e852cf03dd4d8588b489ec' # swapsicle
-    uniswapv3:
-      - '0xaaa32926fce6be95ea2c51cb4fcb60836d320c42': '0xaaa78e8c4241990b4ce159e105da08129345946a' # cle
-    agni:
-      - '0x25780dc8fc3cfbd75f33bfdab65e969b603b2035': '0x218bf598d1453383e2f4aa7b14ffb9bfb102d637' # agni
-      - '0x530d2766d1988cc1c000c8b7d00334c14b69ad71': '0x5752f085206ab87d8a5ef6166779658add455774' # fusion
-
   # empty means no filter
+  position_token_address:
   factory_address:
   pool_address:
+    - "0x8b4e2134d1f3da64f9cc044152bf8ee121bb24ce"
     - "0xcfef46bc49c7502edd960850264b9c2dfe4d75d7"
 
 teahouse_job:
+  # created from 70855795, 10-25
   '0xfc3861c04c5ce0883d9f79308e5a65402141df85': "0x8b4e2134d1f3da64f9cc044152bf8ee121bb24ce"
+  # created from 70852738, 10-25
   "0x4ddd37f662871fb49ebbc88a58897961e2c12a60": "0xcfef46bc49c7502edd960850264b9c2dfe4d75d7"
 
 
 export_tokens_and_transfers_job:
   filter_token_address:
-    - "0x7d24de60a68ae47be4e852cf03dd4d8588b489ec"
-    - "0xaaa78e8c4241990b4ce159e105da08129345946a"
-    - "0x218bf598d1453383e2f4aa7b14ffb9bfb102d637"
-    - "0x5752f085206ab87d8a5ef6166779658add455774"
+    - "0xfc3861c04c5ce0883d9f79308e5a65402141df85"
+    - "0x4ddd37f662871fb49ebbc88a58897961e2c12a60"
 
 total_supply_job:
   token_address:
-    - "0xd39dfbfba9e7eccd813918ffbda10b783ea3b3c6"
+    - "0xfc3861c04c5ce0883d9f79308e5a65402141df85"
+    - "0x4ddd37f662871fb49ebbc88a58897961e2c12a60"

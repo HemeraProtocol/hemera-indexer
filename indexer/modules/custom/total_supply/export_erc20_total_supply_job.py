@@ -35,19 +35,26 @@ class ExportErc20TotalSupplyJob(FilterTransactionDataJob):
 
     def _process(self, **kwargs):
         token_transfers = self._data_buff[ERC20TokenTransfer.type()]
-        call_list = []
+        call_dict = {}
         for token_transfer in token_transfers:
+            token_address = token_transfer.token_address
+            block_number = token_transfer.block_number
             call = Call(
-                target=token_transfer.token_address,
+                target=token_address,
                 function_abi=TOKEN_TOTAL_SUPPLY_FUNCTION,
-                block_number=token_transfer.block_number,
+                block_number=block_number,
                 user_defined_k=token_transfer.block_timestamp,
             )
-            call_list.append(call)
+            call_dict[token_address, block_number] = call
+
+        call_list = list(call_dict.values())
+
         self.multi_call_helper.execute_calls(call_list)
 
         records = []
         current_dict = {}
+
+        call_list.sort(key=lambda call: call.block_number)
 
         for call in call_list:
             total_supply = call.returns.get("totalSupply")
