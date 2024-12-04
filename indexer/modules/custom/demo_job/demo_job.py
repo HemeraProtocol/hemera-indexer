@@ -109,6 +109,3 @@ class DemoJob(FilterTransactionDataJob):
         # This is one of the functions that collect dataclass into unified buffer
         # The other functions can be found in indexer/jobs/base_job.py
         output.collect_domains(erc721_token_mints)
-
-    def _process(self, **kwargs):
-        pass
