@@ -9,3 +9,4 @@ cmETH:
     address_token_balance:
       - period_address_token_balances
       - period_feature_holding_balance_uniswap_v3_detail_new_schema
+      - period_feature_teahouse_detail
