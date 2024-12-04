@@ -223,10 +223,7 @@ class PGSourceJob(BaseSourceJob):
                 )
 
                 result = (
-                    session.query(sub_table)
-                    .join(unnest_query, sub_table.c.number == unnest_query.c.block_number)
-                    .order_by(*table.__query_order__)
-                    .all()
+                    session.query(sub_table).join(unnest_query, sub_table.c.number == unnest_query.c.block_number).all()
                 )
             elif hasattr(table, "block_number") and hasattr(table, "block_timestamp"):
                 sub_table = (
@@ -236,8 +233,8 @@ class PGSourceJob(BaseSourceJob):
                 )
 
                 result = (
-                    session.query(sub_table).join(unnest_query, sub_table.c.block_number == unnest_query.c.block_number)
-                    # .order_by(*table.__query_order__)
+                    session.query(sub_table)
+                    .join(unnest_query, sub_table.c.block_number == unnest_query.c.block_number)
                     .all()
                 )
             else:

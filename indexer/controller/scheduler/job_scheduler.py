@@ -10,7 +10,13 @@ from common.utils.format_utils import bytes_to_hex_str
 from common.utils.module_loading import import_submodules
 from indexer.exporters.console_item_exporter import ConsoleItemExporter
 from indexer.jobs import CSVSourceJob
-from indexer.jobs.base_job import BaseExportJob, BaseJob, ExtensionJob, FilterTransactionDataJob
+from indexer.jobs.base_job import (
+    BaseExportJob,
+    BaseJob,
+    ExtensionJob,
+    FilterTransactionDataJob,
+    generate_dependency_types,
+)
 from indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from indexer.jobs.export_blocks_job import ExportBlocksJob
 from indexer.jobs.source_job.pg_source_job import PGSourceJob
@@ -172,6 +178,7 @@ class JobScheduler:
 
         all_subclasses.extend(ExtensionJob.discover_jobs())
         for cls in all_subclasses:
+            generate_dependency_types(cls)
             self.job_classes.append(cls)
             for output in cls.output_types:
                 if output.type() in self.job_map:

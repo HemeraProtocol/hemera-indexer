@@ -66,22 +66,23 @@ class ExportTokenBalancesJob(BaseExportJob):
     def _process(self, **kwargs):
         if TokenBalance.type() in self._data_buff:
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
-
-            self._data_buff[CurrentTokenBalance.type()] = distinct_collections_by_group(
-                [
-                    CurrentTokenBalance(
-                        address=token_balance.address,
-                        token_id=token_balance.token_id,
-                        token_type=token_balance.token_type,
-                        token_address=token_balance.token_address,
-                        balance=token_balance.balance,
-                        block_number=token_balance.block_number,
-                        block_timestamp=token_balance.block_timestamp,
-                    )
-                    for token_balance in self._data_buff[TokenBalance.type()]
-                ],
-                group_by=["token_address", "address", "token_id"],
-                max_key="block_number",
+            self._update_domains(
+                distinct_collections_by_group(
+                    [
+                        CurrentTokenBalance(
+                            address=token_balance.address,
+                            token_id=token_balance.token_id,
+                            token_type=token_balance.token_type,
+                            token_address=token_balance.token_address,
+                            balance=token_balance.balance,
+                            block_number=token_balance.block_number,
+                            block_timestamp=token_balance.block_timestamp,
+                        )
+                        for token_balance in self._data_buff[TokenBalance.type()]
+                    ],
+                    group_by=["token_address", "address", "token_id"],
+                    max_key="block_number",
+                )
             )
 
     @calculate_execution_time

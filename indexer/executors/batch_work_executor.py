@@ -47,7 +47,7 @@ class BatchWorkExecutor:
         self.logger = logging.getLogger(job_name)
         self.progress_logger = ProgressLogger(name=job_name, logger=self.logger)
 
-    def execute(self, work_iterable, work_handler, total_items=None, split_method=None):
+    def execute(self, work_iterable, work_handler, collector=None, total_items=None, split_method=None):
         self.progress_logger.start(total_items=total_items)
         submit_batches = (
             dynamic_batch_iterator(work_iterable, lambda: self.batch_size)
@@ -57,12 +57,17 @@ class BatchWorkExecutor:
 
         for batch in submit_batches:
             self._check_completed_futures()
-            future = self.executor.submit(self._fail_safe_execute, work_handler, batch, split_method is not None)
+            future = self.executor.submit(
+                self._fail_safe_execute, work_handler, batch, collector, split_method is not None
+            )
             self._futures.append(future)
 
-    def _fail_safe_execute(self, work_handler, batch, custom_splitting):
+    def _fail_safe_execute(self, work_handler, batch, collector, custom_splitting):
         try:
-            work_handler(batch)
+            if collector:
+                work_handler(batch, collector)
+            else:
+                work_handler(batch)
             if not custom_splitting:
                 self._try_increase_batch_size(len(batch))
         except self.retry_exceptions as e:
@@ -71,11 +76,12 @@ class BatchWorkExecutor:
                 self._try_decrease_batch_size(len(batch))
                 self.logger.info("The batch of size {} will be retried one item at a time.".format(len(batch)))
                 for sub_batch in dynamic_batch_iterator(batch, lambda: self.batch_size):
-                    self._fail_safe_execute(work_handler, sub_batch, custom_splitting)
+                    self._fail_safe_execute(work_handler, sub_batch, collector, custom_splitting)
             else:
                 execute_with_retries(
                     work_handler,
                     batch,
+                    collector,
                     max_retries=self.max_retries,
                     retry_exceptions=self.retry_exceptions,
                 )

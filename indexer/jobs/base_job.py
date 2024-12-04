@@ -2,7 +2,9 @@ import logging
 import threading
 from collections import defaultdict
 from datetime import datetime
+from typing import Generic, List, Type, TypeVar, Union, get_args, get_origin, get_type_hints
 
+from deprecated import deprecated
 from web3 import Web3
 
 from common.converter.pg_converter import domain_model_mapping
@@ -11,6 +13,50 @@ from common.utils.format_utils import to_snake_case
 from indexer.domain import Domain
 from indexer.domain.transaction import Transaction
 from indexer.utils.reorg import should_reorg
+
+T = TypeVar("T")
+
+
+class Collector(Generic[T]):
+
+    def __init__(self, job, collect_types: List[Domain]):
+        self.job = job
+        self.collect_types = set(collect_types)
+
+    def check_collect_type(self, cls):
+        if cls not in self.collect_types:
+            raise ValueError(
+                f"Collector only collects the following types of data: {[self.collect_types]}, "
+                f"the data type given now is {cls}"
+            )
+
+    def collect_item(self, key: str, data: Domain):
+        self.check_collect_type(type(data))
+        with self.job._data_buff_lock[key]:
+            self.job._data_buff[key].append(data)
+
+    def collect_items(self, key, datas: List[Domain]):
+        self.check_collect_type(type(datas[0]))
+        with self.job._data_buff_lock[key]:
+            self.job._data_buff[key].extend(datas)
+
+    def collect_domain(self, domain: Domain):
+        self.check_collect_type(type(domain))
+        self.collect(domain)
+
+    def collect_domains(self, domains: List[Domain]):
+        self.check_collect_type(type(domains[0]))
+        self.collects(domains)
+
+    def collect(self, domain: Domain):
+        self.check_collect_type(type(domain))
+        with self.job._data_buff_lock[domain.type()]:
+            self.job._data_buff[domain.type()].append(domain)
+
+    def collects(self, domains: List[Domain]):
+        self.check_collect_type(type(domains[0]))
+        with self.job._data_buff_lock[domains[0].type()]:
+            self.job._data_buff[domains[0].type()].extend(domains)
 
 
 class BaseJobMeta(type):
@@ -93,8 +139,12 @@ class BaseJob(metaclass=BaseJobMeta):
                 self.logger.info(f"Stage _pre_reorg finished. Took {datetime.now() - start_time}")
 
             if not self._reorg or self._should_reorg:
-                self._collect(**kwargs)
-                self._process(**kwargs)
+                if is_overwrite_udf(self.__class__):
+                    parameters = self._build_udf_parameter()
+                    self._udf(**parameters)
+                else:
+                    self._collect(**kwargs)
+                    self._process(**kwargs)
 
             if not self._reorg:
                 self._export()
@@ -127,27 +177,39 @@ class BaseJob(metaclass=BaseJobMeta):
                 if output.type() not in self._should_reorg_type and output.type() in self._data_buff.keys():
                     self._data_buff.pop(output.type())
 
+    # @deprecated
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # Please move your data process logic into _udf instead.
+    @deprecated
     def _collect(self, **kwargs):
         pass
 
+    # @deprecated
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # Please move your data process batch logic into custom define function instead.
+    @deprecated
     def _collect_batch(self, iterator):
         pass
 
-    def _collect_item(self, key, data):
+    def _collect_item(self, key, data: Domain):
         with self._data_buff_lock[key]:
             self._data_buff[key].append(data)
 
-    def _collect_items(self, key, data_list):
+    def _collect_items(self, key, data_list: List[Domain]):
         with self._data_buff_lock[key]:
             self._data_buff[key].extend(data_list)
 
-    def _collect_domain(self, domain):
+    def _collect_domain(self, domain: Domain):
         with self._data_buff_lock[domain.type()]:
             self._data_buff[domain.type()].append(domain)
 
-    def _collect_domains(self, domains):
+    def _collect_domains(self, domains: List[Domain]):
         for domain in domains:
             self._collect_domain(domain)
+
+    def _update_domains(self, domains: List[Domain]):
+        key = domains[0].type()
+        self._data_buff[key] = domains
 
     def _get_domain(self, domain):
         return self._data_buff[domain.type()] if domain.type() in self._data_buff else []
@@ -158,23 +220,37 @@ class BaseJob(metaclass=BaseJobMeta):
             res += self._data_buff[domain.type()]
         return res
 
+    # @deprecated
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # Please move your data process logic into _udf instead.
+    @deprecated
     def _process(self, **kwargs):
         pass
 
-    def _extract_from_buff(self, keys=None):
-        items = []
-        for key in keys:
-            with self._data_buff_lock[key]:
-                items.extend(self._data_buff[key])
+    def _build_udf_parameter(self):
+        parameters = {}
+        annotations = get_type_hints(self._udf)
+        for param, param_type in annotations.items():
+            if param == "output":
+                continue
+            args_type = get_args(param_type)[0]
+            if args_type.type() in self._data_buff:
+                parameters[param] = self._data_buff[args_type.type()]
+            else:
+                parameters[param] = []
 
-        return items
+        parameters["output"] = Collector(self, self.output_types)
+        return parameters
+
+    def _udf(self, **kwargs):
+        pass
 
     def _export(self):
         items = []
 
         for output_type in self.output_types:
             if output_type in self._required_output_types:
-                items.extend(self._extract_from_buff([output_type.type()]))
+                items.extend(self._data_buff[output_type.type()])
 
         for item_exporter in self._item_exporters:
             item_exporter.open()
@@ -207,3 +283,91 @@ class FilterTransactionDataJob(ExtensionJob):
 
     def get_filter_transactions(self):
         return list(filter(self.get_filter().is_satisfied_by, self._data_buff[Transaction.type()]))
+
+
+def is_overwrite_udf(cls: Type[BaseJob]):
+    process_qualname = cls._udf.__qualname__
+    return process_qualname.startswith(cls.__name__)
+
+
+def generate_dependency_types(cls: Type[BaseJob]):
+    if not is_overwrite_udf(cls):
+        return
+
+    annotations = get_type_hints(cls._udf)
+
+    if "output" not in annotations:
+        raise TypeError(f"Missing output collector: output in _udf function parameter list of {cls.__name__}.")
+
+    dependency_types = []
+    output_types = []
+    for param, param_type in annotations.items():
+        if param == "return":
+            continue
+
+        if param == "output":
+            output_types = varify_output_hints(cls.__name__, param_type)
+        else:
+            args_type = varify_input_hints(cls.__name__, param, param_type)
+            dependency_types.append(args_type)
+
+    cls.dependency_types = dependency_types
+    cls.output_types = output_types
+
+
+def varify_input_hints(job_name, param, param_type):
+    origin_type = get_origin(param_type)
+    if origin_type is not list:
+        raise TypeError(
+            f'The variable "{param}" define in {job_name}\'s _udf function parameter list '
+            f"should be of type List[T] or list[T]."
+        )
+
+    args_types = get_args(param_type)
+
+    if len(args_types) != 1:
+        raise TypeError(
+            f'The variable "{param}" define in {job_name}\'s _udf function parameter list '
+            f"should only contain a single type in the list type."
+        )
+
+    args_type = args_types[0]
+    if not issubclass(args_type, Domain) and args_type is not int:
+        raise TypeError(
+            f'The variable "{param}" define in {job_name}\'s _udf function parameter list '
+            f"should have a list element type of int or a subclass of domain."
+        )
+
+    return args_type
+
+
+def varify_output_hints(job_name, param_type):
+    output_types = []
+
+    origin_type = get_origin(param_type)
+    if origin_type is not Collector:
+        raise TypeError(
+            f'The variable "output" define in {job_name}\'s _udf function parameter list '
+            f"should be of type indexer.jobs.base_job.Collector. \n"
+            f"Now it is of type {origin_type}."
+        )
+
+    arg_types = get_args(param_type)
+    if get_origin(arg_types[0]) is not Union and not issubclass(arg_types[0], Domain):
+        raise TypeError(
+            f'The variable "output" define in {job_name}\'s _udf function parameter list '
+            f"should be Collector[Domain] or Collector[Union[DomainA, DomainB]]. \n"
+        )
+
+    if get_origin(arg_types[0]) is Union:
+        for arg_type in get_args(arg_types[0]):
+            if not issubclass(arg_type, Domain):
+                raise TypeError(
+                    f'The collector "output" define in {job_name}\'s _udf function parameter list '
+                    f"only collects data of type domain subclass."
+                )
+            output_types.append(arg_type)
+    elif issubclass(arg_types[0], Domain):
+        output_types.append(arg_types[0])
+
+    return output_types
