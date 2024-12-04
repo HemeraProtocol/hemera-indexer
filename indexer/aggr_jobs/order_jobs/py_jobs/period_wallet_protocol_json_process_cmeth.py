@@ -19,7 +19,7 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_merchant
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_v3 import \
     PeriodFeatureHoldingBalanceUniswapV3Cmeth
 from indexer.aggr_jobs.order_jobs.py_jobs.uniswapv3_job import get_detail_df, calculate_liquidity, change_df_to_obj, \
-    get_uniswap_v3_orms_from_old_mantle, get_uniswap_v3_orms_from_new_mantle
+    get_uniswap_v3_orms_from_old_mantle, get_uniswap_v3_orms_from_new_mantle, get_teahouse_from_new_mantle
 from indexer.aggr_jobs.order_jobs.py_jobs.untils import format_value_for_json, get_new_uniswap_v3_orms, \
     get_token_data_for_lendle_au_init_capital, get_filter_start_date_orm, \
     get_pool_token_pair_data_with_lp, timed_call, get_last_block_number_before_end_date, timed_call_
@@ -28,7 +28,8 @@ warnings.filterwarnings('ignore', category=FutureWarning)
 
 
 class PeriodWalletProtocolJsonProcessCmeth:
-    def __init__(self, chain_name, db_service, start_date, end_date, version, job_list, common_dict, generator_wallet_table=False):
+    def __init__(self, chain_name, db_service, start_date, end_date, version, job_list, common_dict,
+                 generator_wallet_table=False):
         self.chain_name = chain_name
         self.db_service = db_service
         self.start_date = start_date
@@ -218,21 +219,23 @@ where rn = 1;
         if protocol_id in self.job_list:
             orm_list = self.get_filter_cmeth_orm(PeriodFeatureHoldingBalanceMerchantmoeCmeth)
             # results = get_pool_token_pair_data(orm_list, self.token_symbol, self.db_service, self.end_date)
-            results = get_pool_token_pair_data_with_lp(orm_list, self.token_symbol, self.db_service, self.end_date, self.price_dict,
+            results = get_pool_token_pair_data_with_lp(orm_list, self.token_symbol, self.db_service, self.end_date,
+                                                       self.price_dict,
                                                        'merchantmoe')
             self.insert_protocol_json(protocol_id, results)
 
             self.get_pool_token_pair_aggr_by_protocol(orm_list, self.price)
 
-    def get_uniswap_v3_json(self):
-        uniswapV3_list = self.get_filter_cmeth_orm(PeriodFeatureHoldingBalanceUniswapV3Cmeth)
-        orms = get_new_uniswap_v3_orms(self.start_date)
-        uniswapV3_list.extend(orms)
-        # results = get_pool_token_pair_data(uniswapV3_list, self.token_symbol, self.db_service, self.end_date)
-        results = get_pool_token_pair_data_with_lp(uniswapV3_list, self.token_symbol, self.db_service, self.end_date,self.price_dict,
-                                                   'uniswapv3')
-        self.get_pool_token_pair_aggr_by_protocol(uniswapV3_list, self.price)
-        return results
+    # def get_uniswap_v3_json(self):
+    #     uniswapV3_list = self.get_filter_cmeth_orm(PeriodFeatureHoldingBalanceUniswapV3Cmeth)
+    #     orms = get_new_uniswap_v3_orms(self.start_date)
+    #     uniswapV3_list.extend(orms)
+    #     # results = get_pool_token_pair_data(uniswapV3_list, self.token_symbol, self.db_service, self.end_date)
+    #     results = get_pool_token_pair_data_with_lp(uniswapV3_list, self.token_symbol, self.db_service, self.end_date,
+    #                                                self.price_dict,
+    #                                                'uniswapv3')
+    #     self.get_pool_token_pair_aggr_by_protocol(uniswapV3_list, self.price)
+    #     return results
 
     def get_staked_detail_orm_list(self):
         sql = f"""  select 
@@ -351,12 +354,31 @@ where rn = 1;
             liquidity_df = calculate_liquidity(df, self.token_symbol)
             results2 = change_df_to_obj(liquidity_df)
             results1.extend(results2)
-
-            results = get_pool_token_pair_data_with_lp(results1, self.token_symbol, self.db_service, self.end_date,self.price_dict,
+            results = get_pool_token_pair_data_with_lp(results1, self.token_symbol, self.db_service, self.end_date,
+                                                       self.price_dict,
                                                        'uniswapv3')
 
             self.insert_protocol_json(protocol_id, results)
             self.get_pool_token_pair_aggr_by_protocol(results1, self.price)
+
+    def get_teahouse_protocol_json(self):
+        protocol_id = 'teahouse'
+        if protocol_id in self.job_list:
+            result = get_teahouse_from_new_mantle(self.start_date)
+            df = get_detail_df(result)
+            liquidity_df = calculate_liquidity(df, self.token_symbol)
+            columns = ['token0_balance', 'token1_balance', 'token0_balance_upper',
+                       'token1_balance_upper', 'token0_balance_lower', 'token1_balance_lower']
+            for column in columns:
+                liquidity_df[column] = liquidity_df[column] * liquidity_df['share_percent']
+            results1 = change_df_to_obj(liquidity_df)
+            results = get_pool_token_pair_data_with_lp(results1, self.token_symbol, self.db_service, self.end_date,
+                                                       self.price_dict,
+                                                       'uniswapv3')
+
+            self.insert_protocol_json(protocol_id, results)
+            self.get_pool_token_pair_aggr_by_protocol(results1, self.price)
+
 
     def get_protocol_aggr(self, protocol_id_list=[]):
         session = self.db_service.Session()
@@ -513,6 +535,7 @@ where rn = 1;
             timed_call_(self.get_uniswapv3_token_data)
             timed_call_(self.get_merchantmoe_json)
             timed_call_(self.get_init_capital_json)
+            timed_call_(self.get_teahouse_protocol_json)
 
     def run(self):
         self.process_middle_json()

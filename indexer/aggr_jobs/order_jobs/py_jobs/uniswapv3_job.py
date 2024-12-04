@@ -16,7 +16,9 @@ address_mapping = {
     '0xc36442b4a4522e871399cd717abdd847ab11fe88': 'uniswap_v3',
     '0x5752f085206ab87d8a5ef6166779658add455774': 'fusionx',
     '0x46a15b0b27311cedf172ab29e4f4766fbe7f4364': 'pancake',
-    '0x7d24de60a68ae47be4e852cf03dd4d8588b489ec': 'swapsicle'
+    '0x7d24de60a68ae47be4e852cf03dd4d8588b489ec': 'swapsicle',
+    "0xfc3861c04c5ce0883d9f79308e5a65402141df85": "teahouse",
+    "0x4ddd37f662871fb49ebbc88a58897961e2c12a60": "teahouse"
 }
 
 
@@ -71,6 +73,32 @@ def get_uniswap_v3_orms_from_old_mantle(db_service, start_date):
     session.close()
     return result
 
+
+def get_teahouse_from_new_mantle(start_date):
+    Session = get_engine('MANTLE_POSTGRES_URL')
+    session = Session()
+    sql = f"""
+        select period_date,
+       position_token_address as nft_address,
+       wallet_address,
+       share_percent,
+       null as token_id,
+       pool_address as contract_address,
+       liquidity,
+       tick_upper,
+       tick_lower,
+       sqrt_price_x96,
+       token0_address,
+       token1_address,
+       token0_decimals,
+       token0_symbol,
+       token1_decimals,
+       token1_symbol
+from period_feature_teahouse_detail where period_date = '{start_date}'
+    """
+    result = session.execute(text(sql))
+    session.close()
+    return result
 
 def get_detail_df(result):
     df = pd.DataFrame(result.fetchall(), columns=result.keys())
