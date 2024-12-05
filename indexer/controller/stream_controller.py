@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 JOB_RETRIES = os.environ.get("JOB_RETRIES", 5)
 
+
 class StreamController(BaseController):
 
     def __init__(
