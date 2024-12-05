@@ -12,6 +12,7 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.pendle.abi.event import redeem_rewards_event
 from indexer.modules.custom.pendle.abi.function import *
 from indexer.modules.custom.pendle.domains.market import PendleUserActiveBalanceCurrentD, PendleUserActiveBalanceD
+from indexer.modules.custom.pendle.models.market import PendlePool
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.abi_setting import ERC20_BALANCE_OF_FUNCTION, ERC20_TRANSFER_EVENT
 from indexer.utils.multicall_hemera import Call
@@ -38,12 +39,12 @@ class PendleTokenBalanceJob(FilterTransactionDataJob):
         self.multicall_helper = MultiCallHelper(
             self._web3, {"batch_size": kwargs["batch_size"], "multicall": True, "max_workers": kwargs["max_workers"]}
         )
-        self._get_all_market()
+        self._get_all_market(kwargs["config"].get("db_service"))
 
-    def _get_all_market(self):
-        markets = self.user_defined_config["markets"]
-        self._all_markets = [m["market_address"].lower() for m in markets]
-        self._all_markets_map = {m["market_address"].lower(): m for m in markets}
+    def _get_all_market(self, db_service):
+        markets = db_service.get_service_session().query(PendlePool).all()
+        self._all_markets = [m.market_address.lower() for m in markets]
+        self._all_markets_map = {m.market_address.lower(): m for m in markets}
 
     def get_filter(self):
         return [
@@ -102,7 +103,7 @@ class PendleTokenBalanceJob(FilterTransactionDataJob):
 
             # sy balance
             c = Call(
-                target=market["sy_address"],
+                target=market.sy_address,
                 function_abi=ERC20_BALANCE_OF_FUNCTION,
                 parameters=[user_address],
                 block_number=block_number,
@@ -131,7 +132,7 @@ class PendleTokenBalanceJob(FilterTransactionDataJob):
 
             # market sy balance
             c = Call(
-                target=market["sy_address"],
+                target=market.sy_address,
                 function_abi=ERC20_BALANCE_OF_FUNCTION,
                 parameters=[market_address],
                 block_number=block_number,

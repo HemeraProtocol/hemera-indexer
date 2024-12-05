@@ -12,10 +12,3 @@ eigen_layer_job:
 pendle_pools_job:
   pendle_market_factory_address: '0x27b1dacd74688af24a64bd3c9c1b143118740784'
   pendle_market_factory_v3_address: '0x6fcf753f2c67b83f7b09746bbc4fa0047b35d050'
-
-pendle_token_balance_job:
-  markets:
-    - market_address: '0x1806855b73881ed4e435c97c6da58b01be5d7390'
-      sy_address: '0xb359f0a97ca269ae5574dc75be48b0e81efd1da2'
-    - market_address: '0xa5fd0e8991be631917d2d2b2d5dacfd7bfef7876'
-      sy_address: '0xaa68ca9c69a4ff22203ce189ce4448d7401875e8'
