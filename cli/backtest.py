@@ -1,3 +1,5 @@
+import os
+
 import click
 
 from cli.commands.log import log_setting
@@ -30,40 +32,42 @@ from cli.core.stream_process import stream_process
 @delay_control
 @log_setting
 @pid_file_storage
-def stream(
-    provider_uri=None,
-    debug_provider_uri=None,
-    entity_types=None,
-    output_types=None,
-    force_filter_mode=False,
-    auto_reorg=False,
-    config_file=None,
-    source_path=None,
-    source_types=None,
-    output=None,
-    blocks_per_file=None,
-    cache="memory",
-    postgres_url=None,
-    db_version=None,
-    init_schema=False,
-    start_block=None,
-    end_block=None,
-    sync_recorder="file:sync_record",
-    retry_from_record=True,
-    block_batch_size=1,
-    batch_size=10,
-    debug_batch_size=1,
-    max_workers=5,
-    multicall=True,
-    process_numbers=1,
-    process_size=None,
-    process_time_out=None,
-    period_seconds=10,
-    delay=0,
-    log_file=None,
-    log_level="INFO",
-    pid_file=None,
+def backtest(
+        provider_uri=None,
+        debug_provider_uri=None,
+        entity_types=None,
+        output_types=None,
+        force_filter_mode=False,
+        auto_reorg=False,
+        config_file=None,
+        source_path=None,
+        source_types=None,
+        output=None,
+        blocks_per_file=None,
+        cache="memory",
+        postgres_url=None,
+        db_version=None,
+        init_schema=False,
+        start_block=None,
+        end_block=None,
+        sync_recorder="file:sync_record",
+        retry_from_record=False,
+        block_batch_size=1,
+        batch_size=10,
+        debug_batch_size=1,
+        max_workers=5,
+        multicall=False,
+        process_numbers=1,
+        process_size=None,
+        process_time_out=None,
+        period_seconds=10,
+        delay=0,
+        log_file=None,
+        log_level="INFO",
+        pid_file=None,
 ):
+    os.environ['JOB_RETRIES'] = 1
+
     stream_process(
         provider_uri,
         debug_provider_uri,
