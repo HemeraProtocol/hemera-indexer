@@ -3,6 +3,11 @@ import os
 
 import click
 
+from cli.commands.log import log_setting
+from cli.commands.performance import single_performance
+from cli.commands.rpc import rpc_provider
+from cli.commands.schedule import job_config
+from cli.commands.storage import cache_target, postgres
 from common.services.postgresql_service import PostgreSQLService
 from enumeration.entity_type import ALL_ENTITY_COLLECTIONS, calculate_entity_value, generate_output_types
 from indexer.controller.reorg_controller import ReorgController
@@ -18,63 +23,12 @@ exception_recorder = ExceptionRecorder()
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.option(
-    "-p",
-    "--provider-uri",
-    default="https://ethereum-rpc.publicnode.com",
-    show_default=True,
-    type=str,
-    envvar="PROVIDER_URI",
-    help="The URI of the web3 provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
-)
-@click.option(
-    "-d",
-    "--debug-provider-uri",
-    default="https://ethereum-rpc.publicnode.com",
-    show_default=True,
-    type=str,
-    envvar="DEBUG_PROVIDER_URI",
-    help="The URI of the web3 debug provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
-)
-@click.option(
-    "-pg",
-    "--postgres-url",
-    type=str,
-    required=True,
-    envvar="POSTGRES_URL",
-    help="The required postgres connection url." "e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum",
-)
-@click.option(
-    "-v",
-    "--db-version",
-    default="head",
-    show_default=True,
-    type=str,
-    envvar="DB_VERSION",
-    help="The database version to initialize the database. using the alembic script's revision ID to "
-    "specify a version."
-    " e.g. head, indicates the latest version."
-    "or base, indicates the empty database without any table.",
-)
-@click.option(
-    "-b",
-    "--batch-size",
-    default=10,
-    show_default=True,
-    type=int,
-    envvar="BATCH_SIZE",
-    help="How many parameters to batch in single request",
-)
-@click.option(
-    "--debug-batch-size",
-    default=1,
-    show_default=True,
-    type=int,
-    envvar="DEBUG_BATCH_SIZE",
-    help="How many parameters to batch in single debug rpc request",
-)
+@rpc_provider
+@job_config
+@postgres
+@single_performance
+@cache_target
+@log_setting
 @click.option(
     "--block-number",
     show_default=True,
@@ -91,40 +45,6 @@ exception_recorder = ExceptionRecorder()
     envvar="RANGES",
     help="Specify the range limit for data fixing.",
 )
-@click.option(
-    "--log-file",
-    default=None,
-    show_default=True,
-    type=str,
-    envvar="LOG_FILE",
-    help="Log file",
-)
-@click.option(
-    "-m",
-    "--multicall",
-    default=False,
-    show_default=True,
-    type=bool,
-    help="if `multicall` is set to True, it will decrease the consume of rpc calls",
-    envvar="MULTI_CALL_ENABLE",
-)
-@click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE", help="Cache")
-@click.option(
-    "--auto-upgrade-db",
-    default=True,
-    show_default=True,
-    type=bool,
-    envvar="AUTO_UPGRADE_DB",
-    help="Whether to automatically run database migration scripts to update the database to the latest version.",
-)
-@click.option(
-    "--log-level",
-    default="INFO",
-    show_default=True,
-    type=str,
-    envvar="LOG_LEVEL",
-    help="Set the logging output level.",
-)
 def reorg(
     provider_uri,
     debug_provider_uri,
@@ -133,12 +53,10 @@ def reorg(
     ranges,
     batch_size,
     debug_batch_size,
-    db_version="head",
-    multicall=True,
-    log_file=None,
     cache=None,
+    multicall=True,
     config_file=None,
-    auto_upgrade_db=True,
+    log_file=None,
     log_level="INFO",
 ):
     configure_logging(log_level=log_level, log_file=log_file)
@@ -151,7 +69,7 @@ def reorg(
 
     # build postgresql service
     if postgres_url:
-        service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
+        service = PostgreSQLService(postgres_url)
         config = {"db_service": service}
         exception_recorder.init_pg_service(service)
     else:
@@ -179,9 +97,7 @@ def reorg(
     job_scheduler = ReorgScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporters=PostgresItemExporter(
-            postgres_url=postgres_url, db_version=db_version, init_schema=auto_upgrade_db
-        ),
+        item_exporters=PostgresItemExporter(postgres_url=postgres_url),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         required_output_types=output_types,

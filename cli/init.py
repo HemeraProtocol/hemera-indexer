@@ -1,15 +1,12 @@
 import logging
 import os.path
-from shutil import copy
-from typing import List
 
 import click
 
-from common.models import HemeraModel, model_path_patterns
+from cli.commands.storage import postgres, postgres_initial
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.file_utils import get_project_root
 from common.utils.format_utils import to_camel_case
-from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
 from indexer.utils.template_generator import TemplateGenerator
 
 logger = logging.getLogger("Init Client")
@@ -31,28 +28,12 @@ logger = logging.getLogger("Init Client")
     required=False,
     help="The --db flag triggers the database initialization process. ",
 )
-@click.option(
-    "-pg",
-    "--postgres-url",
-    type=str,
-    required=False,
-    envvar="POSTGRES_URL",
-    help="The required postgres connection url." "e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum",
-)
-@click.option(
-    "-v",
-    "--version",
-    type=str,
-    default="head",
-    show_default=True,
-    required=False,
-    help="The database version that would be initialized. "
-    "By using default value 'head', database would be initialized to the latest version."
-    "To make this option work, either -i or --init must be used.",
-)
-def init(jobs, db, postgres_url, version):
+@postgres
+@postgres_initial
+def init(jobs, db, postgres_url, version, init_schema):
     if db:
-        service = PostgreSQLService(jdbc_url=postgres_url, db_version=version, init_schema=True)
+        init_schema = True
+        service = PostgreSQLService(jdbc_url=postgres_url, db_version=version, init_schema=init_schema)
         logger.info("Database successfully initialized.")
 
     if jobs:

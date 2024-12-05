@@ -4,6 +4,7 @@ from typing import List
 import click
 from sqlalchemy import text
 
+from cli.commands.storage import postgres, postgres_initial
 from common.models import HemeraModel, model_path_patterns
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
@@ -12,32 +13,8 @@ logger = logging.getLogger("DB Client")
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.option(
-    "-pg",
-    "--postgres-url",
-    type=str,
-    required=True,
-    envvar="POSTGRES_URL",
-    help="The required postgres connection url." "e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum",
-)
-@click.option(
-    "-i",
-    "--init",
-    is_flag=True,
-    required=False,
-    help="The -i or --init flag triggers the database initialization process. ",
-)
-@click.option(
-    "-v",
-    "--version",
-    type=str,
-    default="head",
-    show_default=True,
-    required=False,
-    help="The database version that would be initialized. "
-         "By using default value 'head', database would be initialized to the latest version."
-         "To make this option work, either -i or --init must be used.",
-)
+@postgres
+@postgres_initial
 @click.option(
     "-c",
     "--create-tables",
@@ -62,8 +39,8 @@ logger = logging.getLogger("DB Client")
     required=False,
     help="Table names that need to clean up data. e.g. blocks,transactions",
 )
-def db(postgres_url, init, version, create_tables, drop_tables, truncate_tables):
-    service = PostgreSQLService(jdbc_url=postgres_url, db_version=version, init_schema=init)
+def db(postgres_url, init_schema, db_version, create_tables, drop_tables, truncate_tables):
+    service = PostgreSQLService(jdbc_url=postgres_url, db_version=db_version, init_schema=init_schema)
 
     if create_tables or drop_tables or truncate_tables:
         exist_models_path = [
