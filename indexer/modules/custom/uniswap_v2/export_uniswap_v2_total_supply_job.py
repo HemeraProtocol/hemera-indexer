@@ -16,7 +16,7 @@ from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordUniswapV2Info
 from indexer.modules.custom.feature_type import FeatureType
 from indexer.modules.custom.uniswap_v2.constants import UNISWAP_V2_ABI, ThreadSafeList
-from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import UniswapV2Pool
+from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import UniswapV2Pool_
 from indexer.modules.custom.uniswap_v2.models.feature_uniswap_v2_pools import UniswapV2Pools
 from indexer.modules.custom.uniswap_v3.util import build_no_input_method_data
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -29,7 +29,7 @@ FEATURE_ID = FeatureType.UNISWAP_V2_INFO.value
 
 class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
     dependency_types = [Log]
-    output_types = [AllFeatureValueRecordUniswapV2Info, UniswapV2Pool]
+    output_types = [AllFeatureValueRecordUniswapV2Info, UniswapV2Pool_]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -94,7 +94,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         self._exist_pools.update(need_add_in_exists_pools)
 
         for pools in format_pool_item(need_add_in_exists_pools):
-            self._collect_item(UniswapV2Pool.type(), pools)
+            self._collect_item(UniswapV2Pool_.type(), pools)
 
         self._batch_work_executor.execute(max_log_index_records, self._collect_batch, len(max_log_index_records))
         self._batch_work_executor.wait()
@@ -117,7 +117,7 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
         for record in format_value_records(self._exist_pools, self._collected_total_supply, FEATURE_ID):
             self._collect_item(AllFeatureValueRecordUniswapV2Info.type(), record)
 
-        self._data_buff[UniswapV2Pool.type()].sort(key=lambda x: x.called_block_number)
+        self._data_buff[UniswapV2Pool_.type()].sort(key=lambda x: x.called_block_number)
         self._data_buff[AllFeatureValueRecordUniswapV2Info.type()].sort(key=lambda x: x.block_number)
         self._collected_total_supply.clear_list()
 
@@ -130,7 +130,7 @@ def add_list_to_queue(queue, items):
 def format_pool_item(new_pools):
     result = []
     for pool_address, pool in new_pools.items():
-        result.append(dict_to_dataclass(pool, UniswapV2Pool))
+        result.append(dict_to_dataclass(pool, UniswapV2Pool_))
     return result
 
 
