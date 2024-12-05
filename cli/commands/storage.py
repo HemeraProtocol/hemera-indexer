@@ -75,7 +75,8 @@ def postgres_initial(commands):
     )(commands)
 
     commands = click.option(
-        "-i" "--init-schema",
+        "-i",
+        "--init-schema",
         is_flag=True,
         required=False,
         show_default=True,
