@@ -24,11 +24,7 @@ classifiers = [
 ]
 keywords = ["ethereum", "indexer", "explorer", "hemera"]
 packages = [
-    { include = "cli" },
-    { include = "common" },
-    { include = "api" },
-    { include = "indexer" },
-    { include = "enumeration" },
+    { include = "hemera" },
 ]
 
 [tool.poetry.dependencies]
@@ -73,7 +69,7 @@ flake8 = "^3.9.2"
 ruff = "^0.0.235"
 
 [tool.poetry.scripts]
-hemera = "cli:cli"
+hemera = "hemera.cli:cli"
 
 [tool.poetry.urls]
 "Homepage" = "https://github.com/HemeraProtocol/hemera-indexer"
