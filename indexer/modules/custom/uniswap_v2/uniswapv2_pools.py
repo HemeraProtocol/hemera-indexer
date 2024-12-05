@@ -30,7 +30,6 @@ class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
             pool = None
 
             if log.topic0 == PAIR_CREATED_EVENT.get_signature():
-                #
                 decoded_dict = PAIR_CREATED_EVENT.decode_log(log)
                 pool = UniswapV2Pool(
                     factory_address=log.address,
