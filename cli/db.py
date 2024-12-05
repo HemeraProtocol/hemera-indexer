@@ -5,6 +5,7 @@ import click
 from sqlalchemy import text
 
 from cli.commands.storage import postgres, postgres_initial
+from cli.core.logo import print_logo
 from common.models import HemeraModel, model_path_patterns
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.module_loading import import_string, scan_subclass_by_path_patterns
@@ -40,6 +41,7 @@ logger = logging.getLogger("DB Client")
     help="Table names that need to clean up data. e.g. blocks,transactions",
 )
 def db(postgres_url, init_schema, db_version, create_tables, drop_tables, truncate_tables):
+    print_logo()
     service = PostgreSQLService(jdbc_url=postgres_url, db_version=db_version, init_schema=init_schema)
 
     if create_tables or drop_tables or truncate_tables:

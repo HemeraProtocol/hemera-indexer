@@ -4,6 +4,7 @@ import os.path
 import click
 
 from cli.commands.storage import postgres, postgres_initial
+from cli.core.logo import print_logo
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.file_utils import get_project_root
 from common.utils.format_utils import to_camel_case
@@ -31,6 +32,7 @@ logger = logging.getLogger("Init Client")
 @postgres
 @postgres_initial
 def init(jobs, db, postgres_url, version, init_schema):
+    print_logo()
     if db:
         init_schema = True
         service = PostgreSQLService(jdbc_url=postgres_url, db_version=version, init_schema=init_schema)
