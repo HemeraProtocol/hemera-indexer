@@ -1,3 +1,3 @@
-from cli import cli
+from hemera.cli import cli
 
 cli()

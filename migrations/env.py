@@ -6,7 +6,7 @@ from alembic.operations import ops
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.sql.schema import SchemaItem
 
-from common.models import db, import_all_models
+from hemera.common.models import db, import_all_models
 
 # Make sure everything is imported so that alembic can find it all
 import_all_models()
