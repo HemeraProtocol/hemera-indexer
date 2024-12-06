@@ -9,8 +9,6 @@ import os
 from collections import defaultdict
 from typing import List
 
-import mpire
-
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.utils.multicall_hemera import Call, Multicall
@@ -142,11 +140,19 @@ class MultiCallHelper:
 
     def construct_multicall_rpc(self, to_execute_multi_calls):
         self.logger.info(f"Function total multicalls: {len(to_execute_multi_calls)}")
-        to_execute_multi_calls = [(calls,) for calls in to_execute_multi_calls]
-        with mpire.WorkerPool(n_jobs=os.cpu_count()) as pool:
-            multicall_rpcs = pool.map(self._construct_single_multicall_rpc, to_execute_multi_calls)
-
-        return multicall_rpcs
+        multicall_rpc = []
+        if to_execute_multi_calls:
+            for calls in to_execute_multi_calls:
+                multicall_rpc.append(
+                    Multicall(
+                        calls,
+                        require_success=False,
+                        chain_id=self.chain_id,
+                        block_number=calls[0].block_number,
+                        gas_limit=(len(calls) * GAS_LIMIT),
+                    ).to_rpc_param()
+                )
+        return multicall_rpc
 
     def _construct_single_multicall_rpc(self, calls):
         multicall = Multicall(
