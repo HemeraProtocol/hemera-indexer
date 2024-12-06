@@ -6,7 +6,7 @@ from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import UniswapV
 
 
 class UniswapV2Pools(HemeraModel):
-    __tablename__ = "feature_uniswap_v2_pools"
+    __tablename__ = "af_uniswap_v2_pools"
     factory_address = Column(BYTEA, primary_key=True)
     pool_address = Column(BYTEA, primary_key=True)
 
@@ -15,7 +15,8 @@ class UniswapV2Pools(HemeraModel):
 
     length = Column(NUMERIC(100))
 
-    called_block_number = Column(BIGINT)
+    block_number = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
