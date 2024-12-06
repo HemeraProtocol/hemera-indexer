@@ -1,6 +1,6 @@
 import click
 
-from cli.logo import print_logo
+from cli.core.logo import print_logo
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))

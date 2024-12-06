@@ -1,0 +1,54 @@
+from typing import Type, Union
+
+from sqlalchemy import Column, Index, desc, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+
+from common.models import HemeraModel, general_converter
+from custom_jobs.${job}.domains.${domain_file} import CustomDomainA, CustomDomainB
+
+
+class CustomTable(HemeraModel):
+    __tablename__ = "custom_table"
+    primary_key = Column(BYTEA, primary_key=True)
+    number = Column(BIGINT)
+    timestamp = Column(TIMESTAMP)
+    nonce = Column(BYTEA)
+
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
+
+    # If the custom job supports reorg,
+    # the data table that stores the data must contain a reorg field.
+    reorg = Column(BOOLEAN, server_default=text("false"))
+
+    __query_order__ = [order_key]
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                "domain": CustomDomainA,
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": converter,
+            },
+            {
+                "domain": CustomDomainB,
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.update_condition_key > custom_table.update_condition_key",
+                "converter": general_converter,
+            },
+        ]
+
+
+Index("custom_table_some_key_index", CustomTable.some_key)
+
+# This is a custom data conversion function. Usually you can use 'general_converter' directly.
+def converter(
+    table: Type[HemeraModel],
+    data: Union[CustomDomainA],
+    is_update=False,
+):
+    # Special data conversion logic here
+    converted_data = do_some_work(table, data, is_update)
+    return converted_data
