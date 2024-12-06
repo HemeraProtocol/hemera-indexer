@@ -1,5 +1,10 @@
 chain_id: 5000
 
+total_supply_job:
+  token_address:
+   # dodo fbtc wbtc
+    - "0xd39dfbfba9e7eccd813918ffbda10b783ea3b3c6"
+    
 uniswap_v3_job:
   # empty means no filter. only work in price job
   pool_address:
@@ -90,4 +95,3 @@ export_tokens_and_transfers_job:
     - "0x1d40bafc49c37cda49f2a5427e2fb95e1e3fcf20"
       # wecmeth, for woofi
     - "0x872b6ff825da431c941d12630754036278ad7049"
-
