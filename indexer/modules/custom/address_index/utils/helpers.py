@@ -23,12 +23,12 @@ from common.utils.db_utils import app_config, build_entities
 from common.utils.exception_control import APIError
 from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, format_value_for_json, hex_str_to_bytes
 from common.utils.web3_utils import ZERO_ADDRESS
+from enumeration.token_type import TokenType
 from indexer.modules.custom.address_index.address_index_job import (
     AddressTokenTransferType,
     AddressTransactionType,
     InternalTransactionType,
 )
-from enumeration.token_type import TokenType
 from indexer.modules.custom.address_index.models.address_contract_operation import AddressContractOperations
 from indexer.modules.custom.address_index.models.address_index_daily_stats import AddressIndexDailyStats
 from indexer.modules.custom.address_index.models.address_internal_transaciton import AddressInternalTransactions
