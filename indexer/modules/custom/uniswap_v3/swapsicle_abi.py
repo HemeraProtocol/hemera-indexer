@@ -1,6 +1,6 @@
 from common.utils.abi_code_utils import Event, Function
 
-POOL_EVENT = Event(
+POOL_CREATED_EVENT = Event(
     {
         "anonymous": False,
         "inputs": [

@@ -13,6 +13,7 @@ from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3SwapEvent,
 )
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
+from indexer.modules.custom.uniswap_v3.util import AddressManager
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
@@ -28,15 +29,10 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         config = kwargs["config"]["uniswap_v3_job"]
-
-        position_token_address = config.get("position_token_address")
-        self.factory_position_pair = {}
-
-        for d_list in position_token_address.values():
-            for d in d_list:
-                self.factory_position_pair.update(d)
-
+        jobs = config.get("jobs", [])
         self._pool_address = config.get("pool_address")
+        self._address_manager = AddressManager(jobs)
+
         self.multi_call_helper = MultiCallHelper(self._web3, kwargs, logger)
         self.pools_requested_by_rpc = []
 
@@ -46,14 +42,8 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         return TransactionFilterByLogs(
             [
                 TopicSpecification(
-                    topics=[
-                        # Uniswapv3/cle
-                        uniswapv3_abi.SWAP_EVENT.get_signature(),
-                        # agni/fusionx
-                        agni_abi.SWAP_EVENT.get_signature(),
-                        # swapsicle
-                        swapsicle_abi.SWAP_EVENT.get_signature(),
-                    ],
+                    topics=[abi_module.SWAP_EVENT.get_signature() for abi_module in
+                            self._address_manager.abi_modules_list],
                     addresses=address_list,
                 ),
             ]
@@ -112,11 +102,11 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self.multi_call_helper.execute_calls(tick_spacing_list)
 
         for factory_call, fee_call, token0_call, token1_call, tick_spacing_call in zip(
-            factory_list, fee_list, token0_list, token1_list, tick_spacing_list
+                factory_list, fee_list, token0_list, token1_list, tick_spacing_list
         ):
             factory_address = factory_call.returns.get("")
             if factory_address:
-                position_token_address = self.factory_position_pair.get(factory_address)
+                position_token_address = self._address_manager.get_position_by_factory(factory_address)
                 if position_token_address:
                     fee = fee_call.returns.get("", 0)
                     token0 = token0_call.returns.get("")

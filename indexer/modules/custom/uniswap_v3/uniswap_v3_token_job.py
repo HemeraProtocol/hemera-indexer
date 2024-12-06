@@ -14,45 +14,31 @@ from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
 )
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
-from indexer.modules.custom.uniswap_v3.util import BiDirectionalDict
+from indexer.modules.custom.uniswap_v3.util import AddressManager
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 logger = logging.getLogger(__name__)
 
-import indexer.modules.custom.uniswap_v3.agni_abi as agni_abi
-import indexer.modules.custom.uniswap_v3.swapsicle_abi as swapsicle_abi
-import indexer.modules.custom.uniswap_v3.uniswapv3_abi as uniswapv3_abi
-
-
 class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
     dependency_types = [Log, ERC721TokenTransfer]
-    output_types = [UniswapV3Token, UniswapV3TokenDetail, UniswapV3TokenCurrentStatus]
+    output_types = [UniswapV3Token, UniswapV3TokenDetail, UniswapV3TokenCurrentStatus, UniswapV3PoolFromToken]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         config = kwargs["config"]["uniswap_v3_job"]
-        # only index selected position_token_address
-        data = config["position_token_address"]
-        self._position_token_address_dict = {}
-        factory_position_dict = {}
-        for uniswapv3_type_str, factory_position_kv in data.items():
-            factory_position_dict.update(factory_position_kv)
-            for factory, position in factory_position_kv.items():
-                self._position_token_address_dict[position] = uniswapv3_type_str
-
-        self._factory_position_dict = BiDirectionalDict(factory_position_dict)
+        jobs = config.get("jobs", [])
+        self._address_manager = AddressManager(jobs)
 
         self.multi_call_helper = MultiCallHelper(self._web3, kwargs, logger)
         self._existing_tokens = self.get_existing_tokens()
 
     def get_filter(self):
-        filter_address = list(self._position_token_address_dict.keys())
         return TransactionFilterByLogs(
             [
-                TopicSpecification(addresses=filter_address),
+                TopicSpecification(addresses=self._address_manager.position_token_address_list),
             ]
         )
 
@@ -66,7 +52,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         erc721_token_transfers = [
             tt
             for tt in self._data_buff["erc721_token_transfer"]
-            if tt.token_address in self._position_token_address_dict
+            if tt.token_address in self._address_manager.position_token_address_list
         ]
         logs = self._data_buff["log"]
 
@@ -104,12 +90,12 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                     call_default_dict[position_token_address, token_id, block_number] = call_dict
         # 2. find out the events that lp change
         for log in logs:
-            if log.address in self._position_token_address_dict:
+            if log.address in self._address_manager.position_token_address_list:
                 position_token_address = log.address
                 block_number = log.block_number
                 token_id = None
                 # different position have different abi
-                abi_module = self.position_token_address_to_abi_module(position_token_address)
+                abi_module = self._address_manager.get_abi_by_position(position_token_address)
                 if log.topic0 == abi_module.INCREASE_LIQUIDITY_EVENT.get_signature():
                     decoded_data = abi_module.INCREASE_LIQUIDITY_EVENT.decode_log(log)
                     token_id = decoded_data["tokenId"]
@@ -149,13 +135,14 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         # eth call
         owner_call_list = []
         for call_dict in call_dict_list:
-            abi_module = self.position_token_address_to_abi_module(call_dict.get("target"))
+            abi_module = self._address_manager.get_abi_by_position(call_dict.get("target"))
+
             owner_call_list.append(Call(function_abi=abi_module.OWNER_OF_FUNCTION, **call_dict))
         self.multi_call_helper.execute_calls(owner_call_list)
 
         positions_call_list = []
         for call_dict in call_dict_list:
-            abi_module = self.position_token_address_to_abi_module(call_dict.get("target"))
+            abi_module = self._address_manager.get_abi_by_position(call_dict.get("target"))
             positions_call_list.append(Call(function_abi=abi_module.POSITIONS_FUNCTION, **call_dict))
         self.multi_call_helper.execute_calls(positions_call_list)
 
@@ -262,10 +249,12 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         call_list = []
         for positions_data in missing_pool_positions_data_dict.values():
             position_token_address = positions_data.get("position_token_address")
-            factory_address = self._factory_position_dict.get_backward(position_token_address)
-            abi_module = self.position_token_address_to_abi_module(position_token_address)
+            factory_address = self._address_manager.get_factory_by_position(position_token_address)
+            if not factory_address:
+                continue
+            abi_module = self._address_manager.get_abi_by_position(position_token_address)
 
-            uniswapv3_type_str = self._position_token_address_dict.get(position_token_address)
+            uniswapv3_type_str = self._address_manager.get_type_str_by_position(position_token_address)
             parameters = [positions_data.get("token0"), positions_data.get("token1")]
             if uniswapv3_type_str in ("uniswapv3", "agni"):
                 parameters.append(positions_data.get("fee"))
@@ -284,7 +273,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             if returns:
                 pool_address = returns.get("")
                 factory_address = call.target.lower()
-                position_token_address = self._factory_position_dict.get_forward(factory_address)
+                position_token_address = self._address_manager.get_position_by_factory(factory_address)
 
                 parameters = call.parameters
                 token0 = parameters[0]
@@ -329,17 +318,6 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         # some position has no fee, could use 0/-1
         fee = positions.get("fee", 0)
         return token0, token1, tick_lower, tick_upper, liquidity, fee
-
-    def position_token_address_to_abi_module(self, position_token_address):
-        uniswapv3_type_str = self._position_token_address_dict.get(position_token_address)
-        if uniswapv3_type_str == "swapsicle":
-            return swapsicle_abi
-        elif uniswapv3_type_str == "uniswapv3":
-            return uniswapv3_abi
-        elif uniswapv3_type_str == "agni":
-            return agni_abi
-        else:
-            raise NotImplementedError(uniswapv3_type_str)
 
     def get_existing_tokens(self):
         session = self._service.get_service_session()

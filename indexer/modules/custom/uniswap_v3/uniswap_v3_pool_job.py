@@ -5,8 +5,10 @@ from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import UniswapV3Pool
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
-from indexer.modules.custom.uniswap_v3.swapsicle_abi import POOL_EVENT
-from indexer.modules.custom.uniswap_v3.uniswapv3_abi import POOL_CREATED_EVENT
+import indexer.modules.custom.uniswap_v3.swapsicle_abi as swapsicle_abi
+import indexer.modules.custom.uniswap_v3.uniswapv3_abi as uniswapv3_abi
+from indexer.modules.custom.uniswap_v3.util import AddressManager
+
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
@@ -21,22 +23,18 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         super().__init__(**kwargs)
         self._service = kwargs["config"].get("db_service")
         config = kwargs["config"]["uniswap_v3_job"]
-        self._factory_address = config.get("factory_address")
+        jobs = config.get("jobs", [])
+        self._address_manager = AddressManager(jobs)
         self._existing_pools = self.get_existing_pools()
 
     def get_filter(self):
-        address_list = [self._factory_address] if self._factory_address else []
 
         return TransactionFilterByLogs(
             [
                 TopicSpecification(
-                    topics=[
-                        # Uniswapv3\agni\...
-                        POOL_CREATED_EVENT.get_signature(),
-                        # swapsicle
-                        POOL_EVENT.get_signature(),
-                    ],
-                    addresses=address_list,
+                    topics=[abi_module.POOL_CREATED_EVENT.get_signature() for abi_module in
+                            self._address_manager.abi_modules_list],
+                    addresses=self._address_manager.factory_address_list,
                 ),
             ]
         )
@@ -49,9 +47,9 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         for transaction in transactions:
             logs = transaction.receipt.logs
             for log in logs:
-                if log.topic0 == POOL_EVENT.get_signature():
+                if log.topic0 == swapsicle_abi.POOL_CREATED_EVENT.get_signature():
                     pool_dict = {}
-                    decoded_data = POOL_EVENT.decode_log(log)
+                    decoded_data = swapsicle_abi.POOL_CREATED_EVENT.decode_log(log)
                     pool_address = decoded_data["pool"]
                     # tick_spacing\fee are stored in other logs
                     pool_dict.update(
@@ -72,9 +70,9 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
                         uniswap_v3_pool = UniswapV3Pool(**pool_dict)
                         self._collect_domain(uniswap_v3_pool)
 
-                elif log.topic0 == POOL_CREATED_EVENT.get_signature():
+                elif log.topic0 == uniswapv3_abi.POOL_CREATED_EVENT.get_signature():
                     pool_dict = {}
-                    decoded_data = POOL_CREATED_EVENT.decode_log(log)
+                    decoded_data = uniswapv3_abi.POOL_CREATED_EVENT.decode_log(log)
                     pool_address = decoded_data["pool"]
                     pool_dict.update(
                         {
