@@ -22,8 +22,7 @@ coverage:
           - "api"
           - "common"
         branches:
-          - main
-          - release/*
+          - "*"
         if_not_found: success
         if_ci_failed: error
         informational: false
@@ -35,8 +34,7 @@ coverage:
         threshold: 0%
         base: auto
         branches:
-          - main
-          - release/*
+          - "*"
         if_no_uploads: error
         if_not_found: success
         if_ci_failed: error
