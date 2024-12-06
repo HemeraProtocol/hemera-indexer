@@ -117,20 +117,23 @@ class StreamController(BaseController):
 
     def _do_stream(self, start_block, end_block):
 
-        for retry in range(self.max_retries):
+        for retry in range(self.max_retries + 1):
             try:
                 # ETL program's main logic
                 self.job_scheduler.run_jobs(start_block, end_block)
                 return
 
             except HemeraBaseException as e:
-                logger.error(f"An rpc response exception occurred while syncing block data. error: {e}")
+                logger.error(f"An expected exception occurred while syncing block data. error: {e}")
                 if e.crashable:
                     logger.error("Mission will crash immediately.")
                     raise e
 
                 if e.retriable:
-                    logger.info(f"No: {retry} retry is about to start.")
+                    if retry == self.max_retries:
+                        logger.info(f"The number of retry is reached limit {self.max_retries}.")
+                    else:
+                        logger.info(f"No: {retry} retry is about to start.")
                 else:
                     logger.error("Mission will not retry, and exit immediately.")
                     raise e
@@ -139,9 +142,8 @@ class StreamController(BaseController):
                 logger.error(f"An unknown exception occurred while syncing block data. error: {e}")
                 raise e
 
-        logger.info(f"The number of retry is reached limit {self.max_retries}. Program will exit.")
-        raise FastShutdownError(
-            f"The job with parameters start_block:{start_block}, end_block:{end_block}"
+        logger.error(
+            f"The job with parameters start_block:{start_block}, end_block:{end_block} "
             f"can't be automatically resumed after reached out limit of retries. Program will exit."
         )
 
