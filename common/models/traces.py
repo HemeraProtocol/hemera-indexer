@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import ARRAY, BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TEXT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.domain.trace import Trace
 
 
 class Traces(HemeraModel):
@@ -37,7 +38,7 @@ class Traces(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "Trace",
+                "domain": Trace,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,

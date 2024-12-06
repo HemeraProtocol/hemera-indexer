@@ -2,6 +2,7 @@ from sqlalchemy import Column, Computed, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSONB, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.domain.contract import Contract
 
 
 class Contracts(HemeraModel):
@@ -43,7 +44,7 @@ class Contracts(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "Contract",
+                "domain": Contract,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,

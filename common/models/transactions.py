@@ -59,7 +59,7 @@ class Transactions(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "Transaction",
+                "domain": Transaction,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": converter,

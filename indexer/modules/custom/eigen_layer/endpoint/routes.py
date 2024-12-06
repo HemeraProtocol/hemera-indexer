@@ -84,5 +84,6 @@ def get_eigen_layer_holdings(wallet_address: Optional[Union[str, bytes]]):
                 tvl += (balance_float / decimal_factor) * price_float
     return {
         "tvl": tvl,
+        "total_value_usd": tvl,
         "holdings": res,
     }

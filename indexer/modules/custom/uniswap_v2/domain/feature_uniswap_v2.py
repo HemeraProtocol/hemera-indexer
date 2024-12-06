@@ -10,4 +10,5 @@ class UniswapV2Pool(FilterData):
     token0_address: str
     token1_address: str
     length: int
-    called_block_number: int
+    block_number: int
+    block_timestamp: int

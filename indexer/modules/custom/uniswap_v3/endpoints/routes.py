@@ -1,16 +1,20 @@
 import math
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 from flask import request
 from flask_restx import Resource
+from sqlalchemy import desc
 from sqlalchemy.sql import select, tuple_
 
 from api.app.address.features import register_feature
+from api.app.cache import cache
 from api.app.db_service.tokens import get_token_price_map_by_symbol_list
 from common.models import db
+from common.models.token_hourly_price import TokenHourlyPrices
 from common.models.tokens import Tokens
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from indexer.modules.custom.opensea.endpoint.routes import get_token_daily_price
 from indexer.modules.custom.uniswap_v3.endpoints import uniswap_v3_namespace
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_liquidity_records import UniswapV3TokenLiquidityRecords
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pool_current_prices import UniswapV3PoolCurrentPrices
@@ -33,6 +37,19 @@ NATIVE_COINS = {
 }
 
 
+@cache.memoize(timeout=86400)
+def get_token_daily_price(token_symbol: str, day: date) -> float:
+    end_of_day = datetime.combine(day, datetime.max.time())
+    price_record = (
+        db.session.query(TokenHourlyPrices)
+        .filter(TokenHourlyPrices.symbol == token_symbol)
+        .filter(TokenHourlyPrices.timestamp <= end_of_day)
+        .order_by(desc(TokenHourlyPrices.timestamp))
+        .first()
+    )
+    return float(price_record.price) if price_record else 0
+
+
 @register_feature("uniswap_v3_trading", "value")
 def get_uniswap_v3_trading_value(address) -> Optional[Dict[str, Any]]:
     if isinstance(address, str):
@@ -44,28 +61,61 @@ def get_uniswap_v3_trading_value(address) -> Optional[Dict[str, Any]]:
             UniswapV3PoolSwapRecords.token1_address,
             UniswapV3PoolSwapRecords.amount0,
             UniswapV3PoolSwapRecords.amount1,
+            UniswapV3PoolSwapRecords.block_timestamp,
         )
         .where(UniswapV3PoolSwapRecords.transaction_from_address == address)
         .order_by(UniswapV3PoolSwapRecords.block_timestamp.desc())
     ).all()
 
-    token_list = []
+    token_set = set()
     transaction_hash_list = []
 
     for swap in swaps:
-        token_list.append(swap.token0_address)
-        token_list.append(swap.token1_address)
+        token_set.add(swap.token0_address)
+        token_set.add(swap.token1_address)
         transaction_hash_list.append(swap.transaction_hash)
 
-    token_list = list(set(token_list))
+    tokens = (
+        db.session.execute(
+            select(Tokens).where(
+                Tokens.address.in_(list(token_set)),
+                Tokens.is_verified == True,
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    total_volume_usd = 0
+    token_map = {token.address: token for token in tokens}
+
     transaction_hash_list = list(set(transaction_hash_list))
-    if len(transaction_hash_list) == 0 or len(token_list) == 0:
+    if len(transaction_hash_list) == 0 or len(token_set) == 0:
         return None
+
+    for swaps in swaps:
+        if token_map.get(swaps.token0_address):
+            token = token_map[swaps.token0_address]
+            total_volume_usd += abs(
+                get_token_daily_price(token.symbol, datetime.fromtimestamp(swaps.block_timestamp))
+                * float(swaps.amount0)
+                / float(10**token.decimals)
+            )
+        elif token_map.get(swaps.token1_address):
+            token = token_map[swaps.token1_address]
+            total_volume_usd += abs(
+                get_token_daily_price(token.symbol, datetime.fromtimestamp(swaps.block_timestamp))
+                * float(swaps.amount1)
+                / float(0**token.decimals)
+            )
+        else:
+            continue
+
     return {
         "trade_count": len(transaction_hash_list),
-        "trade_asset_count": len(token_list),
-        "total_volume_usd": 0,
-        "average_value_usd": 0,
+        "trade_asset_count": len(token_set),
+        "total_volume_usd": total_volume_usd,
+        "average_value_usd": total_volume_usd / len(transaction_hash_list) if len(transaction_hash_list) > 0 else 0,
     }
 
 

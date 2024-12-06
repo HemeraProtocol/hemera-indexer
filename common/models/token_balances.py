@@ -37,7 +37,7 @@ class AddressTokenBalances(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "TokenBalance",
+                "domain": TokenBalance,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": token_balances_general_converter,
