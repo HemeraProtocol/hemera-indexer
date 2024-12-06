@@ -161,7 +161,7 @@ class EigenLayerJob(FilterTransactionDataJob):
                                 )
                                 internal_idx += 1
                                 eigen_actions.append(action)
-                elif log.topic0 == WITHDRAWAL_COMPLETED_EVENT and log.address == self._delegation:
+                elif log.topic0 == WITHDRAWAL_COMPLETED_EVENT.get_signature() and log.address == self._delegation:
                     dl = WITHDRAWAL_COMPLETED_EVENT.decode_log(log)
                     withdrawal_root = dl.get("withdrawalRoot")
                     eigen_actions.append(
@@ -190,6 +190,8 @@ class EigenLayerJob(FilterTransactionDataJob):
             for vault, kad in outer_dic.items():
                 if address in exists_dic and vault in exists_dic[address]:
                     exists_kad = exists_dic[address][vault]
+                    if kad.token and not exists_kad.token:
+                        exists_kad.token = kad.token
                     exists_kad.deposit_amount += kad.deposit_amount
                     exists_kad.start_withdraw_amount += kad.start_withdraw_amount
                     exists_kad.finish_withdraw_amount += kad.finish_withdraw_amount

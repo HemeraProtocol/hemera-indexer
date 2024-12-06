@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, SMALLINT, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 
 
 class AddressOpenseaTransactions(HemeraModel):
@@ -34,7 +35,7 @@ class AddressOpenseaTransactions(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AddressOpenseaTransaction",
+                "domain": AddressOpenseaTransaction,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

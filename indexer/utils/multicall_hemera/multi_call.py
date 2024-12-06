@@ -1,30 +1,12 @@
-import logging
-from typing import Any, List, Optional, Tuple, Union
+from typing import List, Optional
 
 import orjson
 
-from common.utils.format_utils import bytes_to_hex_str
+from common.utils.format_utils import format_block_id, hex_str_to_bytes
 from indexer.utils.multicall_hemera import Call
-from indexer.utils.multicall_hemera.call import prep_args
-from indexer.utils.multicall_hemera.constants import GAS_LIMIT, MULTICALL3_ADDRESSES, Network
-from indexer.utils.multicall_hemera.signature import _get_signature
-
-logger = logging.getLogger(__name__)
-CallResponse = Tuple[Union[None, bool], bytes]
-
-
-def get_args(calls: List[Call], require_success: bool = True) -> List[Union[bool, List[List[Any]]]]:
-    if require_success is True:
-        return [[[call.target, call.data] for call in calls]]
-    return [require_success, [[call.target, call.data] for call in calls]]
-
-
-def unpack_aggregate_outputs(outputs: Any) -> Tuple[CallResponse, ...]:
-    return tuple((None, output) for output in outputs)
-
-
-def unpack_batch_results(batch_results: List[List[CallResponse]]) -> List[CallResponse]:
-    return [result for batch in batch_results for result in batch]
+from indexer.utils.multicall_hemera.abi import AGGREGATE_FUNC, TRY_BLOCK_AND_AGGREGATE_FUNC
+from indexer.utils.multicall_hemera.constants import GAS_LIMIT, get_multicall_address, get_multicall_network
+from indexer.utils.multicall_hemera.util import calculate_execution_time
 
 
 class Multicall:
@@ -33,40 +15,34 @@ class Multicall:
         self,
         calls: List[Call],
         chain_id: int = None,
-        block_id: Union[Optional[int], str] = None,
+        block_number: Optional[int] = None,
         require_success: bool = True,
         gas_limit: int = GAS_LIMIT,
     ) -> None:
         self.calls = calls
-        self.block_id = block_id
         self.require_success = require_success
         self.gas_limit = gas_limit
         self.chain_id = chain_id
-        self.network = Network.from_value(self.chain_id)
+        self.block_number = block_number
+        self.network = get_multicall_network(self.chain_id)
         if require_success is True:
-            multicall_map = MULTICALL3_ADDRESSES if self.network in MULTICALL3_ADDRESSES else None
-            self.multicall_sig = "aggregate((address,bytes)[])(uint256,bytes[])"
+            self.multicall_func = AGGREGATE_FUNC
         else:
-            multicall_map = MULTICALL3_ADDRESSES if self.network in MULTICALL3_ADDRESSES else None
-            self.multicall_sig = "tryBlockAndAggregate(bool,(address,bytes)[])(uint256,uint256,(bool,bytes)[])"
-        self.multicall_address = multicall_map[self.network]
+            self.multicall_func = TRY_BLOCK_AND_AGGREGATE_FUNC
+        self.multicall_address = get_multicall_address(self.network)
+        self._parameters = None
 
-    @property
-    def aggregate(self) -> Call:
-        return Call(
-            self.multicall_address,
-            self.multicall_sig,
-            returns=None,
-            block_id=self.block_id,
-            gas_limit=self.gas_limit,
-        )
-
+    @calculate_execution_time
     def to_rpc_param(self):
-        args = get_args(self.calls, self.require_success)
-        args = prep_args(
-            self.multicall_address, _get_signature(self.multicall_sig), args, self.block_id, hex(self.gas_limit)
-        )
-        args[0]["data"] = bytes_to_hex_str(args[0]["data"])
+        if self.require_success is True:
+            parameters = [[[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
+        else:
+            parameters = [self.require_success, [[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]
+
+        call_data = self.multicall_func.encode_function_call_data(parameters)
+        args = [{"to": self.multicall_address, "data": call_data}, format_block_id(self.block_number)]
+        if self.gas_limit:
+            args[0]["gas"] = format_block_id(self.gas_limit)
         return {
             "jsonrpc": "2.0",
             "method": "eth_call",
