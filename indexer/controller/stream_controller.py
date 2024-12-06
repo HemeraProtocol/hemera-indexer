@@ -122,8 +122,8 @@ class StreamController(BaseController):
                         for key in result:
                             export_data[key].extend(result[key])
 
-                    self.buffer_service.write(export_data)
-                    last_synced_block = target_block
+                    if self.buffer_service.write(export_data):
+                        last_synced_block = target_block
 
                 if synced_blocks <= 0:
                     logger.debug("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))

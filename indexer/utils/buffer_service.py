@@ -17,9 +17,9 @@ from typing import Callable, Dict
 
 from common.utils.exception_control import get_exception_details
 
-BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 100)
+BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 1)
 BUFFER_LINGER_MS = os.environ.get("BUFFER_LINGER_MS", 5000)
-MAX_BUFFER_SIZE = os.environ.get("BUFFER_LINGER_MS", 1000)
+MAX_BUFFER_SIZE = os.environ.get("MAX_BUFFER_SIZE", 1)
 ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
 CONCURRENT_SUBMITTERS = os.environ.get("CONCURRENT_SUBMITTERS", 1)
 CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
@@ -91,7 +91,8 @@ class BufferService:
             exception_details = get_exception_details(e)
             self.exception_callback(self.required_output_types, start_block, end_block, "export", exception_details)
             self.logger.error(f"Exporting items error: {exception_details}")
-            self.shutdown()
+            if CRASH_INSTANTLY:
+                self.shutdown()
 
     def write(self, records: Dict):
         with self.buffer_lock:
@@ -100,7 +101,8 @@ class BufferService:
                     self.buffer[dataclass].extend(records[dataclass])
 
         if len(self.buffer["block"]) >= self.max_buffer_size or not ASYNC_SUBMIT:
-            self.flush_buffer()
+            return self.flush_buffer()
+        return True
 
     def _should_flush(self) -> bool:
         current_time = time.time()
@@ -135,9 +137,14 @@ class BufferService:
             self.pending_futures[future] = block_range
 
         if not ASYNC_SUBMIT:
-            future.result()
+            try:
+                future.result()
+                return True
+            except Exception as e:
+                return False
 
         self._last_flush_time = time.time()
+        return True
 
     def _flush_loop(self):
         while not self._shutdown_event.is_set():
