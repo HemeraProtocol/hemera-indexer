@@ -16,6 +16,7 @@ from indexer.modules.custom.etherfi.domains.eeth import (
     EtherFiShareBalanceCurrentD,
     EtherFiShareBalanceD,
 )
+from indexer.modules.custom.etherfi.domains.lrts import EtherFiLrtExchangeRateD
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
@@ -25,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class ExportEtherFiShareJob(FilterTransactionDataJob):
     dependency_types = [Transaction]
-    output_types = [EtherFiShareBalanceD, EtherFiPositionValuesD, EtherFiShareBalanceCurrentD]
+    output_types = [EtherFiShareBalanceD, EtherFiPositionValuesD, EtherFiShareBalanceCurrentD, EtherFiLrtExchangeRateD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -45,6 +46,11 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
             rebase_event.get_signature(),
         ]
 
+        self._accountants = [a["accountant"].lower() for a in self.user_defined_config.get("lrts", [])]
+        self._accountants_to_tokens = {
+            a["accountant"].lower(): a["token"] for a in self.user_defined_config.get("lrts", [])
+        }
+
         self.topic_addresses = [
             self.user_defined_config["eeth_address"],
             self.user_defined_config["liquidity_pool_address"],
@@ -59,8 +65,9 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
             TransactionFilterByLogs(
                 [
                     TopicSpecification(
-                        addresses=self.topic_addresses,
-                        topics=self.position_events + [transfer_share_event.get_signature()],
+                        addresses=self.topic_addresses + self._accountants,
+                        topics=self.position_events
+                        + [transfer_share_event.get_signature(), exchange_rate_changed_event.get_signature()],
                     )
                 ]
             ),
@@ -78,6 +85,9 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
         block_to_update_position = set()
 
         for log in logs:
+            if log.address.lower() in self._accountants:
+                self._collect_exchange_rate(log)
+                continue
             if log.address not in self.topic_addresses:
                 continue
             if log.topic0 == transfer_share_event.get_signature():
@@ -170,3 +180,15 @@ class ExportEtherFiShareJob(FilterTransactionDataJob):
                 position_domains[call.block_number].total_value_in_lp = call.returns["totalValueInLp"]
         for block_number, domain in position_domains.items():
             self._collect_domain(domain)
+
+    def _collect_exchange_rate(self, log: Log):
+        if log.topic0 != exchange_rate_changed_event.get_signature():
+            return
+        log_data = exchange_rate_changed_event.decode_log(log)
+        self._collect_domain(
+            EtherFiLrtExchangeRateD(
+                block_number=log.block_number,
+                exchange_rate=log_data["newRate"],
+                token_address=self._accountants_to_tokens[log.address.lower()],
+            )
+        )

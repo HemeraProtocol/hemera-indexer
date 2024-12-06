@@ -42,3 +42,16 @@ validator_registration_canceled_event = Event(
         "type": "event",
     }
 )
+
+exchange_rate_changed_event = Event(
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": False, "internalType": "uint96", "name": "oldRate", "type": "uint96"},
+            {"indexed": False, "internalType": "uint96", "name": "newRate", "type": "uint96"},
+            {"indexed": False, "internalType": "uint64", "name": "currentTime", "type": "uint64"},
+        ],
+        "name": "ExchangeRateUpdated",
+        "type": "event",
+    }
+)
