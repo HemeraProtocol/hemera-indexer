@@ -29,7 +29,7 @@ jobs:
       POSTGRES_PASSWORD: password
       POSTGRES_URL: postgresql://hemera:password@localhost:5432/hemera
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
@@ -57,4 +57,9 @@ jobs:
       - name: Pipeline Test with pytest
         run: |
           export PYTHONPATH=$(pwd)
-          make test indexer
+          poetry run pytest indexer --cov .
+      - name: Upload coverage reports to Codecov
+        run: |
+          curl -Os https://cli.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov --verbose upload-process --fail-on-error -t ${{ secrets.CODECOV_TOKEN }} -n 'service'-${{ github.run_id }} -F service -f coverage-service.xml
