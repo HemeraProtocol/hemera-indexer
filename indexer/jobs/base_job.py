@@ -58,6 +58,9 @@ class Collector(Generic[T]):
         with self.job._data_buff_lock[domains[0].type()]:
             self.job._data_buff[domains[0].type()].extend(domains)
 
+    def update(self, domains: List[Domain]):
+        self.job._update_domains(domains)
+
 
 class BaseJobMeta(type):
     _registry = {}
