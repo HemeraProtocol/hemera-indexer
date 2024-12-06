@@ -2,6 +2,13 @@
 <p>By Hemera Protocol</p>
 <p></p>
 
+[![GitHub Build](https://github.com/HemeraProtocol/hemera-indexer/actions/workflows/ci.yaml/badge.svg)](https://github.com/HemeraProtocol/hemera-indexer/actions)
+[![License](https://img.shields.io/:license-Apache%202-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.txt)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Twitter Follow](https://img.shields.io/twitter/follow/HemeraProtocol.svg?style=social&label=Follow)](https://x.com/HemeraProtocol)
+[![Telegram Group](https://img.shields.io/badge/Telegram-Group-blue.svg)](https://t.me/+7OHzn5kvcCdjZGNl)
+[![Discord](https://img.shields.io/badge/Discord-Join-7289da?logo=discord&logoColor=ffffff)](https://discord.com/invite/socialscan)
+
 > [!NOTE]
 > The Hemera Indexer is a work-in-progress project. If you need to use it in production, please consult the Hemera Team first.
 

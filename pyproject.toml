@@ -71,6 +71,7 @@ black = "^21.5b0"
 isort = "^5.9.1"
 flake8 = "^3.9.2"
 ruff = "^0.0.235"
+pytest-cov = "*"
 
 [tool.poetry.scripts]
 hemera = "cli:cli"
