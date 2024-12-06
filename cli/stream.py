@@ -151,7 +151,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--period-seconds",
-    default=10,
+    default=2,
     show_default=True,
     type=float,
     envvar="PERIOD_SECONDS",

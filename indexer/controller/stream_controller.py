@@ -11,11 +11,8 @@ from common.utils.file_utils import delete_file, write_to_file
 from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
 from indexer.utils.buffer_service import BufferService
-from indexer.utils.exception_recorder import ExceptionRecorder
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
-
-exception_recorder = ExceptionRecorder()
 
 logger = logging.getLogger(__name__)
 
