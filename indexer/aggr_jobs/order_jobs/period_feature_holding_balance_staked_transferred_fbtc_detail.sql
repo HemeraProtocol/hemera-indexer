@@ -31,27 +31,84 @@ with sbtc_config as (select distinct contract_address, token_address
                          group by d1.address, d2.contract_address),
 
 
-     c_balance_table as (select from_address,
-                                d2.contract_address,
-                                sum(value / pow(10, d3.decimals)) as c_balance
-                         from erc20_token_transfers d1
-                                  inner join feature_staked_fbtc_config d2
-                                             on d1.token_address = d2.token_address and d1.to_address = d2.to_address
-                                  left join tokens d3 on d2.token_address = d3.address
-                         group by 1, 2),
+          c_in_balance_table AS (SELECT d1.from_address,
+                                   d2.contract_address,
+                                   SUM(d1.value / POW(10, d3.decimals)) AS in_balance
+                            FROM erc20_token_transfers d1
+                                     INNER JOIN feature_staked_fbtc_config d2
+                                                ON d1.token_address = d2.token_address
+                                                    AND d1.to_address = d2.to_address
+                                     LEFT JOIN tokens d3
+                                               ON d2.token_address = d3.address
+                            GROUP BY 1, 2),
 
-     c_balance_protocol_table as (select from_address                      as wallet_address,
-                                         d2.contract_address,
-                                         d2.to_address_protocol_id         as protocol_id,
-                                         d2.to_address,
-                                         d2.token_address                  as c_token_address,
-                                         sum(value / pow(10, d3.decimals)) as balance
-                                  from erc20_token_transfers d1
-                                           inner join feature_staked_fbtc_config d2
-                                                      on d1.token_address = d2.token_address and d1.to_address = d2.to_address
-                                           left join tokens d3 on d2.token_address = d3.address
-                                  group by 1, 2, 3, 4, 5),
+-- 计算转出金额（转出来的）
+     c_out_balance_table AS (SELECT d1.to_address                        AS from_address, -- 这里的转出是由 to_address 发起
+                                    d2.contract_address,
+                                    SUM(d1.value / POW(10, d3.decimals)) AS out_balance
+                             FROM erc20_token_transfers d1
+                                      INNER JOIN feature_staked_fbtc_config d2
+                                                 ON d1.token_address = d2.token_address
+                                                     AND d1.from_address = d2.to_address -- 转出匹配条件
+                                      LEFT JOIN tokens d3
+                                                ON d2.token_address = d3.address
+                             GROUP BY 1, 2),
 
+-- 合并转入和转出，计算净余额
+     c_balance_table AS (SELECT COALESCE(in_table.from_address, out_table.from_address)                            AS from_address,
+                                COALESCE(in_table.contract_address, out_table.contract_address)                    AS contract_address,
+                                greatest(COALESCE(in_table.in_balance, 0) - COALESCE(out_table.out_balance, 0),
+                                         0)                                                                        AS c_balance
+                         FROM c_in_balance_table in_table
+                                  FULL OUTER JOIN c_out_balance_table out_table
+                                                  ON in_table.from_address = out_table.from_address
+                                                      AND in_table.contract_address = out_table.contract_address),
+
+-- 同样逻辑应用到 protocol 层级
+     c_in_balance_protocol_table AS (SELECT d1.from_address                      AS wallet_address,
+                                            d2.contract_address,
+                                            d2.to_address_protocol_id            AS protocol_id,
+                                            d2.to_address,
+                                            d2.token_address                     AS c_token_address,
+                                            SUM(d1.value / POW(10, d3.decimals)) AS in_balance
+                                     FROM erc20_token_transfers d1
+                                              INNER JOIN feature_staked_fbtc_config d2
+                                                         ON d1.token_address = d2.token_address
+                                                             AND d1.to_address = d2.to_address
+                                              LEFT JOIN tokens d3
+                                                        ON d2.token_address = d3.address
+                                     GROUP BY 1, 2, 3, 4, 5),
+
+     c_out_balance_protocol_table AS (SELECT d1.to_address                        AS wallet_address,
+                                             d2.contract_address,
+                                             d2.to_address_protocol_id            AS protocol_id,
+                                             d2.to_address,
+                                             d2.token_address                     AS c_token_address,
+                                             SUM(d1.value / POW(10, d3.decimals)) AS out_balance
+                                      FROM erc20_token_transfers d1
+                                               INNER JOIN feature_staked_fbtc_config d2
+                                                          ON d1.token_address = d2.token_address
+                                                              AND d1.from_address = d2.to_address
+                                               LEFT JOIN tokens d3
+                                                         ON d2.token_address = d3.address
+                                      GROUP BY 1, 2, 3, 4, 5),
+
+     c_balance_protocol_table AS (SELECT COALESCE(in_table.wallet_address, out_table.wallet_address)     AS wallet_address,
+                                         COALESCE(in_table.contract_address, out_table.contract_address) AS contract_address,
+                                         COALESCE(in_table.protocol_id, out_table.protocol_id)           AS protocol_id,
+                                         COALESCE(in_table.to_address, out_table.to_address)             AS to_address,
+                                         COALESCE(in_table.c_token_address, out_table.c_token_address)   AS c_token_address,
+                                         greatest(COALESCE(in_table.in_balance, 0) - COALESCE(out_table.out_balance, 0),
+                                                  0)                                                     AS balance
+                                  FROM c_in_balance_protocol_table in_table
+                                           FULL OUTER JOIN c_out_balance_protocol_table out_table
+                                                           ON in_table.wallet_address = out_table.wallet_address
+                                                               AND
+                                                              in_table.contract_address = out_table.contract_address
+                                                               AND in_table.protocol_id = out_table.protocol_id
+                                                               AND in_table.to_address = out_table.to_address
+                                                               AND
+                                                              in_table.c_token_address = out_table.c_token_address),
 
      a_balance_table as (select d1.wallet_address,
                                 d1.contract_address,
