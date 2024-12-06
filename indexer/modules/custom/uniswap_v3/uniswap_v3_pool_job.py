@@ -1,14 +1,13 @@
 import logging
 
+import indexer.modules.custom.uniswap_v3.swapsicle_abi as swapsicle_abi
+import indexer.modules.custom.uniswap_v3.uniswapv3_abi as uniswapv3_abi
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import UniswapV3Pool
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
-import indexer.modules.custom.uniswap_v3.swapsicle_abi as swapsicle_abi
-import indexer.modules.custom.uniswap_v3.uniswapv3_abi as uniswapv3_abi
 from indexer.modules.custom.uniswap_v3.util import AddressManager
-
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
@@ -32,8 +31,10 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         return TransactionFilterByLogs(
             [
                 TopicSpecification(
-                    topics=[abi_module.POOL_CREATED_EVENT.get_signature() for abi_module in
-                            self._address_manager.abi_modules_list],
+                    topics=[
+                        abi_module.POOL_CREATED_EVENT.get_signature()
+                        for abi_module in self._address_manager.abi_modules_list
+                    ],
                     addresses=self._address_manager.factory_address_list,
                 ),
             ]

@@ -42,8 +42,9 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         return TransactionFilterByLogs(
             [
                 TopicSpecification(
-                    topics=[abi_module.SWAP_EVENT.get_signature() for abi_module in
-                            self._address_manager.abi_modules_list],
+                    topics=[
+                        abi_module.SWAP_EVENT.get_signature() for abi_module in self._address_manager.abi_modules_list
+                    ],
                     addresses=address_list,
                 ),
             ]
@@ -102,7 +103,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
         self.multi_call_helper.execute_calls(tick_spacing_list)
 
         for factory_call, fee_call, token0_call, token1_call, tick_spacing_call in zip(
-                factory_list, fee_list, token0_list, token1_list, tick_spacing_list
+            factory_list, fee_list, token0_list, token1_list, tick_spacing_list
         ):
             factory_address = factory_call.returns.get("")
             if factory_address:

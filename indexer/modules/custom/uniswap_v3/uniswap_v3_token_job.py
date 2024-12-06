@@ -21,6 +21,7 @@ from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 logger = logging.getLogger(__name__)
 
+
 class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
     dependency_types = [Log, ERC721TokenTransfer]
     output_types = [UniswapV3Token, UniswapV3TokenDetail, UniswapV3TokenCurrentStatus, UniswapV3PoolFromToken]
