@@ -298,7 +298,7 @@ class JobScheduler:
         return export_data
 
     def job_with_retires(self, job, start_block, end_block):
-        for retry in range(JOB_RETRIES):
+        for retry in range(JOB_RETRIES + 1):
             try:
                 self.logger.info(f"Task run {job.__class__.__name__}")
                 return job.run(start_block=start_block, end_block=end_block)
@@ -312,7 +312,10 @@ class JobScheduler:
                     raise e
 
                 if e.retriable:
-                    self.logger.debug(f"No: {retry} retry is about to start.")
+                    if retry == JOB_RETRIES:
+                        self.logger.info(f"The number of retry is reached limit {JOB_RETRIES}.")
+                    else:
+                        self.logger.info(f"No: {retry + 1} retry is about to start.")
                 else:
                     self.logger.error("Mission will not retry, and exit immediately.")
                     raise e
@@ -321,8 +324,7 @@ class JobScheduler:
                 self.logger.error(f"An unknown exception occurred while running {job.__class__.__name__}. error: {e}")
                 raise e
 
-        self.logger.debug(f"The number of retry is reached limit {JOB_RETRIES}. Program will exit.")
-        raise FastShutdownError(
-            f"The {job} with parameters start_block:{start_block}, end_block:{end_block} "
+        self.logger.error(
+            f"The job with parameters start_block:{start_block}, end_block:{end_block} "
             f"can't be automatically resumed after reached out limit of retries. Program will exit."
         )
