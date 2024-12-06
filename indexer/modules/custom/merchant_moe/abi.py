@@ -4,7 +4,7 @@ TOTAL_SUPPLY_FUNCTION = Function(
     {
         "inputs": [{"internalType": "uint256", "name": "tokenId", "type": "uint256"}],
         "name": "totalSupply",
-        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "outputs": [{"internalType": "uint256", "name": "totalSupply", "type": "uint256"}],
         "stateMutability": "view",
         "type": "function",
     }
