@@ -13,6 +13,20 @@ from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
+from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
+    AaveV2AddressCurrentD,
+    AaveV2BorrowD,
+    AaveV2CallRecordsD,
+    AaveV2DepositD,
+    AaveV2FlashLoanD,
+    AaveV2LiquidationAddressCurrentD,
+    AaveV2LiquidationCallD,
+    AaveV2RepayD,
+    AaveV2ReserveD,
+    AaveV2ReserveDataCurrentD,
+    AaveV2ReserveDataD,
+    AaveV2WithdrawD,
+)
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
 from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
@@ -70,6 +84,7 @@ class EntityType(IntFlag):
     KARAK = 1 << 11
 
     EIGEN_LAYER = 1 << 13
+    AAVEV2 = 1 << 14
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -85,7 +100,7 @@ class EntityType(IntFlag):
 
 
 ALL_ENTITY_COLLECTIONS = EntityType.__members__.keys()
-DEFAULT_COLLECTION = []
+DEFAULT_COLLECTION = ["EXPLORER_BASE", "EXPLORER_TOKEN"]
 
 
 def calculate_entity_value(entity_types):
@@ -199,3 +214,17 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.EIGEN_LAYER:
         yield EigenLayerAction
         yield EigenLayerAddressCurrent
+
+    if entity_types & EntityType.AAVEV2:
+        yield AaveV2ReserveD
+        yield AaveV2DepositD
+        yield AaveV2WithdrawD
+        yield AaveV2BorrowD
+        yield AaveV2RepayD
+        yield AaveV2FlashLoanD
+        yield AaveV2LiquidationCallD
+        yield AaveV2AddressCurrentD
+        yield AaveV2LiquidationAddressCurrentD
+        yield AaveV2CallRecordsD
+        yield AaveV2ReserveDataD
+        yield AaveV2ReserveDataCurrentD
