@@ -1,15 +1,16 @@
 import logging
 from collections import defaultdict
 
-from common.utils.format_utils import bytes_to_hex_str
-from sqlalchemy import text
+from sqlalchemy import and_, func, or_
 
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.token_transfer import ERC20TokenTransfer
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.staking_fbtc.domain.af_staked_transferred_balance import (
     AfStakedTransferredBalanceCurrentDomain,
     AfStakedTransferredBalanceHistDomain,
 )
+from indexer.modules.custom.staking_fbtc.models.af_staked_transferred_balance_hist import AfStakedTransferredBalanceHist
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.collection_utils import distinct_collections_by_group
 
@@ -43,18 +44,42 @@ class ExportTransferredBalanceJob(FilterTransactionDataJob):
             ]
         )
 
-    def _get_current_holdings(self, block_number):
+    def _get_current_holdings(self, combinations, block_number):
         session = self._service.get_service_session()
-        sql = f"""
-            select * from (select *, row_number() over (partition by wallet_address, contract_address,token_address order by block_number desc) rn
-                   from af_staked_transferred_balance_hist
-                   where block_number < {block_number}) t where rn = 1
-            """
-        result = session.execute(text(sql))
+
+        conditions = [
+            and_(
+                AfStakedTransferredBalanceHist.contract_address == hex_str_to_bytes(contract),
+                AfStakedTransferredBalanceHist.token_address == hex_str_to_bytes(token),
+                AfStakedTransferredBalanceHist.wallet_address == hex_str_to_bytes(wallet),
+            ).self_group()  # need to group for one combination
+            for contract, token, wallet in combinations
+        ]
+
+        windowed_block_number = func.row_number().over(
+            partition_by=(
+                AfStakedTransferredBalanceHist.contract_address,
+                AfStakedTransferredBalanceHist.token_address,
+                AfStakedTransferredBalanceHist.wallet_address,
+            ),
+            order_by=AfStakedTransferredBalanceHist.block_number.desc(),
+        )
+
+        combined_conditions = or_(*conditions)
+
+        subquery = (
+            session.query(AfStakedTransferredBalanceHist, windowed_block_number.label("row_number"))
+            .filter(combined_conditions, AfStakedTransferredBalanceHist.block_number < block_number)
+            .subquery()
+        )
+
+        query = session.query(subquery).filter(subquery.c.row_number == 1)
+
+        results = query.all()
 
         current_holdings = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 
-        for record in result:
+        for record in results:
             contract_address = bytes_to_hex_str(record.contract_address)
             wallet_address = bytes_to_hex_str(record.wallet_address)
             token_address = bytes_to_hex_str(record.token_address)
@@ -73,7 +98,7 @@ class ExportTransferredBalanceJob(FilterTransactionDataJob):
         return results
 
     def _process(self, **kwargs):
-        current_holdings = self._get_current_holdings(kwargs["start_block"])
+        current_holdings_combinations_set = set()
 
         token_transfers = self._data_buff[ERC20TokenTransfer.type()]
         token_transfers.sort(key=lambda x: [x.block_number, x.log_index])
@@ -85,14 +110,25 @@ class ExportTransferredBalanceJob(FilterTransactionDataJob):
             to_address = token_transfer.to_address
             token_address = token_transfer.token_address
             block_number = token_transfer.block_number
+            combination = ()
+
             if from_address in self.address_protocol_dict:
                 protocol_wallet_token_block_group[from_address][to_address][token_address][block_number].append(
                     {"token_transfer": token_transfer, "c": -1}
                 )
+                # contract token wallet
+                combination = (from_address, token_address, to_address)
+
             if to_address in self.address_protocol_dict:
                 protocol_wallet_token_block_group[to_address][from_address][token_address][block_number].append(
                     {"token_transfer": token_transfer, "c": 1}
                 )
+                # contract token wallet
+                combination = (to_address, token_address, from_address)
+            if combination:
+                current_holdings_combinations_set.add(combination)
+        combinations = list(current_holdings_combinations_set)
+        current_holdings = self._get_current_holdings(combinations, kwargs["start_block"])
 
         staked_records = []
 
