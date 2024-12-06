@@ -1,0 +1,50 @@
+---
+codecov:
+  branch: main
+  max_report_age: 6h
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: false
+    after_n_builds: 1
+
+coverage:
+  precision: 1
+  round: down
+  range: 65..90
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 1%
+        base: auto
+        paths:
+          - "indexer"
+          - "api"
+          - "common"
+        branches:
+          - main
+          - release/*
+        if_not_found: success
+        if_ci_failed: error
+        informational: false
+        only_pulls: true
+
+    patch:
+      default:
+        target: 85%
+        threshold: 0%
+        base: auto
+        branches:
+          - main
+          - release/*
+        if_no_uploads: error
+        if_not_found: success
+        if_ci_failed: error
+        only_pulls: true
+        paths:
+          - "indexer"
+          - "api"
+          - "common"
+
+ignore:
+  - "indexer/tests/**/*"
