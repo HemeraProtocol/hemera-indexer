@@ -7,7 +7,8 @@ uniswap_v3_pool_job:
   position_token_address: '0xaaa78e8c4241990b4ce159e105da08129345946a'
   factory_address: '0xaaa32926fce6be95ea2c51cb4fcb60836d320c42'
 
-
+init_capital_job:
+  core_address: '0x972bcb0284cca0152527c4f70f8f689852bcafc5'
 
 
 export_staked_transferred_balance_job:
@@ -69,3 +70,4 @@ export_tokens_and_transfers_job:
     - "0x1d40bafc49c37cda49f2a5427e2fb95e1e3fcf20"
       # wecmeth, for woofi
     - "0x872b6ff825da431c941d12630754036278ad7049"
+
