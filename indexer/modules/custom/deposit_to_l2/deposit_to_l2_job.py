@@ -99,7 +99,7 @@ class DepositToL2Job(FilterTransactionDataJob):
             )
         )
 
-        deposit_tokens = parse_deposit_transaction_function(
+        deposit_transactions = parse_deposit_transaction_function(
             transactions=transactions,
             contract_set=self._contracts,
             chain_mapping=self._contract_chain_mapping,
@@ -107,15 +107,16 @@ class DepositToL2Job(FilterTransactionDataJob):
             sig_parse_mapping=self._sig_parse_mapping,
         )
 
-        output.collects(deposit_tokens)
+        output.collects(deposit_transactions)
 
         if not self._reorg:
-            for deposit in pre_aggregate_deposit_in_same_block(deposit_tokens):
+            address_deposits = []
+            for deposit in pre_aggregate_deposit_in_same_block(deposit_transactions):
                 cache_key = (deposit.wallet_address, deposit.chain_id, deposit.contract_address, deposit.token_address)
                 cache_value = self.cache.get(cache_key)
                 if cache_value and cache_value.block_number < deposit.block_number:
                     # add and save 2 cache
-                    token_deposit = AddressTokenDeposit(
+                    address_deposit = AddressTokenDeposit(
                         wallet_address=deposit.wallet_address,
                         chain_id=deposit.chain_id,
                         contract_address=deposit.contract_address,
@@ -125,8 +126,8 @@ class DepositToL2Job(FilterTransactionDataJob):
                         block_timestamp=deposit.block_timestamp,
                     )
 
-                    self.cache.set(cache_key, token_deposit)
-                    output.collect(token_deposit)
+                    self.cache.set(cache_key, address_deposit)
+                    address_deposits.append(address_deposit)
 
                 elif cache_value is None:
                     # check from db and save 2 cache
@@ -134,7 +135,7 @@ class DepositToL2Job(FilterTransactionDataJob):
                         deposit.wallet_address, deposit.chain_id, deposit.token_address
                     )
                     if history_deposit is None or history_deposit.block_number < deposit.block_number:
-                        token_deposit = AddressTokenDeposit(
+                        address_deposit = AddressTokenDeposit(
                             wallet_address=deposit.wallet_address,
                             chain_id=deposit.chain_id,
                             contract_address=deposit.contract_address,
@@ -143,13 +144,15 @@ class DepositToL2Job(FilterTransactionDataJob):
                             block_number=deposit.block_number,
                             block_timestamp=deposit.block_timestamp,
                         )
-                        self.cache.set(cache_key, token_deposit)
-                        output.collect(token_deposit)
+                        self.cache.set(cache_key, address_deposit)
+                        address_deposits.append(address_deposit)
 
-            self._data_buff[AddressTokenDeposit.type()] = distinct_collections_by_group(
-                collections=self._data_buff[AddressTokenDeposit.type()],
-                group_by=["wallet_address", "chain_id", "contract_address", "token_address"],
-                max_key="block_number",
+            output.collects(
+                distinct_collections_by_group(
+                    collections=address_deposits,
+                    group_by=["wallet_address", "chain_id", "contract_address", "token_address"],
+                    max_key="block_number",
+                )
             )
 
     def check_history_deposit_from_db(
