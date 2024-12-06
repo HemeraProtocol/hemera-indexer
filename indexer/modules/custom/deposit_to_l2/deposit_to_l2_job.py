@@ -1,6 +1,6 @@
 import configparser
 import logging
-from typing import List
+from typing import List, Union
 
 from eth_utils import to_normalized_address
 from sqlalchemy import and_
@@ -8,8 +8,10 @@ from sqlalchemy import and_
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from indexer.domain.block import Block
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
+from indexer.jobs.base_job import Collector
 from indexer.modules.custom.deposit_to_l2.abi.function import function_mapping
 from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transaction_function, token_parse_mapping
 from indexer.modules.custom.deposit_to_l2.domains.address_token_deposit import AddressTokenDeposit
@@ -84,17 +86,19 @@ class DepositToL2Job(FilterTransactionDataJob):
     def get_filter(self):
         return self._filter
 
-    def _process(self, **kwargs):
+    def _udf(self, blocks: List[Block], output: Collector[Union[TokenDepositTransaction, AddressTokenDeposit]]):
         transactions = list(
             filter(
                 self._filter.get_or_specification().is_satisfied_by,
                 [
                     transaction
-                    for transaction in self._data_buff[Transaction.type()]
+                    for block in blocks
+                    for transaction in block.transactions
                     if transaction.receipt and transaction.receipt.status != 0
                 ],
             )
         )
+
         deposit_tokens = parse_deposit_transaction_function(
             transactions=transactions,
             contract_set=self._contracts,
@@ -102,7 +106,8 @@ class DepositToL2Job(FilterTransactionDataJob):
             sig_function_mapping=self._sig_function_mapping,
             sig_parse_mapping=self._sig_parse_mapping,
         )
-        self._collect_items(TokenDepositTransaction.type(), deposit_tokens)
+
+        output.collects(deposit_tokens)
 
         if not self._reorg:
             for deposit in pre_aggregate_deposit_in_same_block(deposit_tokens):
@@ -121,7 +126,7 @@ class DepositToL2Job(FilterTransactionDataJob):
                     )
 
                     self.cache.set(cache_key, token_deposit)
-                    self._collect_item(AddressTokenDeposit.type(), token_deposit)
+                    output.collect(token_deposit)
 
                 elif cache_value is None:
                     # check from db and save 2 cache
@@ -139,7 +144,7 @@ class DepositToL2Job(FilterTransactionDataJob):
                             block_timestamp=deposit.block_timestamp,
                         )
                         self.cache.set(cache_key, token_deposit)
-                        self._collect_item(AddressTokenDeposit.type(), token_deposit)
+                        output.collect(token_deposit)
 
             self._data_buff[AddressTokenDeposit.type()] = distinct_collections_by_group(
                 collections=self._data_buff[AddressTokenDeposit.type()],
@@ -205,7 +210,3 @@ def pre_aggregate_deposit_in_same_block(deposit_events: List[TokenDepositTransac
         )
 
     return [event for event in aggregated_deposit_events.values()]
-
-
-if __name__ == "__main__":
-    pass
