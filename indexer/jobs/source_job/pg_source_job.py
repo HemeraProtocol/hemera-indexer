@@ -78,8 +78,8 @@ class PGSourceJob(BaseSourceJob):
                 if isinstance(job_filter, TransactionFilterByLogs):
                     log_filter = defaultdict(list)
                     for filter_param in job_filter.get_eth_log_filters_params():
-                        param_address = filter_param["address"]
-                        param_topics = flatten(filter_param["topics"])
+                        param_address = filter_param.get("address", [])
+                        param_topics = flatten(filter_param.get("topics", []))
 
                         if len(param_address) > 0:
                             log_filter["address"].extend(param_address)
