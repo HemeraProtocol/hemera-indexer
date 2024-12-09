@@ -206,3 +206,9 @@ def get_json_from_uri_by_http(uri):
         return response.json()
     except Exception as e:
         return None
+
+
+def event_topic_to_address(topic: str) -> str:
+    if len(topic) != 66:
+        return ""
+    return Web3.to_checksum_address("0x" + topic[26:])
