@@ -43,6 +43,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
                 transaction.block_number,
             )
             transaction.fill_with_receipt(receipt_entity)
+            output.collect(transaction)
 
             for log in transaction.receipt.logs:
                 output.collect(log)

@@ -266,20 +266,6 @@ class JobScheduler:
             )
             self.jobs.insert(0, pg_source_job)
 
-        if self.auto_reorg:
-            check_job = CheckBlockConsensusJob(
-                required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                batch_size=self.batch_size,
-                multicall=self._is_multicall,
-                debug_batch_size=self.debug_batch_size,
-                max_workers=self.max_workers,
-                config=self.config,
-                filters=filters,
-            )
-            self.jobs.append(check_job)
-
     def get_scheduled_jobs(self):
         return self.jobs
 
