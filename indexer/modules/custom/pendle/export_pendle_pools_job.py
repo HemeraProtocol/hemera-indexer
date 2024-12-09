@@ -3,6 +3,7 @@ from typing import List
 
 from web3 import Web3
 
+from common.utils.web3_utils import event_topic_to_address
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -68,8 +69,9 @@ class PendlePoolsJob(FilterTransactionDataJob):
                 continue
             if log.topic0 not in [create_market_event.get_signature(), create_market_event_v3.get_signature()]:
                 continue
-            market_address = Web3.to_checksum_address("0x" + log.topic1[26:])
-            pt_address = Web3.to_checksum_address("0x" + log.topic2[26:])
+            market_address = event_topic_to_address(log.topic1)
+
+            pt_address = event_topic_to_address(log.topic2)
             pools[pt_address] = PendlePoolD(
                 market_address=market_address,
                 pt_address=pt_address,

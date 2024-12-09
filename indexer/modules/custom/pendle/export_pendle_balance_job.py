@@ -4,7 +4,7 @@ from typing import List
 
 from web3 import Web3
 
-from common.utils.web3_utils import ZERO_ADDRESS
+from common.utils.web3_utils import ZERO_ADDRESS, event_topic_to_address
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.executors.batch_work_executor import BatchWorkExecutor
@@ -71,10 +71,10 @@ class PendleTokenBalanceJob(FilterTransactionDataJob):
             if log.address.lower() not in self._all_markets:
                 continue
             if log.topic0 == ERC20_TRANSFER_EVENT.get_signature():
-                to_requests.add((log.address, Web3.to_checksum_address("0x" + log.topic1[26:]), log.block_number))
-                to_requests.add((log.address, Web3.to_checksum_address("0x" + log.topic2[26:]), log.block_number))
+                to_requests.add((log.address, event_topic_to_address(log.topic1), log.block_number))
+                to_requests.add((log.address, event_topic_to_address(log.topic2), log.block_number))
             elif log.topic0 == redeem_rewards_event.get_signature():
-                to_requests.add((log.address, Web3.to_checksum_address("0x" + log.topic1[26:]), log.block_number))
+                to_requests.add((log.address, event_topic_to_address(log.topic1), log.block_number))
         if len(to_requests) == 0:
             return
 
