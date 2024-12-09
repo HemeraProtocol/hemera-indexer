@@ -164,6 +164,7 @@ class JobScheduler:
 
             source_output_types = set(source_job.output_types)
             for export_job in BaseExportJob.discover_jobs():
+                generate_dependency_types(export_job)
                 skip = False
                 for output_type in export_job.output_types:
                     if output_type in source_output_types:
