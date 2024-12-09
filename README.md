@@ -3,6 +3,7 @@
 <p></p>
 
 [![GitHub Build](https://github.com/HemeraProtocol/hemera-indexer/actions/workflows/ci.yaml/badge.svg)](https://github.com/HemeraProtocol/hemera-indexer/actions)
+[![PySpark Coverage](https://codecov.io/gh/HemeraProtocol/hemera-indexer/branch/master/graph/badge.svg)](https://codecov.io/gh/HemeraProtocol/hemera-indexer)
 [![License](https://img.shields.io/:license-Apache%202-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.txt)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Twitter Follow](https://img.shields.io/twitter/follow/HemeraProtocol.svg?style=social&label=Follow)](https://x.com/HemeraProtocol)
