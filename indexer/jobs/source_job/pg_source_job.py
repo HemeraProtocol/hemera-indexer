@@ -78,8 +78,8 @@ class PGSourceJob(BaseSourceJob):
                 if isinstance(job_filter, TransactionFilterByLogs):
                     log_filter = defaultdict(list)
                     for filter_param in job_filter.get_eth_log_filters_params():
-                        param_address = filter_param["address"]
-                        param_topics = flatten(filter_param["topics"])
+                        param_address = filter_param.get("address", [])
+                        param_topics = flatten(filter_param.get("topics", []))
 
                         if len(param_address) > 0:
                             log_filter["address"].extend(param_address)
@@ -178,7 +178,7 @@ class PGSourceJob(BaseSourceJob):
     def _collect_from_pg(self, blocks, start_timestamp, end_timestamp):
 
         for output_type in self.output_types:
-            table = domain_model_mapping[output_type.__name__]["table"]
+            table = domain_model_mapping[output_type]["table"]
             if len(self.pg_datas[table]) == 0:
                 start_time = datetime.now()
                 self.pg_datas[table] = self._query_with_blocks(table, blocks, start_timestamp, end_timestamp)
@@ -189,7 +189,7 @@ class PGSourceJob(BaseSourceJob):
     def _process(self, **kwargs):
         self.domain_mapping.clear()
         for output_type in self.build_order:
-            table = domain_model_mapping[output_type.__name__]["table"]
+            table = domain_model_mapping[output_type]["table"]
             domains = self._dataclass_build(self.pg_datas[table], output_type)
             if hasattr(table, "__query_order__"):
                 domains.sort(key=lambda x: tuple(getattr(x, column.name) for column in table.__query_order__))
