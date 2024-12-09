@@ -43,14 +43,12 @@ class ReorgScheduler:
         debug_batch_size=1,
         max_workers=5,
         config={},
-        item_exporters=[],
         required_output_types=[],
         cache="memory",
         multicall=None,
     ):
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
-        self.item_exporters = item_exporters
         self.batch_size = batch_size
         self.debug_batch_size = debug_batch_size
         self.max_workers = max_workers
@@ -114,7 +112,6 @@ class ReorgScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
@@ -132,7 +129,6 @@ class ReorgScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 debug_batch_size=self.debug_batch_size,
                 max_workers=self.max_workers,
@@ -148,7 +144,6 @@ class ReorgScheduler:
             required_output_types=self.required_output_types,
             batch_web3_provider=self.batch_web3_provider,
             batch_web3_debug_provider=self.batch_web3_debug_provider,
-            item_exporters=self.item_exporters,
             batch_size=self.batch_size,
             debug_batch_size=self.debug_batch_size,
             max_workers=self.max_workers,

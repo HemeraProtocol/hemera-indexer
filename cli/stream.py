@@ -434,7 +434,6 @@ def stream(
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporters=create_item_exporters(output, config),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
         max_workers=max_workers,
@@ -455,9 +454,10 @@ def stream(
         process_time_out = 300 * process_size
 
     controller = StreamController(
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_scheduler=job_scheduler,
         sync_recorder=create_recorder(sync_recorder, config),
+        item_exporters=create_item_exporters(output, config),
+        required_output_types=output_types,
         limit_reader=create_limit_reader(
             source_path, ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False))
         ),

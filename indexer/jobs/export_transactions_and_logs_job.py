@@ -1,4 +1,3 @@
-import logging
 from typing import List, Union
 
 import orjson
@@ -11,8 +10,6 @@ from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs.base_job import BaseExportJob, Collector
 from indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc
 from indexer.utils.rpc_utils import rpc_response_batch_to_results
-
-logger = logging.getLogger(__name__)
 
 
 # Exports transactions and logs
@@ -46,6 +43,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
                 transaction.block_number,
             )
             transaction.fill_with_receipt(receipt_entity)
+            output.collect(transaction)
 
             for log in transaction.receipt.logs:
                 output.collect(log)

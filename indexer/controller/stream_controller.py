@@ -1,14 +1,16 @@
 import logging
 import os
 import time
+from collections import defaultdict
+from typing import List
 
 import mpire
 
-from common.utils.exception_control import FastShutdownError, HemeraBaseException
+from common.utils.exception_control import FastShutdownError
 from common.utils.file_utils import delete_file, write_to_file
-from common.utils.web3_utils import build_web3
 from indexer.controller.base_controller import BaseController
 from indexer.controller.scheduler.job_scheduler import JobScheduler
+from indexer.utils.buffer_service import BufferService
 from indexer.utils.limit_reader import LimitReader
 from indexer.utils.sync_recorder import BaseRecorder
 
@@ -19,9 +21,10 @@ class StreamController(BaseController):
 
     def __init__(
         self,
-        batch_web3_provider,
         sync_recorder: BaseRecorder,
         job_scheduler: JobScheduler,
+        item_exporters,
+        required_output_types,
         limit_reader: LimitReader,
         max_retries=5,
         retry_from_record=False,
@@ -31,7 +34,16 @@ class StreamController(BaseController):
         process_time_out=None,
     ):
         self.entity_types = 1
-        self.web3 = build_web3(batch_web3_provider)
+        self.required_output_types = [output.type() for output in required_output_types]
+        self.buffer_service = BufferService(
+            item_exporters=item_exporters,
+            required_output_types=self.required_output_types,
+            export_workers=5,
+            block_size=100,
+            success_callback=self.handle_success,
+            exception_callback=self.handle_failure,
+        )
+
         self.sync_recorder = sync_recorder
         self.job_scheduler = job_scheduler
         self.limit_reader = limit_reader
@@ -45,6 +57,15 @@ class StreamController(BaseController):
 
         self.pool = mpire.WorkerPool(n_jobs=self.process_numbers, use_dill=True, keep_alive=True)
 
+    def handle_success(self, last_block_number):
+        self.sync_recorder.set_last_synced_block(last_block_number)
+        logger.info("Writing last synced block {}".format(last_block_number))
+
+    def handle_failure(
+        self, output_types: List[str], start_block: int, end_block: int, exception_stage: str, exception: str
+    ):
+        self.sync_recorder.set_failure_record(output_types, start_block, end_block, exception_stage, exception)
+
     def action(
         self,
         start_block=None,
@@ -56,7 +77,7 @@ class StreamController(BaseController):
     ):
         try:
             if pid_file is not None:
-                logger.info("Creating pid file {}".format(pid_file))
+                logger.debug("Creating pid file {}".format(pid_file))
                 write_to_file(pid_file, str(os.getpid()))
 
             last_synced_block = self.sync_recorder.get_last_synced_block()
@@ -91,23 +112,33 @@ class StreamController(BaseController):
                 )
 
                 if synced_blocks != 0:
+                    # submit job and concurrent running
+
                     splits = self.split_blocks(last_synced_block + 1, target_block, self.process_size)
-                    self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
-                    logger.info("Writing last synced block {}".format(target_block))
-                    self.sync_recorder.set_last_synced_block(target_block)
-                    last_synced_block = target_block
+                    export_data = defaultdict(list)
+                    for result in list(
+                        self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
+                    ):
+                        for key in result:
+                            export_data[key].extend(result[key])
+
+                    if self.buffer_service.write(export_data):
+                        last_synced_block = target_block
 
                 if synced_blocks <= 0:
-                    logger.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
+                    logger.debug("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
                     time.sleep(period_seconds)
+        except Exception as e:
+            self.shutdown()
+            raise e
 
         finally:
             if pid_file is not None:
-                logger.info("Deleting pid file {}".format(pid_file))
+                logger.debug("Deleting pid file {}".format(pid_file))
                 delete_file(pid_file)
 
     def _shutdown(self):
-        pass
+        self.buffer_service.shutdown()
 
     def split_blocks(self, start_block, end_block, step):
         blocks = []
@@ -116,39 +147,7 @@ class StreamController(BaseController):
         return blocks
 
     def _do_stream(self, start_block, end_block):
-
-        for retry in range(self.max_retries + 1):
-            try:
-                # ETL program's main logic
-                self.job_scheduler.run_jobs(start_block, end_block)
-                return
-
-            except HemeraBaseException as e:
-                logger.error(f"An expected exception occurred while syncing block data. error: {e}")
-                if e.crashable:
-                    logger.error("Mission will crash immediately.")
-                    raise e
-
-                if e.retriable:
-                    if retry == self.max_retries:
-                        logger.info(f"The number of retry is reached limit {self.max_retries}.")
-                    else:
-                        logger.info(f"No: {retry} retry is about to start.")
-                else:
-                    logger.error("Mission will not retry, and exit immediately.")
-                    raise e
-
-            except Exception as e:
-                logger.error(f"An unknown exception occurred while syncing block data. error: {e}")
-                raise e
-
-        logger.error(
-            f"The job with parameters start_block:{start_block}, end_block:{end_block} "
-            f"can't be automatically resumed after reached out limit of retries. Program will exit."
-        )
-
-    def _get_current_block_number(self):
-        return int(self.web3.eth.block_number)
+        return self.job_scheduler.run_jobs(start_block, end_block)
 
     def _calculate_target_block(self, current_block, last_synced_block, end_block, steps):
         target_block = min(current_block - self.delay, last_synced_block + steps)
