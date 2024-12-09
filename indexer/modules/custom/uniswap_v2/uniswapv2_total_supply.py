@@ -2,7 +2,7 @@ import logging
 
 from common.utils.format_utils import bytes_to_hex_str
 from indexer.domain.token_transfer import ERC20TokenTransfer
-from indexer.jobs.base_job import BaseExportJob
+from indexer.jobs.base_job import ExtensionJob
 from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
     UniswapV2Erc20CurrentTotalSupply,
     UniswapV2Erc20TotalSupply,
@@ -16,7 +16,7 @@ from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 logger = logging.getLogger(__name__)
 
 
-class ExportUniswapV2TotalSupplyJob(BaseExportJob):
+class ExportUniswapV2TotalSupplyJob(ExtensionJob):
     dependency_types = [ERC20TokenTransfer, UniswapV2Pool]
 
     output_types = [UniswapV2Erc20TotalSupply, UniswapV2Erc20CurrentTotalSupply]
