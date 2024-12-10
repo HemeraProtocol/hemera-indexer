@@ -213,3 +213,5 @@ def generate_output_types(entity_types):
         yield UniswapV2SwapEvent
         yield UniswapV2Erc20TotalSupply
         yield UniswapV2Erc20CurrentTotalSupply
+        yield TokenBalance
+        yield CurrentTokenBalance
