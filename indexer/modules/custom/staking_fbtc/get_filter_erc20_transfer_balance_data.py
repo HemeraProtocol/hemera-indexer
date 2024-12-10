@@ -42,9 +42,18 @@ class FilterJob(FilterTransactionDataJob):
         # 0x872b6ff825Da431C941d12630754036278AD7049
         # hourglass
         # 0x326b1129a3ec2ad5c4016d2bb4b912687890ae6c
+        # Mitosis
+        # 0x6ff000453a9c14f7d3bf381925c8cde565dbce55
 
-        token_list = ['0xdee7cb1d08ec5e35c4792856f86dd0584db29cfe', '0x872b6ff825da431c941d12630754036278ad7049',
-                      '0x326b1129a3ec2ad5c4016d2bb4b912687890ae6c']
+        token_list = [
+            # Thetanuts
+            '0xdee7cb1d08ec5e35c4792856f86dd0584db29cfe',
+            # woofi
+            '0x872b6ff825da431c941d12630754036278ad7049',
+            # hourglass
+            '0x326b1129a3ec2ad5c4016d2bb4b912687890ae6c',
+            # Mitosis
+            '0x6ff000453a9c14f7d3bf381925c8cde565dbce55']
         self.address_list.extend(token_list)
 
     def _get_lv_tokens(self):
@@ -69,9 +78,7 @@ class FilterJob(FilterTransactionDataJob):
         return TransactionFilterByLogs(
             [
                 TopicSpecification(
-                    # topics=['0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef']
                     addresses=self.address_list
-                    # ,addresses=['0xdef3542bb1b2969c1966dd91ebc504f4b37462fe']
                 ),
             ]
         )
