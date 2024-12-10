@@ -2,10 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
-    AgniV3TokenCurrentStatus,
-    IzumiTokenCurrentState,
-)
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import AgniV3TokenCurrentStatus
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3TokenCurrentStatus as UniswapV3TokenCurrentStatusDomain,
 )
@@ -38,12 +35,6 @@ class UniswapV3TokenCurrentStatus(HemeraModel):
             },
             {
                 "domain": AgniV3TokenCurrentStatus,
-                "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > af_uniswap_v3_token_data_current.block_number",
-                "converter": general_converter,
-            },
-            {
-                "domain": IzumiTokenCurrentState,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_uniswap_v3_token_data_current.block_number",
                 "converter": general_converter,

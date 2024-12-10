@@ -2,11 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
-    AgniV3SwapEvent,
-    IzumiSwapEvent,
-    UniswapV3SwapEvent,
-)
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import AgniV3SwapEvent, UniswapV3SwapEvent
 
 
 class UniswapV3PoolSwapRecords(HemeraModel):
@@ -47,12 +43,6 @@ class UniswapV3PoolSwapRecords(HemeraModel):
             },
             {
                 "domain": AgniV3SwapEvent,
-                "conflict_do_update": True,
-                "update_strategy": None,
-                "converter": general_converter,
-            },
-            {
-                "domain": IzumiSwapEvent,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
