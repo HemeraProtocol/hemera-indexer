@@ -151,12 +151,24 @@ token_info_model = address_features_namespace.model(
     },
 )
 
+
 token_holding_model = address_features_namespace.model(
     "TokenHolding",
     {
         "token": fields.Nested(token_info_model, description="Token information"),
         "balance": fields.String(description="Token balance"),
-        "tvl": fields.String(description="Token TVL"),
+        "estimated_value_usd": fields.Float(description="Estimated value in USD"),
+    },
+)
+
+nft_holding_model = address_features_namespace.model(
+    "NftHolding",
+    {
+        "token": fields.Nested(token_info_model, description="Token information"),
+        "balance": fields.String(description="Nft token balance, the sum of all token ids"),
+        "token_ids": fields.List(fields.String, description="Token IDs"),
+        "amounts": fields.List(fields.String, description="Token amounts"),
+        "estimated_value_usd": fields.Float(description="Estimated value of the NFT holding"),
     },
 )
 
@@ -279,9 +291,15 @@ volume_summary_model = address_features_namespace.model(
 asset_model = address_features_namespace.model(
     "Asset",
     {
-        "total_asset_value_usd": fields.String(description="Total asset value in USD"),
+        "total_asset_value_usd": fields.Float(description="Total asset value in USD"),
         "coin_balance": fields.String(description="Coin balance"),
-        "holdings": fields.List(fields.Nested(token_holding_model), description="Token holdings"),
+        "holdings": fields.List(
+            fields.Nested(token_holding_model), description="Token holdings (deprecated, use token_holdings instead)"
+        ),
+        "token_holdings": fields.List(fields.Nested(token_holding_model), description="Token holdings"),
+        "nft_holdings": fields.List(fields.Nested(nft_holding_model), description="NFT holdings"),
+        "token_estimated_value_usd": fields.Float(description="Estimated value of token holdings in USD"),
+        "nft_estimated_value_usd": fields.Float(description="Estimated value of NFT holdings in USD"),
     },
 )
 

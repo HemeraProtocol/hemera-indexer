@@ -5,13 +5,13 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry]
 name = "hemera"
 description = "Tools for exporting Ethereum blockchain data to JSON/CSV file and postgresql"
-version = "0.5.0"
+version = "0.6.0"
 authors = [
     "xuzh <zihao.xu@thehemera.com>",
     "shanshuo0918 <shuo.shan@lifo.ai>"
 ]
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -60,6 +60,8 @@ pottery = "3.0.0"
 eth_typing = ">=2.2.0,<5"
 orjson = "3.10.7"
 mpire = "2.10.2"
+dill = "0.3.9"
+multiprocess = "0.70.17"
 PyYAML = "6.0.2"
 numpy = "1.24.4"
 
@@ -69,6 +71,7 @@ black = "^21.5b0"
 isort = "^5.9.1"
 flake8 = "^3.9.2"
 ruff = "^0.0.235"
+pytest-cov = "*"
 
 [tool.poetry.scripts]
 hemera = "cli:cli"

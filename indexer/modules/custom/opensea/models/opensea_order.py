@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSON, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
 
 
 class OpenseaOrders(HemeraModel):
@@ -32,7 +33,7 @@ class OpenseaOrders(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "OpenseaOrder",
+                "domain": OpenseaOrder,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

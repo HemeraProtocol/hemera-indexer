@@ -52,7 +52,7 @@ class HemeraAddressPostgresItemExporter(BaseExporter):
                 item_group = items_grouped_by_type.get(item_type)
 
                 if item_group:
-                    pg_config = domain_model_mapping[item_type.__name__]
+                    pg_config = domain_model_mapping[item_type]
 
                     table = pg_config["table"]
                     do_update = pg_config["conflict_do_update"]

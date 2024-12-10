@@ -63,14 +63,10 @@ class ExceptionRecorder(object):
                         self._flush_logs_to_db(logs)
 
     def _flush_logs_to_db(self, logs):
-        session = self._service.get_service_session()
-
-        try:
-            statement = insert(ExceptionRecords).values(logs)
-            session.execute(statement)
-            session.commit()
-        except Exception as e:
-            print(e)
-            raise e
-        finally:
-            session.close()
+        with self._service.session_scope() as session:
+            try:
+                statement = insert(ExceptionRecords).values(logs)
+                session.execute(statement)
+                session.commit()
+            except Exception as e:
+                print(e)

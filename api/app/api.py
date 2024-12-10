@@ -11,6 +11,7 @@ from api.app.user_operation.routes import user_operation_namespace
 from indexer.modules.custom.address_index.endpoint.routes import address_profile_namespace
 from indexer.modules.custom.deposit_to_l2.endpoint.routes import token_deposit_namespace
 from indexer.modules.custom.hemera_ens.endpoint import af_ens_namespace
+from indexer.modules.custom.init_capital.endpoints.routes import init_capital_namespace
 from indexer.modules.custom.merchant_moe.endpoints.routes import merchant_moe_namespace
 from indexer.modules.custom.opensea.endpoint.routes import opensea_namespace
 from indexer.modules.custom.staking_fbtc.endpoints.routes import staking_namespace
@@ -32,3 +33,4 @@ api.add_namespace(af_ens_namespace)
 api.add_namespace(address_profile_namespace)
 
 api.add_namespace(address_features_namespace)
+api.add_namespace(init_capital_namespace)

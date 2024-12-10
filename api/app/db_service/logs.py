@@ -10,7 +10,7 @@ def get_logs_with_input_by_hash(hash, columns="*"):
 
     logs = (
         db.session.query(Logs)
-        .filter(Logs.transaction_hash == bytes_hash)
+        .filter(Logs.transaction_hash == bytes_hash, Logs.block_timestamp == Transactions.block_timestamp)
         .join(Transactions, Logs.transaction_hash == Transactions.hash)
         .add_columns(Transactions.input)
         .all()

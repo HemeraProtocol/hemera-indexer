@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.domain.log import Log
 
 
 class Logs(HemeraModel):
@@ -31,7 +32,7 @@ class Logs(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "Log",
+                "domain": Log,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,

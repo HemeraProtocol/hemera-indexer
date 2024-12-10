@@ -42,6 +42,7 @@ from api.app.db_service.tokens import (
 from api.app.db_service.traces import get_traces_by_condition, get_traces_by_transaction_hash
 from api.app.db_service.transactions import (
     get_address_transaction_cnt,
+    get_address_transaction_cnt_v2,
     get_total_txn_count,
     get_tps_latest_10min,
     get_transaction_by_hash,
@@ -85,6 +86,13 @@ from common.utils.web3_utils import (
     to_checksum_address,
 )
 from indexer.modules.custom.address_index.models.address_index_stats import AddressIndexStats
+from indexer.modules.custom.address_index.utils.helpers import (
+    get_address_erc20_token_transfer_cnt,
+    get_address_token_transfers,
+    get_address_transactions,
+    parse_address_token_transfers,
+    parse_address_transactions,
+)
 from indexer.modules.custom.stats.models.daily_addresses_stats import DailyAddressesStats
 from indexer.modules.custom.stats.models.daily_blocks_stats import DailyBlocksStats
 from indexer.modules.custom.stats.models.daily_tokens_stats import DailyTokensStats
@@ -1349,6 +1357,7 @@ class ExplorerAddressTokenHoldingsV2(Resource):
                     "token_name": token_holder.name or "Unknown Token",
                     "token_symbol": token_holder.symbol or "UNKNOWN",
                     "token_logo_url": token_holder.logo or None,
+                    "token_type": token_holder.token_type,
                     "type": {
                         "ERC20": "tokentxns",
                         "ERC721": "tokentxns-nft",
@@ -1368,23 +1377,17 @@ class ExplorerAddressTransactions(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
         address = address.lower()
-        address_bytes = hex_str_to_bytes(address)
 
-        transactions = get_transactions_by_condition(
-            columns=TRANSACTION_LIST_COLUMNS,
-            filter_condition=or_(
-                Transactions.from_address == address_bytes,
-                Transactions.to_address == address_bytes,
-            ),
-            limit=PAGE_SIZE,
+        transactions = get_address_transactions(
+            address=address,
         )
 
         if len(transactions) < PAGE_SIZE:
             total_count = len(transactions)
         else:
-            total_count = get_address_transaction_cnt(address)
+            total_count = get_address_transaction_cnt_v2(address)
 
-        transaction_list = parse_transactions(transactions)
+        transaction_list = parse_address_transactions(transactions)
 
         return {
             "data": transaction_list,
@@ -1401,10 +1404,15 @@ class ExplorerAddressTokenTransfers(Resource):
         type = flask.request.args.get("type", "").lower()
 
         if type in ["tokentxns", "erc20"]:
-            condition = or_(
-                ERC20TokenTransfers.from_address == bytea_address,
-                ERC20TokenTransfers.to_address == bytea_address,
-            )
+            token_transfers = get_address_token_transfers(address)
+            token_transfer_list = parse_address_token_transfers(token_transfers)
+            total_count = get_address_erc20_token_transfer_cnt(bytea_address)
+            return {
+                "total": total_count,
+                "data": token_transfer_list,
+                "type": type,
+            }, 200
+
         elif type in ["tokentxns-nft", "erc721"]:
             condition = or_(
                 ERC721TokenTransfers.from_address == bytea_address,
@@ -1496,7 +1504,6 @@ class ExplorerTokenProfile(Resource):
     def get(self, address):
         address = address.lower()
         token = get_token_by_address(address)
-
         if not token:
             raise APIError("Token not found", code=400)
 
@@ -1558,15 +1565,11 @@ class ExplorerTokenTokenTransfers(Resource):
         else:
             raise APIError("Invalid type", code=400)
 
-        token_transfers, total_count = get_raw_token_transfers(
-            token.token_type, condition, 1, PAGE_SIZE, is_count=False
-        )
-
-        total_count = get_token_address_token_transfer_cnt(token.token_type, address)
+        token_transfers, _ = get_raw_token_transfers(token.token_type, condition, 1, PAGE_SIZE, is_count=False)
 
         token_transfer_list = parse_token_transfers(token_transfers, token.token_type)
         return {
-            "total": total_count,
+            "total": get_token_address_token_transfer_cnt(token.token_type, address),
             "data": token_transfer_list,
             "type": token.token_type,
         }, 200

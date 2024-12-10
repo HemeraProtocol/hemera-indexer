@@ -2,6 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.merchant_moe.domains.merchant_moe import MerchantMoePoolRecord
 
 
 class FeatureMerchantMoePoolRecords(HemeraModel):
@@ -22,7 +23,7 @@ class FeatureMerchantMoePoolRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "MerchantMoePoolRecord",
+                "domain": MerchantMoePoolRecord,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

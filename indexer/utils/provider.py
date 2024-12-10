@@ -72,7 +72,11 @@ class BatchHTTPProvider(HTTPProvider):
         else:
             request_data = params
         raw_response = make_post_request(self.endpoint_uri, request_data, **self.get_request_kwargs())
-        response = self.decode_rpc_response(raw_response)
+        try:
+            response = self.decode_rpc_response(raw_response)
+        except JSONDecodeError:
+            self.logger.error("JSON decode error, params: %s, raw_response: %s", params, raw_response)
+            raise
         self.logger.debug(
             "Getting response HTTP. URI: %s, " "Request: %s, Response: %s",
             self.endpoint_uri,

@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, desc, func
 from sqlalchemy.dialects.postgresql import BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.address_index.domain import AddressTokenHolder
 
 
 class AddressTokenHolders(HemeraModel):
@@ -17,7 +18,7 @@ class AddressTokenHolders(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AddressTokenHolder",
+                "domain": AddressTokenHolder,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

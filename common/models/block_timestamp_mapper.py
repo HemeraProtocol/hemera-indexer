@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, desc
 from sqlalchemy.dialects.postgresql import BIGINT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.domain.block_ts_mapper import BlockTsMapper
 
 
 class BlockTimestampMapper(HemeraModel):
@@ -14,7 +15,7 @@ class BlockTimestampMapper(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "BlockTsMapper",
+                "domain": BlockTsMapper,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,

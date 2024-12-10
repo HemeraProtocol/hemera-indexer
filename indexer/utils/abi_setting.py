@@ -45,7 +45,18 @@ ERC20_TRANSFER_EVENT = Event(
     }
 )
 
-ERC721_TRANSFER_EVENT = ERC20_TRANSFER_EVENT
+ERC721_TRANSFER_EVENT = Event(
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "name": "from", "type": "address"},
+            {"indexed": True, "name": "to", "type": "address"},
+            {"indexed": True, "name": "tokenId", "type": "uint256"},
+        ],
+        "name": "Transfer",
+        "type": "event",
+    }
+)
 
 ERC1155_SINGLE_TRANSFER_EVENT = Event(
     {
@@ -119,7 +130,7 @@ TOKEN_TOTAL_SUPPLY_FUNCTION = Function(
         "constant": True,
         "inputs": [],
         "name": "totalSupply",
-        "outputs": [{"name": "", "type": "uint256"}],
+        "outputs": [{"name": "totalSupply", "type": "uint256"}],
         "payable": False,
         "stateMutability": "view",
         "type": "function",
@@ -131,7 +142,7 @@ TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION = Function(
         "constant": True,
         "inputs": [{"name": "id", "type": "uint256"}],
         "name": "totalSupply",
-        "outputs": [{"name": "", "type": "uint256"}],
+        "outputs": [{"name": "totalSupply", "type": "uint256"}],
         "payable": False,
         "stateMutability": "view",
         "type": "function",
@@ -155,7 +166,7 @@ ERC721_TOKEN_URI_FUNCTION = Function(
         "constant": True,
         "inputs": [{"name": "tokenId", "type": "uint256"}],
         "name": "tokenURI",
-        "outputs": [{"name": "uri", "type": "address"}],
+        "outputs": [{"name": "uri", "type": "string"}],
         "payable": False,
         "stateMutability": "view",
         "type": "function",
@@ -167,7 +178,7 @@ ERC1155_MULTIPLE_TOKEN_URI_FUNCTION = Function(
         "constant": True,
         "inputs": [{"name": "tokenId", "type": "uint256"}],
         "name": "uri",
-        "outputs": [{"name": "uri", "type": "address"}],
+        "outputs": [{"name": "uri", "type": "string"}],
         "payable": False,
         "stateMutability": "view",
         "type": "function",

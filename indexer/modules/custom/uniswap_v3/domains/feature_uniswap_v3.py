@@ -173,3 +173,13 @@ class AgniV3TokenUpdateLiquidity(UniswapV3TokenUpdateLiquidity):
 @dataclass
 class AgniV3TokenCollectFee(UniswapV3TokenCollectFee):
     pass
+
+
+@dataclass
+class UniswapV3PoolFromSwapEvent(UniswapV3Pool):
+    pass
+
+
+@dataclass
+class UniswapV3PoolFromToken(UniswapV3Pool):
+    pass

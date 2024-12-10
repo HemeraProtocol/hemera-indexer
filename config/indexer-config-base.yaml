@@ -1,0 +1,15 @@
+chain_id: 8453
+
+uniswap_v3_job:
+  # empty means no filter. only work in price job
+  pool_address:
+
+  # works in price\token job
+  jobs:
+    - type: uniswapv3  # uniswapv3`
+      factory address: '0x33128a8fc17869897dce68ed026d694621f6fdfd'
+      position_token_address: '0x03a520b32c04bf3beef7beb72e919cf822ed34f1'
+
+    - type: uniswapv3  # pancake
+      factory address: '0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865'
+      position_token_address: '0x46a15b0b27311cedf172ab29e4f4766fbe7f4364'
