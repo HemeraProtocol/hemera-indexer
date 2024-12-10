@@ -86,7 +86,6 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
         # get prices
         self.get_pool_price(logs)
 
-
     def get_pools(self, logs):
         unknown_pool_swap_events = defaultdict(dict)
 

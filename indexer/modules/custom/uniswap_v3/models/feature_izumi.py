@@ -1,8 +1,15 @@
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text, desc
-from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import IzumiPool, IzumiPoolCurrentPrice, IzumiPoolPrice, IzumiTokenCurrentState, IzumiTokenState, IzumiSwapEvent
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
+    IzumiPool,
+    IzumiPoolCurrentPrice,
+    IzumiPoolPrice,
+    IzumiSwapEvent,
+    IzumiTokenCurrentState,
+    IzumiTokenState,
+)
 
 
 class IzumiPools(HemeraModel):
@@ -78,7 +85,7 @@ class IzumiPoolPrices(HemeraModel):
     current_point = Column(BIGINT)
     liquidity = Column(NUMERIC(100))
     liquidity_x = Column(NUMERIC(100))
-    
+
     factory_address = Column(BYTEA)
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
@@ -121,7 +128,8 @@ class IzumiTokenCurrentStates(HemeraModel):
 
     @staticmethod
     def model_domain_mapping():
-        return [{
+        return [
+            {
                 "domain": IzumiTokenCurrentState,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_izumi_token_state_current.block_number",
@@ -144,7 +152,7 @@ class IzumiTokenStates(HemeraModel):
     block_number = Column(BIGINT, primary_key=True)
     block_timestamp = Column(BIGINT, primary_key=True)
     wallet_address = Column(BYTEA)
-    
+
     pool_address = Column(BYTEA)
     pool_id = Column(INTEGER)
 
@@ -214,7 +222,6 @@ Index(
 #                 "converter": general_converter,
 #             },
 #         ]
-    
 
 
 class IzumiSwapRecords(HemeraModel):
@@ -246,7 +253,8 @@ class IzumiSwapRecords(HemeraModel):
 
     @staticmethod
     def model_domain_mapping():
-        return [{
+        return [
+            {
                 "domain": IzumiSwapEvent,
                 "conflict_do_update": True,
                 "update_strategy": None,

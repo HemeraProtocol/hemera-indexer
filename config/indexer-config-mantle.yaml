@@ -95,7 +95,7 @@ export_tokens_and_transfers_job:
     - "0x1d40bafc49c37cda49f2a5427e2fb95e1e3fcf20"
       # wecmeth, for woofi
     - "0x872b6ff825da431c941d12630754036278ad7049"
-  
+
 izumi_pool_job:
   position_token_address: '0x611575ee1fbd4f7915d0eabcc518ed396ff78f0c'
   factory_address: '0x45e5f26451cdb01b0fa1f8582e0aad9a6f27c218'
