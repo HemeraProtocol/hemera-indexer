@@ -9,6 +9,7 @@ from sqlalchemy.sql import func
 from common.models import HemeraModel, get_column_type
 from common.utils.format_utils import hex_str_to_bytes
 from indexer.domain import Domain
+from indexer.modules.custom.hemera_ens.ens_domain import ENSAddressChangeD, ENSNameRenewD, ENSRegisterD
 
 
 def ens_general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
@@ -70,25 +71,19 @@ class ENSRecord(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ENSRegisterD",
+                "domain": ENSRegisterD,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
                 "converter": ens_general_converter,
             },
             {
-                "domain": "ENSRegisterTokenD",
+                "domain": ENSNameRenewD,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
                 "converter": ens_general_converter,
             },
             {
-                "domain": "ENSNameRenewD",
-                "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
-                "converter": ens_general_converter,
-            },
-            {
-                "domain": "ENSAddressChangeD",
+                "domain": ENSAddressChangeD,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_ens_node_current.block_number",
                 "converter": ens_general_converter,

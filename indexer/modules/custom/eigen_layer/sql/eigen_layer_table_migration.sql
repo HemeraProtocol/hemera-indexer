@@ -7,9 +7,6 @@ CREATE TABLE IF NOT EXISTS af_eigen_layer_address_current (
     deposit_amount NUMERIC(100),
     start_withdraw_amount NUMERIC(100),
     finish_withdraw_amount NUMERIC(100),
-    d_s NUMERIC(100),
-    d_f NUMERIC(100),
-    s_f NUMERIC(100),
     create_time TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     update_time TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
     PRIMARY KEY (address, strategy)

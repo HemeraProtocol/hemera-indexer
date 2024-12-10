@@ -2,6 +2,10 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.staking_fbtc.domain.feature_staked_fbtc_detail import (
+    StakedFBTCDetail,
+    TransferredFBTCDetail,
+)
 
 
 class FeatureStakedFBTCDetailRecords(HemeraModel):
@@ -24,13 +28,13 @@ class FeatureStakedFBTCDetailRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "StakedFBTCDetail",
+                "domain": StakedFBTCDetail,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "TransferredFBTCDetail",
+                "domain": TransferredFBTCDetail,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

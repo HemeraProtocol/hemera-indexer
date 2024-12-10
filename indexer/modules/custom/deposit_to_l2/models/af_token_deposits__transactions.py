@@ -2,6 +2,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 
 
 class AFTokenDepositsTransactions(HemeraModel):
@@ -24,7 +25,7 @@ class AFTokenDepositsTransactions(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "TokenDepositTransaction",
+                "domain": TokenDepositTransaction,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,

@@ -206,3 +206,19 @@ def get_json_from_uri_by_http(uri):
         return response.json()
     except Exception as e:
         return None
+
+
+def event_topic_to_address(topic: str) -> str:
+    if len(topic) != 66:
+        return ""
+    return Web3.to_checksum_address("0x" + topic[26:])
+
+
+def extract_eth_address(input_string):
+    hex_string = input_string.lower().replace("0x", "")
+
+    if len(hex_string) > 40:
+        hex_string = hex_string[-40:]
+
+    hex_string = hex_string.zfill(40)
+    return Web3.to_checksum_address(hex_string).lower()

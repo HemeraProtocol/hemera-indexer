@@ -43,7 +43,7 @@ class ExportBlocksJob(BaseExportJob):
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
         self._reorg_jobs = kwargs.get("reorg_jobs", [])
 
-    def _start(self, **kwargs):
+    def _pre_reorg(self, **kwargs):
         if self._service is None:
             raise FastShutdownError("PG Service is not set")
 

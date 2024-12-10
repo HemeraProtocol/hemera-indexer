@@ -55,11 +55,7 @@ class ExportTokenBalancesJob(BaseExportJob):
     def _collect(self, **kwargs):
         token_transfers = self._collect_all_token_transfers()
         parameters = extract_token_parameters(token_transfers)
-        if self._is_multi_call:
-            self._collect_batch(parameters)
-        else:
-            self._batch_work_executor.execute(parameters, self._collect_batch, total_items=len(parameters))
-            self._batch_work_executor.wait()
+        self._collect_batch(parameters)
 
     @calculate_execution_time
     def _collect_batch(self, parameters):
@@ -70,22 +66,23 @@ class ExportTokenBalancesJob(BaseExportJob):
     def _process(self, **kwargs):
         if TokenBalance.type() in self._data_buff:
             self._data_buff[TokenBalance.type()].sort(key=lambda x: (x.block_number, x.address))
-
-            self._data_buff[CurrentTokenBalance.type()] = distinct_collections_by_group(
-                [
-                    CurrentTokenBalance(
-                        address=token_balance.address,
-                        token_id=token_balance.token_id,
-                        token_type=token_balance.token_type,
-                        token_address=token_balance.token_address,
-                        balance=token_balance.balance,
-                        block_number=token_balance.block_number,
-                        block_timestamp=token_balance.block_timestamp,
-                    )
-                    for token_balance in self._data_buff[TokenBalance.type()]
-                ],
-                group_by=["token_address", "address", "token_id"],
-                max_key="block_number",
+            self._update_domains(
+                distinct_collections_by_group(
+                    [
+                        CurrentTokenBalance(
+                            address=token_balance.address,
+                            token_id=token_balance.token_id,
+                            token_type=token_balance.token_type,
+                            token_address=token_balance.token_address,
+                            balance=token_balance.balance,
+                            block_number=token_balance.block_number,
+                            block_timestamp=token_balance.block_timestamp,
+                        )
+                        for token_balance in self._data_buff[TokenBalance.type()]
+                    ],
+                    group_by=["token_address", "address", "token_id"],
+                    max_key="block_number",
+                )
             )
 
     @calculate_execution_time
@@ -142,7 +139,7 @@ def extract_token_parameters(
                 "param_to": parameter.token_address,
                 "param_data": encode_balance_abi_parameter(parameter.address, parameter.token_type, parameter.token_id),
                 "param_number": parameter.block_number if block_number is None else block_number,
-                "block_number": parameter.block_number if block_number is None else None,
+                "block_number": parameter.block_number if block_number is None else block_number,
                 "block_timestamp": parameter.block_timestamp,
             }
         )

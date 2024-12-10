@@ -33,24 +33,6 @@ class MerchantMoePool(FilterData):
 
 
 @dataclass
-class MerchantMoeErc1155TokenSupply(FilterData):
-    position_token_address: str
-    token_id: int
-    total_supply: int
-    block_number: int
-    block_timestamp: int
-
-
-@dataclass
-class MerchantMoeErc1155TokenCurrentSupply(FilterData):
-    position_token_address: str
-    token_id: int
-    total_supply: int
-    block_number: int
-    block_timestamp: int
-
-
-@dataclass
 class MerchantMoePoolRecord(FilterData):
     pool_address: str
     active_id: int
