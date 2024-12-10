@@ -7,8 +7,7 @@ from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import IzumiTokenCurrentState, IzumiTokenState
-from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
-from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
+from indexer.modules.custom.uniswap_v3.models.feature_izumi import IzumiPools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.collection_utils import distinct_collections_by_group
 from indexer.utils.multicall_hemera import Call
@@ -381,10 +380,10 @@ def get_exist_pools(db_service, position_token_address):
     session = db_service.get_service_session()
     try:
         result = (
-            session.query(UniswapV3Pools)
+            session.query(IzumiPools)
             .filter(
-                UniswapV3Pools.position_token_address == hex_str_to_bytes(position_token_address),
-                UniswapV3Pools.pool_id != None,
+                IzumiPools.position_token_address == hex_str_to_bytes(position_token_address),
+                IzumiPools.pool_id != None,
             )
             .all()
         )
@@ -398,7 +397,7 @@ def get_exist_pools(db_service, position_token_address):
                     "token0_address": bytes_to_hex_str(item.token0_address),
                     "token1_address": bytes_to_hex_str(item.token1_address),
                     "fee": item.fee,
-                    "tick_spacing": item.tick_spacing,
+                    "point_delta": item.point_delta,
                     "block_number": item.block_number,
                     "pool_id": item.pool_id,
                 }

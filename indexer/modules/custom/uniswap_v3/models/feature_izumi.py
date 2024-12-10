@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text, desc
 from sqlalchemy.dialects.postgresql import BIGINT, INTEGER, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import IzumiPool, IzumiPoolCurrentPrice, IzumiPoolPrice, IzumiToken, IzumiTokenCurrentState, IzumiTokenState, IzumiSwapEvent
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import IzumiPool, IzumiPoolCurrentPrice, IzumiPoolPrice, IzumiTokenCurrentState, IzumiTokenState, IzumiSwapEvent
 
 
 class IzumiPools(HemeraModel):
@@ -62,7 +62,7 @@ class IzumiPoolCurrentPrices(HemeraModel):
             {
                 "domain": IzumiPoolCurrentPrice,
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > af_izumi_pool_prices_currentt.block_number",
+                "update_strategy": "EXCLUDED.block_number > af_izumi_pool_prices_current.block_number",
                 "converter": general_converter,
             },
         ]
@@ -99,7 +99,7 @@ class IzumiPoolPrices(HemeraModel):
 
 
 class IzumiTokenCurrentStates(HemeraModel):
-    __tablename__ = "af_izume_token_state_current"
+    __tablename__ = "af_izumi_token_state_current"
 
     position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
