@@ -106,6 +106,7 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
         #     self._position_token_address,
         # )
         # self._exist_token_ids.update(update_exist_tokens)
+        print(token_id_block_positions)
 
         token_states, token_current_states_dict = parse_token_records(
             self._position_token_address,
@@ -113,6 +114,9 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
             token_id_block_positions,
             self._block_infos,
         )
+
+        for state in token_states:
+            print(state.block_number, state.token_id)
 
         self._collect_domains(token_states)
         self._collect_domains(list(token_current_states_dict.values()))
@@ -194,32 +198,33 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
         self._multicall_helper.execute_calls(position_calls)
 
         token_id_block_positions = []
-        token_id_pool_mapping = {}
         for call in position_calls:
-            token["token_id"] = call.parameters[0]
-            token["block_number"] = call.block_number
-
-            token["left_pt"] = call.returns["leftPt"]
-            token["right_pt"] = call.returns["rightPt"]
-            token["liquidity"] = call.returns["liquidity"]
+            token_position = {
+                "token_id": call.parameters[0],
+                "block_number": call.block_number,
+                "left_pt": call.returns["leftPt"],
+                "right_pt": call.returns["rightPt"],
+                "liquidity": call.returns["liquidity"],
+                "pool_id": call.returns["poolId"],
+            }
             # token["lastFeeScaleX_128"] = call.returns["lastFeeScaleX_128"]
             # token["lastFeeScaleY_128"] = call.returns["lastFeeScaleY_128"]
             # token["remainTokenX"] = call.returns["remainTokenX"]
             # token["remainTokenY"] = call.returns["remainTokenY"]
-            token["pool_id"] = call.returns["poolId"]
 
-            if token["pool_id"] in exist_pools:
-                token["token0"] = exist_pools[token["pool_id"]]["token0_address"]
-                token["token1"] = exist_pools[token["pool_id"]]["token1_address"]
-                token["fee"] = exist_pools[token["pool_id"]]["fee"]
-                token["pool_address"] = exist_pools[token["pool_id"]]["pool_address"]
+            if token_position["pool_id"] in exist_pools:
+                existing_pool = exist_pools[token_position["pool_id"]]
+                token_position["token0"] = existing_pool["token0_address"]
+                token_position["token1"] = existing_pool["token1_address"]
+                token_position["fee"] = existing_pool["fee"]
+                token_position["pool_address"] = existing_pool["pool_address"]
 
-            token_id_block_positions.append(token)
+            token_id_block_positions.append(token_position)
         return token_id_block_positions
 
 
 def parse_token_records(position_token_address, token_id_block_owner, token_id_block_positions, block_info):
-    token_result = []
+    token_state = []
     token_current_state = {}
 
     for data in token_id_block_positions:
@@ -232,7 +237,7 @@ def parse_token_records(position_token_address, token_id_block_owner, token_id_b
             else ZERO_ADDRESS
         )
 
-        token_result.append(
+        token_state.append(
             IzumiTokenState(
                 position_token_address=position_token_address,
                 token_id=token_id,
@@ -261,7 +266,7 @@ def parse_token_records(position_token_address, token_id_block_owner, token_id_b
                 block_timestamp=block_info[block_number],
             )
 
-    return token_result, token_current_state
+    return token_state, token_current_state
 
 
 def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids):
