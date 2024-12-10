@@ -5,6 +5,7 @@ from common.models import HemeraModel, general_converter
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     AgniV3TokenUpdateLiquidity,
     UniswapV3TokenUpdateLiquidity,
+    IzumiTokenUpdateLiquidity,
 )
 
 
@@ -47,6 +48,12 @@ class UniswapV3TokenLiquidityRecords(HemeraModel):
             },
             {
                 "domain": AgniV3TokenUpdateLiquidity,
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+            {
+                "domain": IzumiTokenUpdateLiquidity,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
