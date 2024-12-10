@@ -224,7 +224,7 @@ class IzumiPoolCurrentPrice(FilterData):
 
 
 @dataclass
-class IzumiTokenState(UniswapV3TokenDetail):
+class IzumiTokenState(FilterData):
     position_token_address: str
     token_id: int
     pool_address: str
@@ -238,7 +238,7 @@ class IzumiTokenState(UniswapV3TokenDetail):
 
 
 @dataclass
-class IzumiTokenCurrentState(UniswapV3TokenCurrentStatus):
+class IzumiTokenCurrentState(FilterData):
     position_token_address: str
     token_id: int
     pool_address: str
@@ -252,7 +252,7 @@ class IzumiTokenCurrentState(UniswapV3TokenCurrentStatus):
 
 
 @dataclass
-class IzumiSwapEvent(UniswapV3SwapEvent):
+class IzumiSwapEvent(FilterData):
     pool_address: str
     position_token_address: str
     transaction_from_address: str

@@ -26,7 +26,7 @@ from indexer.modules.custom.uniswap_v3.izumi_abi import (
     TOKEN1_FUNCTION,
     UPDATE_LIQUIDITY_EVENT,
 )
-from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
+from indexer.modules.custom.uniswap_v3.models.feature_izumi import IzumiPools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
@@ -86,8 +86,9 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
         # get prices
         self.get_pool_price(logs)
 
+
     def get_pools(self, logs):
-        maybe_unknown_event_in_swap_eventy_dict = defaultdict(dict)
+        unknown_pool_swap_events = defaultdict(dict)
 
         new_pool_list = []
         for log in logs:
@@ -106,37 +107,37 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
                         "pool_address": pool_address,
                         "block_number": log.block_number,
                     }
-                    self._exist_pools[log_address] = new_pool_dict
+                    self._exist_pools[pool_address] = new_pool_dict
 
-                    uniswap_v3_pool = IzumiPool(
+                    new_pool = IzumiPool(
                         block_timestamp=log.block_timestamp,
                         factory_address=self._factory_address,
                         pool_id=None,
                         **new_pool_dict,
                     )
 
-                    new_pool_list.append(uniswap_v3_pool)
+                    new_pool_list.append(new_pool)
                 # collect pools by swap event
                 elif log.topic0 == SWAP_EVENT.get_signature():
                     # if the address created by factory_address ,collect it
-                    maybe_unknown_event_in_swap_eventy_dict[log_address] = {
+                    unknown_pool_swap_events[log_address] = {
                         "address": log_address,
                         "block_number": log.block_number,
                         "block_timestamp": log.block_timestamp,
                     }
 
-        pools_get_from_swap_event = collect_swap_new_pools(
+        pools_from_swap_event = collect_swap_new_pools(
             self._position_token_address,
             self._factory_address,
-            list(maybe_unknown_event_in_swap_eventy_dict.values()),
+            list(unknown_pool_swap_events.values()),
             self._multicall_helper,
         )
-        for pool_address, pool_dict in pools_get_from_swap_event.items():
+        for pool_address, pool_dict in pools_from_swap_event.items():
             if pool_address not in self._exist_pools:
                 self._exist_pools[pool_address] = pool_dict
-                uniswap_v3_pool = IzumiPool(factory_address=self._factory_address, fee=0, pool_id=None, **pool_dict)
+                new_pool = IzumiPool(factory_address=self._factory_address, fee=0, pool_id=None, **pool_dict)
 
-                new_pool_list.append(uniswap_v3_pool)
+                new_pool_list.append(new_pool)
 
         # Add pool id to pool list
         pool_id_calls = []
@@ -170,10 +171,10 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
             _transaction_hash_from_dict[transaction.hash] = transaction.from_address
 
         for log in logs:
-            if log.address not in self._exist_pools:
-                continue
             # Collect swap logs
             if log.topic0 == SWAP_EVENT.get_signature():
+                if log.address not in self._exist_pools:
+                    continue
                 transaction_hash = log.transaction_hash
                 decoded_data = SWAP_EVENT.decode_log(log)
 
@@ -260,8 +261,8 @@ def get_exist_pools(db_service, position_token_address):
     session = db_service.get_service_session()
     try:
         result = (
-            session.query(UniswapV3Pools)
-            .filter(UniswapV3Pools.position_token_address == hex_str_to_bytes(position_token_address))
+            session.query(IzumiPools)
+            .filter(IzumiPools.position_token_address == hex_str_to_bytes(position_token_address))
             .all()
         )
         history_pools = {}
@@ -320,13 +321,13 @@ def collect_pool_prices(exist_pools, logs, multicall_helper):
 
     pool_prices_map = {}
     for call in state_calls:
-        pool_address = call.target
+        pool_address = call.target.lower()
         block_number = call.block_number
         pool_data = {
             "sqrt_price_x96": call.returns["sqrtPrice_96"],
             "current_point": call.returns["currentPoint"],
             "liquidity": call.returns["liquidity"],
-            "liquidity_x": call.returns["liquidity_x"],
+            "liquidity_x": call.returns["liquidityX"],
             "block_number": block_number,
         }
         pool_prices_map[pool_address, block_number] = pool_data
@@ -351,11 +352,11 @@ def collect_swap_new_pools(position_token_address, factory_address, swap_pools, 
     eligible_pools = []
     eligible_pools_with_info = {}
     for call in pool_factory_calls:
-        if "factory" in call.returns and call.returns["factory"] == factory_address:
+        if call.returns and "factory" in call.returns and call.returns["factory"] == factory_address:
             eligible_pools.append(
                 {
                     "block_number": call.block_number,
-                    "address": call.target,
+                    "address": call.target.lower(),
                     "block_timestamp": call.user_defined_k,
                 }
             )
@@ -388,7 +389,7 @@ def collect_swap_new_pools(position_token_address, factory_address, swap_pools, 
     multicall_helper.execute_calls(pool_info_calls)
 
     for call in pool_info_calls:
-        pool_address = call.target
+        pool_address = call.target.lower()
         if pool_address not in eligible_pools_with_info:
             eligible_pools_with_info[pool_address] = {
                 "position_token_address": position_token_address,
