@@ -1,0 +1,4 @@
+chain_id: 8453
+
+export_clanker_created_token_job:
+  token_factory_address: "0x9b84fce5dcd9a38d2d01d5d72373f6b6b067c3e1"
