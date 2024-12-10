@@ -1,72 +1,33 @@
-import json
 import logging
 import queue
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-import eth_abi
-from web3 import Web3
-
+from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from common.utils.web3_utils import ZERO_ADDRESS
 from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
-from indexer.executors.batch_work_executor import BatchWorkExecutor
 from indexer.jobs import FilterTransactionDataJob
-
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     IzumiToken,
-    IzumiTokenCurrentStatus,
-    IzumiTokenDetail,
+    IzumiTokenCurrentState,
+    IzumiTokenState,
 )
-from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
-
+from indexer.modules.custom.uniswap_v3.models.feature_uniswap_v3_tokens import UniswapV3Tokens
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.collection_utils import distinct_collections_by_group
-from indexer.utils.json_rpc_requests import generate_eth_call_json_rpc
-from indexer.utils.rpc_utils import rpc_response_to_result, zip_rpc_response
-from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from common.utils.web3_utils import ZERO_ADDRESS
+from indexer.utils.multicall_hemera import Call
+from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 logger = logging.getLogger(__name__)
 
 from indexer.modules.custom.uniswap_v3.izumi_abi import (
-    BURN_EVENT,
     DECREASE_LIQUIDITY_EVENT,
-    FACTORY_FUNCTION,
-    FEE_FUNCTION,
-    GET_POOL_FUNCTION,
     INCREASE_LIQUIDITY_EVENT,
-    MINT_EVENT,
     OWNER_OF_FUNCTION,
-    POOL_CREATED_EVENT,
     POSITIONS_FUNCTION,
-    SLOT0_FUNCTION,
-    SWAP_EVENT,
-    TICK_SPACING_FUNCTION,
-    TOKEN0_FUNCTION,
-    TOKEN1_FUNCTION,
     UPDATE_LIQUIDITY_EVENT,
 )
-
-FUNCTION_EVENT_LIST = [
-    POSITIONS_FUNCTION,
-    GET_POOL_FUNCTION,
-    SLOT0_FUNCTION,
-    POOL_CREATED_EVENT,
-    SWAP_EVENT,
-    OWNER_OF_FUNCTION,
-    FACTORY_FUNCTION,
-    FEE_FUNCTION,
-    TOKEN0_FUNCTION,
-    TOKEN1_FUNCTION,
-    TICK_SPACING_FUNCTION,
-    INCREASE_LIQUIDITY_EVENT,
-    BURN_EVENT,
-    UPDATE_LIQUIDITY_EVENT,
-    DECREASE_LIQUIDITY_EVENT,
-    MINT_EVENT,
-]
-UNISWAP_V3_ABI = [fe.get_abi() for fe in FUNCTION_EVENT_LIST]
 
 liquidity_event_list = [INCREASE_LIQUIDITY_EVENT, UPDATE_LIQUIDITY_EVENT, DECREASE_LIQUIDITY_EVENT]
 LIQUIDITY_EVENT_TOPIC0_DICT = {e.get_signature(): e for e in liquidity_event_list}
@@ -74,20 +35,16 @@ LIQUIDITY_EVENT_TOPIC0_DICT = {e.get_signature(): e for e in liquidity_event_lis
 
 class ExportIzumiTokensJob(FilterTransactionDataJob):
     dependency_types = [Log, ERC721TokenTransfer, Block]
-    output_types = [IzumiToken, IzumiTokenDetail, IzumiTokenCurrentStatus]
+    output_types = [IzumiToken, IzumiTokenState, IzumiTokenCurrentState]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._batch_work_executor = BatchWorkExecutor(
-            kwargs["batch_size"],
-            kwargs["max_workers"],
-            job_name=self.__class__.__name__,
-        )
-        self._is_batch = kwargs["batch_size"] > 1
+
         self._service = kwargs["config"].get("db_service")
-        self._abi_list = UNISWAP_V3_ABI
-        self._liquidity_token_id_blocks = queue.Queue()
+        self._multicall_helper = MultiCallHelper(
+            self._web3, {"batch_size": kwargs["batch_size"], "multicall": True, "max_workers": kwargs["max_workers"]}
+        )
 
         config = kwargs["config"]["izumi_pool_job"]
         self._position_token_address = config.get("position_token_address").lower()
@@ -95,8 +52,6 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
 
         self._exist_pools = get_exist_pools(self._service, self._position_token_address)
         self._exist_token_ids = get_exist_token_ids(self._service, self._position_token_address)
-        self._batch_size = kwargs["batch_size"]
-        self._max_worker = kwargs["max_workers"]
 
     def get_filter(self):
         return TransactionFilterByLogs(
@@ -110,82 +65,71 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
 
     def _collect(self, **kwargs):
         blocks = self._data_buff[Block.type()]
+        erc721_token_transfers = self._data_buff[ERC721TokenTransfer.type()]
+        logs = self._data_buff[Log.type()]
+
         self._block_infos = {}
         for data in blocks:
             self._block_infos[data.number] = data.timestamp
+
         # collect the nft_ids which were minted or burned
         mint_token_ids, burn_token_ids, all_token_dict = extract_changed_tokens(
-            self._data_buff[ERC721TokenTransfer.type()], self._position_token_address
+            erc721_token_transfers, self._position_token_address
         )
-        token_id_liquidity_records = extract_liquidity_logs(self._data_buff[Log.type()], self._position_token_address)
+        token_id_liquidity_records = extract_liquidity_logs(logs, self._position_token_address)
 
-        # need_collect_value_tokens -> [{"token_id": "xxx", "block_number": xxx}]
-        # want_pool_tokens set((token_id, block_number), (token_id,block_number))
-        need_collect_value_tokens, want_pool_tokens = gather_collect_infos(
+        # tokens_to_update_states -> [{"token_id": "xxx", "block_number": xxx}]
+        # tokens_to_update_info set((token_id, block_number), (token_id,block_number))
+        tokens_to_update_states, tokens_to_update_info = gather_collect_infos(
             all_token_dict,
             token_id_liquidity_records,
             burn_token_ids,
             self._exist_token_ids,
         )
         # call owners
-        owner_dict = get_owner_dict(
-            self._web3,
-            self._batch_web3_provider.make_request,
-            need_collect_value_tokens,
+        token_id_block_owner = get_token_id_block_owner(
+            tokens_to_update_states,
             self._position_token_address,
-            self._is_batch,
-            self._abi_list,
-            self._batch_size,
-            self._max_worker,
         )
 
         # call positions
         # token_infos -> [{"token_id": "111", "block_number": 222, "liquidity": 333, "tickerLower", "tickerUpper","poolId"}]
         # Need to fill pool address to token_infos
-        token_infos = positions_rpc_requests(
-            self._web3,
-            self._batch_web3_provider.make_request,
-            need_collect_value_tokens,
+        token_id_block_positions = get_token_id_block_position(
+            token_id_block_owner,
             self._position_token_address,
-            self._is_batch,
-            self._abi_list,
-            self._batch_size,
-            self._max_worker,
             self._exist_pools,
         )
 
         # filter the info which call pool needed
         update_exist_tokens, new_nft_info = get_new_nfts(
-            token_infos,
-            want_pool_tokens,
+            token_id_block_positions,
+            tokens_to_update_info,
             self._position_token_address,
-            self._web3,
-            self._batch_web3_provider.make_request,
-            need_collect_value_tokens,
-            self._factory_address,
-            self._is_batch,
-            self._abi_list,
-            self._batch_size,
-            self._max_worker,
             self._block_infos,
         )
         self._exist_token_ids.update(update_exist_tokens)
+
         for data in new_nft_info:
             self._collect_item(IzumiToken.type(), data)
             self._exist_token_ids[data.token_id] = data.pool_address
         token_result, current_statuses = parse_token_records(
-            self._position_token_address, self._exist_token_ids, owner_dict, token_infos, self._block_infos
+            self._position_token_address,
+            self._exist_token_ids,
+            token_id_block_owner,
+            token_id_block_positions,
+            self._block_infos,
         )
 
         for data in token_result:
-            self._collect_item(IzumiTokenDetail.type(), data)
+            self._collect_item(IzumiTokenState.type(), data)
         for data in current_statuses:
-            self._collect_item(IzumiTokenCurrentStatus.type(), data)
+            self._collect_item(IzumiTokenCurrentState.type(), data)
 
         for token_id, block_number in burn_token_ids.items():
             self._collect_item(
-                IzumiTokenDetail.type(),
-                IzumiTokenDetail(
+                IzumiTokenState.type(),
+                IzumiTokenState(
                     position_token_address=self._position_token_address,
                     pool_address=self._exist_token_ids.get(token_id, ""),
                     token_id=token_id,
@@ -196,8 +140,8 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
                 ),
             )
             self._collect_item(
-                IzumiTokenCurrentStatus.type(),
-                IzumiTokenCurrentStatus(
+                IzumiTokenCurrentState.type(),
+                IzumiTokenCurrentState(
                     position_token_address=self._position_token_address,
                     pool_address=self._exist_token_ids.get(token_id, ""),
                     token_id=token_id,
@@ -208,22 +152,25 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
                 ),
             )
 
-        self._data_buff[IzumiTokenCurrentStatus.type()] = distinct_collections_by_group(
-            self._data_buff[IzumiTokenCurrentStatus.type()], ["position_token_address", "token_id"], "block_number"
+        self._data_buff[IzumiTokenCurrentState.type()] = distinct_collections_by_group(
+            self._data_buff[IzumiTokenCurrentState.type()], ["position_token_address", "token_id"], "block_number"
         )
 
         self._block_infos = {}
 
     def _process(self, **kwargs):
         self._data_buff[IzumiToken.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[IzumiTokenDetail.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[IzumiTokenCurrentStatus.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[IzumiTokenState.type()].sort(key=lambda x: x.block_number)
+        self._data_buff[IzumiTokenCurrentState.type()].sort(key=lambda x: x.block_number)
 
-def parse_token_records(position_token_address, token_pool_dict, owner_dict, token_infos, block_info):
+
+def parse_token_records(
+    position_token_address, token_pool_dict, token_id_block_owner, token_id_block_positions, block_info
+):
     token_result = []
     token_block_dict = {}
 
-    for data in token_infos:
+    for data in token_id_block_positions:
         block_number = data["block_number"]
         token_id = data["token_id"]
         liquidity = data["liquidity"]
@@ -233,11 +180,11 @@ def parse_token_records(position_token_address, token_pool_dict, owner_dict, tok
 
         token_block_dict[token_id] = max(token_block_dict.get(token_id, block_number), block_number)
 
-        address = owner_dict[token_id][block_number]
+        address = token_id_block_owner[token_id][block_number]
         pool_address = token_pool_dict[token_id]
 
         token_result.append(
-            IzumiTokenDetail(
+            IzumiTokenState(
                 position_token_address=position_token_address,
                 pool_address=pool_address,
                 token_id=token_id,
@@ -251,13 +198,15 @@ def parse_token_records(position_token_address, token_pool_dict, owner_dict, tok
     current_statuses = []
     for token_id, max_block_number in token_block_dict.items():
         max_block_data = next(
-            data for data in token_infos if data["token_id"] == token_id and data["block_number"] == max_block_number
+            data
+            for data in token_id_block_positions
+            if data["token_id"] == token_id and data["block_number"] == max_block_number
         )
-        address = owner_dict[token_id][max_block_number]
+        address = token_id_block_owner[token_id][max_block_number]
         pool_address = token_pool_dict[token_id]
 
         current_statuses.append(
-            IzumiTokenCurrentStatus(
+            IzumiTokenCurrentState(
                 position_token_address=position_token_address,
                 token_id=token_id,
                 pool_address=pool_address,
@@ -279,53 +228,104 @@ def gather_collect_infos(all_token_dict, token_id_block, burn_token_ids, exist_t
         for block_number, to_address in blocks.items():
             seen.add((token_id, block_number))
 
-    need_collect_value_tokens = []
-    want_pool_tokens = set()
+    tokens_to_update_states = []
+    tokens_to_update_info = set()
     for item in seen:
         token_id = item[0]
         block_number = item[1]
+
+        # If token is not burned or token burned after this block_number
+        # we need to get state for this block
         if token_id not in burn_token_ids or burn_token_ids[token_id] > block_number:
-            temp = {
-                "token_id": token_id,
-                "block_number": block_number,
-            }
-            need_collect_value_tokens.append(temp)
+            tokens_to_update_states.append(
+                {
+                    "token_id": token_id,
+                    "block_number": block_number,
+                }
+            )
+
+        # If token id not in
         if token_id not in exist_token_ids:
-            want_pool_tokens.add((token_id, block_number))
-    return need_collect_value_tokens, want_pool_tokens
+            tokens_to_update_info.add((token_id, block_number))
+    return tokens_to_update_states, tokens_to_update_info
 
 
-def get_owner_dict(web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers):
-    owners = owner_rpc_requests(
-        web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers
-    )
-    owner_dict = {}
-    for data in owners:
-        owner_dict.setdefault(data["token_id"], {})[data["block_number"]] = data["owner"]
-    return owner_dict
+def get_token_id_block_owner(tokens_to_update_states, position_token_address):
+    owner_of_calls = []
+    for token in tokens_to_update_states:
+        (token_id, block_number) = token
+        owner_of_calls.append(
+            Call(
+                target=position_token_address,
+                function_abi=OWNER_OF_FUNCTION,
+                parameters=[token_id],
+                block_number=block_number,
+            )
+        )
+
+    token_id_block_owner = {}
+    for call in owner_of_calls:
+        token_id = call.parameters[0]
+        if token_id not in token_id_block_owner:
+            token_id_block_owner[token_id] = {}
+        token_id_block_owner[token_id][call.block_number] = call.returns["owner"]
+    return token_id_block_owner
+
+
+def get_token_id_block_position(tokens_to_update_states, position_token_address, exist_pools):
+    position_calls = []
+    for token in tokens_to_update_states:
+        (token_id, block_number) = token
+        position_calls.append(
+            target=position_token_address,
+            function_abi=POSITIONS_FUNCTION,
+            parameters=[token_id],
+            block_number=block_number,
+        )
+
+    token_id_block_positions = []
+    for call in position_calls:
+        token["token_id"] = call.parameters[0]
+        token["block_number"] = call.block_number
+
+        token["tickLower"] = call.returns["leftPt"]
+        token["tickUpper"] = call.returns["rightPt"]
+        token["liquidity"] = call.returns["liquidity"]
+        token["feeGrowthInside0LastX128"] = call.returns["lastFeeScaleX_128"]
+        token["feeGrowthInside1LastX128"] = call.returns["lastFeeScaleY_128"]
+        token["tokensOwed0"] = call.returns["remainTokenX"]
+        token["tokensOwed1"] = call.returns["remainTokenY"]
+        token["poolId"] = call.returns["poolId"]
+
+        if token["poolId"] in exist_pools:
+            token["token0"] = exist_pools[token["poolId"]]["token0_address"]
+            token["token1"] = exist_pools[token["poolId"]]["token1_address"]
+            token["fee"] = exist_pools[token["poolId"]]["fee"]
+            token["pool_address"] = exist_pools[token["poolId"]]["pool_address"]
+
+        # token["nonce"] = decoded_data[0]
+        # token["operator"] = decoded_data[1]
+        # token["token0"] = decoded_data[2]
+        # token["token1"] = decoded_data[3]
+        # token["fee"] = decoded_data[4]
+
+        token_id_block_positions.append(token)
+    return token_id_block_positions
 
 
 def get_new_nfts(
-    all_token_infos,
-    want_pool_tokens,
+    token_id_block_positions,
+    tokens_to_update_info,
     position_token_address,
-    web3,
-    make_requests,
-    requests,
-    factory_address,
-    is_batch,
-    abi_list,
-    batch_size,
-    max_worker,
     block_infos,
 ):
     result = []
     need_collect_pool_tokens = []
-    for info in all_token_infos:
-        token_id = info["token_id"]
-        block_number = info["block_number"]
-        if (token_id, block_number) in want_pool_tokens:
-            need_collect_pool_tokens.append(info)
+    for position in token_id_block_positions:
+        token_id = position["token_id"]
+        block_number = position["block_number"]
+        if (token_id, block_number) in tokens_to_update_info:
+            need_collect_pool_tokens.append(position)
 
     # get new nft_id info
     update_exist_tokens = {}
@@ -338,7 +338,7 @@ def get_new_nfts(
         if (position_token_address, token_id) in seen:
             continue
         seen.add((position_token_address, token_id))
-        
+
         # Skip non exist pool
         if "pool_address" not in data:
             continue
@@ -421,209 +421,13 @@ def extract_liquidity_logs(logs, position_token_address):
         if log.address != position_token_address:
             continue
 
-        topic0 = log.topic0
-        fe = LIQUIDITY_EVENT_TOPIC0_DICT.get(topic0)
-        if fe:
-            log_decoded_data = fe.decode_log(log)
-            token_id = log_decoded_data["nftId"]
-            token_id_block.setdefault(token_id, {})[log.block_number] = topic0
+        if log.topic0 in LIQUIDITY_EVENT_TOPIC0_DICT:
+            event = LIQUIDITY_EVENT_TOPIC0_DICT.get(log.topic0)
+            if event:
+                log_decoded_data = event.decode_log(log)
+                token_id = log_decoded_data["nftId"]
+                token_id_block.setdefault(token_id, {})[log.block_number] = log.topic0
     return token_id_block
-
-
-def build_token_id_method_data(web3, token_ids, position_token_address, fn, abi_list):
-    parameters = []
-    contract = web3.eth.contract(address=Web3.to_checksum_address(position_token_address), abi=abi_list)
-
-    for idx, token in enumerate(token_ids):
-        token_data = {
-            "request_id": idx,
-            "param_to": position_token_address,
-            "param_number": hex(token["block_number"]),
-        }
-        token.update(token_data)
-
-        try:
-            # Encode the ABI for the specific token_id
-            data = contract.encodeABI(fn_name=fn, args=[token["token_id"]])
-            token["param_data"] = data
-        except Exception as e:
-            logger.error(
-                f"Encoding token id {token['token_id']} for function {fn} failed. "
-                f"NFT address: {position_token_address}. "
-                f"Exception: {e}."
-            )
-
-        parameters.append(token)
-    return parameters
-
-
-def positions_rpc_requests(
-    web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers, exist_pools
-):
-    if len(requests) == 0:
-        return []
-
-    fn_name = POSITIONS_FUNCTION.get_name()
-    output_types = POSITIONS_FUNCTION.get_outputs_type()
-
-    parameters = build_token_id_method_data(web3, requests, position_token_address, fn_name, abi_list)
-    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-
-    def process_batch(batch):
-        if is_batch:
-            response = make_requests(params=json.dumps(batch))
-        else:
-            response = [make_requests(params=json.dumps(batch[0]))]
-
-        token_infos = []
-        for data in list(zip_rpc_response(parameters, response)):
-            result = rpc_response_to_result(data[1])
-            token = data[0]
-            value = result[2:] if result is not None else None
-            try:
-                decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-                token["tickLower"] = decoded_data[0]
-                token["tickUpper"] = decoded_data[1]
-                token["liquidity"] = decoded_data[2]
-                token["feeGrowthInside0LastX128"] = decoded_data[3]
-                token["feeGrowthInside1LastX128"] = decoded_data[4]
-                token["tokensOwed0"] = decoded_data[5]
-                token["tokensOwed1"] = decoded_data[6]
-                token["poolId"] = decoded_data[7]
-
-                if token["poolId"] in exist_pools:
-                    token["token0"] = exist_pools[token["poolId"]]["token0_address"]
-                    token["token1"] = exist_pools[token["poolId"]]["token1_address"]
-                    token["fee"] = exist_pools[token["poolId"]]["fee"]
-                    token["pool_address"] = exist_pools[token["poolId"]]["pool_address"]
-                
-                # token["nonce"] = decoded_data[0]
-                # token["operator"] = decoded_data[1]
-                # token["token0"] = decoded_data[2]
-                # token["token1"] = decoded_data[3]
-                # token["fee"] = decoded_data[4]
-
-            except Exception as e:
-                logger.error(
-                    f"Decoding positions failed. "
-                    f"token: {token}. "
-                    f"fn: {fn_name}. "
-                    f"rpc response: {result}. "
-                    f"exception: {e}"
-                )
-            token_infos.append(token)
-        return token_infos
-
-    all_token_infos = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        for i in range(0, len(token_name_rpc), batch_size):
-            batch = token_name_rpc[i : i + batch_size]
-            futures.append(executor.submit(process_batch, batch))
-
-        for future in as_completed(futures):
-            try:
-                result = future.result()
-                all_token_infos.extend(result)
-            except Exception as e:
-                logger.error(f"Batch processing failed with exception: {e}")
-
-    return all_token_infos
-
-
-def owner_rpc_requests(
-    web3, make_requests, requests, position_token_address, is_batch, abi_list, batch_size, max_workers
-):
-    if len(requests) == 0:
-        return []
-
-    fn_name = OWNER_OF_FUNCTION.get_name()
-    function_abi = next(
-        (abi for abi in abi_list if abi["name"] == fn_name and abi["type"] == "function"),
-        None,
-    )
-    outputs = function_abi["outputs"]
-    output_types = [output["type"] for output in outputs]
-
-    parameters = build_token_id_method_data(web3, requests, position_token_address, fn_name, abi_list)
-    token_name_rpc = list(generate_eth_call_json_rpc(parameters))
-
-    def process_batch(batch):
-        if is_batch:
-            response = make_requests(params=json.dumps(batch))
-        else:
-            response = [make_requests(params=json.dumps(batch[0]))]
-
-        token_infos = []
-        for data in list(zip_rpc_response(parameters, response)):
-            result = rpc_response_to_result(data[1])
-            token = data[0]
-            value = result[2:] if result is not None else None
-            try:
-                decoded_data = eth_abi.decode(output_types, bytes.fromhex(value))
-                token["owner"] = decoded_data[0]
-
-            except Exception as e:
-                logger.error(
-                    f"Decoding ownerOf failed. "
-                    f"token: {token}. "
-                    f"fn: {fn_name}. "
-                    f"rpc response: {result}. "
-                    f"exception: {e}"
-                )
-            token_infos.append(token)
-        return token_infos
-
-    # 分批处理请求
-    all_token_infos = []
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        for i in range(0, len(token_name_rpc), batch_size):
-            batch = token_name_rpc[i : i + batch_size]
-            futures.append(executor.submit(process_batch, batch))
-
-        for future in as_completed(futures):
-            try:
-                result = future.result()
-                all_token_infos.extend(result)
-            except Exception as e:
-                logger.error(f"Batch processing failed with exception: {e}")
-
-    return all_token_infos
-
-
-def build_get_pool_method_data(web3, requests, factory_address, fn, abi_list):
-    parameters = []
-    contract = web3.eth.contract(address=Web3.to_checksum_address(factory_address), abi=abi_list)
-
-    for idx, token in enumerate(requests):
-        token["request_id"] = (idx,)
-        token_data = {
-            "request_id": idx,
-            "param_to": factory_address,
-            "param_number": hex(token["block_number"]),
-        }
-        token.update(token_data)
-        try:
-            # Encode the ABI for the specific token_id
-            data = contract.encodeABI(
-                fn_name=fn,
-                args=[
-                    Web3.to_checksum_address(token["token0"]),
-                    Web3.to_checksum_address(token["token1"]),
-                    token["fee"],
-                ],
-            )
-            token["param_data"] = data
-        except Exception as e:
-            logger.error(
-                f"Encoding token0 {token['token0']} token1 {token['token1']}  fee {token['fee']}  for function {fn} failed. "
-                f"contract address: {factory_address}. "
-                f"Exception: {e}."
-            )
-
-        parameters.append(token)
-    return parameters
 
 
 def get_exist_pools(db_service, position_token_address):
@@ -634,7 +438,10 @@ def get_exist_pools(db_service, position_token_address):
     try:
         result = (
             session.query(UniswapV3Pools)
-            .filter(UniswapV3Pools.position_token_address == hex_str_to_bytes(position_token_address), UniswapV3Pools.pool_id != None)
+            .filter(
+                UniswapV3Pools.position_token_address == hex_str_to_bytes(position_token_address),
+                UniswapV3Pools.pool_id != None,
+            )
             .all()
         )
         history_pools = {}
@@ -649,7 +456,7 @@ def get_exist_pools(db_service, position_token_address):
                     "fee": item.fee,
                     "tick_spacing": item.tick_spacing,
                     "block_number": item.block_number,
-                    "pool_id": item.pool_id
+                    "pool_id": item.pool_id,
                 }
 
     except Exception as e:

@@ -2,7 +2,11 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import AgniV3TokenDetail, UniswapV3TokenDetail, IzumiTokenDetail
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
+    AgniV3TokenDetail,
+    IzumiTokenState,
+    UniswapV3TokenDetail,
+)
 
 
 class UniswapV3TokenDetails(HemeraModel):
@@ -38,7 +42,7 @@ class UniswapV3TokenDetails(HemeraModel):
                 "converter": general_converter,
             },
             {
-                "domain": IzumiTokenDetail,
+                "domain": IzumiTokenState,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

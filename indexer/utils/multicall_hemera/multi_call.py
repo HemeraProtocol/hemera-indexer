@@ -32,7 +32,6 @@ class Multicall:
         self.multicall_address = get_multicall_address(self.network)
         self._parameters = None
 
-    @calculate_execution_time
     def to_rpc_param(self):
         if self.require_success is True:
             parameters = [[[call.target, hex_str_to_bytes(call.data)] for call in self.calls]]

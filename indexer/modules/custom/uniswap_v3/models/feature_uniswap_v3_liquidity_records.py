@@ -4,8 +4,8 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUME
 from common.models import HemeraModel, general_converter
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     AgniV3TokenUpdateLiquidity,
-    UniswapV3TokenUpdateLiquidity,
     IzumiTokenUpdateLiquidity,
+    UniswapV3TokenUpdateLiquidity,
 )
 
 
