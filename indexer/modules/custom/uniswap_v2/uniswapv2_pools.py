@@ -10,7 +10,7 @@ from indexer.specification.specification import TopicSpecification, TransactionF
 logger = logging.getLogger(__name__)
 
 
-class ExportUniSwapV2InfoJob(FilterTransactionDataJob):
+class ExportUniSwapV2PoolJob(FilterTransactionDataJob):
     dependency_types = [Log]
     output_types = [UniswapV2Pool]
 

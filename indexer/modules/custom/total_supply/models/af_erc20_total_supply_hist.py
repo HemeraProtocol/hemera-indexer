@@ -5,6 +5,7 @@ from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIME
 
 from common.models import HemeraModel, general_converter
 from indexer.modules.custom.total_supply.domain.erc20_total_supply import Erc20TotalSupply
+from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import UniswapV2Erc20TotalSupply
 
 
 class AfErc20TotalSupplyHist(HemeraModel):
@@ -29,5 +30,11 @@ class AfErc20TotalSupplyHist(HemeraModel):
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            }
+            },
+            {
+                "domain": UniswapV2Erc20TotalSupply,
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
