@@ -32,9 +32,17 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
 from indexer.modules.custom.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
+from indexer.modules.custom.uniswap_v2.domain.feature_uniswap_v2 import (
+    UniswapV2Erc20CurrentTotalSupply,
+    UniswapV2Erc20TotalSupply,
+    UniswapV2Pool,
+    UniswapV2SwapEvent,
+)
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3Pool,
     UniswapV3PoolCurrentPrice,
+    UniswapV3PoolFromSwapEvent,
+    UniswapV3PoolFromToken,
     UniswapV3PoolPrice,
     UniswapV3SwapEvent,
     UniswapV3Token,
@@ -70,6 +78,8 @@ class EntityType(IntFlag):
     KARAK = 1 << 11
 
     EIGEN_LAYER = 1 << 13
+
+    UNISWAP_V2 = 1 << 14
 
     EXPLORER = EXPLORER_BASE | EXPLORER_TOKEN | EXPLORER_TRACE
 
@@ -133,17 +143,15 @@ def generate_output_types(entity_types):
         yield UpdateBlockInternalCount
 
     if entity_types & EntityType.UNISWAP_V3:
-        yield Token
-        yield UpdateToken
         yield UniswapV3Pool
-        yield UniswapV3SwapEvent
         yield UniswapV3PoolPrice
         yield UniswapV3PoolCurrentPrice
+        yield UniswapV3SwapEvent
+        yield UniswapV3PoolFromSwapEvent
         yield UniswapV3Token
-        yield UniswapV3TokenCollectFee
-        yield UniswapV3TokenUpdateLiquidity
         yield UniswapV3TokenDetail
         yield UniswapV3TokenCurrentStatus
+        yield UniswapV3PoolFromToken
 
     if entity_types & EntityType.USER_OPS:
         yield UserOperationsResult
@@ -199,3 +207,9 @@ def generate_output_types(entity_types):
     if entity_types & EntityType.EIGEN_LAYER:
         yield EigenLayerAction
         yield EigenLayerAddressCurrent
+
+    if entity_types & EntityType.UNISWAP_V2:
+        yield UniswapV2Pool
+        yield UniswapV2SwapEvent
+        yield UniswapV2Erc20TotalSupply
+        yield UniswapV2Erc20CurrentTotalSupply

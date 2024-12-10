@@ -14,3 +14,19 @@ POOL_CREATED_EVENT = Event(
         "type": "event",
     }
 )
+
+SWAP_EVENT = Event(
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "internalType": "address", "name": "sender", "type": "address"},
+            {"indexed": True, "internalType": "address", "name": "to", "type": "address"},
+            {"indexed": False, "internalType": "uint256", "name": "amount0In", "type": "uint256"},
+            {"indexed": False, "internalType": "uint256", "name": "amount1In", "type": "uint256"},
+            {"indexed": False, "internalType": "uint256", "name": "amount0Out", "type": "uint256"},
+            {"indexed": False, "internalType": "uint256", "name": "amount1Out", "type": "uint256"},
+        ],
+        "name": "Swap",
+        "type": "event",
+    }
+)

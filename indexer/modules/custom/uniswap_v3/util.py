@@ -81,7 +81,7 @@ class AddressManager:
 
     def get_factory_by_position(self, position_token_address):
         entry = self.position_to_factory.get(position_token_address)
-        return entry.get("position_token_address") if entry else None
+        return entry.get("factory_address") if entry else None
 
     def get_abi_by_factory(self, factory_address):
         entry = self.factory_to_position.get(factory_address)
