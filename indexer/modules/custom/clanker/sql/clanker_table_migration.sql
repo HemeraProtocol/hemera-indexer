@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS af_clanker_created_token (
     "locker_address" bytea,
     "cast_hash" bytea,
     "block_number" int8,
+    "version" int8,
     "create_time" timestamp DEFAULT CURRENT_TIMESTAMP,
     "update_time" timestamp DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY ("token_address")
