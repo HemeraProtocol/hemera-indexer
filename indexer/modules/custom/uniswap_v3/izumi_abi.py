@@ -146,7 +146,7 @@ TOKEN1_FUNCTION = Function(
         "type": "function",
     }
 )
-TICK_SPACING_FUNCTION = Function(
+POINT_DELTA_FUNCTION = Function(
     {
         "inputs": [],
         "name": "pointDelta",

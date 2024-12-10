@@ -2,11 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
-    AgniV3TokenCollectFee,
-    IzumiTokenCollectFee,
-    UniswapV3TokenCollectFee,
-)
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import AgniV3TokenCollectFee, UniswapV3TokenCollectFee
 
 
 class UniswapV3CollectFeeRecords(HemeraModel):
@@ -45,12 +41,6 @@ class UniswapV3CollectFeeRecords(HemeraModel):
             },
             {
                 "domain": AgniV3TokenCollectFee,
-                "conflict_do_update": True,
-                "update_strategy": None,
-                "converter": general_converter,
-            },
-            {
-                "domain": IzumiTokenCollectFee,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

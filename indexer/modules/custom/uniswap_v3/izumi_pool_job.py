@@ -18,10 +18,10 @@ from indexer.modules.custom.uniswap_v3.izumi_abi import (
     GET_POOL_ID_FUNCTION,
     INCREASE_LIQUIDITY_EVENT,
     MINT_EVENT,
+    POINT_DELTA_FUNCTION,
     POOL_CREATED_EVENT,
     SLOT0_FUNCTION,
     SWAP_EVENT,
-    TICK_SPACING_FUNCTION,
     TOKEN0_FUNCTION,
     TOKEN1_FUNCTION,
     UPDATE_LIQUIDITY_EVENT,
@@ -102,7 +102,7 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
                         "token0_address": decoded_data["tokenX"],
                         "token1_address": decoded_data["tokenY"],
                         "fee": decoded_data["fee"],
-                        "tick_spacing": decoded_data["pointDelta"],
+                        "point_delta": decoded_data["pointDelta"],
                         "pool_address": pool_address,
                         "block_number": log.block_number,
                     }
@@ -179,9 +179,7 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
 
                 amount0 = decoded_data["amountX"]
                 amount1 = decoded_data["amountY"]
-                # sqrt_price_x96 = decoded_data["sqrtPriceX96"]
-                # liquidity = decoded_data["liquidity"]
-                tick = decoded_data["currentPoint"]
+                current_point = decoded_data["currentPoint"]
                 pool_data = self._exist_pools[log.address]
                 self._collect_item(
                     IzumiSwapEvent.type(),
@@ -197,9 +195,9 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
                         recipient=None,  # decoded_data["recipient"],
                         amount0=amount0,
                         amount1=amount1,
-                        liquidity=None,  # liquidity,
-                        tick=tick,
-                        sqrt_price_x96=None,  # sqrt_price_x96,
+                        current_point=current_point,
+                        fee=decoded_data["fee"],
+                        sell_x_earn_y=decoded_data["sellXEarnY"],
                         token0_address=pool_data.get("token0_address"),
                         token1_address=pool_data.get("token1_address"),
                     ),
@@ -220,7 +218,9 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
                     factory_address=price.factory_address,
                     pool_address=price.pool_address,
                     sqrt_price_x96=price.sqrt_price_x96,
-                    tick=price.tick,
+                    current_point=price.current_point,
+                    liquidity=price.liquidity,
+                    liquidity_x=price.liquidity_x,
                     block_number=price.block_number,
                     block_timestamp=price.block_timestamp,
                 )
@@ -234,7 +234,6 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
 
 
 def format_value_records(exist_pools, factory_address, pool_prices, block_info):
-    print(pool_prices)
     prices = []
     for key, pool_data in pool_prices.items():
         pool_address, block_number = key
@@ -243,8 +242,10 @@ def format_value_records(exist_pools, factory_address, pool_prices, block_info):
                 IzumiPoolPrice(
                     factory_address=factory_address,
                     pool_address=pool_address,
-                    sqrt_price_x96=pool_data["sqrtPriceX96"],
-                    tick=pool_data["tick"],
+                    sqrt_price_x96=pool_data["sqrt_price_x96"],
+                    current_point=pool_data["current_point"],
+                    liquidity=pool_data["liquidity"],
+                    liquidity_x=pool_data["liquidity_x"],
                     block_number=block_number,
                     block_timestamp=block_info[block_number],
                 )
@@ -273,7 +274,7 @@ def get_exist_pools(db_service, position_token_address):
                     "token0_address": bytes_to_hex_str(item.token0_address),
                     "token1_address": bytes_to_hex_str(item.token1_address),
                     "fee": item.fee,
-                    "tick_spacing": item.tick_spacing,
+                    "point_delta": item.point_delta,
                     "block_number": item.block_number,
                     "pool_id": item.pool_id,
                 }
@@ -322,8 +323,10 @@ def collect_pool_prices(exist_pools, logs, multicall_helper):
         pool_address = call.target
         block_number = call.block_number
         pool_data = {
-            "sqrtPriceX96": call.returns["sqrtPrice_96"],
-            "tick": call.returns["currentPoint"],
+            "sqrt_price_x96": call.returns["sqrtPrice_96"],
+            "current_point": call.returns["currentPoint"],
+            "liquidity": call.returns["liquidity"],
+            "liquidity_x": call.returns["liquidity_x"],
             "block_number": block_number,
         }
         pool_prices_map[pool_address, block_number] = pool_data
@@ -376,7 +379,7 @@ def collect_swap_new_pools(position_token_address, factory_address, swap_pools, 
             ),
             Call(
                 target=pool["address"],
-                function_abi=TICK_SPACING_FUNCTION,
+                function_abi=POINT_DELTA_FUNCTION,
                 block_number=pool["block_number"],
                 user_defined_k=pool["block_timestamp"],
             ),
@@ -398,6 +401,6 @@ def collect_swap_new_pools(position_token_address, factory_address, swap_pools, 
         if "tokenY" in call.returns:
             eligible_pools_with_info[pool_address]["token1_address"] = call.returns["tokenY"]
         if "pointDelta" in call.returns:
-            eligible_pools_with_info[pool_address]["tick_spacing"] = call.returns["pointDelta"]
+            eligible_pools_with_info[pool_address]["point_delta"] = call.returns["pointDelta"]
 
     return eligible_pools_with_info
