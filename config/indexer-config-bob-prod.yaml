@@ -1,0 +1,7 @@
+chain_id: 60808
+uniswap_v3_pool_job:
+  position_token_address: "0x743e03cceb4af2efa3cc76838f6e8b50b63f184c"
+  factory_address: "0xcb2436774c3e191c85056d248ef4260ce5f27a9d"
+export_tokens_and_transfers_job:
+  filter_token_address:
+    - "0xc96de26018a54d51c097160568752c4e3bd6c364"
