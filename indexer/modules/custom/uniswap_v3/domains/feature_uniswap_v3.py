@@ -184,6 +184,7 @@ class UniswapV3PoolFromToken(UniswapV3Pool):
 class IzumiPool(UniswapV3Pool):
     pool_id: int
 
+
 @dataclass
 class IzumiPoolId(FilterData):
     position_token_address: str
@@ -202,7 +203,7 @@ class IzumiPoolPrice(UniswapV3PoolPrice):
 
 
 @dataclass
-class IzumiTokenDetail(UniswapV3TokenDetail):
+class IzumiTokenState(UniswapV3TokenDetail):
     pass
 
 
@@ -212,7 +213,7 @@ class IzumiPoolCurrentPrice(UniswapV3PoolCurrentPrice):
 
 
 @dataclass
-class IzumiTokenCurrentStatus(UniswapV3TokenCurrentStatus):
+class IzumiTokenCurrentState(UniswapV3TokenCurrentStatus):
     pass
 
 

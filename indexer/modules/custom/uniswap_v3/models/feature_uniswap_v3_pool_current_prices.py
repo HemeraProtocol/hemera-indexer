@@ -4,8 +4,8 @@ from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 from common.models import HemeraModel, general_converter
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     AgniV3PoolCurrentPrice,
-    UniswapV3PoolCurrentPrice,
     IzumiPoolCurrentPrice,
+    UniswapV3PoolCurrentPrice,
 )
 
 
