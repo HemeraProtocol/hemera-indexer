@@ -1,28 +1,15 @@
 chain_name: mantle
 
-FBTC:
-  period_sqls:
-    address_token_balance:
-      - period_address_token_balances
-
-  py_jobs:
-    - address_token_balance
-    - uniswapv3
-    - merchantmoe
-    - init_capital
-    - lendle
-    - staked
-    - dodo
+if_init_balance:
+  true
 
 cmETH:
+  generator_wallet_table:
+    true
+
   period_sqls:
     address_token_balance:
       - period_address_token_balances
 
   py_jobs:
-    - address_token_balance
-    - uniswapv3
-    - merchantmoe
-    - init_capital
-    - lendle
     - staked
