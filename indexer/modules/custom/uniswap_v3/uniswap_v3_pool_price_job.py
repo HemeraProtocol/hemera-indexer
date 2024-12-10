@@ -109,7 +109,10 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
             if factory_address:
                 position_token_address = self._address_manager.get_position_by_factory(factory_address)
                 if position_token_address:
-                    fee = fee_call.returns.get("", 0)
+                    if fee_call.returns:
+                        fee = fee_call.returns.get("", 0)
+                    else:
+                        fee = 0
                     token0 = token0_call.returns.get("")
                     token1 = token1_call.returns.get("")
                     pool_address = factory_call.target.lower()
@@ -138,7 +141,8 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
     def _process(self, **kwargs):
         self._exist_pools = self.get_existing_pools()
 
-        self.get_missing_pools_by_rpc()
+        if not self._pool_address:
+            self.get_missing_pools_by_rpc()
 
         transactions = self._data_buff["transaction"]
         current_price_dict = {}
@@ -174,6 +178,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
                         }
 
                     elif log.topic0 == swapsicle_abi.SWAP_EVENT.get_signature():
+                        # maybe can be removed
                         decoded_data = swapsicle_abi.SWAP_EVENT.decode_log(log)
                         key_data_dict = {
                             "tick": decoded_data["tick"],
