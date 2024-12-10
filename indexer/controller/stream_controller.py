@@ -42,8 +42,10 @@ class StreamController(BaseController):
         self.process_numbers = process_numbers
         self.process_size = process_size
         self.process_time_out = process_time_out
-
-        self.pool = mpire.WorkerPool(n_jobs=self.process_numbers, use_dill=True, keep_alive=True)
+        if self.process_numbers <= 1:
+            self.pool = None
+        else:
+            self.pool = mpire.WorkerPool(n_jobs=self.process_numbers, use_dill=True, keep_alive=True)
 
     def action(
         self,
@@ -91,8 +93,11 @@ class StreamController(BaseController):
                 )
 
                 if synced_blocks != 0:
-                    splits = self.split_blocks(last_synced_block + 1, target_block, self.process_size)
-                    self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
+                    if not self.pool:
+                        self._do_stream(last_synced_block + 1, target_block)
+                    else:
+                        splits = self.split_blocks(last_synced_block + 1, target_block, self.process_size)
+                        self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
                     logger.info("Writing last synced block {}".format(target_block))
                     self.sync_recorder.set_last_synced_block(target_block)
                     last_synced_block = target_block
