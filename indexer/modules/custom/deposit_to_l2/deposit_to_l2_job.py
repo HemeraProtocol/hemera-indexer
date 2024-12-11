@@ -8,6 +8,7 @@ from sqlalchemy import and_
 from web3.types import ABIFunction
 
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
+from common.utils.db_utils import build_domains_by_sql
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.transaction import Transaction
@@ -149,34 +150,18 @@ class DepositToL2Job(FilterTransactionDataJob):
     def check_history_deposit_from_db(
         self, wallet_address: str, chain_id: int, token_address: str
     ) -> AddressTokenDeposit:
-        session = self._service.get_service_session()
-        try:
-            history_deposit = (
-                session.query(AFTokenDepositsCurrent)
-                .filter(
-                    and_(
-                        AFTokenDepositsCurrent.wallet_address == hex_str_to_bytes(wallet_address),
-                        AFTokenDepositsCurrent.chain_id == chain_id,
-                        AFTokenDepositsCurrent.token_address == hex_str_to_bytes(token_address),
-                    )
-                )
-                .first()
-            )
-        finally:
-            session.close()
 
-        deposit = (
-            AddressTokenDeposit(
-                wallet_address=bytes_to_hex_str(history_deposit.wallet_address),
-                chain_id=history_deposit.chain_id,
-                contract_address=bytes_to_hex_str(history_deposit.contract_address),
-                token_address=bytes_to_hex_str(history_deposit.token_address),
-                value=int(history_deposit.value),
-                block_number=history_deposit.block_number,
-                block_timestamp=int(round(history_deposit.block_timestamp.timestamp())),
-            )
-            if history_deposit
-            else None
+        deposit = build_domains_by_sql(
+            service=self._service,
+            domain=AddressTokenDeposit,
+            sql=f"""
+            SELECT * FROM af_token_deposits_current
+            WHERE 
+                wallet_address == {hex_str_to_bytes(wallet_address)}
+                and chain_id = {chain_id}
+                and token_address = {hex_str_to_bytes(token_address)}
+            limit 1
+            """
         )
 
         return deposit
