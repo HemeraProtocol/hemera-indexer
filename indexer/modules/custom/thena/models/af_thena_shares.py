@@ -8,6 +8,7 @@ from indexer.modules.custom.thena.domains.feature_thena import ThenaSharesDomain
 class AfThenaShares(HemeraModel):
     __tablename__ = "af_thena_shares"
 
+    pool_address = Column(BYTEA, primary_key=True)
     farming_address = Column(BYTEA, primary_key=True)
     gamma_address = Column(BYTEA, primary_key=True)
     wallet_address = Column(BYTEA, primary_key=True)
@@ -23,7 +24,8 @@ class AfThenaShares(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("farming_address", "gamma_address", "wallet_address", "block_number"),)
+    __table_args__ = (
+    PrimaryKeyConstraint("farming_address", "pool_address", "gamma_address", "wallet_address", "block_number"),)
 
     @staticmethod
     def model_domain_mapping():

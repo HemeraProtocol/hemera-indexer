@@ -15,6 +15,7 @@ class ThenaLiquidityDomain(FilterData):
 class ThenaSharesDomain(FilterData):
     farming_address: str
     gamma_address: str
+    pool_address: str
     wallet_address: str
 
     shares: int

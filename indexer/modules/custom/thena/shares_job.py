@@ -27,6 +27,8 @@ class ThenaSharesJob(FilterTransactionDataJob):
         config = kwargs["config"]["thena_job"]
         self.gamma_pool_address = config["gamma_pool_address"]
         self.thena_farming_pool_address = config["thena_farming_pool_address"]
+        self.thena_liquidity_pool = config.get("thena_liquidity_pool_address")
+
         self.multi_call_helper = MultiCallHelper(self._web3, kwargs, logger)
 
     def get_filter(self):
@@ -96,6 +98,7 @@ class ThenaSharesJob(FilterTransactionDataJob):
                 shares_domain = ThenaSharesDomain(
                     farming_address=self.thena_farming_pool_address,
                     gamma_address=self.gamma_pool_address,
+                    pool_address=self.thena_liquidity_pool,
                     wallet_address=shares_call.parameters[0],
                     total_supply=total_supply,
                     shares=shares,
