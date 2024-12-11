@@ -1,23 +1,21 @@
 from sqlalchemy import Column, func
-from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
-from indexer.modules.custom.clanker.domains.tokens import ClankerCreatedTokenD
+from indexer.modules.custom.meme_agent.domains.clanker import ClankerCreatedTokenD
+from indexer.modules.custom.meme_agent.domains.larry import LarryCreatedTokenD
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
 
 
-class ClankerCreatedToken(HemeraModel):
-    __tablename__ = "clanker_created_token"
+class LarryCreatedToken(HemeraModel):
+    __tablename__ = "af_larry_created_token"
 
-    token_address = Column(BYTEA, primary_key=True)
-    lp_nft_id = Column(BIGINT)
-    deployer = Column(BYTEA)
-    fid = Column(BIGINT)
+    token = Column(BYTEA, primary_key=True)
+    party = Column(BYTEA)
+    recipient = Column(BYTEA)
     name = Column(VARCHAR)
     symbol = Column(VARCHAR)
-    supply = Column(NUMERIC(100))
-    locker_address = Column(BYTEA)
-    cast_hash = Column(BYTEA)
+    eth_value = Column(NUMERIC(100))
     block_number = Column(BIGINT)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
@@ -27,7 +25,7 @@ class ClankerCreatedToken(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": ClankerCreatedTokenD,
+                "domain": LarryCreatedTokenD,
                 "conflict_do_update": None,
                 "update_strategy": None,
                 "converter": ens_general_converter,

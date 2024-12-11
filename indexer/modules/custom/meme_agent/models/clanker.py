@@ -2,7 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
-from indexer.modules.custom.clanker.domains.tokens import ClankerCreatedTokenD
+from indexer.modules.custom.meme_agent.domains.clanker import ClankerCreatedTokenD
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
 
 

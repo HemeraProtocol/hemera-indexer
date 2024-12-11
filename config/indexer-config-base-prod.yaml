@@ -1,5 +1,10 @@
 chain_id: 8453
 
-export_clanker_created_token_job:
-  token_factory_address_v0: "0x250c9FB2b411B48273f69879007803790A6AeA47"
-  token_factory_address_v1: "0x9b84fce5dcd9a38d2d01d5d72373f6b6b067c3e1"
+export_meme_token_created_job:
+  clanker_factory_address_v0: "0x250c9FB2b411B48273f69879007803790A6AeA47"
+  clanker_factory_address_v1: "0x9b84fce5dcd9a38d2d01d5d72373f6b6b067c3e1"
+  virtuals_factory_address: "0x94Bf9622348Cf5598D9A491Fa809194Cf85A0D61"
+  larry_factory_address:
+    - "0x5faAb5D52790916ed9c2C159960006151e311bA0"
+    - "0xb3a720f17902b7d2e8c38c5044c3b20e8ac9c27c"
+
