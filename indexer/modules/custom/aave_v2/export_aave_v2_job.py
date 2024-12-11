@@ -42,7 +42,7 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2WithdrawD,
     aave_v2_address_current_factory,
 )
-from indexer.modules.custom.aave_v2.models.aave_v2_reserve_current import AaveV2Reserve
+from indexer.modules.custom.aave_v2.models.aave_v2_reserve import AaveV2Reserve
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
