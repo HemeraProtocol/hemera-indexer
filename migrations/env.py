@@ -1,6 +1,8 @@
 import re
 
 from alembic import context
+from alembic.autogenerate import rewriter
+from alembic.operations import ops
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.sql.schema import SchemaItem
 
@@ -29,7 +31,22 @@ target_metadata = db.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-IGNORE_DB_TABLE = ["transactions_multi", "hemera_address_transactions", "address_transactions_all", "chosen_address"]
+IGNORE_DB_TABLE = [
+    "transactions_multi",
+    "hemera_address_transactions",
+    "address_transactions_all",
+    "chosen_address",
+    "af_ether_fi_share_balances",
+    "af_ether_fi_position_values",
+    "af_ether_fi_share_balances_current",
+    "af_ether_fi_lrt_exchange_rate",
+    "af_lido_seth_share_balances",
+    "af_lido_position_values",
+    "af_lido_seth_share_balances_current",
+    "af_pendle_pool",
+    "af_pendle_user_active_balance",
+    "af_pendle_user_active_balance_current",
+]
 PARTITION_TABLES = [
     "contract_internal_transactions",
     "erc20_token_transfers",
@@ -71,6 +88,32 @@ def do_not_track_partition_table(**kwargs) -> bool:
 
 tracking_list = [table_able_to_track, do_not_track_partition_table]
 
+writer = rewriter.Rewriter()
+
+
+@writer.rewrites(ops.CreateTableOp)
+def rewrite_create_table(context, revision, op):
+    op.if_not_exists = True
+    return op
+
+
+@writer.rewrites(ops.CreateIndexOp)
+def rewrite_create_index(context, revision, op):
+    op.if_not_exists = True
+    return op
+
+
+@writer.rewrites(ops.DropTableOp)
+def rewrite_drop_table(context, revision, op):
+    op.if_exists = True
+    return op
+
+
+@writer.rewrites(ops.DropIndexOp)
+def rewrite_drop_index(context, revision, op):
+    op.if_exists = True
+    return op
+
 
 def custom_table_tracking(
     obj: SchemaItem, name: str, object_type: str, reflected: bool, compare_to: SchemaItem
@@ -100,6 +143,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         include_object=custom_table_tracking,
+        process_revision_directives=writer,
     )
 
     with context.begin_transaction():
@@ -124,6 +168,7 @@ def run_migrations_online() -> None:
             connection=connection,
             target_metadata=target_metadata,
             include_object=custom_table_tracking,
+            process_revision_directives=writer,
         )
 
         with context.begin_transaction():

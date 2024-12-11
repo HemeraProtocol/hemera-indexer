@@ -2,6 +2,30 @@ from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import ARRAY, BOOLEAN, BYTEA, INTEGER, JSON, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.bridge.domain.arbitrum import (
+    ArbitrumL1ToL2TransactionOnL1,
+    ArbitrumL1ToL2TransactionOnL2,
+    ArbitrumL2ToL1TransactionOnL1,
+    ArbitrumL2ToL1TransactionOnL2,
+    ArbitrumStateBatchConfirmed,
+    ArbitrumStateBatchCreated,
+    ArbitrumTransactionBatch,
+    BridgeToken,
+)
+from indexer.modules.bridge.domain.morph import (
+    MorphDepositedTransactionOnL1,
+    MorphDepositedTransactionOnL2,
+    MorphWithdrawalTransactionOnL1,
+    MorphWithdrawalTransactionOnL2,
+)
+from indexer.modules.bridge.domain.op_bedrock import (
+    OpL1ToL2DepositedTransaction,
+    OpL1ToL2DepositedTransactionOnL2,
+    OpL2ToL1WithdrawnTransactionFinalized,
+    OpL2ToL1WithdrawnTransactionOnL2,
+    OpL2ToL1WithdrawnTransactionProven,
+    OpStateBatch,
+)
 
 
 class AbstractTransactions(HemeraModel):
@@ -81,37 +105,37 @@ class L1ToL2BridgeTransactions(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ArbitrumL1ToL2TransactionOnL1",
+                "domain": ArbitrumL1ToL2TransactionOnL1,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "ArbitrumL1ToL2TransactionOnL2",
+                "domain": ArbitrumL1ToL2TransactionOnL2,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "OpL1ToL2DepositedTransaction",
+                "domain": OpL1ToL2DepositedTransaction,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "OpL1ToL2DepositedTransactionOnL2",
+                "domain": OpL1ToL2DepositedTransactionOnL2,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "MorphDepositedTransactionOnL1",
+                "domain": MorphDepositedTransactionOnL1,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "MorphDepositedTransactionOnL2",
+                "domain": MorphDepositedTransactionOnL2,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -155,43 +179,43 @@ class L2ToL1BridgeTransactions(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ArbitrumL2ToL1TransactionOnL1",
+                "domain": ArbitrumL2ToL1TransactionOnL1,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "ArbitrumL2ToL1TransactionOnL2",
+                "domain": ArbitrumL2ToL1TransactionOnL2,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "OpL2ToL1WithdrawnTransactionFinalized",
+                "domain": OpL2ToL1WithdrawnTransactionFinalized,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "OpL2ToL1WithdrawnTransactionOnL2",
+                "domain": OpL2ToL1WithdrawnTransactionOnL2,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "OpL2ToL1WithdrawnTransactionProven",
+                "domain": OpL2ToL1WithdrawnTransactionProven,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "MorphWithdrawalTransactionOnL1",
+                "domain": MorphWithdrawalTransactionOnL1,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "MorphWithdrawalTransactionOnL2",
+                "domain": MorphWithdrawalTransactionOnL2,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -209,7 +233,7 @@ class BridgeTokens(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "BridgeToken",
+                "domain": BridgeToken,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -249,7 +273,7 @@ class OpBedrockStateBatches(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "OpStateBatch",
+                "domain": OpStateBatch,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -284,13 +308,13 @@ class ArbitrumStateBatches(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ArbitrumStateBatchCreated",
+                "domain": ArbitrumStateBatchCreated,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
             },
             {
-                "domain": "ArbitrumStateBatchConfirmed",
+                "domain": ArbitrumStateBatchConfirmed,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -418,7 +442,7 @@ class ArbitrumTransactionBatches(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ArbitrumTransactionBatch",
+                "domain": ArbitrumTransactionBatch,
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,

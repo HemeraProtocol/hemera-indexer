@@ -2,6 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, JSONB, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 
 
 class FeatureBlueChipHolders(HemeraModel):
@@ -22,7 +23,7 @@ class FeatureBlueChipHolders(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "BlueChipHolder",
+                "domain": BlueChipHolder,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

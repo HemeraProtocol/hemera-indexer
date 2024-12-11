@@ -30,12 +30,14 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address", "token_address", "token_id"),
+        if_not_exists=True,
     )
     op.create_index(
         "address_nft_1155_holders_token_address_balance_of_idx",
         "address_nft_1155_holders",
         ["token_address", "token_id", sa.text("balance_of DESC")],
         unique=False,
+        if_not_exists=True,
     )
     op.create_table(
         "address_nft_transfers",
@@ -53,6 +55,7 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address", "block_number", "log_index", "block_timestamp", "block_hash", "token_id"),
+        if_not_exists=True,
     )
     op.create_table(
         "address_token_holders",
@@ -62,12 +65,14 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address", "token_address"),
+        if_not_exists=True,
     )
     op.create_index(
         "address_token_holders_token_address_balance_of_idx",
         "address_token_holders",
         ["token_address", sa.text("balance_of DESC")],
         unique=False,
+        if_not_exists=True,
     )
     op.create_table(
         "address_token_transfers",
@@ -84,6 +89,7 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address", "block_number", "log_index", "block_timestamp", "block_hash"),
+        if_not_exists=True,
     )
     op.create_table(
         "address_transactions",
@@ -102,12 +108,14 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("address", "block_number", "transaction_index", "block_timestamp"),
+        if_not_exists=True,
     )
     op.create_index(
         "address_transactions_address_block_timestamp_block_number_t_idx",
         "address_transactions",
         ["address", sa.text("block_timestamp DESC"), sa.text("block_number DESC"), sa.text("transaction_index DESC")],
         unique=False,
+        if_not_exists=True,
     )
     op.create_index(
         "address_transactions_address_txn_type_block_timestamp_block_idx",
@@ -120,6 +128,7 @@ def upgrade() -> None:
             sa.text("transaction_index DESC"),
         ],
         unique=False,
+        if_not_exists=True,
     )
     op.create_table(
         "token_address_nft_inventories",
@@ -129,12 +138,14 @@ def upgrade() -> None:
         sa.Column("create_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.Column("update_time", postgresql.TIMESTAMP(), server_default=sa.text("now()"), nullable=True),
         sa.PrimaryKeyConstraint("token_address", "token_id"),
+        if_not_exists=True,
     )
     op.create_index(
         "token_address_nft_inventories_wallet_address_token_address__idx",
         "token_address_nft_inventories",
         ["wallet_address", "token_address", "token_id"],
         unique=False,
+        if_not_exists=True,
     )
 
 

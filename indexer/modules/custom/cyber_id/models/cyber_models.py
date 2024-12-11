@@ -2,6 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
+from indexer.modules.custom.cyber_id.domains.cyber_domain import CyberAddressChangedD, CyberAddressD, CyberIDRegisterD
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
 
 
@@ -19,7 +20,7 @@ class CyberAddress(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "CyberAddressD",
+                "domain": CyberAddressD,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > cyber_address.block_number",
                 "converter": ens_general_converter,
@@ -45,13 +46,13 @@ class CyberIDRecord(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "CyberIDRegisterD",
+                "domain": CyberIDRegisterD,
                 "conflict_do_update": None,
                 "update_strategy": None,
                 "converter": ens_general_converter,
             },
             {
-                "domain": "CyberAddressChangedD",
+                "domain": CyberAddressChangedD,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number >= cyber_id_record.block_number",
                 "converter": ens_general_converter,

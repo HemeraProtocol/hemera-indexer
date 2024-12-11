@@ -3,10 +3,10 @@ from api.app.contract.contract_verify import get_contract_names
 from api.app.ens.ens import ENSClient
 from common.models import db
 from common.models.contracts import Contracts
-from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.models.tokens import Tokens
 from common.utils.config import get_config
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from indexer.modules.custom.address_index.models.address_index_stats import AddressIndexStats
 
 app_config = get_config()
 
@@ -16,12 +16,12 @@ else:
     ens_client = None
 
 token_address_transfers_type_column_dict = {
-    "tokentxns": StatisticsWalletAddresses.erc20_transfer_cnt,
-    "tokentxns-nft": StatisticsWalletAddresses.erc721_transfer_cnt,
-    "tokentxns-nft1155": StatisticsWalletAddresses.erc1155_transfer_cnt,
-    "erc20": StatisticsWalletAddresses.erc20_transfer_cnt,
-    "erc721": StatisticsWalletAddresses.erc721_transfer_cnt,
-    "erc1155": StatisticsWalletAddresses.erc1155_transfer_cnt,
+    "tokentxns": AddressIndexStats.erc20_transfer_count,
+    "tokentxns-nft": AddressIndexStats.nft_721_transfer_count,
+    "tokentxns-nft1155": AddressIndexStats.nft_1155_transfer_count,
+    "erc20": AddressIndexStats.erc20_transfer_count,
+    "erc721": AddressIndexStats.nft_721_transfer_count,
+    "erc1155": AddressIndexStats.nft_1155_transfer_count,
 }
 
 
@@ -31,9 +31,9 @@ def type_to_stats_column(type):
 
 def get_token_txn_cnt_by_address(token_type, bytes_address: bytes):
     result = (
-        db.session.query(StatisticsWalletAddresses)
+        db.session.query(AddressIndexStats)
         .with_entities(type_to_stats_column(token_type))
-        .filter(StatisticsWalletAddresses.address == bytes_address)
+        .filter(AddressIndexStats.address == bytes_address)
         .first()
     )
 
@@ -43,9 +43,9 @@ def get_token_txn_cnt_by_address(token_type, bytes_address: bytes):
 def get_txn_cnt_by_address(address: str):
     bytes_address = hex_str_to_bytes(address)
     result = (
-        db.session.query(StatisticsWalletAddresses)
-        .with_entities(StatisticsWalletAddresses.txn_cnt)
-        .filter(StatisticsWalletAddresses.address == bytes_address)
+        db.session.query(AddressIndexStats)
+        .with_entities(AddressIndexStats.transaction_count)
+        .filter(AddressIndexStats.address == bytes_address)
         .first()
     )
     return result
@@ -111,10 +111,10 @@ def get_address_display_mapping(bytea_address_list: list[bytes]):
 
     # Any additional manual tags
     addresses = (
-        db.session.query(StatisticsWalletAddresses.address, StatisticsWalletAddresses.tag)
+        db.session.query(AddressIndexStats.address, AddressIndexStats.tag)
         .filter(
-            StatisticsWalletAddresses.address.in_(bytea_address_list),
-            StatisticsWalletAddresses.tag != None,
+            AddressIndexStats.address.in_(bytea_address_list),
+            AddressIndexStats.tag != None,
         )
         .all()
     )

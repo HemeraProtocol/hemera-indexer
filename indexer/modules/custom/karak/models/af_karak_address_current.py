@@ -9,6 +9,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.karak.karak_domain import KarakAddressCurrentD
 
 
 class AfKarakAddressCurrent(HemeraModel):
@@ -26,7 +27,6 @@ class AfKarakAddressCurrent(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (PrimaryKeyConstraint("address", "vault"),)
 
@@ -34,7 +34,7 @@ class AfKarakAddressCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "KarakAddressCurrentD",
+                "domain": KarakAddressCurrentD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

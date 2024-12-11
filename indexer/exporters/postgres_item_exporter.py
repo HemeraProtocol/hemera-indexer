@@ -1,19 +1,17 @@
 import logging
-from datetime import datetime
 from typing import Type
 
-from dateutil.tz import tzlocal
 from psycopg2.extras import execute_values
 from tqdm import tqdm
 
 from common.converter.pg_converter import domain_model_mapping
 from common.models import HemeraModel
+from common.services.postgresql_service import PostgreSQLService
 from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
-from indexer.utils.atomic_counter import AtomicCounter
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 500
+COMMIT_BATCH_SIZE = 1000
 
 
 class TqdmExtraFormat(tqdm):
@@ -30,20 +28,20 @@ class TqdmExtraFormat(tqdm):
 
 
 class PostgresItemExporter(BaseExporter):
-    def __init__(self, service):
-        self.service = service
-        self.main_progress = None
-        self.sub_progress = None
+    def __init__(self, **service):
+        self.postgres_url = service["postgres_url"]
+        self.db_version = service.get("db_version")
+        self.init_schema = service.get("init_schema")
+        # self.service = service
 
     def export_items(self, items, **kwargs):
-        start_time = datetime.now(tzlocal())
-
         # Initialize main progress bar
         if kwargs.get("job_name"):
             job_name = kwargs.get("job_name")
             desc = f"{job_name}(PG)"
         else:
             desc = "Exporting items"
+        service = PostgreSQLService(self.postgres_url, db_version=self.db_version, init_schema=self.init_schema)
         self.main_progress = TqdmExtraFormat(
             total=len(items),
             desc=desc.ljust(35),
@@ -52,72 +50,61 @@ class PostgresItemExporter(BaseExporter):
             ncols=90,
             bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}] Est: {total_time}",
         )
+        with service.cursor_scope() as cur:
 
-        conn = self.service.get_conn()
-        try:
-            insert_stmt = ""
-            items_grouped_by_type = group_by_item_type(items)
-            tables = []
+            try:
+                insert_stmt = ""
+                items_grouped_by_type = group_by_item_type(items)
+                tables = []
 
-            # Process each item type
-            for item_type in items_grouped_by_type.keys():
-                item_group = items_grouped_by_type.get(item_type)
+                # Process each item type
+                for item_type in items_grouped_by_type.keys():
+                    item_group = items_grouped_by_type.get(item_type)
 
-                if item_group:
-                    pg_config = domain_model_mapping[item_type.__name__]
-                    table = pg_config["table"]
-                    do_update = pg_config["conflict_do_update"]
-                    update_strategy = pg_config["update_strategy"]
-                    converter = pg_config["converter"]
+                    if item_group:
+                        pg_config = domain_model_mapping[item_type]
+                        table = pg_config["table"]
+                        do_update = pg_config["conflict_do_update"]
+                        update_strategy = pg_config["update_strategy"]
+                        converter = pg_config["converter"]
 
-                    # Initialize sub-progress bar for current table
-                    self.sub_progress = TqdmExtraFormat(
-                        total=len(item_group),
-                        desc=f"Processing {table.__tablename__}".ljust(35),
-                        unit="items",
-                        position=1,
-                        leave=False,
-                        ncols=90,
-                        bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
-                    )
+                        # Initialize sub-progress bar for current table
+                        # Initialize sub-progress bar for current table
+                        self.sub_progress = TqdmExtraFormat(
+                            total=len(item_group),
+                            desc=f"Processing {table.__tablename__}".ljust(35),
+                            unit="items",
+                            position=1,
+                            leave=False,
+                            ncols=90,
+                            bar_format="{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
+                        )
+                        data = []
+                        # Process items with progress tracking
+                        for item in item_group:
+                            converted_item = converter(table, item, do_update)
+                            data.append(converted_item)
+                            self.sub_progress.update(1)
+                            self.main_progress.update(1)
+                        if data:
+                            columns = list(data[0].keys())
+                            values = [tuple(d.values()) for d in data]
 
-                    cur = conn.cursor()
-                    data = []
+                            insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
 
-                    # Process items with progress tracking
-                    for item in item_group:
-                        converted_item = converter(table, item, do_update)
-                        data.append(converted_item)
-                        self.sub_progress.update(1)
-                        self.main_progress.update(1)
+                            # Execute in batches with progress tracking
+                            for i in range(0, len(values), COMMIT_BATCH_SIZE):
+                                batch = values[i : i + COMMIT_BATCH_SIZE]
+                                execute_values(cur, insert_stmt, batch)
+                                cur.connection.commit()
 
-                    if data:
-                        columns = list(data[0].keys())
-                        values = [tuple(d.values()) for d in data]
+                        tables.append(table.__tablename__)
+                        self.sub_progress.close()
 
-                        insert_stmt = sql_insert_statement(table, do_update, columns, where_clause=update_strategy)
-
-                        # Execute in batches with progress tracking
-                        for i in range(0, len(values), COMMIT_BATCH_SIZE):
-                            batch = values[i : i + COMMIT_BATCH_SIZE]
-                            execute_values(cur, insert_stmt, batch)
-                            conn.commit()
-
-                    tables.append(table.__tablename__)
-                    self.sub_progress.close()
-
-        except Exception as e:
-            logger.error(f"Error exporting items: {e}")
-            logger.error(f"{insert_stmt}")
-            raise Exception("Error exporting items")
-        finally:
-            self.service.release_conn(conn)
-            if self.main_progress:
-                self.main_progress.close()
-            if self.sub_progress:
-                self.sub_progress.close()
-
-        end_time = datetime.now(tzlocal())
+            except Exception as e:
+                logger.error(f"Error exporting items: {e}")
+                logger.error(f"{insert_stmt}")
+                raise e
 
 
 def sql_insert_statement(model: Type[HemeraModel], do_update: bool, columns, where_clause=None):

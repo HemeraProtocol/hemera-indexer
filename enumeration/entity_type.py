@@ -24,7 +24,7 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2RepayD,
     AaveV2ReserveD,
     AaveV2ReserveDataCurrentD,
-    AaveV2ReserveDataUpdatedRecordsD,
+    AaveV2ReserveDataD,
     AaveV2WithdrawD,
 )
 from indexer.modules.custom.address_index.domain import *
@@ -35,7 +35,7 @@ from indexer.modules.custom.all_features_value_record import AllFeatureValueReco
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
-from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import EigenLayerActionD, EigenLayerAddressCurrentD
+from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import EigenLayerAction, EigenLayerAddressCurrent
 from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSAddressChangeD,
     ENSAddressD,
@@ -46,7 +46,7 @@ from indexer.modules.custom.hemera_ens.ens_domain import (
 from indexer.modules.custom.karak.karak_domain import KarakActionD, KarakAddressCurrentD, KarakVaultTokenD
 from indexer.modules.custom.opensea.domain.address_opensea_transactions import AddressOpenseaTransaction
 from indexer.modules.custom.opensea.domain.opensea_order import OpenseaOrder
-from indexer.modules.custom.uniswap_v3.domain.feature_uniswap_v3 import (
+from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3Pool,
     UniswapV3PoolCurrentPrice,
     UniswapV3PoolPrice,
@@ -100,7 +100,7 @@ class EntityType(IntFlag):
 
 
 ALL_ENTITY_COLLECTIONS = EntityType.__members__.keys()
-DEFAULT_COLLECTION = []
+DEFAULT_COLLECTION = ["EXPLORER_BASE", "EXPLORER_TOKEN"]
 
 
 def calculate_entity_value(entity_types):
@@ -212,8 +212,8 @@ def generate_output_types(entity_types):
         yield KarakAddressCurrentD
 
     if entity_types & EntityType.EIGEN_LAYER:
-        yield EigenLayerActionD
-        yield EigenLayerAddressCurrentD
+        yield EigenLayerAction
+        yield EigenLayerAddressCurrent
 
     if entity_types & EntityType.AAVEV2:
         yield AaveV2ReserveD
@@ -226,5 +226,5 @@ def generate_output_types(entity_types):
         yield AaveV2AddressCurrentD
         yield AaveV2LiquidationAddressCurrentD
         yield AaveV2CallRecordsD
-        yield AaveV2ReserveDataUpdatedRecordsD
+        yield AaveV2ReserveDataD
         yield AaveV2ReserveDataCurrentD

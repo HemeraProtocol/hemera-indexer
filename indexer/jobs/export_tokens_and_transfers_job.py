@@ -59,7 +59,7 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
     ]
     output_token_types = [Token, UpdateToken]
 
-    dependency_types = [Log]
+    dependency_types = [Log, TokenTransfer]
     output_types = output_transfer_types + output_token_types
     able_to_reorg = True
 

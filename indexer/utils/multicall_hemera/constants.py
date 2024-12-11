@@ -2,7 +2,12 @@ import os
 from dataclasses import dataclass
 from typing import ClassVar, Dict
 
+# gas limit for a single call
 GAS_LIMIT: int = int(os.environ.get("GAS_LIMIT", 5_000_000))
+# payload limit in KB
+RPC_PAYLOAD_SIZE: int = int(os.environ.get("BATCH_SIZE", 250))
+# calls limit
+CALLS_LIMIT: int = int(os.environ.get("CALLS_LIMIT", 2000))
 DEFAULT_MULTICALL_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11"
 
 
@@ -97,6 +102,9 @@ KOVAN = NetworkConfig(42, "Kovan")
 OKC = NetworkConfig(66, "OKC")
 FUSE = NetworkConfig(122, "Fuse")
 COSTON2_TESTNET = NetworkConfig(114, "Coston2Testnet")
+TAIKO_MAIN = NetworkConfig(167000, "Taiko", 11269)
+CYBER_TESTNET = NetworkConfig(111557560, "CyberTestnet")
+CYBER = NetworkConfig(7560, "Cyber", 3413302)
 
 
 def get_multicall_network(chain_id: int) -> NetworkConfig:

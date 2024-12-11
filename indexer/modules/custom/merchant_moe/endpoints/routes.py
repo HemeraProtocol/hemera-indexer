@@ -8,9 +8,9 @@ from indexer.modules.custom.merchant_moe.endpoints import merchant_moe_namespace
 from indexer.modules.custom.merchant_moe.models.feature_erc1155_token_current_supply import (
     FeatureErc1155TokenCurrentSupplyStatus,
 )
-from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerChantMoePools
+from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_pool import FeatureMerchantMoePools
 from indexer.modules.custom.merchant_moe.models.feature_merchant_moe_token_current_bin import (
-    FeatureMerChantMoeTokenBinCurrentStatus,
+    FeatureMerchantMoeTokenBinCurrentStatus,
 )
 
 Q96 = 2**96
@@ -20,7 +20,7 @@ Q96 = 2**96
 class MerchantMoeWalletHolding(Resource):
     def get(self, wallet_address):
         pool_infos = {}
-        pool_tokens = db.session.query(FeatureMerChantMoePools).all()
+        pool_tokens = db.session.query(FeatureMerchantMoePools).all()
 
         tokens = set()
         for data in pool_tokens:
@@ -51,8 +51,8 @@ class MerchantMoeWalletHolding(Resource):
         )
 
         token_bin_list = (
-            db.session.query(FeatureMerChantMoeTokenBinCurrentStatus)
-            .filter(FeatureMerChantMoeTokenBinCurrentStatus.token_address.in_(unique_token_addresses))
+            db.session.query(FeatureMerchantMoeTokenBinCurrentStatus)
+            .filter(FeatureMerchantMoeTokenBinCurrentStatus.token_address.in_(unique_token_addresses))
             .all()
         )
 

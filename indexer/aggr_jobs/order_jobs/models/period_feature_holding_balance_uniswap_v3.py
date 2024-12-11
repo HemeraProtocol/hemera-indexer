@@ -9,7 +9,7 @@ class PeriodFeatureHoldingBalanceUniswapV3(HemeraModel):
 
     period_date = Column(DATE, primary_key=True, nullable=False)
     protocol_id = Column(VARCHAR, primary_key=True, nullable=False)
-    position_token_address = Column(BYTEA, primary_key=True, nullable=False)
+    pool_address = Column(BYTEA, primary_key=True, nullable=False)
     token_id = Column(INTEGER, primary_key=True, nullable=False)
     wallet_address = Column(BYTEA, nullable=False)
     token0_address = Column(BYTEA, nullable=False)
@@ -22,7 +22,7 @@ class PeriodFeatureHoldingBalanceUniswapV3(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("period_date", "protocol_id", "position_token_address", "token_id"),)
+    __table_args__ = (PrimaryKeyConstraint("period_date", "protocol_id", "pool_address", "token_id"),)
 
 
 # could be replaced by partition in case of huge amount data

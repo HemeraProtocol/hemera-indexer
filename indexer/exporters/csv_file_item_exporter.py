@@ -12,16 +12,14 @@ from indexer.exporters.base_exporter import BaseExporter, group_by_item_type
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BLOCKS_PER_FILE = 1000
+DEFAULT_BLOCKS_PER_FILE = os.environ.get("DEFAULT_BLOCKS_PER_FILE", 1000)
 
 
 class CSVFileItemExporter(BaseExporter):
 
     def __init__(self, direction, config):
-        blocks_per_file = config.get("blocks_per_file") if config.get("blocks_per_file") else DEFAULT_BLOCKS_PER_FILE
-
         self.dir = direction.replace("csvfile://", "")
-        self.blocks_per_file = blocks_per_file
+        self.blocks_per_file = config.get("blocks_per_file", DEFAULT_BLOCKS_PER_FILE)
 
     def export_items(self, items: List[Domain], **kwargs):
         start_time = datetime.now(tzlocal())

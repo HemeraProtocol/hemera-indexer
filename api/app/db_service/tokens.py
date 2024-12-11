@@ -6,7 +6,7 @@ from common.models import db
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
-from common.models.scheduled_metadata import ScheduledTokenCountMetadata, ScheduledWalletCountMetadata
+from common.models.scheduled_metadata import ScheduledMetadata
 from common.models.token_prices import TokenPrices
 from common.models.tokens import Tokens
 from common.utils.config import get_config
@@ -35,7 +35,7 @@ def type_to_token_transfer_table(type):
 
 def get_address_token_transfer_cnt(token_type, condition, address):
     # Get count last update timestamp
-    last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
 
     # Get historical count
     result = get_token_txn_cnt_by_address(token_type, address)
@@ -60,12 +60,14 @@ def get_address_token_transfer_cnt(token_type, condition, address):
 def get_token_address_token_transfer_cnt(token_type: str, address: str):
     # Get count last update timestamp
     bytes_address = hex_str_to_bytes(address)
-    last_timestamp = db.session.query(func.max(ScheduledTokenCountMetadata.last_data_timestamp)).scalar()
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
 
     # Get historical count
     result = (
         db.session.query(Tokens).with_entities(Tokens.transfer_count).filter(Tokens.address == bytes_address).first()
     )
+    if result and result[0]:
+        return result[0]
     return (
         db.session.query(type_to_token_transfer_table(token_type))
         .filter(
@@ -95,6 +97,7 @@ def get_raw_token_transfers(type, condition, page_index, page_size, is_count=Tru
                 .where(condition)
                 .order_by(
                     token_trasfer_table.block_number.desc(),
+                    token_trasfer_table.block_timestamp.desc(),
                     token_trasfer_table.log_index.desc(),
                 )
                 .limit(page_size)

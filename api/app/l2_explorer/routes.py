@@ -27,7 +27,7 @@ from common.models.bridge import (
     StateBatches,
     ZkEvmBatches,
 )
-from common.models.scheduled_metadata import ScheduledWalletCountMetadata
+from common.models.scheduled_metadata import ScheduledMetadata
 from common.models.tokens import Tokens
 from common.models.transactions import Transactions
 from common.utils.bridge_utils import BridgeTransactionParser

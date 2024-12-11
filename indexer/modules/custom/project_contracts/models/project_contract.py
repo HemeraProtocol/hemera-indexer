@@ -4,16 +4,17 @@
 # @Author  will
 # @File  project_contract.py
 # @Brief
-from sqlalchemy import BIGINT, BOOLEAN, INT, VARCHAR, Column, PrimaryKeyConstraint, func, text
-from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
+from sqlalchemy import Column, PrimaryKeyConstraint, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.project_contracts.domain.project_contract_domain import ProjectContractD
 
 
 class AfProjectContracts(HemeraModel):
     __tablename__ = "af_project_contracts"
     project_id = Column(VARCHAR)
-    chain_id = Column(INT)
+    chain_id = Column(INTEGER)
     address = Column(BYTEA, primary_key=True)
     deployer = Column(BYTEA)
 
@@ -33,7 +34,7 @@ class AfProjectContracts(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "ProjectContractD",
+                "domain": ProjectContractD,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

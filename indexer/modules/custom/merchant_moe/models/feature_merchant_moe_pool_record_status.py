@@ -2,9 +2,10 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.merchant_moe.domains.merchant_moe import MerchantMoePoolCurrentStatus
 
 
-class FeatureMerChantMoePoolRecordStatus(HemeraModel):
+class FeatureMerchantMoePoolRecordStatus(HemeraModel):
     __tablename__ = "af_merchant_moe_pool_data_current"
     pool_address = Column(BYTEA, primary_key=True)
     block_timestamp = Column(BIGINT)
@@ -22,7 +23,7 @@ class FeatureMerChantMoePoolRecordStatus(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "MerChantMoePoolCurrentStatu",
+                "domain": MerchantMoePoolCurrentStatus,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > af_merchant_moe_pool_data_current.block_number",
                 "converter": general_converter,

@@ -45,7 +45,18 @@ ERC20_TRANSFER_EVENT = Event(
     }
 )
 
-ERC721_TRANSFER_EVENT = ERC20_TRANSFER_EVENT
+ERC721_TRANSFER_EVENT = Event(
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": True, "name": "from", "type": "address"},
+            {"indexed": True, "name": "to", "type": "address"},
+            {"indexed": True, "name": "tokenId", "type": "uint256"},
+        ],
+        "name": "Transfer",
+        "type": "event",
+    }
+)
 
 ERC1155_SINGLE_TRANSFER_EVENT = Event(
     {

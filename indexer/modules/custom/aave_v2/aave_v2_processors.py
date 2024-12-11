@@ -3,7 +3,9 @@ from abc import ABC, abstractmethod
 from typing import Any, Type, TypeVar
 
 from common.utils.abi_code_utils import Event
-from common.utils.web3_utils import extract_eth_address, to_checksum_address
+from common.utils.web3_utils import extract_eth_address
+from indexer.modules.custom.aave_v2.abi.abi import DECIMALS_FUNCTIOIN, SYMBOL_FUNCTIOIN
+from indexer.utils.multicall_hemera import Call
 
 logger = logging.getLogger(__name__)
 
@@ -13,10 +15,10 @@ T = TypeVar("T")
 class EventProcessor(ABC):
     """Abstract base processor for handling different event types"""
 
-    def __init__(self, event: Event, data_class: Type[T], web3=None):
+    def __init__(self, event: Event, data_class: Type[T], multicall_helper=None):
         self.event = event
         self.data_class = data_class
-        self.web3 = web3
+        self.multicall_helper = multicall_helper
 
     def process(self, log: Any) -> T:
         """Process log data with common field handling and custom processing"""
@@ -46,40 +48,14 @@ class EventProcessor(ABC):
         pass
 
 
-class BaseReserveProcessor(EventProcessor):
-    """Base class for reserve initialization processors"""
-
-    def __init__(self, event: Event, data_class: Type[T], web3=None):
-        super().__init__(event, data_class, web3)
-        self.abi = [
-            {
-                "constant": True,
-                "inputs": [],
-                "name": "decimals",
-                "outputs": [{"name": "", "type": "uint8"}],
-                "payable": False,
-                "stateMutability": "view",
-                "type": "function",
-            },
-            {
-                "constant": True,
-                "inputs": [],
-                "name": "symbol",
-                "outputs": [{"name": "", "type": "string"}],
-                "payable": False,
-                "stateMutability": "view",
-                "type": "function",
-            },
-        ]
+class ReserveInitProcessor(EventProcessor):
+    """0x3a0ca721fc364424566385a1aa271ed508cc2c0949c2272575fb3013a163a45f"""
 
     def _get_token_info(self, address: str) -> dict:
-        """Get token decimals and symbol"""
-        contract = self.web3.eth.contract(abi=self.abi, address=to_checksum_address(address))
-        return {"decimals": contract.functions.decimals().call(), "symbol": contract.functions.symbol().call()}
-
-
-class ReserveInitProcessor(BaseReserveProcessor):
-    """0x3a0ca721fc364424566385a1aa271ed508cc2c0949c2272575fb3013a163a45f"""
+        decimals_call = Call(target=address, function_abi=DECIMALS_FUNCTIOIN)
+        symbol_call = Call(target=address, function_abi=SYMBOL_FUNCTIOIN)
+        self.multicall_helper.execute_multicall([decimals_call, symbol_call])
+        return {"decimals": decimals_call.returns["decimals"], "symbol": symbol_call.returns["symbol"]}
 
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         asset = extract_eth_address(log.topic1)
@@ -202,10 +178,10 @@ class ReserveDataUpdateProcessor(EventProcessor):
 
     def _process_specific_fields(self, log: Any, decoded_log: Any) -> dict:
         return {
-            "reserve": extract_eth_address(log.topic1),
-            "liquidityRate": decoded_log.get("liquidityRate"),
-            "stableBorrowRate": decoded_log.get("stableBorrowRate"),
-            "variableBorrowRate": decoded_log.get("variableBorrowRate"),
-            "liquidityIndex": decoded_log.get("liquidityIndex"),
-            "variableBorrowIndex": decoded_log.get("variableBorrowIndex"),
+            "asset": extract_eth_address(log.topic1),
+            "liquidity_rate": decoded_log.get("liquidityRate"),
+            "stable_borrow_rate": decoded_log.get("stableBorrowRate"),
+            "variable_borrow_rate": decoded_log.get("variableBorrowRate"),
+            "liquidity_index": decoded_log.get("liquidityIndex"),
+            "variable_borrow_index": decoded_log.get("variableBorrowIndex"),
         }

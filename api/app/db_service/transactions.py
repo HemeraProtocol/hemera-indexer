@@ -1,15 +1,18 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from sqlalchemy import and_, func, or_
 
 from api.app.cache import cache
 from api.app.db_service.wallet_addresses import get_txn_cnt_by_address
 from common.models import db
-from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
-from common.models.scheduled_metadata import ScheduledWalletCountMetadata
+from common.models.scheduled_metadata import ScheduledMetadata
 from common.models.transactions import Transactions
 from common.utils.db_utils import build_entities
 from common.utils.format_utils import hex_str_to_bytes
+from indexer.modules.custom.address_index.models.address_transactions import AddressTransactions
+from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
+
+MAX_ADDRESS_TXN_COUNT = 100000
 
 
 def get_last_transaction():
@@ -62,14 +65,45 @@ def get_tps_latest_10min(timestamp):
     return float(cnt / 600)
 
 
-def get_address_transaction_cnt(address: str):
-    last_timestamp = db.session.query(func.max(ScheduledWalletCountMetadata.last_data_timestamp)).scalar()
+def get_address_transaction_cnt_v2(address: str):
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
     bytes_address = hex_str_to_bytes(address)
+
+    result = get_txn_cnt_by_address(address)
+    past_txn_count = 0 if not result else result[0]
+
+    if past_txn_count > MAX_ADDRESS_TXN_COUNT:
+        return past_txn_count
+
+    recently_txn_count = (
+        db.session.query(AddressTransactions.address)
+        .filter(
+            and_(
+                (AddressTransactions.block_timestamp >= last_timestamp if last_timestamp is not None else True),
+                AddressTransactions.address == bytes_address,
+            )
+        )
+        .count()
+    )
+
+    total_count = past_txn_count + recently_txn_count
+    return total_count
+
+
+def get_address_transaction_cnt(address: str):
+    last_timestamp = db.session.query(func.max(ScheduledMetadata.last_data_timestamp)).scalar()
+    bytes_address = hex_str_to_bytes(address)
+
+    result = get_txn_cnt_by_address(address)
+    past_txn_count = 0 if not result else result[0]
+    if past_txn_count > MAX_ADDRESS_TXN_COUNT:
+        return past_txn_count
+
     recently_txn_count = (
         db.session.query(Transactions.hash)
         .filter(
             and_(
-                (Transactions.block_timestamp >= last_timestamp.date() if last_timestamp is not None else True),
+                (Transactions.block_timestamp >= last_timestamp if last_timestamp is not None else True),
                 or_(
                     Transactions.from_address == bytes_address,
                     Transactions.to_address == bytes_address,
@@ -78,9 +112,6 @@ def get_address_transaction_cnt(address: str):
         )
         .count()
     )
-
-    result = get_txn_cnt_by_address(address)
-    past_txn_count = 0 if not result else result[0]
     total_count = past_txn_count + recently_txn_count
     return total_count
 
@@ -88,11 +119,11 @@ def get_address_transaction_cnt(address: str):
 def get_total_txn_count():
     # Get the latest block date and cumulative count
     latest_record = (
-        DailyTransactionsAggregates.query.with_entities(
-            DailyTransactionsAggregates.block_date,
-            DailyTransactionsAggregates.total_cnt,
+        DailyTransactionsStats.query.with_entities(
+            DailyTransactionsStats.block_date,
+            DailyTransactionsStats.total_cnt,
         )
-        .order_by(DailyTransactionsAggregates.block_date.desc())
+        .order_by(DailyTransactionsStats.block_date.desc())
         .first()
     )
 
@@ -102,10 +133,18 @@ def get_total_txn_count():
 
     block_date, cumulate_count = latest_record
 
-    # Count transactions since the latest block date
-    cnt = Transactions.query.filter(Transactions.block_timestamp >= (block_date + timedelta(days=1))).count()
+    current_time = datetime.utcnow()
 
-    return cnt + cumulate_count
+    ten_minutes_ago = current_time - timedelta(minutes=10)
+    latest_10_min_txn_cnt = Transactions.query.filter(Transactions.block_timestamp >= ten_minutes_ago).count()
+
+    avg_txn_per_minute = latest_10_min_txn_cnt / 10
+
+    minutes_since_last_block = int((current_time - block_date).total_seconds() / 60)
+
+    estimated_txn = int(avg_txn_per_minute * minutes_since_last_block)
+
+    return estimated_txn + cumulate_count
 
 
 def get_transactions_by_condition(filter_condition=None, columns="*", limit=1, offset=0):

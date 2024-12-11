@@ -2,6 +2,7 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BYTEA, INTEGER, NUMERIC, SMALLINT, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
+from indexer.modules.custom.address_index.domain import AddressNftTransfer
 
 
 class AddressNftTransfers(HemeraModel):
@@ -10,7 +11,7 @@ class AddressNftTransfers(HemeraModel):
     address = Column(BYTEA, primary_key=True)
     block_number = Column(INTEGER, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
-    transaction_hash = Column(BYTEA)
+    transaction_hash = Column(BYTEA, primary_key=True)
     block_timestamp = Column(TIMESTAMP, primary_key=True)
     block_hash = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA)
@@ -25,7 +26,7 @@ class AddressNftTransfers(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "AddressNftTransfer",
+                "domain": AddressNftTransfer,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,

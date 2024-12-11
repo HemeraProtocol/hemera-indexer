@@ -12,8 +12,8 @@ from decimal import Decimal
 import flask
 from flask import Response
 from flask_restx import Resource, reqparse
-from sqlalchemy.sql import and_, cast, func, nullslast, or_
-from sqlalchemy.sql.sqltypes import VARCHAR, Numeric
+from sqlalchemy.sql import and_, func, nullslast, or_
+from sqlalchemy.sql.sqltypes import Numeric
 
 from api.app.cache import cache
 from api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
@@ -42,6 +42,7 @@ from api.app.db_service.tokens import (
 from api.app.db_service.traces import get_traces_by_condition, get_traces_by_transaction_hash
 from api.app.db_service.transactions import (
     get_address_transaction_cnt,
+    get_address_transaction_cnt_v2,
     get_total_txn_count,
     get_tps_latest_10min,
     get_transaction_by_hash,
@@ -66,14 +67,9 @@ from common.models.blocks import Blocks
 from common.models.contract_internal_transactions import ContractInternalTransactions
 from common.models.contracts import Contracts
 from common.models.current_token_balances import CurrentTokenBalances
-from common.models.daily_address_aggregates import DailyAddressesAggregates
-from common.models.daily_blocks_aggregates import DailyBlocksAggregates
-from common.models.daily_tokens_aggregates import DailyTokensAggregates
-from common.models.daily_transactions_aggregates import DailyTransactionsAggregates
 from common.models.erc20_token_transfers import ERC20TokenTransfers
 from common.models.erc721_token_transfers import ERC721TokenTransfers
 from common.models.erc1155_token_transfers import ERC1155TokenTransfers
-from common.models.statistics_wallet_addresses import StatisticsWalletAddresses
 from common.models.token_balances import AddressTokenBalances
 from common.models.tokens import Tokens
 from common.models.traces import Traces
@@ -82,13 +78,25 @@ from common.utils.abi_code_utils import Function, decode_function, decode_log_da
 from common.utils.config import get_config
 from common.utils.db_utils import get_total_row_count
 from common.utils.exception_control import APIError
-from common.utils.format_utils import bytes_to_hex_str, format_to_dict, hex_str_to_bytes, row_to_dict
+from common.utils.format_utils import as_dict, bytes_to_hex_str, format_to_dict, hex_str_to_bytes, row_to_dict
 from common.utils.web3_utils import (
     get_debug_trace_transaction,
     is_eth_address,
     is_eth_transaction_hash,
     to_checksum_address,
 )
+from indexer.modules.custom.address_index.models.address_index_stats import AddressIndexStats
+from indexer.modules.custom.address_index.utils.helpers import (
+    get_address_erc20_token_transfer_cnt,
+    get_address_token_transfers,
+    get_address_transactions,
+    parse_address_token_transfers,
+    parse_address_transactions,
+)
+from indexer.modules.custom.stats.models.daily_addresses_stats import DailyAddressesStats
+from indexer.modules.custom.stats.models.daily_blocks_stats import DailyBlocksStats
+from indexer.modules.custom.stats.models.daily_tokens_stats import DailyTokensStats
+from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTransactionsStats
 
 PAGE_SIZE = 25
 MAX_TRANSACTION = 500000
@@ -657,6 +665,49 @@ class ExplorerTransactionInternalTransactions(Resource):
         # Add display name for from/to address
         fill_address_display_to_transactions(transaction_list, bytea_address_list)
 
+        return {"total": len(transaction_list), "data": transaction_list}, 200
+
+
+@explorer_namespace.route("/v1/explorer/transaction/<hash>/all_internal_transactions")
+class ExplorerTransactionInternalTransactions(Resource):
+    @cache.cached(timeout=360, query_string=True)
+    def get(self, hash):
+
+        internal_transactions = (
+            db.session.query(Traces).filter(Traces.transaction_hash == bytes.fromhex(hash[2:])).all()
+        )
+        transaction_list = []
+        address_list = []
+        for transaction in internal_transactions:
+            transaction_json = as_dict(transaction)
+            transaction_json["from_address_is_contract"] = False
+            transaction_json["to_address_is_contract"] = False
+            transaction_json["value"] = (
+                format_coin_value_with_unit(transaction.value or 0, app_config.token_configuration.native_token)
+                if transaction.value
+                else 0
+            )
+            transaction_list.append(transaction_json)
+            address_list.append(transaction.from_address)
+            address_list.append(transaction.to_address)
+
+        # Find contract
+        contracts = (
+            db.session.query(Contracts)
+            .with_entities(Contracts.address)
+            .filter(Contracts.address.in_(list(set(address_list))))
+            .all()
+        )
+        contract_list = set(map(lambda x: x.address, contracts))
+
+        for transaction_json in transaction_list:
+            if transaction_json["to_address"] in contract_list:
+                transaction_json["to_address_is_contract"] = True
+            if transaction_json["from_address"] in contract_list:
+                transaction_json["from_address_is_contract"] = True
+
+        fill_address_display_to_transactions(transaction_list)
+        transaction_list.sort(key=lambda x: int(x["trace_id"].split("-")[-1]) if x["trace_id"] else 0)
         return {"total": len(transaction_list), "data": transaction_list}, 200
 
 
@@ -1306,6 +1357,7 @@ class ExplorerAddressTokenHoldingsV2(Resource):
                     "token_name": token_holder.name or "Unknown Token",
                     "token_symbol": token_holder.symbol or "UNKNOWN",
                     "token_logo_url": token_holder.logo or None,
+                    "token_type": token_holder.token_type,
                     "type": {
                         "ERC20": "tokentxns",
                         "ERC721": "tokentxns-nft",
@@ -1325,23 +1377,17 @@ class ExplorerAddressTransactions(Resource):
     @cache.cached(timeout=10, query_string=True)
     def get(self, address):
         address = address.lower()
-        address_bytes = hex_str_to_bytes(address)
 
-        transactions = get_transactions_by_condition(
-            columns=TRANSACTION_LIST_COLUMNS,
-            filter_condition=or_(
-                Transactions.from_address == address_bytes,
-                Transactions.to_address == address_bytes,
-            ),
-            limit=PAGE_SIZE,
+        transactions = get_address_transactions(
+            address=address,
         )
 
         if len(transactions) < PAGE_SIZE:
             total_count = len(transactions)
         else:
-            total_count = get_address_transaction_cnt(address)
+            total_count = get_address_transaction_cnt_v2(address)
 
-        transaction_list = parse_transactions(transactions)
+        transaction_list = parse_address_transactions(transactions)
 
         return {
             "data": transaction_list,
@@ -1358,10 +1404,15 @@ class ExplorerAddressTokenTransfers(Resource):
         type = flask.request.args.get("type", "").lower()
 
         if type in ["tokentxns", "erc20"]:
-            condition = or_(
-                ERC20TokenTransfers.from_address == bytea_address,
-                ERC20TokenTransfers.to_address == bytea_address,
-            )
+            token_transfers = get_address_token_transfers(address)
+            token_transfer_list = parse_address_token_transfers(token_transfers)
+            total_count = get_address_erc20_token_transfer_cnt(bytea_address)
+            return {
+                "total": total_count,
+                "data": token_transfer_list,
+                "type": type,
+            }, 200
+
         elif type in ["tokentxns-nft", "erc721"]:
             condition = or_(
                 ERC721TokenTransfers.from_address == bytea_address,
@@ -1453,7 +1504,6 @@ class ExplorerTokenProfile(Resource):
     def get(self, address):
         address = address.lower()
         token = get_token_by_address(address)
-
         if not token:
             raise APIError("Token not found", code=400)
 
@@ -1515,15 +1565,11 @@ class ExplorerTokenTokenTransfers(Resource):
         else:
             raise APIError("Invalid type", code=400)
 
-        token_transfers, total_count = get_raw_token_transfers(
-            token.token_type, condition, 1, PAGE_SIZE, is_count=False
-        )
-
-        total_count = get_token_address_token_transfer_cnt(token.token_type, address)
+        token_transfers, _ = get_raw_token_transfers(token.token_type, condition, 1, PAGE_SIZE, is_count=False)
 
         token_transfer_list = parse_token_transfers(token_transfers, token.token_type)
         return {
-            "total": total_count,
+            "total": get_token_address_token_transfer_cnt(token.token_type, address),
             "data": token_transfer_list,
             "type": token.token_type,
         }, 200
@@ -1615,18 +1661,18 @@ class ExplorerStatisticsContractData(Resource):
         "transactions_received": lambda session, limit: session.query(
             Transactions.to_address.label("address"),
             func.count().label("transaction_count"),
-            StatisticsWalletAddresses.tag,
+            AddressIndexStats.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.to_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            AddressIndexStats,
+            Transactions.to_address == AddressIndexStats.address,
             isouter=True,
         )
         .filter(
             Transactions.block_timestamp > datetime.now() - timedelta(days=1),
             Transactions.to_address.in_(session.query(Contracts.address)),
         )
-        .group_by(Transactions.to_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.to_address, AddressIndexStats.tag)
         .order_by(func.count().desc())
         .limit(limit)
         .all(),
@@ -1661,30 +1707,30 @@ class ExplorerStatisticsAddressData(Resource):
         "gas_used": lambda session, limit: session.query(
             Transactions.from_address.label("address"),
             func.sum(Transactions.receipt_gas_used).label("gas_used"),
-            StatisticsWalletAddresses.tag,
+            AddressIndexStats.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            AddressIndexStats,
+            Transactions.from_address == AddressIndexStats.address,
             isouter=True,
         )
         .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
-        .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.from_address, AddressIndexStats.tag)
         .order_by(func.sum(Transactions.receipt_gas_used).desc())
         .limit(limit)
         .all(),
         "transactions_sent": lambda session, limit: session.query(
             Transactions.from_address.label("address"),
             func.count().label("transaction_count"),
-            StatisticsWalletAddresses.tag,
+            AddressIndexStats.tag,
         )
         .join(
-            StatisticsWalletAddresses,
-            cast("0x" + func.encode(Transactions.from_address, "hex"), VARCHAR) == StatisticsWalletAddresses.address,
+            AddressIndexStats,
+            Transactions.from_address == AddressIndexStats.address,
             isouter=True,
         )
         .filter(Transactions.block_timestamp > datetime.now() - timedelta(days=1))
-        .group_by(Transactions.from_address, StatisticsWalletAddresses.tag)
+        .group_by(Transactions.from_address, AddressIndexStats.tag)
         .order_by(func.count().desc())
         .limit(limit)
         .all(),
@@ -1762,13 +1808,13 @@ class ExplorerChartDataDaily(Resource):
         data_list = {}
         for table_name, fields in tables_to_query.items():
             if table_name == "transaction":
-                table = DailyTransactionsAggregates
+                table = DailyTransactionsStats
             elif table_name == "address":
-                table = DailyAddressesAggregates
+                table = DailyAddressesStats
             elif table_name == "block":
-                table = DailyBlocksAggregates
+                table = DailyBlocksStats
             elif table_name == "token":
-                table = DailyTokensAggregates
+                table = DailyTokensStats
             else:
                 return {"error": f"Unknown table name in metric: {metrics_list}."}, 400
 

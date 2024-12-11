@@ -35,8 +35,6 @@ class AaveV2BaseRecord(FilterData):
     log_index: Optional[int] = None
     event_name: Optional[str] = None
     topic0: Optional[str] = None
-    # when we can get address current status, we don't need events that happened before
-    force_update_current: Optional[bool] = False
 
 
 @dataclass
@@ -46,6 +44,8 @@ class AaveV2DepositD(AaveV2BaseRecord):
     referral: Optional[int] = None
     aave_user: Optional[str] = None
     amount: Optional[int] = None
+    #
+    _after: Optional[int] = None
 
 
 @dataclass
@@ -55,7 +55,7 @@ class AaveV2WithdrawD(AaveV2BaseRecord):
     to_address: Optional[str] = None
     amount: Optional[int] = None
     #
-    after_withdraw: Optional[int] = None
+    _after: Optional[int] = None
 
 
 @dataclass
@@ -67,6 +67,8 @@ class AaveV2BorrowD(AaveV2BaseRecord):
     amount: Optional[int] = None
     borrow_rate_mode: Optional[int] = None
     borrow_rate: Optional[int] = None
+    #
+    _after: Optional[int] = None
 
 
 @dataclass
@@ -77,7 +79,7 @@ class AaveV2RepayD(AaveV2BaseRecord):
     amount: Optional[int] = None
     borrow_rate_mode: Optional[int] = None
     # debt, after repayed
-    after_repay_debt: Optional[int] = None
+    _after: Optional[int] = None
 
 
 @dataclass
@@ -119,6 +121,7 @@ class AaveV2AddressCurrentD(FilterData):
 class AaveV2LiquidationAddressCurrentD(FilterData):
     address: Optional[str] = None
     asset: Optional[str] = None
+    block_number: Optional[int] = None
     last_total_value_of_liquidation: Optional[int] = None
     last_liquidation_time: Optional[int] = None
 
@@ -139,21 +142,27 @@ class AaveV2CallRecordsD(FilterData):
 
 
 @dataclass
-class AaveV2ReserveDataUpdatedRecordsD(AaveV2BaseRecord):
-    reserve: Optional[str] = None
-    liquidityRate: Optional[int] = None
-    stableBorrowRate: Optional[int] = None
-    variableBorrowRate: Optional[int] = None
-    liquidityIndex: Optional[int] = None
-    variableBorrowIndex: Optional[int] = None
+class AaveV2ReserveDataD(FilterData):
+    block_timestamp: Optional[int] = None
+    transaction_hash: Optional[str] = None
+    log_index: Optional[int] = None
+    topic0: Optional[str] = None
+    event_name: Optional[str] = None
+    asset: Optional[str] = None
+    liquidity_rate: Optional[int] = None
+    stable_borrow_rate: Optional[int] = None
+    variable_borrow_rate: Optional[int] = None
+    liquidity_index: Optional[int] = None
+    variable_borrow_index: Optional[int] = None
+    block_number: Optional[int] = None
 
 
 @dataclass
 class AaveV2ReserveDataCurrentD(FilterData):
     asset: Optional[str] = None
-    liquidityRate: Optional[int] = None
-    stableBorrowRate: Optional[int] = None
-    variableBorrowRate: Optional[int] = None
-    liquidityIndex: Optional[int] = None
-    variableBorrowIndex: Optional[int] = None
     block_number: Optional[int] = None
+    liquidity_rate: Optional[int] = None
+    stable_borrow_rate: Optional[int] = None
+    variable_borrow_rate: Optional[int] = None
+    liquidity_index: Optional[int] = None
+    variable_borrow_index: Optional[int] = None

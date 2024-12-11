@@ -4,14 +4,31 @@
 # @Author  will
 # @File  util.py.py
 # @Brief
+import atexit
 import logging
 import os
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
 
+from indexer.utils.multicall_hemera.constants import RPC_PAYLOAD_SIZE
+
 logger = logging.getLogger(__name__)
+
+
+def calculate_execution_time(func):
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        execution_time = end_time - start_time
+        logger.debug(f"function {func.__name__} time: {execution_time:.6f} s")
+        # print(f"function {func.__name__} time: {execution_time:.6f} s")
+        return result
+
+    return wrapper
 
 
 def estimate_size(item):
@@ -19,7 +36,7 @@ def estimate_size(item):
     return len(orjson.dumps(item))
 
 
-def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
+def rebatch_by_size(items, same_length_calls, max_size=1024 * RPC_PAYLOAD_SIZE):
     # 250KB
     current_chunk = []
     calls = []
@@ -40,18 +57,6 @@ def rebatch_by_size(items, same_length_calls, max_size=1024 * 250):
         yield (current_chunk, calls)
 
 
-def calculate_execution_time(func):
-    def wrapper(*args, **kwargs):
-        start_time = time.time()
-        result = func(*args, **kwargs)
-        end_time = time.time()
-        execution_time = end_time - start_time
-        logger.debug(f"function {func.__name__} time: {execution_time:.6f} s")
-        return result
-
-    return wrapper
-
-
 def make_request_concurrent(make_request, chunks, max_workers=None):
     def single_request(chunk, index):
         logger.debug(f"single request {len(chunk)}")
@@ -60,11 +65,41 @@ def make_request_concurrent(make_request, chunks, max_workers=None):
     if max_workers is None:
         max_workers = os.cpu_count() + 4
 
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_chunk = {executor.submit(single_request, chunk[0], i): i for i, chunk in enumerate(chunks)}
-        results = [None] * len(chunks)
-        for future in as_completed(future_to_chunk):
-            index, result = future.result()
-            results[index] = result
+    return ThreadPoolManager.submit_tasks(single_request, chunks, max_workers)
 
-    return results
+
+class ThreadPoolManager:
+    _instance = None
+    _lock = threading.Lock()
+
+    @classmethod
+    def get_instance(cls, max_workers=None):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = ThreadPoolExecutor(max_workers=max_workers)
+                    atexit.register(cls.shutdown)
+        return cls._instance
+
+    @classmethod
+    def shutdown(cls):
+        if cls._instance:
+            cls._instance.shutdown(wait=False)
+            cls._instance = None
+
+    @classmethod
+    def submit_tasks(cls, func, chunks, max_workers=None):
+        executor = cls.get_instance(max_workers)
+        results = [None] * len(chunks)
+
+        try:
+            future_to_chunk = {executor.submit(func, chunk[0], i): i for i, chunk in enumerate(chunks)}
+
+            for future in as_completed(future_to_chunk):
+                index, result = future.result(timeout=30)
+                results[index] = result
+        except Exception as e:
+            logger.error(f"ThreadPoolManager.submit_tasks error: {e}")
+            raise e
+
+        return results

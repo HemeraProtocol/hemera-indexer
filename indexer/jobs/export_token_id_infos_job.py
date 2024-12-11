@@ -49,11 +49,7 @@ class ExportTokenIdInfosJob(BaseExportJob):
             self._data_buff[ERC721TokenTransfer.type()],
             self._data_buff[ERC1155TokenTransfer.type()],
         )
-        if self._is_multi_call:
-            self._collect_batch(token_id_info)
-        else:
-            self._batch_work_executor.execute(token_id_info, self._collect_batch, total_items=len(token_id_info))
-            self._batch_work_executor.wait()
+        self._collect_batch(token_id_info)
 
     @calculate_execution_time
     def _collect_batch(self, token_list):

@@ -151,12 +151,24 @@ token_info_model = address_features_namespace.model(
     },
 )
 
+
 token_holding_model = address_features_namespace.model(
     "TokenHolding",
     {
         "token": fields.Nested(token_info_model, description="Token information"),
         "balance": fields.String(description="Token balance"),
-        "tvl": fields.String(description="Token TVL"),
+        "estimated_value_usd": fields.Float(description="Estimated value in USD"),
+    },
+)
+
+nft_holding_model = address_features_namespace.model(
+    "NftHolding",
+    {
+        "token": fields.Nested(token_info_model, description="Token information"),
+        "balance": fields.String(description="Nft token balance, the sum of all token ids"),
+        "token_ids": fields.List(fields.String, description="Token IDs"),
+        "amounts": fields.List(fields.String, description="Token amounts"),
+        "estimated_value_usd": fields.Float(description="Estimated value of the NFT holding"),
     },
 )
 
@@ -213,6 +225,47 @@ address_base_info_model = address_features_namespace.model(
     },
 )
 
+
+address_developer_info_model = address_features_namespace.model(
+    "AddressDeveloperInfo",
+    {
+        "address": fields.String(required=True, description="User address"),
+        "deployed_contracts_count": fields.Integer(description="Total number of deployed contracts"),
+        # First contract deployment info
+        "first_contract_deployed_address": fields.String(description="First deployed contract address"),
+        "first_contract_deployed_transaction_hash": fields.String(
+            description="First contract deployment transaction hash"
+        ),
+        "first_contract_deployed_block_hash": fields.String(description="First contract deployment block hash"),
+        "first_contract_deployed_block_number": fields.Integer(description="First contract deployment block number"),
+        "first_contract_deployed_block_timestamp": fields.DateTime(
+            description="First contract deployment block timestamp"
+        ),
+        "first_contract_deployed_trace_id": fields.String(description="First contract deployment trace ID"),
+        # Latest contract deployment info
+        "latest_contract_deployed_address": fields.String(description="Latest deployed contract address"),
+        "latest_contract_deployed_transaction_hash": fields.String(
+            description="Latest contract deployment transaction hash"
+        ),
+        "latest_contract_deployed_block_hash": fields.String(description="Latest contract deployment block hash"),
+        "latest_contract_deployed_block_number": fields.Integer(description="Latest contract deployment block number"),
+        "latest_contract_deployed_block_timestamp": fields.DateTime(
+            description="Latest contract deployment block timestamp"
+        ),
+        "latest_contract_deployed_trace_id": fields.String(description="Latest contract deployment trace ID"),
+        "years_since_first_contract": fields.Float(description="Years since first contract deployment", default=0.0),
+        "total_transaction_count_across_contract": fields.Integer(
+            description="Total transaction count across contracts"
+        ),
+        "total_gas_consumed_across_contracts_eth": fields.String(
+            description="Total gas consumed across contracts in ETH"
+        ),
+        "total_gas_consumed_across_contracts_usd": fields.String(
+            description="Total gas consumed across contracts in USD"
+        ),
+    },
+)
+
 daily_volume_model = address_features_namespace.model(
     "DailyVolume",
     {
@@ -238,9 +291,15 @@ volume_summary_model = address_features_namespace.model(
 asset_model = address_features_namespace.model(
     "Asset",
     {
-        "total_asset_value_usd": fields.String(description="Total asset value in USD"),
+        "total_asset_value_usd": fields.Float(description="Total asset value in USD"),
         "coin_balance": fields.String(description="Coin balance"),
-        "holdings": fields.List(fields.Nested(token_holding_model), description="Token holdings"),
+        "holdings": fields.List(
+            fields.Nested(token_holding_model), description="Token holdings (deprecated, use token_holdings instead)"
+        ),
+        "token_holdings": fields.List(fields.Nested(token_holding_model), description="Token holdings"),
+        "nft_holdings": fields.List(fields.Nested(nft_holding_model), description="NFT holdings"),
+        "token_estimated_value_usd": fields.Float(description="Estimated value of token holdings in USD"),
+        "nft_estimated_value_usd": fields.Float(description="Estimated value of NFT holdings in USD"),
     },
 )
 
@@ -255,5 +314,7 @@ aci_score_model = address_features_namespace.model(
 )
 
 address_base_info_response_model = create_standard_response_model("AddressProfile", address_base_info_model)
-
+address_developer_info_response_model = create_standard_response_model(
+    "AddressDeveloperInfo", address_developer_info_model
+)
 aci_score_response_model = create_standard_response_model("ACIScore", aci_score_model)
