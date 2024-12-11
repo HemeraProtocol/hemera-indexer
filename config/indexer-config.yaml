@@ -38,3 +38,13 @@ eigen_layer_job:
     address: "0x858646372cc42e1a627fce94aa7a7033e7cf075a"
   DELEGATION:
     address: "0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a"
+
+export_aave_v2_job:
+  POOL_CONFIGURE: "0x311bb771e4f8952e6da169b425e7e92d6ac45756"
+  POOL_V2: "0x7d2768de32b0b80b7a3454c06bdac94a69ddc7a9"
+
+export_aave_v1_job:
+  POOL_V1: "0x398ec7346dcd622edc5ae82352f02be94c62d119"
+  POOL_V1_CORE: "0x3dfd23A6c5E8BbcFc9581d2E864a68feb6a076d3"
+  INIT_PROXY: "0x4965f6fa20fe9728decf5165016fc338a5a85abf"
+  POOL: "0x7937d4799803fbbe595ed57278bc4ca21f3bffcb"

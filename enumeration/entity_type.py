@@ -13,6 +13,20 @@ from indexer.domain.token_id_infos import *
 from indexer.domain.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from indexer.domain.trace import Trace
 from indexer.domain.transaction import Transaction
+from indexer.modules.custom.aave_v1.domains.aave_v1_domain import (
+    AaveV1AddressCurrentD,
+    AaveV1BorrowD,
+    AaveV1CallRecordsD,
+    AaveV1DepositD,
+    AaveV1FlashLoanD,
+    AaveV1LiquidationAddressCurrentD,
+    AaveV1LiquidationCallD,
+    AaveV1RepayD,
+    AaveV1ReserveD,
+    AaveV1ReserveDataCurrentD,
+    AaveV1ReserveDataD,
+    AaveV1WithdrawD,
+)
 from indexer.modules.custom.address_index.domain import *
 from indexer.modules.custom.address_index.domain.address_contract_operation import AddressContractOperation
 from indexer.modules.custom.address_index.domain.address_internal_transaction import AddressInternalTransaction
@@ -76,6 +90,8 @@ class EntityType(IntFlag):
     ENS = 1 << 10
 
     KARAK = 1 << 11
+
+    AAVEV1 = 1 << 12
 
     EIGEN_LAYER = 1 << 13
 
@@ -213,3 +229,17 @@ def generate_output_types(entity_types):
         yield UniswapV2SwapEvent
         yield UniswapV2Erc20TotalSupply
         yield UniswapV2Erc20CurrentTotalSupply
+
+    if entity_types & EntityType.AAVEV1:
+        yield AaveV1AddressCurrentD
+        yield AaveV1BorrowD
+        yield AaveV1CallRecordsD
+        yield AaveV1DepositD
+        yield AaveV1FlashLoanD
+        yield AaveV1LiquidationAddressCurrentD
+        yield AaveV1LiquidationCallD
+        yield AaveV1RepayD
+        yield AaveV1ReserveD
+        yield AaveV1WithdrawD
+        yield AaveV1ReserveDataD
+        yield AaveV1ReserveDataCurrentD
