@@ -1,4 +1,5 @@
 import logging
+from typing import List, Union
 
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from common.utils.web3_utils import ZERO_ADDRESS
@@ -6,6 +7,7 @@ from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.jobs import FilterTransactionDataJob
+from indexer.jobs.base_job import BaseExportJob, Collector
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import IzumiTokenCurrentState, IzumiTokenState
 from indexer.modules.custom.uniswap_v3.models.feature_izumi import IzumiPools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -56,10 +58,13 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
             ]
         )
 
-    def _collect(self, **kwargs):
-        blocks = self._data_buff[Block.type()]
-        erc721_token_transfers = self._data_buff[ERC721TokenTransfer.type()]
-        logs = self._data_buff[Log.type()]
+    def _udf(
+        self,
+        blocks: List[Block],
+        erc721_token_transfers: List[ERC721TokenTransfer],
+        logs: List[Log],
+        output: Collector[Union[IzumiTokenState, IzumiTokenCurrentState]],
+    ):
 
         self._block_infos = {}
         for data in blocks:
@@ -99,15 +104,6 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
             self._exist_pools,
         )
 
-        # filter the info which call pool needed
-        # update_exist_tokens = get_new_nfts(
-        #     token_id_block_positions,
-        #     tokens_to_update_info,
-        #     self._position_token_address,
-        # )
-        # self._exist_token_ids.update(update_exist_tokens)
-        print(token_id_block_positions)
-
         token_states, token_current_states_dict = parse_token_records(
             self._position_token_address,
             token_id_block_owner,
@@ -115,49 +111,9 @@ class ExportIzumiTokensJob(FilterTransactionDataJob):
             self._block_infos,
         )
 
-        for state in token_states:
-            print(state.block_number, state.token_id)
-
-        self._collect_domains(token_states)
-        self._collect_domains(list(token_current_states_dict.values()))
-
-        # for token_id, block_number in burn_token_ids.items():
-        #     self._collect_item(
-        #         IzumiTokenState.type(),
-        #         IzumiTokenState(
-        #             position_token_address=self._position_token_address,
-        #             pool_address=self._exist_token_ids.get(token_id, ""),
-        #             token_id=token_id,
-        #             wallet_address=ZERO_ADDRESS,
-        #             liquidity=0,
-        #             left_pt=0,
-        #             right_pt=0,
-        #             block_number=block_number,
-        #             block_timestamp=self._block_infos[block_number],
-        #         ),
-        #     )
-        #     self._collect_item(
-        #         IzumiTokenCurrentState.type(),
-        #         IzumiTokenCurrentState(
-        #             position_token_address=self._position_token_address,
-        #             pool_address=self._exist_token_ids.get(token_id, ""),
-        #             token_id=token_id,
-        #             wallet_address=ZERO_ADDRESS,
-        #             liquidity=0,
-        #             left_pt=0,
-        #             right_pt=0,
-        #             block_number=block_number,
-        #             block_timestamp=self._block_infos[block_number],
-        #         ),
-        #     )
-
-        # self._data_buff[IzumiTokenCurrentState.type()] = distinct_collections_by_group(
-        #     self._data_buff[IzumiTokenCurrentState.type()], ["position_token_address", "token_id"], "block_number"
-        # )
-
-    def _process(self, **kwargs):
-        self._data_buff[IzumiTokenState.type()].sort(key=lambda x: x.block_number)
-        self._data_buff[IzumiTokenCurrentState.type()].sort(key=lambda x: x.block_number)
+        if len(token_states) > 0:
+            output.collect_domains(token_states)
+            output.collect_domains(list(token_current_states_dict.values()))
 
     def get_token_id_block_owner(self, tokens_to_update_states, position_token_address):
         owner_of_calls = []

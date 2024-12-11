@@ -1,10 +1,12 @@
 import logging
 from collections import defaultdict
+from typing import List, Union
 
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from indexer.domain.log import Log
 from indexer.domain.transaction import Transaction
 from indexer.jobs import FilterTransactionDataJob
+from indexer.jobs.base_job import Collector
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
     IzumiPool,
     IzumiPoolCurrentPrice,
@@ -73,18 +75,27 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
             ]
         )
 
-    def _collect(self, **kwargs):
+    def _udf(
+        self,
+        transactions: List[Transaction],
+        logs: List[Log],
+        output: Collector[Union[IzumiPool, IzumiPoolPrice, IzumiPoolCurrentPrice, IzumiSwapEvent]],
+    ):
         transactions = self._data_buff[Transaction.type()]
         logs = self._data_buff[Log.type()]
 
         # collect pool by create event
-        self.get_pools(logs)
+        new_pool_list = self.get_pools(logs)
+        output.collect_domains(new_pool_list)
 
         # collect swap event
-        self.get_swap_event(transactions, logs)
+        swap_events = self.get_swap_event(transactions, logs)
+        output.collect_domains(swap_events)
 
         # get prices
-        self.get_pool_price(logs)
+        pool_price, pool_current_price = self.get_pool_price(logs)
+        output.collect_domains(pool_price)
+        output.collect_domains(pool_current_price)
 
     def get_pools(self, logs):
         unknown_pool_swap_events = defaultdict(dict)
@@ -121,6 +132,20 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
                     # if the address created by factory_address ,collect it
                     unknown_pool_swap_events[log_address] = {
                         "address": log_address,
+                        "block_number": log.block_number,
+                        "block_timestamp": log.block_timestamp,
+                    }
+                elif log.topic0 == INCREASE_LIQUIDITY_EVENT.get_signature():
+                    decoded_data = INCREASE_LIQUIDITY_EVENT.decode_log(log)
+                    unknown_pool_swap_events[log_address] = {
+                        "address": decoded_data["pool"],
+                        "block_number": log.block_number,
+                        "block_timestamp": log.block_timestamp,
+                    }
+                elif log.topic0 == DECREASE_LIQUIDITY_EVENT.get_signature():
+                    decoded_data = DECREASE_LIQUIDITY_EVENT.decode_log(log)
+                    unknown_pool_swap_events[log_address] = {
+                        "address": decoded_data["pool"],
                         "block_number": log.block_number,
                         "block_timestamp": log.block_timestamp,
                     }
@@ -162,13 +187,14 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
             for pool in new_pool_list:
                 pool.pool_id = pool_id_mapping[pool.pool_address]
 
-            self._collect_domains(new_pool_list)
+        return new_pool_list
 
     def get_swap_event(self, transactions, logs):
         _transaction_hash_from_dict = {}
         for transaction in transactions:
             _transaction_hash_from_dict[transaction.hash] = transaction.from_address
 
+        swap_events = []
         for log in logs:
             # Collect swap logs
             if log.topic0 == SWAP_EVENT.get_signature():
@@ -181,8 +207,7 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
                 amount1 = decoded_data["amountY"]
                 current_point = decoded_data["currentPoint"]
                 pool_data = self._exist_pools[log.address]
-                self._collect_item(
-                    IzumiSwapEvent.type(),
+                swap_events.append(
                     IzumiSwapEvent(
                         pool_address=log.address,
                         position_token_address=self._position_token_address,
@@ -200,19 +225,21 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
                         sell_x_earn_y=decoded_data["sellXEarnY"],
                         token0_address=pool_data.get("token0_address"),
                         token1_address=pool_data.get("token1_address"),
-                    ),
+                    )
                 )
 
+        return swap_events
+
     def get_pool_price(self, logs):
-        if not logs:
-            return
+        pool_price = []
+        pool_current_price = []
         block_info = {log.block_number: log.block_timestamp for log in logs}
 
         pool_prices = collect_pool_prices(self._exist_pools, logs, self._multicall_helper)
         prices = format_value_records(self._exist_pools, self._factory_address, pool_prices, block_info)
         current_price = None
         for price in prices:
-            self._collect_item(IzumiPoolPrice.type(), price)
+            pool_price.append(price)
             if current_price is None or price.block_number > current_price.block_number:
                 current_price = IzumiPoolCurrentPrice(
                     factory_address=price.factory_address,
@@ -225,7 +252,9 @@ class ExportIzumiPoolJob(FilterTransactionDataJob):
                     block_timestamp=price.block_timestamp,
                 )
         if current_price:
-            self._collect_item(IzumiPoolCurrentPrice.type(), current_price)
+            pool_current_price.append(current_price)
+
+        return pool_price, pool_current_price
 
     def _process(self, **kwargs):
         self._data_buff[IzumiPool.type()].sort(key=lambda x: x.block_number)
