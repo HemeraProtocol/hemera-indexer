@@ -7,7 +7,7 @@ from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.token_transfer import ERC721TokenTransfer
 from indexer.jobs import FilterTransactionDataJob
-from indexer.jobs.base_job import BaseExportJob, Collector
+from indexer.jobs.base_job import Collector
 from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import IzumiTokenCurrentState, IzumiTokenState
 from indexer.modules.custom.uniswap_v3.models.feature_izumi import IzumiPools
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
@@ -193,11 +193,13 @@ def parse_token_records(position_token_address, token_id_block_owner, token_id_b
             else ZERO_ADDRESS
         )
 
+        pool_address = data["pool_address"] if "pool_address" in data else ZERO_ADDRESS
+
         token_state.append(
             IzumiTokenState(
                 position_token_address=position_token_address,
                 token_id=token_id,
-                pool_address=data["pool_address"],
+                pool_address=pool_address,
                 pool_id=data["pool_id"],
                 wallet_address=address,
                 liquidity=data["liquidity"],
@@ -212,7 +214,7 @@ def parse_token_records(position_token_address, token_id_block_owner, token_id_b
             token_current_state[token_id] = IzumiTokenCurrentState(
                 position_token_address=position_token_address,
                 token_id=token_id,
-                pool_address=data["pool_address"],
+                pool_address=pool_address,
                 pool_id=data["pool_id"],
                 wallet_address=address,
                 liquidity=data["liquidity"],
