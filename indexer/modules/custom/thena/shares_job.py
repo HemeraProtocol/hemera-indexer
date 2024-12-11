@@ -87,20 +87,21 @@ class ThenaSharesJob(FilterTransactionDataJob):
         for shares_call, supply_call, tick_lower_call, tick_upper_call in zip(
             shares_list, supply_list, tick_lower_list, tick_upper_list
         ):
-            shares = shares_call.returns.get("")
-            total_supply = supply_call.returns.get("")
-            tick_lower = tick_lower_call.returns.get("")
-            tick_upper = tick_upper_call.returns.get("")
+            if shares_call.returns:
+                shares = shares_call.returns.get("")
+                total_supply = supply_call.returns.get("")
+                tick_lower = tick_lower_call.returns.get("")
+                tick_upper = tick_upper_call.returns.get("")
 
-            shares_domain = ThenaSharesDomain(
-                farming_address=self.thena_farming_pool_address,
-                gamma_address=self.gamma_pool_address,
-                wallet_address=shares_call.parameters[0],
-                total_supply=total_supply,
-                shares=shares,
-                tick_lower=tick_lower,
-                tick_upper=tick_upper,
-                block_number=shares_call.block_number,
-                block_timestamp=shares_call.user_defined_k,
-            )
-            self._collect_domain(shares_domain)
+                shares_domain = ThenaSharesDomain(
+                    farming_address=self.thena_farming_pool_address,
+                    gamma_address=self.gamma_pool_address,
+                    wallet_address=shares_call.parameters[0],
+                    total_supply=total_supply,
+                    shares=shares,
+                    tick_lower=tick_lower,
+                    tick_upper=tick_upper,
+                    block_number=shares_call.block_number,
+                    block_timestamp=shares_call.user_defined_k,
+                )
+                self._collect_domain(shares_domain)
