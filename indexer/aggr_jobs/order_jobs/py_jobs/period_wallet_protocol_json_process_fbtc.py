@@ -21,8 +21,11 @@ from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_staked_f
 from indexer.aggr_jobs.order_jobs.models.period_feature_holding_balance_uniswap_v3 import \
     PeriodFeatureHoldingBalanceUniswapV3
 from indexer.aggr_jobs.order_jobs.py_jobs.PeriodFeatureDefiWalletAggregates import PeriodFeatureDefiWalletAggregates
+from indexer.aggr_jobs.order_jobs.py_jobs.uniswapv3_job import get_thena_uniswapv3_details, get_detail_df, \
+    calculate_liquidity, change_df_to_obj
 from indexer.aggr_jobs.order_jobs.py_jobs.untils import get_token_data_for_lendle_au_init_capital, \
-    get_eigenlayer_orms, get_pool_token_pair_data, get_last_block_number_before_end_date, timed_call_
+    get_eigenlayer_orms, get_pool_token_pair_data, get_last_block_number_before_end_date, timed_call_, \
+    get_pool_token_pair_data_with_lp
 
 
 class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
@@ -48,6 +51,7 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
             'staked': self.get_staked_json,
             'dodo': self.get_dodo_json,
             'eigenlayer': self.get_eigenlayer_json,
+            'thena': self.get_thena_json
         }
 
     def get_pool_token_pair_data(self, orm_list):
@@ -143,6 +147,24 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
         results = get_token_data_for_lendle_au_init_capital(orm_list, self.token_address, self.price_dict)
         return results
 
+    def get_thena_json(self):
+        result = get_thena_uniswapv3_details(self.end_date)
+        df = get_detail_df(result)
+        liquidity_df = calculate_liquidity(df, self.token_symbol)
+        columns = ['token0_balance', 'token1_balance', 'token0_balance_upper',
+                   'token1_balance_upper', 'token0_balance_lower', 'token1_balance_lower']
+        for column in columns:
+            liquidity_df[column] = liquidity_df[column] * liquidity_df['share_percent']
+
+        results1 = change_df_to_obj(liquidity_df)
+
+        results = get_pool_token_pair_data_with_lp(results1, self.token_symbol, self.db_service, self.end_date,
+                                                   self.price_dict,
+                                                   'uniswapv3')
+
+        self.get_pool_token_pair_aggr_by_protocol(results1, self.price)
+        return results
+
     @staticmethod
     def timed_call(method, method_name):
         start_time = time.time()
@@ -227,6 +249,9 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
 
         elif self.chain_name == 'eth':
             self.protocol_process_fun('eigenlayer')
+        elif self.chain_name == 'bsc':
+            self.protocol_process_fun('thena')
+
         self.protocol_process_fun('staked')
         self.protocol_process_fun('uniswapv3')
         self.protocol_process_fun('merchantmoe')
@@ -234,7 +259,6 @@ class PeriodWalletProtocolJsonProcessFbtc(PeriodFeatureDefiWalletAggregates):
 
     def run(self):
         self.get_middle_json()
-
         if self.generator_wallet_table:
             result_orm_list = self.process_wallet_record()
             self.insert_wallet_detail(result_orm_list)
