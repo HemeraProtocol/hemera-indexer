@@ -26,6 +26,9 @@ class ExportUniSwapV2PoolJob(FilterTransactionDataJob):
 
     def _process(self, **kwargs):
         logs = self._data_buff[Log.type()]
+
+        pools_dict = {}
+
         for log in logs:
             pool = None
 
@@ -53,4 +56,6 @@ class ExportUniSwapV2PoolJob(FilterTransactionDataJob):
                 )
 
             if pool:
-                self._collect_domain(pool)
+                pools_dict[pool.pool_address] = pool
+
+        self._collect_domains(pools_dict.values())
