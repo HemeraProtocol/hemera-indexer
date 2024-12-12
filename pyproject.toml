@@ -1,21 +1,20 @@
 [build-system]
 requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry_dynamic_versioning.backend"
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "hemera"
 description = "Tools for exporting Ethereum blockchain data to JSON/CSV file and postgresql"
-version = "0.5.0"
+version = "1.0.0a1"
 authors = [
     "xuzh <zihao.xu@thehemera.com>",
-    "shanshuo0918 <shuo.shan@lifo.ai>"
+    "shanshuo0918 <shuo.shan@lifo.ai>",
 ]
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -24,11 +23,8 @@ classifiers = [
 ]
 keywords = ["ethereum", "indexer", "explorer", "hemera"]
 packages = [
-    { include = "cli" },
-    { include = "common" },
-    { include = "api" },
-    { include = "indexer" },
-    { include = "enumeration" },
+    { include = "hemera", from = "." },
+    { include = "hemera_udf", from = "." }
 ]
 
 [tool.poetry.dependencies]
@@ -71,9 +67,10 @@ black = "^21.5b0"
 isort = "^5.9.1"
 flake8 = "^3.9.2"
 ruff = "^0.0.235"
+pytest-cov = "*"
 
 [tool.poetry.scripts]
-hemera = "cli:cli"
+hemera = "hemera.cli:cli"
 
 [tool.poetry.urls]
 "Homepage" = "https://github.com/HemeraProtocol/hemera-indexer"
@@ -100,11 +97,13 @@ markers = [
     "indexer_bridge: Tests related to the indexer bridge",
     "indexer_bridge_optimism: Tests related to the indexer bridge optimism",
     "indexer_bridge_arbitrum: Tests related to the indexer bridge arbitrum",
+    "indexer_bridge_morph: Tests related to the indexer bridge morph",
     "indexer_jobs: Tests related to the indexer jobs",
     "indexer_jobs_user_ops: Tests related to the indexer jobs user ops",
     "indexer_address_index: Tests related to the indexer address index",
     "explorer_api: Test explorer related API",
     "indexer_jobs_day_mining: Tests related to the indexer day mining",
     "ens: Tests related to the indexer ENS",
-    "pipeline: Continuous Integration"
+    "pipeline: Continuous Integration",
+    "multicall_helper: Tests related to the multicall helper",
 ]

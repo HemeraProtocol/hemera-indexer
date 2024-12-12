@@ -1,6 +1,10 @@
 name: Python application unit test
 
-on: [pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   test:
@@ -37,4 +41,4 @@ jobs:
           MANTLE_PUBLIC_NODE_DEBUG_RPC_URL: '${{ secrets.MANTLE_PUBLIC_NODE_DEBUG_RPC_URL }}'
         run: |
           export PYTHONPATH=$(pwd)
-          make test indexer
+          poetry run pytest -vv -m indexer
