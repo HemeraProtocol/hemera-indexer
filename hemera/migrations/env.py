@@ -9,7 +9,7 @@ from sqlalchemy.sql.schema import SchemaItem
 from hemera.common.models import db, import_all_models
 
 # Make sure everything is imported so that alembic can find it all
-import_all_models()
+# import_all_models()
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
