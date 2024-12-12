@@ -1,8 +1,8 @@
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, NUMERIC, TIMESTAMP
 
-from common.models import HemeraModel, general_converter
-from indexer.modules.custom.uniswap_v3.domains.feature_uniswap_v3 import (
+from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.izumi.domains.feature_uniswap_v3 import (
     IzumiPool,
     IzumiPoolCurrentPrice,
     IzumiPoolPrice,
