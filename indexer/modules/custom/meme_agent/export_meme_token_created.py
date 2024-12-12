@@ -42,7 +42,8 @@ class ExportMemeTokenCreatedJob(FilterTransactionDataJob):
                             self.user_defined_config["clanker_factory_address_v0"],
                             self.user_defined_config["clanker_factory_address_v1"],
                             self.user_defined_config["virtuals_factory_address"],
-                        ] + self.user_defined_config["larry_factory_address"],
+                        ]
+                        + self.user_defined_config["larry_factory_address"],
                         topics=[
                             clanker_token_created_event_v0.get_signature(),
                             clanker_token_created_event_v1.get_signature(),
@@ -87,6 +88,7 @@ class ExportMemeTokenCreatedJob(FilterTransactionDataJob):
                 locker_address=log_data["lockerAddress"],
                 cast_hash="",
                 block_number=log.block_number,
+                block_timestamp=log.block_timestamp,
                 version=0,
             )
         )
@@ -111,7 +113,7 @@ class ExportMemeTokenCreatedJob(FilterTransactionDataJob):
                 version=1,
             )
         )
-    
+
     def _process_virtuals_token_created(self, log: Log):
         if log.topic0 != virtuals_token_created_event.get_signature():
             return
@@ -126,9 +128,10 @@ class ExportMemeTokenCreatedJob(FilterTransactionDataJob):
                 ve_token=log_data["veToken"],
                 lp=log_data["lp"],
                 block_number=log.block_number,
+                block_timestamp=log.block_timestamp,
             )
         )
-    
+
     def _process_larry_token_created(self, log: Log):
         if log.topic0 != larry_token_created_event.get_signature():
             return

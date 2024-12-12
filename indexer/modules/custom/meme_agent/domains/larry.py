@@ -12,3 +12,4 @@ class LarryCreatedTokenD(FilterData):
     symbol: str
     eth_value: int
     block_number: int
+    block_timestamp: int

@@ -15,4 +15,5 @@ class ClankerCreatedTokenD(FilterData):
     locker_address: str
     cast_hash: str
     block_number: int
+    block_timestamp: int
     version: int

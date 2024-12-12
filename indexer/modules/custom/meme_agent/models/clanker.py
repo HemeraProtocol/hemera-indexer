@@ -2,8 +2,8 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
-from indexer.modules.custom.meme_agent.domains.clanker import ClankerCreatedTokenD
 from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
+from indexer.modules.custom.meme_agent.domains.clanker import ClankerCreatedTokenD
 
 
 class ClankerCreatedToken(HemeraModel):
@@ -19,6 +19,7 @@ class ClankerCreatedToken(HemeraModel):
     locker_address = Column(BYTEA)
     cast_hash = Column(BYTEA)
     block_number = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
     version = Column(INTEGER)
 
     create_time = Column(TIMESTAMP, server_default=func.now())

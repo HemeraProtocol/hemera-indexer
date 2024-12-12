@@ -2,9 +2,9 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, NUMERIC, TIMESTAMP, VARCHAR
 
 from common.models import HemeraModel
+from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
 from indexer.modules.custom.meme_agent.domains.clanker import ClankerCreatedTokenD
 from indexer.modules.custom.meme_agent.domains.larry import LarryCreatedTokenD
-from indexer.modules.custom.hemera_ens.models.af_ens_node_current import ens_general_converter
 
 
 class LarryCreatedToken(HemeraModel):
@@ -17,6 +17,7 @@ class LarryCreatedToken(HemeraModel):
     symbol = Column(VARCHAR)
     eth_value = Column(NUMERIC(100))
     block_number = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

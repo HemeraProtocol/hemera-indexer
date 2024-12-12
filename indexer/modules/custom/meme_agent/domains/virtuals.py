@@ -1,5 +1,5 @@
-
 from dataclasses import dataclass
+
 from indexer.domain import FilterData
 
 
@@ -12,3 +12,4 @@ class VirtualsCreatedTokenD(FilterData):
     ve_token: str
     lp: str
     block_number: int
+    block_timestamp: int
