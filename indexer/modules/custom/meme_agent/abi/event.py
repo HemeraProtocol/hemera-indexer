@@ -37,7 +37,7 @@ clanker_token_created_event_v0 = Event(
     }
 )
 
-virtuals_token_created_event = Event(
+virtuals_token_created_event_v1 = Event(
     {
         "anonymous": False,
         "inputs": [
@@ -49,6 +49,21 @@ virtuals_token_created_event = Event(
             {"indexed": False, "internalType": "address", "name": "lp", "type": "address"},
         ],
         "name": "NewPersona",
+        "type": "event",
+    }
+)
+
+virtuals_token_created_event_v0 = Event(
+    {
+        "anonymous": False,
+        "inputs": [
+            {"indexed": False, "internalType": "uint256", "name": "virtualId", "type": "uint256"},
+            {"indexed": False, "internalType": "address", "name": "dao", "type": "address"},
+            {"indexed": False, "internalType": "address", "name": "token", "type": "address"},
+            {"indexed": False, "internalType": "address", "name": "lp", "type": "address"},
+            {"indexed": False, "internalType": "address", "name": "veToken", "type": "address"},
+        ],
+        "name": "AgentMigrated",
         "type": "event",
     }
 )

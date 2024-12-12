@@ -47,7 +47,7 @@ class ExportMemeTokenCreatedJob(FilterTransactionDataJob):
                         topics=[
                             clanker_token_created_event_v0.get_signature(),
                             clanker_token_created_event_v1.get_signature(),
-                            virtuals_token_created_event.get_signature(),
+                            virtuals_token_created_event_v1.get_signature(),
                             larry_token_created_event.get_signature(),
                         ],
                     )
@@ -66,8 +66,10 @@ class ExportMemeTokenCreatedJob(FilterTransactionDataJob):
                 self._process_clanker_token_created_v0(log)
             elif log_address == self.user_defined_config["clanker_factory_address_v1"].lower():
                 self._process_clanker_token_created_v1(log)
-            elif log_address == self.user_defined_config["virtuals_factory_address"].lower():
-                self._process_virtuals_token_created(log)
+            elif log_address == self.user_defined_config["virtuals_factory_address_v0"].lower():
+                self._process_virtuals_token_created_v0(log)
+            elif log_address == self.user_defined_config["virtuals_factory_address_v1"].lower():
+                self._process_virtuals_token_created_v1(log)
             elif log_address in self.user_defined_config["larry_factory_address"]:
                 self._process_larry_token_created(log)
 
@@ -114,11 +116,29 @@ class ExportMemeTokenCreatedJob(FilterTransactionDataJob):
             )
         )
 
-    def _process_virtuals_token_created(self, log: Log):
-        if log.topic0 != virtuals_token_created_event.get_signature():
+    def _process_virtuals_token_created_v0(self, log: Log):
+        if log.topic0 != virtuals_token_created_event_v0.get_signature():
             return
 
-        log_data = virtuals_token_created_event.decode_log(log)
+        log_data = virtuals_token_created_event_v0.decode_log(log)
+        self._collect_domain(
+            VirtualsCreatedTokenD(
+                virtual_id=log_data["virtualId"],
+                token=log_data["token"],
+                dao=log_data["dao"],
+                tba="",
+                ve_token=log_data["veToken"],
+                lp=log_data["lp"],
+                block_number=log.block_number,
+                block_timestamp=log.block_timestamp,
+            )
+        )
+
+    def _process_virtuals_token_created_v1(self, log: Log):
+        if log.topic0 != virtuals_token_created_event_v1.get_signature():
+            return
+
+        log_data = virtuals_token_created_event_v1.decode_log(log)
         self._collect_domain(
             VirtualsCreatedTokenD(
                 virtual_id=log_data["virtualId"],
