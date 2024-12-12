@@ -323,7 +323,7 @@ def calculate_execution_time(func):
 )
 @click.option(
     "--auto-upgrade-db",
-    default=False,
+    default=True,
     show_default=True,
     type=bool,
     envvar="AUTO_UPGRADE_DB",
