@@ -46,7 +46,7 @@ docker-compose/output/
 docker-compose/postgres/
 
 # Local Config
-resource/hemera.ini
+hemera/resource/hemera.ini
 sync_record
 alembic.ini
 !hemera_udf/hemera_ens/abi/*.json
