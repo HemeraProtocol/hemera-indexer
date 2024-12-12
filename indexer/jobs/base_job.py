@@ -31,29 +31,47 @@ class Collector(Generic[T]):
             )
 
     def collect_item(self, key: str, data: Domain):
+        if data is None:
+            return
+
         self.check_collect_type(type(data))
         with self.job._data_buff_lock[key]:
             self.job._data_buff[key].append(data)
 
     def collect_items(self, key, datas: List[Domain]):
+        if datas is None or len(datas) == 0:
+            return
+
         self.check_collect_type(type(datas[0]))
         with self.job._data_buff_lock[key]:
             self.job._data_buff[key].extend(datas)
 
     def collect_domain(self, domain: Domain):
+        if domain is None:
+            return
+
         self.check_collect_type(type(domain))
         self.collect(domain)
 
     def collect_domains(self, domains: List[Domain]):
+        if domains is None or len(domains) == 0:
+            return
+
         self.check_collect_type(type(domains[0]))
         self.collects(domains)
 
     def collect(self, domain: Domain):
+        if domain is None:
+            return
+
         self.check_collect_type(type(domain))
         with self.job._data_buff_lock[domain.type()]:
             self.job._data_buff[domain.type()].append(domain)
 
     def collects(self, domains: List[Domain]):
+        if domains is None or len(domains) == 0:
+            return
+
         self.check_collect_type(type(domains[0]))
         with self.job._data_buff_lock[domains[0].type()]:
             self.job._data_buff[domains[0].type()].extend(domains)

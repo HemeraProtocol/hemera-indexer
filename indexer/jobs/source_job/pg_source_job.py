@@ -46,7 +46,8 @@ class PGSourceJob(BaseSourceJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._source_path = kwargs["config"].get("source_path", None)
-        self._service = PostgreSQLService(self._source_path) if self._source_path else None
+        if self._source_path is None:
+            raise FastShutdownError("-pg or --postgres-url is required to run PGSourceJob")
         self.pre_build = defaultdict(list)
         self.post_build = defaultdict()
         self.domain_mapping = defaultdict(dict)
@@ -55,15 +56,14 @@ class PGSourceJob(BaseSourceJob):
         self._is_filter = kwargs.get("is_filter", False)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
 
-        if self._service is None:
-            raise FastShutdownError("-pg or --postgres-url is required to run PGSourceJob")
-
         for output_type in self.output_types:
             self._dataclass_build_dependence(output_type, Domain)
         self.build_order = []
         self._calculate_build_queue()
 
     def _collect(self, **kwargs):
+        if not self._service:
+            self._service = PostgreSQLService(self._source_path) if self._source_path else None
         start_block = int(kwargs["start_block"])
         end_block = int(kwargs["end_block"])
         start_timestamp = self._query_timestamp_with_block(start_block)
