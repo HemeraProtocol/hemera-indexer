@@ -2,7 +2,6 @@ import pytest
 
 from hemera.common.utils.web3_utils import ZERO_ADDRESS
 from hemera.indexer.controller.scheduler.job_scheduler import JobScheduler
-from hemera.indexer.domains.coin_balance import CoinBalance
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer
 from hemera.indexer.exporters.console_item_exporter import ConsoleItemExporter
 from hemera.indexer.utils.provider import get_provider_from_uri

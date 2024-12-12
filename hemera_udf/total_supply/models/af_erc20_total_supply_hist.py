@@ -1,9 +1,9 @@
 from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
-from uniswap_v2 import UniswapV2Erc20TotalSupply
 
 from hemera.common.models import HemeraModel, general_converter
 from hemera_udf.total_supply.domains import Erc20TotalSupply
+from hemera_udf.uniswap_v2.domains import UniswapV2Erc20TotalSupply
 
 
 class AfErc20TotalSupplyHist(HemeraModel):
