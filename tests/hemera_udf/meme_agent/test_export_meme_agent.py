@@ -1,13 +1,13 @@
-from hemera_udf.meme_agent.domains.clanker import ClankerCreatedTokenD
-from hemera_udf.meme_agent.domains.larry import LarryCreatedTokenD
-from hemera_udf.meme_agent.domains.virtuals import VirtualsCreatedTokenD
 import pytest
 
 from hemera.indexer.controller.scheduler.job_scheduler import JobScheduler
 from hemera.indexer.exporters.console_item_exporter import ConsoleItemExporter
-from tests_commons import BASE_PUBLIC_NODE_RPC_URL
 from hemera.indexer.utils.provider import get_provider_from_uri
 from hemera.indexer.utils.thread_local_proxy import ThreadLocalProxy
+from hemera_udf.meme_agent.domains.clanker import ClankerCreatedTokenD
+from hemera_udf.meme_agent.domains.larry import LarryCreatedTokenD
+from hemera_udf.meme_agent.domains.virtuals import VirtualsCreatedTokenD
+from tests_commons import BASE_PUBLIC_NODE_RPC_URL
 
 config = {
     "export_meme_token_created_job": {

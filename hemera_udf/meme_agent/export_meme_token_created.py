@@ -5,11 +5,11 @@ from hemera.indexer.domains.log import Log
 from hemera.indexer.domains.transaction import Transaction
 from hemera.indexer.executors.batch_work_executor import BatchWorkExecutor
 from hemera.indexer.jobs.base_job import FilterTransactionDataJob
+from hemera.indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from hemera_udf.meme_agent.abi.event import *
 from hemera_udf.meme_agent.domains.clanker import ClankerCreatedTokenD
 from hemera_udf.meme_agent.domains.larry import LarryCreatedTokenD
 from hemera_udf.meme_agent.domains.virtuals import VirtualsCreatedTokenD
-from hemera.indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 
 logger = logging.getLogger(__name__)
 
