@@ -1,7 +1,6 @@
+from common.models import HemeraModel, general_converter
 from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
-
-from common.models import HemeraModel, general_converter
 
 from hemera_udf.thena.domains.feature_thena import ThenaSharesDomain
 
@@ -26,7 +25,8 @@ class AfThenaShares(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
 
     __table_args__ = (
-    PrimaryKeyConstraint("farming_address", "pool_address", "gamma_address", "wallet_address", "block_number"),)
+        PrimaryKeyConstraint("farming_address", "pool_address", "gamma_address", "wallet_address", "block_number"),
+    )
 
     @staticmethod
     def model_domain_mapping():

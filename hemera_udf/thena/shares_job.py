@@ -1,14 +1,12 @@
 import logging
 
-
 from indexer.jobs import FilterTransactionDataJob
-
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from indexer.utils.multicall_hemera import Call
 from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
-from hemera_udf.thena.abi import BALANCE_OF_FUNCTION, TOTAL_SUPPLY_FUNCTION, BASE_LOWER_FUNCTION, BASE_UPPER_FUNCTION
+from hemera_udf.thena.abi import BALANCE_OF_FUNCTION, BASE_LOWER_FUNCTION, BASE_UPPER_FUNCTION, TOTAL_SUPPLY_FUNCTION
 from hemera_udf.thena.domains.feature_thena import ThenaSharesDomain
 
 logger = logging.getLogger(__name__)
@@ -85,7 +83,7 @@ class ThenaSharesJob(FilterTransactionDataJob):
         self.multi_call_helper.execute_calls(tick_upper_list)
 
         for shares_call, supply_call, tick_lower_call, tick_upper_call in zip(
-                shares_list, supply_list, tick_lower_list, tick_upper_list
+            shares_list, supply_list, tick_lower_list, tick_upper_list
         ):
             if shares_call.returns:
                 shares = shares_call.returns.get("")
