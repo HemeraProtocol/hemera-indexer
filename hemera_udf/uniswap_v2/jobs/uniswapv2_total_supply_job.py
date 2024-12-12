@@ -50,18 +50,20 @@ class ExportUniswapV2TotalSupplyJob(ExtensionJob):
         call_list.sort(key=lambda call: call.block_number)
 
         for call in call_list:
-            total_supply = call.returns.get("totalSupply")
+            returns = call.returns
+            if returns:
+                total_supply = returns.get("totalSupply")
 
-            token_address = call.target.lower()
-            erc_total_supply = UniswapV2Erc20TotalSupply(
-                token_address=token_address,
-                total_supply=total_supply,
-                block_number=call.block_number,
-                block_timestamp=call.user_defined_k,
-            )
+                token_address = call.target.lower()
+                erc_total_supply = UniswapV2Erc20TotalSupply(
+                    token_address=token_address,
+                    total_supply=total_supply,
+                    block_number=call.block_number,
+                    block_timestamp=call.user_defined_k,
+                )
 
-            current_dict[token_address] = UniswapV2Erc20CurrentTotalSupply(**vars(erc_total_supply))
-            records.append(erc_total_supply)
+                current_dict[token_address] = UniswapV2Erc20CurrentTotalSupply(**vars(erc_total_supply))
+                records.append(erc_total_supply)
         self._collect_domains(records)
         self._collect_domains(current_dict.values())
 

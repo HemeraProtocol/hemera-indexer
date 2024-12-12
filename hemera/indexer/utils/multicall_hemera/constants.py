@@ -54,7 +54,7 @@ OPTIMISM_GOERLI = NetworkConfig(420, "OptimismGoerli")
 ARBITRUM_RINKEBY = NetworkConfig(421611, "ArbitrumRinkeby")
 ARBITRUM_GOERLI = NetworkConfig(421613, "ArbitrumGoerli")
 
-BSC = NetworkConfig(56, "BSC")
+BSC = NetworkConfig(56, "BSC", 15921452)
 BSC_TESTNET = NetworkConfig(97, "BSCTestnet")
 
 POLYGON = NetworkConfig(137, "Polygon", 25770160)
