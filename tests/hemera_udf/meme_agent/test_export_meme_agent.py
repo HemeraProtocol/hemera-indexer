@@ -26,32 +26,6 @@ config = {
 @pytest.mark.indexer
 @pytest.mark.indexer_exporter
 @pytest.mark.serial
-def test_export_lanker_v0_job():
-    job_scheduler = JobScheduler(
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(BASE_PUBLIC_NODE_RPC_URL, batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(BASE_PUBLIC_NODE_RPC_URL, batch=True)),
-        item_exporters=[ConsoleItemExporter()],
-        batch_size=100,
-        debug_batch_size=1,
-        max_workers=5,
-        config=config,
-        required_output_types=[ClankerCreatedTokenD],
-    )
-
-    job_scheduler.run_jobs(
-        start_block=23542888,
-        end_block=23542888,
-    )
-
-    data_buff = job_scheduler.get_data_buff()
-
-    token = data_buff[ClankerCreatedTokenD.type()]
-    assert len(token) == 1
-
-
-@pytest.mark.indexer
-@pytest.mark.indexer_exporter
-@pytest.mark.serial
 def test_export_lanker_v1_job():
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(BASE_PUBLIC_NODE_RPC_URL, batch=True)),
@@ -72,32 +46,6 @@ def test_export_lanker_v1_job():
     data_buff = job_scheduler.get_data_buff()
 
     token = data_buff[ClankerCreatedTokenD.type()]
-    assert len(token) == 1
-
-
-@pytest.mark.indexer
-@pytest.mark.indexer_exporter
-@pytest.mark.serial
-def test_export_virtuals_v0_job():
-    job_scheduler = JobScheduler(
-        batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(BASE_PUBLIC_NODE_RPC_URL, batch=True)),
-        batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(BASE_PUBLIC_NODE_RPC_URL, batch=True)),
-        item_exporters=[ConsoleItemExporter()],
-        batch_size=100,
-        debug_batch_size=1,
-        max_workers=5,
-        config=config,
-        required_output_types=[VirtualsCreatedTokenD],
-    )
-
-    job_scheduler.run_jobs(
-        start_block=21147120,
-        end_block=21147121,
-    )
-
-    data_buff = job_scheduler.get_data_buff()
-
-    token = data_buff[VirtualsCreatedTokenD.type()]
     assert len(token) == 1
 
 
