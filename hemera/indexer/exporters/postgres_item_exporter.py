@@ -4,7 +4,6 @@ from typing import Type
 from psycopg2.extras import execute_values
 from tqdm import tqdm
 
-from hemera.common.converter.pg_converter import domain_model_mapping
 from hemera.common.models import HemeraModel
 from hemera.common.services.postgresql_service import PostgreSQLService
 from hemera.indexer.exporters.base_exporter import BaseExporter, group_by_item_type
@@ -32,6 +31,9 @@ class PostgresItemExporter(BaseExporter):
         self.postgres_url = service["postgres_url"]
         self.db_version = service.get("db_version")
         self.init_schema = service.get("init_schema")
+        from hemera.common.converter.pg_converter import domain_model_mapping
+
+        self._domain_model_mapping = domain_model_mapping
         # self.service = service
 
     def export_items(self, items, **kwargs):
@@ -62,7 +64,7 @@ class PostgresItemExporter(BaseExporter):
                     item_group = items_grouped_by_type.get(item_type)
 
                     if item_group:
-                        pg_config = domain_model_mapping[item_type]
+                        pg_config = self._domain_model_mapping[item_type]
                         table = pg_config["table"]
                         do_update = pg_config["conflict_do_update"]
                         update_strategy = pg_config["update_strategy"]

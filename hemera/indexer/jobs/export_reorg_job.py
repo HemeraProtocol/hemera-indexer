@@ -2,7 +2,6 @@ import logging
 
 from psycopg2.extras import execute_values
 
-from hemera.common.converter.pg_converter import domain_model_mapping
 from hemera.indexer.exporters.postgres_item_exporter import sql_insert_statement
 from hemera.indexer.jobs.base_job import BaseJob
 
@@ -12,8 +11,11 @@ logger = logging.getLogger(__name__)
 class ExportReorgJob(BaseJob):
 
     def __init__(self, **kwargs):
+        from hemera.common.converter.pg_converter import domain_model_mapping
+
         super().__init__(**kwargs)
         self._should_reorg = True
+        self._domain_model_mapping = domain_model_mapping
 
     def _process(self, **kwargs):
         block_number = int(kwargs["start_block"])
@@ -25,10 +27,10 @@ class ExportReorgJob(BaseJob):
                 if len(self._data_buff[key]) > 0:
                     items = self._data_buff[key]
                     domain = type(items[0])
-                    if domain.__name__ not in domain_model_mapping:
+                    if domain.__name__ not in self._domain_model_mapping:
                         continue
 
-                    pg_config = domain_model_mapping[domain.__name__]
+                    pg_config = self._domain_model_mapping[domain.__name__]
 
                     table = pg_config["table"]
                     do_update = pg_config["conflict_do_update"]

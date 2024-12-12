@@ -1,9 +1,8 @@
-from hemera.common.models import HemeraModel
-from hemera.common.utils.module_loading import import_string, scan_subclass_by_path_patterns
+from hemera.common.models import *
 
 
 def scan_convert_config():
-    class_mapping = HemeraModel.get_all_subclasses_with_type()
+    class_mapping = HemeraModel.get_all_subclasses()
 
     config_mapping = {}
     for _, module in class_mapping.items():

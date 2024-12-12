@@ -1,8 +1,7 @@
 from sqlalchemy import INTEGER, Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
-from common.models import HemeraModel, general_converter
-
+from hemera.common.models import HemeraModel, general_converter
 from hemera_udf.thena.domains.feature_thena import ThenaLiquidityDomain
 
 

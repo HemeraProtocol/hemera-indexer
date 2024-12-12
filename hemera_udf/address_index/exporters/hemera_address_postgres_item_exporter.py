@@ -5,7 +5,6 @@ from typing import Type
 from dateutil.tz import tzlocal
 from psycopg2.extras import execute_values
 
-from hemera.common.converter.pg_converter import domain_model_mapping
 from hemera.common.models import HemeraModel
 from hemera.common.services.hemera_postgresql_service import HemeraPostgreSQLService
 from hemera.indexer.domains.token import Token
@@ -35,6 +34,9 @@ class HemeraAddressPostgresItemExporter(BaseExporter):
         service = HemeraPostgreSQLService(url)
         self.service = service
         self.chain_id = chain_id
+        from hemera.common.converter.pg_converter import domain_model_mapping
+
+        self._domain_model_mapping = domain_model_mapping
 
     def export_items(self, items, **kwargs):
         start_time = datetime.now(tzlocal())
@@ -49,7 +51,7 @@ class HemeraAddressPostgresItemExporter(BaseExporter):
                 item_group = items_grouped_by_type.get(item_type)
 
                 if item_group:
-                    pg_config = domain_model_mapping[item_type]
+                    pg_config = self._domain_model_mapping[item_type]
 
                     table = pg_config["table"]
                     do_update = pg_config["conflict_do_update"]

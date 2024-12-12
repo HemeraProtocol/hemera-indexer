@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, JSONB, SMALLINT, TIMESTAMP, VARCHAR
 
-from hemera.common.models import HemeraModel
+from hemera.common.models import HemeraModel, general_converter
 from hemera_udf.opensea.domains import AddressOpenseaTransaction
 
 

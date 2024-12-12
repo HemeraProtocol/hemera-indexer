@@ -3,13 +3,14 @@ from datetime import datetime, timezone
 
 from sqlalchemy import and_
 
-from hemera.common.converter.pg_converter import domain_model_mapping
 from hemera.common.models import HemeraModel
 from hemera.common.services.postgresql_service import PostgreSQLService
 from hemera.common.utils.exception_control import RetriableError
 
 
 def set_reorg_sign(jobs, block_number, service):
+    from hemera.common.converter.pg_converter import domain_model_mapping
+
     conn = service.get_conn()
     cur = conn.cursor()
     try:

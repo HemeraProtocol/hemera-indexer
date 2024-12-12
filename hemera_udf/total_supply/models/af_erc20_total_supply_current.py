@@ -1,5 +1,6 @@
 from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
+from uniswap_v2 import UniswapV2Erc20CurrentTotalSupply
 
 from hemera.common.models import HemeraModel, general_converter
 from hemera_udf.total_supply.domains import Erc20CurrentTotalSupply
