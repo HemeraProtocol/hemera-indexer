@@ -154,15 +154,20 @@ class DepositToL2Job(FilterTransactionDataJob):
         deposit = build_domains_by_sql(
             service=self._service,
             domain=AddressTokenDeposit,
-            sql=f"""
+            sql="""
             SELECT * FROM af_token_deposits_current
-            WHERE 
-                wallet_address == {hex_str_to_bytes(wallet_address)}
-                and chain_id = {chain_id}
-                and token_address = {hex_str_to_bytes(token_address)}
+            WHERE
+                wallet_address = '{}'
+                and chain_id = {}
+                and token_address = '{}'
             limit 1
-            """
+            """.format("\\" + wallet_address[1:], chain_id, "\\" + token_address[1:]),
         )
+
+        if len(deposit) == 0:
+            deposit = None
+        else:
+            deposit = deposit[0]
 
         return deposit
 

@@ -3,7 +3,6 @@ import inspect
 import logging
 from collections import defaultdict
 from datetime import datetime
-from decimal import Decimal
 from queue import Queue
 from typing import List, Type, Union, get_args, get_origin
 
@@ -14,9 +13,10 @@ from common.models.blocks import Blocks
 from common.models.logs import Logs
 from common.models.transactions import Transactions
 from common.services.postgresql_service import PostgreSQLService
+from common.utils.db_utils import table_to_dataclass
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
-from indexer.domain import Domain, dict_to_dataclass
+from indexer.domain import Domain
 from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.receipt import Receipt
@@ -446,52 +446,3 @@ def check_dependency(column_type, target_type) -> (bool, object):
         return True, column_type
 
     return False, None
-
-
-def table_to_dataclass(row_instance, cls):
-    """
-    Converts row of table to a dataclass instance, handling nested structures.
-
-    Args:
-        row_instance (HemeraModel): The input data structure.
-        cls: The dataclass type to convert to.
-
-    Returns:
-        An instance of the dataclass which is corresponding to table in the definition.
-    """
-
-    dict_instance = {}
-    if hasattr(row_instance, "__table__"):
-        for column in row_instance.__table__.columns:
-            if column.name == "meta_data":
-                meta_data_json = getattr(row_instance, column.name)
-                if meta_data_json:
-                    for key in meta_data_json:
-                        dict_instance[key] = meta_data_json[key]
-            else:
-                value = getattr(row_instance, column.name)
-                dict_instance[column.name] = convert_value(value)
-    else:
-        for column, value in row_instance._asdict().items():
-            dict_instance[column] = convert_value(value)
-
-    domain = dict_to_dataclass(dict_instance, cls)
-    if cls is Transaction:
-        domain.fill_with_receipt(Receipt.from_pg(dict_instance))
-
-    return domain
-
-
-def convert_value(value):
-    if isinstance(value, datetime):
-        return int(round(value.timestamp()))
-    elif isinstance(value, Decimal):
-        return float(value)
-    elif isinstance(value, bytes):
-        return bytes_to_hex_str(value)
-    elif isinstance(value, list):
-        return [convert_value(v) for v in value]
-    elif isinstance(value, dict):
-        return {k: convert_value(v) for k, v in value.items()}
-    else:
-        return value
