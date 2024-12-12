@@ -2,7 +2,8 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from common.models import HemeraModel, general_converter
-from indexer.modules.custom.thena.domains.feature_thena import ThenaSharesDomain
+
+from hemera_udf.thena.domains.feature_thena import ThenaSharesDomain
 
 
 class AfThenaShares(HemeraModel):

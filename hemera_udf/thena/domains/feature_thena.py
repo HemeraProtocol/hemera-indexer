@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
-from indexer.domain import FilterData
+from hemera.indexer.domains import Domain
 
 
 @dataclass
-class ThenaLiquidityDomain(FilterData):
+class ThenaLiquidityDomain(Domain):
     pool_address: str
     liquidity: int
     block_number: int
@@ -12,7 +12,7 @@ class ThenaLiquidityDomain(FilterData):
 
 
 @dataclass
-class ThenaSharesDomain(FilterData):
+class ThenaSharesDomain(Domain):
     farming_address: str
     gamma_address: str
     pool_address: str
