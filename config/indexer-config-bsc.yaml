@@ -5,12 +5,19 @@ uniswap_v3_job:
   pool_address:
     - '0xe2bb11d6b6a39e55762f5e14d632f0981198b3a7'
 
-  # works in price\token job
-  jobs:
-    - type: swapsicle  # thena`
-      factory address: '0x306f06c147f064a010530292a1eb6737c3e378e4'
-      position_token_address: '0xa51adb08cbe6ae398046a23bec013979816b77ab'
+#  # works in price\token job
+#  jobs:
+#    - type: swapsicle  # thena`
+#      factory address: '0x306f06c147f064a010530292a1eb6737c3e378e4'
+#      position_token_address: '0xa51adb08cbe6ae398046a23bec013979816b77ab'
 
 export_tokens_and_transfers_job:
   filter_token_address:
-    - '0xa51adb08cbe6ae398046a23bec013979816b77ab'
+    #      gamma_pool_address
+    - '0xfcecab790751c2bf65bcf7bce6ff3555dc12e40b'
+
+
+thena_job:
+  gamma_pool_address: '0xfcecab790751c2bf65bcf7bce6ff3555dc12e40b'
+  thena_farming_pool_address: '0xc21b8ed94ad3b1d383ef20605498614e27b222fd'
+  thena_liquidity_pool_address: '0xe2bb11d6b6a39e55762f5e14d632f0981198b3a7'
