@@ -3,23 +3,23 @@ import json
 import os
 from typing import List, cast
 
-from eth_utils import to_normalized_address
-from sqlalchemy import and_
-from web3.types import ABIFunction
-
 from common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from common.utils.db_utils import build_domains_by_sql
 from common.utils.exception_control import FastShutdownError
 from common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from eth_utils import to_normalized_address
 from indexer.domain.transaction import Transaction
-from indexer.jobs import FilterTransactionDataJob
 from indexer.modules.custom.deposit_to_l2.deposit_parser import parse_deposit_transaction_function, token_parse_mapping
 from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
 from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
 from indexer.modules.custom.deposit_to_l2.models.af_token_deposits_current import AFTokenDepositsCurrent
-from indexer.specification.specification import ToAddressSpecification, TransactionFilterByTransactionInfo
 from indexer.utils.abi import function_abi_to_4byte_selector_str
 from indexer.utils.collection_utils import distinct_collections_by_group
+from sqlalchemy import and_
+from web3.types import ABIFunction
+
+from indexer.jobs import FilterTransactionDataJob
+from indexer.specification.specification import ToAddressSpecification, TransactionFilterByTransactionInfo
 
 
 class DepositToL2Job(FilterTransactionDataJob):

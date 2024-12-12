@@ -2,18 +2,18 @@ from datetime import datetime
 from decimal import Decimal
 from typing import List, Type
 
-from sqlalchemy import text
-
-from common.models import HemeraModel, db
 from common.models.blocks import Blocks
 from common.services.postgresql_service import PostgreSQLService
 from common.utils.config import get_config
 from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain import Domain, dict_to_dataclass
 from indexer.domain.block import Block
 from indexer.domain.log import Log
 from indexer.domain.receipt import Receipt
 from indexer.domain.transaction import Transaction
+from sqlalchemy import text
+
+from common.models import HemeraModel, db
+from indexer.domain import Domain, dict_to_dataclass
 
 app_config = get_config()
 
