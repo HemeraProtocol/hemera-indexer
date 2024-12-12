@@ -15,7 +15,7 @@ FROM python:3.9-slim
 
 WORKDIR "/app"
 
-COPY --from=builder /app/migrations ./migrations
+COPY --from=builder /app/hemera/migrations ./migrations
 COPY --from=builder /app/dist/*.whl .
 RUN pip install *.whl
 
