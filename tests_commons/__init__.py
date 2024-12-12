@@ -25,3 +25,5 @@ ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL = os.environ.get(
 
 
 CYBER_PUBLIC_NODE_RPC_URL = os.environ.get("CYBER_PUBLIC_NODE_RPC_URL", "https://cyber-mainnet-archive.alt.technology")
+
+BASE_PUBLIC_NODE_RPC_URL = os.environ.get("BASE_PUBLIC_NODE_RPC_URL", "https://base.llamarpc.com")
