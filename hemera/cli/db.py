@@ -27,6 +27,14 @@ logger = logging.getLogger("DB Client")
     help="The -i or --init flag triggers the database initialization process. ",
 )
 @click.option(
+    "-sl",
+    "--script-location",
+    type=str,
+    default="./hemera/migrations",
+    required=False,
+    help="The location of the migration scripts.",
+)
+@click.option(
     "-v",
     "--version",
     type=str,
@@ -53,8 +61,10 @@ logger = logging.getLogger("DB Client")
     required=False,
     help="Table names that need to be dropped in the database. e.g. blocks,transactions",
 )
-def db(postgres_url, init, version, create_tables="", drop_tables=""):
-    service = PostgreSQLService(jdbc_url=postgres_url, db_version=version, init_schema=init)
+def db(postgres_url, init, version, script_location="./hemera/migrations", create_tables="", drop_tables=""):
+    service = PostgreSQLService(
+        jdbc_url=postgres_url, db_version=version, init_schema=init, script_location=script_location
+    )
 
     if create_tables != "" or drop_tables != "":
         exist_models_path = [
