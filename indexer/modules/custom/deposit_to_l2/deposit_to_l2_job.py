@@ -161,7 +161,9 @@ class DepositToL2Job(FilterTransactionDataJob):
                 and chain_id = {}
                 and token_address = '{}'
             limit 1
-            """.format("\\" + wallet_address[1:], chain_id, "\\" + token_address[1:]),
+            """.format(
+                "\\" + wallet_address[1:], chain_id, "\\" + token_address[1:]
+            ),
         )
 
         if len(deposit) == 0:

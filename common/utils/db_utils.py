@@ -217,36 +217,3 @@ def build_domains_by_sql(service: PostgreSQLService, domain: Type[Domain], sql: 
 
     domains = dataclass_builder(datas, domain)
     return domains
-
-
-if __name__ == "__main__":
-    service = PostgreSQLService(jdbc_url="postgresql://debuglife:postgres_admin@localhost:5432/hemera_indexer")
-    blocks = build_domains_by_sql(
-        service=service,
-        domain=Block,
-        sql="""
-        SELECT
-            *
-        FROM
-        (
-            SELECT * FROM blocks WHERE number = 21000007
-        ) AS blocks
-        LEFT JOIN
-        (
-            SELECT * FROM transactions WHERE block_number = 21000007
-        ) as transactions
-        ON blocks.hash = transactions.block_hash
-        LEFT JOIN
-        (
-            SELECT * FROM logs where block_number = 21000007
-        ) as logs
-        ON logs.transaction_hash = transactions.hash
-        """,
-        # sql="""
-        # SELECT * FROM blocks WHERE number = 21000007
-        # """
-    )
-
-    # blocks = require_data_as_domain(service=service, table=Blocks, domain=Block)
-
-    print(blocks)
