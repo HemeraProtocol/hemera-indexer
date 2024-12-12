@@ -49,5 +49,5 @@ docker-compose/postgres/
 resource/hemera.ini
 sync_record
 alembic.ini
-!indexer/modules/custom/hemera_ens/abi/*.json
-!indexer/modules/custom/cyber_id/abi/*.json
+!hemera_udf/hemera_ens/abi/*.json
+!hemera_udf/cyber_id/abi/*.json
