@@ -1,12 +1,12 @@
 from sqlalchemy import NUMERIC, VARCHAR, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP
 
-from common.models import HemeraModel, general_converter
-from indexer.modules.custom.aave_v2.domains.aave_v2_domain import AaveV2ReserveD, AaveV2ReserveDataCurrentD
+from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.aave_v2.domains.aave_v2_domain import AaveV2ReserveDataCurrentD
 
 
-class AaveV2Reserve(HemeraModel):
-    __tablename__ = "af_aave_v2_reserve"
+class AaveV2ReserveCurrent(HemeraModel):
+    __tablename__ = "af_aave_v2_reserve_current"
     asset = Column(BYTEA, primary_key=True)
     asset_decimals = Column(NUMERIC(100))
     asset_symbol = Column(VARCHAR)
@@ -45,9 +45,9 @@ class AaveV2Reserve(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": AaveV2ReserveD,
+                "domain": AaveV2ReserveDataCurrentD,
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number >= af_aave_v2_reserve.block_number",
+                "update_strategy": "EXCLUDED.block_number >= af_aave_v2_reserve_current.block_number",
                 "converter": general_converter,
-            }
+            },
         ]

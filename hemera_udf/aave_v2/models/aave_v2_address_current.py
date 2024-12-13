@@ -7,11 +7,8 @@ from sqlalchemy import BOOLEAN, INT, NUMERIC, Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
-from common.models import HemeraModel, general_converter
-from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
-    AaveV2AddressCurrentD,
-    AaveV2LiquidationAddressCurrentD,
-)
+from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.aave_v2.domains.aave_v2_domain import AaveV2AddressCurrentD, AaveV2LiquidationAddressCurrentD
 
 
 class AaveV2AddressCurrent(HemeraModel):

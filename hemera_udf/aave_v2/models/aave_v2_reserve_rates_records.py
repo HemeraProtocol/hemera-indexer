@@ -1,8 +1,8 @@
-from sqlalchemy import NUMERIC, VARCHAR, Column, PrimaryKeyConstraint, func, text
+from sqlalchemy import NUMERIC, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP
 
-from common.models import HemeraModel, general_converter
-from indexer.modules.custom.aave_v2.domains.aave_v2_domain import AaveV2ReserveDataD
+from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.aave_v2.domains.aave_v2_domain import AaveV2ReserveDataD
 
 
 class AaveV2ReserveRates(HemeraModel):

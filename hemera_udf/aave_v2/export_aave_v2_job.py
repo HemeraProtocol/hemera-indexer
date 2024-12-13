@@ -1,11 +1,14 @@
 import logging
 from collections import defaultdict
 
-from common.utils.exception_control import FastShutdownError
-from common.utils.format_utils import bytes_to_hex_str
-from indexer.domain.log import Log
-from indexer.jobs import FilterTransactionDataJob
-from indexer.modules.custom.aave_v2.aave_v2_processors import (
+from hemera.common.utils.exception_control import FastShutdownError
+from hemera.common.utils.format_utils import bytes_to_hex_str
+from hemera.indexer.domains.log import Log
+from hemera.indexer.jobs import FilterTransactionDataJob
+from hemera.indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
+from hemera.indexer.utils.multicall_hemera import Call
+from hemera.indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
+from hemera_udf.aave_v2.aave_v2_processors import (
     BorrowProcessor,
     DepositProcessor,
     FlashLoanProcessor,
@@ -15,7 +18,7 @@ from indexer.modules.custom.aave_v2.aave_v2_processors import (
     ReserveInitProcessor,
     WithdrawProcessor,
 )
-from indexer.modules.custom.aave_v2.abi.abi import (
+from hemera_udf.aave_v2.abi.abi import (
     BORROW_EVENT,
     DEPOSIT_EVENT,
     FLUSH_LOAN_EVENT,
@@ -27,7 +30,7 @@ from indexer.modules.custom.aave_v2.abi.abi import (
     SCALED_BALANCE_OF_FUNCTION,
     WITHDRAW_EVENT,
 )
-from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
+from hemera_udf.aave_v2.domains.aave_v2_domain import (
     AaveV2AddressCurrentD,
     AaveV2BorrowD,
     AaveV2CallRecordsD,
@@ -42,10 +45,7 @@ from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
     AaveV2WithdrawD,
     aave_v2_address_current_factory,
 )
-from indexer.modules.custom.aave_v2.models.aave_v2_reserve import AaveV2Reserve
-from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.utils.multicall_hemera import Call
-from indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
+from hemera_udf.aave_v2.models.aave_v2_reserve import AaveV2Reserve
 
 logger = logging.getLogger(__name__)
 

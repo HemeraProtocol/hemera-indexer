@@ -7,8 +7,8 @@ from sqlalchemy import BOOLEAN, VARCHAR, Column, PrimaryKeyConstraint, func, tex
 from sqlalchemy.dialects.mysql import BIGINT
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
-from common.models import HemeraModel, general_converter
-from indexer.modules.custom.aave_v2.domains.aave_v2_domain import AaveV2CallRecordsD
+from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.aave_v2.domains.aave_v2_domain import AaveV2CallRecordsD
 
 
 class AaveV2CallRecords(HemeraModel):

@@ -4,7 +4,8 @@ from typing import Any, Type, TypeVar
 
 from common.utils.abi_code_utils import Event
 from common.utils.web3_utils import extract_eth_address
-from indexer.modules.custom.aave_v2.abi.abi import DECIMALS_FUNCTIOIN, SYMBOL_FUNCTIOIN
+
+from hemera_udf.aave_v2.abi.abi import DECIMALS_FUNCTIOIN, SYMBOL_FUNCTIOIN
 from indexer.utils.multicall_hemera import Call
 
 logger = logging.getLogger(__name__)

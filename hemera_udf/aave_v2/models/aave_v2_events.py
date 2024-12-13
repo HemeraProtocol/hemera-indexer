@@ -7,8 +7,8 @@
 from sqlalchemy import BIGINT, BOOLEAN, INT, INTEGER, NUMERIC, VARCHAR, Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BYTEA, TIMESTAMP
 
-from common.models import HemeraModel, general_converter
-from indexer.modules.custom.aave_v2.domains.aave_v2_domain import (
+from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.aave_v2.domains.aave_v2_domain import (
     AaveV2BorrowD,
     AaveV2DepositD,
     AaveV2FlashLoanD,

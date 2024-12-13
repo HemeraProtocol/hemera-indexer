@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from indexer.domain import FilterData
+from hemera.indexer.domains import Domain
 
 
 @dataclass
-class AaveV2ReserveD(FilterData):
+class AaveV2ReserveD(Domain):
     asset: str
     asset_decimals: Optional[int]
     asset_symbol: Optional[str]
@@ -28,7 +28,7 @@ class AaveV2ReserveD(FilterData):
 
 
 @dataclass
-class AaveV2BaseRecord(FilterData):
+class AaveV2BaseRecord(Domain):
     block_number: Optional[int] = None
     block_timestamp: Optional[int] = None
     transaction_hash: Optional[str] = None
@@ -107,7 +107,7 @@ class AaveV2LiquidationCallD(AaveV2BaseRecord):
 
 
 @dataclass
-class AaveV2AddressCurrentD(FilterData):
+class AaveV2AddressCurrentD(Domain):
     address: Optional[str] = None
     asset: Optional[str] = None
     supply_amount: Optional[int] = None
@@ -118,7 +118,7 @@ class AaveV2AddressCurrentD(FilterData):
 
 
 @dataclass
-class AaveV2LiquidationAddressCurrentD(FilterData):
+class AaveV2LiquidationAddressCurrentD(Domain):
     address: Optional[str] = None
     asset: Optional[str] = None
     block_number: Optional[int] = None
@@ -133,7 +133,7 @@ def aave_v2_address_current_factory():
 
 
 @dataclass
-class AaveV2CallRecordsD(FilterData):
+class AaveV2CallRecordsD(Domain):
     target: Optional[str] = None
     params: Optional[str] = None
     function: Optional[str] = None
@@ -142,7 +142,7 @@ class AaveV2CallRecordsD(FilterData):
 
 
 @dataclass
-class AaveV2ReserveDataD(FilterData):
+class AaveV2ReserveDataD(Domain):
     block_timestamp: Optional[int] = None
     transaction_hash: Optional[str] = None
     log_index: Optional[int] = None
@@ -158,7 +158,7 @@ class AaveV2ReserveDataD(FilterData):
 
 
 @dataclass
-class AaveV2ReserveDataCurrentD(FilterData):
+class AaveV2ReserveDataCurrentD(Domain):
     asset: Optional[str] = None
     block_number: Optional[int] = None
     liquidity_rate: Optional[int] = None
