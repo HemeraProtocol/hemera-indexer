@@ -1,0 +1,41 @@
+from typing import List, Union
+
+from hemera.indexer.jobs.base_job import ExtensionJob, Collector
+from hemera.indexer.utils.collection_utils import distinct_collections_by_group
+
+
+class Export{$job_name}Job(ExtensionJob):
+    # If the data processing logic of the developed job supports re-running with on-chain data reorg,
+    # set able_to_reorg to True so that the scheduler can automatically start the job during the reorg process.
+    able_to_reorg = False
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _udf(self, dependency_domains: List[DependencyDomain], output: Collector[Union[JobCustomDomainA, JobCustomDomainB]]):
+        job_custom_domain_a_list, job_custom_domain_b_list = some_work_here(dependency_domains)
+
+        # Before collecting, you may need sort/distinct etc.
+        # Just like following:
+        job_custom_domain_a_list.sort(key=lambda x: x.some_key)
+        job_custom_domain_a_list = distinct_collections_by_group(
+            collections=job_custom_domain_a_list,
+            group_by=['key1', 'key2'],
+            max_key="comparable_key",
+        )
+
+        output.collects(job_custom_domain_a_list)
+        output.collects(job_custom_domain_b_list)
+
+        # more collect example:
+        # for item in job_custom_domain_a_list:
+        #     output.collect(item)
+        #
+        # for item in job_custom_domain_a_list:
+        #     output.collect_domain(item)
+        #
+        # for item in job_custom_domain_a_list:
+        #     output.collect_item(item.type(), item)
+        #
+        # output.collect_domains(job_custom_domain_a_list)
+        # output.collect_items(job_custom_domain_a_list[0].type(), job_custom_domain_a_list)

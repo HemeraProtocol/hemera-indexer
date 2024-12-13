@@ -8,3 +8,24 @@ eigen_layer_job:
     address: '0x858646372cc42e1a627fce94aa7a7033e7cf075a'
   DELEGATION:
     address: '0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a'
+
+export_lido_share_job:
+  seth_address: '0xae7ab96520de3a18e5e111b5eaab095312d7fe84'
+
+export_ether_fi_share_job:
+  eeth_address: '0x35fa164735182de50811e8e2e824cfb9b6118ac2'
+  liquidity_pool_address: '0x308861A430be4cce5502d0A12724771Fc6DaF216'
+  lrts:
+    - token: '0x939778D83b46B456224A33Fb59630B11DEC56663'
+      accountant: '0xEB440B36f61Bf62E0C54C622944545f159C3B790'
+    - token: '0x657e8C867D8B37dCC18fA4Caead9C45EB088C642'
+      accountant: '0x1b293DC39F94157fA0D1D36d7e0090C8B8B8c13F'
+    - token: '0x917ceE801a67f933F2e6b33fC0cD1ED2d5909D88'
+      accountant: '0xbe16605B22a7faCEf247363312121670DFe5afBE'
+    - token: '0x7223442cad8e9cA474fC40109ab981608F8c4273'
+      accountant: '0x126af21dc55C300B7D0bBfC4F3898F558aE8156b'
+
+pendle_pools_job:
+  pendle_market_factory_address: '0x27b1dacd74688af24a64bd3c9c1b143118740784'
+  pendle_market_factory_v3_address: '0x6fcf753f2c67b83f7b09746bbc4fa0047b35d050'
+

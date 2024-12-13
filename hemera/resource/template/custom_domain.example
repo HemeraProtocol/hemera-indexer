@@ -1,0 +1,19 @@
+from dataclasses import dataclass
+
+from hemera.indexer.domain import Domain
+
+
+@dataclass
+class CustomDomainA(Domain):
+    field1: str
+    field2: int
+    may_need_block_number: int
+    may_need_block_timestamp: int
+
+
+@dataclass
+class CustomDomainB(Domain):
+    field1: str
+    field2: int
+    may_need_block_number: int
+    may_need_block_timestamp: int
