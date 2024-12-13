@@ -43,7 +43,7 @@ endif
 
 init_db:
 	@echo "Initializing database..."
-	poetry run hemera
+	poetry run hemera db --init-schema
 
 development:
 	@echo "Setting up development environment..."
