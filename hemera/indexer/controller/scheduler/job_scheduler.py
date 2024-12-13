@@ -1,4 +1,5 @@
 import logging
+import os
 from collections import defaultdict, deque
 from typing import List, Set, Type
 
@@ -6,6 +7,7 @@ from pottery import RedisDict
 from redis.client import Redis
 
 from hemera.common.models.tokens import Tokens
+from hemera.common.utils.exception_control import HemeraBaseException
 from hemera.common.utils.format_utils import bytes_to_hex_str
 from hemera.common.utils.module_loading import import_submodules
 from hemera.indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -17,9 +19,12 @@ from hemera.indexer.jobs.base_job import (
     FilterTransactionDataJob,
     generate_dependency_types,
 )
-from hemera.indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from hemera.indexer.jobs.export_blocks_job import ExportBlocksJob
 from hemera.indexer.jobs.source_job.pg_source_job import PGSourceJob
+from hemera.indexer.utils.buffer_service import BufferService
+
+JOB_RETRIES = os.environ.get("JOB_RETRIES", 5)
+ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
 
 
 def get_tokens_from_db(service):
@@ -58,7 +63,7 @@ class JobScheduler:
         debug_batch_size=1,
         max_workers=5,
         config={},
-        item_exporters=[ConsoleItemExporter()],
+        buffer_service: Union[dict, BufferService] = defaultdict(list),
         required_output_types=[],
         required_source_types=[],
         cache="memory",
@@ -71,7 +76,7 @@ class JobScheduler:
         self.auto_reorg = auto_reorg
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
-        self.item_exporters = item_exporters
+        self.buffer_service = buffer_service
         self.batch_size = batch_size
         self._is_multicall = multicall
         self.debug_batch_size = debug_batch_size
@@ -112,41 +117,6 @@ class JobScheduler:
         self.logger.info("Export output types: ")
         for output_type in self.required_output_types:
             self.logger.info(f"[*] {output_type.type()}")
-
-    def get_required_job_classes(self, output_types) -> (List[Type[BaseJob]], bool):
-        required_job_classes = set()
-        output_type_queue = deque(output_types)
-        is_filter = True
-        locked_output_types = []
-
-        jobs_set = set()
-
-        for output_type in output_types:
-            for job_class in self.job_map[output_type.type()]:
-                jobs_set.add(job_class)
-
-        is_locked_flag = False
-        for job_class in jobs_set:
-            is_filter = job_class.is_filter and is_filter
-            if job_class.is_locked and not is_locked_flag:
-                is_locked_flag = True
-                locked_output_types += job_class.output_types
-            elif job_class.is_locked and is_locked_flag:
-                raise Exception("Only one job can be locked in a pipeline")
-            else:
-                pass
-
-        if is_locked_flag and not set(output_types).issubset(set(locked_output_types)):
-            raise Exception("Output types must be subset of locked job output types")
-
-        while output_type_queue:
-            output_type = output_type_queue.popleft()
-            for job_class in self.job_map[output_type.type()]:
-                if job_class in self.job_classes:
-                    required_job_classes.add(job_class)
-                    for dependency in job_class.dependency_types:
-                        output_type_queue.append(dependency)
-        return required_job_classes, is_filter
 
     def clear_data_buff(self):
         BaseJob._data_buff.clear()
@@ -189,7 +159,71 @@ class JobScheduler:
             for dependency in cls.dependency_types:
                 self.dependency_map[dependency.type()].append(cls)
 
+    def get_required_job_classes(self, output_types) -> (List[Type[BaseJob]], bool):
+        required_job_classes = set()
+        output_type_queue = deque(output_types)
+        is_filter = True
+        locked_output_types = []
+
+        jobs_set = set()
+
+        for output_type in output_types:
+            for job_class in self.job_map[output_type.type()]:
+                jobs_set.add(job_class)
+
+        is_locked_flag = False
+        for job_class in jobs_set:
+            is_filter = job_class.is_filter and is_filter
+            if job_class.is_locked and not is_locked_flag:
+                is_locked_flag = True
+                locked_output_types += job_class.output_types
+            elif job_class.is_locked and is_locked_flag:
+                raise Exception("Only one job can be locked in a pipeline")
+            else:
+                pass
+
+        if is_locked_flag and not set(output_types).issubset(set(locked_output_types)):
+            raise Exception("Output types must be subset of locked job output types")
+
+        while output_type_queue:
+            output_type = output_type_queue.popleft()
+            for job_class in self.job_map[output_type.type()]:
+                if job_class in self.job_classes:
+                    required_job_classes.add(job_class)
+                    for dependency in job_class.dependency_types:
+                        output_type_queue.append(dependency)
+        return required_job_classes, is_filter
+
+    def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
+        sorted_order = []
+        job_graph = defaultdict(list)
+        in_degree = defaultdict(int)
+
+        for job_class in required_jobs:
+            for dependency in job_class.dependency_types:
+                for parent_class in self.job_map[dependency.type()]:
+                    if parent_class in required_jobs:
+                        job_graph[parent_class].append(job_class)
+                        in_degree[job_class] += 1
+
+        sources = deque([job_class for job_class in required_jobs if in_degree[job_class] == 0])
+
+        while sources:
+            job_class = sources.popleft()
+            sorted_order.append(job_class)
+            for child_class in job_graph[job_class]:
+                in_degree[child_class] -= 1
+                if in_degree[child_class] == 0:
+                    sources.append(child_class)
+
+        if len(sorted_order) != len(required_jobs):
+            raise Exception("Dependency cycle detected")
+
+        return sorted_order
+
     def instantiate_jobs(self):
+        BaseJob._data_buff = self.buffer_service
+
         filters = []
         for job_class in self.resolved_job_classes:
             if job_class is ExportBlocksJob or job_class is PGSourceJob:
@@ -241,59 +275,47 @@ class JobScheduler:
             )
             self.jobs.insert(0, pg_source_job)
 
-        if self.auto_reorg:
-            check_job = CheckBlockConsensusJob(
-                required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
-                batch_size=self.batch_size,
-                multicall=self._is_multicall,
-                debug_batch_size=self.debug_batch_size,
-                max_workers=self.max_workers,
-                config=self.config,
-                filters=filters,
-            )
-            self.jobs.append(check_job)
+    def get_scheduled_jobs(self):
+        return self.jobs
 
     def run_jobs(self, start_block, end_block):
         self.clear_data_buff()
-        try:
-            for job in self.jobs:
+
+        for job in self.jobs:
+            self.job_with_retires(job, start_block=start_block, end_block=end_block)
+
+        for output_type in self.required_output_types:
+            message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
+            self.logger.info(f"{message}")
+
+    def job_with_retires(self, job, start_block, end_block):
+        for retry in range(JOB_RETRIES + 1):
+            try:
+                self.logger.info(f"Task run {job.__class__.__name__}")
                 job.run(start_block=start_block, end_block=end_block)
 
-            for output_type in self.required_output_types:
-                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
-                self.logger.info(f"{message}")
+            except HemeraBaseException as e:
+                self.logger.error(
+                    f"An rpc response exception occurred while running {job.__class__.__name__}. error: {e}"
+                )
+                if e.crashable:
+                    self.logger.error("Mission will crash immediately.")
+                    raise e
 
-        except Exception as e:
-            raise e
-        finally:
-            pass
+                if e.retriable:
+                    if retry == JOB_RETRIES:
+                        self.logger.info(f"The number of retry is reached limit {JOB_RETRIES}.")
+                    else:
+                        self.logger.info(f"No: {retry + 1} retry is about to start.")
+                else:
+                    self.logger.error("Mission will not retry, and exit immediately.")
+                    raise e
 
-    def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
-        sorted_order = []
-        job_graph = defaultdict(list)
-        in_degree = defaultdict(int)
+            except Exception as e:
+                self.logger.error(f"An unknown exception occurred while running {job.__class__.__name__}. error: {e}")
+                raise e
 
-        for job_class in required_jobs:
-            for dependency in job_class.dependency_types:
-                for parent_class in self.job_map[dependency.type()]:
-                    if parent_class in required_jobs:
-                        job_graph[parent_class].append(job_class)
-                        in_degree[job_class] += 1
-
-        sources = deque([job_class for job_class in required_jobs if in_degree[job_class] == 0])
-
-        while sources:
-            job_class = sources.popleft()
-            sorted_order.append(job_class)
-            for child_class in job_graph[job_class]:
-                in_degree[child_class] -= 1
-                if in_degree[child_class] == 0:
-                    sources.append(child_class)
-
-        if len(sorted_order) != len(required_jobs):
-            raise Exception("Dependency cycle detected")
-
-        return sorted_order
+        self.logger.error(
+            f"The job with parameters start_block:{start_block}, end_block:{end_block} "
+            f"can't be automatically resumed after reached out limit of retries. Program will exit."
+        )

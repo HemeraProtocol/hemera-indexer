@@ -7,10 +7,11 @@ from typing import Generic, List, Type, TypeVar, Union, get_args, get_origin, ge
 from deprecated import deprecated
 from web3 import Web3
 
-from hemera.common.utils.exception_control import FastShutdownError
+from hemera.common.utils.exception_control import FastShutdownError, RetriableError
 from hemera.common.utils.format_utils import to_snake_case
 from hemera.indexer.domains import Domain
 from hemera.indexer.domains.transaction import Transaction
+from hemera.indexer.utils.buffer_service import BufferService
 from hemera.indexer.utils.reorg import should_reorg
 
 T = TypeVar("T")
@@ -106,7 +107,7 @@ class BaseJobMeta(type):
 
 
 class BaseJob(metaclass=BaseJobMeta):
-    _data_buff = defaultdict(list)
+    _data_buff: Union[dict, BufferService] = defaultdict(list)
     _data_buff_lock = defaultdict(threading.Lock)
 
     tokens = None
@@ -144,6 +145,7 @@ class BaseJob(metaclass=BaseJobMeta):
         self._should_reorg = False
         self._should_reorg_type = set()
         self._service = kwargs["config"].get("db_service", None)
+        self.collector = Collector(self, self.output_types)
 
         job_name_snake = to_snake_case(self.job_name)
         self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
@@ -167,7 +169,10 @@ class BaseJob(metaclass=BaseJobMeta):
                     self._process(**kwargs)
 
             if not self._reorg:
-                self._export()
+                if not self._data_buff.check_and_flush(
+                    job_name=self.job_name, output_types=[output.type() for output in self.output_types]
+                ):
+                    raise RetriableError(f"Job {self.job_name} export error.")
 
         finally:
             self._end()
@@ -261,7 +266,7 @@ class BaseJob(metaclass=BaseJobMeta):
             else:
                 parameters[param] = []
 
-        parameters["output"] = Collector(self, self.output_types)
+        parameters["output"] = self.collector
         return parameters
 
     def _udf(self, **kwargs):

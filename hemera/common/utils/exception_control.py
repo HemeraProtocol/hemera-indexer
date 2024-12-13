@@ -102,11 +102,11 @@ def decode_response_error(error):
         return None
 
     if (
-            message == "execution reverted"
-            or message == "out of gas"
-            or message == "gas uint64 overflow"
-            or message == "invalid jump destination"
-            or message.lower().find("stack underflow") != -1
+        message == "execution reverted"
+        or message == "out of gas"
+        or message == "gas uint64 overflow"
+        or message == "invalid jump destination"
+        or message.lower().find("stack underflow") != -1
     ):
         return None
     elif message.find("required historical state unavailable") != -1:

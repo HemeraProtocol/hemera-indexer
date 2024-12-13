@@ -5,6 +5,7 @@ Time    : 2024/11/19 下午6:07
 Author  : xuzh
 Project : hemera_indexer
 """
+import json
 import logging
 import os
 import signal
@@ -18,11 +19,31 @@ from typing import Callable, Dict
 from hemera.common.utils.exception_control import get_exception_details
 
 BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 1)
-BUFFER_LINGER_MS = os.environ.get("BUFFER_LINGER_MS", 5000)
 MAX_BUFFER_SIZE = os.environ.get("MAX_BUFFER_SIZE", 1)
 ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
 CONCURRENT_SUBMITTERS = os.environ.get("CONCURRENT_SUBMITTERS", 1)
 CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
+EXPORTE_STRATEGY = os.environ.get("EXPORTE_STRATEGY", json.loads("{}"))
+
+
+class BufferKeyLock:
+    def __init__(self):
+        self._locks: Dict[str, threading.Lock] = {}
+        self._meta_lock = threading.Lock()
+
+    def __getitem__(self, key: str) -> threading.Lock:
+        with self._meta_lock:
+            if key not in self._locks:
+                self._locks[key] = threading.Lock()
+            return self._locks[key]
+
+    def remove(self, key: str) -> None:
+        with self._meta_lock:
+            self._locks.pop(key, None)
+
+    def clear(self) -> None:
+        with self._meta_lock:
+            self._locks.clear()
 
 
 class BufferService:
@@ -32,38 +53,90 @@ class BufferService:
         item_exporters,
         required_output_types,
         block_size: int = BUFFER_BLOCK_SIZE,
-        linger_ms: int = BUFFER_LINGER_MS,
         max_buffer_size: int = MAX_BUFFER_SIZE,
         export_workers: int = CONCURRENT_SUBMITTERS,
         success_callback: Callable = None,
         exception_callback: Callable = None,
     ):
         self.block_size = block_size
-        self.linger_ms = linger_ms
         self.max_buffer_size = max_buffer_size
 
         self.item_exporters = item_exporters
         self.required_output_types = required_output_types
 
         self.buffer = defaultdict(list)
-        self.buffer_lock = threading.Lock()
+        self.buffer_entire_lock = threading.Lock()
+        self.buffer_lock = BufferKeyLock()
+
         self.pending_futures: dict[Future, (int, int)] = dict()
         self.futures_lock = threading.Lock()
 
         self._shutdown_event = Event()
-        self._last_flush_time = time.time()
 
         self.submit_export_pool = ThreadPoolExecutor(max_workers=export_workers)
-        self._flush_thread = Thread(target=self._flush_loop)
-        self._flush_thread.daemon = True
-        self._flush_thread.start()
 
         self._setup_signal_handlers()
 
         self.success_callback = success_callback
         self.exception_callback = exception_callback
 
+        self.export_strategy = EXPORTE_STRATEGY
+
         self.logger = logging.getLogger(__name__)
+
+    def keys(self) -> List[Any]:
+        return self.buffer.keys()
+
+    def __getitem__(self, key: str) -> List[Any]:
+        with self.buffer_lock[key]:
+            if key not in self._timestamps:
+                self._timestamps[key] = time.time()
+            return self.buffer[key]
+
+    def get(self, key: str, default: Any = None) -> List[Any]:
+        with self.buffer_lock[key]:
+            return self.buffer.get(key, default)
+
+    def __setitem__(self, key: str, value: Any):
+        with self.buffer_lock[key]:
+            if isinstance(value, list):
+                self.buffer[key] = value
+            else:
+                self.buffer[key] = [value]
+            self._timestamps[key] = time.time()
+            self._round_data[key] = self._current_round
+
+    def extend(self, key: str, values: List[Any]):
+        with self.buffer_lock[key]:
+            self.buffer[key].extend(values)
+            if key not in self._timestamps:
+                self._timestamps[key] = time.time()
+            self._round_data[key] = self._current_round
+
+    def append(self, key: str, value: Any):
+        with self.buffer_lock[key]:
+            self.buffer[key].append(value)
+            if key not in self._timestamps:
+                self._timestamps[key] = time.time()
+            self._round_data[key] = self._current_round
+
+    def _get_data_snapshot(self) -> Dict[str, List[Any]]:
+        snapshot = {}
+        all_keys = set(self.buffer.keys())
+
+        with self.buffer_entire_lock:
+            for key in all_keys:
+                if key in self.buffer:
+                    snapshot[key] = self.buffer[key].copy()
+        return snapshot
+
+    def _clear_exported_data(self, keys: List[str]):
+        for key in keys:
+            with self.buffer_lock[key]:
+                if key in self.buffer:
+                    del self.buffer[key]
+                    del self._timestamps[key]
+                    self._round_data.pop(key, None)
 
     def _setup_signal_handlers(self):
         signal.signal(signal.SIGTERM, self._handle_shutdown)
@@ -94,42 +167,25 @@ class BufferService:
             if CRASH_INSTANTLY:
                 self.shutdown()
 
-    def write(self, records: Dict):
-        with self.buffer_lock:
-            for dataclass in records.keys():
-                if dataclass in self.required_output_types or dataclass == "block":
-                    self.buffer[dataclass].extend(records[dataclass])
-
-        if len(self.buffer["block"]) >= self.max_buffer_size or not ASYNC_SUBMIT:
-            return self.flush_buffer()
-        return True
-
-    def _should_flush(self) -> bool:
-        current_time = time.time()
-        time_since_last_flush = (current_time - self._last_flush_time) * 1000
-
-        return len(self.buffer["block"]) >= self.block_size or time_since_last_flush >= self.linger_ms
-
     def export_items(self, items):
         for item_exporter in self.item_exporters:
             item_exporter.open()
             item_exporter.export_items(items)
             item_exporter.close()
 
-    def flush_buffer(self):
-
-        with self.buffer_lock:
-            if len(self.buffer["block"]) == 0:
-                return
+    def flush_buffer(self, flush_keys: List[str]):
+        flush_items = []
+        with self.buffer_entire_lock:
             self.buffer["block"].sort(key=lambda x: x.number)
             block_range = (self.buffer["block"][0].number, self.buffer["block"][-1].number)
-            flush_items = []
-            for key in self.buffer:
+
+            for key in flush_keys:
                 if key in self.required_output_types:
                     flush_items.extend(self.buffer[key])
-
-            self.buffer.clear()
-        self.logger.info(f"Flush data between block range: {block_range}")
+                if key != "block":
+                    self.buffer[key].clear()
+            if len(flush_keys):
+                self.logger.info(f"Flush domains: {','.join(flush_keys)} between block range: {block_range}")
         future = self.submit_export_pool.submit(self.export_items, flush_items)
         future.add_done_callback(self._handle_export_completion)
 
@@ -143,17 +199,18 @@ class BufferService:
             except Exception as e:
                 return False
 
-        self._last_flush_time = time.time()
         return True
 
-    def _flush_loop(self):
-        while not self._shutdown_event.is_set():
-            try:
-                if self._should_flush():
-                    self.flush_buffer()
-                time.sleep(0.1)
-            except Exception as e:
-                self.logger.error(f"Error in flush loop: {e}")
+    def check_and_flush(self, job_name: str = None, output_types: List[str] = None):
+        if job_name in self.export_strategy:
+            output_types = self.export_strategy[job_name]
+
+        if not ASYNC_SUBMIT:
+            return self.flush_buffer(output_types)
+        else:
+            self.flush_buffer(output_types)
+
+        return True
 
     def shutdown(self):
         if self._shutdown_event.is_set():
@@ -161,6 +218,5 @@ class BufferService:
 
         self.logger.info("Shutting down buffer service...")
         self._handle_shutdown(None, None)
-        self._flush_thread.join()
         self.submit_export_pool.shutdown(wait=True)
         self.logger.info("Buffer service shut down completed")
