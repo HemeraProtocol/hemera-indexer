@@ -9,7 +9,7 @@ from sqlalchemy import Numeric as SQL_Numeric
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSON, JSONB, NUMERIC, TIMESTAMP
 
 from hemera.common.utils.format_utils import hex_str_to_bytes
-from hemera.common.utils.module_loading import import_string
+from hemera.common.utils.module_loading import import_string, import_submodules
 from hemera.indexer.domains import Domain
 
 model_path_exclude = []
@@ -30,7 +30,9 @@ class HemeraMeta(type(db.Model)):
         return new_cls
 
     @classmethod
-    def get_all_subclasses_with_type(mcs):
+    def get_all_subclasses(mcs):
+        import_submodules("hemera.common.models")
+
         def get_subclasses(cls):
             subclasses = set()
             for subclass in cls.__subclasses__():
@@ -39,7 +41,7 @@ class HemeraMeta(type(db.Model)):
             return subclasses
 
         all_subclasses = get_subclasses(HemeraModel)
-        return {subclass.type(): subclass for subclass in all_subclasses if hasattr(subclass, "type")}
+        return {subclass: subclass for subclass in all_subclasses}
 
 
 class HemeraModel(db.Model, metaclass=HemeraMeta):
@@ -66,7 +68,7 @@ class HemeraModel(db.Model, metaclass=HemeraMeta):
 
     @classmethod
     def get_all_hemera_model_dict(cls):
-        return HemeraMeta.get_all_subclasses_with_type()
+        return HemeraMeta.get_all_subclasses()
 
     def dict_to_entity(self, data_dict: Dict[str, Any]):
         valid_keys = {field.name for field in fields(self.__class__)}
@@ -117,7 +119,7 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
 
 
 def import_all_models():
-    hemera_model_subclass = HemeraModel.get_all_subclasses_with_type()
+    hemera_model_subclass = HemeraModel.get_all_subclasses()
     for name in hemera_model_subclass.keys():
         if name != "ImportError":
             path = hemera_model_subclass.get(name)

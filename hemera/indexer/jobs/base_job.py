@@ -7,7 +7,6 @@ from typing import Generic, List, Type, TypeVar, Union, get_args, get_origin, ge
 from deprecated import deprecated
 from web3 import Web3
 
-from hemera.common.converter.pg_converter import domain_model_mapping
 from hemera.common.utils.exception_control import FastShutdownError
 from hemera.common.utils.format_utils import to_snake_case
 from hemera.indexer.domains import Domain
@@ -177,6 +176,8 @@ class BaseJob(metaclass=BaseJobMeta):
         pass
 
     def _pre_reorg(self, **kwargs):
+        from hemera.common.converter.pg_converter import domain_model_mapping
+
         if self._service is None:
             raise FastShutdownError("PG Service is not set")
 

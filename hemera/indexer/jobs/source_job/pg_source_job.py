@@ -9,7 +9,6 @@ from typing import List, Type, Union, get_args, get_origin
 
 from sqlalchemy import and_, func, select
 
-from hemera.common.converter.pg_converter import domain_model_mapping
 from hemera.common.models.blocks import Blocks
 from hemera.common.models.logs import Logs
 from hemera.common.models.transactions import Transactions
@@ -44,6 +43,8 @@ class PGSourceJob(BaseSourceJob):
     ]
 
     def __init__(self, **kwargs):
+        from hemera.common.converter.pg_converter import domain_model_mapping
+
         super().__init__(**kwargs)
         self._source_path = kwargs["config"].get("source_path", None)
         self._service = PostgreSQLService(self._source_path) if self._source_path else None
@@ -54,7 +55,7 @@ class PGSourceJob(BaseSourceJob):
         self._filters = flatten(kwargs.get("filters", []))
         self._is_filter = kwargs.get("is_filter", False)
         self._specification = AlwaysFalseSpecification() if self._is_filter else AlwaysTrueSpecification()
-
+        self._domain_model_mapping = domain_model_mapping
         if self._service is None:
             raise FastShutdownError("-pg or --postgres-url is required to run PGSourceJob")
 
@@ -178,7 +179,7 @@ class PGSourceJob(BaseSourceJob):
     def _collect_from_pg(self, blocks, start_timestamp, end_timestamp):
 
         for output_type in self.output_types:
-            table = domain_model_mapping[output_type]["table"]
+            table = self._domain_model_mapping[output_type]["table"]
             if len(self.pg_datas[table]) == 0:
                 start_time = datetime.now()
                 self.pg_datas[table] = self._query_with_blocks(table, blocks, start_timestamp, end_timestamp)
@@ -189,7 +190,7 @@ class PGSourceJob(BaseSourceJob):
     def _process(self, **kwargs):
         self.domain_mapping.clear()
         for output_type in self.build_order:
-            table = domain_model_mapping[output_type]["table"]
+            table = self._domain_model_mapping[output_type]["table"]
             domains = self._dataclass_build(self.pg_datas[table], output_type)
             if hasattr(table, "__query_order__"):
                 domains.sort(key=lambda x: tuple(getattr(x, column.name) for column in table.__query_order__))
