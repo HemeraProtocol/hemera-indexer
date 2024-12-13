@@ -1,4 +1,6 @@
 import logging
+import sys
+import traceback
 
 from werkzeug.exceptions import HTTPException
 
@@ -100,11 +102,11 @@ def decode_response_error(error):
         return None
 
     if (
-        message == "execution reverted"
-        or message == "out of gas"
-        or message == "gas uint64 overflow"
-        or message == "invalid jump destination"
-        or message.lower().find("stack underflow") != -1
+            message == "execution reverted"
+            or message == "out of gas"
+            or message == "gas uint64 overflow"
+            or message == "invalid jump destination"
+            or message.lower().find("stack underflow") != -1
     ):
         return None
     elif message.find("required historical state unavailable") != -1:
@@ -118,3 +120,15 @@ def decode_response_error(error):
         raise RetriableError(message)
     else:
         return None
+
+
+def get_exception_details(e: Exception) -> dict:
+    exc_type, exc_value, exc_traceback = sys.exc_info()
+
+    return {
+        "type": exc_type.__name__ if exc_type else None,
+        "module": exc_type.__module__ if exc_type else None,
+        "message": str(exc_value) if exc_value else str(e),
+        "traceback": traceback.format_exc(),
+        "line_number": exc_traceback.tb_lineno if exc_traceback else None,
+    }
