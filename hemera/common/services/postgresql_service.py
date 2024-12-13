@@ -45,7 +45,7 @@ class PostgreSQLService:
         pool_recycle: int = 1800,  # 30 minutes
         application_name: str = "postgresql_service",
         db_version: str = "head",
-        script_location: str = "migrations",
+        script_location: str = "hemera/migrations",
         init_schema: bool = False,
     ):
         """
