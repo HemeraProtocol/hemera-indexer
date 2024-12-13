@@ -31,10 +31,56 @@ opensea_job:
       - "0x5b3256965e7c3cf26e11fcaf296dfc8807c01073"
 
 export_tokens_and_transfers_job:
-    weth_address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+  weth_address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 
-eigen_layer_job:
+export_eigen_layer_job:
   STRATEGY_MANAGER:
     address: "0x858646372cc42e1a627fce94aa7a7033e7cf075a"
   DELEGATION:
     address: "0x39053d51b77dc0d36036fc1fcc8cb819df8ef37a"
+
+deposit_to_l2_job:
+  contract_info:
+    10:
+      - contract: "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1"
+        ABIFunction:
+          - token: "eth"
+            abi: "op_deposit_eth"
+          - token: "eth"
+            abi: "op_bridge_eth_to"
+          - token: "_l1Token"
+            abi: "op_deposit_erc20_to"
+        ABIEvent:
+          - abi: "op_transaction_deposited"
+    8453:
+      - contract: "0x3154Cf16ccdb4C6d922629664174b904d80F2C35"
+        ABIFunction:
+          - token: "eth"
+            abi: "op_deposit_eth"
+          - token: "eth"
+            abi: "op_bridge_eth_to"
+    42161:
+      - contract: "0x72Ce9c846789fdB6fC1f34aC4AD25Dd9ef7031ef"
+        ABIFunction:
+          - token: "_l1Token"
+            abi: "arbitrum_outbound_transfer"
+      - contract: "0x4Dbd4fc535Ac27206064B68FfCf827b0A60BAB3f"
+        ABIFunction:
+          - token: "eth"
+            method_id: "0x439370b1"
+    59144:
+      - contract: "0xd19d4B5d358258f05D7B411E21A1460D11B0876F"
+        ABIFunction:
+          - token: "eth"
+            abi: "linea_send_message"
+      - contract: "0x051F1D88f0aF5763fB888eC4378b4D8B29ea3319"
+        ABIFunction:
+          - token: "_l1Token"
+            abi: "linea_bridge_token"
+      - contract: "0x504A330327A089d8364C4ab3811Ee26976d388ce"
+        ABIFunction:
+          - token: "usdc"
+            abi: "linea_deposit_to"
+  cache_config:
+    clean_mode: blocks
+    clean_limit_value: 1000

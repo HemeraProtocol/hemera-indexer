@@ -19,8 +19,8 @@ from indexer.modules.custom.address_index.domain.address_internal_transaction im
 from indexer.modules.custom.address_index.domain.address_nft_1155_holders import AddressNft1155Holder
 from indexer.modules.custom.all_features_value_record import AllFeatureValueRecordBlueChipHolders
 from indexer.modules.custom.blue_chip.domain.feature_blue_chip import BlueChipHolder
-from indexer.modules.custom.deposit_to_l2.domain.address_token_deposit import AddressTokenDeposit
-from indexer.modules.custom.deposit_to_l2.domain.token_deposit_transaction import TokenDepositTransaction
+from indexer.modules.custom.deposit_to_l2.domains.address_token_deposit import AddressTokenDeposit
+from indexer.modules.custom.deposit_to_l2.domains.token_deposit_transaction import TokenDepositTransaction
 from indexer.modules.custom.eigen_layer.domains.eigen_layer_domain import EigenLayerAction, EigenLayerAddressCurrent
 from indexer.modules.custom.hemera_ens.ens_domain import (
     ENSAddressChangeD,
