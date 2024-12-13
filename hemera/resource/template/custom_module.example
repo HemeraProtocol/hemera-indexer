@@ -4,7 +4,7 @@ from sqlalchemy import Column, Index, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from hemera.common.models import HemeraModel, general_converter
-from hemera_udf.${job}.domains.${domain_file} import CustomDomainA, CustomDomainB
+from hemera_udf.${job}.domains import CustomDomainA, CustomDomainB
 
 
 class CustomTable(HemeraModel):

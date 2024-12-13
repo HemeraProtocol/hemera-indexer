@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from hemera.indexer.domain import Domain
+from hemera.indexer.domains import Domain
 
 
 @dataclass

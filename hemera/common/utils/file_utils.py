@@ -96,7 +96,7 @@ def delete_file(file):
 
 def get_project_root():
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+    project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
     return project_root
 
 

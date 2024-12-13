@@ -2,9 +2,10 @@ from typing import List, Union
 
 from hemera.indexer.jobs.base_job import ExtensionJob, Collector
 from hemera.indexer.utils.collection_utils import distinct_collections_by_group
+from hemera_udf.${job}.domains import *
 
 
-class Export{$job_name}Job(ExtensionJob):
+class Export${job_name}Job(ExtensionJob):
     # If the data processing logic of the developed job supports re-running with on-chain data reorg,
     # set able_to_reorg to True so that the scheduler can automatically start the job during the reorg process.
     able_to_reorg = False
@@ -12,7 +13,7 @@ class Export{$job_name}Job(ExtensionJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    def _udf(self, dependency_domains: List[DependencyDomain], output: Collector[Union[JobCustomDomainA, JobCustomDomainB]]):
+    def _udf(self, dependency_domains: List[DependencyDomain], output: Collector[Union[CustomDomainA, CustomDomainB]]):
         job_custom_domain_a_list, job_custom_domain_b_list = some_work_here(dependency_domains)
 
         # Before collecting, you may need sort/distinct etc.

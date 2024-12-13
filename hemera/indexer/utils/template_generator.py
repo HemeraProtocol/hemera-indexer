@@ -10,9 +10,12 @@ from pathlib import Path
 
 
 class TemplateGenerator:
-    def __init__(self, template_file: str):
-        with open(Path(template_file), "r", encoding="utf-8") as f:
-            self.template_file = f.read()
+    def __init__(self, template_file: str = None):
+        if template_file:
+            with open(Path(template_file), "r", encoding="utf-8") as f:
+                self.template_file = f.read()
+        else:
+            self.template_file = ""
         self.replacements = {}
 
     def add_replacements(self, key: dict, value: str):
