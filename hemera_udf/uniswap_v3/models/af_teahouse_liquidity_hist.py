@@ -21,7 +21,8 @@ class AfTeahouseLiquidityHist(HemeraModel):
     reorg = Column(BOOLEAN, server_default=text("false"))
 
     __table_args__ = (
-        PrimaryKeyConstraint("position_token_address", "pool_address", "block_timestamp", "block_number"),)
+        PrimaryKeyConstraint("position_token_address", "pool_address", "block_timestamp", "block_number"),
+    )
 
     @staticmethod
     def model_domain_mapping():

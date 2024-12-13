@@ -2,12 +2,12 @@ import logging
 
 from hemera.indexer.domains.log import Log
 from hemera.indexer.jobs import FilterTransactionDataJob
-from hemera.indexer.specification.specification import TransactionFilterByLogs, TopicSpecification
+from hemera.indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from hemera.indexer.utils.collection_utils import distinct_collections_by_group
 from hemera.indexer.utils.multicall_hemera import Call
 from hemera.indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
-from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import TeahouseLiquidityHist, TeahouseLiquidityCurrent
 from hemera_udf.uniswap_v3.abi.teahouse_abi import GET_ALL_POSITIONS_FUNCTION
+from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import TeahouseLiquidityCurrent, TeahouseLiquidityHist
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class TeahouseLiquidityJob(FilterTransactionDataJob):
         return results
 
     def _process(self, **kwargs):
-        logs = self._data_buff['log']
+        logs = self._data_buff["log"]
         call_dict = {}
 
         for log in logs:
@@ -54,7 +54,8 @@ class TeahouseLiquidityJob(FilterTransactionDataJob):
                     target=position_token_address,
                     function_abi=GET_ALL_POSITIONS_FUNCTION,
                     block_number=block_number,
-                    user_defined_k=log.block_timestamp)
+                    user_defined_k=log.block_timestamp,
+                )
 
         call_list = list(call_dict.values())
         self.multi_call_helper.execute_calls(call_list)
@@ -66,12 +67,12 @@ class TeahouseLiquidityJob(FilterTransactionDataJob):
             pool_address = self._position_pool_dict[position_token_address]
             block_number = call.block_number
             block_timestamp = call.user_defined_k
-            results = call.returns.get('results')
+            results = call.returns.get("results")
             if results:
                 result = results[0]
-                liquidity = result.get('liquidity')
-                tick_lower = result.get('tickLower')
-                tick_upper = result.get('tickUpper')
+                liquidity = result.get("liquidity")
+                tick_lower = result.get("tickLower")
+                tick_upper = result.get("tickUpper")
 
                 record = TeahouseLiquidityHist(
                     position_token_address=position_token_address,
@@ -80,12 +81,13 @@ class TeahouseLiquidityJob(FilterTransactionDataJob):
                     tick_lower=tick_lower,
                     tick_upper=tick_upper,
                     block_number=block_number,
-                    block_timestamp=block_timestamp
+                    block_timestamp=block_timestamp,
                 )
                 records.append(record)
 
-        current_list = self.extract_current_status(records, TeahouseLiquidityCurrent,
-                                                   ["position_token_address", "pool_address"])
+        current_list = self.extract_current_status(
+            records, TeahouseLiquidityCurrent, ["position_token_address", "pool_address"]
+        )
         self._collect_domains(records)
         self._collect_domains(current_list)
         pass

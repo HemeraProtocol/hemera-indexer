@@ -195,6 +195,7 @@ class TeahouseLiquidityHist(Domain):
     block_number: int
     block_timestamp: int
 
+
 @dataclass
 class TeahouseLiquidityCurrent(Domain):
     position_token_address: str
@@ -204,4 +205,3 @@ class TeahouseLiquidityCurrent(Domain):
     tick_upper: int
     block_number: int
     block_timestamp: int
-
