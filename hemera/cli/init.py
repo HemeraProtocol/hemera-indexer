@@ -91,5 +91,4 @@ def jobs_space_initialize_before_check(jobs):
         namespace_generator.generate_file(target_path=os.path.join(custom_job_path, "endpoint", "__init__.py"))
         empty_generator.generate_file(target_path=os.path.join(custom_job_path, "endpoint", "routes.py"))
 
-
         logger.info(f"{job} successfully initialized.")
