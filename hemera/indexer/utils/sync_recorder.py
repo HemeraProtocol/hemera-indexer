@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -5,6 +6,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
 
+from hemera.common.models.failure_records import FailureRecords
 from hemera.common.models.sync_record import SyncRecord
 from hemera.common.utils.file_utils import smart_open, write_to_file
 
@@ -55,7 +57,7 @@ class FileSyncRecorder(BaseRecorder):
 
         write_to_file(failure_file, json.dumps(content) + "\n", "a+")
 
-    def handle_success(self):
+    def handle_success(self, last_block_number):
         pass
 
 
