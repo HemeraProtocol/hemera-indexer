@@ -177,7 +177,8 @@ class BaseJob(metaclass=BaseJobMeta):
             self._end()
 
     def _start(self, **kwargs):
-        pass
+        for dataclass in self.output_types:
+            self._data_buff[dataclass.type()].clear()
 
     def _pre_reorg(self, **kwargs):
         from hemera.common.converter.pg_converter import domain_model_mapping
@@ -260,7 +261,7 @@ class BaseJob(metaclass=BaseJobMeta):
             if param == "output":
                 continue
             args_type = get_args(param_type)[0]
-            if args_type.type() in self._data_buff:
+            if args_type.type() in self._data_buff.keys():
                 parameters[param] = self._data_buff[args_type.type()]
             else:
                 parameters[param] = []

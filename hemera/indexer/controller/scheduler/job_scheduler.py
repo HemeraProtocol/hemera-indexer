@@ -290,6 +290,7 @@ class JobScheduler:
             try:
                 self.logger.info(f"Task run {job.__class__.__name__}")
                 job.run(start_block=start_block, end_block=end_block)
+                return
 
             except HemeraBaseException as e:
                 self.logger.error(f"An expected exception occurred while running {job.__class__.__name__}. error: {e}")

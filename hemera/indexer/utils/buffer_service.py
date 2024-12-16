@@ -10,11 +10,10 @@ import logging
 import os
 import signal
 import threading
-import time
 from collections import defaultdict
 from concurrent.futures import Future, ThreadPoolExecutor
-from threading import Event, Thread
-from typing import Any, Callable, Dict, List, Union
+from threading import Event
+from typing import Any, Callable, Dict, List
 
 from hemera.common.utils.exception_control import get_exception_details
 
@@ -143,10 +142,11 @@ class BufferService:
         try:
             future.result()
 
-            try:
-                self.success_callback(end_block)
-            except Exception as e:
-                self.logger.error(f"Writing last synced block number {end_block} error.")
+            if self.success_callback:
+                try:
+                    self.success_callback(end_block)
+                except Exception as e:
+                    self.logger.error(f"Writing last synced block number {end_block} error.")
 
         except Exception as e:
             exception_details = get_exception_details(e)
