@@ -156,6 +156,9 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             block_number = owner_call.block_number
             block_timestamp = owner_call.user_defined_k
 
+            if not owner_call.returns or not positions_call.returns:
+                continue
+
             positions = positions_call.returns
             token0, token1, tick_lower, tick_upper, liquidity, fee = self.decode_positions_data(
                 position_token_address, positions
