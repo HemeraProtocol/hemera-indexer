@@ -184,6 +184,24 @@ class PeriodWalletProtocolJsonProcessCmeth:
         full_query = " UNION ALL ".join(queries)
         return full_query
 
+    def generate_transferred_balance_query(self, token_info):
+        sql = f"""select date('{self.start_date}')                    as period_date,
+                   protocol_id,
+                   '{token_info['contract_address']}'           as contract_address,
+                   wallet_address,
+                   '0xe6829d9a7ee3040e1276fa75293bde931859e8fa' as token_address,
+                   'cmETH'                                      as token_symbol,
+                   block_cumulative_value / pow(10, 18)         as balance
+            from (select *,
+                         row_number()
+                         over (partition by contract_address, wallet_address, token_address order by block_number desc) rn
+                  from feature_staked_transfer_detail_records
+                  where protocol_id = '{token_info["protocol_id"]}'
+                    and token_address = decode('{token_info['token_hex']}', 'hex')
+                    and to_timestamp(block_timestamp) < '{self.end_date}') t
+            where rn = 1 """
+        return sql
+
     def get_staked_data_from_address_token_balance(self):
         tokens_info = [
             {
@@ -207,34 +225,33 @@ class PeriodWalletProtocolJsonProcessCmeth:
                 "token_symbol": "cmETH",
                 "token_hex": "6ff000453a9c14f7d3bf381925c8cde565dbce55"
             },
-            {
-                "protocol_id": "woofi",
-                "contract_address": "0x82fde5086784e348aed03eb7b19ded97652db7a8",
-                "token_address": "0xe6829d9a7ee3040e1276fa75293bde931859e8fa",
-                "token_symbol": "cmETH",
-                "token_hex": "872b6ff825da431c941d12630754036278ad7049"
-            }
         ]
+
+        woofi_token_info = {
+            "protocol_id": "woofi",
+            "contract_address": "0x82fde5086784e348aed03eb7b19ded97652db7a8",
+            "token_address": "0xe6829d9a7ee3040e1276fa75293bde931859e8fa",
+            "token_symbol": "cmETH",
+            "token_hex": "872b6ff825da431c941d12630754036278ad7049"
+        }
+
+        circuit_token_info = {
+            "protocol_id": "circuit",
+            "contract_address": "0x5b27576159d201697feb73e7cbe5dafcfdc9b0dc",
+            "token_address": "0xe6829d9a7ee3040e1276fa75293bde931859e8fa",
+            "token_symbol": "cmETH",
+            "token_hex": "59e641de941cc794cdf6152eda0ef51210373d95"
+        }
+
+        tokens_info.append(woofi_token_info)
+        tokens_info.append(circuit_token_info)
+
         token_staked_query = self.generate_token_balance_query(self.start_date, tokens_info)
 
-        staked_woofi_cmeth_sql = f"""
-            select date('{self.start_date}')                    as period_date,
-                   protocol_id,
-                   '0x82fde5086784e348aed03eb7b19ded97652db7a8' as contract_address,
-                   wallet_address,
-                   '0xe6829d9a7ee3040e1276fa75293bde931859e8fa' as token_address,
-                   'cmETH'                                      as token_symbol,
-                   block_cumulative_value / pow(10, 18)         as balance
-            from (select *,
-                         row_number()
-                         over (partition by contract_address, wallet_address, token_address order by block_number desc) rn
-                  from feature_staked_transfer_detail_records
-                  where protocol_id = 'woofi'
-                    and token_address = decode('872b6ff825da431c941d12630754036278ad7049', 'hex')
-                    and to_timestamp(block_timestamp) < '{self.end_date}') t
-            where rn = 1;
-            """
-        sql = " UNION ALL ".join([token_staked_query, staked_woofi_cmeth_sql])
+        staked_woofi_cmeth_sql = self.generate_transferred_balance_query(woofi_token_info)
+        staked_circuit_cmeth_sql = self.generate_transferred_balance_query(circuit_token_info)
+
+        sql = " UNION ALL ".join([token_staked_query, staked_woofi_cmeth_sql, staked_circuit_cmeth_sql])
 
         session = self.db_service.Session()
         stmt = session.execute(text(sql))
