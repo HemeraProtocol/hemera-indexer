@@ -170,8 +170,6 @@ class BufferService:
             for key in flush_keys:
                 if key in self.required_output_types:
                     flush_items.extend(self.buffer[key])
-                if key != "block":
-                    self.buffer[key].clear()
             if len(flush_keys):
                 self.logger.info(f"Flush domains: {','.join(flush_keys)} between block range: {block_range}")
         future = self.submit_export_pool.submit(self.export_items, flush_items)
