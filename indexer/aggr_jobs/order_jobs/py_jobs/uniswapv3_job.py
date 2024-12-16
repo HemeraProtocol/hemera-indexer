@@ -315,8 +315,8 @@ columns = ['token0_balance', 'token1_balance', 'token0_balance_upper', 'token1_b
 def change_df_to_obj(df):
     for column in df.columns:
         # 检查数据类型并强制转换列为 float 类型
-        if pd.api.types.is_numeric_dtype(df[column]) or column in columns:
-            df[column] = df[column].apply(lambda x: Decimal(x) if not pd.isna(x) else None)
+        if df[column].dtype == 'float64' or column in columns:
+            df[column] = df[column].apply(lambda x: Decimal(x) if not pd.isna(x) else x)
 
     # 将 DataFrame 转换为命名元组对象
     Row = namedtuple('Row', df.columns)
