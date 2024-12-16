@@ -4,7 +4,6 @@ from operator import or_
 
 from api.app.cache import cache
 from api.app.l2_explorer import l2_explorer_namespace
-from common.models import db as postgres_db
 from common.models.bridge import BridgeTokens, L1ToL2BridgeTransactions, L2ToL1BridgeTransactions, OpBedrockStateBatches
 from common.models.tokens import Tokens
 from common.utils.bridge_utils import BridgeTransactionParser
@@ -15,6 +14,8 @@ from common.utils.web3_utils import is_eth_address
 from flask import request
 from flask_restx import Resource
 from sqlalchemy import and_, func
+
+from common.models import db as postgres_db
 
 app_config = get_config()
 

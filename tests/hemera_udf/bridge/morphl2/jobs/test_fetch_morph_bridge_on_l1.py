@@ -22,7 +22,6 @@ def test_fetch_morphl2_bridge_on_l1_deposited():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
