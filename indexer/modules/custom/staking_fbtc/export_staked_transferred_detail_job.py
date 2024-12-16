@@ -46,8 +46,9 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
         try:
             transferred_protocol_dict_str = config.get(str(chain_id), "TRANSFERRED_CONTRACTS_DICT")
             self._transferred_protocol_dict = ast.literal_eval(transferred_protocol_dict_str)
-            # add woofi
-            self._transferred_protocol_dict.update({'0x82fde5086784e348aed03eb7b19ded97652db7a8': 'woofi'})
+            # add woofi、circuit
+            self._transferred_protocol_dict.update({'0x82fde5086784e348aed03eb7b19ded97652db7a8': 'woofi',
+                                                    '0x5b27576159d201697feb73e7cbe5dafcfdc9b0dc': 'circuit'})
 
             self._staked_address_list = config.get(str(chain_id), "STAKED_BTC_ADDRESS").split(
                 ',')  # remember to remove the last one
@@ -61,9 +62,12 @@ class ExportTransferredFBTCDetailJob(FilterTransactionDataJob):
     def get_filter(self):
         # add woofi
         wecmeth_address = '0x872b6ff825da431c941d12630754036278ad7049'
-        # filer_address = [wecmeth_address]
+        # add circuit
+        circuit_address = '0x59e641de941cc794cdf6152eda0ef51210373d95'
+        filer_address = self._staked_address_list + [self._fbtc_address, self._cmeth_address, wecmeth_address,
+                                                     circuit_address]
+        # filer_address = [circuit_address]
 
-        filer_address = self._staked_address_list + [self._fbtc_address, self._cmeth_address, wecmeth_address]
         filer_address_list = list(set(filer_address))
         return TransactionFilterByLogs(
             [

@@ -53,8 +53,14 @@ class FilterJob(FilterTransactionDataJob):
             # hourglass
             '0x326b1129a3ec2ad5c4016d2bb4b912687890ae6c',
             # Mitosis
-            '0x6ff000453a9c14f7d3bf381925c8cde565dbce55']
+            '0x6ff000453a9c14f7d3bf381925c8cde565dbce55',
+            # circuit
+            '0x59e641de941cc794cdf6152eda0ef51210373d95',
+        ]
         self.address_list.extend(token_list)
+
+        # self.address_list = ['0x59e641de941cc794cdf6152eda0ef51210373d95']
+
 
     def _get_lv_tokens(self):
         session = self._service.get_service_session()
