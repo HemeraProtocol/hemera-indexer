@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import defaultdict, deque
-from typing import List, Set, Type
+from typing import List, Set, Type, Union
 
 from pottery import RedisDict
 from redis.client import Redis
@@ -232,7 +232,6 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
@@ -249,7 +248,6 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
@@ -264,7 +262,6 @@ class JobScheduler:
                 required_output_types=self.required_output_types,
                 batch_web3_provider=self.batch_web3_provider,
                 batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
                 batch_size=self.batch_size,
                 multicall=self._is_multicall,
                 debug_batch_size=self.debug_batch_size,
@@ -295,9 +292,7 @@ class JobScheduler:
                 job.run(start_block=start_block, end_block=end_block)
 
             except HemeraBaseException as e:
-                self.logger.error(
-                    f"An rpc response exception occurred while running {job.__class__.__name__}. error: {e}"
-                )
+                self.logger.error(f"An expected exception occurred while running {job.__class__.__name__}. error: {e}")
                 if e.crashable:
                     self.logger.error("Mission will crash immediately.")
                     raise e

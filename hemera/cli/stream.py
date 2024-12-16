@@ -439,7 +439,7 @@ def stream(
     sync_recorder = create_recorder(sync_recorder, config)
     buffer_service = BufferService(
         item_exporters=create_item_exporters(output, config),
-        required_output_types=[output.type() for output in required_output_types],
+        required_output_types=[output.type() for output in output_types],
         exception_callback=sync_recorder.set_failure_record,
     )
 

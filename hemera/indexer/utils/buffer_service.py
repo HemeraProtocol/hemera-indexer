@@ -14,7 +14,7 @@ import time
 from collections import defaultdict
 from concurrent.futures import Future, ThreadPoolExecutor
 from threading import Event, Thread
-from typing import Callable, Dict
+from typing import Any, Callable, Dict, List, Union
 
 from hemera.common.utils.exception_control import get_exception_details
 
@@ -89,8 +89,6 @@ class BufferService:
 
     def __getitem__(self, key: str) -> List[Any]:
         with self.buffer_lock[key]:
-            if key not in self._timestamps:
-                self._timestamps[key] = time.time()
             return self.buffer[key]
 
     def get(self, key: str, default: Any = None) -> List[Any]:
@@ -103,22 +101,14 @@ class BufferService:
                 self.buffer[key] = value
             else:
                 self.buffer[key] = [value]
-            self._timestamps[key] = time.time()
-            self._round_data[key] = self._current_round
 
     def extend(self, key: str, values: List[Any]):
         with self.buffer_lock[key]:
             self.buffer[key].extend(values)
-            if key not in self._timestamps:
-                self._timestamps[key] = time.time()
-            self._round_data[key] = self._current_round
 
     def append(self, key: str, value: Any):
         with self.buffer_lock[key]:
             self.buffer[key].append(value)
-            if key not in self._timestamps:
-                self._timestamps[key] = time.time()
-            self._round_data[key] = self._current_round
 
     def _get_data_snapshot(self) -> Dict[str, List[Any]]:
         snapshot = {}
@@ -135,8 +125,6 @@ class BufferService:
             with self.buffer_lock[key]:
                 if key in self.buffer:
                     del self.buffer[key]
-                    del self._timestamps[key]
-                    self._round_data.pop(key, None)
 
     def _setup_signal_handlers(self):
         signal.signal(signal.SIGTERM, self._handle_shutdown)
@@ -144,7 +132,7 @@ class BufferService:
 
     def _handle_shutdown(self, signum, frame):
         self.logger.info("Received shutdown signal, flushing buffer...")
-        self.flush_buffer()
+        self.flush_buffer(self.required_output_types)
         self._shutdown_event.set()
 
     def _handle_export_completion(self, future: Future):
@@ -211,6 +199,10 @@ class BufferService:
             self.flush_buffer(output_types)
 
         return True
+
+    def clear(self):
+        with self.buffer_entire_lock:
+            self.buffer.clear()
 
     def shutdown(self):
         if self._shutdown_event.is_set():

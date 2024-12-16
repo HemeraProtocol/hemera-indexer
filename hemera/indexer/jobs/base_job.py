@@ -133,7 +133,6 @@ class BaseJob(metaclass=BaseJobMeta):
     def __init__(self, **kwargs):
 
         self._required_output_types = kwargs["required_output_types"]
-        self._item_exporters = kwargs["item_exporters"]
         self._batch_web3_provider = kwargs["batch_web3_provider"]
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -271,18 +270,6 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def _udf(self, **kwargs):
         pass
-
-    def _export(self):
-        items = []
-
-        for output_type in self.output_types:
-            if output_type in self._required_output_types:
-                items.extend(self._data_buff[output_type.type()])
-
-        for item_exporter in self._item_exporters:
-            item_exporter.open()
-            item_exporter.export_items(items, job_name=self.job_name)
-            item_exporter.close()
 
     def get_buff(self):
         return self._data_buff
