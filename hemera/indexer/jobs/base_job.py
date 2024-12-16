@@ -168,7 +168,7 @@ class BaseJob(metaclass=BaseJobMeta):
                     self._process(**kwargs)
 
             if not self._reorg:
-                if not self._data_buff.check_and_flush(
+                if self._data_buff is BufferService and not self._data_buff.check_and_flush(
                     job_name=self.job_name, output_types=[output.type() for output in self.output_types]
                 ):
                     raise RetriableError(f"Job {self.job_name} export error.")
