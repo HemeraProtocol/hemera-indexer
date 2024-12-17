@@ -14,7 +14,7 @@ from hemera.indexer.utils.json_rpc_requests import (
     generate_get_receipt_from_blocks_json_rpc,
     generate_get_receipt_json_rpc,
 )
-from hemera.indexer.utils.rpc_utils import rpc_response_batch_to_results
+from hemera.indexer.utils.rpc_utils import rpc_response_batch_to_results, zip_rpc_response
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
             [block.number for block in blocks],
             self._is_batch,
         )
-        for block, receipts in zip(blocks, results):
+        for block, receipts in zip_rpc_response(blocks, results, index="number"):
             for receipt in receipts:
                 transaction = transaction_hash_mapper[receipt["transactionHash"]]
                 receipt_entity = Receipt.from_rpc(
