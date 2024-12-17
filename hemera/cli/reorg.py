@@ -8,7 +8,12 @@ from hemera.cli.commands.performance import single_performance
 from hemera.cli.commands.rpc import rpc_provider
 from hemera.cli.commands.schedule import job_config
 from hemera.cli.commands.storage import cache_target, postgres
-from hemera.common.enumeration.entity_type import ALL_ENTITY_COLLECTIONS, calculate_entity_value, generate_output_types
+from hemera.common.enumeration.entity_type import (
+    ALL_ENTITY_COLLECTIONS,
+    EntityType,
+    calculate_entity_value,
+    generate_output_types,
+)
 from hemera.common.logo import print_logo
 from hemera.common.services.postgresql_service import PostgreSQLService
 from hemera.common.utils.module_loading import import_submodules
@@ -96,7 +101,7 @@ def reorg(
             else:
                 raise click.ClickException(f"Config file {config_file} is not supported)")
 
-    entity_types = calculate_entity_value(",".join(ALL_ENTITY_COLLECTIONS))
+    entity_types = EntityType.combine_all_entity_types()
     output_types = list(generate_output_types(entity_types))
 
     job_scheduler = ReorgScheduler(

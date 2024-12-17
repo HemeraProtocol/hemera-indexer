@@ -1,7 +1,9 @@
 from enum import IntFlag
 from functools import reduce
+from time import sleep
 from typing import Dict, Generator, Set, Type
 
+from hemera.common.utils.module_loading import import_submodules
 from hemera.indexer.domains.block import Block, UpdateBlockInternalCount
 from hemera.indexer.domains.block_ts_mapper import BlockTsMapper
 from hemera.indexer.domains.contract import Contract
@@ -125,7 +127,6 @@ class EntityType(IntFlag):
         return False
 
 
-ALL_ENTITY_COLLECTIONS = EntityType.__members__.keys()
 DEFAULT_COLLECTION = []
 
 

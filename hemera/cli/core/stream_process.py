@@ -8,6 +8,7 @@ from web3 import Web3
 from hemera.common.enumeration.entity_type import calculate_entity_value, generate_output_types
 from hemera.common.logo import print_logo
 from hemera.common.services.postgresql_service import PostgreSQLService
+from hemera.common.utils.module_loading import import_submodules
 from hemera.indexer.controller.scheduler.job_scheduler import JobScheduler
 from hemera.indexer.controller.stream_controller import StreamController
 from hemera.indexer.exporters.item_exporter import create_item_exporters
@@ -72,6 +73,7 @@ def stream_process(
     pid_file,
 ):
     print_logo()
+    import_submodules("hemera_udf")
     configure_logging(log_level, log_file)
     configure_signals()
     provider_uri = pick_random_provider_uri(provider_uri)
