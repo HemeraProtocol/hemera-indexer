@@ -8,7 +8,7 @@ from hemera.cli.commands.storage import postgres, postgres_initial
 from hemera.common.logo import print_logo
 from hemera.common.models import HemeraModel
 from hemera.common.services.postgresql_service import PostgreSQLService
-from hemera.common.utils.module_loading import import_string, scan_subclass_by_path_patterns
+from hemera.common.utils.module_loading import import_submodules
 
 logger = logging.getLogger("DB Client")
 
@@ -45,12 +45,10 @@ def db(postgres_url, init_schema, db_version, create_tables=None, drop_tables=No
     service = PostgreSQLService(jdbc_url=postgres_url, db_version=db_version, init_schema=init_schema)
 
     if create_tables or drop_tables or truncate_tables:
-        exist_models_path = [
-            value["cls_import_path"] for key, value in scan_subclass_by_path_patterns("", HemeraModel).items()
-        ]
+        import_submodules("hemera_udf")
         exist_models = {
             table.__tablename__: table
-            for table in [import_string(path) for path in exist_models_path]
+            for table in HemeraModel.get_all_hemera_model_dict()
             if hasattr(table, "__tablename__")
         }
 
