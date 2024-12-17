@@ -25,24 +25,98 @@ CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
 EXPORTE_STRATEGY = os.environ.get("EXPORTE_STRATEGY", json.loads("{}"))
 
 
-class BufferKeyLock:
+class KeyLockContext:
+
+    def __init__(self, manager, key, lock):
+        self._manager = manager
+        self._key = key
+        self._lock = lock
+
+    def __enter__(self):
+        self._lock.acquire()
+
+        with self._manager._meta_lock:
+            self._manager._active_row_locks.add(self._key)
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        try:
+            with self._manager._meta_lock:
+                self._manager._active_row_locks.discard(self._key)
+                should_notify = len(self._manager._active_row_locks) == 0
+
+            if should_notify:
+                with self._manager._global_condition:
+                    self._manager._global_condition.notify_all()
+        finally:
+            self._lock.release()
+
+
+class BufferLockManager:
     def __init__(self):
+        self._global_lock = threading.Lock()
+        self._global_condition = threading.Condition(self._global_lock)
+
         self._locks: Dict[str, threading.Lock] = {}
         self._meta_lock = threading.Lock()
 
-    def __getitem__(self, key: str) -> threading.Lock:
+        self._active_row_locks = set()
+
+    def __getitem__(self, key: str) -> KeyLockContext:
+        with self._global_condition:
+            while self._global_lock.locked():
+                self._global_condition.wait()
+
         with self._meta_lock:
             if key not in self._locks:
                 self._locks[key] = threading.Lock()
-            return self._locks[key]
+            return KeyLockContext(self, key, self._locks[key])
+
+    def acquire_global_lock(self, timeout=-1):
+        if not self._global_lock.acquire(blocking=True, timeout=timeout):
+            return False
+
+        try:
+            with self._global_condition:
+                while self._active_row_locks:
+                    self._global_condition.wait()
+                return True
+        except Exception as e:
+            if self._global_lock.locked():
+                self._global_lock.release()
+            raise RuntimeError(f"Failed to acquire global lock: {str(e)}")
+
+    def release_global(self):
+        with self._global_condition:
+            self._global_lock.release()
+            self._global_condition.notify_all()
 
     def remove(self, key: str) -> None:
         with self._meta_lock:
             self._locks.pop(key, None)
+            self._active_row_locks.discard(key)
+            should_notify = len(self._active_row_locks) == 0
+
+        if should_notify:
+            with self._global_condition:
+                self._global_condition.notify_all()
 
     def clear(self) -> None:
         with self._meta_lock:
             self._locks.clear()
+            self._active_row_locks.clear()
+
+        with self._global_condition:
+            self._global_condition.notify_all()
+
+    def __enter__(self):
+        if not self.acquire_global_lock():
+            raise RuntimeError("Failed to acquire global lock")
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release_global()
 
 
 class BufferService:
@@ -64,8 +138,7 @@ class BufferService:
         self.required_output_types = required_output_types
 
         self.buffer = defaultdict(list)
-        self.buffer_entire_lock = threading.Lock()
-        self.buffer_lock = BufferKeyLock()
+        self.buffer_lock = BufferLockManager()
 
         self.pending_futures: dict[Future, (int, int)] = dict()
         self.futures_lock = threading.Lock()
@@ -113,7 +186,7 @@ class BufferService:
         snapshot = {}
         all_keys = set(self.buffer.keys())
 
-        with self.buffer_entire_lock:
+        with self.buffer_lock:
             for key in all_keys:
                 if key in self.buffer:
                     snapshot[key] = self.buffer[key].copy()
@@ -163,7 +236,7 @@ class BufferService:
 
     def flush_buffer(self, flush_keys: List[str]):
         flush_items = []
-        with self.buffer_entire_lock:
+        with self.buffer_lock:
             self.buffer["block"].sort(key=lambda x: x.number)
             block_range = (self.buffer["block"][0].number, self.buffer["block"][-1].number)
 
@@ -199,7 +272,7 @@ class BufferService:
         return True
 
     def clear(self):
-        with self.buffer_entire_lock:
+        with self.buffer_lock:
             self.buffer.clear()
 
     def shutdown(self):
