@@ -1,5 +1,11 @@
 chain_id: 56
 
+total_supply_job:
+  token_address:
+   # dodo
+    - "0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c"
+
+
 uniswap_v3_job:
   # empty means no filter. only work in price job
   pool_address:
@@ -11,13 +17,41 @@ uniswap_v3_job:
 #      factory address: '0x306f06c147f064a010530292a1eb6737c3e378e4'
 #      position_token_address: '0xa51adb08cbe6ae398046a23bec013979816b77ab'
 
-export_tokens_and_transfers_job:
-  filter_token_address:
-    #      gamma_pool_address
-    - '0xfcecab790751c2bf65bcf7bce6ff3555dc12e40b'
-
-
 thena_job:
   gamma_pool_address: '0xfcecab790751c2bf65bcf7bce6ff3555dc12e40b'
   thena_farming_pool_address: '0xc21b8ed94ad3b1d383ef20605498614e27b222fd'
   thena_liquidity_pool_address: '0xe2bb11d6b6a39e55762f5e14d632f0981198b3a7'
+
+
+export_staked_transferred_balance_job:
+  TRANSFERRED_CONTRACTS_DICT:
+    pump_btc:
+      - "0x2b4b9047c9fea54705218388bfc7aa7bada4bb5e"
+    bed_rock:
+      - "0x84e5c854a7ff9f49c888d69deca578d406c26800"
+    avalon:
+      - "0x02fedcff97942fe28e8936cdc3d7a480fdd248f0"
+      - "0xc757e47d6bc20feab54e16f2939f51aa4826def7"
+    astherus:
+      - "0x128463a60784c4d3f46c23af3f65ed859ba87974"
+
+
+  token_address:
+      # fbtc
+    - "0xc96de26018a54d51c097160568752c4e3bd6c364"
+      # pump btc
+    - "0xf9c4ff105803a77ecb5dae300871ad76c2794fa4"
+      # uniBTC
+    - "0x6b2a01a5f79deb4c2f3c0eda7b01df456fbd726a"
+
+
+export_tokens_and_transfers_job:
+  filter_token_address:
+    #      gamma_pool_address
+    - '0xfcecab790751c2bf65bcf7bce6ff3555dc12e40b'
+    # fbtc
+    - "0xc96de26018a54d51c097160568752c4e3bd6c364"
+    # pump btc
+    - "0xf9c4ff105803a77ecb5dae300871ad76c2794fa4"
+    # uniBTC
+    - "0x6b2a01a5f79deb4c2f3c0eda7b01df456fbd726a"
