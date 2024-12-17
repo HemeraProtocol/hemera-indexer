@@ -4,16 +4,23 @@ from hemera.indexer.domains import Domain
 
 
 @dataclass
-class CustomDomainA(Domain):
-    field1: str
-    field2: int
-    may_need_block_number: int
-    may_need_block_timestamp: int
+class AddressFeatureValueCurrent(Domain):
+    address: str
+    feature_value: int
+    block_number: int
+    block_timestamp: int
 
 
 @dataclass
-class CustomDomainB(Domain):
-    field1: str
-    field2: int
-    may_need_block_number: int
-    may_need_block_timestamp: int
+class AddressFeatureValueHistory(Domain):
+    address: str
+    feature: int
+    block_number: int
+    block_timestamp: int
+
+@dataclass AddressFeatureEvent(Domain):
+    transaction_hash: str
+    address: str
+    event_value: int
+    block_number: int
+    block_timestamp: int
