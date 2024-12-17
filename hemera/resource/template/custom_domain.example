@@ -14,7 +14,7 @@ class AddressFeatureValueCurrent(Domain):
 @dataclass
 class AddressFeatureValueHistory(Domain):
     address: str
-    feature: int
+    feature_value: int
     block_number: int
     block_timestamp: int
 

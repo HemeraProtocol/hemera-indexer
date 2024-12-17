@@ -7,8 +7,8 @@ from hemera.common.models import HemeraModel, general_converter
 from hemera_udf.${job}.domains import AddressFeatureValueCurrent, AddressFeatureValueHistory, AddressFeatureEvent
 
 
-class AddressFeatureValueCurrents(HemeraModel):
-    __tablename__ = "address_feature_value_currents"
+class AddressFeatureValuesCurrent(HemeraModel):
+    __tablename__ = "address_feature_values_current"
     address = Column(BYTEA, primary_key=True)
     feature_value = Column(NUMERIC)
 
@@ -24,14 +24,14 @@ class AddressFeatureValueCurrents(HemeraModel):
             {
                 "domain": AddressFeatureValueCurrent,
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > address_feature_value_currents.block_number",
+                "update_strategy": "EXCLUDED.block_number > address_feature_values_current.block_number",
                 "converter": general_converter,
             },
         ]
 
 
-class AddressFeatureValueHistories(HemeraModel):
-    __tablename__ = "address_feature_value_histories"
+class AddressFeatureValuesHistory(HemeraModel):
+    __tablename__ = "address_feature_values_history"
     address = Column(BYTEA, primary_key=True)
     feature_value = Column(NUMERIC)
 
@@ -59,8 +59,8 @@ class AddressFeatureValueHistories(HemeraModel):
         ]
 
 
-class AddressFeatureValueEvents(HemeraModel):
-    __tablename__ = "address_feature_value_events"
+class AddressFeatureEvents(HemeraModel):
+    __tablename__ = "address_feature_events"
     transaction_hash = Column(BYTEA, primary_key=True)
     address = Column(BYTEA)
     event_value = Column(NUMERIC)
@@ -88,7 +88,7 @@ class AddressFeatureValueEvents(HemeraModel):
             }
         ]
 
-Index("address_feature_value_events", AddressFeatureValueEvents.address)
+Index("address_feature_events_address_index", AddressFeatureEvents.address)
 
 # This is a custom data conversion function. Usually you can use 'general_converter' directly.
 def converter(
