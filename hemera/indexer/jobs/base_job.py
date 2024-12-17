@@ -230,7 +230,9 @@ class BaseJob(metaclass=BaseJobMeta):
             self._collect_domain(domain)
 
     def _update_domains(self, domains: List[Domain]):
-        self._data_buff[Domain.type()] = domains
+        if not domains:
+            return
+        self._data_buff[domains[0].type()] = domains
 
     def _get_domain(self, domain):
         return self._data_buff[domain.type()] if domain.type() in self._data_buff else []
