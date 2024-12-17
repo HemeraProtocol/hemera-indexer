@@ -17,6 +17,8 @@ model_path_exclude = []
 # db = RouteSQLAlchemy(session_options={"autoflush": False})
 db = SQLAlchemy(session_options={"autoflush": False})
 
+from sqlalchemy import BigInteger, Boolean, DateTime, Integer, LargeBinary, Numeric
+
 
 class HemeraMeta(type(db.Model)):
     _registry = {}
@@ -87,14 +89,16 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
     for key in data.__dict__.keys():
         if key in table.__table__.c:
             column_type = get_column_type(table, key)
-            if isinstance(column_type, BYTEA) and not isinstance(getattr(data, key), bytes):
+            if (isinstance(column_type, BYTEA) or isinstance(column_type, LargeBinary)) and not isinstance(
+                getattr(data, key), bytes
+            ):
                 if isinstance(getattr(data, key), str):
                     converted_data[key] = hex_str_to_bytes(getattr(data, key)) if getattr(data, key) else None
                 elif isinstance(getattr(data, key), int):
                     converted_data[key] = getattr(data, key).to_bytes(32, byteorder="big")
                 else:
                     converted_data[key] = None
-            elif isinstance(column_type, TIMESTAMP):
+            elif isinstance(column_type, TIMESTAMP) or isinstance(column_type, DateTime):
                 converted_data[key] = datetime.utcfromtimestamp(getattr(data, key))
             elif isinstance(column_type, ARRAY) and isinstance(column_type.item_type, BYTEA):
                 converted_data[key] = [hex_str_to_bytes(address) for address in getattr(data, key)]
@@ -104,6 +108,7 @@ def general_converter(table: Type[HemeraModel], data: Domain, is_update=False):
                 isinstance(column_type, NUMERIC)
                 or isinstance(column_type, SQL_NUMERIC)
                 or isinstance(column_type, SQL_Numeric)
+                or isinstance(column_type, Numeric)
             ) and isinstance(getattr(data, key), str):
                 converted_data[key] = None
             else:
