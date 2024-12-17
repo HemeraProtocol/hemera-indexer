@@ -1,5 +1,11 @@
 chain_id: 56
 
+total_supply_job:
+  token_address:
+   # dodo
+    - "0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c"
+
+
 uniswap_v3_job:
   # empty means no filter. only work in price job
   pool_address:
@@ -23,6 +29,12 @@ export_staked_transferred_balance_job:
       - "0x2b4b9047c9fea54705218388bfc7aa7bada4bb5e"
     bed_rock:
       - "0x84e5c854a7ff9f49c888d69deca578d406c26800"
+    avalon:
+      - "0x02fedcff97942fe28e8936cdc3d7a480fdd248f0"
+      - "0xc757e47d6bc20feab54e16f2939f51aa4826def7"
+    astherus:
+      - "0x128463a60784c4d3f46c23af3f65ed859ba87974"
+
 
   token_address:
       # fbtc
