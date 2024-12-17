@@ -9,7 +9,11 @@ from hemera.indexer.domains.receipt import Receipt
 from hemera.indexer.domains.transaction import Transaction
 from hemera.indexer.executors.batch_work_executor import BatchWorkExecutor
 from hemera.indexer.jobs.base_job import BaseExportJob, Collector
-from hemera.indexer.utils.json_rpc_requests import generate_get_receipt_json_rpc
+from hemera.indexer.utils.collection_utils import flatten
+from hemera.indexer.utils.json_rpc_requests import (
+    generate_get_receipt_from_blocks_json_rpc,
+    generate_get_receipt_json_rpc,
+)
 from hemera.indexer.utils.rpc_utils import rpc_response_batch_to_results
 
 logger = logging.getLogger(__name__)
@@ -28,35 +32,66 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
             job_name=self.__class__.__name__,
         )
         self._is_batch = kwargs["batch_size"] > 1
+        self._use_receipt_from_blocks_rpc = self.user_defined_config.get("use_receipt_from_blocks_rpc") or False
 
-    def request_for_receipt(self, transactions: List[Transaction], output: Collector):
-        transaction_hash_mapper = {transaction.hash: transaction for transaction in transactions}
-        results = receipt_rpc_requests(
+    def request_for_receipt_from_block(self, blocks: List[Block], output: Collector):
+        transaction_hash_mapper = {
+            transaction.hash: transaction for block in blocks for transaction in block.transactions
+        }
+        results = receipt_rpc_from_block_number_requests(
             self._batch_web3_provider.make_request,
-            transaction_hash_mapper.keys(),
+            [block.number for block in blocks],
             self._is_batch,
         )
+        for block, receipts in zip(blocks, results):
+            for receipt in receipts:
+                transaction = transaction_hash_mapper[receipt["transactionHash"]]
+                receipt_entity = Receipt.from_rpc(
+                    receipt,
+                    block.timestamp,
+                    block.hash,
+                    block.number,
+                )
+                transaction.fill_with_receipt(receipt_entity)
+
+                for log in transaction.receipt.logs:
+                    output.collect(log)
+
+    def request_for_receipt(self, blocks: List[Block], output: Collector):
+        transaction_hash_mapper = {
+            transaction.hash: transaction for block in blocks for transaction in block.transactions
+        }
+
+        if self._use_receipt_from_blocks_rpc:
+            results = receipt_rpc_from_block_number_requests(
+                self._batch_web3_provider.make_request,
+                [block.number for block in blocks],
+                self._is_batch,
+            )
+        else:
+            results = receipt_rpc_requests(
+                self._batch_web3_provider.make_request,
+                transaction_hash_mapper.keys(),
+                self._is_batch,
+            )
 
         for receipt in results:
-            transaction = transaction_hash_mapper[receipt["transactionHash"]]
-            receipt_entity = Receipt.from_rpc(
-                receipt,
-                transaction.block_timestamp,
-                transaction.block_hash,
-                transaction.block_number,
-            )
-            transaction.fill_with_receipt(receipt_entity)
+            transaction = transaction_hash_mapper.get(receipt["transactionHash"])
+            if transaction:
+                receipt_entity = Receipt.from_rpc(
+                    receipt,
+                    transaction.block_timestamp,
+                    transaction.block_hash,
+                    transaction.block_number,
+                )
+                transaction.fill_with_receipt(receipt_entity)
 
-            for log in transaction.receipt.logs:
-                output.collect(log)
+                for log in transaction.receipt.logs:
+                    output.collect(log)
 
     def _udf(self, blocks: List[Block], output: Collector[Union[Transaction, Log]]):
-        transactions: List[Transaction] = [transaction for block in blocks for transaction in block.transactions]
-        self._batch_work_executor.execute(
-            transactions, self.request_for_receipt, collector=output, total_items=len(transactions)
-        )
+        self._batch_work_executor.execute(blocks, self.request_for_receipt, collector=output, total_items=len(blocks))
         self._batch_work_executor.wait()
-
         self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
 
@@ -69,4 +104,16 @@ def receipt_rpc_requests(make_request, transaction_hashes, is_batch):
         response = [make_request(params=orjson.dumps(receipts_rpc[0]))]
 
     results = rpc_response_batch_to_results(response)
-    return results
+    return list(results)
+
+
+def receipt_rpc_from_block_number_requests(make_request, block_numbers, is_batch):
+    receipts_rpc = list(generate_get_receipt_from_blocks_json_rpc(block_numbers))
+
+    if is_batch:
+        response = make_request(params=orjson.dumps(receipts_rpc))
+    else:
+        response = [make_request(params=orjson.dumps(receipts_rpc[0]))]
+
+    results = rpc_response_batch_to_results(response)
+    return flatten(results)
