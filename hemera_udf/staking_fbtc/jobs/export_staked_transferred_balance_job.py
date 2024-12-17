@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 
-from sqlalchemy import func, and_, or_
+from sqlalchemy import and_, func, or_
 
 from hemera.common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
