@@ -3,7 +3,12 @@ import os
 
 import click
 
-from hemera.common.enumeration.entity_type import calculate_entity_value, generate_output_types
+from hemera.cli.commands.log import log_setting
+from hemera.cli.commands.performance import single_performance
+from hemera.cli.commands.rpc import rpc_provider
+from hemera.cli.commands.schedule import job_config
+from hemera.cli.commands.storage import cache_target, postgres
+from hemera.common.enumeration.entity_type import EntityType, generate_output_types
 from hemera.common.logo import print_logo
 from hemera.common.services.postgresql_service import PostgreSQLService
 from hemera.common.utils.module_loading import import_submodules
@@ -20,63 +25,12 @@ exception_recorder = ExceptionRecorder()
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
-@click.option(
-    "-p",
-    "--provider-uri",
-    default="https://ethereum-rpc.publicnode.com",
-    show_default=True,
-    type=str,
-    envvar="PROVIDER_URI",
-    help="The URI of the web3 provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
-)
-@click.option(
-    "-d",
-    "--debug-provider-uri",
-    default="https://ethereum-rpc.publicnode.com",
-    show_default=True,
-    type=str,
-    envvar="DEBUG_PROVIDER_URI",
-    help="The URI of the web3 debug provider e.g. "
-    "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
-)
-@click.option(
-    "-pg",
-    "--postgres-url",
-    type=str,
-    required=True,
-    envvar="POSTGRES_URL",
-    help="The required postgres connection url." "e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum",
-)
-@click.option(
-    "-v",
-    "--db-version",
-    default="head",
-    show_default=True,
-    type=str,
-    envvar="DB_VERSION",
-    help="The database version to initialize the database. using the alembic script's revision ID to "
-    "specify a version."
-    " e.g. head, indicates the latest version."
-    "or base, indicates the empty database without any table.",
-)
-@click.option(
-    "-b",
-    "--batch-size",
-    default=10,
-    show_default=True,
-    type=int,
-    envvar="BATCH_SIZE",
-    help="How many parameters to batch in single request",
-)
-@click.option(
-    "--debug-batch-size",
-    default=1,
-    show_default=True,
-    type=int,
-    envvar="DEBUG_BATCH_SIZE",
-    help="How many parameters to batch in single debug rpc request",
-)
+@rpc_provider
+@job_config
+@postgres
+@single_performance
+@cache_target
+@log_setting
 @click.option(
     "--block-number",
     show_default=True,
@@ -87,61 +41,26 @@ exception_recorder = ExceptionRecorder()
 @click.option(
     "-r",
     "--ranges",
-    default=1000,
+    default=10,
     show_default=True,
     type=int,
     envvar="RANGES",
     help="Specify the range limit for data fixing.",
 )
-@click.option(
-    "--log-file",
-    default=None,
-    show_default=True,
-    type=str,
-    envvar="LOG_FILE",
-    help="Log file",
-)
-@click.option(
-    "-m",
-    "--multicall",
-    default=False,
-    show_default=True,
-    type=bool,
-    help="if `multicall` is set to True, it will decrease the consume of rpc calls",
-    envvar="MULTI_CALL_ENABLE",
-)
-@click.option("--cache", default=None, show_default=True, type=str, envvar="CACHE", help="Cache")
-@click.option(
-    "--auto-upgrade-db",
-    default=True,
-    show_default=True,
-    type=bool,
-    envvar="AUTO_UPGRADE_DB",
-    help="Whether to automatically run database migration scripts to update the database to the latest version.",
-)
-@click.option(
-    "--log-level",
-    default="INFO",
-    show_default=True,
-    type=str,
-    envvar="LOG_LEVEL",
-    help="Set the logging output level.",
-)
 def reorg(
-    provider_uri,
-    debug_provider_uri,
-    postgres_url,
-    block_number,
-    ranges,
-    batch_size,
-    debug_batch_size,
-    db_version="head",
-    multicall=True,
-    log_file=None,
-    cache=None,
+    provider_uri=None,
+    debug_provider_uri=None,
     config_file=None,
-    auto_upgrade_db=True,
+    postgres_url=None,
+    batch_size=None,
+    debug_batch_size=None,
+    max_workers=None,
+    multicall=True,
+    cache=None,
+    log_file=None,
     log_level="INFO",
+    block_number=None,
+    ranges=None,
 ):
     print_logo()
     import_submodules("hemera_udf")
@@ -155,7 +74,7 @@ def reorg(
 
     # build postgresql service
     if postgres_url:
-        service = PostgreSQLService(postgres_url, db_version=db_version, init_schema=auto_upgrade_db)
+        service = PostgreSQLService(postgres_url)
         config = {"db_service": service}
         exception_recorder.init_pg_service(service)
     else:
@@ -177,17 +96,16 @@ def reorg(
             else:
                 raise click.ClickException(f"Config file {config_file} is not supported)")
 
-    entity_types = calculate_entity_value(",".join())
+    entity_types = EntityType.combine_all_entity_types()
     output_types = list(generate_output_types(entity_types))
 
     job_scheduler = ReorgScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(debug_provider_uri, batch=True)),
-        item_exporters=PostgresItemExporter(
-            postgres_url=postgres_url, db_version=db_version, init_schema=auto_upgrade_db
-        ),
+        item_exporters=PostgresItemExporter(postgres_url=postgres_url),
         batch_size=batch_size,
         debug_batch_size=debug_batch_size,
+        max_workers=max_workers,
         required_output_types=output_types,
         config=config,
         cache=cache,

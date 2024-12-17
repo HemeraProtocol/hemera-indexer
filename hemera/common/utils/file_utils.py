@@ -94,6 +94,12 @@ def delete_file(file):
         raise OSError
 
 
+def get_project_root():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+    return project_root
+
+
 class NoopFile:
     def __enter__(self):
         pass

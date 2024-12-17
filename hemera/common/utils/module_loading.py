@@ -6,6 +6,8 @@ import pkgutil
 from importlib import import_module
 from typing import Dict, List, Type
 
+from hemera.common.utils.file_utils import get_project_root
+
 
 def import_string(dotted_path: str):
     """
@@ -29,8 +31,7 @@ def import_string(dotted_path: str):
 def scan_subclass_by_path_patterns(
     path_patterns: List[str], base_class: Type[object], exclude_path=[]
 ) -> Dict[str, dict]:
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+    project_root = get_project_root()
     exclude_path = [os.path.join(project_root, path) for path in exclude_path]
 
     mapping = {}

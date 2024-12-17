@@ -125,6 +125,9 @@ class EntityType(IntFlag):
         return False
 
 
+DEFAULT_COLLECTION = []
+
+
 def register_all_output_types():
     """Register output types for all entity types (both static and dynamic)."""
     # Register static output types
