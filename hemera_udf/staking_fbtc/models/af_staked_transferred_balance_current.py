@@ -21,7 +21,7 @@ class AfStakedTransferredBalanceCurrent(HemeraModel):
     reorg = Column(BOOLEAN, default=False)
 
     __table_args__ = (
-        PrimaryKeyConstraint("contract_address", "wallet_address", "token_address", "block_timestamp", "block_number"),
+        PrimaryKeyConstraint("contract_address", "wallet_address", "token_address"),
     )
 
     @staticmethod
