@@ -12,6 +12,7 @@ import signal
 import threading
 from collections import defaultdict
 from concurrent.futures import Future, ThreadPoolExecutor
+from distutils.util import strtobool
 from threading import Event
 from typing import Any, Callable, Dict, List
 
@@ -19,8 +20,8 @@ from hemera.common.utils.exception_control import FastShutdownError, get_excepti
 
 BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 1)
 MAX_BUFFER_SIZE = os.environ.get("MAX_BUFFER_SIZE", 1)
-ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
-CONCURRENT_SUBMITTERS = os.environ.get("CONCURRENT_SUBMITTERS", 1)
+ASYNC_SUBMIT = bool(strtobool(os.environ.get("ASYNC_SUBMIT", 'false')))
+CONCURRENT_SUBMITTERS = int(os.environ.get("CONCURRENT_SUBMITTERS", 1))
 CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
 EXPORT_STRATEGY = os.environ.get("EXPORT_STRATEGY", json.loads("{}"))
 
@@ -145,7 +146,7 @@ class BufferService:
 
         self._shutdown_event = Event()
 
-        self.submit_export_pool = ThreadPoolExecutor(max_workers=int(export_workers))
+        self.submit_export_pool = ThreadPoolExecutor(max_workers=export_workers)
 
         self._setup_signal_handlers()
 
