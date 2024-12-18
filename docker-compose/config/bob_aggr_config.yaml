@@ -13,7 +13,9 @@ FBTC:
       - period_address_token_balances
     uniswapv3:
       - period_feature_holding_balance_uniswap_v3_new_schema
+      - n_period_feature_holding_balance_staked_transferred_fbtc_detail
 
   py_jobs:
     - address_token_balance
+    - staked
     - uniswapv3
