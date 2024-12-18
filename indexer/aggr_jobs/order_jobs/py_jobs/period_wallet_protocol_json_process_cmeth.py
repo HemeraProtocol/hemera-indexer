@@ -314,7 +314,7 @@ class PeriodWalletProtocolJsonProcessCmeth:
                                    inner join tokens d2 on d1.token_address = d2.address
                           where d1.token_address = decode('e6829d9a7ee3040e1276fa75293bde931859e8fa', 'hex')
                             and to_timestamp(block_timestamp) < '{self.end_date}'
-                            and  protocol_id <> 'init_capital'
+                            and  protocol_id not in ('init_capital','dolomite')
                             ) t
                     where rn = 1 
                 """
