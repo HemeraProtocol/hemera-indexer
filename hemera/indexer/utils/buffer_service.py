@@ -64,9 +64,9 @@ class BufferLockManager:
         self._active_row_locks = set()
 
     def __getitem__(self, key: str) -> KeyLockContext:
-        with self._global_condition:
-            while self._global_lock.locked():
-                self._global_condition.wait()
+        if self._global_lock.locked():
+            with self._global_lock:
+                pass
 
         with self._meta_lock:
             if key not in self._locks:
