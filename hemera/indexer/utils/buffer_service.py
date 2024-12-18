@@ -15,7 +15,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from threading import Event
 from typing import Any, Callable, Dict, List
 
-from hemera.common.utils.exception_control import get_exception_details
+from hemera.common.utils.exception_control import FastShutdownError, get_exception_details
 
 BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 1)
 MAX_BUFFER_SIZE = os.environ.get("MAX_BUFFER_SIZE", 1)
@@ -227,6 +227,7 @@ class BufferService:
             self.logger.error(f"Exporting items error: {exception_details}")
             if CRASH_INSTANTLY:
                 self.shutdown()
+                raise FastShutdownError(f"Exporting items error: {exception_details}")
 
     def export_items(self, items):
         for item_exporter in self.item_exporters:
