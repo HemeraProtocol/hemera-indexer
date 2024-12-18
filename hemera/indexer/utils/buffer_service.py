@@ -204,8 +204,8 @@ class BufferService:
         signal.signal(signal.SIGINT, self._handle_shutdown)
 
     def _handle_shutdown(self, signum, frame):
-        self.logger.info("Received shutdown signal, flushing buffer...")
-        self.flush_buffer(self.required_output_types)
+        # self.logger.info("Received shutdown signal, flushing buffer...")
+        # self.flush_buffer(self.required_output_types)
         self._shutdown_event.set()
 
     def _handle_export_completion(self, future: Future):
