@@ -22,7 +22,7 @@ MAX_BUFFER_SIZE = os.environ.get("MAX_BUFFER_SIZE", 1)
 ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
 CONCURRENT_SUBMITTERS = os.environ.get("CONCURRENT_SUBMITTERS", 1)
 CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
-EXPORTE_STRATEGY = os.environ.get("EXPORTE_STRATEGY", json.loads("{}"))
+EXPORT_STRATEGY = os.environ.get("EXPORT_STRATEGY", json.loads("{}"))
 
 
 class KeyLockContext:
@@ -152,7 +152,7 @@ class BufferService:
         self.success_callback = success_callback
         self.exception_callback = exception_callback
 
-        self.export_strategy = EXPORTE_STRATEGY
+        self.export_strategy = EXPORT_STRATEGY
 
         self.logger = logging.getLogger(__name__)
 
