@@ -145,7 +145,7 @@ class BufferService:
 
         self._shutdown_event = Event()
 
-        self.submit_export_pool = ThreadPoolExecutor(max_workers=export_workers)
+        self.submit_export_pool = ThreadPoolExecutor(max_workers=int(export_workers))
 
         self._setup_signal_handlers()
 
