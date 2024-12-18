@@ -78,19 +78,19 @@ class BufferLockManager:
             return False
 
         try:
-            with self._global_condition:
-                while self._active_row_locks:
-                    self._global_condition.wait()
-                return True
+            while self._active_row_locks:
+                self._global_condition.wait()
+            return True
         except Exception as e:
             if self._global_lock.locked():
                 self._global_lock.release()
             raise RuntimeError(f"Failed to acquire global lock: {str(e)}")
 
     def release_global(self):
-        with self._global_condition:
-            self._global_lock.release()
+        try:
             self._global_condition.notify_all()
+        finally:
+            self._global_lock.release()
 
     def remove(self, key: str) -> None:
         with self._meta_lock:
