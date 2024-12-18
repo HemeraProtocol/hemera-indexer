@@ -20,9 +20,7 @@ class AfStakedTransferredBalanceCurrent(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, default=False)
 
-    __table_args__ = (
-        PrimaryKeyConstraint("contract_address", "wallet_address", "token_address", "block_timestamp", "block_number"),
-    )
+    __table_args__ = (PrimaryKeyConstraint("contract_address", "wallet_address", "token_address"),)
 
     @staticmethod
     def model_domain_mapping():

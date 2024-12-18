@@ -1,3 +1,5 @@
+import os
+
 import click
 
 from hemera.cli.commands.log import log_setting
@@ -37,7 +39,7 @@ from hemera.cli.core.stream_process import stream_process
 @delay_control
 @log_setting
 @pid_file_storage
-def stream(
+def backtest(
     provider_uri=None,
     debug_provider_uri=None,
     entity_types=None,
@@ -56,12 +58,12 @@ def stream(
     start_block=None,
     end_block=None,
     sync_recorder="file:sync_record",
-    retry_from_record=True,
+    retry_from_record=False,
     block_batch_size=1,
     batch_size=10,
     debug_batch_size=1,
     max_workers=5,
-    multicall=True,
+    multicall=False,
     process_numbers=1,
     process_size=None,
     process_time_out=None,
@@ -71,6 +73,8 @@ def stream(
     log_level="INFO",
     pid_file=None,
 ):
+    os.environ["JOB_RETRIES"] = 1
+
     stream_process(
         provider_uri,
         debug_provider_uri,

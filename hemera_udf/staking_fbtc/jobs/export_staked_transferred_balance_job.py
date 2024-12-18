@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
-from operator import and_, or_
+
+from sqlalchemy import and_, func, or_
 
 from hemera.common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
@@ -43,7 +44,7 @@ class ExportTransferredBalanceJob(FilterTransactionDataJob):
             ]
         )
 
-    def _get_current_holdings(self, combinations, block_number, func=None):
+    def _get_current_holdings(self, combinations, block_number):
         session = self._service.get_service_session()
 
         conditions = [

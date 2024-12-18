@@ -14,6 +14,8 @@ from hemera.indexer.utils.sync_recorder import BaseRecorder
 
 logger = logging.getLogger(__name__)
 
+JOB_RETRIES = os.environ.get("JOB_RETRIES", 5)
+
 
 class StreamController(BaseController):
 
@@ -23,7 +25,6 @@ class StreamController(BaseController):
         sync_recorder: BaseRecorder,
         job_scheduler: JobScheduler,
         limit_reader: LimitReader,
-        max_retries=5,
         retry_from_record=False,
         delay=0,
         process_numbers=1,
@@ -35,7 +36,7 @@ class StreamController(BaseController):
         self.sync_recorder = sync_recorder
         self.job_scheduler = job_scheduler
         self.limit_reader = limit_reader
-        self.max_retries = max_retries
+        self.max_retries = JOB_RETRIES
         self.retry_from_record = retry_from_record
         self.delay = delay
 
