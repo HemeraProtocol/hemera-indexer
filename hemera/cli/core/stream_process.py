@@ -186,3 +186,5 @@ def stream_process(
         period_seconds=period_seconds,
         pid_file=pid_file,
     )
+
+    buffer_service.shutdown()
