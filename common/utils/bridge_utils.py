@@ -240,6 +240,8 @@ def parse_bedrock_bridge_l2_to_l1_transaction(transaction, token_info, native_to
 
 
 def format_value(amount, decimals=18):
+    if amount is None:
+        return "1"
     """Function to format the value, handling decimal places."""
     formatted_value = f"{amount / 10 ** decimals:.6f}".rstrip("0").rstrip(".")
     return formatted_value if formatted_value else "0"
