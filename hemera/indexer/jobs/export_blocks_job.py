@@ -5,7 +5,6 @@ import orjson
 from hemera.common.utils.exception_control import FastShutdownError
 from hemera.indexer.domains.block import Block
 from hemera.indexer.domains.block_ts_mapper import BlockTsMapper
-from hemera.indexer.domains.transaction import Transaction
 from hemera.indexer.executors.batch_work_executor import BatchWorkExecutor
 from hemera.indexer.jobs.base_job import BaseExportJob
 from hemera.indexer.specification.specification import (

@@ -24,7 +24,6 @@ from hemera.indexer.jobs.source_job.pg_source_job import PGSourceJob
 from hemera.indexer.utils.buffer_service import BufferService
 
 JOB_RETRIES = os.environ.get("JOB_RETRIES", 5)
-ASYNC_SUBMIT = os.environ.get("ASYNC_SUBMIT", False)
 
 
 def get_tokens_from_db(service):
@@ -192,6 +191,15 @@ class JobScheduler:
                     required_job_classes.add(job_class)
                     for dependency in job_class.dependency_types:
                         output_type_queue.append(dependency)
+
+        if len(required_job_classes) == 0:
+            raise Exception(
+                "No job classes were required. The following are possible reasons: "
+                "1. The udf job is not recognized by indexer. "
+                "2. The input dependency and output dataclass are not correctly bound to the udf job. "
+                "3. DynamicEntityTypeRegistry failed to register correctly."
+            )
+
         return required_job_classes, is_filter
 
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
