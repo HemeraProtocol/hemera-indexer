@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
+from distutils.util import strtobool
 
 from sqlalchemy import func
 from sqlalchemy.dialects.postgresql import insert
@@ -11,6 +12,8 @@ from hemera.common.models.sync_record import SyncRecord
 from hemera.common.utils.file_utils import smart_open, write_to_file
 
 logger = logging.getLogger(__name__)
+
+ASYNC_SUBMIT = bool(strtobool(os.environ.get("ASYNC_SUBMIT", "false")))
 
 
 class BaseRecorder(object):
@@ -34,14 +37,24 @@ class FileSyncRecorder(BaseRecorder):
         self.file_name = file_name
 
     def set_last_synced_block(self, last_synced_block):
-        write_to_file(self.file_name, str(last_synced_block) + "\n")
+        if ASYNC_SUBMIT:
+            wrote_synced_block = self.get_last_synced_block()
+            if wrote_synced_block < last_synced_block:
+                write_to_file(self.file_name, str(last_synced_block) + "\n")
+        else:
+            write_to_file(self.file_name, str(last_synced_block) + "\n")
 
     def get_last_synced_block(self):
         if not os.path.isfile(self.file_name):
             self.set_last_synced_block(0)
             return 0
         with smart_open(self.file_name, "r") as last_synced_block_file:
-            return int(last_synced_block_file.read())
+            last_synced_block = last_synced_block_file.read()
+            try:
+                last_synced_block = int(last_synced_block)
+            except ValueError as e:
+                last_synced_block = 0
+            return last_synced_block
 
     def set_failure_record(self, output_types, start_block, end_block, exception_stage, exception):
         failure_file = self.file_name + "_failure_records"
@@ -71,6 +84,17 @@ class PGSyncRecorder(BaseRecorder):
         session = self.service.get_service_session()
         update_time = func.to_timestamp(int(datetime.now(timezone.utc).timestamp()))
         try:
+            conflict_args = {
+                "index_elements": [SyncRecord.mission_sign],
+                "set_": {
+                    "last_block_number": last_synced_block,
+                    "update_time": update_time,
+                },
+            }
+
+            if ASYNC_SUBMIT:
+                conflict_args["where"] = SyncRecord.last_block_number <= last_synced_block
+
             statement = (
                 insert(SyncRecord)
                 .values(
@@ -80,13 +104,7 @@ class PGSyncRecorder(BaseRecorder):
                         "update_time": update_time,
                     }
                 )
-                .on_conflict_do_update(
-                    index_elements=[SyncRecord.mission_sign],
-                    set_={
-                        "last_block_number": last_synced_block,
-                        "update_time": update_time,
-                    },
-                )
+                .on_conflict_do_update(**conflict_args)
             )
             session.execute(statement)
             session.commit()

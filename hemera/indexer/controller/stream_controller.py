@@ -4,7 +4,7 @@ import time
 
 import mpire
 
-from hemera.common.utils.exception_control import FastShutdownError, HemeraBaseException
+from hemera.common.utils.exception_control import FastShutdownError
 from hemera.common.utils.file_utils import delete_file, write_to_file
 from hemera.common.utils.web3_utils import build_web3
 from hemera.indexer.controller.base_controller import BaseController
@@ -104,8 +104,7 @@ class StreamController(BaseController):
                     else:
                         splits = self.split_blocks(last_synced_block + 1, target_block, self.process_size)
                         self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
-                    logger.info("Writing last synced block {}".format(target_block))
-                    self.sync_recorder.set_last_synced_block(target_block)
+
                     last_synced_block = target_block
 
                 if synced_blocks <= 0:

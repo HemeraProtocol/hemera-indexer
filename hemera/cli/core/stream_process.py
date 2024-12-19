@@ -139,6 +139,7 @@ def stream_process(
     buffer_service = BufferService(
         item_exporters=create_item_exporters(output, config),
         required_output_types=[output.type() for output in output_types],
+        success_callback=sync_recorder.handle_success,
         exception_callback=sync_recorder.set_failure_record,
     )
 

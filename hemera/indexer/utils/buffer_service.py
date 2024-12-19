@@ -142,6 +142,8 @@ class BufferService:
         self.buffer = defaultdict(list)
         self.buffer_lock = BufferLockManager()
 
+        self.output_in_progress: dict[(int, int), set] = dict()
+        self.futures_output: dict[Future, set] = dict()
         self.pending_futures: dict[Future, (int, int)] = dict()
         self.futures_lock = threading.Lock()
 
@@ -212,20 +214,26 @@ class BufferService:
     def _handle_export_completion(self, future: Future):
         with self.futures_lock:
             start_block, end_block = self.pending_futures[future]
+            complete_type = self.futures_output[future]
+
             self.pending_futures.pop(future)
+            self.futures_output.pop(future)
 
         try:
             future.result()
 
-            if self.success_callback:
+            self.output_in_progress[(start_block, end_block)] -= complete_type
+            if self.success_callback and len(self.output_in_progress[(start_block, end_block)]) == 0:
                 try:
+                    self.output_in_progress.pop((start_block, end_block))
                     self.success_callback(end_block)
                 except Exception as e:
                     self.logger.error(f"Writing last synced block number {end_block} error.")
 
         except Exception as e:
             exception_details = get_exception_details(e)
-            self.exception_callback(self.required_output_types, start_block, end_block, "export", exception_details)
+            if self.exception_callback:
+                self.exception_callback(self.required_output_types, start_block, end_block, "export", exception_details)
             self.logger.error(f"Exporting items error: {exception_details}")
             if CRASH_INSTANTLY:
                 self.shutdown()
@@ -242,12 +250,14 @@ class BufferService:
 
     def flush_buffer(self, flush_keys: List[str]):
         flush_items = []
+        flush_type = set()
         with self.buffer_lock:
             self.buffer["block"].sort(key=lambda x: x.number)
             block_range = (self.buffer["block"][0].number, self.buffer["block"][-1].number)
 
             for key in flush_keys:
                 if key in self.required_output_types:
+                    flush_type.add(key)
                     flush_items.extend(self.buffer[key])
             if len(flush_keys):
                 self.logger.info(f"Flush domains: {','.join(flush_keys)} between block range: {block_range}")
@@ -255,7 +265,10 @@ class BufferService:
         future.add_done_callback(self._handle_export_completion)
 
         with self.futures_lock:
+            self.futures_output[future] = flush_type
             self.pending_futures[future] = block_range
+            if block_range not in self.output_in_progress:
+                self.output_in_progress[block_range] = set(self.required_output_types)
 
         if not ASYNC_SUBMIT:
             try:
