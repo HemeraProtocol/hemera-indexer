@@ -138,11 +138,10 @@ finalizeDepositERC721Function = MorphFunction(
         bridge_to_address=x["_to"],
         amount=1,
         extra_info={
-            "data": bytes_to_hex_str(x["_data"]),
             "token": {"token_type": "ERC721", "token_ids": [str(x["_tokenId"])]},
         },
         _type=1,
-        data=bytes_to_hex_str(x["_data"]),
+        data=None,
     ),
 )
 
@@ -168,14 +167,13 @@ finalizeBatchDepositERC721Function = MorphFunction(
         bridge_to_address=x["_to"],
         amount=len(x["_tokenIds"]),
         extra_info={
-            "data": bytes_to_hex_str(x["_data"]),
             "token": {
                 "token_type": "ERC721",
                 "token_ids": [str(token_id) for token_id in x["_tokenIds"]],
             },
         },
         _type=1,
-        data=bytes_to_hex_str(x["_data"]),
+        data=None,
     ),
 )
 
@@ -202,11 +200,10 @@ finalizeDepositERC1155Function = MorphFunction(
         bridge_to_address=x["_to"],
         amount=x["_amount"],
         extra_info={
-            "data": bytes_to_hex_str(x["_data"]),
             "token": {"token_type": "ERC1155", "token_ids": [str(x["_tokenId"])], "amounts": [str(x["_amount"])]},
         },
         _type=1,
-        data=bytes_to_hex_str(x["_data"]),
+        data=None,
     ),
 )
 
@@ -233,7 +230,6 @@ finalizeBatchDepositERC1155Function = MorphFunction(
         bridge_to_address=x["_to"],
         amount=sum(x["_amounts"]),
         extra_info={
-            "data": bytes_to_hex_str(x["_data"]),
             "token": {
                 "token_type": "ERC1155",
                 "token_ids": [str(token_id) for token_id in x["_tokenIds"]],
@@ -241,7 +237,7 @@ finalizeBatchDepositERC1155Function = MorphFunction(
             },
         },
         _type=1,
-        data=bytes_to_hex_str(x["_data"]),
+        data=None,
     ),
 )
 
@@ -328,11 +324,10 @@ finalizeWithdrawERC721Function = MorphFunction(
         bridge_to_address=x["_to"],
         amount=1,
         extra_info={
-            "data": bytes_to_hex_str(x["_data"]),
             "token": {"token_type": "ERC721", "token_ids": [str(x["_tokenId"])]},
         },
         _type=1,
-        data=bytes_to_hex_str(x["_data"]),
+        data=None,
     ),
 )
 
@@ -358,14 +353,13 @@ finalizeBatchWithdrawERC721Function = MorphFunction(
         bridge_to_address=x["_to"],
         amount=len(x["_tokenIds"]),
         extra_info={
-            "data": bytes_to_hex_str(x["_data"]),
             "token": {
                 "token_type": "ERC721",
                 "token_ids": [str(token_id) for token_id in x["_tokenIds"]],
             },
         },
         _type=1,
-        data=bytes_to_hex_str(x["_data"]),
+        data=None,
     ),
 )
 
@@ -392,11 +386,10 @@ finalizeWithdrawERC1155Function = MorphFunction(
         bridge_to_address=x["_to"],
         amount=x["_amount"],
         extra_info={
-            "data": bytes_to_hex_str(x["_data"]),
             "token": {"token_type": "ERC1155", "token_ids": [str(x["_tokenId"])], "amounts": [str(x["_amount"])]},
         },
         _type=1,
-        data=bytes_to_hex_str(x["_data"]),
+        data=None,
     ),
 )
 
@@ -423,7 +416,6 @@ finalizeBatchWithdrawERC1155Function = MorphFunction(
         bridge_to_address=x["_to"],
         amount=sum(x["_amounts"]),
         extra_info={
-            "data": bytes_to_hex_str(x["_data"]),
             "token": {
                 "token_type": "ERC1155",
                 "token_ids": [str(token_id) for token_id in x["_tokenIds"]],
@@ -431,6 +423,6 @@ finalizeBatchWithdrawERC1155Function = MorphFunction(
             },
         },
         _type=1,
-        data=bytes_to_hex_str(x["_data"]),
+        data=None,
     ),
 )

@@ -211,6 +211,8 @@ class BaseJob(metaclass=BaseJobMeta):
             self._collect_domain(domain)
 
     def _update_domains(self, domains: List[Domain]):
+        if not domains:
+            return
         key = domains[0].type()
         self._data_buff[key] = domains
 
