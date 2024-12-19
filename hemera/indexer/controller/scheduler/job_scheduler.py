@@ -146,6 +146,15 @@ class JobScheduler:
                     required_job_classes.add(job_class)
                     for dependency in job_class.dependency_types:
                         output_type_queue.append(dependency)
+
+        if len(required_job_classes) == 0:
+            raise Exception(
+                "No job classes were required. The following are possible reasons: "
+                "1. The udf job is not recognized by indexer. "
+                "2. The input dependency and output dataclass are not correctly bound to the udf job. "
+                "3. DynamicEntityTypeRegistry failed to register correctly."
+            )
+
         return required_job_classes, is_filter
 
     def clear_data_buff(self):
