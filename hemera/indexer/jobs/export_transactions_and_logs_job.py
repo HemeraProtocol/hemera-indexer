@@ -85,6 +85,7 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
                     transaction.block_number,
                 )
                 transaction.fill_with_receipt(receipt_entity)
+                output.collect(transaction)
 
                 for log in transaction.receipt.logs:
                     output.collect(log)
@@ -92,6 +93,8 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
     def _udf(self, blocks: List[Block], output: Collector[Union[Transaction, Log]]):
         self._batch_work_executor.execute(blocks, self.request_for_receipt, collector=output, total_items=len(blocks))
         self._batch_work_executor.wait()
+
+        self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
         self._data_buff[Log.type()].sort(key=lambda x: (x.block_number, x.log_index))
 
 
