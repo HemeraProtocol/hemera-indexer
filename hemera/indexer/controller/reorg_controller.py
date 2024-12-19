@@ -104,7 +104,7 @@ class ReorgController(BaseController):
                 break
 
             except HemeraBaseException as e:
-                logging.exception(f"An rpc response exception occurred while syncing block data. error: {e}")
+                logging.exception(f"An expected exception occurred while syncing block data. error: {e}")
                 if e.crashable:
                     logging.exception("Mission will crash immediately.")
                     raise e

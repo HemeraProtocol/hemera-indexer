@@ -4,7 +4,7 @@ import time
 
 import mpire
 
-from hemera.common.utils.exception_control import FastShutdownError, HemeraBaseException
+from hemera.common.utils.exception_control import FastShutdownError
 from hemera.common.utils.file_utils import delete_file, write_to_file
 from hemera.common.utils.web3_utils import build_web3
 from hemera.indexer.controller.base_controller import BaseController
@@ -104,8 +104,7 @@ class StreamController(BaseController):
                     else:
                         splits = self.split_blocks(last_synced_block + 1, target_block, self.process_size)
                         self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
-                    logger.info("Writing last synced block {}".format(target_block))
-                    self.sync_recorder.set_last_synced_block(target_block)
+
                     last_synced_block = target_block
 
                 if synced_blocks <= 0:
@@ -127,36 +126,7 @@ class StreamController(BaseController):
         return blocks
 
     def _do_stream(self, start_block, end_block):
-
-        for retry in range(self.max_retries + 1):
-            try:
-                # ETL program's main logic
-                self.job_scheduler.run_jobs(start_block, end_block)
-                return
-
-            except HemeraBaseException as e:
-                logger.error(f"An expected exception occurred while syncing block data. error: {e}")
-                if e.crashable:
-                    logger.error("Mission will crash immediately.")
-                    raise e
-
-                if e.retriable:
-                    if retry == self.max_retries:
-                        logger.info(f"The number of retry is reached limit {self.max_retries}.")
-                    else:
-                        logger.info(f"No: {retry} retry is about to start.")
-                else:
-                    logger.error("Mission will not retry, and exit immediately.")
-                    raise e
-
-            except Exception as e:
-                logger.error(f"An unknown exception occurred while syncing block data. error: {e}")
-                raise e
-
-        logger.error(
-            f"The job with parameters start_block:{start_block}, end_block:{end_block} "
-            f"can't be automatically resumed after reached out limit of retries. Program will exit."
-        )
+        self.job_scheduler.run_jobs(start_block, end_block)
 
     def _get_current_block_number(self):
         return int(self.web3.eth.block_number)

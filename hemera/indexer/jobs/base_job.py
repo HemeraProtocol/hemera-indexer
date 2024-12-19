@@ -7,10 +7,11 @@ from typing import Generic, List, Type, TypeVar, Union, get_args, get_origin, ge
 from deprecated import deprecated
 from web3 import Web3
 
-from hemera.common.utils.exception_control import FastShutdownError
+from hemera.common.utils.exception_control import FastShutdownError, RetriableError
 from hemera.common.utils.format_utils import to_snake_case
 from hemera.indexer.domains import Domain
 from hemera.indexer.domains.transaction import Transaction
+from hemera.indexer.utils.buffer_service import BufferService
 from hemera.indexer.utils.reorg import should_reorg
 
 T = TypeVar("T")
@@ -106,7 +107,7 @@ class BaseJobMeta(type):
 
 
 class BaseJob(metaclass=BaseJobMeta):
-    _data_buff = defaultdict(list)
+    _data_buff: Union[dict, BufferService] = defaultdict(list)
     _data_buff_lock = defaultdict(threading.Lock)
 
     tokens = None
@@ -132,7 +133,6 @@ class BaseJob(metaclass=BaseJobMeta):
     def __init__(self, **kwargs):
 
         self._required_output_types = kwargs["required_output_types"]
-        self._item_exporters = kwargs["item_exporters"]
         self._batch_web3_provider = kwargs["batch_web3_provider"]
         self._web3 = Web3(Web3.HTTPProvider(self._batch_web3_provider.endpoint_uri))
         self.logger = logging.getLogger(self.__class__.__name__)
@@ -144,6 +144,7 @@ class BaseJob(metaclass=BaseJobMeta):
         self._should_reorg = False
         self._should_reorg_type = set()
         self._service = kwargs["config"].get("db_service", None)
+        self.collector = Collector(self, self.output_types)
 
         job_name_snake = to_snake_case(self.job_name)
         self.user_defined_config = kwargs["config"][job_name_snake] if kwargs["config"].get(job_name_snake) else {}
@@ -167,13 +168,17 @@ class BaseJob(metaclass=BaseJobMeta):
                     self._process(**kwargs)
 
             if not self._reorg:
-                self._export()
+                if type(self._data_buff) is BufferService and not self._data_buff.check_and_flush(
+                    job_name=self.job_name, output_types=[output.type() for output in self.output_types]
+                ):
+                    raise RetriableError(f"Job {self.job_name} export error.")
 
         finally:
             self._end()
 
     def _start(self, **kwargs):
-        pass
+        for dataclass in self.output_types:
+            self._data_buff[dataclass.type()].clear()
 
     def _pre_reorg(self, **kwargs):
         from hemera.common.converter.pg_converter import domain_model_mapping
@@ -257,28 +262,16 @@ class BaseJob(metaclass=BaseJobMeta):
             if param == "output":
                 continue
             args_type = get_args(param_type)[0]
-            if args_type.type() in self._data_buff:
+            if args_type.type() in self._data_buff.keys():
                 parameters[param] = self._data_buff[args_type.type()]
             else:
                 parameters[param] = []
 
-        parameters["output"] = Collector(self, self.output_types)
+        parameters["output"] = self.collector
         return parameters
 
     def _udf(self, **kwargs):
         pass
-
-    def _export(self):
-        items = []
-
-        for output_type in self.output_types:
-            if output_type in self._required_output_types:
-                items.extend(self._data_buff[output_type.type()])
-
-        for item_exporter in self._item_exporters:
-            item_exporter.open()
-            item_exporter.export_items(items, job_name=self.job_name)
-            item_exporter.close()
 
     def get_buff(self):
         return self._data_buff

@@ -22,7 +22,6 @@ def test_fetch_morphl2_bridge_on_l1_deposited():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -53,7 +52,6 @@ def test_fetch_morphl2_bridge_on_l1_withdrawal():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -84,7 +82,6 @@ def test_fetch_morphl2_bridge_on_l2_withdrawl():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(MORPHL2_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -133,7 +130,6 @@ def test_fetch_morphl2_bridge_on_l2_deposited():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(MORPHL2_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -182,7 +178,6 @@ def test_fetch_morphl2_bridge_on_l2_deposit():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(MORPHL2_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,

@@ -1,11 +1,13 @@
 import logging
+import os
 from collections import defaultdict, deque
-from typing import List, Set, Type
+from typing import List, Set, Type, Union
 
 from pottery import RedisDict
 from redis.client import Redis
 
 from hemera.common.models.tokens import Tokens
+from hemera.common.utils.exception_control import HemeraBaseException
 from hemera.common.utils.format_utils import bytes_to_hex_str
 from hemera.common.utils.module_loading import import_submodules
 from hemera.indexer.exporters.console_item_exporter import ConsoleItemExporter
@@ -17,9 +19,11 @@ from hemera.indexer.jobs.base_job import (
     FilterTransactionDataJob,
     generate_dependency_types,
 )
-from hemera.indexer.jobs.check_block_consensus_job import CheckBlockConsensusJob
 from hemera.indexer.jobs.export_blocks_job import ExportBlocksJob
 from hemera.indexer.jobs.source_job.pg_source_job import PGSourceJob
+from hemera.indexer.utils.buffer_service import BufferService
+
+JOB_RETRIES = os.environ.get("JOB_RETRIES", 5)
 
 
 def get_tokens_from_db(service):
@@ -58,7 +62,7 @@ class JobScheduler:
         debug_batch_size=1,
         max_workers=5,
         config={},
-        item_exporters=[ConsoleItemExporter()],
+        buffer_service: Union[dict, BufferService] = defaultdict(list),
         required_output_types=[],
         required_source_types=[],
         cache="memory",
@@ -71,7 +75,7 @@ class JobScheduler:
         self.auto_reorg = auto_reorg
         self.batch_web3_provider = batch_web3_provider
         self.batch_web3_debug_provider = batch_web3_debug_provider
-        self.item_exporters = item_exporters
+        self.buffer_service = buffer_service
         self.batch_size = batch_size
         self._is_multicall = multicall
         self.debug_batch_size = debug_batch_size
@@ -112,6 +116,47 @@ class JobScheduler:
         self.logger.info("Export output types: ")
         for output_type in self.required_output_types:
             self.logger.info(f"[*] {output_type.type()}")
+
+    def clear_data_buff(self):
+        BaseJob._data_buff.clear()
+
+    def get_data_buff(self):
+        return BaseJob._data_buff
+
+    def discover_and_register_job_classes(self):
+        if self.load_from_source:
+            source_job = get_source_job_type(source_path=self.load_from_source)
+            if source_job is PGSourceJob:
+                source_job.output_types = self.required_source_types
+            all_subclasses = [source_job]
+
+            source_output_types = set(source_job.output_types)
+            for export_job in BaseExportJob.discover_jobs():
+                generate_dependency_types(export_job)
+                skip = False
+                for output_type in export_job.output_types:
+                    if output_type in source_output_types:
+                        source_job.output_types = list(set(export_job.output_types + list(source_output_types)))
+                        skip = True
+                        break
+                if not skip:
+                    all_subclasses.append(export_job)
+
+        else:
+            all_subclasses = BaseExportJob.discover_jobs()
+
+        all_subclasses.extend(ExtensionJob.discover_jobs())
+        for cls in all_subclasses:
+            generate_dependency_types(cls)
+            self.job_classes.append(cls)
+            for output in cls.output_types:
+                if output.type() in self.job_map:
+                    raise Exception(
+                        f"Duplicated output type: {output.type()}, job: {cls.__name__}, existing: {self.job_map[output.type()]}, plz check your job definition"
+                    )
+                self.job_map[output.type()].append(cls)
+            for dependency in cls.dependency_types:
+                self.dependency_map[dependency.type()].append(cls)
 
     def get_required_job_classes(self, output_types) -> (List[Type[BaseJob]], bool):
         required_job_classes = set()
@@ -157,129 +202,6 @@ class JobScheduler:
 
         return required_job_classes, is_filter
 
-    def clear_data_buff(self):
-        BaseJob._data_buff.clear()
-
-    def get_data_buff(self):
-        return BaseJob._data_buff
-
-    def discover_and_register_job_classes(self):
-        if self.load_from_source:
-            source_job = get_source_job_type(source_path=self.load_from_source)
-            if source_job is PGSourceJob:
-                source_job.output_types = self.required_source_types
-            all_subclasses = [source_job]
-
-            source_output_types = set(source_job.output_types)
-            for export_job in BaseExportJob.discover_jobs():
-                generate_dependency_types(export_job)
-                skip = False
-                for output_type in export_job.output_types:
-                    if output_type in source_output_types:
-                        source_job.output_types = list(set(export_job.output_types + list(source_output_types)))
-                        skip = True
-                        break
-                if not skip:
-                    all_subclasses.append(export_job)
-
-        else:
-            all_subclasses = BaseExportJob.discover_jobs()
-
-        all_subclasses.extend(ExtensionJob.discover_jobs())
-        for cls in all_subclasses:
-            generate_dependency_types(cls)
-            self.job_classes.append(cls)
-            for output in cls.output_types:
-                if output.type() in self.job_map:
-                    raise Exception(
-                        f"Duplicated output type: {output.type()}, job: {cls.__name__}, existing: {self.job_map[output.type()]}, plz check your job definition"
-                    )
-                self.job_map[output.type()].append(cls)
-            for dependency in cls.dependency_types:
-                self.dependency_map[dependency.type()].append(cls)
-
-    def instantiate_jobs(self):
-        filters = []
-        for job_class in self.resolved_job_classes:
-            if job_class is ExportBlocksJob or job_class is PGSourceJob:
-                continue
-            job = job_class(
-                required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
-                batch_size=self.batch_size,
-                multicall=self._is_multicall,
-                debug_batch_size=self.debug_batch_size,
-                max_workers=self.max_workers,
-                config=self.config,
-            )
-            if isinstance(job, FilterTransactionDataJob):
-                filters.append(job.get_filter())
-
-            self.jobs.append(job)
-
-        if ExportBlocksJob in self.resolved_job_classes:
-            export_blocks_job = ExportBlocksJob(
-                required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
-                batch_size=self.batch_size,
-                multicall=self._is_multicall,
-                debug_batch_size=self.debug_batch_size,
-                max_workers=self.max_workers,
-                config=self.config,
-                is_filter=self.is_pipeline_filter,
-                filters=filters,
-            )
-            self.jobs.insert(0, export_blocks_job)
-        else:
-            pg_source_job = PGSourceJob(
-                required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
-                batch_size=self.batch_size,
-                multicall=self._is_multicall,
-                debug_batch_size=self.debug_batch_size,
-                max_workers=self.max_workers,
-                config=self.config,
-                is_filter=self.is_pipeline_filter,
-                filters=filters,
-            )
-            self.jobs.insert(0, pg_source_job)
-
-        if self.auto_reorg:
-            check_job = CheckBlockConsensusJob(
-                required_output_types=self.required_output_types,
-                batch_web3_provider=self.batch_web3_provider,
-                batch_web3_debug_provider=self.batch_web3_debug_provider,
-                item_exporters=self.item_exporters,
-                batch_size=self.batch_size,
-                multicall=self._is_multicall,
-                debug_batch_size=self.debug_batch_size,
-                max_workers=self.max_workers,
-                config=self.config,
-                filters=filters,
-            )
-            self.jobs.append(check_job)
-
-    def run_jobs(self, start_block, end_block):
-        self.clear_data_buff()
-        try:
-            for job in self.jobs:
-                job.run(start_block=start_block, end_block=end_block)
-
-            for output_type in self.required_output_types:
-                message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
-                self.logger.info(f"{message}")
-
-        except Exception as e:
-            raise e
-        finally:
-            pass
-
     def resolve_dependencies(self, required_jobs: Set[Type[BaseJob]]) -> List[Type[BaseJob]]:
         sorted_order = []
         job_graph = defaultdict(list)
@@ -306,3 +228,98 @@ class JobScheduler:
             raise Exception("Dependency cycle detected")
 
         return sorted_order
+
+    def instantiate_jobs(self):
+        BaseJob._data_buff = self.buffer_service
+
+        filters = []
+        for job_class in self.resolved_job_classes:
+            if job_class is ExportBlocksJob or job_class is PGSourceJob:
+                continue
+            job = job_class(
+                required_output_types=self.required_output_types,
+                batch_web3_provider=self.batch_web3_provider,
+                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                batch_size=self.batch_size,
+                multicall=self._is_multicall,
+                debug_batch_size=self.debug_batch_size,
+                max_workers=self.max_workers,
+                config=self.config,
+            )
+            if isinstance(job, FilterTransactionDataJob):
+                filters.append(job.get_filter())
+
+            self.jobs.append(job)
+
+        if ExportBlocksJob in self.resolved_job_classes:
+            export_blocks_job = ExportBlocksJob(
+                required_output_types=self.required_output_types,
+                batch_web3_provider=self.batch_web3_provider,
+                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                batch_size=self.batch_size,
+                multicall=self._is_multicall,
+                debug_batch_size=self.debug_batch_size,
+                max_workers=self.max_workers,
+                config=self.config,
+                is_filter=self.is_pipeline_filter,
+                filters=filters,
+            )
+            self.jobs.insert(0, export_blocks_job)
+        else:
+            pg_source_job = PGSourceJob(
+                required_output_types=self.required_output_types,
+                batch_web3_provider=self.batch_web3_provider,
+                batch_web3_debug_provider=self.batch_web3_debug_provider,
+                batch_size=self.batch_size,
+                multicall=self._is_multicall,
+                debug_batch_size=self.debug_batch_size,
+                max_workers=self.max_workers,
+                config=self.config,
+                is_filter=self.is_pipeline_filter,
+                filters=filters,
+            )
+            self.jobs.insert(0, pg_source_job)
+
+    def get_scheduled_jobs(self):
+        return self.jobs
+
+    def run_jobs(self, start_block, end_block):
+        self.clear_data_buff()
+
+        for job in self.jobs:
+            self.job_with_retires(job, start_block=start_block, end_block=end_block)
+
+        for output_type in self.required_output_types:
+            message = f"{output_type.type()} : {len(self.get_data_buff().get(output_type.type())) if self.get_data_buff().get(output_type.type()) else 0}"
+            self.logger.info(f"{message}")
+
+    def job_with_retires(self, job, start_block, end_block):
+        for retry in range(JOB_RETRIES + 1):
+            try:
+                self.logger.info(f"Task run {job.__class__.__name__}")
+                job.run(start_block=start_block, end_block=end_block)
+                return
+
+            except HemeraBaseException as e:
+                self.logger.error(f"An expected exception occurred while running {job.__class__.__name__}. error: {e}")
+                if e.crashable:
+                    self.logger.error("Mission will crash immediately.")
+                    raise e
+
+                if e.retriable:
+                    if retry == JOB_RETRIES:
+                        self.logger.info(f"The number of retry is reached limit {JOB_RETRIES}.")
+                    else:
+                        self.logger.info(f"No: {retry + 1} retry is about to start.")
+                else:
+                    self.logger.error("Mission will not retry, and exit immediately.")
+                    raise e
+
+            except Exception as e:
+                self.logger.error(f"An unknown exception occurred while running {job.__class__.__name__}. error: {e}")
+                raise e
+
+        self.logger.error(
+            f"The job with parameters start_block:{start_block}, end_block:{end_block} "
+            f"can't be automatically resumed after reached out limit of retries. Program will exit."
+        )
