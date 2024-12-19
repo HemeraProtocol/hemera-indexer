@@ -3,12 +3,11 @@ import logging
 import orjson
 
 # Utility
-from hemera.common.utils.abi_code_utils import decode_data, decode_log, encode_data
+from hemera.common.utils.abi_code_utils import decode_data, decode_log
 from hemera.common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 
 # Dependency dataclass
 from hemera.indexer.domains.log import Log
-from hemera.indexer.executors.batch_work_executor import BatchWorkExecutor
 
 # Job
 from hemera.indexer.jobs.base_job import FilterTransactionDataJob
