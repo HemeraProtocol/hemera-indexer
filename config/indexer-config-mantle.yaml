@@ -4,10 +4,16 @@ total_supply_job:
   token_address:
    # dodo fbtc wbtc
     - "0xd39dfbfba9e7eccd813918ffbda10b783ea3b3c6"
+    # teahouse
+    - "0xfc3861c04c5ce0883d9f79308e5a65402141df85"
+    - "0x4ddd37f662871fb49ebbc88a58897961e2c12a60"
 
 uniswap_v3_job:
   # empty means no filter. only work in price job
   pool_address:
+#    teahouse
+#    - "0x8b4e2134d1f3da64f9cc044152bf8ee121bb24ce"
+#    - "0xcfef46bc49c7502edd960850264b9c2dfe4d75d7"
 
   # works in price\token job
   jobs:
@@ -74,6 +80,13 @@ export_staked_transferred_balance_job:
     - "0x59e641de941cc794cdf6152eda0ef51210373d95"
 
 
+teahouse_job:
+  # created from 70855795, 10-25
+  '0xfc3861c04c5ce0883d9f79308e5a65402141df85': "0x8b4e2134d1f3da64f9cc044152bf8ee121bb24ce"
+  # created from 70852738, 10-25
+  "0x4ddd37f662871fb49ebbc88a58897961e2c12a60": "0xcfef46bc49c7502edd960850264b9c2dfe4d75d7"
+
+
 export_tokens_and_transfers_job:
   filter_token_address:
       # uniswapv3 position token address
@@ -96,6 +109,10 @@ export_tokens_and_transfers_job:
     - "0x1d40bafc49c37cda49f2a5427e2fb95e1e3fcf20"
       # wecmeth, for woofi
     - "0x872b6ff825da431c941d12630754036278ad7049"
+      # teahouse
+    - "0xfc3861c04c5ce0883d9f79308e5a65402141df85"
+    - "0x4ddd37f662871fb49ebbc88a58897961e2c12a60"
+
       # thetanuts
     - "0xdee7cb1d08ec5e35c4792856f86dd0584db29cfe"
       # hour_glass

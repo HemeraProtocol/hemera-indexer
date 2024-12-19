@@ -92,6 +92,34 @@ def to_snake_case(name: str) -> str:
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
 
 
+def to_camel_case(name: str) -> str:
+    """
+    Converts a snake_case string to CamelCase.
+
+    :param name: The snake_case string to convert.
+    :type name: str
+
+    :return: The converted CamelCase string.
+    :rtype: str
+    """
+    components = name.split("_")
+    return "".join(x.title() for x in components)
+
+
+def to_space_camel_case(name: str) -> str:
+    """
+    Converts a snake_case string to CamelCase.
+
+    :param name: The snake_case string to convert.
+    :type name: str
+
+    :return: The converted CamelCase string.
+    :rtype: str
+    """
+    components = name.split("_")
+    return " ".join(x.title() for x in components)
+
+
 def as_dict(self):
     """
     Converts an SQLAlchemy model instance to a dictionary.

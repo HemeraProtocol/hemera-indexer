@@ -2,6 +2,7 @@ import click
 
 from hemera.cli.api import api
 from hemera.cli.db import db
+from hemera.cli.init import init
 from hemera.cli.reorg import reorg
 from hemera.cli.stream import stream
 from hemera.indexer.utils.logging_utils import logging_basic_config
@@ -26,3 +27,4 @@ cli.add_command(stream, "stream")
 cli.add_command(api, "api")
 cli.add_command(reorg, "reorg")
 cli.add_command(db, "db")
+cli.add_command(init, "init")
