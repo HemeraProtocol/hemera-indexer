@@ -5,7 +5,6 @@ import orjson
 from hemera.common.utils.exception_control import FastShutdownError
 from hemera.indexer.domains.block import Block
 from hemera.indexer.domains.block_ts_mapper import BlockTsMapper
-from hemera.indexer.domains.transaction import Transaction
 from hemera.indexer.executors.batch_work_executor import BatchWorkExecutor
 from hemera.indexer.jobs.base_job import BaseExportJob
 from hemera.indexer.specification.specification import (
@@ -15,7 +14,7 @@ from hemera.indexer.specification.specification import (
     TransactionFilterByTransactionInfo,
     TransactionHashSpecification,
 )
-from hemera.indexer.utils.collection_utils import flatten
+from hemera.indexer.utils.collection_utils import distinct_collections_by_group, flatten
 from hemera.indexer.utils.json_rpc_requests import generate_get_block_by_number_json_rpc
 from hemera.indexer.utils.reorg import set_reorg_sign
 from hemera.indexer.utils.rpc_utils import rpc_response_batch_to_results
@@ -94,13 +93,16 @@ class ExportBlocksJob(BaseExportJob):
         for block_rpc_dict in results:
             block_entity = Block.from_rpc(block_rpc_dict)
             self._collect_item(Block.type(), block_entity)
+
+            satisfied_transactions = []
             for transaction_entity in block_entity.transactions:
                 if self._specification.is_satisfied_by(transaction_entity):
-                    self._collect_item(Transaction.type(), transaction_entity)
+                    satisfied_transactions.append(transaction_entity)
+            block_entity.transactions = satisfied_transactions
 
     def _process(self, **kwargs):
+        self._data_buff[Block.type()] = distinct_collections_by_group(self._data_buff[Block.type()], ["hash"])
         self._data_buff[Block.type()].sort(key=lambda x: x.number)
-        self._data_buff[Transaction.type()].sort(key=lambda x: (x.block_number, x.transaction_index))
 
         ts_dict = {}
         for block in self._data_buff[Block.type()]:
