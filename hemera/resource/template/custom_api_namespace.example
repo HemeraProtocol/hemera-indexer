@@ -1,0 +1,7 @@
+from flask_restx.namespace import Namespace
+
+${job}_namespace = Namespace(
+    "${job_descript} Namespace",
+    path="/",
+    description="${job_descript} API",
+)

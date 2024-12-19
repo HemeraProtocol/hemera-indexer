@@ -1,0 +1,44 @@
+chain_id: 60808
+
+uniswap_v3_job:
+  # empty means no filter. only work in price job
+  pool_address:
+
+  # works in price\token job
+  jobs:
+    - type: uniswapv3  # oku
+      factory address: '0xcb2436774c3e191c85056d248ef4260ce5f27a9d'
+      position_token_address: '0x743e03cceb4af2efa3cc76838f6e8b50b63f184c'
+
+
+export_staked_transferred_balance_job:
+  TRANSFERRED_CONTRACTS_DICT:
+    pump_btc:
+      - "0xd7c019326b5c22a6a2e0aadd1241af94ff7ecf7b"
+    bed_rock:
+      - "0x2ac98db41cbd3172cb7b8fd8a8ab3b91cfe45dcf"
+
+  token_address:
+    # fBTC
+    - "0xc96de26018a54d51c097160568752c4e3bd6c364"
+    # pumpBTC
+    - "0x1fcca65fb6ae3b2758b9b2b394cb227eae404e1e"
+    # uniBTC
+    - "0x236f8c0a61da474db21b693fb2ea7aab0c803894"
+
+
+export_tokens_and_transfers_job:
+  filter_token_address:
+    # OKU position token address
+    - "0x743e03cceb4af2efa3cc76838f6e8b50b63f184c"
+    # fBTC
+    - "0xc96de26018a54d51c097160568752c4e3bd6c364"
+    # pumpBTC
+    - "0x1fcca65fb6ae3b2758b9b2b394cb227eae404e1e"
+    # uniBTC
+    - "0x236f8c0a61da474db21b693fb2ea7aab0c803894"
+
+
+
+
+
