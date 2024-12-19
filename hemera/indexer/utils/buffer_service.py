@@ -20,7 +20,7 @@ from hemera.common.utils.exception_control import FastShutdownError, get_excepti
 
 BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 1)
 MAX_BUFFER_SIZE = os.environ.get("MAX_BUFFER_SIZE", 1)
-ASYNC_SUBMIT = bool(strtobool(os.environ.get("ASYNC_SUBMIT", 'false')))
+ASYNC_SUBMIT = bool(strtobool(os.environ.get("ASYNC_SUBMIT", "false")))
 CONCURRENT_SUBMITTERS = int(os.environ.get("CONCURRENT_SUBMITTERS", 1))
 CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
 EXPORT_STRATEGY = os.environ.get("EXPORT_STRATEGY", json.loads("{}"))
@@ -134,6 +134,7 @@ class BufferService:
     ):
         self.block_size = block_size
         self.max_buffer_size = max_buffer_size
+        self.concurrent_submitters = threading.Semaphore(export_workers)
 
         self.item_exporters = item_exporters
         self.required_output_types = required_output_types
@@ -230,6 +231,9 @@ class BufferService:
                 self.shutdown()
                 raise FastShutdownError(f"Exporting items error: {exception_details}")
 
+        finally:
+            self.concurrent_submitters.release()
+
     def export_items(self, items):
         for item_exporter in self.item_exporters:
             item_exporter.open()
@@ -265,6 +269,8 @@ class BufferService:
     def check_and_flush(self, job_name: str = None, output_types: List[str] = None):
         if job_name in self.export_strategy:
             output_types = self.export_strategy[job_name]
+
+        self.concurrent_submitters.acquire()
 
         if not ASYNC_SUBMIT:
             return self.flush_buffer(output_types)
