@@ -19,9 +19,10 @@ services:
     <<: *common-settings
     container_name: indexer
     environment:
-      - AUTO_UPGRADE_DB=true
+      - INIT_SCHEMA=true
       - ENTITY_TYPES=EXPLORER_BASE
       - SYNC_RECORDER=pg:main_recorder
+      - RETRY_FROM_RECORD=true
 
   hemera-uop-indexer:
     <<: *common-settings
