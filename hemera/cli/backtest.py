@@ -73,7 +73,7 @@ def backtest(
     log_level="INFO",
     pid_file=None,
 ):
-    os.environ["JOB_RETRIES"] = 1
+    os.environ["JOB_RETRIES"] = "1"
 
     stream_process(
         provider_uri,

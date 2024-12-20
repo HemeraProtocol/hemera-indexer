@@ -1,6 +1,7 @@
 import click
 
 from hemera.cli.api import api
+from hemera.cli.backtest import backtest
 from hemera.cli.db import db
 from hemera.cli.init import init
 from hemera.cli.reorg import reorg
@@ -46,6 +47,7 @@ def cli(ctx):
     load_environ()
 
 
+cli.add_command(backtest, "backtest")
 cli.add_command(stream, "stream")
 cli.add_command(api, "api")
 cli.add_command(reorg, "reorg")
