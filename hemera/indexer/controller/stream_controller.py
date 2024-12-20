@@ -14,7 +14,7 @@ from hemera.indexer.utils.sync_recorder import BaseRecorder
 
 logger = logging.getLogger(__name__)
 
-JOB_RETRIES = os.environ.get("JOB_RETRIES", 5)
+JOB_RETRIES = int(os.environ.get("JOB_RETRIES", "5"))
 
 
 class StreamController(BaseController):

@@ -18,12 +18,12 @@ from typing import Any, Callable, Dict, List
 
 from hemera.common.utils.exception_control import FastShutdownError, get_exception_details
 
-BUFFER_BLOCK_SIZE = os.environ.get("BUFFER_BLOCK_SIZE", 1)
-MAX_BUFFER_SIZE = os.environ.get("MAX_BUFFER_SIZE", 1)
+BUFFER_BLOCK_SIZE = int(os.environ.get("BUFFER_BLOCK_SIZE", "1"))
+MAX_BUFFER_SIZE = int(os.environ.get("MAX_BUFFER_SIZE", "1"))
 ASYNC_SUBMIT = bool(strtobool(os.environ.get("ASYNC_SUBMIT", "false")))
-CONCURRENT_SUBMITTERS = int(os.environ.get("CONCURRENT_SUBMITTERS", 1))
-CRASH_INSTANTLY = os.environ.get("CRASH_INSTANTLY", True)
-EXPORT_STRATEGY = os.environ.get("EXPORT_STRATEGY", json.loads("{}"))
+CONCURRENT_SUBMITTERS = int(os.environ.get("CONCURRENT_SUBMITTERS", "1"))
+CRASH_INSTANTLY = bool(strtobool(os.environ.get("CRASH_INSTANTLY", "true")))
+EXPORT_STRATEGY = json.loads(os.environ.get("EXPORT_STRATEGY", "{}"))
 
 
 class KeyLockContext:

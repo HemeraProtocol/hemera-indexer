@@ -8,7 +8,7 @@ GAS_LIMIT: int = int(os.environ.get("GAS_LIMIT", 5_000_000))
 RPC_PAYLOAD_SIZE: int = int(os.environ.get("BATCH_SIZE", 250))
 # calls limit
 CALLS_LIMIT: int = int(os.environ.get("CALLS_LIMIT", 2000))
-DEFAULT_MULTICALL_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11"
+DEFAULT_MULTICALL_ADDRESS = os.environ.get("DEFAULT_MULTICALL_ADDRESS", "0xcA11bde05977b3631167028862bE2a173976CA11")
 
 
 @dataclass(frozen=True)

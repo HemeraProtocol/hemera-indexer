@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Type
 
 from psycopg2.extras import execute_values
@@ -10,7 +11,7 @@ from hemera.indexer.exporters.base_exporter import BaseExporter, group_by_item_t
 
 logger = logging.getLogger(__name__)
 
-COMMIT_BATCH_SIZE = 1000
+COMMIT_BATCH_SIZE = int(os.environ.get("COMMIT_BATCH_SIZE", "1000"))
 
 
 class TqdmExtraFormat(tqdm):
