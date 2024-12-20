@@ -41,4 +41,4 @@ jobs:
           MANTLE_PUBLIC_NODE_DEBUG_RPC_URL: '${{ secrets.MANTLE_PUBLIC_NODE_DEBUG_RPC_URL }}'
         run: |
           export PYTHONPATH=$(pwd)
-          make test indexer
+          poetry run pytest -vv -m indexer

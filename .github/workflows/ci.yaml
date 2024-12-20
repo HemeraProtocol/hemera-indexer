@@ -61,7 +61,7 @@ jobs:
       - name: Pipeline Test with pytest
         run: |
           export PYTHONPATH=$(pwd)
-          poetry run pytest indexer --cov --cov-report=xml
+          poetry run pytest -vv -m indexer --cov --cov-report=xml
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
