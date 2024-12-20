@@ -199,7 +199,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 continue
 
             if (position_token_address, token_id) not in self._existing_tokens:
-                self._existing_tokens.append((position_token_address, token_id))
+                self._existing_tokens.add((position_token_address, token_id))
                 token = UniswapV3Token(
                     position_token_address=position_token_address,
                     token_id=token_id,
@@ -327,13 +327,11 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         ).all()
         session.close()
 
-        # position_token_address_token_id_pool_address_dict = {
-        #     (bytes_to_hex_str(t.position_token_address), bytes_to_hex_str(t.token_id)): bytes_to_hex_str(t.pool_address)
-        #     for t in tokens_orm}
+        position_token_address_token_id_pool_address_dict = set()
 
-        position_token_address_token_id_pool_address_dict = [
-            (bytes_to_hex_str(t.position_token_address), t.token_id) for t in tokens_orm
-        ]
+        for t in tokens_orm:
+            position_token_address_token_id_pool_address_dict.add(
+                (bytes_to_hex_str(t.position_token_address), t.token_id))
 
         return position_token_address_token_id_pool_address_dict
 
