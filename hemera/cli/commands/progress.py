@@ -38,7 +38,7 @@ def index_record(commands):
 
     commands = click.option(
         "--retry-from-record",
-        default=False,
+        default=None,
         show_default=True,
         type=bool,
         envvar="RETRY_FROM_RECORD",
