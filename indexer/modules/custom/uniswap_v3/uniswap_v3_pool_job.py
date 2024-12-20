@@ -67,7 +67,7 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
                         }
                     )
                     if pool_address not in self._existing_pools:
-                        self._existing_pools.append(pool_address)
+                        self._existing_pools.add(pool_address)
                         uniswap_v3_pool = UniswapV3Pool(**pool_dict)
                         self._collect_domain(uniswap_v3_pool)
 
@@ -88,16 +88,20 @@ class ExportUniSwapV3PoolJob(FilterTransactionDataJob):
                             "block_timestamp": log.block_timestamp,
                         }
                     )
+
                     if pool_address not in self._existing_pools:
-                        self._existing_pools.append(pool_address)
+                        self._existing_pools.add(pool_address)
                         uniswap_v3_pool = UniswapV3Pool(**pool_dict)
                         self._collect_domain(uniswap_v3_pool)
 
     def get_existing_pools(self):
         session = self._service.Session()
+        existing_pools = set()
+
         try:
             pools_orm = session.query(UniswapV3Pools).all()
-            existing_pools = [bytes_to_hex_str(p.pool_address) for p in pools_orm]
+            for pool in pools_orm:
+                existing_pools.add(bytes_to_hex_str(pool.pool_address))
 
         except Exception as e:
             print(e)
