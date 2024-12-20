@@ -1,6 +1,7 @@
 import click
 
 from hemera.cli.api import api
+from hemera.cli.async_stream import async_stream
 from hemera.cli.backtest import backtest
 from hemera.cli.db import db
 from hemera.cli.init import init
@@ -49,6 +50,7 @@ def cli(ctx):
 
 cli.add_command(backtest, "backtest")
 cli.add_command(stream, "stream")
+cli.add_command(async_stream, "async_stream")
 cli.add_command(api, "api")
 cli.add_command(reorg, "reorg")
 cli.add_command(db, "db")
