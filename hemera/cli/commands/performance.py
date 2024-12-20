@@ -4,7 +4,7 @@ import click
 def delay_control(commands):
     commands = click.option(
         "--period-seconds",
-        default=10,
+        default=None,
         show_default=True,
         type=float,
         envvar="PERIOD_SECONDS",
@@ -13,7 +13,7 @@ def delay_control(commands):
 
     commands = click.option(
         "--delay",
-        default=0,
+        default=None,
         show_default=True,
         type=int,
         envvar="DELAY",
@@ -27,7 +27,7 @@ def block_step(commands):
     commands = click.option(
         "-B",
         "--block-batch-size",
-        default=1,
+        default=None,
         show_default=True,
         type=int,
         envvar="BLOCK_BATCH_SIZE",
@@ -41,7 +41,7 @@ def single_performance(commands):
     commands = click.option(
         "-b",
         "--batch-size",
-        default=10,
+        default=None,
         show_default=True,
         type=int,
         envvar="BATCH_SIZE",
@@ -50,7 +50,7 @@ def single_performance(commands):
 
     commands = click.option(
         "--debug-batch-size",
-        default=1,
+        default=None,
         show_default=True,
         type=int,
         envvar="DEBUG_BATCH_SIZE",
@@ -70,7 +70,7 @@ def single_performance(commands):
     commands = click.option(
         "-m",
         "--multicall",
-        default=False,
+        default=None,
         show_default=True,
         type=bool,
         help="if `multicall` is set to True, it will decrease the consume of rpc calls",
@@ -84,7 +84,7 @@ def multi_performance(commands):
     commands = click.option(
         "-pn",
         "--process-numbers",
-        default=1,
+        default=None,
         show_default=True,
         type=int,
         help="The processor numbers to ues.",

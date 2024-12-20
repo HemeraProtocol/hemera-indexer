@@ -63,3 +63,9 @@ def read_config_value(config_file, section, key):
         value = None
 
     return value
+
+
+def check_and_set_default_env(key: str, default_value: str):
+    env_value = os.environ.get(key)
+    if env_value is None:
+        os.environ[key] = default_value

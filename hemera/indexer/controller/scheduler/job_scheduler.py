@@ -23,7 +23,7 @@ from hemera.indexer.jobs.export_blocks_job import ExportBlocksJob
 from hemera.indexer.jobs.source_job.pg_source_job import PGSourceJob
 from hemera.indexer.utils.buffer_service import BufferService
 
-JOB_RETRIES = os.environ.get("JOB_RETRIES", 5)
+JOB_RETRIES = int(os.environ.get("JOB_RETRIES", "5"))
 
 
 def get_tokens_from_db(service):

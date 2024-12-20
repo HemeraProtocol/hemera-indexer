@@ -12,7 +12,7 @@ from hemera.indexer.exporters.base_exporter import BaseExporter, group_by_item_t
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_BLOCKS_PER_FILE = os.environ.get("DEFAULT_BLOCKS_PER_FILE", 1000)
+DEFAULT_BLOCKS_PER_FILE = int(os.environ.get("DEFAULT_BLOCKS_PER_FILE", "1000"))
 
 
 class JSONFileItemExporter(BaseExporter):

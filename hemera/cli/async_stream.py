@@ -39,7 +39,7 @@ from hemera.cli.core.stream_process import stream_process
 @delay_control
 @log_setting
 @pid_file_storage
-def backtest(
+def async_stream(
     provider_uri=None,
     debug_provider_uri=None,
     entity_types=None,
@@ -59,11 +59,11 @@ def backtest(
     end_block=None,
     sync_recorder="file:sync_record",
     retry_from_record=False,
-    block_batch_size=1,
-    batch_size=10,
+    block_batch_size=10,
+    batch_size=50,
     debug_batch_size=1,
     max_workers=5,
-    multicall=False,
+    multicall=True,
     process_numbers=1,
     process_size=None,
     process_time_out=None,
@@ -73,7 +73,15 @@ def backtest(
     log_level="INFO",
     pid_file=None,
 ):
-    os.environ["JOB_RETRIES"] = "1"
+    os.environ["JOB_RETRIES"] = "3"
+
+    # BufferService env
+    os.environ["ASYNC_SUBMIT"] = "true"
+    os.environ["CONCURRENT_SUBMITTERS"] = "5"
+    os.environ["CRASH_INSTANTLY"] = "false"
+
+    # pg performance
+    os.environ["COMMIT_BATCH_SIZE"] = "8000"
 
     stream_process(
         provider_uri,
