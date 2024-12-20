@@ -34,7 +34,8 @@ class ExportErc20TotalSupplyJob(FilterTransactionDataJob):
         )
 
     def _process(self, **kwargs):
-        token_transfers = self._data_buff[ERC20TokenTransfer.type()]
+        erc20_token_transfers = self._data_buff[ERC20TokenTransfer.type()]
+        token_transfers = [tt for tt in erc20_token_transfers if tt.token_address in self.token_address_list]
         call_dict = {}
         for token_transfer in token_transfers:
             token_address = token_transfer.token_address
