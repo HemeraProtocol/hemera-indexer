@@ -39,7 +39,6 @@ def test_l1_to_l2_deposit_eth_on_l1():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -86,7 +85,6 @@ def test_l2_to_l1_deposit_eth_on_l2():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -123,7 +121,6 @@ def test_l1_to_l2_deposit_erc20():
     l2_tnx_hash = '0x7f2e057ff9fe588e822b192636e7dca87982a93666cb5218c8bdae429c283d1b'
     """
     eth_job = JobScheduler(
-        item_exporters=[ConsoleItemExporter()],
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
@@ -162,7 +159,6 @@ def test_l1_to_l2_deposit_erc20():
             lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         max_workers=1,
         config={
@@ -195,7 +191,6 @@ def test_l2_to_l1_withdraw():
     l1_tnx_hash = '0x1013dea84e83985fa2dd7dbf4ff71dced8c98d1e442e47f0ec39ac5fe4b2008a'
     """
     arb_job = JobScheduler(
-        item_exporters=[ConsoleItemExporter()],
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
@@ -227,7 +222,6 @@ def test_l2_to_l1_withdraw():
     arb_job.clear_data_buff()
 
     eth_job = JobScheduler(
-        item_exporters=[ConsoleItemExporter()],
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL, batch=True)
@@ -264,7 +258,6 @@ def test_state_batch_eth():
     # node_created_tnx_hash = '0x3772f60c09379b147a80086f185b9fc3b7151a871fb48fa674e40ffa970b4aa4'
 
     eth_job = JobScheduler(
-        item_exporters=[ConsoleItemExporter()],
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL, batch=True)
@@ -293,7 +286,6 @@ def test_state_batch_eth():
     eth_job.clear_data_buff()
 
     eth_job_1 = JobScheduler(
-        item_exporters=[ConsoleItemExporter()],
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_DEBUG_RPC_URL, batch=True)
@@ -335,7 +327,6 @@ def test_transaction_batch_eth():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,

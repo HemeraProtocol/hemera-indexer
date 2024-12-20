@@ -53,7 +53,6 @@ def test_l1_to_l2_deposit_dodo():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -115,7 +114,6 @@ def test_l1_to_l2_deposit_dodo():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(DODO_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=100,
         debug_batch_size=1,
         max_workers=5,
@@ -154,7 +152,6 @@ def test_l1_to_l2_deposit_usdc():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -199,7 +196,6 @@ def test_l1_to_l2_deposit_kind12():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -243,7 +239,6 @@ def test_l1_to_l2_deposit_gld():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -286,7 +281,6 @@ def test_l1_to_l2_deposit_erc20():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ETHEREUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -322,7 +316,6 @@ def test_l1_to_l2_deposit_erc20():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -357,7 +350,6 @@ def test_l2_to_l1_withdraw():
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(l2_rpc, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(l2_rpc, batch=True)),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -389,7 +381,6 @@ def test_l2_to_l1_withdraw():
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(l1_rpc, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(l1_rpc, batch=True)),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -429,7 +420,6 @@ def test_state_batch_eth():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -463,7 +453,6 @@ def test_state_batch_eth():
         batch_web3_debug_provider=ThreadLocalProxy(
             lambda: get_provider_from_uri(ARBITRUM_TESTNET_PUBLIC_NODE_RPC_URL, batch=True)
         ),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
@@ -500,7 +489,6 @@ def test_transaction_batch_eth():
     job_scheduler = JobScheduler(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(l1_rpc, batch=True)),
         batch_web3_debug_provider=ThreadLocalProxy(lambda: get_provider_from_uri(l1_rpc, batch=True)),
-        item_exporters=[ConsoleItemExporter()],
         batch_size=10,
         debug_batch_size=1,
         max_workers=1,
