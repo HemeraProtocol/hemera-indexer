@@ -299,4 +299,4 @@ def get_exist_pools(db_service):
         raise e
     finally:
         session.close()
-    return history_pools
+    return list(history_pools)
