@@ -34,7 +34,8 @@ class ExportErc20TotalSupplyJob(FilterTransactionDataJob):
         )
 
     def _process(self, **kwargs):
-        token_transfers = self._data_buff[ERC20TokenTransfer.type()]
+        erc20_token_transfers = self._data_buff[ERC20TokenTransfer.type()]
+        token_transfers = [tt for tt in erc20_token_transfers if tt.token_address in self.token_address_list]
         call_dict = {}
         for token_transfer in token_transfers:
             token_address = token_transfer.token_address
@@ -57,17 +58,18 @@ class ExportErc20TotalSupplyJob(FilterTransactionDataJob):
         call_list.sort(key=lambda call: call.block_number)
 
         for call in call_list:
-            total_supply = call.returns.get("totalSupply")
+            if call.returns:
+                total_supply = call.returns.get("totalSupply")
 
-            token_address = call.target.lower()
-            erc_total_supply = Erc20TotalSupply(
-                token_address=token_address,
-                total_supply=total_supply,
-                block_number=call.block_number,
-                block_timestamp=call.user_defined_k,
-            )
+                token_address = call.target.lower()
+                erc_total_supply = Erc20TotalSupply(
+                    token_address=token_address,
+                    total_supply=total_supply,
+                    block_number=call.block_number,
+                    block_timestamp=call.user_defined_k,
+                )
 
-            current_dict[token_address] = Erc20CurrentTotalSupply(**vars(erc_total_supply))
-            records.append(erc_total_supply)
+                current_dict[token_address] = Erc20CurrentTotalSupply(**vars(erc_total_supply))
+                records.append(erc_total_supply)
         self._collect_domains(records)
         self._collect_domains(current_dict.values())

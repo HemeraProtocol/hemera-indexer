@@ -44,6 +44,7 @@ export_staked_transferred_balance_job:
       - "0x8f778806cbea29f0f64ba6a4b7724bcd5eed543e"
     treehouse:
       - "0x5e4acca7a9989007cd74ae4ed1b096c000779dcc"
+    # maybe can be removed
     dolomite:
       - "0xe6ef4f0b2455bab92ce7cc78e35324ab58917de8"
     bed_rock:
@@ -57,10 +58,10 @@ export_staked_transferred_balance_job:
       - "0xbadc72654ace6ed707fd6833037586f3dc867e0b"
     woofi:
       - "0x82fde5086784e348aed03eb7b19ded97652db7a8"
-    # maybe can be removed
-    init_capital:
-      - "0x233493e9dc68e548ac27e4933a600a3a4682c0c3"
-      - "0x7fa704e73262e5a9f48382087f69c6aba0408eaa"
+    circuit:
+      - "0x5b27576159d201697feb73e7cbe5dafcfdc9b0dc"
+
+
 
   token_address:
       # fbtc
@@ -77,6 +78,8 @@ export_staked_transferred_balance_job:
     - "0x1d40bafc49c37cda49f2a5427e2fb95e1e3fcf20"
       # wecmeth, for woofi
     - "0x872b6ff825da431c941d12630754036278ad7049"
+      # circuit
+    - "0x59e641de941cc794cdf6152eda0ef51210373d95"
 
 
 teahouse_job:
@@ -111,3 +114,51 @@ export_tokens_and_transfers_job:
       # teahouse
     - "0xfc3861c04c5ce0883d9f79308e5a65402141df85"
     - "0x4ddd37f662871fb49ebbc88a58897961e2c12a60"
+
+      # thetanuts
+    - "0xdee7cb1d08ec5e35c4792856f86dd0584db29cfe"
+      # hour_glass
+    - "0x326b1129a3ec2ad5c4016d2bb4b912687890ae6c"
+      # Mitosis
+    - "0x6ff000453a9c14f7d3bf381925c8cde565dbce55"
+      #circuit
+    - "0x59e641de941cc794cdf6152eda0ef51210373d95"
+      # lendle/aurelius
+    - "0x067ddc903148968d49abc3144fd7619820f16949"
+    - "0x334a542b51212b8bcd6f96efd718d55a9b7d1c35"
+    - "0xf91798762cc61971df6df0e15f0904e174387477"
+    - "0xfdd2ebc184b4ff6df14562715452e970c82fe49a"
+    - "0xaa9c890ca3e6b163487de3c11847b50e48230b45"
+    - "0x68a1b2756b41ce837d73a801e18a06e13eac50e1"
+    - "0x76f727f55074931221fc88a188b7915084011dcf"
+    - "0x45ccce9bc8e883ef7805ea73b88d5d528c7cec55"
+    - "0xd739fb7a3b652306d00f92b20439afc637650254"
+    - "0xcbe019c9c44954d388602a99a45a1d7da61321cf"
+    - "0x491f8fbc6b9a5db31c959a702ab6a0dcbea73a48"
+    - "0xc799fe29b67599010a55ec14a8031af2a2521470"
+    - "0x787cb0d29194f0faca73884c383cf4d2501bb874"
+    - "0x833b5c0379a597351c6cd3efe246534bf3ae5f9f"
+    - "0x893da3225a2fcf13cca674d1a1bb5a2ea1f3dd14"
+    - "0x880a809ca9dc0a35f5015d31f1f2273a489695eb"
+    - "0xd632fd1d737c6db356d747d09642bef8ae453f4d"
+    - "0x00dfd5f920ccf08eb0581d605bab413d289c21b4"
+    - "0x4c3c0650ddcb767d71c91fa89ee9e5a2cd335834"
+    - "0x5df9a4be4f9d717b2bfece9ec350dcf4cbcb91d8"
+    - "0xbb406187c01cc1c9eaf9d4b5c924b7fa37aecefd"
+    - "0x7bdb0095429f8eff1efb718aabc912b2489ba5b3"
+    - "0x874712c653aaaa7cfb201317f46e00238c2649bb"
+    - "0x0aa17f21dc8977cdf0141e35543f094fb9edaece"
+    - "0xac3c14071c80819113df501e1ab767be910d5e5a"
+    - "0x44cccbbd7a5a9e2202076ea80c185da0058f1715"
+    - "0x683696523512636b46a826a7e3d1b0658e8e2e1c"
+    - "0xdef3542bb1b2969c1966dd91ebc504f4b37462fe"
+    - "0x2cfa1e69c8a8083aa52cfcf22d8caff7521e1e7e"
+    - "0x08c830f79917205ff1605325fcfbb3efc0c16cb5"
+    - "0x2d55f5558aea4c25fcc1ff78b10265755aff3856"
+    - "0xe71cbaaa6b093fce66211e6f218780685077d8b5"
+    - "0xc3b515bca486520483ef182c3128f72ce270c069"
+    - "0x42f9f9202d5f4412148662cf3bc68d704c8e354f"
+    - "0x0e927aa52a38783c1fd5dfa5c8873cbdbd01d2ca"
+    - "0x18d3e4f9951fedcddd806538857ebed2f5f423b7"
+    - "0xf36afb467d1f05541d998bbbcd5f7167d67bd8fc"
+    - "0xd2ea6612f6c7c11626f7d5d801d08b53bce52511"

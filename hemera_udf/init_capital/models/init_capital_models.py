@@ -2,6 +2,14 @@ from sqlalchemy import Column, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, INTEGER, JSONB, NUMERIC, SMALLINT, TIMESTAMP
 
 from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.init_capital import (
+    InitCapitalPoolHistoryDomain,
+    InitCapitalPoolUpdateDomain,
+    InitCapitalPositionCreateDomain,
+    InitCapitalPositionHistoryDomain,
+    InitCapitalPositionUpdateDomain,
+    InitCapitalRecordDomain,
+)
 
 
 class InitCapitalPositionHistory(HemeraModel):
@@ -25,7 +33,7 @@ class InitCapitalPositionHistory(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "InitCapitalPositionHistoryDomain",
+                "domain": InitCapitalPositionHistoryDomain,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -59,13 +67,13 @@ class InitCapitalPositionCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "InitCapitalPositionCreateDomain",
+                "domain": InitCapitalPositionCreateDomain,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number >= init_capital_position_current.block_number",
                 "converter": general_converter,
             },
             {
-                "domain": "InitCapitalPositionUpdateDomain",
+                "domain": InitCapitalPositionUpdateDomain,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number >= init_capital_position_current.block_number",
                 "converter": general_converter,
@@ -97,7 +105,7 @@ class InitCapitalRecords(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "InitCapitalRecordDomain",
+                "domain": InitCapitalRecordDomain,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -138,7 +146,7 @@ class InitCapitalPoolsHistory(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "InitCapitalPoolHistoryDomain",
+                "domain": InitCapitalPoolHistoryDomain,
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
@@ -166,7 +174,7 @@ class InitCapitalPoolCurrent(HemeraModel):
     def model_domain_mapping():
         return [
             {
-                "domain": "InitCapitalPoolUpdateDomain",
+                "domain": InitCapitalPoolUpdateDomain,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number >= init_capital_pool_current.block_number OR init_capital_pool_current.block_number IS NULL",
                 "converter": general_converter,
