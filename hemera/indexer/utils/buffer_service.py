@@ -178,6 +178,9 @@ class BufferService:
             else:
                 self.buffer[key] = [value]
 
+    def __contains__(self, key: str) -> bool:
+        return key in self.buffer.keys()
+
     def extend(self, key: str, values: List[Any]):
         with self.buffer_lock[key]:
             self.buffer[key].extend(values)
@@ -252,6 +255,9 @@ class BufferService:
         flush_items = []
         flush_type = set()
         with self.buffer_lock:
+            if len(self.buffer["block"]) == 0:
+                return True
+
             self.buffer["block"].sort(key=lambda x: x.number)
             block_range = (self.buffer["block"][0].number, self.buffer["block"][-1].number)
 

@@ -194,7 +194,7 @@ class ExportTokensAndTransfersJob(FilterTransactionDataJob):
 
     def _process(self, **kwargs):
         for token_transfer_type in self.output_transfer_types:
-            if token_transfer_type in self._data_buff:
+            if token_transfer_type.type() in self._data_buff:
                 self._data_buff[token_transfer_type.type()].sort(
                     key=lambda x: (x.block_number, x.transaction_hash, x.log_index)
                 )
