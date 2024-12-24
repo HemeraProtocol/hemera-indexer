@@ -17,7 +17,9 @@ from hemera.indexer.controller.scheduler.reorg_scheduler import ReorgScheduler
 from hemera.indexer.exporters.postgres_item_exporter import PostgresItemExporter
 from hemera.indexer.utils.exception_recorder import ExceptionRecorder
 from hemera.indexer.utils.logging_utils import configure_logging, configure_signals
+from hemera.indexer.utils.parameter_utils import default_if_none
 from hemera.indexer.utils.provider import get_provider_from_uri
+from hemera.indexer.utils.reorg import check_reorg
 from hemera.indexer.utils.rpc_utils import pick_random_provider_uri
 from hemera.indexer.utils.thread_local_proxy import ThreadLocalProxy
 
@@ -47,21 +49,33 @@ exception_recorder = ExceptionRecorder()
     envvar="RANGES",
     help="Specify the range limit for data fixing.",
 )
+@click.option(
+    "--check-ranges",
+    show_default=True,
+    type=int,
+    envvar="CHECK_RANGES",
+    help="Specify the range for block continuous checking.",
+)
 def reorg(
-    provider_uri=None,
-    debug_provider_uri=None,
-    config_file=None,
-    postgres_url=None,
-    batch_size=None,
-    debug_batch_size=None,
-    max_workers=None,
-    multicall=True,
-    cache=None,
-    log_file=None,
-    log_level="INFO",
-    block_number=None,
-    ranges=None,
+    provider_uri,
+    debug_provider_uri,
+    config_file,
+    postgres_url,
+    batch_size,
+    debug_batch_size,
+    max_workers,
+    multicall,
+    cache,
+    log_file,
+    log_level,
+    block_number,
+    ranges,
+    check_ranges,
 ):
+    batch_size = default_if_none(batch_size, 1)
+    debug_batch_size = default_if_none(debug_batch_size, 1)
+    multicall = default_if_none(multicall, True)
+
     print_logo()
     import_submodules("hemera_udf")
     configure_logging(log_level=log_level, log_file=log_file)
@@ -116,23 +130,30 @@ def reorg(
         batch_web3_provider=ThreadLocalProxy(lambda: get_provider_from_uri(provider_uri, batch=False)),
         job_scheduler=job_scheduler,
         ranges=ranges,
-        config=config,
+        service=service,
     )
 
-    job = None
-    while True:
-        if job:
-            controller.action(
-                job_id=job.job_id,
-                block_number=job.last_fixed_block_number - 1,
-                remains=job.remain_process,
-            )
+    if not block_number:
+        current_block = controller.get_current_block_number()
+        if check_ranges:
+            check_begin = current_block - check_ranges
+            check_reorg(service, check_begin)
         else:
-            controller.action(block_number=block_number)
+            check_reorg(service)
 
-        job = controller.wake_up_next_job()
-        if job:
-            logging.info(f"Waking up uncompleted job: {job.job_id}.")
+    while True:
+        if block_number:
+            controller.action(block_number=block_number)
         else:
-            logging.info("No more uncompleted jobs to wake-up, reorg process will terminate.")
-            break
+            job = controller.wake_up_next_job()
+            if job:
+                logging.info(f"Waking up uncompleted job: {job.job_id}.")
+
+                controller.action(
+                    job_id=job.job_id,
+                    block_number=job.last_fixed_block_number - 1,
+                    remains=job.remain_process,
+                )
+            else:
+                logging.info("No more uncompleted jobs to wake-up, reorg process will terminate.")
+                break
