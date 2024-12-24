@@ -256,6 +256,7 @@ class BufferService:
         flush_type = set()
         with self.buffer_lock:
             if len(self.buffer["block"]) == 0:
+                self.concurrent_submitters.release()
                 return True
 
             self.buffer["block"].sort(key=lambda x: x.number)
@@ -267,14 +268,14 @@ class BufferService:
                     flush_items.extend(self.buffer[key])
             if len(flush_keys):
                 self.logger.info(f"Flush domains: {','.join(flush_keys)} between block range: {block_range}")
-        future = self.submit_export_pool.submit(self.export_items, flush_items)
-        future.add_done_callback(self._handle_export_completion)
 
         with self.futures_lock:
+            future = self.submit_export_pool.submit(self.export_items, flush_items)
             self.futures_output[future] = flush_type
             self.pending_futures[future] = block_range
             if block_range not in self.output_in_progress:
                 self.output_in_progress[block_range] = set(self.required_output_types)
+            future.add_done_callback(self._handle_export_completion)
 
         if not ASYNC_SUBMIT:
             try:
@@ -310,3 +311,6 @@ class BufferService:
         self._handle_shutdown(None, None)
         self.submit_export_pool.shutdown(wait=True)
         self.logger.info("Buffer service shut down completed")
+
+    def is_shutdown(self):
+        return self._shutdown_event.is_set()

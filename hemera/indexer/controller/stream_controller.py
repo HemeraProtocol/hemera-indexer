@@ -40,6 +40,8 @@ class StreamController(BaseController):
         self.retry_from_record = retry_from_record
         self.delay = delay
 
+        self.buffer_service = job_scheduler.buffer_service
+
         self.process_numbers = process_numbers
         self.process_size = process_size
         self.process_time_out = process_time_out
@@ -106,6 +108,9 @@ class StreamController(BaseController):
                         self.pool.map(func=self._do_stream, iterable_of_args=splits, task_timeout=self.process_time_out)
 
                     last_synced_block = target_block
+                    if self.buffer_service.is_shutdown():
+                        logger.info("By some reason, BufferService was shutdown, Indexer will exit immediately.")
+                        break
 
                 if synced_blocks <= 0:
                     logger.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
