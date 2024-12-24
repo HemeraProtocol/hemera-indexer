@@ -1,31 +1,29 @@
 import click
 
 
-def index_range(commands):
-    commands = click.option(
+def index_range(options):
+    options = click.option(
         "-s",
         "--start-block",
-        default=None,
         show_default=True,
         type=int,
         help="Start block",
         envvar="START_BLOCK",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "-e",
         "--end-block",
-        default=None,
         show_default=True,
         type=int,
         help="End block",
         envvar="END_BLOCK",
-    )(commands)
-    return commands
+    )(options)
+    return options
 
 
-def index_record(commands):
-    commands = click.option(
+def index_record(options):
+    options = click.option(
         "--sync-recorder",
         default="file:sync_record",
         show_default=True,
@@ -34,16 +32,15 @@ def index_record(commands):
         help="How to store the sync record data."
         'e.g pg:base. means sync record data will store in pg as "base" be key'
         'or file:base. means sync record data will store in file as "base" be file name',
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "--retry-from-record",
-        default=None,
         show_default=True,
         type=bool,
         envvar="RETRY_FROM_RECORD",
         help="With the default parameter, the program will always run from the -s parameter, "
         "and when set to True, it will run from the record point between -s and -e",
-    )(commands)
+    )(options)
 
-    return commands
+    return options

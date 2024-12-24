@@ -1,10 +1,9 @@
 import click
 
 
-def source_control(commands):
-    commands = click.option(
+def source_control(options):
+    options = click.option(
         "--source-path",
-        default=None,
         show_default=True,
         required=False,
         type=str,
@@ -13,9 +12,9 @@ def source_control(commands):
         "Load from postgres e.g. postgresql://postgres:admin@127.0.0.1:5432/ethereum"
         "or local csv file e.g. csvfile://your-file-direction; "
         "or local json file e.g. jsonfile://your-file-direction; ",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "--source-types",
         default="block,transaction,log",
         show_default=True,
@@ -25,6 +24,6 @@ def source_control(commands):
         "Examples include: block, transaction, log, "
         "token, address_token_balance, erc20_token_transfer, erc721_token_transfer, erc1155_token_transfer, "
         "trace, contract, coin_balance.",
-    )(commands)
+    )(options)
 
-    return commands
+    return options

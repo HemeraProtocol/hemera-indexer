@@ -1,63 +1,58 @@
 import click
 
 
-def delay_control(commands):
-    commands = click.option(
+def delay_control(options):
+    options = click.option(
         "--period-seconds",
-        default=None,
         show_default=True,
         type=float,
         envvar="PERIOD_SECONDS",
         help="How many seconds to sleep between syncs",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "--delay",
-        default=None,
         show_default=True,
         type=int,
         envvar="DELAY",
         help="The limit number of blocks which delays from the network current block number.",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
 
 
-def block_step(commands):
-    commands = click.option(
+def block_step(options):
+    options = click.option(
         "-B",
         "--block-batch-size",
-        default=None,
         show_default=True,
         type=int,
         envvar="BLOCK_BATCH_SIZE",
         help="How many blocks to batch in single sync round",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
 
 
-def single_performance(commands):
-    commands = click.option(
+def single_performance(options):
+    options = click.option(
         "-b",
         "--batch-size",
-        default=None,
         show_default=True,
         type=int,
         envvar="BATCH_SIZE",
         help="The number of non-debug RPC requests to batch in a single request",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "--debug-batch-size",
-        default=None,
         show_default=True,
         type=int,
         envvar="DEBUG_BATCH_SIZE",
         help="The number of debug RPC requests to batch in a single request",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "-w",
         "--max-workers",
         default=5,
@@ -65,50 +60,46 @@ def single_performance(commands):
         type=int,
         help="The number of workers during a request to rpc.",
         envvar="MAX_WORKERS",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "-m",
         "--multicall",
-        default=None,
         show_default=True,
         type=bool,
         help="if `multicall` is set to True, it will decrease the consume of rpc calls",
         envvar="MULTI_CALL_ENABLE",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
 
 
-def multi_performance(commands):
-    commands = click.option(
+def multi_performance(options):
+    options = click.option(
         "-pn",
         "--process-numbers",
-        default=None,
         show_default=True,
         type=int,
         help="The processor numbers to ues.",
         envvar="PROCESS_NUMBERS",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "-ps",
         "--process-size",
-        default=None,
         show_default=True,
         type=int,
         help="The data size for every process to handle. Default to {B}/{pn} ,see above",
         envvar="PROCESS_SIZE",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "-pto",
         "--process-time-out",
-        default=None,
         show_default=True,
         type=int,
         help="Timeout for every processor, default to {ps} * 300 , see above",
         envvar="PROCESS_TIME_OUT",
-    )(commands)
+    )(options)
 
-    return commands
+    return options

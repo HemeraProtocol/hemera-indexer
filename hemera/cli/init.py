@@ -3,7 +3,7 @@ import os.path
 
 import click
 
-from hemera.cli.commands.storage import postgres, postgres_initial
+from hemera.cli.options.storage import postgres, postgres_initial
 from hemera.common.logo import print_logo
 from hemera.common.services.postgresql_service import PostgreSQLService
 from hemera.common.utils.file_utils import get_project_root

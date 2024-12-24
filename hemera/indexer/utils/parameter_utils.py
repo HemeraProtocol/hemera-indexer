@@ -9,6 +9,10 @@ from hemera.indexer.domains import Domain
 from hemera.indexer.exporters.item_exporter import ItemExporterType, check_exporter_in_chosen
 
 
+def default_if_none(value, default):
+    return default if value is None else value
+
+
 def extract_path_from_parameter(cli_path: str) -> str:
     substrings_to_remove = ["csvfile://", "jsonfile://"]
     pattern = "|".join(re.escape(sub) for sub in substrings_to_remove)

@@ -4,7 +4,7 @@ from typing import List
 import click
 from sqlalchemy import text
 
-from hemera.cli.commands.storage import postgres, postgres_initial
+from hemera.cli.options.storage import postgres, postgres_initial
 from hemera.common.logo import print_logo
 from hemera.common.models import HemeraModel
 from hemera.common.services.postgresql_service import PostgreSQLService

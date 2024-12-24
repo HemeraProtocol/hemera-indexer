@@ -1,23 +1,23 @@
 import click
 
 
-def log_setting(commands):
-    commands = click.option(
+def log_setting(options):
+    options = click.option(
         "--log-file",
         default=None,
         show_default=True,
         type=str,
         envvar="LOG_FILE",
         help="Log file",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "--log-level",
         default="INFO",
         show_default=True,
         type=str,
         envvar="LOG_LEVEL",
         help="Set the logging output level.",
-    )(commands)
+    )(options)
 
-    return commands
+    return options

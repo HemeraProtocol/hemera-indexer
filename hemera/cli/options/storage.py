@@ -1,8 +1,8 @@
 import click
 
 
-def cache_target(commands):
-    commands = click.option(
+def cache_target(options):
+    options = click.option(
         "--cache",
         default="memory",
         show_default=True,
@@ -11,13 +11,13 @@ def cache_target(commands):
         help="How to store the cache data."
         "e.g redis. means cache data will store in redis, redis://localhost:6379"
         "or memory. means cache data will store in memory, memory",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
 
 
-def sink_target(commands):
-    commands = click.option(
+def sink_target(options):
+    options = click.option(
         "-o",
         "--output",
         type=str,
@@ -28,26 +28,26 @@ def sink_target(commands):
         "or local json file e.g. jsonfile://your-file-path; "
         "or local csv file e.g. csvfile://your-file-path; "
         "or both. e.g. console,jsonfile://your-file-path,csvfile://your-file-path",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
 
 
-def file_size(commands):
-    commands = click.option(
+def file_size(options):
+    options = click.option(
         "--blocks-per-file",
         default=1000,
         show_default=True,
         type=int,
         envvar="BLOCKS_PER_FILE",
         help="How many blocks data was written to each file",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
 
 
-def postgres(commands):
-    commands = click.option(
+def postgres(options):
+    options = click.option(
         "-pg",
         "--postgres-url",
         type=str,
@@ -55,13 +55,13 @@ def postgres(commands):
         envvar="POSTGRES_URL",
         help="The required postgres connection url."
         "e.g. postgresql+psycopg2://postgres:admin@127.0.0.1:5432/ethereum",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
 
 
-def postgres_initial(commands):
-    commands = click.option(
+def postgres_initial(options):
+    options = click.option(
         "-v",
         "--db-version",
         default="head",
@@ -72,9 +72,9 @@ def postgres_initial(commands):
         "specify a version. "
         "e.g. head, indicates the latest version."
         "or base, indicates the empty database without any table.",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "-i",
         "--init-schema",
         is_flag=True,
@@ -82,19 +82,18 @@ def postgres_initial(commands):
         show_default=True,
         envvar="INIT_SCHEMA",
         help="Whether to automatically run database migration scripts to update the database to the specify version.",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
 
 
-def pid_file_storage(commands):
-    commands = click.option(
+def pid_file_storage(options):
+    options = click.option(
         "--pid-file",
-        default=None,
         show_default=True,
         type=str,
         envvar="PID_FILE",
         help="Pid file",
-    )(commands)
+    )(options)
 
-    return commands
+    return options

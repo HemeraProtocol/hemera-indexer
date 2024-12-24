@@ -1,8 +1,8 @@
 import click
 
 
-def rpc_provider(commands):
-    commands = click.option(
+def rpc_provider(options):
+    options = click.option(
         "-p",
         "--provider-uri",
         default="https://ethereum-rpc.publicnode.com",
@@ -11,9 +11,9 @@ def rpc_provider(commands):
         envvar="PROVIDER_URI",
         help="The URI of the web3 provider e.g. "
         "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
-    )(commands)
+    )(options)
 
-    commands = click.option(
+    options = click.option(
         "-d",
         "--debug-provider-uri",
         default="https://ethereum-rpc.publicnode.com",
@@ -22,6 +22,6 @@ def rpc_provider(commands):
         envvar="DEBUG_PROVIDER_URI",
         help="The URI of the web3 debug provider e.g. "
         "file://$HOME/Library/Ethereum/geth.ipc or https://ethereum-rpc.publicnode.com",
-    )(commands)
+    )(options)
 
-    return commands
+    return options
