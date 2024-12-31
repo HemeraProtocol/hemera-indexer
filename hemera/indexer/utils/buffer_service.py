@@ -275,7 +275,8 @@ class BufferService:
             self.pending_futures[future] = block_range
             if block_range not in self.output_in_progress:
                 self.output_in_progress[block_range] = set(self.required_output_types)
-            future.add_done_callback(self._handle_export_completion)
+
+        future.add_done_callback(self._handle_export_completion)
 
         if not ASYNC_SUBMIT:
             try:
