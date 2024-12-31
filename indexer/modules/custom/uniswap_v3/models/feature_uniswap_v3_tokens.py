@@ -16,7 +16,7 @@ class UniswapV3Tokens(HemeraModel):
     fee = Column(NUMERIC(100))
 
     block_number = Column(BIGINT)
-    block_timestamp = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())

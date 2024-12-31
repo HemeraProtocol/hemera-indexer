@@ -251,7 +251,7 @@ def get_uniswap_v3_liquidity_value(address) -> Optional[Dict[str, Any]]:
                 "pool_address": pool_address,
                 "position_token_address": position_token_address,
                 "token_id": str(token_id),
-                "block_timestamp": datetime.fromtimestamp(holding.block_timestamp).isoformat("T", "seconds"),
+                "block_timestamp": holding.block_timestamp.isoformat("T", "seconds"),
                 "token0": {
                     "token0_symbol": token0_info.symbol,
                     "token0_icon_url": token0_info.icon_url,
@@ -370,7 +370,7 @@ def get_uniswap_v3_liquidity_events(address) -> Optional[Dict[str, Any]]:
                 "pool_address": pool_address,
                 "position_token_address": position_token_address,
                 "token_id": str(token_id),
-                "block_timestamp": datetime.fromtimestamp(holding.block_timestamp).isoformat("T", "seconds"),
+                "block_timestamp": holding.block_timestamp.isoformat("T", "seconds"),
                 "token0": {
                     "token0_symbol": token0_info.symbol,
                     "token0_icon_url": token0_info.icon_url,
@@ -490,7 +490,7 @@ class UniswapV3WalletLiquidityHolding(Resource):
                     "pool_address": pool_address,
                     "position_token_address": position_token_address,
                     "token_id": str(token_id),
-                    "block_timestamp": datetime.fromtimestamp(holding.block_timestamp).isoformat("T", "seconds"),
+                    "block_timestamp": holding.block_timestamp.isoformat("T", "seconds"),
                     "token0": {
                         "token0_symbol": token0_info.symbol,
                         "token0_icon_url": token0_info.icon_url,
