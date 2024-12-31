@@ -47,6 +47,7 @@ from api.app.db_service.transactions import (
     get_transactions_cnt_by_condition,
 )
 from api.app.db_service.wallet_addresses import get_address_display_mapping, get_ens_mapping
+from api.app.explorer import explorer_namespace
 from api.app.utils.fill_info import (
     fill_address_display_to_transactions,
     fill_is_contract_to_transactions,
@@ -69,7 +70,6 @@ from indexer.modules.custom.stats.models.daily_transactions_stats import DailyTr
 from sqlalchemy.sql import and_, func, nullslast, or_
 from sqlalchemy.sql.sqltypes import Numeric
 
-from api.app.explorer import explorer_namespace
 from hemera.api.app.utils.format_utils import format_coin_value_with_unit, format_dollar_value
 from hemera.api.app.utils.parse_utils import parse_log_with_transaction_input_list, parse_transactions
 from hemera.api.app.utils.token_utils import get_token_price

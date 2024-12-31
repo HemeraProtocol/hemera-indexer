@@ -6,10 +6,11 @@ from alembic.operations import ops
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.sql.schema import SchemaItem
 
-from hemera.common.models import db, import_all_models
+from hemera.common.models import db
+from hemera.common.utils.module_loading import import_submodules
 
 # Make sure everything is imported so that alembic can find it all
-# import_all_models()
+import_submodules("hemera")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
