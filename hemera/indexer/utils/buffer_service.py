@@ -181,6 +181,10 @@ class BufferService:
     def __contains__(self, key: str) -> bool:
         return key in self.buffer.keys()
 
+    def pop(self, key: str, default: Any = None) -> Any:
+        with self.buffer_lock[key]:
+            return self.buffer.pop(key, default)
+
     def extend(self, key: str, values: List[Any]):
         with self.buffer_lock[key]:
             self.buffer[key].extend(values)
@@ -275,7 +279,8 @@ class BufferService:
             self.pending_futures[future] = block_range
             if block_range not in self.output_in_progress:
                 self.output_in_progress[block_range] = set(self.required_output_types)
-            future.add_done_callback(self._handle_export_completion)
+
+        future.add_done_callback(self._handle_export_completion)
 
         if not ASYNC_SUBMIT:
             try:
