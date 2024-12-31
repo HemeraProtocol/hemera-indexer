@@ -50,7 +50,7 @@ app.config.update(
 db.init_app(app)
 
 # Add API Namespace
-from api.app.api import api
+from hemera.api.app.api import api
 
 api.init_app(app)
 
