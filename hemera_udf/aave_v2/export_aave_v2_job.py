@@ -384,10 +384,7 @@ class ExportAaveV2Job(FilterTransactionDataJob):
                     )
                 )
             elif a_record.type() == AaveV2TransferD.type():
-                if (
-                    a_record.a_token in self.a_token_reserve_dic
-                    or a_record.a_token in self.vary_debt_reserve_dic
-                ):
+                if a_record.a_token in self.a_token_reserve_dic or a_record.a_token in self.vary_debt_reserve_dic:
                     a_token_address = a_record.a_token
                     eth_call_lis.append(
                         Call(
