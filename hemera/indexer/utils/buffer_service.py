@@ -181,6 +181,10 @@ class BufferService:
     def __contains__(self, key: str) -> bool:
         return key in self.buffer.keys()
 
+    def pop(self, key: str, default: Any = None) -> Any:
+        with self.buffer_lock[key]:
+            return self.buffer.pop(key, default)
+
     def extend(self, key: str, values: List[Any]):
         with self.buffer_lock[key]:
             self.buffer[key].extend(values)
