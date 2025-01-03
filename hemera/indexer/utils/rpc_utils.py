@@ -10,11 +10,15 @@ def pick_random_provider_uri(provider_uri):
 
 
 def rpc_response_batch_to_results(response):
+    if isinstance(response, list) == False:
+        response = [response]
     for response_item in response:
         yield rpc_response_to_result(response_item)
 
 
 def rpc_response_to_result(response):
+    if isinstance(response, dict) == False:
+        return None
     result = response.get("result")
     if result is None:
         error_message = "result is None in response {}.".format(response)
