@@ -2,7 +2,7 @@ from sqlalchemy import Column, Computed, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSONB, TIMESTAMP, VARCHAR
 
 from hemera.common.models import HemeraModel, general_converter
-from hemera.indexer.domains.contract import Contract
+from hemera.indexer.domains.contract import Contract, ContractFromTransaction
 
 
 class Contracts(HemeraModel):
@@ -48,5 +48,11 @@ class Contracts(HemeraModel):
                 "conflict_do_update": False,
                 "update_strategy": None,
                 "converter": general_converter,
-            }
+            },
+            {
+                "domain": ContractFromTransaction,
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]
