@@ -104,6 +104,9 @@ def decode_response_error(error):
     if "revert" in message:
         return None
 
+    if "EVM" in message:
+        return None
+
     if (
         message == "execution reverted"
         or message == "out of gas"
