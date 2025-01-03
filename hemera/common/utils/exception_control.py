@@ -101,6 +101,8 @@ def decode_response_error(error):
         return None
     if "InvalidJump" in message:
         return None
+    if "revert" in message:
+        return None
 
     if (
         message == "execution reverted"
