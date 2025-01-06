@@ -1,4 +1,8 @@
 chain_id: 1
-demo_job:
-    contract_address:
-     - "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"
+degen_tracker_job:
+    tracked_addresses:
+        - "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d"  # Example degen address
+    tracked_tokens:
+        - "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  # WETH
+        - "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599"  # WBTC
+        - "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"  # USDC
