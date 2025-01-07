@@ -70,9 +70,6 @@ class FileSyncRecorder(BaseRecorder):
 
         write_to_file(failure_file, json.dumps(content) + "\n", "a+")
 
-    def handle_success(self, last_block_number):
-        pass
-
 
 class PGSyncRecorder(BaseRecorder):
 
