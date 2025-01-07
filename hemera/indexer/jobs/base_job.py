@@ -151,6 +151,9 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def run(self, **kwargs):
         try:
+            start_block = kwargs["start_block"]
+            end_block = kwargs["end_block"]
+
             self._start(**kwargs)
 
             if self.able_to_reorg and self._reorg:
@@ -172,7 +175,10 @@ class BaseJob(metaclass=BaseJobMeta):
                     type(self._data_buff) is BufferService
                     and not self._data_buff.is_shutdown()
                     and not self._data_buff.check_and_flush(
-                        job_name=self.job_name, output_types=[output.type() for output in self.output_types]
+                        start_block=start_block,
+                        end_block=end_block,
+                        job_name=self.job_name,
+                        output_types=[output.type() for output in self.output_types],
                     )
                 ):
                     raise RetriableError(f"Job {self.job_name} export error.")
