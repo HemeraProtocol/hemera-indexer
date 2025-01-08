@@ -22,6 +22,7 @@ def get_version():
 def load_environ():
     # Job control
     check_and_set_default_env("JOB_RETRIES", "5")
+    check_and_set_default_env("PGSOURCE_ACCURACY", "false")
 
     # Postgres commit control
     check_and_set_default_env("COMMIT_BATCH_SIZE", "1000")

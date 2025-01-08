@@ -1,5 +1,8 @@
 chain_id: 8453
 
+export_transactions_and_logs_job:
+  use_receipt_from_blocks_rpc: True
+
 uniswap_v3_job:
   # empty means no filter. only work in price job
   pool_address:
@@ -26,6 +29,10 @@ export_tokens_and_transfers_job:
     - "0x03a520b32c04bf3beef7beb72e919cf822ed34f1"
     - "0x46a15b0b27311cedf172ab29e4f4766fbe7f4364"
     - "0x827922686190790b37229fd06084350e74485b72"
+    - '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+    - '0x50c5725949a6f0c72e6c4a641f24049a917db0cb'
+    - '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2'
+    - '0x4200000000000000000000000000000000000006'
 
 
 export_meme_token_created_job:
@@ -43,3 +50,4 @@ export_block_token_price_job:
   '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': 'DAI'
   '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2': 'USDT'
   '0x4200000000000000000000000000000000000006': 'ETH'
+

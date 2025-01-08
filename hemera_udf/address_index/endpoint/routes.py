@@ -16,8 +16,11 @@ from hemera_udf.address_index.utils.helpers import (
     get_address_assets,
     get_address_base_info,
     get_address_developer_info,
+    get_all_udf_dashboards,
+    get_all_udf_dashboards_data,
     get_contract_deployed_events,
     get_contract_deployer_profile,
+    get_daily_active_address,
     get_wallet_address_volumes,
 )
 from hemera_udf.address_index.utils.score import calculate_aci_score
@@ -127,3 +130,25 @@ class ACIVolumes(Resource):
     @cache.cached(timeout=360, query_string=True)
     def get(self, address):
         address_bytes = bytes.fromhex(address[2:])
+
+
+@address_profile_namespace.route("/v1/aci/udf_dashboards")
+class UDFDashboards(Resource):
+    @cache.cached(timeout=360, query_string=True)
+    def get(self):
+        return get_all_udf_dashboards()
+
+
+@address_profile_namespace.route("/v1/aci/udf_dashboards_data")
+class UDFDashboards(Resource):
+    @cache.cached(timeout=360, query_string=True)
+    def get(self):
+        return get_all_udf_dashboards_data()
+
+
+@address_profile_namespace.route("/v1/aci/daily_active_address")
+class DailyAddress(Resource):
+    @cache.cached(timeout=360, query_string=True)
+    def get(self):
+        time_range = flask.request.args.get("time_range", "7d")
+        return get_daily_active_address(time_range)

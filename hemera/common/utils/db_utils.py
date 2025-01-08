@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import List, Type
 
@@ -80,7 +80,7 @@ def table_to_dataclass(row_instance, cls):
 
 def convert_value(value):
     if isinstance(value, datetime):
-        return int(round(value.timestamp()))
+        return int(round(value.replace(tzinfo=timezone.utc).timestamp()))
     elif isinstance(value, Decimal):
         return float(value)
     elif isinstance(value, bytes):

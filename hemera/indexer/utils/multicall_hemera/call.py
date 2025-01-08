@@ -24,7 +24,8 @@ class Call:
         gas_limit: Optional[int] = None,
         user_defined_k: Optional[Any] = None,
     ) -> None:
-        self.target = to_checksum_address(target)
+        # self.target = to_checksum_address(target)
+        self.target = target
         self.block_number = block_number
         self.gas_limit = gas_limit
 

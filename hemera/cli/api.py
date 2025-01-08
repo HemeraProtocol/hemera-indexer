@@ -8,4 +8,4 @@ def api():
     print_logo()
     from hemera.api.app.main import app
 
-    app.run("0.0.0.0", 8082, threaded=True, debug=True)
+    app.run("0.0.0.0", 8082, threaded=True, debug=True, use_reloader=False)

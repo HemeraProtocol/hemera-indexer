@@ -61,3 +61,20 @@ def split_to_batches(start_incl, end_incl, batch_size):
     for batch_start in range(start_incl, end_incl + 1, batch_size):
         batch_end = min(batch_start + batch_size - 1, end_incl)
         yield batch_start, batch_end
+
+
+def merge_dataclasses(self, data_class, attributes):
+    """sort dataclass by block_number, then keep the newest data"""
+    if data_class.type() not in self._data_buff:
+        return
+    tmps = self._data_buff.pop(data_class.type())
+    tmps.sort(key=lambda x: x.block_number, reverse=True)
+    lis = []
+    unique_k_set = set()
+    for li in tmps:
+        k = tuple([getattr(li, at) for at in attributes])
+        if k not in unique_k_set:
+            unique_k_set.add(k)
+            lis.append(li)
+    if len(lis) > 0:
+        self._collect_items(data_class.type(), lis)

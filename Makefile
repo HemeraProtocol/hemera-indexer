@@ -76,7 +76,7 @@ development:
 	fi; \
 	if ! poetry --version &> /dev/null; then \
 		echo "Installing Poetry..."; \
-		pip install poetry; \
+		pip install poetry==1.6.1; \
 	else \
 		echo "Poetry is already installed."; \
 	fi; \

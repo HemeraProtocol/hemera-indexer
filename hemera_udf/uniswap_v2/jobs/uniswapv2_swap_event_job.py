@@ -31,7 +31,6 @@ class ExportUniSwapV2SwapEventJob(FilterTransactionDataJob):
         self.multi_call_helper = MultiCallHelper(self._web3, kwargs, logger)
         self._existing_pools = self.get_existing_pools()
 
-
     def get_filter(self):
         return TransactionFilterByLogs(
             [
@@ -198,7 +197,9 @@ class ExportUniSwapV2SwapEventJob(FilterTransactionDataJob):
 
             pools_orm = session.query(UniswapV2Pools).all()
             for pool in pools_orm:
-                existing_pools[bytes_to_hex_str(pool.pool_address)] = bytes_to_hex_str(pool.token0_address), bytes_to_hex_str(pool.token1_address)
+                existing_pools[bytes_to_hex_str(pool.pool_address)] = bytes_to_hex_str(
+                    pool.token0_address
+                ), bytes_to_hex_str(pool.token1_address)
 
         except Exception as e:
             print(e)

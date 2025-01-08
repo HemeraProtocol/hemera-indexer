@@ -11,7 +11,7 @@ class UniswapV3TokenDetails(HemeraModel):
     position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_number = Column(BIGINT, primary_key=True)
-    block_timestamp = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
     wallet_address = Column(BYTEA)
     pool_address = Column(BYTEA)
     liquidity = Column(NUMERIC(100))

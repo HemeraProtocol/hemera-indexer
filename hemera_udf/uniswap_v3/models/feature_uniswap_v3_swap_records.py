@@ -11,7 +11,7 @@ class UniswapV3PoolSwapRecords(HemeraModel):
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
     block_number = Column(BIGINT)
-    block_timestamp = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
     position_token_address = Column(BYTEA)
     transaction_from_address = Column(BYTEA)
     sender = Column(BYTEA)

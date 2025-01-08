@@ -10,7 +10,7 @@ class UniswapV3TokenLiquidityRecords(HemeraModel):
     position_token_address = Column(BYTEA, primary_key=True)
     token_id = Column(NUMERIC(100), primary_key=True)
     block_number = Column(BIGINT, primary_key=True)
-    block_timestamp = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
     transaction_hash = Column(BYTEA)
     owner = Column(BYTEA)

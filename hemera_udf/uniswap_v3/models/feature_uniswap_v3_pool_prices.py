@@ -9,7 +9,7 @@ class UniswapV3PoolPrices(HemeraModel):
     __tablename__ = "af_uniswap_v3_pool_prices_hist"
     pool_address = Column(BYTEA, primary_key=True)
     block_number = Column(BIGINT, primary_key=True)
-    block_timestamp = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
 
     sqrt_price_x96 = Column(NUMERIC(100))
     tick = Column(NUMERIC(100))

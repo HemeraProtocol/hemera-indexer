@@ -152,9 +152,17 @@ class ExportDexBlockTokenPriceJob(ExtensionJob):
 
         df["stable_token_balance_limit"] = df.apply(lambda x: 0.001 if x.stable_token_symbol == "ETH" else 10, axis=1)
 
-        df["stable_balance"] = df.apply(
+        # get stable_balance_raw
+        df["token_balance_raw"] = df.apply(
             lambda x: token_balance_dict.get((x.token0_address, x.pool_address, x.block_number))
-            or token_balance_dict.get((x.token1_address, x.pool_address, x.block_number))
+            or token_balance_dict.get((x.token1_address, x.pool_address, x.block_number)),
+            axis=1,
+        )
+
+        df = df.dropna(subset=["token_balance_raw"])
+
+        df["stable_balance"] = df.apply(
+            lambda x: x.token_balance_raw
             / 10 ** (x.token1_decimals if x.stable_token_address_position else x.token0_decimals),
             axis=1,
         )

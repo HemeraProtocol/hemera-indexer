@@ -1,9 +1,10 @@
 import copy
+import math
 import re
 from datetime import date, datetime, timedelta
 from typing import Any, Dict, List, Optional, Union
 
-from sqlalchemy import and_, func
+from sqlalchemy import and_, distinct, func, or_
 
 from hemera.api.app.address.features import register_feature
 from hemera.api.app.address.models import AddressBaseProfile
@@ -41,6 +42,9 @@ from hemera_udf.address_index.models.address_nft_1155_holders import AddressNftT
 from hemera_udf.address_index.models.address_token_holders import AddressTokenHolders
 from hemera_udf.address_index.models.address_token_transfers import AddressTokenTransfers
 from hemera_udf.address_index.models.address_transactions import AddressTransactions
+from hemera_udf.address_index.models.dashboard_daily_address import AFDashboardDailyAddressStats
+from hemera_udf.address_index.models.distribution_daily_stats import AFDistributionDailyStats
+from hemera_udf.address_index.models.metrics_distribution_daily_stats import AFMetricsDistributionDailyStats
 from hemera_udf.address_index.models.token_address_nft_inventories import TokenAddressNftInventories
 from hemera_udf.address_index.schemas.api import address_base_info_model, filter_and_fill_dict_by_model
 
@@ -1061,3 +1065,236 @@ def parse_address_transactions(transactions: list[AddressTransactions]):
                 ).title()
 
     return transaction_list
+
+
+time_ranges = {
+    "1d": lambda now: now - timedelta(days=1),
+    "7d": lambda now: now - timedelta(days=7),
+    "30d": lambda now: now - timedelta(days=30),
+    "6m": lambda now: now - timedelta(days=180),
+    "YTD": lambda now: datetime(now.year, 1, 1),
+    "1y": lambda now: now - timedelta(days=365),
+}
+
+
+def get_daily_active_address(time_range: str):
+    today = date.today()
+
+    start_date = time_ranges[time_range](today)
+    result = (
+        db.session.query(AFDashboardDailyAddressStats)
+        .filter(AFDashboardDailyAddressStats.block_date <= today, AFDashboardDailyAddressStats.block_date >= start_date)
+        .order_by(AFDashboardDailyAddressStats.block_date)
+        .all()
+    )
+    data = [
+        {
+            "block_date": record.block_date.isoformat(),
+            "active_addresses": record.active_addresses,
+            "new_addresses": record.new_addresses,
+        }
+        for record in result
+    ]
+
+    return {"time_range": time_range, "data": data}
+
+
+def get_all_udf_dashboards():
+    all_udf_dashboards = []
+    query = db.session.query(distinct(AFDistributionDailyStats.distribution_name)).order_by(
+        AFDistributionDailyStats.distribution_name
+    )
+    result = query.all()
+
+    distinct_distribution_names = [row[0] for row in result]
+
+    return distinct_distribution_names
+
+
+def fetch_and_group_metrics(today, week_ago, month_ago):
+    """Fetch metrics and group them by distribution name and date."""
+    metrics = (
+        db.session.query(AFMetricsDistributionDailyStats)
+        .filter(
+            or_(
+                AFMetricsDistributionDailyStats.block_date == today,
+                AFMetricsDistributionDailyStats.block_date == week_ago,
+                AFMetricsDistributionDailyStats.block_date == month_ago,
+            )
+        )
+        .order_by(AFMetricsDistributionDailyStats.distribution_name, AFMetricsDistributionDailyStats.block_date)
+        .all()
+    )
+
+    metrics_dic = {}
+    for metric in metrics:
+        metrics_dic.setdefault(metric.distribution_name, {})[metric.block_date] = metric
+    return metrics_dic
+
+
+def populate_data_for_date(res, row, date_index, metrics_dic):
+    """Populate data for a specific date index."""
+    target_metrics = metrics_dic.get(row.distribution_name, {}).get(row.block_date)
+    if target_metrics:
+        res[row.distribution_name]["data"][date_index]["avg"] = float(target_metrics.avg)
+        res[row.distribution_name]["data"][date_index]["stdev"] = float(target_metrics.stdev)
+    res[row.distribution_name]["data"][date_index]["actual_date"] = row.block_date.isoformat()
+    res[row.distribution_name]["data"][date_index]["data"].append({"value": float(row.value), "label": float(row.x)})
+
+
+def get_all_udf_dashboards_data():
+    today = date.today() - timedelta(days=1)
+    week_ago = today - timedelta(days=7)
+    month_ago = today - timedelta(days=30)
+
+    # Fetch main data and metrics
+    result = (
+        db.session.query(AFDistributionDailyStats)
+        .filter(
+            AFDistributionDailyStats.x != 0.0,
+            or_(
+                AFDistributionDailyStats.block_date == today,
+                AFDistributionDailyStats.block_date == week_ago,
+                AFDistributionDailyStats.block_date == month_ago,
+            ),
+        )
+        .order_by(
+            AFDistributionDailyStats.distribution_name,
+            AFDistributionDailyStats.block_date,
+            AFDistributionDailyStats.x,
+        )
+        .all()
+    )
+    metrics_dic = fetch_and_group_metrics(today, week_ago, month_ago)
+
+    # Initialize result structure
+    all_distribution_names = get_all_udf_dashboards()
+    res = {
+        name: {
+            "name": name,
+            "chart_type": "",
+            "data": [
+                {"type": "as_of_today", "avg": "", "stdev": "", "actual_date": "", "data": []},
+                {"type": "as_of_a_week_ago", "avg": "", "stdev": "", "actual_date": "", "data": []},
+                {"type": "as_of_a_month_ago", "avg": "", "stdev": "", "actual_date": "", "data": []},
+            ],
+        }
+        for name in all_distribution_names
+    }
+
+    date_mapping = {today: 0, week_ago: 1, month_ago: 2}
+    for row in result:
+        if (
+            row.distribution_name in {"distribution_job_ens_holdings_udf", "distribution_job_ens_resolves_udf"}
+            and float(row.x) == 100.0
+        ):
+            continue
+        date_index = date_mapping.get(row.block_date)
+        if date_index is not None:
+            populate_data_for_date(res, row, date_index, metrics_dic)
+
+    # Handle missing data
+    for distribution_name, distribution_data in res.items():
+        for i, (date_ref, date_type) in enumerate(
+            [(today, "as_of_today"), (week_ago, "as_of_a_week_ago"), (month_ago, "as_of_a_month_ago")]
+        ):
+            if not distribution_data["data"][i]["data"]:
+                actual_date, data = get_best_match_data(distribution_name, date_ref)
+                avg, stdev = get_distribution_date_metrics(distribution_name, actual_date)
+                distribution_data["data"][i].update(
+                    {
+                        "avg": avg,
+                        "stdev": stdev,
+                        "actual_date": actual_date.isoformat(),
+                        "data": data,
+                    }
+                )
+
+        # Determine chart type
+        chart_type = (
+            "log"
+            if any(check_logarithmic_pattern(distribution_name, distribution_data["data"][i]["data"]) for i in range(3))
+            else "value"
+        )
+        distribution_data["chart_type"] = chart_type
+        if distribution_name in ("distribution_age_daily", "distribution_tx_daily", "distribution_deployed_daily"):
+            res[distribution_name]["data"] = res[distribution_name]["data"][0:1]
+
+    return res
+
+
+def get_best_match_data(distribution_name: str, target_date: date):
+    """
+    Find the nearest data for a given distribution and target_date.
+    """
+    closest_block_date = (
+        db.session.query(AFDistributionDailyStats.block_date)
+        .filter(AFDistributionDailyStats.distribution_name == distribution_name)
+        .order_by(
+            func.abs(
+                func.date_part("epoch", AFDistributionDailyStats.block_date) - func.date_part("epoch", target_date)
+            )
+        )
+        .limit(1)
+        .scalar()
+    )
+
+    if not closest_block_date:
+        return []
+
+    result = (
+        db.session.query(AFDistributionDailyStats)
+        .filter(
+            and_(
+                AFDistributionDailyStats.block_date == closest_block_date,
+                AFDistributionDailyStats.distribution_name == distribution_name,
+                AFDistributionDailyStats.x != 0.0,
+            )
+        )
+        .order_by(AFDistributionDailyStats.x)
+        .all()
+    )
+
+    data = [{"value": float(record.value), "label": float(record.x)} for record in result]
+
+    return closest_block_date, data
+
+
+def get_distribution_date_metrics(distribution_name: str, block_date: date):
+    row = (
+        db.session.query(AFMetricsDistributionDailyStats)
+        .filter(
+            AFMetricsDistributionDailyStats.distribution_name == distribution_name,
+            AFMetricsDistributionDailyStats.block_date == block_date,
+        )
+        .order_by(AFMetricsDistributionDailyStats.distribution_name, AFMetricsDistributionDailyStats.block_date)
+        .first()
+    )
+    if row:
+        return float(row.avg), float(row.stdev)
+    return "", ""
+
+
+def is_logarithmic(labels):
+    if len(labels) < 3:
+        return False
+    differences = []
+    for i in range(1, len(labels)):
+        if labels[i - 1] <= 0 or labels[i] <= 0:
+            return False
+        differences.append(math.log(labels[i]) - math.log(labels[i - 1]))
+
+    threshold = 1e-6
+    return all(abs(d - differences[0]) < threshold for d in differences)
+
+
+def check_logarithmic_pattern(distribution_name, data):
+    log_chart_type = {
+        "distribution_job_eigen_layer_udf",
+        "distribution_job_aave2_supply_udf",
+        "distribution_job_aave2_borrow_udf",
+    }
+    if distribution_name in log_chart_type:
+        return True
+    labels = [item["label"] for item in data]
+    return is_logarithmic(labels)

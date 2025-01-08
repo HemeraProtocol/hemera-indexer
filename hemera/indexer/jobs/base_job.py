@@ -167,7 +167,7 @@ class BaseJob(metaclass=BaseJobMeta):
                     self._collect(**kwargs)
                     self._process(**kwargs)
 
-            if not self._reorg:
+            if not self._reorg or not issubclass(self.__class__, BaseSourceJob):
                 if (
                     type(self._data_buff) is BufferService
                     and not self._data_buff.is_shutdown()

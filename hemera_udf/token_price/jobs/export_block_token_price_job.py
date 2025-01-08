@@ -32,6 +32,9 @@ class ExportBlockTokenPriceJob(ExtensionJob):
         return int(date.timestamp())
 
     def _process(self, **kwargs):
+        if not self.symbols:
+            return
+
         blocks = self._data_buff[Block.type()]
 
         blocks.sort(key=lambda block: block.number)
