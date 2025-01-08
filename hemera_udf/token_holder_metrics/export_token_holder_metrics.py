@@ -87,6 +87,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         current_metrics = query_results
 
         for metrics in history_metrics:
+            token = self.tokens[metrics.token_address]
             self._collect_domain(metrics)
 
             key = (metrics.holder_address, metrics.token_address)
@@ -125,8 +126,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 sell_price = metrics.price_usd
 
                 if now_metrics.current_balance > 0:
-                    profit = (sell_price - now_metrics.current_average_buy_price) * sell_amount / 10 ** token['decimals']
-                    now_metrics.realized_pnl += profit
+                    now_metrics.realized_pnl = now_metrics.total_sell_usd - now_metrics.total_buy_usd + now_metrics.current_balance * now_metrics.current_average_buy_price / 10 ** token['decimals']
 
                     if sell_price > now_metrics.current_average_buy_price:
                         now_metrics.success_sell_count += 1
