@@ -116,7 +116,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 now_metrics.total_buy_count += 1
                 now_metrics.total_buy_amount += new_amount
                 now_metrics.total_buy_usd += new_cost
-                now_metrics.current_average_buy_price = now_metrics.total_buy_usd  / now_metrics.total_buy_amount 
+                if now_metrics.total_buy_amount > 0:
+                    now_metrics.current_average_buy_price = now_metrics.total_buy_usd  / now_metrics.total_buy_amount 
 
             else:
                 sell_amount = metrics.transfer_amount
