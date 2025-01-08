@@ -113,13 +113,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 now_metrics.current_balance += new_amount
                 total_cost = old_cost + new_cost
 
-                if now_metrics.current_balance > 0:
-                    now_metrics.current_average_buy_price = total_cost * 10 ** token[
-                        'decimals'] / now_metrics.current_balance
-
                 now_metrics.total_buy_count += 1
                 now_metrics.total_buy_amount += new_amount
                 now_metrics.total_buy_usd += new_cost
+                now_metrics.current_average_buy_price = now_metrics.total_buy_usd  / now_metrics.total_buy_amount 
 
             else:
                 sell_amount = metrics.transfer_amount
