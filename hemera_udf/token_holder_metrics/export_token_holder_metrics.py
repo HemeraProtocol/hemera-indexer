@@ -165,8 +165,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     now_metrics.swap_sell_amount += metrics.transfer_amount
                     now_metrics.swap_sell_usd += metrics.transfer_usd
 
-        for metrics in current_metrics.values():
-            self._collect_domain(metrics)
+        self._collect_domains(list(current_metrics.values()))
 
     def _get_token_dex_price_latest(self, token_address: str, block_number: int):
         token_address_bytes = hex_str_to_bytes(token_address)
