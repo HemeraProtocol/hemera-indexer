@@ -26,9 +26,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         swaps = self._data_buff[UniswapV2SwapEvent.type()] + self._data_buff[UniswapV3SwapEvent.type()]
         swap_txs = {swap.transaction_hash: swap for swap in swaps}
 
-        transfers = [transfer for transfer in transfers if transfer.token_address in ["0x55cd6469f597452b5a7536e2cd98fde4c1247ee4"]]
-        if not transfers:
-            return
         # Collect token-block pairs for batch price query
         token_blocks = [(transfer.token_address, transfer.block_number) for transfer in transfers]
         token_prices = self._get_token_dex_prices_batch(token_blocks)
@@ -116,7 +113,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 total_cost = old_cost + new_cost
 
                 if now_metrics.current_balance > 0:
-                    now_metrics.current_average_buy_price = total_cost * 10 ** token['decimals'] / now_metrics.current_balance
+                    now_metrics.current_average_buy_price = total_cost * 10 ** token[
+                        'decimals'] / now_metrics.current_balance
 
                 now_metrics.total_buy_count += 1
                 now_metrics.total_buy_amount += new_amount
@@ -202,10 +200,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         result = {}
         for metrics in query_results:
             # Convert bytes back to hex strings for key matching
-            key = (metrics.holder_address.hex(), metrics.token_address.hex())
+            key = (bytes_to_hex_str(metrics.holder_address), bytes_to_hex_str(metrics.token_address))
             result[key] = TokenHolderMetricsCurrentD(
-                holder_address=metrics.holder_address.hex(),
-                token_address=metrics.token_address.hex(),
+                holder_address=bytes_to_hex_str(metrics.holder_address),
+                token_address=bytes_to_hex_str(metrics.token_address),
                 block_number=metrics.block_number,
                 block_timestamp=int(metrics.block_timestamp.timestamp()),
                 first_block_timestamp=int(metrics.first_block_timestamp.timestamp()),
