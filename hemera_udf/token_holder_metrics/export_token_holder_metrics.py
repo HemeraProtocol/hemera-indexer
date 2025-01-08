@@ -126,7 +126,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 sell_price = metrics.price_usd
 
                 if now_metrics.current_balance > 0:
-                    now_metrics.realized_pnl = now_metrics.total_sell_usd - now_metrics.total_buy_usd + now_metrics.current_balance * now_metrics.current_average_buy_price / 10 ** token['decimals']
+                    now_metrics.realized_pnl = now_metrics.total_sell_usd - now_metrics.total_buy_usd + now_metrics.current_balance * token['price'] / 10 ** token['decimals']
 
                     if sell_price > now_metrics.current_average_buy_price:
                         now_metrics.success_sell_count += 1
