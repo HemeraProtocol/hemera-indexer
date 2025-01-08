@@ -125,7 +125,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 sell_price = metrics.price_usd
 
                 if now_metrics.current_balance > 0:
-                    profit = (sell_price - now_metrics.current_average_buy_price) * sell_amount
+                    profit = (sell_price - now_metrics.current_average_buy_price) * sell_amount / 10 ** token['decimals']
                     now_metrics.realized_pnl += profit
 
                     if sell_price > now_metrics.current_average_buy_price:
