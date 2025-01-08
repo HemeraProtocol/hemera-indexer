@@ -6,7 +6,7 @@ from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCu
 
 
 class TokenHolderMetricsCurrent(HemeraModel):
-    __tablename__ = "token_holder_metrics_current"
+    __tablename__ = "af_token_holder_metrics_current"
 
     holder_address = Column(BYTEA, primary_key=True)
     token_address = Column(BYTEA, primary_key=True)
@@ -51,7 +51,7 @@ class TokenHolderMetricsCurrent(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("holder_address", "token_address", "block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("holder_address", "token_address"),)
 
     @staticmethod
     def model_domain_mapping():
@@ -66,7 +66,7 @@ class TokenHolderMetricsCurrent(HemeraModel):
 
 
 class TokenHolderMetricsHistory(HemeraModel):
-    __tablename__ = "token_holder_metrics_history"
+    __tablename__ = "af_token_holder_metrics_history"
     
     holder_address = Column(BYTEA)
     token_address = Column(BYTEA)

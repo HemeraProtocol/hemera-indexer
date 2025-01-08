@@ -1,5 +1,4 @@
-import random
-from hemera.common.utils.format_utils import hex_str_to_bytes
+from hemera.common.utils.format_utils import hex_str_to_bytes, bytes_to_hex_str
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
 from hemera.indexer.jobs.base_job import ExtensionJob
 from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD
@@ -118,7 +117,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 total_cost = old_cost + new_cost
 
                 if now_metrics.current_balance > 0:
-                    now_metrics.current_average_buy_price = total_cost / now_metrics.current_balance
+                    now_metrics.current_average_buy_price = total_cost * 10 ** token['decimals'] / now_metrics.current_balance
 
                 now_metrics.total_buy_count += 1
                 now_metrics.total_buy_amount += new_amount
@@ -253,7 +252,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     token_price,
                     ROW_NUMBER() OVER (PARTITION BY token_address ORDER BY block_number DESC) AS rn
                 FROM af_dex_block_token_price
-                WHERE token_address = ANY(:token_addresses)
+                WHERE token_address in :token_addresses
                 AND block_number <= :max_block
             )
             SELECT token_address, token_price
@@ -265,12 +264,12 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         prices = session.execute(
             price_sql,
             {
-                'token_addresses': token_addresses,
+                'token_addresses': tuple(token_addresses),
                 'max_block': max_block
             }
         ).fetchall()
 
-        token_prices = {price[0].hex(): float(price[1]) for price in prices}
+        token_prices = {bytes_to_hex_str(price[0]): float(price[1]) for price in prices}
 
         for token_block in token_blocks:
             token_addr, _ = token_block
