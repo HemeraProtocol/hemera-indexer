@@ -26,6 +26,9 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         swaps = self._data_buff[UniswapV2SwapEvent.type()] + self._data_buff[UniswapV3SwapEvent.type()]
         swap_txs = {swap.transaction_hash: swap for swap in swaps}
 
+        transfers = [transfer for transfer in transfers if transfer.token_address in ["0x55cd6469f597452b5a7536e2cd98fde4c1247ee4"]]
+        if not transfers:
+            return
         # Collect token-block pairs for batch price query
         token_blocks = [(transfer.token_address, transfer.block_number) for transfer in transfers]
         token_prices = self._get_token_dex_prices_batch(token_blocks)
