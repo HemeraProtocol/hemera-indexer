@@ -4,7 +4,6 @@ from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
 from hemera.indexer.jobs.base_job import ExtensionJob
 from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD
 from hemera_udf.token_holder_metrics.models.metrics import TokenHolderMetricsCurrent
-from hemera_udf.token_price.domains import DexBlockTokenPrice
 from hemera_udf.token_price.models import AfDexBlockTokenPrice
 from hemera_udf.uniswap_v2.domains import UniswapV2SwapEvent
 from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import UniswapV3SwapEvent
