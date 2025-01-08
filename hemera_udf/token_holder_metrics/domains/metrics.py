@@ -16,7 +16,7 @@ class TokenHolderMetricsHistoryD(Domain):
     transfer_action: str = "in"
     is_swap: bool = False
     tx_hash: str = ""
-    tx_index: int = 0
+    log_index: int = 0
 
 
 @dataclass

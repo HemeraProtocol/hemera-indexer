@@ -51,3 +51,6 @@ export_block_token_price_job:
   '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2': 'USDT'
   '0x4200000000000000000000000000000000000006': 'ETH'
 
+export_token_holder_metrics_job:
+  token_export:
+#    - '0x55cd6469f597452b5a7536e2cd98fde4c1247ee4'

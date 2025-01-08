@@ -1,4 +1,4 @@
-from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy import Column, PrimaryKeyConstraint, func, BOOLEAN
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from hemera.common.models import HemeraModel, general_converter
@@ -67,24 +67,23 @@ class TokenHolderMetricsCurrent(HemeraModel):
 
 class TokenHolderMetricsHistory(HemeraModel):
     __tablename__ = "token_holder_metrics_history"
-
-    holder_address = Column(BYTEA, primary_key=True)
-    token_address = Column(BYTEA, primary_key=True)
-    block_number = Column(BIGINT, primary_key=True)
-    tx_hash = Column(BYTEA, primary_key=True)
-    tx_index = Column(BIGINT, primary_key=True)
+    
+    holder_address = Column(BYTEA)
+    token_address = Column(BYTEA)
+    block_number = Column(BIGINT)
+    tx_hash = Column(BYTEA)
+    log_index = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
 
     price_usd = Column(NUMERIC)
     transfer_amount = Column(NUMERIC)
     transfer_usd = Column(NUMERIC)
     transfer_action = Column(VARCHAR)
-    is_swap = Column(BYTEA)
+    is_swap = Column(BOOLEAN)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
-    update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("holder_address", "token_address", "block_number", "tx_hash", "tx_index"),)
+    __table_args__ = (PrimaryKeyConstraint("holder_address", "token_address", "block_number", "tx_hash", "log_index"),)
 
     @staticmethod
     def model_domain_mapping():
