@@ -4,7 +4,7 @@ from hemera.indexer.domains import Domain
 
 
 @dataclass
-class TokenHolderMetricsHistoryD(Domain):
+class TokenHolderTransferWithPriceD(Domain):
     holder_address: str
     token_address: str
     block_number: int
@@ -20,7 +20,7 @@ class TokenHolderMetricsHistoryD(Domain):
 
 
 @dataclass
-class TokenHolderMetricsCurrentD(Domain):
+class TokenHolderMetricsD(Domain):
     holder_address: str
     token_address: str
     block_number: int
@@ -35,7 +35,7 @@ class TokenHolderMetricsCurrentD(Domain):
     max_balance_timestamp: int = 0
     sell_25_timestamp: int = 0
     sell_50_timestamp: int = 0
-    
+
     total_buy_count: int = 0
     total_buy_amount: float = 0.0
     total_buy_usd: float = 0.0
@@ -59,3 +59,13 @@ class TokenHolderMetricsCurrentD(Domain):
 
     realized_pnl: float = 0.0
     win_rate: float = 0.0
+
+
+@dataclass
+class TokenHolderMetricsHistoryD(TokenHolderMetricsD):
+    pass
+
+
+@dataclass
+class TokenHolderMetricsCurrentD(TokenHolderMetricsD):
+    pass

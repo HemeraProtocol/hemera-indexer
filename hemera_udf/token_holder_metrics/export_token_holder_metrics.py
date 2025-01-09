@@ -1,7 +1,8 @@
+from dataclasses import asdict
 from hemera.common.utils.format_utils import hex_str_to_bytes, bytes_to_hex_str
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
 from hemera.indexer.jobs.base_job import ExtensionJob
-from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD
+from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD, TokenHolderTransferWithPriceD
 from hemera_udf.token_holder_metrics.models.metrics import TokenHolderMetricsCurrent
 from hemera_udf.token_price.models import AfDexBlockTokenPrice
 from hemera_udf.uniswap_v2.domains import UniswapV2SwapEvent
@@ -11,7 +12,7 @@ from sqlalchemy import or_, text
 
 class ExportTokenHolderMetricsJob(ExtensionJob):
     dependency_types = [ERC20TokenTransfer, UniswapV2SwapEvent, UniswapV3SwapEvent]
-    output_types = [TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD]
+    output_types = [TokenHolderMetricsCurrentD, TokenHolderTransferWithPriceD, TokenHolderMetricsHistoryD]
     able_to_reorg = True
 
     def __init__(self, **kwargs):
@@ -30,9 +31,9 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         token_blocks = [(transfer.token_address, transfer.block_number) for transfer in transfers]
         token_prices = self._get_token_dex_prices_batch(token_blocks)
 
-        history_metrics = []
+        transfer_metrics = []
         for transfer in transfers:
-            token_holder_from_metrics = TokenHolderMetricsHistoryD(
+            token_holder_from_metrics = TokenHolderTransferWithPriceD(
                 holder_address=transfer.from_address,
                 token_address=transfer.token_address,
                 block_number=transfer.block_number,
@@ -43,7 +44,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 tx_hash=transfer.transaction_hash,
                 log_index=transfer.log_index,
             )
-            token_holder_to_metrics = TokenHolderMetricsHistoryD(
+            token_holder_to_metrics = TokenHolderTransferWithPriceD(
                 holder_address=transfer.to_address,
                 token_address=transfer.token_address,
                 block_number=transfer.block_number,
@@ -75,18 +76,18 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             token_holder_from_metrics.transfer_usd = amount_usd
             token_holder_to_metrics.price_usd = price
             token_holder_to_metrics.transfer_usd = amount_usd
-            history_metrics.append(token_holder_from_metrics)
-            history_metrics.append(token_holder_to_metrics)
+            transfer_metrics.append(token_holder_from_metrics)
+            transfer_metrics.append(token_holder_to_metrics)
 
         current_metrics = {}
         address_token_pairs = set()
-        for metrics in history_metrics:
+        for metrics in transfer_metrics:
             address_token_pairs.add((metrics.holder_address, metrics.token_address))
 
         query_results = self._get_address_token_holder_metrics_batch(list(address_token_pairs))
         current_metrics = query_results
 
-        for metrics in history_metrics:
+        for metrics in transfer_metrics:
             token = self.tokens[metrics.token_address]
             self._collect_domain(metrics)
 
@@ -170,6 +171,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     now_metrics.swap_sell_usd += metrics.transfer_usd
 
         self._collect_domains(list(current_metrics.values()))
+        history_metrics = [TokenHolderMetricsHistoryD(**asdict(metrics)) for metrics in current_metrics.values()]
+        self._collect_domains(history_metrics)
 
     def _get_token_dex_price_latest(self, token_address: str, block_number: int):
         token_address_bytes = hex_str_to_bytes(token_address)
