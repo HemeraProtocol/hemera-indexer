@@ -103,6 +103,11 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     last_transfer_timestamp=metrics.block_timestamp,
                 )
             now_metrics = current_metrics[key]
+            
+            if now_metrics.block_number > metrics.block_number: 
+                continue
+            now_metrics.block_number = metrics.block_number
+            now_metrics.block_timestamp = metrics.block_timestamp
 
             if metrics.transfer_action == "in":
                 new_amount = metrics.transfer_amount
