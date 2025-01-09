@@ -215,14 +215,14 @@ class BaseJob(metaclass=BaseJobMeta):
                     self._data_buff.pop(output.type())
 
     # @deprecated
-    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 1.1.0.
     # Please move your data process logic into _udf instead.
     @deprecated
     def _collect(self, **kwargs):
         pass
 
     # @deprecated
-    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 1.1.0.
     # Please move your data process batch logic into custom define function instead.
     @deprecated
     def _collect_batch(self, iterator):
@@ -259,7 +259,7 @@ class BaseJob(metaclass=BaseJobMeta):
         return res
 
     # @deprecated
-    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 1.1.0.
     # Please move your data process logic into _udf instead.
     @deprecated
     def _process(self, **kwargs):
