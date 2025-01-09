@@ -194,10 +194,12 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 (TokenHolderMetricsCurrent.token_address == token_addr)
             )
 
-        # Execute batch query
-        query_results = self._service.get_service_session().query(TokenHolderMetricsCurrent).filter(
+        session = self._service.get_service_session()
+        query_results = session.query(TokenHolderMetricsCurrent).filter(
             or_(*conditions)
         ).all()
+        session.close()
+        
 
         # Build result dictionary
         result = {}
@@ -267,6 +269,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 'max_block': max_block
             }
         ).fetchall()
+        session.close()
 
         token_prices = {bytes_to_hex_str(price[0]): float(price[1]) for price in prices}
 
