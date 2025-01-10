@@ -2,7 +2,8 @@ from dataclasses import asdict
 from hemera.common.utils.format_utils import hex_str_to_bytes, bytes_to_hex_str
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
 from hemera.indexer.jobs.base_job import ExtensionJob
-from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD, TokenHolderTransferWithPriceD
+from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD, \
+    TokenHolderTransferWithPriceD
 from hemera_udf.token_holder_metrics.models.metrics import TokenHolderMetricsCurrent
 from hemera_udf.token_price.models import AfDexBlockTokenPrice
 from hemera_udf.uniswap_v2.domains import UniswapV2SwapEvent
@@ -104,8 +105,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     last_transfer_timestamp=metrics.block_timestamp,
                 )
             now_metrics = current_metrics[key]
-            
-            if now_metrics.block_number > metrics.block_number: 
+
+            if now_metrics.block_number > metrics.block_number:
                 continue
             now_metrics.block_number = metrics.block_number
             now_metrics.block_timestamp = metrics.block_timestamp
@@ -123,14 +124,16 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 now_metrics.total_buy_amount += new_amount
                 now_metrics.total_buy_usd += new_cost
                 if now_metrics.total_buy_amount > 0:
-                    now_metrics.current_average_buy_price = now_metrics.total_buy_usd  * 10 ** token['decimals'] / now_metrics.total_buy_amount 
+                    now_metrics.current_average_buy_price = now_metrics.total_buy_usd * 10 ** token[
+                        'decimals'] / now_metrics.total_buy_amount
 
             else:
                 sell_amount = metrics.transfer_amount
                 sell_price = metrics.price_usd
 
                 if now_metrics.current_balance > 0:
-                    now_metrics.realized_pnl = now_metrics.total_sell_usd - now_metrics.total_buy_usd + now_metrics.current_balance * metrics.price_usd / 10 ** token['decimals']
+                    now_metrics.realized_pnl = now_metrics.total_sell_usd - now_metrics.total_buy_usd + now_metrics.current_balance * metrics.price_usd / 10 ** \
+                                               token['decimals']
 
                     if sell_price > now_metrics.current_average_buy_price:
                         now_metrics.success_sell_count += 1
@@ -187,58 +190,60 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         if not address_token_pairs:
             return {}
 
-        address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token))
-                               for addr, token in address_token_pairs]
+        BATCH_SIZE = 1000
+        result = {}
+        session = self._service.get_service_session()
 
-        conditions = []
-        for holder_addr, token_addr in address_bytes_pairs:
-            conditions.append(
+        for i in range(0, len(address_token_pairs), BATCH_SIZE):
+            batch_pairs = address_token_pairs[i:i + BATCH_SIZE]
+            address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token))
+                                   for addr, token in batch_pairs]
+
+            conditions = [
                 (TokenHolderMetricsCurrent.holder_address == holder_addr) &
                 (TokenHolderMetricsCurrent.token_address == token_addr)
-            )
+                for holder_addr, token_addr in address_bytes_pairs
+            ]
 
-        session = self._service.get_service_session()
-        query_results = session.query(TokenHolderMetricsCurrent).filter(
-            or_(*conditions)
-        ).all()
+            batch_results = session.query(TokenHolderMetricsCurrent).filter(
+                or_(*conditions)
+            ).all()
+
+            for metrics in batch_results:
+                key = (bytes_to_hex_str(metrics.holder_address),
+                       bytes_to_hex_str(metrics.token_address))
+                result[key] = TokenHolderMetricsCurrentD(
+                    holder_address=bytes_to_hex_str(metrics.holder_address),
+                    token_address=bytes_to_hex_str(metrics.token_address),
+                    block_number=metrics.block_number,
+                    block_timestamp=int(metrics.block_timestamp.timestamp()),
+                    first_block_timestamp=int(metrics.first_block_timestamp.timestamp()),
+                    last_swap_timestamp=int(
+                        metrics.last_swap_timestamp.timestamp()) if metrics.last_swap_timestamp else 0,
+                    last_transfer_timestamp=int(
+                        metrics.last_transfer_timestamp.timestamp()) if metrics.last_transfer_timestamp else 0,
+                    current_balance=float(metrics.current_balance),
+                    max_balance=float(metrics.max_balance),
+                    total_buy_count=metrics.total_buy_count,
+                    total_buy_amount=float(metrics.total_buy_amount),
+                    total_buy_usd=float(metrics.total_buy_usd),
+                    total_sell_count=metrics.total_sell_count,
+                    total_sell_amount=float(metrics.total_sell_amount),
+                    total_sell_usd=float(metrics.total_sell_usd),
+                    swap_buy_count=metrics.swap_buy_count,
+                    swap_buy_amount=float(metrics.swap_buy_amount),
+                    swap_buy_usd=float(metrics.swap_buy_usd),
+                    swap_sell_count=metrics.swap_sell_count,
+                    swap_sell_amount=float(metrics.swap_sell_amount),
+                    swap_sell_usd=float(metrics.swap_sell_usd),
+                    success_sell_count=metrics.success_sell_count,
+                    fail_sell_count=metrics.fail_sell_count,
+                    current_average_buy_price=float(metrics.current_average_buy_price),
+                    realized_pnl=float(metrics.realized_pnl),
+                    win_rate=float(metrics.win_rate)
+                )
+
         session.close()
-        
-
-        # Build result dictionary
-        result = {}
-        for metrics in query_results:
-            # Convert bytes back to hex strings for key matching
-            key = (bytes_to_hex_str(metrics.holder_address), bytes_to_hex_str(metrics.token_address))
-            result[key] = TokenHolderMetricsCurrentD(
-                holder_address=bytes_to_hex_str(metrics.holder_address),
-                token_address=bytes_to_hex_str(metrics.token_address),
-                block_number=metrics.block_number,
-                block_timestamp=int(metrics.block_timestamp.timestamp()),
-                first_block_timestamp=int(metrics.first_block_timestamp.timestamp()),
-                last_swap_timestamp=int(metrics.last_swap_timestamp.timestamp()) if metrics.last_swap_timestamp else 0,
-                last_transfer_timestamp=int(
-                    metrics.last_transfer_timestamp.timestamp()) if metrics.last_transfer_timestamp else 0,
-                current_balance=float(metrics.current_balance),
-                max_balance=float(metrics.max_balance),
-                total_buy_count=metrics.total_buy_count,
-                total_buy_amount=float(metrics.total_buy_amount),
-                total_buy_usd=float(metrics.total_buy_usd),
-                total_sell_count=metrics.total_sell_count,
-                total_sell_amount=float(metrics.total_sell_amount),
-                total_sell_usd=float(metrics.total_sell_usd),
-                swap_buy_count=metrics.swap_buy_count,
-                swap_buy_amount=float(metrics.swap_buy_amount),
-                swap_buy_usd=float(metrics.swap_buy_usd),
-                swap_sell_count=metrics.swap_sell_count,
-                swap_sell_amount=float(metrics.swap_sell_amount),
-                swap_sell_usd=float(metrics.swap_sell_usd),
-                success_sell_count=metrics.success_sell_count,
-                fail_sell_count=metrics.fail_sell_count,
-                current_average_buy_price=float(metrics.current_average_buy_price),
-                realized_pnl=float(metrics.realized_pnl),
-                win_rate=float(metrics.win_rate)
-            )
-
         return result
 
     def _get_token_dex_prices_batch(self, token_blocks: list[tuple[str, int]]) -> dict[tuple[str, int], float]:
