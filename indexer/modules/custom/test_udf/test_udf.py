@@ -3,8 +3,7 @@ from indexer.jobs.base_job import Collector, FilterTransactionDataJob
 from indexer.domain.log import Log
 from indexer.utils.abi_setting import ERC20_TRANSFER_EVENT
 from indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from indexer.modules.custom.test_job.domain.test_job import TestUdfDomain
-
+from indexer.modules.custom.test_udf.domain.test_udf_domain import TestUdfDomain
 
 class TestUDFJob(FilterTransactionDataJob):
 
@@ -18,7 +17,12 @@ class TestUDFJob(FilterTransactionDataJob):
         ])
 
     def _udf(self, logs: List[Log], output: Collector[TestUdfDomain]):
+        """Process input data and collect output results.
 
+        Args:
+            logs: List of Log objects.
+            output: Collector to collect TestUdfDomain objects.
+        """
         token_transfers = []
 
         for log in logs:
