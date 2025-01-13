@@ -9,12 +9,35 @@ import pytest
 from web3 import Web3
 
 from hemera.common.utils.abi_code_utils import Function
+from hemera.common.utils.format_utils import hex_str_to_bytes
+from hemera.indexer.utils.abi_setting import ERC20_BALANCE_OF_FUNCTION
 from hemera.indexer.utils.multicall_hemera import Call
+from hemera.indexer.utils.multicall_hemera.abi import AGGREGATE_FUNC, TRY_BLOCK_AND_AGGREGATE_FUNC
 from hemera.indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
 from tests_commons import ETHEREUM_PUBLIC_NODE_RPC_URL
 
 web3 = Web3(Web3.HTTPProvider(ETHEREUM_PUBLIC_NODE_RPC_URL))
 multicall_helper = MultiCallHelper(web3, {"batch_size": 100, "multicall": True, "max_workers": 10})
+
+
+def test_multicall_encode():
+    cl1 = Call(
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        function_abi=ERC20_BALANCE_OF_FUNCTION,
+        parameters=["0x49866A9CFE9129FbB0B93dCDb4b5eb758Ee3F9Be"],
+    )
+    cl2 = Call(
+        "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+        function_abi=ERC20_BALANCE_OF_FUNCTION,
+        parameters=["0xdDE1bb2B8cb427B889567CbDf6527c4E69C0a392"],
+    )
+    parameters = [[[call.target, hex_str_to_bytes(call.data)] for call in [cl1, cl2]]]
+    assert AGGREGATE_FUNC.encode_function_call_data(parameters) == AGGREGATE_FUNC.encode_multicall_data(parameters)
+
+    parameters = [False, [[call.target, hex_str_to_bytes(call.data)] for call in [cl1, cl2]]]
+    assert TRY_BLOCK_AND_AGGREGATE_FUNC.encode_function_call_data(
+        parameters
+    ) == TRY_BLOCK_AND_AGGREGATE_FUNC.encode_multicall_data(parameters)
 
 
 @pytest.mark.indexer

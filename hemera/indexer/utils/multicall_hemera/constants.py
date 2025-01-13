@@ -4,6 +4,8 @@ from typing import ClassVar, Dict
 
 # gas limit for a single call
 GAS_LIMIT: int = int(os.environ.get("GAS_LIMIT", 5_000_000))
+# for some networks, there may be `MAX_GAS_LIMIT` if this is set, `GAS_LIMIT` will not be used
+MAX_GAS_LIMIT: int = int(os.environ.get("MAX_GAS_LIMIT", 0))
 # payload limit in KB
 RPC_PAYLOAD_SIZE: int = int(os.environ.get("BATCH_SIZE", 250))
 # calls limit

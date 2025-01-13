@@ -151,6 +151,9 @@ class BaseJob(metaclass=BaseJobMeta):
 
     def run(self, **kwargs):
         try:
+            start_block = kwargs["start_block"]
+            end_block = kwargs["end_block"]
+
             self._start(**kwargs)
 
             if self.able_to_reorg and self._reorg:
@@ -172,7 +175,10 @@ class BaseJob(metaclass=BaseJobMeta):
                     type(self._data_buff) is BufferService
                     and not self._data_buff.is_shutdown()
                     and not self._data_buff.check_and_flush(
-                        job_name=self.job_name, output_types=[output.type() for output in self.output_types]
+                        start_block=start_block,
+                        end_block=end_block,
+                        job_name=self.job_name,
+                        output_types=[output.type() for output in self.output_types],
                     )
                 ):
                     raise RetriableError(f"Job {self.job_name} export error.")
@@ -209,14 +215,14 @@ class BaseJob(metaclass=BaseJobMeta):
                     self._data_buff.pop(output.type())
 
     # @deprecated
-    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 1.1.0.
     # Please move your data process logic into _udf instead.
     @deprecated
     def _collect(self, **kwargs):
         pass
 
     # @deprecated
-    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 1.1.0.
     # Please move your data process batch logic into custom define function instead.
     @deprecated
     def _collect_batch(self, iterator):
@@ -253,7 +259,7 @@ class BaseJob(metaclass=BaseJobMeta):
         return res
 
     # @deprecated
-    # This function has been marked as deprecated in 0.6.0, and will be removed in 0.8.0.
+    # This function has been marked as deprecated in 0.6.0, and will be removed in 1.1.0.
     # Please move your data process logic into _udf instead.
     @deprecated
     def _process(self, **kwargs):

@@ -6,10 +6,12 @@ from alembic.operations import ops
 from sqlalchemy import engine_from_config, pool
 from sqlalchemy.sql.schema import SchemaItem
 
-from hemera.common.models import db, import_all_models
+from hemera.common.models import db
+from hemera.common.utils.module_loading import import_submodules
 
 # Make sure everything is imported so that alembic can find it all
 # import_all_models()
+import_submodules("hemera.common.models")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -31,30 +33,8 @@ target_metadata = db.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-IGNORE_DB_TABLE = [
-    "transactions_multi",
-    "hemera_address_transactions",
-    "address_transactions_all",
-    "chosen_address",
-    "af_ether_fi_share_balances",
-    "af_ether_fi_position_values",
-    "af_ether_fi_share_balances_current",
-    "af_ether_fi_lrt_exchange_rate",
-    "af_lido_seth_share_balances",
-    "af_lido_position_values",
-    "af_lido_seth_share_balances_current",
-    "af_pendle_pool",
-    "af_pendle_user_active_balance",
-    "af_pendle_user_active_balance_current",
-]
-PARTITION_TABLES = [
-    "contract_internal_transactions",
-    "erc20_token_transfers",
-    "erc721_token_transfers",
-    "logs",
-    "traces",
-    "transactions",
-]
+IGNORE_DB_TABLE = []
+PARTITION_TABLES = []
 
 
 def table_able_to_track(**kwargs) -> bool:

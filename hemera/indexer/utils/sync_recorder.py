@@ -17,6 +17,10 @@ ASYNC_SUBMIT = bool(strtobool(os.environ.get("ASYNC_SUBMIT", "false")))
 
 
 class BaseRecorder(object):
+
+    def __init__(self, multi_mode: bool):
+        self.multi_mode = multi_mode
+
     def set_last_synced_block(self, last_synced_block):
         pass
 
@@ -33,11 +37,12 @@ class BaseRecorder(object):
 
 class FileSyncRecorder(BaseRecorder):
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, multi_mode):
+        super().__init__(multi_mode)
         self.file_name = file_name
 
     def set_last_synced_block(self, last_synced_block):
-        if ASYNC_SUBMIT:
+        if ASYNC_SUBMIT or self.multi_mode:
             wrote_synced_block = self.get_last_synced_block()
             if wrote_synced_block < last_synced_block:
                 write_to_file(self.file_name, str(last_synced_block) + "\n")
@@ -46,7 +51,6 @@ class FileSyncRecorder(BaseRecorder):
 
     def get_last_synced_block(self):
         if not os.path.isfile(self.file_name):
-            self.set_last_synced_block(0)
             return 0
         with smart_open(self.file_name, "r") as last_synced_block_file:
             last_synced_block = last_synced_block_file.read()
@@ -70,13 +74,11 @@ class FileSyncRecorder(BaseRecorder):
 
         write_to_file(failure_file, json.dumps(content) + "\n", "a+")
 
-    def handle_success(self, last_block_number):
-        pass
-
 
 class PGSyncRecorder(BaseRecorder):
 
-    def __init__(self, key, service):
+    def __init__(self, key, service, multi_mode):
+        super().__init__(multi_mode)
         self.key = key
         self.service = service
 
@@ -92,7 +94,7 @@ class PGSyncRecorder(BaseRecorder):
                 },
             }
 
-            if ASYNC_SUBMIT:
+            if ASYNC_SUBMIT or self.multi_mode:
                 conflict_args["where"] = SyncRecord.last_block_number <= last_synced_block
 
             statement = (
@@ -152,7 +154,7 @@ class PGSyncRecorder(BaseRecorder):
             session.close()
 
 
-def create_recorder(sync_recorder: str, config: dict) -> BaseRecorder:
+def create_recorder(sync_recorder: str, config: dict, multi_mode: bool) -> BaseRecorder:
     recorder_sign = sync_recorder.find(":")
     if recorder_sign == -1:
         raise ValueError(f"Invalid sync recorder: {sync_recorder}" "")
@@ -164,10 +166,10 @@ def create_recorder(sync_recorder: str, config: dict) -> BaseRecorder:
             service = config["db_service"]
         except KeyError:
             raise ValueError(f"postgresql sync record must provide pg config.")
-        return PGSyncRecorder(recorder[1], service)
+        return PGSyncRecorder(recorder[1], service, multi_mode)
 
     elif recorder[0] == "file":
-        return FileSyncRecorder(recorder[1])
+        return FileSyncRecorder(recorder[1], multi_mode)
 
     else:
         raise ValueError("Unable to determine sync recorder type: " + sync_recorder)

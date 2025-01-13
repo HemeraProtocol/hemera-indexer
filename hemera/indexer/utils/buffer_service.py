@@ -255,23 +255,20 @@ class BufferService:
             item_exporter.export_items(items)
             item_exporter.close()
 
-    def flush_buffer(self, flush_keys: List[str]):
+    def flush_buffer(self, start_block, end_block, flush_keys: List[str]):
         flush_items = []
         flush_type = set()
         with self.buffer_lock:
-            if len(self.buffer["block"]) == 0:
-                self.concurrent_submitters.release()
-                return True
-
-            self.buffer["block"].sort(key=lambda x: x.number)
-            block_range = (self.buffer["block"][0].number, self.buffer["block"][-1].number)
+            block_range = (start_block, end_block)
 
             for key in flush_keys:
                 if key in self.required_output_types:
                     flush_type.add(key)
                     flush_items.extend(self.buffer[key])
-            if len(flush_keys):
-                self.logger.info(f"Flush domains: {','.join(flush_keys)} between block range: {block_range}")
+            if len(flush_type):
+                self.logger.info(f"Flush domains: {','.join(flush_type)} between block range: {block_range}")
+            else:
+                return True
 
         with self.futures_lock:
             future = self.submit_export_pool.submit(self.export_items, flush_items)
@@ -291,18 +288,20 @@ class BufferService:
 
         return True
 
-    def check_and_flush(self, job_name: str = None, output_types: List[str] = None):
+    def check_and_flush(self, start_block, end_block, job_name: str = None, output_types: List[str] = None):
         if job_name in self.export_strategy:
             output_types = self.export_strategy[job_name]
 
         self.concurrent_submitters.acquire()
 
-        if not ASYNC_SUBMIT:
-            return self.flush_buffer(output_types)
-        else:
-            self.flush_buffer(output_types)
-
-        return True
+        try:
+            if not ASYNC_SUBMIT:
+                return self.flush_buffer(start_block, end_block, output_types)
+            else:
+                self.flush_buffer(start_block, end_block, output_types)
+            return True
+        finally:
+            self.concurrent_submitters.release()
 
     def clear(self):
         with self.buffer_lock:

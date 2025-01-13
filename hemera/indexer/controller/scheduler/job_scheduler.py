@@ -1,15 +1,16 @@
+import io
 import logging
 import os
 from collections import defaultdict, deque
 from distutils.util import strtobool
 from typing import List, Set, Type, Union
 
+import pandas as pd
 from pottery import RedisDict
 from redis.client import Redis
+from tqdm import tqdm
 
-from hemera.common.models.tokens import Tokens
 from hemera.common.utils.exception_control import HemeraBaseException
-from hemera.common.utils.format_utils import bytes_to_hex_str
 from hemera.common.utils.module_loading import import_submodules
 from hemera.indexer.jobs import CSVSourceJob
 from hemera.indexer.jobs.base_job import (
@@ -28,21 +29,47 @@ PGSOURCE_ACCURACY = bool(strtobool(os.environ.get("PGSOURCE_ACCURACY", "false"))
 
 
 def get_tokens_from_db(service):
-    with service.session_scope() as s:
-        dict = {}
-        result = s.query(Tokens).all()
-        if result is not None:
-            for token in result:
-                dict[bytes_to_hex_str(token.address)] = {
-                    "address": bytes_to_hex_str(token.address),
-                    "token_type": token.token_type,
-                    "name": token.name,
-                    "symbol": token.symbol,
-                    "decimals": int(token.decimals) if token.decimals is not None else None,
-                    "block_number": token.block_number,
-                    "total_supply": int(token.total_supply) if token.total_supply is not None else None,
-                }
-        return dict
+    with service.cursor_scope() as cur:
+        csv_data = io.StringIO()
+        copy_query = "COPY tokens TO STDOUT WITH CSV HEADER"
+        cur.copy_expert(copy_query, csv_data)
+        csv_data.seek(0)
+
+        dtype = {
+            "address": str,
+            "token_type": str,
+            "name": str,
+            "symbol": str,
+            "decimals": str,
+            "total_supply": str,
+            "fail_balance_of_count": int,
+            "fail_total_supply_count": int,
+            "block_number": int,
+        }
+        converters = {
+            "no_balance_of": lambda x: str(x).lower() in ["t", "true", "1"],
+            "no_total_supply": lambda x: str(x).lower() in ["t", "true", "1"],
+        }
+        df = pd.read_csv(csv_data, dtype=dtype, converters=converters)
+        df["address"] = df["address"].str.replace(r"\\x", "0x", regex=True)
+
+        token_dict = {}
+        for row in tqdm(df.itertuples(), total=len(df), desc="Loading tokens"):
+            address = row.address
+            token_dict[address] = {
+                "address": address,
+                "token_type": row.token_type,
+                "name": row.name,
+                "symbol": row.symbol,
+                "decimals": int(row.decimals) if pd.notna(row.decimals) else None,
+                "total_supply": int(row.total_supply) if pd.notna(row.total_supply) else None,
+                "no_total_supply": row.no_total_supply,
+                "fail_total_supply_count": row.fail_total_supply_count,
+                "no_balance_of": row.no_balance_of,
+                "fail_balance_of_count": row.fail_balance_of_count,
+                "block_number": row.block_number,
+            }
+        return token_dict
 
 
 def get_source_job_type(source_path: str):

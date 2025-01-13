@@ -2,7 +2,7 @@ from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSONB, NUMERIC, TIMESTAMP, VARCHAR
 
 from hemera.common.models import HemeraModel, general_converter
-from hemera.indexer.domains.token import Token, UpdateToken
+from hemera.indexer.domains.token import MarkBalanceToken, MarkTotalSupplyToken, Token, UpdateToken
 
 
 class Tokens(HemeraModel):
@@ -32,6 +32,11 @@ class Tokens(HemeraModel):
     gecko_id = Column(VARCHAR)
     description = Column(VARCHAR)
 
+    no_balance_of = Column(BOOLEAN, default=False)
+    fail_balance_of_count = Column(INTEGER, default=0)
+    no_total_supply = Column(BOOLEAN, default=False)
+    fail_total_supply_count = Column(BOOLEAN, default=0)
+
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
@@ -50,6 +55,20 @@ class Tokens(HemeraModel):
                 "domain": UpdateToken,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > tokens.block_number",
+                "converter": general_converter,
+            },
+            {
+                "domain": MarkTotalSupplyToken,
+                "conflict_do_update": True,
+                "update_strategy": None,
+                # "update_strategy": "EXCLUDED.block_number >= tokens.block_number",
+                "converter": general_converter,
+            },
+            {
+                "domain": MarkBalanceToken,
+                "conflict_do_update": True,
+                "update_strategy": None,
+                # "update_strategy": "EXCLUDED.block_number >= tokens.block_number",
                 "converter": general_converter,
             },
         ]

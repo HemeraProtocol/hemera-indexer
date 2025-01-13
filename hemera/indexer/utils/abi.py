@@ -1,7 +1,10 @@
+from itertools import accumulate
 from typing import Any, Dict, Optional, Sequence, Tuple
 
 from eth_abi.codec import ABICodec
 from eth_abi.grammar import BasicType
+from eth_abi.utils.numeric import ceil32
+from eth_abi.utils.padding import zpad, zpad_right
 from eth_typing import ChecksumAddress, HexStr, TypeStr
 from eth_utils import (
     event_abi_to_log_topic,
@@ -70,9 +73,6 @@ def abi_address_to_hex(type_str: TypeStr, data: Any) -> Optional[Tuple[TypeStr, 
 
 
 def uint256_to_bytes(value: int) -> bytes:
-    if value < 0 or value >= 2**256:
-        raise ValueError("Value out of uint256 range")
-
     return value.to_bytes(32, byteorder="big")
 
 
@@ -84,3 +84,64 @@ def pad_address(address: str) -> bytes:
 
     padded = "0" * 24 + address
     return bytes.fromhex(padded)
+
+
+def encode_bool(arg: bool) -> bytes:
+    value = b"\x01" if arg is True else b"\x00"
+    return zpad(value, 32)
+
+
+def encode_bytes(value: bytes) -> bytes:
+    value_length = len(value)
+
+    encoded_size = uint256_to_bytes(value_length)
+    padded_value = zpad_right(value, ceil32(value_length))
+
+    return encoded_size + padded_value
+
+
+def tuple_encode(values, type_lis):
+    raw_head_chunks = []
+    tail_chunks = []
+    for value, tp in zip(values, type_lis):
+        if tp == "bytes":
+            raw_head_chunks.append(None)
+            tail_chunks.append(encode_bytes(value))
+        elif tp == "bool":
+            raw_head_chunks.append(encode_bool(value))
+            tail_chunks.append(b"")
+        elif tp == "address":
+            raw_head_chunks.append(pad_address(value))
+            tail_chunks.append(b"")
+        elif tp == "(address,bytes)[]":
+            items_are_dynamic = True
+            if not items_are_dynamic or len(value) == 0:
+                return b"".join(tail_chunks)
+            encoded_size = uint256_to_bytes(len(value))
+
+            tmp_tail_chunks = tuple(tuple_encode(list(i), ["address", "bytes"]) for i in value)
+            head_length = 32 * len(value)
+            tail_offsets = (0,) + tuple(accumulate(map(len, tmp_tail_chunks[:-1])))
+            head_chunks = tuple(uint256_to_bytes(head_length + offset) for offset in tail_offsets)
+            raw_head_chunks.append(None)
+            tail_chunks.append(encoded_size + b"".join(head_chunks + tmp_tail_chunks))
+        elif tp == "(address,bytes)":
+            encoded_size = uint256_to_bytes(len(value))
+            encoded_elements = b""
+            for target, call_data in value:
+                encoded_elements += pad_address(target)
+                encoded_elements += tuple_encode([call_data], ["bytes"])
+            raw_head_chunks.append(None)
+            tail_chunks.append(encoded_size + encoded_elements)
+        else:
+            raise Exception(f"Unsupported type {tp}")
+
+    head_length = sum(32 if item is None else len(item) for item in raw_head_chunks)
+    tail_offsets = (0,) + tuple(accumulate(map(len, tail_chunks[:-1])))
+    head_chunks = tuple(
+        uint256_to_bytes(head_length + offset) if chunk is None else chunk
+        for chunk, offset in zip(raw_head_chunks, tail_offsets)
+    )
+
+    encoded_value = b"".join(head_chunks + tuple(tail_chunks))
+    return encoded_value

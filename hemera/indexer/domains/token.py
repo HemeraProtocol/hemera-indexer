@@ -20,3 +20,17 @@ class UpdateToken(Domain):
     address: str
     block_number: int
     total_supply: Optional[int] = None
+
+
+@dataclass
+class MarkBalanceToken(Domain):
+    address: str
+    fail_balance_of_count: int
+    no_balance_of: Optional[bool] = True
+
+
+@dataclass
+class MarkTotalSupplyToken(Domain):
+    address: str
+    fail_total_supply_count: int
+    no_total_supply: Optional[bool] = True
