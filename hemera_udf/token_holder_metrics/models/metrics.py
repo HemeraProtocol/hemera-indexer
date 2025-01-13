@@ -1,9 +1,12 @@
-from sqlalchemy import Column, PrimaryKeyConstraint, func, BOOLEAN
+from sqlalchemy import BOOLEAN, Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
 from hemera.common.models import HemeraModel, general_converter
-from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD, \
-    TokenHolderTransferWithPriceD
+from hemera_udf.token_holder_metrics.domains.metrics import (
+    TokenHolderMetricsCurrentD,
+    TokenHolderMetricsHistoryD,
+    TokenHolderTransferWithPriceD,
+)
 
 
 class TokenHolderMetricsCurrent(HemeraModel):
@@ -144,7 +147,9 @@ class TokenHolderTransferWithPrice(HemeraModel):
 
     create_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("holder_address", "token_address", "block_timestamp", "tx_hash", "log_index"),)
+    __table_args__ = (
+        PrimaryKeyConstraint("holder_address", "token_address", "block_timestamp", "tx_hash", "log_index"),
+    )
 
     @staticmethod
     def model_domain_mapping():
