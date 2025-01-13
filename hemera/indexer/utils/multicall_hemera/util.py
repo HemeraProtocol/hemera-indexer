@@ -12,10 +12,15 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import orjson
+from requests import RequestException
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from hemera.indexer.utils.multicall_hemera.constants import RPC_PAYLOAD_SIZE
 
 logger = logging.getLogger(__name__)
+
+
+JOB_RETRIES = int(os.environ.get("JOB_RETRIES", "5"))
 
 
 def calculate_execution_time(func):
@@ -25,7 +30,7 @@ def calculate_execution_time(func):
         end_time = time.time()
         execution_time = end_time - start_time
         logger.debug(f"function {func.__name__} time: {execution_time:.6f} s")
-        # print(f"function {func.__name__} time: {execution_time:.6f} s")
+        print(f"function {func.__name__} time: {execution_time:.6f} s")
         return result
 
     return wrapper
@@ -88,6 +93,12 @@ class ThreadPoolManager:
             cls._instance = None
 
     @classmethod
+    @retry(
+        stop=stop_after_attempt(JOB_RETRIES),
+        wait=wait_exponential(min=1, max=(2 ** (JOB_RETRIES - 1)), multiplier=2),
+        retry=retry_if_exception_type((TimeoutError, ConnectionError, RequestException, Exception)),
+        reraise=True,
+    )
     def submit_tasks(cls, func, chunks, max_workers=None):
         executor = cls.get_instance(max_workers)
         results = [None] * len(chunks)

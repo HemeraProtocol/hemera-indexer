@@ -33,10 +33,12 @@ from hemera.indexer.utils.abi import (
     abi_bytes_to_bytes,
     abi_string_to_text,
     codec,
+    encode_bool,
     event_log_abi_to_topic,
     function_abi_to_4byte_selector_str,
     get_types_from_abi_type_list,
     pad_address,
+    tuple_encode,
     uint256_to_bytes,
 )
 
@@ -307,9 +309,27 @@ class Function:
                 encoded += pad_address(arg)
             elif arg_type == "uint256":
                 encoded += uint256_to_bytes(arg)
+            elif arg_type == "bool":
+                encoded += encode_bool(arg)
             else:
                 # cannot handle, call encode directly
                 return encode_data(self._function_abi, arguments, self.get_signature())
+        return bytes_to_hex_str(encoded)
+
+    def encode_multicall_data(self, arguments: Sequence[Any]) -> str:
+        """For use with multicall.
+        This implementation should be 5x faster than eth_abi.encode, which is slow in this scenario.
+        """
+        if arguments is None:
+            arguments = []
+
+        encoded = hex_str_to_bytes(self._signature)
+        if len(arguments) == 1:
+            encoded += tuple_encode(arguments, ["(address,bytes)[]"])
+        elif len(arguments) == 2:
+            encoded += tuple_encode(arguments, ["bool", "(address,bytes)[]"])
+        else:
+            return encode_data(self._function_abi, arguments, self.get_signature())
         return bytes_to_hex_str(encoded)
 
 

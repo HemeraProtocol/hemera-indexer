@@ -13,7 +13,7 @@ from hemera.common.utils.exception_control import FastShutdownError
 from hemera.common.utils.format_utils import bytes_to_hex_str
 from hemera.indexer.utils.multicall_hemera import Call, Multicall
 from hemera.indexer.utils.multicall_hemera.abi import TRY_BLOCK_AND_AGGREGATE_FUNC
-from hemera.indexer.utils.multicall_hemera.constants import CALLS_LIMIT, GAS_LIMIT, get_multicall_network
+from hemera.indexer.utils.multicall_hemera.constants import CALLS_LIMIT, GAS_LIMIT, MAX_GAS_LIMIT, get_multicall_network
 from hemera.indexer.utils.multicall_hemera.util import (
     calculate_execution_time,
     make_request_concurrent,
@@ -142,6 +142,7 @@ class MultiCallHelper:
                     call.returns = None
                     self.logger.warning(f"multicall helper failed call: {call}")
 
+    @calculate_execution_time
     def construct_multicall_rpc(self, to_execute_multi_calls):
         self.logger.info(f"Function total multicalls: {len(to_execute_multi_calls)}")
         multicall_rpc = []
@@ -153,17 +154,7 @@ class MultiCallHelper:
                         require_success=False,
                         chain_id=self.chain_id,
                         block_number=calls[0].block_number,
-                        gas_limit=(len(calls) * GAS_LIMIT),
+                        gas_limit=MAX_GAS_LIMIT if MAX_GAS_LIMIT != 0 else (len(calls) * GAS_LIMIT),
                     ).to_rpc_param()
                 )
         return multicall_rpc
-
-    def _construct_single_multicall_rpc(self, calls):
-        multicall = Multicall(
-            calls,
-            require_success=False,
-            chain_id=self.chain_id,
-            block_number=calls[0].block_number,
-            gas_limit=(len(calls) * GAS_LIMIT),
-        )
-        return multicall.to_rpc_param()
