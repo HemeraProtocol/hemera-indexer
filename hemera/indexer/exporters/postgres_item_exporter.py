@@ -65,6 +65,9 @@ class PostgresItemExporter(BaseExporter):
                     item_group = items_grouped_by_type.get(item_type)
 
                     if item_group:
+                        if item_type not in self._domain_model_mapping:
+                            continue
+
                         pg_config = self._domain_model_mapping[item_type]
                         table = pg_config["table"]
                         do_update = pg_config["conflict_do_update"]

@@ -1,4 +1,4 @@
-from hemera.common.utils.abi_code_utils import Event
+from hemera.common.utils.abi_code_utils import Event, Function
 
 PAIR_CREATED_EVENT = Event(
     {
@@ -27,5 +27,39 @@ SWAP_EVENT = Event(
         ],
         "name": "Swap",
         "type": "event",
+    }
+)
+
+TOKEN0_FUNCTION = Function(
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "token0",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+TOKEN1_FUNCTION = Function(
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "token1",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+FACTORY_FUNCTION = Function(
+    {
+        "constant": True,
+        "inputs": [],
+        "name": "factory",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function",
     }
 )

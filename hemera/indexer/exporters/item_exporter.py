@@ -2,6 +2,7 @@ from hemera.indexer.exporters.base_exporter import BaseExporter
 from hemera.indexer.exporters.console_item_exporter import ConsoleItemExporter
 from hemera.indexer.exporters.csv_file_item_exporter import CSVFileItemExporter
 from hemera.indexer.exporters.json_file_item_exporter import JSONFileItemExporter
+from hemera.indexer.exporters.kafka_exporter import KafkaItemExporter
 from hemera.indexer.exporters.postgres_item_exporter import PostgresItemExporter
 
 
@@ -21,6 +22,8 @@ def create_item_exporter(output, config):
         item_exporter = JSONFileItemExporter(output, config)
     elif item_exporter_type == ItemExporterType.CSVFILE:
         item_exporter = CSVFileItemExporter(output, config)
+    elif item_exporter_type == ItemExporterType.KAFKA:
+        item_exporter = KafkaItemExporter(output)
     # TODO: Implement HemeraAddressPostgresItemExporter dynamically importing it
     # elif item_exporter_type == ItemExporterType.HEMERA_ADDRESS_POSTGRES:
     #     item_exporter = HemeraAddressPostgresItemExporter(output, config["chain_id"])
@@ -52,6 +55,8 @@ def determine_item_exporter_type(output):
         return ItemExporterType.JSONFILE
     elif output is not None and output.startswith("csvfile://"):
         return ItemExporterType.CSVFILE
+    elif output is not None and output.startswith("kafka://"):
+        return ItemExporterType.KAFKA
     elif output is not None and output == "void":
         return ItemExporterType.VOID
     elif output is None or output == "console":
@@ -68,6 +73,7 @@ class ItemExporterType:
     CSVFILE = "csvfile"
     CONSOLE = "console"
     UNKNOWN = "unknown"
+    KAFKA = "kafka"
     HEMERA_ADDRESS_POSTGRES = "hemera_address_postgres"
 
 

@@ -18,16 +18,16 @@ uniswap_v3_job:
   # works in price\token job
   jobs:
     - type: uniswapv3  # cle
-      factory address: '0xaaa32926fce6be95ea2c51cb4fcb60836d320c42'
+      factory_address: '0xaaa32926fce6be95ea2c51cb4fcb60836d320c42'
       position_token_address: '0xaaa78e8c4241990b4ce159e105da08129345946a'
     - type: swapsicle  # swapsicle
-      factory address: '0xc848bc597903b4200b9427a3d7f61e3ff0553913'
+      factory_address: '0xc848bc597903b4200b9427a3d7f61e3ff0553913'
       position_token_address: '0x7d24de60a68ae47be4e852cf03dd4d8588b489ec'
     - type: agni  # agni
-      factory address: '0x25780dc8fc3cfbd75f33bfdab65e969b603b2035'
+      factory_address: '0x25780dc8fc3cfbd75f33bfdab65e969b603b2035'
       position_token_address: '0x218bf598d1453383e2f4aa7b14ffb9bfb102d637'
     - type: agni  # fusion
-      factory address: '0x530d2766d1988cc1c000c8b7d00334c14b69ad71'
+      factory_address: '0x530d2766d1988cc1c000c8b7d00334c14b69ad71'
       position_token_address: '0x5752f085206ab87d8a5ef6166779658add455774'
 
 

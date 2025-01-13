@@ -60,10 +60,6 @@ class Domain(metaclass=DomainMeta):
         for key, value in filtered_data.items():
             setattr(self, key, value)
 
-    @classmethod
-    def is_filter_data(cls):
-        return False
-
 
 from typing import Dict
 

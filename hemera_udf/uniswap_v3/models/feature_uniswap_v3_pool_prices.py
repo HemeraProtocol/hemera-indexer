@@ -13,6 +13,9 @@ class UniswapV3PoolPrices(HemeraModel):
 
     sqrt_price_x96 = Column(NUMERIC(100))
     tick = Column(NUMERIC(100))
+    token0_price = Column(NUMERIC)
+    token1_price = Column(NUMERIC)
+
     factory_address = Column(BYTEA)
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())

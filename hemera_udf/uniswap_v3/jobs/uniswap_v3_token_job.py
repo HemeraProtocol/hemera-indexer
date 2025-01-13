@@ -157,7 +157,11 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             block_timestamp = owner_call.user_defined_k
 
             positions = positions_call.returns
-            token0, token1, tick_lower, tick_upper, liquidity, fee = self.decode_positions_data(
+
+            if not owner_call.returns or not positions_call.returns:
+                continue
+
+            token0, token1, tick_lower, tick_upper, liquidity, fee, tick_spacing = self.decode_positions_data(
                 position_token_address, positions
             )
             data_dict = {
@@ -172,6 +176,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 "tick_upper": tick_upper,
                 "liquidity": liquidity,
                 "fee": fee,
+                "tick_spacing": tick_spacing,
             }
             positions_data_list.append(data_dict)
         self.get_pool_address_by_rpc(positions_data_list)
@@ -199,7 +204,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 continue
 
             if (position_token_address, token_id) not in self._existing_tokens:
-                self._existing_tokens.append((position_token_address, token_id))
+                self._existing_tokens.add((position_token_address, token_id))
                 token = UniswapV3Token(
                     position_token_address=position_token_address,
                     token_id=token_id,
@@ -241,6 +246,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 positions_data.get("position_token_address"),
                 positions_data.get("token0"),
                 positions_data.get("token1"),
+                # todo: some pools use tick_spacing
                 positions_data.get("fee"),
             )
             pool_address = self.existing_pools.get(key)
@@ -259,6 +265,9 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
             parameters = [positions_data.get("token0"), positions_data.get("token1")]
             if uniswapv3_type_str in ("uniswapv3", "agni"):
                 parameters.append(positions_data.get("fee"))
+            elif uniswapv3_type_str == "aerodrome":
+                parameters.append(positions_data.get("tick_spacing"))
+
             call = Call(
                 target=factory_address,
                 parameters=parameters,
@@ -276,13 +285,18 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                 factory_address = call.target.lower()
                 position_token_address = self._address_manager.get_position_by_factory(factory_address)
 
+                type_str = self._address_manager.get_type_str_by_position(position_token_address)
+
                 parameters = call.parameters
                 token0 = parameters[0]
                 token1 = parameters[1]
-                if parameters.__len__() == 3:
+
+                tick_spacing = 0
+                fee = 0
+                if type_str in ("uniswapv3", "agni"):
                     fee = parameters[2]
-                else:
-                    fee = 0
+                elif type_str == "aerodrome":
+                    tick_spacing = parameters[3]
 
                 uniswap_v_pool_from_token_positions = UniswapV3PoolFromToken(
                     position_token_address=position_token_address,
@@ -293,7 +307,7 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
                     token1_address=token1,
                     block_number=call.block_number,
                     block_timestamp=call.user_defined_k,
-                    tick_spacing=0,
+                    tick_spacing=tick_spacing,
                 )
                 self._collect_domain(uniswap_v_pool_from_token_positions)
                 pool = {
@@ -318,7 +332,8 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         liquidity = positions.get("liquidity")
         # some position has no fee, could use 0/-1
         fee = positions.get("fee", 0)
-        return token0, token1, tick_lower, tick_upper, liquidity, fee
+        tick_spacing = positions.get("tickSpacing", 0)
+        return token0, token1, tick_lower, tick_upper, liquidity, fee, tick_spacing
 
     def get_existing_tokens(self):
         session = self._service.get_service_session()
@@ -327,13 +342,12 @@ class ExportUniSwapV3TokensJob(FilterTransactionDataJob):
         ).all()
         session.close()
 
-        # position_token_address_token_id_pool_address_dict = {
-        #     (bytes_to_hex_str(t.position_token_address), bytes_to_hex_str(t.token_id)): bytes_to_hex_str(t.pool_address)
-        #     for t in tokens_orm}
+        position_token_address_token_id_pool_address_dict = set()
 
-        position_token_address_token_id_pool_address_dict = [
-            (bytes_to_hex_str(t.position_token_address), t.token_id) for t in tokens_orm
-        ]
+        for t in tokens_orm:
+            position_token_address_token_id_pool_address_dict.add(
+                (bytes_to_hex_str(t.position_token_address), t.token_id)
+            )
 
         return position_token_address_token_id_pool_address_dict
 

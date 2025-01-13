@@ -3,6 +3,7 @@ import logging
 import hemera_udf.uniswap_v3.abi.agni_abi as agni_abi
 import hemera_udf.uniswap_v3.abi.swapsicle_abi as swapsicle_abi
 import hemera_udf.uniswap_v3.abi.uniswapv3_abi as uniswapv3_abi
+from hemera_udf.uniswap_v3.abi import aerodrome_abi
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +39,8 @@ class AddressManager:
     def _build_mappings(self, jobs):
         for job in jobs:
             type_str = job.get("type")
-            factory_address = job.get("factory address")
-            position_token_address = job.get("position_token_address")
+            factory_address = job.get("factory_address").lower()
+            position_token_address = job.get("position_token_address").lower()
 
             if factory_address not in self.factory_address_list:
                 self.factory_address_list.append(factory_address)
@@ -70,6 +71,7 @@ class AddressManager:
             "uniswapv3": uniswapv3_abi,
             "swapsicle": swapsicle_abi,
             "agni": agni_abi,
+            "aerodrome": aerodrome_abi,
         }
         return abi_mapping.get(type_str)
 

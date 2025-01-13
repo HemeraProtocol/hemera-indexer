@@ -1,5 +1,8 @@
 chain_id: 8453
 
+export_transactions_and_logs_job:
+  use_receipt_from_blocks_rpc: True
+
 uniswap_v3_job:
   # empty means no filter. only work in price job
   pool_address:
@@ -7,12 +10,30 @@ uniswap_v3_job:
   # works in price\token job
   jobs:
     - type: uniswapv3  # uniswapv3`
-      factory address: '0x33128a8fc17869897dce68ed026d694621f6fdfd'
+      factory_address: '0x33128a8fc17869897dce68ed026d694621f6fdfd'
       position_token_address: '0x03a520b32c04bf3beef7beb72e919cf822ed34f1'
 
     - type: uniswapv3  # pancake
-      factory address: '0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865'
+      factory_address: '0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865'
       position_token_address: '0x46a15b0b27311cedf172ab29e4f4766fbe7f4364'
+
+    - type: aerodrome # aerodrome
+      factory_address: "0x5e7bb104d84c7cb9b682aac2f3d509f5f406809a"
+      position_token_address: '0x827922686190790b37229fd06084350e74485b72'
+
+export_tokens_and_transfers_job:
+  filter_token_address:
+    # fbtc
+    - "0xc96de26018a54d51c097160568752c4e3bd6c364"
+    # uniswapv3
+    - "0x03a520b32c04bf3beef7beb72e919cf822ed34f1"
+    - "0x46a15b0b27311cedf172ab29e4f4766fbe7f4364"
+    - "0x827922686190790b37229fd06084350e74485b72"
+    - '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'
+    - '0x50c5725949a6f0c72e6c4a641f24049a917db0cb'
+    - '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2'
+    - '0x4200000000000000000000000000000000000006'
+
 
 export_meme_token_created_job:
   clanker_factory_address_v0: "0x250c9FB2b411B48273f69879007803790A6AeA47"
@@ -22,3 +43,11 @@ export_meme_token_created_job:
   larry_factory_address:
     - "0x5faAb5D52790916ed9c2C159960006151e311bA0"
     - "0xb3a720f17902b7d2e8c38c5044c3b20e8ac9c27c"
+
+
+export_block_token_price_job:
+  '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913': 'USDC'
+  '0x50c5725949a6f0c72e6c4a641f24049a917db0cb': 'DAI'
+  '0xfde4c96c8593536e31f229ea8f37b2ada2699bb2': 'USDT'
+  '0x4200000000000000000000000000000000000006': 'ETH'
+

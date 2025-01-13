@@ -7,7 +7,7 @@ uniswap_v3_job:
   # works in price\token job
   jobs:
     - type: agni  # pancake
-      factory address: '0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865'
+      factory_address: '0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865'
       position_token_address: '0x46a15b0b27311cedf172ab29e4f4766fbe7f4364'
 
 

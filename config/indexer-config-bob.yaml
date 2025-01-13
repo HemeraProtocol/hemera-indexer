@@ -7,7 +7,7 @@ uniswap_v3_job:
   # works in price\token job
   jobs:
     - type: uniswapv3  # oku
-      factory address: '0xcb2436774c3e191c85056d248ef4260ce5f27a9d'
+      factory_address: '0xcb2436774c3e191c85056d248ef4260ce5f27a9d'
       position_token_address: '0x743e03cceb4af2efa3cc76838f6e8b50b63f184c'
 
 

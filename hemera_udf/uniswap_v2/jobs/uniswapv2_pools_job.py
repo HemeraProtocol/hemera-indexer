@@ -3,7 +3,7 @@ import logging
 from hemera.indexer.domains.log import Log
 from hemera.indexer.jobs import FilterTransactionDataJob
 from hemera.indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
-from hemera_udf.uniswap_v2.abi.aerodrome_abi import POOL_CREATED_EVENT
+from hemera_udf.uniswap_v2.abi.aerodromev2_abi import POOL_CREATED_EVENT
 from hemera_udf.uniswap_v2.abi.uniswapv2_abi import PAIR_CREATED_EVENT
 from hemera_udf.uniswap_v2.domains import UniswapV2Pool
 

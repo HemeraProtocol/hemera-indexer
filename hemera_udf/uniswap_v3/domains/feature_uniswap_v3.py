@@ -34,6 +34,8 @@ class UniswapV3PoolPrice(Domain):
     pool_address: str
     sqrt_price_x96: int
     tick: int
+    token0_price: float
+    token1_price: float
     block_number: int
     block_timestamp: int
 
@@ -55,6 +57,8 @@ class UniswapV3PoolCurrentPrice(Domain):
     pool_address: str
     sqrt_price_x96: int
     tick: int
+    token0_price: float
+    token1_price: float
     block_number: int
     block_timestamp: int
 
@@ -68,6 +72,9 @@ class UniswapV3SwapEvent(Domain):
     recipient: str
     amount0: int
     amount1: int
+    token0_price: float
+    token1_price: float
+    amount_usd: float
     liquidity: int
     tick: int
     sqrt_price_x96: int

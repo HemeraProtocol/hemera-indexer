@@ -14,7 +14,7 @@ uniswap_v3_job:
 #  # works in price\token job
 #  jobs:
 #    - type: swapsicle  # thena`
-#      factory address: '0x306f06c147f064a010530292a1eb6737c3e378e4'
+#      factory_address: '0x306f06c147f064a010530292a1eb6737c3e378e4'
 #      position_token_address: '0xa51adb08cbe6ae398046a23bec013979816b77ab'
 
 thena_job:

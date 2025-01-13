@@ -21,12 +21,23 @@ class UniswapV2SwapEvent(Domain):
     amount1_in: int
     amount0_out: int
     amount1_out: int
-    log_index: int
+
     to_address: str
     pool_address: str
+    token0_address: str
+    token1_address: str
+    # calculate
+    amount0: int
+    amount1: int
+    token0_price: float
+    token1_price: float
+    amount_usd: float
+
     block_number: int
     block_timestamp: int
     transaction_hash: str
+    log_index: int
+    transaction_from_address: str
 
 
 @dataclass
@@ -43,3 +54,8 @@ class UniswapV2Erc20CurrentTotalSupply(Domain):
     total_supply: int
     block_number: int
     block_timestamp: int
+
+
+@dataclass
+class UniswapV2PoolFromSwapEvent(UniswapV2Pool):
+    pass

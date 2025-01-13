@@ -1,4 +1,4 @@
-from hemera.common.utils.abi_code_utils import Event
+from hemera.common.utils.abi_code_utils import Event, Function
 
 POOL_CREATED_EVENT = Event(
     {
@@ -28,5 +28,34 @@ SWAP_EVENT = Event(
         ],
         "name": "Swap",
         "type": "event",
+    }
+)
+
+TOKEN0_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "token0",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+TOKEN1_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "token1",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    }
+)
+
+FACTORY_FUNCTION = Function(
+    {
+        "inputs": [],
+        "name": "factory",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
     }
 )

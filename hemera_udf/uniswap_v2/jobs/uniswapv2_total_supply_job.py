@@ -70,8 +70,11 @@ class ExportUniswapV2TotalSupplyJob(ExtensionJob):
     def get_existing_pools(self):
         session = self._service.Session()
         try:
+            existing_pools = set()
+
             pools_orm = session.query(UniswapV2Pools).all()
-            existing_pools = [bytes_to_hex_str(p.pool_address) for p in pools_orm]
+            for pool in pools_orm:
+                existing_pools.add(bytes_to_hex_str(pool.pool_address))
 
         except Exception as e:
             print(e)

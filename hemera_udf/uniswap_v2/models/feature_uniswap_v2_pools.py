@@ -2,7 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func
 from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TIMESTAMP
 
 from hemera.common.models import HemeraModel, general_converter
-from hemera_udf.uniswap_v2.domains import UniswapV2Pool
+from hemera_udf.uniswap_v2.domains import UniswapV2Pool, UniswapV2PoolFromSwapEvent
 
 
 class UniswapV2Pools(HemeraModel):
@@ -31,5 +31,11 @@ class UniswapV2Pools(HemeraModel):
                 "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
-            }
+            },
+            {
+                "domain": UniswapV2PoolFromSwapEvent,
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
         ]

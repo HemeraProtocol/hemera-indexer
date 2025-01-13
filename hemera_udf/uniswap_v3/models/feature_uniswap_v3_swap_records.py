@@ -22,6 +22,9 @@ class UniswapV3PoolSwapRecords(HemeraModel):
     sqrt_price_x96 = Column(NUMERIC(100))
     amount0 = Column(NUMERIC(100))
     amount1 = Column(NUMERIC(100))
+    token0_price = Column(NUMERIC)
+    token1_price = Column(NUMERIC)
+    amount_usd = Column(NUMERIC)
 
     token0_address = Column(BYTEA)
     token1_address = Column(BYTEA)

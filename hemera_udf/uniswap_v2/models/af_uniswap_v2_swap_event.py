@@ -9,6 +9,7 @@ class AfUniswapV2SwapEvent(HemeraModel):
     __tablename__ = "af_uniswap_v2_swap_event"
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
+    transaction_from_address = Column(BYTEA)
 
     pool_address = Column(BYTEA)
     sender = Column(BYTEA)
@@ -19,8 +20,17 @@ class AfUniswapV2SwapEvent(HemeraModel):
     amount0_out = Column(NUMERIC)
     amount1_out = Column(NUMERIC)
 
+    amount0 = Column(NUMERIC)
+    amount1 = Column(NUMERIC)
+    token0_price = Column(NUMERIC)
+    token1_price = Column(NUMERIC)
+    amount_usd = Column(NUMERIC)
+
     block_number = Column(BIGINT)
     block_timestamp = Column(TIMESTAMP)
+
+    token0_address = Column(BYTEA)
+    token1_address = Column(BYTEA)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
