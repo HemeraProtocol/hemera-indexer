@@ -23,7 +23,7 @@ class AfDexBlockTokenPrice(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("token_address", "block_number","block_timestamp"),)
+    __table_args__ = (PrimaryKeyConstraint("token_address", "block_number", "block_timestamp"),)
 
     @staticmethod
     def model_domain_mapping():
