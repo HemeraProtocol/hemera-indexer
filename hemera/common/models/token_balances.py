@@ -25,13 +25,13 @@ class AddressTokenBalances(HemeraModel):
     balance = Column(NUMERIC(100))
 
     block_number = Column(BIGINT, primary_key=True)
-    block_timestamp = Column(TIMESTAMP)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("address", "token_address", "token_id", "block_number"),)
+    __table_args__ = (PrimaryKeyConstraint("address", "token_address", "token_id", "block_number", "block_timestamp"),)
 
     @staticmethod
     def model_domain_mapping():
