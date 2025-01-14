@@ -27,7 +27,7 @@ class AfUniswapV2SwapEvent(HemeraModel):
     amount_usd = Column(NUMERIC)
 
     block_number = Column(BIGINT)
-    block_timestamp = Column(TIMESTAMP)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
 
     token0_address = Column(BYTEA)
     token1_address = Column(BYTEA)
@@ -35,7 +35,7 @@ class AfUniswapV2SwapEvent(HemeraModel):
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 
-    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "log_index"),)
+    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "log_index", "block_timestamp"),)
 
     @staticmethod
     def model_domain_mapping():

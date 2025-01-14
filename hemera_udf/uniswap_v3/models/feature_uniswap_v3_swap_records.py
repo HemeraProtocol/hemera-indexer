@@ -11,7 +11,7 @@ class UniswapV3PoolSwapRecords(HemeraModel):
     transaction_hash = Column(BYTEA, primary_key=True)
     log_index = Column(INTEGER, primary_key=True)
     block_number = Column(BIGINT)
-    block_timestamp = Column(TIMESTAMP)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
     position_token_address = Column(BYTEA)
     transaction_from_address = Column(BYTEA)
     sender = Column(BYTEA)
@@ -33,7 +33,7 @@ class UniswapV3PoolSwapRecords(HemeraModel):
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("pool_address", "transaction_hash", "log_index"),)
+    __table_args__ = (PrimaryKeyConstraint("pool_address", "transaction_hash", "log_index", "block_timestamp"),)
 
     @staticmethod
     def model_domain_mapping():
