@@ -16,5 +16,12 @@ if packaging.version.parse(packaging.version.parse(hemera_version).base_version)
 
 value = DynamicEntityTypeRegistry.register("UNISWAP_V2")
 DynamicEntityTypeRegistry.register_output_types(
-    value, {UniswapV2Pool, UniswapV2SwapEvent, UniswapV2Erc20TotalSupply, UniswapV2Erc20CurrentTotalSupply}
+    value,
+    {
+        UniswapV2Pool,
+        UniswapV2SwapEvent,
+        UniswapV2PoolFromSwapEvent,
+        UniswapV2Erc20TotalSupply,
+        UniswapV2Erc20CurrentTotalSupply,
+    },
 )
