@@ -66,7 +66,7 @@ class ExportUniSwapV2SwapEventJob(FilterTransactionDataJob):
                     if log.address not in self.pools_requested_by_rpc:
                         abi_module = uniswapv2_abi
                         self.pools_requested_by_rpc.add(log.address)
-                elif log.topic0 == UNISWAPV2_SWAP_EVENT.get_signature() and log.address not in self._existing_pools:
+                elif log.topic0 == AERODROME_SWAP_EVENT.get_signature() and log.address not in self._existing_pools:
                     if log.address not in self.pools_requested_by_rpc:
                         abi_module = aerodromev2_abi
                         self.pools_requested_by_rpc.add(log.address)
