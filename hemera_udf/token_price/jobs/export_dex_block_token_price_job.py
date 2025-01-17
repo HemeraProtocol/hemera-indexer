@@ -87,13 +87,19 @@ class ExportDexBlockTokenPriceJob(ExtensionJob):
         }
 
         uniswapv2_df_ = self.dataclass_to_df(self._data_buff[UniswapV2SwapEvent.type()])
-        uniswapv2_df = self.process_uniswap_data(
-            uniswapv2_df_, token_balance_dict, self.stable_tokens, self.max_price, self.process_token
-        )
+        if uniswapv2_df_.empty:
+            uniswapv2_df = uniswapv2_df_
+        else:
+            uniswapv2_df = self.process_uniswap_data(
+                uniswapv2_df_, token_balance_dict, self.stable_tokens, self.max_price, self.process_token
+            )
         uniswapv3_df_ = self.dataclass_to_df(self._data_buff[UniswapV3SwapEvent.type()])
-        uniswapv3_df = self.process_uniswap_data(
-            uniswapv3_df_, token_balance_dict, self.stable_tokens, self.max_price, self.process_token
-        )
+        if uniswapv3_df_.empty:
+            uniswapv3_df = uniswapv3_df_
+        else:
+            uniswapv3_df = self.process_uniswap_data(
+                uniswapv3_df_, token_balance_dict, self.stable_tokens, self.max_price, self.process_token
+            )
 
         processed_v2 = self.process_swap_df(uniswapv2_df)
         processed_v3 = self.process_swap_df(uniswapv3_df)

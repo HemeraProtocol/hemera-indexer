@@ -5,7 +5,7 @@ from hemera.cli.options.log import log_setting
 from hemera.cli.options.performance import block_step, delay_control, multi_performance, single_performance
 from hemera.cli.options.progress import index_range, index_record
 from hemera.cli.options.rpc import rpc_provider
-from hemera.cli.options.schedule import filter_mode, job_config, job_schedule, reorg_switch
+from hemera.cli.options.schedule import filter_mode, job_config, job_schedule, metrics_config, reorg_switch
 from hemera.cli.options.source import source_control
 from hemera.cli.options.storage import (
     cache_target,
@@ -19,6 +19,7 @@ from hemera.indexer.utils.parameter_utils import default_if_none
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
+@metrics_config
 @rpc_provider
 @job_schedule
 @filter_mode
@@ -39,6 +40,7 @@ from hemera.indexer.utils.parameter_utils import default_if_none
 @log_setting
 @pid_file_storage
 def stream(
+    instance_name,
     provider_uri,
     debug_provider_uri,
     entity_types,
@@ -58,6 +60,7 @@ def stream(
     end_block,
     sync_recorder,
     retry_from_record,
+    persistence_type,
     block_batch_size,
     batch_size,
     debug_batch_size,
@@ -85,6 +88,7 @@ def stream(
     retry_from_record = default_if_none(retry_from_record, True)
 
     stream_process(
+        instance_name,
         provider_uri,
         debug_provider_uri,
         entity_types,
@@ -104,6 +108,7 @@ def stream(
         end_block,
         sync_recorder,
         retry_from_record,
+        persistence_type,
         block_batch_size,
         batch_size,
         debug_batch_size,

@@ -36,7 +36,8 @@ class ExportBlockTokenPriceJob(ExtensionJob):
             return
 
         blocks = self._data_buff[Block.type()]
-
+        if not blocks:
+            return
         blocks.sort(key=lambda block: block.number)
 
         start_block_timestamp = datetime.utcfromtimestamp(blocks[0].timestamp).strftime("%Y-%m-%d %H:%M:%S")

@@ -50,11 +50,6 @@ class StreamController(BaseController):
         else:
             self.pool = mpire.WorkerPool(n_jobs=self.process_numbers, use_dill=True, keep_alive=True)
 
-        if self.process_numbers <= 1:
-            self.pool = None
-        else:
-            self.pool = mpire.WorkerPool(n_jobs=self.process_numbers, use_dill=True, keep_alive=True)
-
     def action(
         self,
         start_block=None,

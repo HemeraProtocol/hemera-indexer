@@ -23,6 +23,8 @@ services:
       - ENTITY_TYPES=EXPLORER_BASE
       - SYNC_RECORDER=pg:main_recorder
       - RETRY_FROM_RECORD=true
+    ports:
+      - 9200:9200
 
   hemera-uop-indexer:
     <<: *common-settings

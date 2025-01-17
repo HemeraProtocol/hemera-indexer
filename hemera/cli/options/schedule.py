@@ -3,6 +3,30 @@ import click
 from hemera.common.enumeration.entity_type import DEFAULT_COLLECTION
 
 
+def metrics_config(options):
+    options = click.option(
+        "--instance-name",
+        default="default",
+        show_default=True,
+        type=str,
+        envvar="INSTANCE_NAME",
+        help="The instance name displayed in the monitoring background.",
+    )(options)
+
+    options = click.option(
+        "--persistence-type",
+        default="file",
+        show_default=True,
+        type=str,
+        envvar="PERSISTENCE_TYPE",
+        help="How to persist metrics data."
+        "e.g postgres means persist metrics data by postgres and use instance name be key"
+        "or file means persist metrics data by file and use instance name be file name",
+    )(options)
+
+    return options
+
+
 def job_schedule(options):
     options = click.option(
         "-E",

@@ -41,6 +41,7 @@ class ExportUniSwapV3PoolPriceJob(FilterTransactionDataJob):
         stable_tokens_config = kwargs["config"].get("export_block_token_price_job", {})
 
         self.stable_tokens = stable_tokens_config
+        self._exist_pools = self.get_existing_pools()
 
     def get_filter(self):
         address_list = self._pool_address if self._pool_address else []
@@ -159,7 +160,6 @@ class ExportUniSwapV3PoolPriceJob(FilterTransactionDataJob):
                     self._collect_domain(uniswap_v_pool_from_swap_event)
 
     def _process(self, **kwargs):
-        self._exist_pools = self.get_existing_pools()
         token_prices_dict = self.change_block_token_prices_to_dict()
 
         if not self._pool_address:

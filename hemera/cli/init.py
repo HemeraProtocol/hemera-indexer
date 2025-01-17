@@ -3,17 +3,20 @@ import os.path
 
 import click
 
+from hemera.cli.options.schedule import metrics_config
 from hemera.cli.options.storage import postgres, postgres_initial
 from hemera.common.logo import print_logo
 from hemera.common.services.postgresql_service import PostgreSQLService
 from hemera.common.utils.file_utils import get_project_root
 from hemera.common.utils.format_utils import to_camel_case, to_space_camel_case
+from hemera.indexer.utils.metrics_persistence import BasePersistence, init_persistence
 from hemera.indexer.utils.template_generator import TemplateGenerator
 
 logger = logging.getLogger("Init Client")
 
 
 @click.command(context_settings=dict(help_option_names=["-h", "--help"]))
+@metrics_config
 @click.option(
     "--jobs",
     type=str,
@@ -29,9 +32,15 @@ logger = logging.getLogger("Init Client")
     required=False,
     help="The --db flag triggers the database initialization process. ",
 )
+@click.option(
+    "--metrics",
+    is_flag=True,
+    required=False,
+    help="The --metrics flag triggers the metrics' persistence data initialization process. ",
+)
 @postgres
 @postgres_initial
-def init(jobs, db, postgres_url, db_version, init_schema):
+def init(jobs, db, metrics, postgres_url, db_version, init_schema, instance_name, persistence_type):
     print_logo()
     if db:
         init_schema = True
@@ -41,6 +50,15 @@ def init(jobs, db, postgres_url, db_version, init_schema):
     if jobs:
         jobs = [job.lower() for job in jobs.split(",")]
         jobs_space_initialize_before_check(jobs)
+
+    if metrics:
+        config = {}
+        if postgres_url:
+            service = PostgreSQLService(jdbc_url=postgres_url)
+            config["db_service"] = service
+        persistence = init_persistence(instance_name=instance_name, persistence_type=persistence_type, config=config)
+        persistence.init()
+        logger.info(f"The instance: {instance_name}'s metrics has been successfully initialized.")
 
 
 def jobs_space_initialize_before_check(jobs):

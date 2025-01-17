@@ -97,8 +97,14 @@ def decode_response_error(error):
         return None
     if "out of gas" in message:
         return None
-
+    if "Invalid request" in message:
+        return None
     if "InvalidJump" in message:
+        return None
+    if "revert" in message:
+        return None
+
+    if "EVM" in message:
         return None
 
     if (

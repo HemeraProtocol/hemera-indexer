@@ -10,6 +10,7 @@ import logging
 import os
 import signal
 import threading
+import time
 from collections import defaultdict
 from concurrent.futures import Future, ThreadPoolExecutor
 from distutils.util import strtobool
@@ -17,6 +18,7 @@ from threading import Event
 from typing import Any, Callable, Dict, List
 
 from hemera.common.utils.exception_control import FastShutdownError, get_exception_details
+from hemera.indexer.utils.metrics_collector import MetricsCollector
 
 BUFFER_BLOCK_SIZE = int(os.environ.get("BUFFER_BLOCK_SIZE", "1"))
 MAX_BUFFER_SIZE = int(os.environ.get("MAX_BUFFER_SIZE", "1"))
@@ -131,6 +133,7 @@ class BufferService:
         export_workers: int = CONCURRENT_SUBMITTERS,
         success_callback: Callable = None,
         exception_callback: Callable = None,
+        metrics: MetricsCollector = None,
     ):
         self.block_size = block_size
         self.max_buffer_size = max_buffer_size
@@ -145,6 +148,7 @@ class BufferService:
         self.output_in_progress: dict[(int, int), set] = dict()
         self.futures_output: dict[Future, set] = dict()
         self.pending_futures: dict[Future, (int, int)] = dict()
+        self.futures_start: dict[Future, float] = dict()
         self.futures_lock = threading.Lock()
 
         self._shutdown_event = Event()
@@ -158,6 +162,7 @@ class BufferService:
 
         self.export_strategy = EXPORT_STRATEGY
 
+        self.metrics = metrics
         self.logger = logging.getLogger(__name__)
 
     def keys(self) -> List[Any]:
@@ -222,6 +227,7 @@ class BufferService:
         with self.futures_lock:
             start_block, end_block = self.pending_futures[future]
             complete_type = self.futures_output[future]
+            start_time = self.futures_start[future]
 
             self.pending_futures.pop(future)
             self.futures_output.pop(future)
@@ -230,10 +236,27 @@ class BufferService:
             future.result()
 
             self.output_in_progress[(start_block, end_block)] -= complete_type
+
+            if self.metrics:
+                for output_type in complete_type:
+                    self.metrics.update_exported_domains(
+                        domain=output_type,
+                        status="success",
+                        amount=len(self.buffer[output_type]),
+                    )
+                self.metrics.update_export_domains_processing_duration(
+                    domains=",".join(complete_type),
+                    duration=int((time.time() - start_time) * 1000),
+                )
+
             if self.success_callback and len(self.output_in_progress[(start_block, end_block)]) == 0:
                 try:
                     self.output_in_progress.pop((start_block, end_block))
                     self.success_callback(end_block)
+
+                    if self.metrics:
+                        self.metrics.update_last_sync_record(last_sync_record=end_block)
+
                 except Exception as e:
                     self.logger.error(f"Writing last synced block number {end_block} error.")
 
@@ -242,6 +265,17 @@ class BufferService:
             if self.exception_callback:
                 self.exception_callback(self.required_output_types, start_block, end_block, "export", exception_details)
             self.logger.error(f"Exporting items error: {exception_details}")
+
+            if self.metrics:
+                self.metrics.update_failure_batch_counter()
+
+                for output_type in complete_type:
+                    self.metrics.update_exported_domains(
+                        domain=output_type,
+                        status="failure",
+                        amount=len(self.buffer[output_type]),
+                    )
+
             if CRASH_INSTANTLY:
                 self.shutdown()
                 raise FastShutdownError(f"Exporting items error: {exception_details}")
@@ -265,15 +299,21 @@ class BufferService:
                 if key in self.required_output_types:
                     flush_type.add(key)
                     flush_items.extend(self.buffer[key])
+
+                    if self.metrics:
+                        self.metrics.update_indexed_domains(domain=key, amount=len(self.buffer[key]))
+
             if len(flush_type):
                 self.logger.info(f"Flush domains: {','.join(flush_type)} between block range: {block_range}")
             else:
+                self.concurrent_submitters.release()
                 return True
 
         with self.futures_lock:
             future = self.submit_export_pool.submit(self.export_items, flush_items)
             self.futures_output[future] = flush_type
             self.pending_futures[future] = block_range
+            self.futures_start[future] = time.time()
             if block_range not in self.output_in_progress:
                 self.output_in_progress[block_range] = set(self.required_output_types)
 
@@ -294,14 +334,11 @@ class BufferService:
 
         self.concurrent_submitters.acquire()
 
-        try:
-            if not ASYNC_SUBMIT:
-                return self.flush_buffer(start_block, end_block, output_types)
-            else:
-                self.flush_buffer(start_block, end_block, output_types)
-            return True
-        finally:
-            self.concurrent_submitters.release()
+        if not ASYNC_SUBMIT:
+            return self.flush_buffer(start_block, end_block, output_types)
+        else:
+            self.flush_buffer(start_block, end_block, output_types)
+        return True
 
     def clear(self):
         with self.buffer_lock:
@@ -310,6 +347,9 @@ class BufferService:
     def shutdown(self):
         if self._shutdown_event.is_set():
             return
+
+        if self.metrics:
+            self.metrics.update_instance_shutdown()
 
         self.logger.info("Shutting down buffer service...")
         self._handle_shutdown(None, None)

@@ -76,6 +76,8 @@ class ExportTransactionsAndLogsJob(BaseExportJob):
             )
 
         for receipt in results:
+            if receipt is None:
+                continue
             transaction = transaction_hash_mapper.get(receipt["transactionHash"])
             if transaction:
                 receipt_entity = Receipt.from_rpc(

@@ -41,6 +41,9 @@ def load_environ():
     check_and_set_default_env("CALLS_LIMIT", "2000")
     check_and_set_default_env("DEFAULT_MULTICALL_ADDRESS", "0xcA11bde05977b3631167028862bE2a173976CA11")
 
+    # MetricsCollector control
+    check_and_set_default_env("METRICS_CLIENT_PORT", "9200")
+
 
 @click.group()
 @click.version_option(version=get_version())
