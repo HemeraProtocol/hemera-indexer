@@ -119,6 +119,9 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             now_metrics.block_timestamp = metrics.block_timestamp
 
             if metrics.transfer_action == "in":
+                new_average_buy_price = (
+                    metrics.transfer_usd + now_metrics.current_balance * now_metrics.current_average_buy_price / 10 ** token["decimals"]
+                ) / ((metrics.transfer_amount + now_metrics.current_balance) / 10 ** token["decimals"])
                 new_amount = metrics.transfer_amount
                 new_cost = metrics.transfer_usd
                 old_amount = now_metrics.current_balance
@@ -130,11 +133,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 now_metrics.total_buy_count += 1
                 now_metrics.total_buy_amount += new_amount
                 now_metrics.total_buy_usd += new_cost
-                if now_metrics.total_buy_amount > 0:
-                    now_metrics.current_average_buy_price = (
-                        now_metrics.total_buy_usd * 10 ** token["decimals"] / now_metrics.total_buy_amount
-                    )
-
+                now_metrics.current_average_buy_price = new_average_buy_price
             else:
                 sell_amount = metrics.transfer_amount
                 sell_price = metrics.price_usd
