@@ -1,4 +1,5 @@
 from dataclasses import asdict
+import time
 from venv import logger
 
 from sqlalchemy import or_, text
@@ -36,7 +37,11 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
 
         # Collect token-block pairs for batch price query
         token_blocks = [(transfer.token_address, transfer.block_number) for transfer in transfers]
+        # Start Generation Here
+        start_time = time.time()
         token_prices = self._get_token_dex_prices_batch(token_blocks)
+        end_time = time.time()
+        logger.info(f"Fetching token prices took {end_time - start_time} seconds")
 
         transfer_metrics = []
         for transfer in transfers:
