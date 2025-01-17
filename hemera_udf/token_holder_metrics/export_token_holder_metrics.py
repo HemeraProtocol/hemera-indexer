@@ -1,4 +1,5 @@
 from dataclasses import asdict
+from venv import logger
 
 from sqlalchemy import or_, text
 
@@ -39,6 +40,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
 
         transfer_metrics = []
         for transfer in transfers:
+            token = self.tokens.get(transfer.token_address)
+            if not token:
+                logger.warning(f"Token {transfer.token_address} not found")
+                continue
             token_holder_from_metrics = TokenHolderTransferWithPriceD(
                 holder_address=transfer.from_address,
                 token_address=transfer.token_address,
@@ -78,7 +83,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 ):
                     token_holder_to_metrics.is_swap = True
             price = token_prices.get((transfer.token_address, transfer.block_number), 0.0)
-            token = self.tokens[transfer.token_address]
             amount_usd = transfer.value * price / 10 ** token["decimals"]
             token_holder_from_metrics.price_usd = price
             token_holder_from_metrics.transfer_usd = amount_usd
@@ -96,7 +100,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         current_metrics = query_results
 
         for metrics in transfer_metrics:
-            token = self.tokens[metrics.token_address]
+            token = self.tokens.get(metrics.token_address)
             self._collect_domain(metrics)
 
             key = (metrics.holder_address, metrics.token_address)
