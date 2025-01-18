@@ -26,14 +26,26 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._service = kwargs["config"].get("db_service")
+        self._non_meme_tokens = self._load_non_meme_tokens()
 
     def _collect(self, **kwargs):
         pass
+    
+    def _load_non_meme_tokens(self):
+        session = self._service.get_service_session()
+        non_meme_tokens = set(bytes_to_hex_str(row[0]) for row in session.execute(
+            text("SELECT address FROM non_meme_tokens")
+        ).fetchall())
+        session.close()
+        return non_meme_tokens
 
     def _process(self, **kwargs):
         transfers = self._data_buff[ERC20TokenTransfer.type()]
         swaps = self._data_buff[UniswapV2SwapEvent.type()] + self._data_buff[UniswapV3SwapEvent.type()]
         swap_txs = {swap.transaction_hash: swap for swap in swaps}
+
+        # Filter out transfers involving non-meme tokens
+        transfers = [t for t in transfers if t.token_address not in self._non_meme_tokens]
 
         # Collect token-block pairs for batch price query
         token_blocks = [(transfer.token_address, transfer.block_number) for transfer in transfers]
@@ -201,19 +213,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         history_metrics = [TokenHolderMetricsHistoryD(**asdict(metrics)) for metrics in current_metrics.values()]
         self._collect_domains(history_metrics)
 
-    def _get_token_dex_price_latest(self, token_address: str, block_number: int):
-        token_address_bytes = hex_str_to_bytes(token_address)
-        token_price = (
-            self._service.get_service_session()
-            .query(AfDexBlockTokenPrice)
-            .filter(
-                AfDexBlockTokenPrice.token_address == token_address_bytes,
-                AfDexBlockTokenPrice.block_number <= block_number,
-            )
-            .order_by(AfDexBlockTokenPrice.block_number.desc())
-            .first()
-        )
-        return token_price.price if token_price else 0.0
 
     def _get_address_token_holder_metrics_batch(
         self, address_token_pairs: list[tuple[str, str]]
