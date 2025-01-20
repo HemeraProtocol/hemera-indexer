@@ -156,7 +156,7 @@ class ExportDexBlockTokenPriceJob(ExtensionJob):
             lambda x: stable_tokens.get(x.token0_address) or stable_tokens.get(x.token1_address), axis=1
         )
 
-        df["stable_token_balance_limit"] = df.apply(lambda x: 0.001 if x.stable_token_symbol == "ETH" else 10, axis=1)
+        df["stable_token_balance_limit"] = df.apply(lambda x: 0.001 if x.stable_token_symbol == "WETH" else 10, axis=1)
 
         # get stable_balance_raw
         df["token_balance_raw"] = df.apply(
