@@ -316,6 +316,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         return result
 
     def _init_history_token_prices(self, start_block: int):
+        self.history_token_prices = {}
+        return
         if self.history_token_prices is not None:
             return
         session = self._service.get_service_session()
@@ -336,8 +338,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         self.history_token_prices = {bytes_to_hex_str(row[0]): float(row[2]) for row in token_blocks}
 
     def _init_token_dex_prices_batch(self, start_block: int, end_block: int):
-        self.token_price_maps = {}
-        return
 
         price_sql = text(
             """
