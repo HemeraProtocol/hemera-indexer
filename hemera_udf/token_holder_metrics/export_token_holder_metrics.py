@@ -1,4 +1,5 @@
 from dataclasses import asdict
+import logging
 import time
 from venv import logger
 
@@ -17,6 +18,8 @@ from hemera_udf.token_price.models import AfDexBlockTokenPrice
 from hemera_udf.uniswap_v2.domains import UniswapV2SwapEvent
 from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import UniswapV3SwapEvent
 from sortedcontainers import SortedDict
+
+logger = logging.getLogger(__name__)
 
 
 class ExportTokenHolderMetricsJob(ExtensionJob):
@@ -42,16 +45,32 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         return non_meme_tokens
 
     def _process(self, **kwargs):
+        start_time = time.time()
+        logger.info(f"Starting process at block range: {kwargs['start_block']} - {kwargs['end_block']}")
+
+        logger.info("Initializing history token prices...")
         self._init_history_token_prices(kwargs["start_block"])
+        logger.info(f"History token prices initialized in {time.time() - start_time:.2f}s")
+
+        logger.info("Initializing token dex prices batch...")
+        t1 = time.time()
         self._init_token_dex_prices_batch(kwargs["start_block"], kwargs["end_block"])
+        logger.info(f"Token dex prices initialized in {time.time() - t1:.2f}s")
+
         transfers = self._data_buff[ERC20TokenTransfer.type()]
         swaps = self._data_buff[UniswapV2SwapEvent.type()] + self._data_buff[UniswapV3SwapEvent.type()]
         swap_txs = {swap.transaction_hash: swap for swap in swaps}
 
+        logger.info(f"Processing {len(transfers)} transfers and {len(swaps)} swaps...")
+        t2 = time.time()
         transfers = [t for t in transfers if t.token_address not in self._non_meme_tokens]
+        logger.info(f"Filtered non-meme tokens in {time.time() - t2:.2f}s")
 
+        t3 = time.time()
         transfer_metrics = []
-        for transfer in transfers:
+        for i, transfer in enumerate(transfers):
+            if i > 0 and i % 1000 == 0:
+                logger.info(f"Processed {i}/{len(transfers)} transfers in {time.time() - t3:.2f}s")
             token = self.tokens.get(transfer.token_address)
             if not token:
                 logger.warning(f"Token {transfer.token_address} not found")
@@ -102,15 +121,25 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             token_holder_to_metrics.transfer_usd = amount_usd
             transfer_metrics.append(token_holder_from_metrics)
             transfer_metrics.append(token_holder_to_metrics)
+        logger.info(f"Completed transfer processing in {time.time() - t3:.2f}s")
 
+        t4 = time.time()
         address_token_pairs = set()
         for metrics in transfer_metrics:
             address_token_pairs.add((metrics.holder_address, metrics.token_address))
+        logger.info(f"Created {len(address_token_pairs)} address-token pairs in {time.time() - t4:.2f}s")
 
+        logger.info("Querying existing metrics...")
+        t5 = time.time()
         query_results = self._get_address_token_holder_metrics_batch(list(address_token_pairs))
         current_metrics = query_results
+        logger.info(f"Query completed in {time.time() - t5:.2f}s")
 
-        for metrics in transfer_metrics:
+        logger.info("Updating metrics...")
+        t6 = time.time()
+        for i, metrics in enumerate(transfer_metrics):
+            if i > 0 and i % 1000 == 0:
+                logger.info(f"Updated {i}/{len(transfer_metrics)} metrics in {time.time() - t6:.2f}s")
             token = self.tokens.get(metrics.token_address)
             self._collect_domain(metrics)
 
@@ -208,11 +237,17 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     now_metrics.swap_sell_count += 1
                     now_metrics.swap_sell_amount += metrics.transfer_amount
                     now_metrics.swap_sell_usd += metrics.transfer_usd
+        logger.info(f"Metrics update completed in {time.time() - t6:.2f}s")
 
+        t7 = time.time()
         self._collect_domains(list(current_metrics.values()))
         history_metrics = [TokenHolderMetricsHistoryD(**asdict(metrics)) for metrics in current_metrics.values()]
         self._collect_domains(history_metrics)
         self._update_history_token_prices()
+        logger.info(f"Final collection and updates completed in {time.time() - t7:.2f}s")
+
+        total_time = time.time() - start_time
+        logger.info(f"Total processing time: {total_time:.2f}s")
 
     def _get_address_token_holder_metrics_batch(
             self, address_token_pairs: list[tuple[str, str]]
