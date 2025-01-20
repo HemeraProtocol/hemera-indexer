@@ -274,7 +274,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             t2 = time.time()
             query = text("""
                 SELECT *
-                FROM token_holder_metrics_current
+                FROM af_token_holder_metrics_current
                 WHERE (holder_address, token_address) = ANY(:pairs)
             """)
             
