@@ -242,8 +242,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     holder_address=bytes_to_hex_str(metrics.holder_address),
                     token_address=bytes_to_hex_str(metrics.token_address),
                     block_number=metrics.block_number,
-                    block_timestamp=int(metrics.block_timestamp.timestamp()),
-                    first_block_timestamp=int(metrics.first_block_timestamp.timestamp()),
+                    block_timestamp=int(metrics.block_timestamp.timestamp()) if metrics.block_timestamp else 0,
+                    first_block_timestamp=int(metrics.first_block_timestamp.timestamp()) if metrics.first_block_timestamp else 0,
                     last_swap_timestamp=(
                         int(metrics.last_swap_timestamp.timestamp()) if metrics.last_swap_timestamp else 0
                     ),
