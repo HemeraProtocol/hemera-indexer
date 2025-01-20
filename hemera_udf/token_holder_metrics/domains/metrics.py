@@ -58,6 +58,7 @@ class TokenHolderMetricsD(Domain):
     current_average_buy_price: float = 0.0
 
     realized_pnl: float = 0.0
+    sell_pnl: float = 0.0
     win_rate: float = 0.0
 
 

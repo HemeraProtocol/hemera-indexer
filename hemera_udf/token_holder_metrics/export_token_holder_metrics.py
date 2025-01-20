@@ -16,6 +16,7 @@ from hemera_udf.token_holder_metrics.models.metrics import TokenHolderMetricsCur
 from hemera_udf.token_price.models import AfDexBlockTokenPrice
 from hemera_udf.uniswap_v2.domains import UniswapV2SwapEvent
 from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import UniswapV3SwapEvent
+from sortedcontainers import SortedDict
 
 
 class ExportTokenHolderMetricsJob(ExtensionJob):
@@ -27,10 +28,11 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         super().__init__(**kwargs)
         self._service = kwargs["config"].get("db_service")
         self._non_meme_tokens = self._load_non_meme_tokens()
+        self.history_token_prices = None
 
     def _collect(self, **kwargs):
         pass
-    
+
     def _load_non_meme_tokens(self):
         session = self._service.get_service_session()
         non_meme_tokens = set(bytes_to_hex_str(row[0]) for row in session.execute(
@@ -40,20 +42,13 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         return non_meme_tokens
 
     def _process(self, **kwargs):
+        self._init_history_token_prices(kwargs["start_block"])
+        self._init_token_dex_prices_batch(kwargs["start_block"], kwargs["end_block"])
         transfers = self._data_buff[ERC20TokenTransfer.type()]
         swaps = self._data_buff[UniswapV2SwapEvent.type()] + self._data_buff[UniswapV3SwapEvent.type()]
         swap_txs = {swap.transaction_hash: swap for swap in swaps}
 
-        # Filter out transfers involving non-meme tokens
         transfers = [t for t in transfers if t.token_address not in self._non_meme_tokens]
-
-        # Collect token-block pairs for batch price query
-        token_blocks = [(transfer.token_address, transfer.block_number) for transfer in transfers]
-        # Start Generation Here
-        start_time = time.time()
-        token_prices = self._get_token_dex_prices_batch(token_blocks)
-        end_time = time.time()
-        logger.info(f"Fetching token prices took {end_time - start_time} seconds")
 
         transfer_metrics = []
         for transfer in transfers:
@@ -89,17 +84,17 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     token_holder_from_metrics.is_buy = True
                     token_holder_from_metrics.is_swap = True
                 elif (hasattr(swap, "to_address") and swap.to_address == transfer.from_address) or (
-                    hasattr(swap, "recipient") and swap.recipient == transfer.from_address
+                        hasattr(swap, "recipient") and swap.recipient == transfer.from_address
                 ):
                     token_holder_from_metrics.is_swap = True
                 if swap.sender == transfer.to_address:
                     token_holder_to_metrics.is_buy = True
                     token_holder_to_metrics.is_swap = True
                 elif (hasattr(swap, "to_address") and swap.to_address == transfer.to_address) or (
-                    hasattr(swap, "recipient") and swap.recipient == transfer.to_address
+                        hasattr(swap, "recipient") and swap.recipient == transfer.to_address
                 ):
                     token_holder_to_metrics.is_swap = True
-            price = token_prices.get((transfer.token_address, transfer.block_number), 0.0)
+            price = self._get_token_dex_price(transfer.token_address, transfer.block_number)
             amount_usd = transfer.value * price / 10 ** token["decimals"]
             token_holder_from_metrics.price_usd = price
             token_holder_from_metrics.transfer_usd = amount_usd
@@ -108,7 +103,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             transfer_metrics.append(token_holder_from_metrics)
             transfer_metrics.append(token_holder_to_metrics)
 
-        current_metrics = {}
         address_token_pairs = set()
         for metrics in transfer_metrics:
             address_token_pairs.add((metrics.holder_address, metrics.token_address))
@@ -143,11 +137,13 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 new_balance = now_metrics.current_balance + metrics.transfer_amount
                 if new_balance > 0:
                     new_average_buy_price = (
-                        metrics.transfer_usd + now_metrics.current_balance * now_metrics.current_average_buy_price / 10 ** token["decimals"]
-                    ) / ((metrics.transfer_amount + now_metrics.current_balance) / 10 ** token["decimals"])
+                                                    metrics.transfer_usd + now_metrics.current_balance * now_metrics.current_average_buy_price / 10 **
+                                                    token["decimals"]
+                                            ) / ((metrics.transfer_amount + now_metrics.current_balance) / 10 ** token[
+                        "decimals"])
                 else:
                     new_average_buy_price = 0
-                    
+
                 new_amount = metrics.transfer_amount
                 new_cost = metrics.transfer_usd
                 old_amount = now_metrics.current_balance
@@ -165,10 +161,14 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 sell_price = metrics.price_usd
 
                 if now_metrics.current_balance > 0:
+                    sell_pnl = (sell_price - now_metrics.current_average_buy_price) * sell_amount / 10 ** token[
+                        "decimals"]
+                    now_metrics.sell_pnl += sell_pnl
+
                     now_metrics.realized_pnl = (
-                        now_metrics.total_sell_usd
-                        - now_metrics.total_buy_usd
-                        + now_metrics.current_balance * metrics.price_usd / 10 ** token["decimals"]
+                            now_metrics.total_sell_usd
+                            - now_metrics.total_buy_usd
+                            + now_metrics.current_balance * metrics.price_usd / 10 ** token["decimals"]
                     )
 
                     if sell_price > now_metrics.current_average_buy_price:
@@ -212,10 +212,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         self._collect_domains(list(current_metrics.values()))
         history_metrics = [TokenHolderMetricsHistoryD(**asdict(metrics)) for metrics in current_metrics.values()]
         self._collect_domains(history_metrics)
-
+        self._update_history_token_prices()
 
     def _get_address_token_holder_metrics_batch(
-        self, address_token_pairs: list[tuple[str, str]]
+            self, address_token_pairs: list[tuple[str, str]]
     ) -> dict[tuple[str, str], TokenHolderMetricsCurrentD]:
         if not address_token_pairs:
             return {}
@@ -225,7 +225,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         session = self._service.get_service_session()
 
         for i in range(0, len(address_token_pairs), BATCH_SIZE):
-            batch_pairs = address_token_pairs[i : i + BATCH_SIZE]
+            batch_pairs = address_token_pairs[i: i + BATCH_SIZE]
             address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token)) for addr, token in batch_pairs]
 
             conditions = [
@@ -274,41 +274,69 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         session.close()
         return result
 
-    def _get_token_dex_prices_batch(self, token_blocks: list[tuple[str, int]]) -> dict[tuple[str, int], float]:
-        result = {}
-        if not token_blocks:
-            return result
+    def _init_history_token_prices(self, start_block: int):
+        if self.history_token_prices is not None:
+            return
+        session = self._service.get_service_session()
+        token_blocks = session.execute(
+            text("""
+                SELECT token_address, block_number, token_price
+                FROM (
+                    SELECT token_address, block_number, token_price,
+                           ROW_NUMBER() OVER (PARTITION BY token_address ORDER BY block_number DESC) as rn
+                    FROM af_dex_block_token_price 
+                    WHERE block_number < :start_block
+                ) t
+                WHERE rn = 1
+            """),
+            {"start_block": start_block}
+        ).fetchall()
+        session.close()
+        self.history_token_prices = {bytes_to_hex_str(row[0]): float(row[2]) for row in token_blocks}
 
-        token_addresses = [hex_str_to_bytes(token) for token in set(token for token, _ in token_blocks)]
-        max_block = max(block for _, block in token_blocks)
+    def _init_token_dex_prices_batch(self, start_block: int, end_block: int):
 
         price_sql = text(
             """
-            WITH ranked_prices AS (
-                SELECT
-                    token_address,
-                    token_price,
-                    ROW_NUMBER() OVER (PARTITION BY token_address ORDER BY block_number DESC) AS rn
-                FROM af_dex_block_token_price
-                WHERE token_address in :token_addresses
-                AND block_number <= :max_block
-            )
-            SELECT token_address, token_price
-            FROM ranked_prices
-            WHERE rn = 1
-        """
+            SELECT token_address, block_number, token_price
+            FROM af_dex_block_token_price
+            WHERE block_number BETWEEN :min_block AND :max_block
+            ORDER BY block_number
+            """
         )
 
         session = self._service.get_service_session()
         prices = session.execute(
-            price_sql, {"token_addresses": tuple(token_addresses), "max_block": max_block}
+            price_sql,
+            {
+                "min_block": start_block,
+                "max_block": end_block
+            }
         ).fetchall()
         session.close()
 
-        token_prices = {bytes_to_hex_str(price[0]): float(price[1]) for price in prices}
+        token_price_maps = {token: SortedDict() for token in self.history_token_prices}
 
-        for token_block in token_blocks:
-            token_addr, _ = token_block
-            result[token_block] = token_prices.get(token_addr, 0.0)
+        for token in self.history_token_prices:
+            token_price_maps[token][0] = self.history_token_prices[token]
 
-        return result
+        for price_row in prices:
+            token_addr = bytes_to_hex_str(price_row[0])
+            if token_addr not in token_price_maps:
+                token_price_maps[token_addr] = SortedDict()
+            block_num = price_row[1]
+            price = float(price_row[2])
+            token_price_maps[token_addr][block_num] = price
+
+        self.token_price_maps = token_price_maps
+
+    def _get_token_dex_price(self, token_addr: str, block_num: int):
+        return self.token_price_maps.get(token_addr, SortedDict()).get(block_num, 0.0)
+
+    def _update_history_token_prices(self):
+        for token_addr, price_map in self.token_price_maps.items():
+            if not price_map:
+                continue
+            latest_block = price_map.keys()[-1]
+            latest_price = price_map[latest_block]
+            self.history_token_prices[token_addr] = latest_price
