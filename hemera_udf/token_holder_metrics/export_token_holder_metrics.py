@@ -275,11 +275,11 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             query = text("""
                 SELECT *
                 FROM af_token_holder_metrics_current
-                WHERE (holder_address, token_address) = ANY(:pairs)
+                WHERE (holder_address, token_address) IN :pairs
             """)
             
             batch_results = session.query(TokenHolderMetricsCurrent).from_statement(
-                query.params(pairs=address_bytes_pairs)
+                query.params(pairs=tuple(address_bytes_pairs))
             ).all()
             logger.info(f"SQL query took {time.time() - t2:.2f}s")
             
