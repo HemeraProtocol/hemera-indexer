@@ -255,24 +255,35 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         if not address_token_pairs:
             return {}
 
-        BATCH_SIZE = 10000
+        start_time = time.time()
+        logger.info(f"Starting to process {len(address_token_pairs)} address-token pairs")
+
+        BATCH_SIZE = 5000
         result = {}
         session = self._service.get_service_session()
 
         for i in range(0, len(address_token_pairs), BATCH_SIZE):
+            batch_start = time.time()
             batch_pairs = address_token_pairs[i: i + BATCH_SIZE]
-            address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token)) for addr, token in batch_pairs]
+            logger.info(f"Processing batch {i//BATCH_SIZE + 1}, size: {len(batch_pairs)}")
             
+            t1 = time.time()
+            address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token)) for addr, token in batch_pairs]
+            logger.info(f"Bytes conversion took {time.time() - t1:.2f}s")
+            
+            t2 = time.time()
             query = text("""
                 SELECT *
-                FROM af_token_holder_metrics_current
+                FROM token_holder_metrics_current
                 WHERE (holder_address, token_address) = ANY(:pairs)
             """)
             
             batch_results = session.query(TokenHolderMetricsCurrent).from_statement(
                 query.params(pairs=address_bytes_pairs)
             ).all()
+            logger.info(f"SQL query took {time.time() - t2:.2f}s")
             
+            t3 = time.time()
             pair_lookup = {(bytes_to_hex_str(m.holder_address), bytes_to_hex_str(m.token_address)): m 
                           for m in batch_results}
             
@@ -280,39 +291,38 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 metrics = pair_lookup.get((addr, token))
                 if metrics:
                     result[(addr, token)] = TokenHolderMetricsCurrentD(
-                        holder_address=bytes_to_hex_str(metrics.holder_address),
-                        token_address=bytes_to_hex_str(metrics.token_address),
+                        holder_address=addr,
+                        token_address=token,
                         block_number=metrics.block_number,
                         block_timestamp=int(metrics.block_timestamp.timestamp()) if metrics.block_timestamp else 0,
                         first_block_timestamp=int(metrics.first_block_timestamp.timestamp()) if metrics.first_block_timestamp else 0,
-                        last_swap_timestamp=(
-                            int(metrics.last_swap_timestamp.timestamp()) if metrics.last_swap_timestamp else 0
-                        ),
-                        last_transfer_timestamp=(
-                            int(metrics.last_transfer_timestamp.timestamp()) if metrics.last_transfer_timestamp else 0
-                        ),
-                        current_balance=float(metrics.current_balance) if metrics.current_balance else 0,
-                        max_balance=float(metrics.max_balance) if metrics.max_balance else 0,
-                        total_buy_count=metrics.total_buy_count if metrics.total_buy_count else 0,
-                        total_buy_amount=float(metrics.total_buy_amount) if metrics.total_buy_amount else 0,
-                        total_buy_usd=float(metrics.total_buy_usd) if metrics.total_buy_usd else 0,
-                        total_sell_count=metrics.total_sell_count if metrics.total_sell_count else 0,
-                        total_sell_amount=float(metrics.total_sell_amount) if metrics.total_sell_amount else 0,
-                        total_sell_usd=float(metrics.total_sell_usd) if metrics.total_sell_usd else 0,
-                        swap_buy_count=metrics.swap_buy_count if metrics.swap_buy_count else 0,
-                        swap_buy_amount=float(metrics.swap_buy_amount) if metrics.swap_buy_amount else 0,
-                        swap_buy_usd=float(metrics.swap_buy_usd) if metrics.swap_buy_usd else 0,
-                        swap_sell_count=metrics.swap_sell_count if metrics.swap_sell_count else 0,
-                        swap_sell_amount=float(metrics.swap_sell_amount) if metrics.swap_sell_amount else 0,
-                        swap_sell_usd=float(metrics.swap_sell_usd) if metrics.swap_sell_usd else 0,
-                        success_sell_count=metrics.success_sell_count if metrics.success_sell_count else 0,
-                        fail_sell_count=metrics.fail_sell_count if metrics.fail_sell_count else 0,
-                        current_average_buy_price=float(metrics.current_average_buy_price) if metrics.current_average_buy_price else 0,
-                        realized_pnl=float(metrics.realized_pnl) if metrics.realized_pnl else 0,
-                        win_rate=float(metrics.win_rate) if metrics.win_rate else 0,
+                        last_swap_timestamp=int(metrics.last_swap_timestamp.timestamp()) if metrics.last_swap_timestamp else 0,
+                        last_transfer_timestamp=int(metrics.last_transfer_timestamp.timestamp()) if metrics.last_transfer_timestamp else 0,
+                        current_balance=float(metrics.current_balance or 0),
+                        max_balance=float(metrics.max_balance or 0),
+                        total_buy_count=metrics.total_buy_count or 0,
+                        total_buy_amount=float(metrics.total_buy_amount or 0),
+                        total_buy_usd=float(metrics.total_buy_usd or 0),
+                        total_sell_count=metrics.total_sell_count or 0,
+                        total_sell_amount=float(metrics.total_sell_amount or 0),
+                        total_sell_usd=float(metrics.total_sell_usd or 0),
+                        swap_buy_count=metrics.swap_buy_count or 0,
+                        swap_buy_amount=float(metrics.swap_buy_amount or 0),
+                        swap_buy_usd=float(metrics.swap_buy_usd or 0),
+                        swap_sell_count=metrics.swap_sell_count or 0,
+                        swap_sell_amount=float(metrics.swap_sell_amount or 0),
+                        swap_sell_usd=float(metrics.swap_sell_usd or 0),
+                        success_sell_count=metrics.success_sell_count or 0,
+                        fail_sell_count=metrics.fail_sell_count or 0,
+                        current_average_buy_price=float(metrics.current_average_buy_price or 0),
+                        realized_pnl=float(metrics.realized_pnl or 0),
+                        win_rate=float(metrics.win_rate or 0),
                     )
+            logger.info(f"Results processing took {time.time() - t3:.2f}s")
+            logger.info(f"Total batch processing took {time.time() - batch_start:.2f}s")
 
         session.close()
+        logger.info(f"Total function execution took {time.time() - start_time:.2f}s")
         return result
 
     def _init_history_token_prices(self, start_block: int):
