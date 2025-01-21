@@ -54,8 +54,8 @@ abi_mapping = {
 class ExportTokensAndTransfersJob(FilterTransactionDataJob):
     output_transfer_types = [
         ERC20TokenTransfer,
-        # ERC721TokenTransfer,
-        # ERC1155TokenTransfer,
+        ERC721TokenTransfer,
+        ERC1155TokenTransfer,
     ]
     output_token_types = [Token, UpdateToken]
 
