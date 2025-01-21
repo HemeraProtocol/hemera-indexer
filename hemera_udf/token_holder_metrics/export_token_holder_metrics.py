@@ -1,7 +1,6 @@
 from dataclasses import asdict
 import logging
 import time
-from venv import logger
 
 from sqlalchemy import or_, text
 
@@ -14,7 +13,6 @@ from hemera_udf.token_holder_metrics.domains.metrics import (
     TokenHolderTransferWithPriceD,
 )
 from hemera_udf.token_holder_metrics.models.metrics import TokenHolderMetricsCurrent
-from hemera_udf.token_price.models import AfDexBlockTokenPrice
 from hemera_udf.uniswap_v2.domains import UniswapV2SwapEvent
 from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import UniswapV3SwapEvent
 from sortedcontainers import SortedDict
