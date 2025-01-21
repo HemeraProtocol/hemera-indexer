@@ -391,11 +391,17 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         if not price_map:
             return self.history_token_prices.get(token_addr, 0.0)
         
-        try:
-            floor_key = price_map.floor_key(block_num)
-            return price_map[floor_key]
-        except KeyError:
+        keys = list(price_map.keys())
+        idx = price_map.bisect_left(block_num)
+        
+        if idx == 0:  
             return 0.0
+        elif idx == len(keys):  
+            return price_map[keys[-1]]  
+        elif keys[idx] == block_num:  
+            return price_map[block_num]
+        else:  
+            return price_map[keys[idx - 1]]
 
     def _update_history_token_prices(self):
         for token_addr, price_map in self.token_price_maps.items():
