@@ -321,6 +321,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                             fail_sell_count=metrics.fail_sell_count or 0,
                             current_average_buy_price=float(metrics.current_average_buy_price or 0),
                             realized_pnl=float(metrics.realized_pnl or 0),
+                            sell_pnl=float(metrics.sell_pnl or 0),
                             win_rate=float(metrics.win_rate or 0),
                         )
                 hit_rate = hits / len(batch_pairs)
