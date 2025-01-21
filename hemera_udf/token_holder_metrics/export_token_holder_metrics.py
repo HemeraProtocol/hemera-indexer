@@ -256,7 +256,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         start_time = time.time()
         logger.info(f"Starting to process {len(address_token_pairs)} address-token pairs")
 
-        BATCH_SIZE = 500
+        BATCH_SIZE = 1000
         result = {}
         session = self._service.get_service_session()
 
