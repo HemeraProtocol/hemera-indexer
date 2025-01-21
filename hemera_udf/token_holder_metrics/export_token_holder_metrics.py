@@ -331,8 +331,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         return result
 
     def _init_history_token_prices(self, start_block: int):
-        self.history_token_prices = {}
-        return
         if self.history_token_prices is not None:
             return
         session = self._service.get_service_session()
