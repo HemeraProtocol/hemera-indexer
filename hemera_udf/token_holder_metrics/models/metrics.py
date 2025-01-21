@@ -109,6 +109,7 @@ class TokenHolderMetricsHistory(HemeraModel):
     current_average_buy_price = Column(NUMERIC)
 
     realized_pnl = Column(NUMERIC)
+    sell_pnl = Column(NUMERIC)
     win_rate = Column(NUMERIC)
 
     first_block_timestamp = Column(TIMESTAMP)

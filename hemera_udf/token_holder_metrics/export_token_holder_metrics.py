@@ -387,7 +387,15 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         self.token_price_maps = token_price_maps
 
     def _get_token_dex_price(self, token_addr: str, block_num: int):
-        return self.token_price_maps.get(token_addr, SortedDict()).get(block_num, 0.0)
+        price_map = self.token_price_maps.get(token_addr)
+        if not price_map:
+            return self.history_token_prices.get(token_addr, 0.0)
+        
+        try:
+            floor_key = price_map.floor_key(block_num)
+            return price_map[floor_key]
+        except KeyError:
+            return 0.0
 
     def _update_history_token_prices(self):
         for token_addr, price_map in self.token_price_maps.items():
