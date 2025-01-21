@@ -67,8 +67,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         t3 = time.time()
         transfer_metrics = []
         for i, transfer in enumerate(transfers):
-            if i > 0 and i % 1000 == 0:
-                logger.info(f"Processed {i}/{len(transfers)} transfers in {time.time() - t3:.2f}s")
             token = self.tokens.get(transfer.token_address)
             if not token:
                 logger.warning(f"Token {transfer.token_address} not found")
@@ -136,7 +134,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         logger.info("Updating metrics...")
         t6 = time.time()
         for i, metrics in enumerate(transfer_metrics):
-            if i > 0 and i % 1000 == 0:
+            if i > 0 and i % 10000 == 0:
                 logger.info(f"Updated {i}/{len(transfer_metrics)} metrics in {time.time() - t6:.2f}s")
             token = self.tokens.get(metrics.token_address)
             self._collect_domain(metrics)
@@ -272,24 +270,21 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             for i in range(0, len(partition_pairs), BATCH_SIZE):
                 batch_pairs = partition_pairs[i:i + BATCH_SIZE]
                 batch_start = time.time()
-                logger.info(f"Processing batch for partition {partition_idx}, size: {len(batch_pairs)}")
                 
                 t1 = time.time()
                 address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token)) 
                                      for addr, token in batch_pairs]
-                logger.info(f"Bytes conversion took {time.time() - t1:.2f}s")
                 
                 t2 = time.time()
                 query = text(f"""
                     SELECT *
-                    FROM af_token_holder_metrics_current_all_p{partition_idx}
+                    FROM af_token_holder_metrics_current_p{partition_idx}
                     WHERE (holder_address, token_address) IN :pairs
                 """)
                 
                 batch_results = session.query(TokenHolderMetricsCurrent).from_statement(
                     query.params(pairs=tuple(address_bytes_pairs))
                 ).all()
-                logger.info(f"SQL query for partition {partition_idx} took {time.time() - t2:.2f}s")
                 
                 t3 = time.time()
                 pair_lookup = {(bytes_to_hex_str(m.holder_address), bytes_to_hex_str(m.token_address)): m 
@@ -329,8 +324,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                             win_rate=float(metrics.win_rate or 0),
                         )
                 hit_rate = hits / len(batch_pairs)
-                logger.info(f"Batch hit rate: {hit_rate:.2%} ({hits}/{len(batch_pairs)})")
-                logger.info(f"Results processing took {time.time() - t3:.2f}s")
+                logger.info(f"Processed batch {i//BATCH_SIZE + 1} for partition {partition_idx}: hit rate {hit_rate:.2%} ({hits}/{len(batch_pairs)})")
 
         session.close()
         logger.info(f"Total function execution took {time.time() - start_time:.2f}s")
