@@ -295,9 +295,11 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 pair_lookup = {(bytes_to_hex_str(m.holder_address), bytes_to_hex_str(m.token_address)): m 
                               for m in batch_results}
                 
+                hits = 0
                 for addr, token in batch_pairs:
                     metrics = pair_lookup.get((addr, token))
                     if metrics:
+                        hits += 1
                         result[(addr, token)] = TokenHolderMetricsCurrentD(
                             holder_address=addr,
                             token_address=token,
@@ -326,6 +328,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                             realized_pnl=float(metrics.realized_pnl or 0),
                             win_rate=float(metrics.win_rate or 0),
                         )
+                hit_rate = hits / len(batch_pairs)
+                logger.info(f"Batch hit rate: {hit_rate:.2%} ({hits}/{len(batch_pairs)})")
                 logger.info(f"Results processing took {time.time() - t3:.2f}s")
 
         session.close()
