@@ -172,7 +172,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
 
             if metrics.transfer_action == "in":
                 new_balance = now_metrics.current_balance + metrics.transfer_amount
-                if new_balance > 0:
+                if new_balance/ 10 ** token["decimals"] > 0.00001:
                     new_average_buy_price = (
                                                     metrics.transfer_usd + now_metrics.current_balance * now_metrics.current_average_buy_price / 10 **
                                                     token["decimals"]
@@ -218,6 +218,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                         now_metrics.win_rate = now_metrics.success_sell_count / total_sells
 
                 now_metrics.current_balance -= sell_amount
+                if now_metrics.current_balance / 10 ** token["decimals"] < 0.00001:
+                    now_metrics.current_average_buy_price = 0
 
                 now_metrics.total_sell_count += 1
                 now_metrics.total_sell_amount += sell_amount
