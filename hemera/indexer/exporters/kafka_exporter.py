@@ -8,13 +8,12 @@ from urllib.parse import urlparse
 from kafka import KafkaProducer
 
 from hemera.indexer.domains import Domain
-from hemera.indexer.domains.block import Block
 from hemera.indexer.domains.current_token_balance import CurrentTokenBalance
 from hemera.indexer.domains.log import Log
 from hemera.indexer.domains.token_balance import TokenBalance
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
-from hemera.indexer.domains.transaction import Transaction
 from hemera.indexer.exporters.base_exporter import BaseExporter
+from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD
 from hemera_udf.token_price.domains import DexBlockTokenPriceCurrent
 from hemera_udf.uniswap_v2 import UniswapV2SwapEvent
 from hemera_udf.uniswap_v3 import UniswapV3SwapEvent
@@ -59,7 +58,7 @@ class KafkaItemExporter(BaseExporter):
         item = self.domain_mapping(item)
         if item is None:
             return
-        data = asdict(item)
+        data = {key: value for key, value in asdict(item).items() if value is not None}
         utc_now = datetime.now(timezone.utc)
         utc_timestamp = int(utc_now.timestamp())
         data["update_time"] = utc_timestamp
@@ -76,18 +75,30 @@ class KafkaItemExporter(BaseExporter):
             if data.token_id is None or data.token_id < 0:
                 data.token_id = 0
             return data
-        if isinstance(data, DexBlockTokenPriceCurrent):
-            if data.token_symbol is None:
-                data.token_symbol = ""
+        if isinstance(data, (TokenHolderMetricsHistoryD, TokenHolderMetricsCurrentD)):
+            if data.current_balance:
+                data.current_balance = int(data.current_balance)
+            if data.max_balance:
+                data.max_balance = int(data.max_balance)
+            if data.total_buy_amount:
+                data.total_buy_amount = int(data.total_buy_amount)
+            if data.total_sell_amount:
+                data.total_sell_amount = int(data.total_sell_amount)
+            if data.swap_buy_amount:
+                data.swap_buy_amount = int(data.swap_buy_amount)
+            if data.swap_sell_amount:
+                data.swap_sell_amount = int(data.swap_sell_amount)
             return data
-
         if isinstance(
             data,
             (
                 UniswapV2SwapEvent,
                 UniswapV3SwapEvent,
                 ERC20TokenTransfer,
+                DexBlockTokenPriceCurrent,
                 Log,
+                TokenHolderMetricsCurrentD,
+                TokenHolderMetricsHistoryD,
             ),
         ):
             return data

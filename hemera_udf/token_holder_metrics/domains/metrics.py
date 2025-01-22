@@ -37,19 +37,19 @@ class TokenHolderMetricsD(Domain):
     sell_50_timestamp: int = 0
 
     total_buy_count: int = 0
-    total_buy_amount: float = 0.0
+    total_buy_amount: int = 0
     total_buy_usd: float = 0.0
 
     total_sell_count: int = 0
-    total_sell_amount: float = 0.0
+    total_sell_amount: int = 0
     total_sell_usd: float = 0.0
 
     swap_buy_count: int = 0
-    swap_buy_amount: float = 0.0
+    swap_buy_amount: int = 0
     swap_buy_usd: float = 0.0
 
     swap_sell_count: int = 0
-    swap_sell_amount: float = 0.0
+    swap_sell_amount: int = 0
     swap_sell_usd: float = 0.0
 
     success_sell_count: int = 0
