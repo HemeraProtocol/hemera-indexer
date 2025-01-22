@@ -61,7 +61,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
 
         logger.info(f"Processing {len(transfers)} transfers and {len(swaps)} swaps...")
         t2 = time.time()
-        transfers = [t for t in transfers if t.token_address not in self._non_meme_tokens]
+        transfers = sorted(
+            [t for t in transfers if t.token_address not in self._non_meme_tokens],
+            key=lambda x: (x.block_number, x.log_index)
+        )
         logger.info(f"Filtered non-meme tokens in {time.time() - t2:.2f}s")
 
         t3 = time.time()
