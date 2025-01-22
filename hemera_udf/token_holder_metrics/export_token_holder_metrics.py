@@ -19,6 +19,8 @@ from sortedcontainers import SortedDict
 
 logger = logging.getLogger(__name__)
 
+MAX_SAFE_VALUE = 2 ** 255   
+
 
 class ExportTokenHolderMetricsJob(ExtensionJob):
     dependency_types = [ERC20TokenTransfer, UniswapV2SwapEvent, UniswapV3SwapEvent]
@@ -70,6 +72,13 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         t3 = time.time()
         transfer_metrics = []
         for i, transfer in enumerate(transfers):
+            if transfer.value > MAX_SAFE_VALUE:
+                logger.warning(
+                        f"Skipping transfer with unusually large value: {getattr(transfer, 'value', 'N/A')}, "
+                        f"tx: {getattr(transfer, 'transaction_hash', 'N/A')}, "
+                        f"token: {getattr(transfer, 'token_address', 'N/A')}"
+                    )
+                continue
             token = self.tokens.get(transfer.token_address)
             if not token:
                 logger.warning(f"Token {transfer.token_address} not found")
