@@ -222,6 +222,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             if now_metrics.current_balance <= now_metrics.max_balance * 0.5 and now_metrics.sell_50_timestamp == 0:
                 now_metrics.sell_50_timestamp = metrics.block_timestamp
 
+            now_metrics.last_transfer_timestamp = metrics.block_timestamp
             if metrics.is_swap:
                 now_metrics.last_swap_timestamp = metrics.block_timestamp
 
