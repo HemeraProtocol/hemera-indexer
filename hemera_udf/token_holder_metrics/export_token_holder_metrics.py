@@ -1,7 +1,8 @@
-from dataclasses import asdict
 import logging
 import time
+from dataclasses import asdict
 
+from sortedcontainers import SortedDict
 from sqlalchemy import or_, text
 
 from hemera.common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
@@ -15,11 +16,10 @@ from hemera_udf.token_holder_metrics.domains.metrics import (
 from hemera_udf.token_holder_metrics.models.metrics import TokenHolderMetricsCurrent
 from hemera_udf.uniswap_v2.domains import UniswapV2SwapEvent
 from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import UniswapV3SwapEvent
-from sortedcontainers import SortedDict
 
 logger = logging.getLogger(__name__)
 
-MAX_SAFE_VALUE = 2 ** 255   
+MAX_SAFE_VALUE = 2**255
 
 
 class ExportTokenHolderMetricsJob(ExtensionJob):
@@ -38,12 +38,11 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
 
     def _load_non_meme_tokens(self):
         session = self._service.get_service_session()
-        non_meme_tokens = set(bytes_to_hex_str(row[0]) for row in session.execute(
-            text("SELECT address FROM non_meme_tokens")
-        ).fetchall())
+        non_meme_tokens = set(
+            bytes_to_hex_str(row[0]) for row in session.execute(text("SELECT address FROM non_meme_tokens")).fetchall()
+        )
         session.close()
         return non_meme_tokens
-    
 
     def _process(self, **kwargs):
         start_time = time.time()
@@ -65,7 +64,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         t2 = time.time()
         transfers = sorted(
             [t for t in transfers if t.token_address not in self._non_meme_tokens],
-            key=lambda x: (x.block_number, x.log_index)
+            key=lambda x: (x.block_number, x.log_index),
         )
         logger.info(f"Filtered non-meme tokens in {time.time() - t2:.2f}s")
 
@@ -74,10 +73,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         for i, transfer in enumerate(transfers):
             if transfer.value > MAX_SAFE_VALUE:
                 logger.warning(
-                        f"Skipping transfer with unusually large value: {getattr(transfer, 'value', 'N/A')}, "
-                        f"tx: {getattr(transfer, 'transaction_hash', 'N/A')}, "
-                        f"token: {getattr(transfer, 'token_address', 'N/A')}"
-                    )
+                    f"Skipping transfer with unusually large value: {getattr(transfer, 'value', 'N/A')}, "
+                    f"tx: {getattr(transfer, 'transaction_hash', 'N/A')}, "
+                    f"token: {getattr(transfer, 'token_address', 'N/A')}"
+                )
                 continue
             token = self.tokens.get(transfer.token_address)
             if not token:
@@ -111,14 +110,14 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     token_holder_from_metrics.is_buy = True
                     token_holder_from_metrics.is_swap = True
                 elif (hasattr(swap, "to_address") and swap.to_address == transfer.from_address) or (
-                        hasattr(swap, "recipient") and swap.recipient == transfer.from_address
+                    hasattr(swap, "recipient") and swap.recipient == transfer.from_address
                 ):
                     token_holder_from_metrics.is_swap = True
                 if swap.sender == transfer.to_address:
                     token_holder_to_metrics.is_buy = True
                     token_holder_to_metrics.is_swap = True
                 elif (hasattr(swap, "to_address") and swap.to_address == transfer.to_address) or (
-                        hasattr(swap, "recipient") and swap.recipient == transfer.to_address
+                    hasattr(swap, "recipient") and swap.recipient == transfer.to_address
                 ):
                     token_holder_to_metrics.is_swap = True
             price = self._get_token_dex_price(transfer.token_address, transfer.block_number)
@@ -182,18 +181,17 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             # update win rate
             if metrics.transfer_action == "in":
                 new_balance = now_metrics.current_balance + metrics.transfer_amount
-                if new_balance/ 10 ** token["decimals"] > 0.00001:
+                if new_balance / 10 ** token["decimals"] > 0.00001:
                     new_average_buy_price = (
-                                                    metrics.transfer_usd + now_metrics.current_balance * now_metrics.current_average_buy_price / 10 **
-                                                    token["decimals"]
-                                            ) / ((metrics.transfer_amount + now_metrics.current_balance) / 10 ** token[
-                        "decimals"])
+                        metrics.transfer_usd
+                        + now_metrics.current_balance * now_metrics.current_average_buy_price / 10 ** token["decimals"]
+                    ) / ((metrics.transfer_amount + now_metrics.current_balance) / 10 ** token["decimals"])
                 else:
                     new_average_buy_price = 0
 
                 now_metrics.current_balance = new_balance
                 now_metrics.total_buy_count += 1
-                now_metrics.total_buy_amount +=  metrics.transfer_amount
+                now_metrics.total_buy_amount += metrics.transfer_amount
                 now_metrics.total_buy_usd += metrics.transfer_usd
                 now_metrics.current_average_buy_price = new_average_buy_price
             else:
@@ -201,14 +199,15 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 sell_price = metrics.price_usd
 
                 if now_metrics.current_balance > 0:
-                    sell_pnl = (sell_price - now_metrics.current_average_buy_price) * sell_amount / 10 ** token[
-                        "decimals"]
+                    sell_pnl = (
+                        (sell_price - now_metrics.current_average_buy_price) * sell_amount / 10 ** token["decimals"]
+                    )
                     now_metrics.sell_pnl += sell_pnl
 
                     now_metrics.realized_pnl = (
-                            now_metrics.total_sell_usd
-                            - now_metrics.total_buy_usd
-                            + now_metrics.current_balance * metrics.price_usd / 10 ** token["decimals"]
+                        now_metrics.total_sell_usd
+                        - now_metrics.total_buy_usd
+                        + now_metrics.current_balance * metrics.price_usd / 10 ** token["decimals"]
                     )
 
                     if sell_price > now_metrics.current_average_buy_price:
@@ -262,7 +261,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         logger.info(f"Total processing time: {total_time:.2f}s")
 
     def _get_address_token_holder_metrics_batch(
-            self, address_token_pairs: list[tuple[str, str]]
+        self, address_token_pairs: list[tuple[str, str]]
     ) -> dict[tuple[str, str], TokenHolderMetricsCurrentD]:
         if not address_token_pairs:
             return {}
@@ -276,32 +275,36 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
 
         partition_groups = {}
         for addr, token in address_token_pairs:
-            first_char = int(addr[2:3], 16) 
-            partition_idx = first_char  
+            first_char = int(addr[2:3], 16)
+            partition_idx = first_char
             partition_groups.setdefault(partition_idx, []).append((addr, token))
 
         for partition_idx, partition_pairs in partition_groups.items():
             logger.info(f"Processing partition {partition_idx} with {len(partition_pairs)} pairs")
-            
+
             for i in range(0, len(partition_pairs), BATCH_SIZE):
-                batch_pairs = partition_pairs[i:i + BATCH_SIZE]
-                
-                address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token)) 
-                                     for addr, token in batch_pairs]
-                
-                query = text(f"""
+                batch_pairs = partition_pairs[i : i + BATCH_SIZE]
+
+                address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token)) for addr, token in batch_pairs]
+
+                query = text(
+                    f"""
                     SELECT *
                     FROM af_token_holder_metrics_current_all_p{partition_idx}
                     WHERE (holder_address, token_address) IN :pairs
-                """)
-                
-                batch_results = session.query(TokenHolderMetricsCurrent).from_statement(
-                    query.params(pairs=tuple(address_bytes_pairs))
-                ).all()
-                
-                pair_lookup = {(bytes_to_hex_str(m.holder_address), bytes_to_hex_str(m.token_address)): m 
-                              for m in batch_results}
-                
+                """
+                )
+
+                batch_results = (
+                    session.query(TokenHolderMetricsCurrent)
+                    .from_statement(query.params(pairs=tuple(address_bytes_pairs)))
+                    .all()
+                )
+
+                pair_lookup = {
+                    (bytes_to_hex_str(m.holder_address), bytes_to_hex_str(m.token_address)): m for m in batch_results
+                }
+
                 for addr, token in batch_pairs:
                     metrics = pair_lookup.get((addr, token))
                     if metrics:
@@ -310,14 +313,28 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                             token_address=token,
                             block_number=metrics.block_number,
                             block_timestamp=int(metrics.block_timestamp.timestamp()) if metrics.block_timestamp else 0,
-                            first_block_timestamp=int(metrics.first_block_timestamp.timestamp()) if metrics.first_block_timestamp else 0,
-                            last_swap_timestamp=int(metrics.last_swap_timestamp.timestamp()) if metrics.last_swap_timestamp else 0,
-                            last_transfer_timestamp=int(metrics.last_transfer_timestamp.timestamp()) if metrics.last_transfer_timestamp else 0,
+                            first_block_timestamp=(
+                                int(metrics.first_block_timestamp.timestamp()) if metrics.first_block_timestamp else 0
+                            ),
+                            last_swap_timestamp=(
+                                int(metrics.last_swap_timestamp.timestamp()) if metrics.last_swap_timestamp else 0
+                            ),
+                            last_transfer_timestamp=(
+                                int(metrics.last_transfer_timestamp.timestamp())
+                                if metrics.last_transfer_timestamp
+                                else 0
+                            ),
                             current_balance=float(metrics.current_balance or 0),
                             max_balance=float(metrics.max_balance or 0),
-                            max_balance_timestamp=int(metrics.max_balance_timestamp.timestamp()) if metrics.max_balance_timestamp else 0,
-                            sell_25_timestamp=int(metrics.sell_25_timestamp.timestamp()) if metrics.sell_25_timestamp else 0,
-                            sell_50_timestamp=int(metrics.sell_50_timestamp.timestamp()) if metrics.sell_50_timestamp else 0,
+                            max_balance_timestamp=(
+                                int(metrics.max_balance_timestamp.timestamp()) if metrics.max_balance_timestamp else 0
+                            ),
+                            sell_25_timestamp=(
+                                int(metrics.sell_25_timestamp.timestamp()) if metrics.sell_25_timestamp else 0
+                            ),
+                            sell_50_timestamp=(
+                                int(metrics.sell_50_timestamp.timestamp()) if metrics.sell_50_timestamp else 0
+                            ),
                             total_buy_count=metrics.total_buy_count or 0,
                             total_buy_amount=float(metrics.total_buy_amount or 0),
                             total_buy_usd=float(metrics.total_buy_usd or 0),
@@ -346,17 +363,19 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             return
         session = self._service.get_service_session()
         token_blocks = session.execute(
-            text("""
+            text(
+                """
                 SELECT token_address, block_number, token_price
                 FROM (
                     SELECT token_address, block_number, token_price,
                            ROW_NUMBER() OVER (PARTITION BY token_address ORDER BY block_number DESC) as rn
-                    FROM af_dex_block_token_price 
+                    FROM af_dex_block_token_price
                     WHERE block_number < :start_block
                 ) t
                 WHERE rn = 1
-            """),
-            {"start_block": start_block}
+            """
+            ),
+            {"start_block": start_block},
         ).fetchall()
         session.close()
         self.history_token_prices = {bytes_to_hex_str(row[0]): float(row[2]) for row in token_blocks}
@@ -373,13 +392,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         )
 
         session = self._service.get_service_session()
-        prices = session.execute(
-            price_sql,
-            {
-                "min_block": start_block,
-                "max_block": end_block
-            }
-        ).fetchall()
+        prices = session.execute(price_sql, {"min_block": start_block, "max_block": end_block}).fetchall()
         session.close()
 
         token_price_maps = {token: SortedDict() for token in self.history_token_prices}
@@ -401,17 +414,17 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         price_map = self.token_price_maps.get(token_addr)
         if not price_map:
             return self.history_token_prices.get(token_addr, 0.0)
-        
+
         keys = list(price_map.keys())
         idx = price_map.bisect_left(block_num)
-        
-        if idx == 0:  
+
+        if idx == 0:
             return 0.0
-        elif idx == len(keys):  
-            return price_map[keys[-1]]  
-        elif keys[idx] == block_num:  
+        elif idx == len(keys):
+            return price_map[keys[-1]]
+        elif keys[idx] == block_num:
             return price_map[block_num]
-        else:  
+        else:
             return price_map[keys[idx - 1]]
 
     def _update_history_token_prices(self):
