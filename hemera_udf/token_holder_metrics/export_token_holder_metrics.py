@@ -47,7 +47,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
 
     def _process(self, **kwargs):
         start_time = time.time()
-        logger.info(f"Starting process at block range: {kwargs['start_block']} - {kwargs['end_block']}")
 
         logger.info("Initializing history token prices...")
         self._init_history_token_prices(kwargs["start_block"])
@@ -144,11 +143,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         current_metrics = query_results
         logger.info(f"Query completed in {time.time() - t5:.2f}s")
 
-        logger.info("Updating metrics...")
         t6 = time.time()
         for i, metrics in enumerate(transfer_metrics):
-            if i > 0 and i % 10000 == 0:
-                logger.info(f"Updated {i}/{len(transfer_metrics)} metrics in {time.time() - t6:.2f}s")
             token = self.tokens.get(metrics.token_address)
             self._collect_domain(metrics)
 
@@ -171,6 +167,19 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             now_metrics.block_number = metrics.block_number
             now_metrics.block_timestamp = metrics.block_timestamp
 
+            # buy
+            # update balance
+            # update total buy count, amount, usd
+            # update current average buy price
+            # sell
+            # set average buy price to 0 when balance is less than 0.00001
+            # calculate pnl
+            # update balance
+            # update total sell count, amount, usd
+            # update realized pnl
+            # update success sell count
+            # update fail sell count
+            # update win rate
             if metrics.transfer_action == "in":
                 new_balance = now_metrics.current_balance + metrics.transfer_amount
                 if new_balance/ 10 ** token["decimals"] > 0.00001:
@@ -182,17 +191,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 else:
                     new_average_buy_price = 0
 
-                new_amount = metrics.transfer_amount
-                new_cost = metrics.transfer_usd
-                old_amount = now_metrics.current_balance
-                old_cost = old_amount * now_metrics.current_average_buy_price if old_amount > 0 else 0
-
                 now_metrics.current_balance = new_balance
-                total_cost = old_cost + new_cost
-
                 now_metrics.total_buy_count += 1
-                now_metrics.total_buy_amount += new_amount
-                now_metrics.total_buy_usd += new_cost
+                now_metrics.total_buy_amount +=  metrics.transfer_amount
+                now_metrics.total_buy_usd += metrics.transfer_usd
                 now_metrics.current_average_buy_price = new_average_buy_price
             else:
                 sell_amount = metrics.transfer_amount
@@ -251,12 +253,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     now_metrics.swap_sell_usd += metrics.transfer_usd
         logger.info(f"Metrics update completed in {time.time() - t6:.2f}s")
 
-        t7 = time.time()
         self._collect_domains(list(current_metrics.values()))
         history_metrics = [TokenHolderMetricsHistoryD(**asdict(metrics)) for metrics in current_metrics.values()]
         self._collect_domains(history_metrics)
         self._update_history_token_prices()
-        logger.info(f"Final collection and updates completed in {time.time() - t7:.2f}s")
 
         total_time = time.time() - start_time
         logger.info(f"Total processing time: {total_time:.2f}s")
@@ -285,13 +285,10 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             
             for i in range(0, len(partition_pairs), BATCH_SIZE):
                 batch_pairs = partition_pairs[i:i + BATCH_SIZE]
-                batch_start = time.time()
                 
-                t1 = time.time()
                 address_bytes_pairs = [(hex_str_to_bytes(addr), hex_str_to_bytes(token)) 
                                      for addr, token in batch_pairs]
                 
-                t2 = time.time()
                 query = text(f"""
                     SELECT *
                     FROM af_token_holder_metrics_current_all_p{partition_idx}
@@ -302,15 +299,12 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                     query.params(pairs=tuple(address_bytes_pairs))
                 ).all()
                 
-                t3 = time.time()
                 pair_lookup = {(bytes_to_hex_str(m.holder_address), bytes_to_hex_str(m.token_address)): m 
                               for m in batch_results}
                 
-                hits = 0
                 for addr, token in batch_pairs:
                     metrics = pair_lookup.get((addr, token))
                     if metrics:
-                        hits += 1
                         result[(addr, token)] = TokenHolderMetricsCurrentD(
                             holder_address=addr,
                             token_address=token,
@@ -343,11 +337,8 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                             sell_pnl=float(metrics.sell_pnl or 0),
                             win_rate=float(metrics.win_rate or 0),
                         )
-                hit_rate = hits / len(batch_pairs)
-                logger.info(f"Processed batch {i//BATCH_SIZE + 1} for partition {partition_idx}: hit rate {hit_rate:.2%} ({hits}/{len(batch_pairs)})")
 
         session.close()
-        logger.info(f"Total function execution took {time.time() - start_time:.2f}s")
         return result
 
     def _init_history_token_prices(self, start_block: int):
