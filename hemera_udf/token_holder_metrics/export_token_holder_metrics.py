@@ -72,10 +72,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
 
         t3 = time.time()
         transfer_metrics = []
-        filter_token  = self._service.get_service_session().execute(
-            text("SELECT address FROM tokens where  create_time >= '2025-01-22 13:27:40.820285'")
-        ).fetchall()
-        filter_token = set(bytes_to_hex_str(row[0]) for row in filter_token)
         for i, transfer in enumerate(transfers):
             if transfer.value > MAX_SAFE_VALUE:
                 logger.warning(
@@ -87,8 +83,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             token = self.tokens.get(transfer.token_address)
             if not token:
                 logger.warning(f"Token {transfer.token_address} not found")
-                continue
-            if transfer.token_address not in filter_token:
                 continue
             token_holder_from_metrics = TokenHolderTransferWithPriceD(
                 holder_address=transfer.from_address,
