@@ -76,8 +76,7 @@ class KafkaItemExporter(BaseExporter):
                 data.token_id = 0
             return data
         if isinstance(data, DexBlockTokenPrice):
-            if not isinstance(data.token_symbol, str):
-                data.token_symbol = ""
+            data.token_symbol = ""
         if isinstance(data, (TokenHolderMetricsHistoryD, TokenHolderMetricsCurrentD)):
             if data.current_balance:
                 data.current_balance = int(data.current_balance)
