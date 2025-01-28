@@ -392,6 +392,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
         )
 
         session = self._service.get_service_session()
+        logger.info("fetching token prices from %s to %s", start_block, end_block)
         prices = session.execute(price_sql, {"min_block": start_block, "max_block": end_block}).fetchall()
 
         logger.info("fetch %s  token prices", len(prices))
@@ -408,6 +409,7 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             block_num = price_row[1]
             price = float(price_row[2])
             token_price_maps[token_addr][block_num] = price
+            
         session.close()
         
         logger.info("Initialized %s tokens", len(token_price_maps))
