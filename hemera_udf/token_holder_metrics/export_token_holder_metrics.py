@@ -442,11 +442,5 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             latest_block = price_map.keys()[-1]
             latest_price = price_map[latest_block]
             
-            if  latest_price != self.history_token_prices.get(token_addr, 0.0):
-                logger.info(
-                    f"Token price changed - Token: {token_addr}, "
-                    f"Block: {latest_block}"
-                )
-            
             self.history_token_prices[token_addr] = latest_price
         logger.info("Updated history token prices..., after: %s", len(self.history_token_prices))
