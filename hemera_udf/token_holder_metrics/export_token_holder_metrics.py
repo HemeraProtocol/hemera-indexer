@@ -14,6 +14,7 @@ from hemera_udf.token_holder_metrics.domains.metrics import (
     TokenHolderTransferWithPriceD,
 )
 from hemera_udf.token_holder_metrics.models.metrics import TokenHolderMetricsCurrent
+from hemera_udf.token_price.domains import DexBlockTokenPrice
 from hemera_udf.uniswap_v2.domains import UniswapV2SwapEvent
 from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import UniswapV3SwapEvent
 
@@ -23,7 +24,7 @@ MAX_SAFE_VALUE = 2**255
 
 
 class ExportTokenHolderMetricsJob(ExtensionJob):
-    dependency_types = [ERC20TokenTransfer, UniswapV2SwapEvent, UniswapV3SwapEvent]
+    dependency_types = [ERC20TokenTransfer, UniswapV2SwapEvent, UniswapV3SwapEvent,DexBlockTokenPrice]
     output_types = [TokenHolderMetricsCurrentD, TokenHolderTransferWithPriceD, TokenHolderMetricsHistoryD]
     able_to_reorg = True
 
