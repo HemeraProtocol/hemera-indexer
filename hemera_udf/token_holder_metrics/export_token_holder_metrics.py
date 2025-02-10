@@ -24,7 +24,7 @@ MAX_SAFE_VALUE = 2**255
 
 
 class ExportTokenHolderMetricsJob(ExtensionJob):
-    dependency_types = [ERC20TokenTransfer, UniswapV2SwapEvent, UniswapV3SwapEvent,DexBlockTokenPrice]
+    dependency_types = [ERC20TokenTransfer, UniswapV2SwapEvent, UniswapV3SwapEvent, DexBlockTokenPrice]
     output_types = [TokenHolderMetricsCurrentD, TokenHolderTransferWithPriceD, TokenHolderMetricsHistoryD]
     able_to_reorg = True
 
@@ -410,9 +410,9 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
             block_num = price_row[1]
             price = float(price_row[2])
             token_price_maps[token_addr][block_num] = price
-            
+
         session.close()
-        
+
         logger.info("Initialized %s tokens", len(token_price_maps))
 
         self.token_price_maps = token_price_maps
@@ -441,6 +441,6 @@ class ExportTokenHolderMetricsJob(ExtensionJob):
                 continue
             latest_block = price_map.keys()[-1]
             latest_price = price_map[latest_block]
-            
+
             self.history_token_prices[token_addr] = latest_price
         logger.info("Updated history token prices..., after: %s", len(self.history_token_prices))
