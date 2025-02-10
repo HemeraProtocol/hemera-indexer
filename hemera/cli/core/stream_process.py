@@ -189,6 +189,7 @@ def stream_process(
         process_numbers=process_numbers,
         process_size=process_size,
         process_time_out=process_time_out,
+        metrics=metrics,
     )
 
     controller.action(

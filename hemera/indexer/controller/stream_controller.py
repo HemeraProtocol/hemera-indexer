@@ -25,6 +25,7 @@ class StreamController(BaseController):
         sync_recorder: BaseRecorder,
         job_scheduler: JobScheduler,
         limit_reader: LimitReader,
+        metrics,
         retry_from_record=False,
         delay=0,
         process_numbers=1,
@@ -50,6 +51,8 @@ class StreamController(BaseController):
         else:
             self.pool = mpire.WorkerPool(n_jobs=self.process_numbers, use_dill=True, keep_alive=True)
 
+        self.metrics = metrics
+
     def action(
         self,
         start_block=None,
@@ -65,6 +68,7 @@ class StreamController(BaseController):
                 write_to_file(pid_file, str(os.getpid()))
 
             last_synced_block = self.sync_recorder.get_last_synced_block()
+            self.metrics.update_last_sync_record(last_synced_block)
 
             if start_block is not None:
                 if (
@@ -104,8 +108,9 @@ class StreamController(BaseController):
 
                     last_synced_block = target_block
                     if self.buffer_service.is_shutdown():
-                        logger.info("By some reason, BufferService was shutdown, Indexer will exit immediately.")
-                        break
+                        raise FastShutdownError(
+                            "By some reason, BufferService was shutdown, Indexer will exit immediately."
+                        )
 
                 if synced_blocks <= 0:
                     logger.info("Nothing to sync. Sleeping for {} seconds...".format(period_seconds))
