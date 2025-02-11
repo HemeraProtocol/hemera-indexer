@@ -111,6 +111,7 @@ class ThreadPoolManager:
         results = [None] * len(chunks)
 
         pending_tasks = {i: chunk for i, chunk in enumerate(chunks)}
+        last_time_tasks = len(pending_tasks)
         attempt = 0
         max_attempts = JOB_RETRIES
         min_wait = 1
@@ -130,10 +131,14 @@ class ThreadPoolManager:
                     pending_tasks[index] = chunks[index]
 
             if pending_tasks:
-                delay = min(min_wait * (2**attempt), max_wait)
+                if len(pending_tasks) < last_time_tasks:
+                    # some task succeed
+                    delay = 0
+                else:
+                    delay = min(min_wait * (2**attempt), max_wait)
+                    attempt += 1
                 logger.info(f"Retrying {len(pending_tasks)} failed tasks in {delay} seconds...")
                 time.sleep(delay)
-                attempt += 1
 
         if pending_tasks:
             logger.error(f"Some tasks failed after {max_attempts} retries: {list(pending_tasks.keys())}")
