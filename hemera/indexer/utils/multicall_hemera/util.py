@@ -100,7 +100,6 @@ class ThreadPoolManager:
                     if isinstance(result, dict) and "error" in result:
                         error = result["error"]
                         if error.get("code") == 429:
-                            logger.error("retrying...")
                             raise Exception(f"Rate limit error: {error.get('message')}")
             return results
         except Exception as e:
@@ -122,7 +121,6 @@ class ThreadPoolManager:
             pending_tasks.clear()
 
             for future in as_completed(futures):
-                index = futures[future]
                 try:
                     index, result = future.result(timeout=30)
                     cls.check_results(result)
@@ -139,6 +137,6 @@ class ThreadPoolManager:
 
         if pending_tasks:
             logger.error(f"Some tasks failed after {max_attempts} retries: {list(pending_tasks.keys())}")
-            raise Exception(f"Some tasks failed after {max_attempts} retries: {list(pending_tasks.keys())}")
+            # raise Exception(f"Some tasks failed after {max_attempts} retries: {list(pending_tasks.keys())}")
 
         return results
