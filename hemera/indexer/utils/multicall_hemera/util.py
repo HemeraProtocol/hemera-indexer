@@ -106,7 +106,7 @@ class ThreadPoolManager:
                         else:
                             # {'error': {'code': -32000, 'message': 'out of gas'}}
                             # {'error': {'code': -32000, 'message': 'execution reverted'}
-                            if 'out of gas' in error.get('message'):
+                            if "out of gas" in error.get("message"):
                                 # if out of gas, log the error
                                 logger.error(f"rpc error: {json.dumps(result)}")
             return results
