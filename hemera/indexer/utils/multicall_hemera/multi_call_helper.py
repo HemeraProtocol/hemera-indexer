@@ -141,11 +141,11 @@ class MultiCallHelper:
                     call.returns = call.decode_output(result)
                     if call.returns is None:
                         self.logger.error(
-                            f"multicall helper failed decode call: {call}, data {json.dumps(data)}"
+                            f"multicall helper failed decode call: {call}, data {data}"
                         )
                 except Exception:
                     call.returns = None
-                    self.logger.error(f"multicall helper failed call: {call}, data {json.dumps(data)}")
+                    self.logger.error(f"multicall helper failed call: {call}, data {data}")
 
     @calculate_execution_time
     def construct_multicall_rpc(self, to_execute_multi_calls):
