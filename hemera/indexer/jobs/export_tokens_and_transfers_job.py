@@ -302,7 +302,7 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
                 logger.warning(
                     f"Decoding token {fn_name} failed. "
                     f"token: {token}. "
-                    f"rpc response: {result}. "
+                    f"rpc response: {result[:500]}... (truncated) "
                     f"exception: {e}"
                 )
                 exception_recorder.log(
