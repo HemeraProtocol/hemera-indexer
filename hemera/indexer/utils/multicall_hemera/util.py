@@ -5,6 +5,7 @@
 # @File  util.py
 # @Brief
 import atexit
+import json
 import logging
 import os
 import threading
@@ -101,6 +102,9 @@ class ThreadPoolManager:
                         error = result["error"]
                         if error.get("code") == 429:
                             raise Exception(f"Rate limit error: {error.get('message')}")
+                        else:
+                            # other errors log message
+                            logger.error(f"rpc error: {json.dumps(result)}")
             return results
         except Exception as e:
             raise e
