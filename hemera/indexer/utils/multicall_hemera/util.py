@@ -95,11 +95,13 @@ class ThreadPoolManager:
     @classmethod
     def check_results(cls, results):
         try:
+            logger.info("check_results...")
             if results:
                 for result in results:
                     if isinstance(result, dict) and "error" in result:
                         error = result["error"]
                         if error.get("code") == 429:
+                            logger.error("retrying...")
                             raise Exception(f"Rate limit error: {error.get('message')}")
             return results
         except Exception as e:
