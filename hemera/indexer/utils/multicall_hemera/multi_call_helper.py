@@ -151,7 +151,7 @@ class MultiCallHelper:
         multicall_rpc = []
         if to_execute_multi_calls:
             for calls in to_execute_multi_calls:
-                self.logger.info(f"{len(calls)} calls, at block_number {calls[0].block_number}")
+                self.logger.debug(f"{len(calls)} calls, at block_number {calls[0].block_number}")
                 multicall_rpc.append(
                     Multicall(
                         calls,

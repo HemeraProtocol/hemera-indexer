@@ -101,10 +101,14 @@ class ThreadPoolManager:
                     if isinstance(result, dict) and "error" in result:
                         error = result["error"]
                         if error.get("code") == 429:
+                            # raise it to retry
                             raise Exception(f"Rate limit error: {error.get('message')}")
                         else:
-                            # other errors log message
-                            logger.error(f"rpc error: {json.dumps(result)}")
+                            # {'error': {'code': -32000, 'message': 'out of gas'}}
+                            # {'error': {'code': -32000, 'message': 'execution reverted'}
+                            if 'out of gas' in error.get('message'):
+                                # if out of gas, log the error
+                                logger.error(f"rpc error: {json.dumps(result)}")
             return results
         except Exception as e:
             raise e
