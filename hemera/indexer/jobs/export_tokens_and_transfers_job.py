@@ -289,11 +289,11 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
 
             token = data[0]
             value = result[2:] if result is not None else None
+            key = to_snake_case(fn_name)
             if value is None:
                 # skip decode progress
                 token[key] = None
                 continue
-            key = to_snake_case(fn_name)
             try:
                 token[key] = decode_data([token["data_type"]], bytes.fromhex(value))[0]
                 if token["data_type"] == "string":
