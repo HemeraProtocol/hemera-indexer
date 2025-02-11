@@ -84,9 +84,10 @@ class MultiCallHelper:
             for calls, res in zip(wrapped_calls, response_chunk):
                 result = res.get("result")
                 if result:
-                    self.logger.debug(f"{__name__}, calls {len(calls)}")
+                    self.logger.info(f"{__name__}, calls {len(calls)}")
                     dic = TRY_BLOCK_AND_AGGREGATE_FUNC.decode_function_output_data(result)
                     outputs = dic["returnData"]
+                    self.logger.info(outputs)
                     for call, (output) in zip(calls, outputs):
                         call.returns = call.decode_output(bytes_to_hex_str(output["returnData"]))
 
