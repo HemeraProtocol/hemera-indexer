@@ -126,7 +126,7 @@ class ThreadPoolManager:
                     cls.check_results(result)
                     results[index] = result
                 except Exception as e:
-                    # logger.error(f"Task {index} failed with error: {e}")
+                    logger.error(f"Task {index} failed with error: {e}")
                     pending_tasks[index] = chunks[index]
 
             if pending_tasks:
