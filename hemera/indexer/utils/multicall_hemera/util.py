@@ -107,25 +107,38 @@ class ThreadPoolManager:
             raise e
 
     @classmethod
-    @retry(
-        stop=stop_after_attempt(JOB_RETRIES),
-        wait=wait_exponential(min=1, max=(2 ** (JOB_RETRIES - 1)), multiplier=2),
-        retry=retry_if_exception_type((TimeoutError, ConnectionError, RequestException, Exception)),
-        reraise=True,
-    )
     def submit_tasks(cls, func, chunks, max_workers=None):
         executor = cls.get_instance(max_workers)
         results = [None] * len(chunks)
 
-        try:
-            future_to_chunk = {executor.submit(func, chunk[0], i): i for i, chunk in enumerate(chunks)}
+        pending_tasks = {i: chunk for i, chunk in enumerate(chunks)}
+        attempt = 0
+        max_attempts = JOB_RETRIES
+        min_wait = 1
+        max_wait = 2 ** (JOB_RETRIES - 1)
 
-            for future in as_completed(future_to_chunk):
-                index, result = future.result(timeout=30)
-                results[index] = result
-                cls.check_results(result)
-        except Exception as e:
-            logger.error(f"ThreadPoolManager.submit_tasks error: {e}")
-            raise e
+        while pending_tasks and attempt < max_attempts:
+            futures = {executor.submit(func, chunk[0], i): i for i, chunk in pending_tasks.items()}
+            pending_tasks.clear()
+
+            for future in as_completed(futures):
+                index = futures[future]
+                try:
+                    index, result = future.result(timeout=30)
+                    cls.check_results(result)
+                    results[index] = result
+                except Exception as e:
+                    logger.error(f"Task {index} failed with error: {e}")
+                    pending_tasks[index] = chunks[index]
+
+            if pending_tasks:
+                delay = min(min_wait * (2**attempt), max_wait)
+                logger.info(f"Retrying {len(pending_tasks)} failed tasks in {delay} seconds...")
+                time.sleep(delay)
+                attempt += 1
+
+        if pending_tasks:
+            logger.error(f"Some tasks failed after {max_attempts} retries: {list(pending_tasks.keys())}")
+            raise Exception(f"Some tasks failed after {max_attempts} retries: {list(pending_tasks.keys())}")
 
         return results

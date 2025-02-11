@@ -1,9 +1,10 @@
+import json
 import logging
 from dataclasses import asdict
 from typing import Dict, List
 
 import orjson
-import json
+
 from hemera.common.enumeration.record_level import RecordLevel
 from hemera.common.enumeration.token_type import TokenType
 from hemera.common.utils.abi_code_utils import decode_data, encode_data
@@ -253,7 +254,10 @@ def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
             token["total_supply"] = decode_data(["uint256"], bytes.fromhex(value))[0]
         except Exception as e:
             logger.warning(
-                f"Decoding token {fn_name} failed. " f"token: {json.dumps(token)}. " f"rpc response: {result[:500]}...(truncated). " f"exception: {e}"
+                f"Decoding token {fn_name} failed. "
+                f"token: {json.dumps(token)}. "
+                f"rpc response: {result[:500]}...(truncated). "
+                f"exception: {e}"
             )
             token["total_supply"] = None
     return tokens
