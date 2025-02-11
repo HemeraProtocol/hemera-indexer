@@ -3,7 +3,7 @@ from dataclasses import asdict
 from typing import Dict, List
 
 import orjson
-
+import json
 from hemera.common.enumeration.record_level import RecordLevel
 from hemera.common.enumeration.token_type import TokenType
 from hemera.common.utils.abi_code_utils import decode_data, encode_data

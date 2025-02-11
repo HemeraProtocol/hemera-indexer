@@ -95,7 +95,6 @@ class ThreadPoolManager:
     @classmethod
     def check_results(cls, results):
         try:
-            logger.info("check_results...")
             if results:
                 for result in results:
                     if isinstance(result, dict) and "error" in result:
@@ -124,7 +123,7 @@ class ThreadPoolManager:
             for future in as_completed(future_to_chunk):
                 index, result = future.result(timeout=30)
                 results[index] = result
-            cls.check_results(results)
+                cls.check_results(result)
         except Exception as e:
             logger.error(f"ThreadPoolManager.submit_tasks error: {e}")
             raise e
