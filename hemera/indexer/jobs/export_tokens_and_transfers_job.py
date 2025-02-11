@@ -253,7 +253,7 @@ def tokens_total_supply_rpc_requests(make_requests, tokens, is_batch):
             token["total_supply"] = decode_data(["uint256"], bytes.fromhex(value))[0]
         except Exception as e:
             logger.warning(
-                f"Decoding token {fn_name} failed. " f"token: {token}. " f"rpc response: {result}. " f"exception: {e}"
+                f"Decoding token {fn_name} failed. " f"token: {json.dumps(token)}. " f"rpc response: {result[:500]}...(truncated). " f"exception: {e}"
             )
             token["total_supply"] = None
     return tokens
@@ -301,7 +301,7 @@ def tokens_info_rpc_requests(make_requests, tokens, is_batch):
             except Exception as e:
                 logger.warning(
                     f"Decoding token {fn_name} failed. "
-                    f"token: {token}. "
+                    f"token: {json.dumps(token)}. "
                     f"rpc response: {result[:500]}... (truncated) "
                     f"exception: {e}"
                 )
