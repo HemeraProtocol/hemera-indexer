@@ -137,6 +137,7 @@ class ThreadPoolManager:
                 else:
                     delay = min(min_wait * (2**attempt), max_wait)
                     attempt += 1
+                last_time_tasks = len(pending_tasks)
                 logger.info(f"Retrying {len(pending_tasks)} failed tasks in {delay} seconds...")
                 time.sleep(delay)
 
