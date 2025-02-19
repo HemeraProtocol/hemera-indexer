@@ -31,6 +31,7 @@ from hemera.common.utils.web3_utils import ZERO_ADDRESS
 @contract_namespace.route("/v2/explorer/verify_contract/verify")
 class ExplorerVerifyContract(Resource):
     def post(_):
+        wallet_address = "0x8f72840be9414436da8a76ff08a1f6924f0efb83"
         request_form = flask.request.form
         address = request_form.get("address", "").lower()
         compiler_type = request_form.get("compiler_type")
@@ -49,12 +50,11 @@ class ExplorerVerifyContract(Resource):
 
         contracts = get_contract_by_address(address)
         check_contract_verification_status(contracts)
-
         creation_code, deployed_code = get_creation_or_deployed_code(contracts)
 
         payload = {
             "address": address,
-            "wallet_address": ZERO_ADDRESS,
+            "wallet_address": wallet_address,
             "compiler_type": compiler_type,
             "compiler_version": compiler_version,
             "evm_version": evm_version,
@@ -226,6 +226,7 @@ class ExplorerContractCommandApi(Resource):
 
     @limiter.limit("10 per minute")
     def post(self):
+        wallet_address = "0x8f72840be9414436da8a76ff08a1f6924f0efb83"
         request_form = flask.request.form
         action = request_form.get("action")
         module = request_form.get("module")
@@ -257,7 +258,6 @@ class ExplorerContractCommandApi(Resource):
         contracts = get_contract_by_address(address)
         if contracts.is_verified:
             return {"message": "This contract is verified", "status": "0"}, 200
-
         creation_code, deployed_code = get_creation_or_deployed_code(contracts)
         payload = {
             "address": address,
@@ -269,6 +269,7 @@ class ExplorerContractCommandApi(Resource):
             "optimization_runs": optimization_runs,
             "input_str": input_str,
             "constructor_arguments": constructor_arguments,
+            "wallet_address": wallet_address,
             "creation_code": creation_code,
             "deployed_code": deployed_code,
         }
