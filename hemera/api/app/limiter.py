@@ -19,6 +19,6 @@ def get_real_ip() -> str:
 # https://flask-limiter.readthedocs.io/en/stable/index.html
 limiter = Limiter(
     key_func=get_real_ip,
-    default_limits=["1800 per hour", "180 per minute"],
+    default_limits=["36000 per hour", "180 per minute"],
     storage_uri="memory://",
 )
