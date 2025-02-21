@@ -16,7 +16,12 @@ from sqlalchemy.sql import and_, func, nullslast, or_
 from sqlalchemy.sql.sqltypes import Numeric
 
 from hemera.api.app.cache import cache
-from hemera.api.app.contract.contract_verify import get_abis_for_method, get_sha256_hash, get_similar_addresses
+from hemera.api.app.contract.contract_verify import (
+    get_abis_for_method,
+    get_implementation_contract,
+    get_sha256_hash,
+    get_similar_addresses,
+)
 from hemera.api.app.db_service.blocks import (
     get_block_by_hash,
     get_block_by_number,
@@ -1269,7 +1274,7 @@ class ExplorerAddressProfile(Resource):
             profile_json["contract_creator"] = bytes_to_hex_str(contract.contract_creator)
             profile_json["transaction_hash"] = bytes_to_hex_str(contract.transaction_hash)
             profile_json["is_verified"] = contract.is_verified
-            profile_json["is_proxy"] = contract.is_proxy
+            profile_json["is_proxy"] = contract.is_verified or get_implementation_contract(address) is not None
             profile_json["implementation_contract"] = (
                 bytes_to_hex_str(contract.implementation_contract) if contract.implementation_contract else None
             )
