@@ -214,6 +214,7 @@ class ExplorerVerifyContract(Resource):
 
         contract = Contracts.query.filter(Contracts.address == hex_str_to_bytes(proxy_contract_address.lower())).first()
         contract.verified_implementation_contract = hex_str_to_bytes(implementation_contract_address.lower())
+        contract.is_verified = True
 
         postgres_db.session.add(contract)
         postgres_db.session.commit()
