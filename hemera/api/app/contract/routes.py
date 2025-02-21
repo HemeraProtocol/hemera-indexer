@@ -208,7 +208,7 @@ class ExplorerVerifyContract(Resource):
             not proxy_contract_address
             or not implementation_contract_address
             or not is_eth_address(proxy_contract_address)
-            or is_eth_address(implementation_contract_address)
+            or not is_eth_address(implementation_contract_address)
         ):
             raise APIError("Not such proxy contract address", code=400)
 
