@@ -24,7 +24,7 @@ from hemera.common.models import db as postgres_db
 from hemera.common.models.contracts import Contracts
 from hemera.common.utils.exception_control import APIError
 from hemera.common.utils.format_utils import as_dict, hex_str_to_bytes
-from hemera.common.utils.web3_utils import ZERO_ADDRESS
+from hemera.common.utils.web3_utils import ZERO_ADDRESS, is_eth_address
 
 
 @contract_namespace.route("/v1/explorer/verify_contract/verify")
@@ -171,7 +171,7 @@ class ExplorerVerifyContract(Resource):
     def post(self):
         request_body = flask.request.json
         proxy_contract_address = request_body.get("proxy_contract_address")
-        if not proxy_contract_address:
+        if not proxy_contract_address or not is_eth_address(proxy_contract_address):
             raise APIError("Please sent correct proxy contract address")
 
         implementation_address = get_implementation_contract(proxy_contract_address)
@@ -204,11 +204,16 @@ class ExplorerVerifyContract(Resource):
         proxy_contract_address = request_body.get("proxy_contract_address")
         implementation_contract_address = request_body.get("implementation_contract_address")
 
-        if not proxy_contract_address or not implementation_contract_address:
+        if (
+            not proxy_contract_address
+            or not implementation_contract_address
+            or not is_eth_address(proxy_contract_address)
+            or is_eth_address(implementation_contract_address)
+        ):
             raise APIError("Not such proxy contract address", code=400)
 
-        contract = Contracts.query.filter(Contracts.address == proxy_contract_address.lower()).first()
-        contract.verified_implementation_contract = implementation_contract_address.lower()
+        contract = Contracts.query.filter(Contracts.address == hex_str_to_bytes(proxy_contract_address.lower())).first()
+        contract.verified_implementation_contract = hex_str_to_bytes(implementation_contract_address.lower())
 
         postgres_db.session.add(contract)
         postgres_db.session.commit()
