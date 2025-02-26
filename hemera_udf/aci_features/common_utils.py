@@ -1,7 +1,7 @@
 import logging
 from typing import cast
 
-from web3.types import ABIFunction
+from eth_typing import ABIFunction
 
 from hemera.common.utils.abi_code_utils import encode_data
 from hemera.indexer.utils.abi import function_abi_to_4byte_selector_str

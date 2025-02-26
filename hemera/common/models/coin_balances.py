@@ -1,23 +1,29 @@
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+from datetime import datetime
+from decimal import Decimal
+from typing import Optional
+
+from sqlalchemy.sql import text
+from sqlmodel import Field, Index
 
 from hemera.common.models import HemeraModel, general_converter
 from hemera.indexer.domains.coin_balance import CoinBalance
 
 
-class CoinBalances(HemeraModel):
+class CoinBalances(HemeraModel, table=True):
     __tablename__ = "address_coin_balances"
 
-    address = Column(BYTEA, primary_key=True)
-    balance = Column(NUMERIC(100))
-    block_number = Column(BIGINT, primary_key=True)
-    block_timestamp = Column(TIMESTAMP)
+    # Primary key fields
+    address: bytes = Field(primary_key=True)
+    block_number: int = Field(primary_key=True)
 
-    create_time = Column(TIMESTAMP, server_default=func.now())
-    update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text("false"))
+    # Balance and timestamp fields
+    balance: Optional[Decimal] = Field(default=None, max_digits=100)
+    block_timestamp: Optional[datetime] = Field(default=None)
 
-    __table_args__ = (PrimaryKeyConstraint("address", "block_number"),)
+    # Metadata fields
+    create_time: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    update_time: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    reorg: Optional[bool] = Field(default=False)
 
     @staticmethod
     def model_domain_mapping():
@@ -30,9 +36,4 @@ class CoinBalances(HemeraModel):
             }
         ]
 
-
-Index(
-    "coin_balance_address_number_desc_index",
-    desc(CoinBalances.address),
-    desc(CoinBalances.block_number),
-)
+    __table_args__ = (Index("coin_balance_address_number_desc_index", text("address DESC"), text("block_number DESC")),)

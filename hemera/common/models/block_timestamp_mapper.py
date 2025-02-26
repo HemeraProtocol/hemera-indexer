@@ -1,15 +1,19 @@
-from sqlalchemy import Column, Index, desc
-from sqlalchemy.dialects.postgresql import BIGINT, TIMESTAMP
+from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import Index, text
+from sqlmodel import Field
 
 from hemera.common.models import HemeraModel, general_converter
 from hemera.indexer.domains.block_ts_mapper import BlockTsMapper
 
 
-class BlockTimestampMapper(HemeraModel):
+class BlockTimestampMapper(HemeraModel, table=True):
     __tablename__ = "block_ts_mapper"
-    ts = Column(BIGINT, primary_key=True)
-    block_number = Column(BIGINT)
-    timestamp = Column(TIMESTAMP)
+
+    ts: int = Field(primary_key=True)
+    block_number: Optional[int] = Field(default=None)
+    timestamp: Optional[datetime] = Field(default=None)
 
     @staticmethod
     def model_domain_mapping():
@@ -22,5 +26,4 @@ class BlockTimestampMapper(HemeraModel):
             }
         ]
 
-
-Index("block_ts_mapper_idx", desc(BlockTimestampMapper.block_number))
+    __table_args__ = Index("block_ts_mapper_idx", text("block_number DESC"))

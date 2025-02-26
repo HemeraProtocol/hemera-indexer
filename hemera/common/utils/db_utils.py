@@ -4,18 +4,15 @@ from typing import List, Type
 
 from sqlalchemy import text
 
-from hemera.common.models import HemeraModel, db
+from hemera.common.models import HemeraModel
 from hemera.common.models.blocks import Blocks
 from hemera.common.services.postgresql_service import PostgreSQLService
-from hemera.common.utils.config import get_config
 from hemera.common.utils.format_utils import bytes_to_hex_str
 from hemera.indexer.domains import Domain, dict_to_dataclass
 from hemera.indexer.domains.block import Block
 from hemera.indexer.domains.log import Log
 from hemera.indexer.domains.receipt import Receipt
 from hemera.indexer.domains.transaction import Transaction
-
-app_config = get_config()
 
 
 def build_entities(model, columns):

@@ -3,8 +3,8 @@ import json
 import os
 from typing import List, cast
 
+from eth_typing import ABIFunction
 from eth_utils import to_normalized_address
-from web3.types import ABIFunction
 
 from hemera.common.utils.cache_utils import BlockToLiveDict, TimeToLiveDict
 from hemera.common.utils.db_utils import build_domains_by_sql

@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Callable, Dict, Optional
 
-from web3.types import ABIFunction
+from eth_typing import ABIFunction
 
 from hemera.common.utils.abi_code_utils import Function, FunctionCollection
 from hemera.common.utils.format_utils import bytes_to_hex_str

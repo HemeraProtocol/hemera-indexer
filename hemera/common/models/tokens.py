@@ -1,47 +1,59 @@
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, JSONB, NUMERIC, TIMESTAMP, VARCHAR
+from datetime import datetime
+from decimal import Decimal
+from typing import Dict, Optional
+
+from sqlalchemy import Column, desc, func, text
+from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
+from sqlmodel import Field, Index
 
 from hemera.common.models import HemeraModel, general_converter
 from hemera.indexer.domains.token import MarkBalanceToken, MarkTotalSupplyToken, Token, UpdateToken
 
 
-class Tokens(HemeraModel):
+class Tokens(HemeraModel, table=True):
     __tablename__ = "tokens"
 
-    address = Column(BYTEA, primary_key=True)
-    token_type = Column(VARCHAR)
-    name = Column(VARCHAR)
-    symbol = Column(VARCHAR)
-    decimals = Column(NUMERIC(100))
-    total_supply = Column(NUMERIC(100))
-    block_number = Column(BIGINT)
+    # Primary key
+    address: bytes = Field(primary_key=True)
 
-    holder_count = Column(INTEGER, default=0)
-    transfer_count = Column(INTEGER, default=0)
-    icon_url = Column(VARCHAR)
-    urls = Column(JSONB)
-    volume_24h = Column(NUMERIC(38, 2))
-    price = Column(NUMERIC(38, 6))
-    previous_price = Column(NUMERIC(38, 6))
-    market_cap = Column(NUMERIC(38, 2))
-    on_chain_market_cap = Column(NUMERIC(38, 2))
-    is_verified = Column(BOOLEAN, default=False)
+    # Token basic info
+    token_type: Optional[str] = Field(default=None)
+    name: Optional[str] = Field(default=None)
+    symbol: Optional[str] = Field(default=None)
+    decimals: Optional[Decimal] = Field(default=None, max_digits=100)
+    total_supply: Optional[Decimal] = Field(default=None, max_digits=100)
+    block_number: Optional[int] = Field(default=None)
 
-    cmc_id = Column(INTEGER)
-    cmc_slug = Column(VARCHAR)
-    gecko_id = Column(VARCHAR)
-    description = Column(VARCHAR)
+    # Token statistics
+    holder_count: Optional[int] = Field(default=0)
+    transfer_count: Optional[int] = Field(default=0)
+    icon_url: Optional[str] = Field(default=None)
+    urls: Optional[Dict] = Field(default=None, sa_column=Column(JSONB))
+    volume_24h: Optional[Decimal] = Field(default=None, max_digits=38, decimal_places=2)
+    price: Optional[Decimal] = Field(default=None, max_digits=38, decimal_places=6)
+    previous_price: Optional[Decimal] = Field(default=None, max_digits=38, decimal_places=6)
+    market_cap: Optional[Decimal] = Field(default=None, max_digits=38, decimal_places=2)
+    on_chain_market_cap: Optional[Decimal] = Field(default=None, max_digits=38, decimal_places=2)
+    is_verified: bool = Field(default=False)
 
-    no_balance_of = Column(BOOLEAN, default=False)
-    fail_balance_of_count = Column(INTEGER, default=0)
-    succeed_balance_of_count = Column(INTEGER, default=0)
-    no_total_supply = Column(BOOLEAN, default=False)
-    fail_total_supply_count = Column(BOOLEAN, default=0)
+    # External IDs
+    cmc_id: Optional[int] = Field(default=None)
+    cmc_slug: Optional[str] = Field(default=None)
+    gecko_id: Optional[str] = Field(default=None)
+    description: Optional[str] = Field(default=None)
+    no_balance_of: bool = Field(default=False)
+    fail_balance_of_count: Optional[int] = Field(default=0)
+    succeed_balance_of_count: Optional[int] = Field(default=0)
+    no_total_supply: bool = Field(default=False)
+    fail_total_supply_count: Optional[int] = Field(default=0)
 
-    create_time = Column(TIMESTAMP, server_default=func.now())
-    update_time = Column(TIMESTAMP, server_default=func.now())
-
-    __table_args__ = (PrimaryKeyConstraint("address"),)
+    # Metadata
+    create_time: datetime = Field(
+        default_factory=datetime.utcnow, sa_column=Column(TIMESTAMP, server_default=func.now())
+    )
+    update_time: datetime = Field(
+        default_factory=datetime.utcnow, sa_column=Column(TIMESTAMP, server_default=func.now())
+    )
 
     @staticmethod
     def model_domain_mapping():
@@ -55,7 +67,7 @@ class Tokens(HemeraModel):
             {
                 "domain": UpdateToken,
                 "conflict_do_update": True,
-                "update_strategy": "EXCLUDED.block_number > tokens.block_number",
+                "update_strategy": "EXCLUDED.block_number >= tokens.block_number",
                 "converter": general_converter,
             },
             {
@@ -74,24 +86,14 @@ class Tokens(HemeraModel):
             },
         ]
 
-
-Index("tokens_name_index", Tokens.name)
-Index("tokens_symbol_index", Tokens.symbol)
-Index("tokens_type_index", Tokens.token_type)
-Index("tokens_type_holders_index", Tokens.token_type, desc(Tokens.holder_count))
-Index(
-    "tokens_type_on_chain_market_cap_index",
-    Tokens.token_type,
-    desc(Tokens.on_chain_market_cap),
-)
-
-# because of sqlalchemy doesn't recognize 'english' with datatype REGCONFIG
-# alembic could not track this index
-# before sqlalchemy support this case, we suggest running this sql manually
-
-# Index('tokens_tsvector_symbol_name_index',
-#       func.to_tsvector('english', (Tokens.symbol + ' ' + Tokens.name)), postgresql_using='gin')
-
-# CREATE INDEX tokens_tsvector_symbol_name_index
-# ON tokens
-# USING gin (to_tsvector('english', (symbol || ' ' || name)));
+    __table_args__ = (
+        Index("tokens_name_index", "name"),
+        Index("tokens_symbol_index", "symbol"),
+        Index("tokens_type_index", "token_type"),
+        Index("tokens_type_holders_index", "token_type", desc("holder_count")),
+        Index("tokens_type_on_chain_market_cap_index", "token_type", desc("on_chain_market_cap")),
+        # Note: tsvector index needs to be created manually
+        # CREATE INDEX tokens_tsvector_symbol_name_index
+        # ON tokens
+        # USING gin (to_tsvector('english', (symbol || ' ' || name)));
+    )

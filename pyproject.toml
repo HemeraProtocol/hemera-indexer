@@ -7,19 +7,21 @@ name = "hemera"
 description = "Tools for exporting Ethereum blockchain data to JSON/CSV file and postgresql"
 version = "1.0.0a1"
 authors = [
-    "xuzh <zihao.xu@thehemera.com>",
     "shanshuo0918 <shuo.shan@lifo.ai>",
+    "xuzh <zihao.xu@thehemera.com>",
+    "ideal93 <xiang.li@lifo.ai>",
 ]
 readme = "README.md"
 license = "Apache-2.0"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
 ]
 keywords = ["ethereum", "indexer", "explorer", "hemera"]
 packages = [
@@ -29,8 +31,9 @@ packages = [
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4"
-web3 = "6.20.3"
-eth-utils = ">=4.0.0"
+web3 = "7.8.0"
+eth-typing = ">=5.0.0"
+eth-utils = "5.1.0"
 eth-abi = ">=5.0.1"
 python-dateutil = ">=2.8.0,<3"
 click = ">=8.0.4,<9"
@@ -39,13 +42,6 @@ requests = "*"
 sqlalchemy = "2.0.31"
 psycopg2-binary = "2.9.9"
 alembic = "1.13.3"
-pandas = "1.5.3"
-Flask = "3.0.3"
-Flask-Caching = "2.3.0"
-Flask-Cors = "3.0.9"
-flask-limiter = "3.8.0"
-flask-restx = "1.3.0"
-Flask-SQLAlchemy = "3.1.1"
 blinker = ">=1.8.2"
 Werkzeug = "3.0.3"
 openpyxl = "3.1.3"
@@ -53,25 +49,35 @@ redis = ">=4,<6"
 urllib3 = ">=2.2.2"
 dataclass-wizard = "0.22.3"
 pottery = "3.0.0"
-eth_typing = ">=2.2.0,<5"
 orjson = "3.10.7"
 mpire = "2.10.2"
 dill = "0.3.9"
 multiprocess = "0.70.17"
 PyYAML = "6.0.2"
-numpy = "1.24.4"
+fastapi = {version = "<1.0.0,>=0.114.2", extras = ["standard"]}
+pydantic = ">=2.4.0"
+pydantic-settings = "<3.0.0,>=2.2.1"
+sentry-sdk = {version = "<2.0.0,>=1.40.6", extras = ["fastapi"]}
+sqlmodel = "*"
+pyjwt = "<3.0.0,>=2.8.0"
 tenacity = "9.0.0"
 kafka-python = "2.0.2"
 prometheus_client = "0.21.1"
 sortedcontainers = "2.4.0"
+deprecated = ">=1.2.13"
+pandas = "1.5.3"
+numpy = "1.24.4"
+packaging = "21.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=7.0.0"
+pytest-postgresql = "*"
 black = "^21.5b0"
 isort = "^5.9.1"
 flake8 = "^3.9.2"
 ruff = "^0.0.235"
 pytest-cov = "*"
+pygments = "<2.14.0"
 
 [tool.poetry.scripts]
 hemera = "hemera.cli:cli"
@@ -83,7 +89,7 @@ hemera = "hemera.cli:cli"
 
 [tool.black]
 line-length = 120
-target-version = ["py38", "py39", "py310", "py311"]
+target-version = ["py38", "py39", "py310", "py311", "py312", "py313"]
 
 [tool.isort]
 profile = "black"
@@ -94,6 +100,7 @@ line_length = 120
 
 [tool.pytest.ini_options]
 markers = [
+    "api: marks tests as api tests",
     "serial: run this test in single thread",
     "indexer: Tests related to indexer",
     "indexer_exporter: Tests related to the indexer exporter",

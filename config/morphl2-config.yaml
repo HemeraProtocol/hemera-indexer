@@ -1,0 +1,4 @@
+chain_id: 1
+morph_bridge_on_l1_job:
+  l1_message_queue_oracle_contract_address: "0x3931ade842f5bb8763164bdd81e5361dce6cc1ef"
+  l1_cross_domain_messenger_contract_address: "0xdc71366effa760804dcfc3edf87fa2a6f1623304"

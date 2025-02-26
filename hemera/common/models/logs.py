@@ -1,31 +1,44 @@
-from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
-from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, INTEGER, TIMESTAMP
+from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import Column, desc, func, text
+from sqlalchemy.dialects.postgresql import BOOLEAN, BYTEA, TIMESTAMP
+from sqlmodel import Field, Index
 
 from hemera.common.models import HemeraModel, general_converter
 from hemera.indexer.domains.log import Log
 
 
-class Logs(HemeraModel):
+class Logs(HemeraModel, table=True):
     __tablename__ = "logs"
 
-    log_index = Column(INTEGER, primary_key=True)
-    address = Column(BYTEA)
-    data = Column(BYTEA)
-    topic0 = Column(BYTEA)
-    topic1 = Column(BYTEA)
-    topic2 = Column(BYTEA)
-    topic3 = Column(BYTEA)
-    transaction_hash = Column(BYTEA, primary_key=True)
-    transaction_index = Column(INTEGER)
-    block_number = Column(BIGINT)
-    block_hash = Column(BYTEA, primary_key=True)
-    block_timestamp = Column(TIMESTAMP)
+    # Primary keys
+    log_index: int = Field(primary_key=True)
+    transaction_hash: bytes = Field(primary_key=True)
+    block_hash: bytes = Field(primary_key=True)
 
-    create_time = Column(TIMESTAMP, server_default=func.now())
-    update_time = Column(TIMESTAMP, server_default=func.now())
-    reorg = Column(BOOLEAN, server_default=text("false"))
+    # Log data
+    address: Optional[bytes] = Field(default=None)
+    data: Optional[bytes] = Field(default=None)
+    topic0: Optional[bytes] = Field(default=None)
+    topic1: Optional[bytes] = Field(default=None)
+    topic2: Optional[bytes] = Field(default=None)
+    topic3: Optional[bytes] = Field(default=None)
 
-    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "block_hash", "log_index"),)
+    # Block info
+    transaction_index: Optional[int] = Field(default=None)
+    block_number: Optional[int] = Field(default=None)
+    block_timestamp: Optional[datetime] = Field(default=None)
+
+    # Metadata
+    create_time: datetime = Field(
+        default_factory=datetime.utcnow, sa_column=Column(TIMESTAMP, server_default=func.now())
+    )
+    update_time: datetime = Field(
+        default_factory=datetime.utcnow, sa_column=Column(TIMESTAMP, server_default=func.now())
+    )
+    reorg: bool = Field(default=False, sa_column=Column(BOOLEAN, server_default=text("false")))
+
     __query_order__ = [block_number, log_index]
 
     @staticmethod
@@ -39,19 +52,24 @@ class Logs(HemeraModel):
             }
         ]
 
-
-Index("logs_block_timestamp_index", desc(Logs.block_timestamp))
-Index(
-    "logs_address_block_number_log_index_index",
-    Logs.address,
-    desc(Logs.block_number),
-    desc(Logs.log_index),
-)
-Index("logs_block_number_log_index_index", desc(Logs.block_number), desc(Logs.log_index))
-Index(
-    "logs_address_topic_0_number_log_index_index",
-    Logs.address,
-    Logs.topic0,
-    desc(Logs.block_number),
-    desc(Logs.log_index),
-)
+    __table_args__ = (
+        # Block timestamp index
+        Index("logs_block_timestamp_index", desc("block_timestamp")),
+        # Address with block number index
+        Index(
+            "logs_address_block_number_log_index_index",
+            "address",
+            desc("block_number"),
+            desc("log_index"),
+        ),
+        # Block number with log index
+        Index("logs_block_number_log_index_index", desc("block_number"), desc("log_index")),
+        # Address with topic index
+        Index(
+            "logs_address_topic_0_number_log_index_index",
+            "address",
+            "topic0",
+            desc("block_number"),
+            desc("log_index"),
+        ),
+    )

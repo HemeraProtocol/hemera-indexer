@@ -104,7 +104,7 @@ class JobScheduler:
         force_filter_mode=False,
         metrics=None,
     ):
-        import_submodules("hemera_udf")
+        # import_submodules("hemera_udf")
         self.logger = logging.getLogger(__name__)
         self.auto_reorg = auto_reorg
         self.batch_web3_provider = batch_web3_provider

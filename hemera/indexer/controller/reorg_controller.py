@@ -6,7 +6,7 @@ from sqlalchemy import and_, update
 from sqlalchemy.dialects.postgresql import insert
 
 from hemera.common.models.blocks import Blocks
-from hemera.common.models.fix_record import FixRecord
+from hemera.common.models.records import FixRecord
 from hemera.common.utils.exception_control import HemeraBaseException
 from hemera.common.utils.format_utils import hex_str_to_bytes
 from hemera.common.utils.web3_utils import build_web3

@@ -1,41 +1,35 @@
 from dataclasses import fields
 from datetime import datetime, timezone
-from typing import Any, Dict, Type
+from typing import Any, Dict, Set, Type
 
-from flask_sqlalchemy import SQLAlchemy
 from psycopg2._json import Json
 from sqlalchemy import NUMERIC as SQL_NUMERIC
+from sqlalchemy import DateTime, LargeBinary
+from sqlalchemy import Numeric
 from sqlalchemy import Numeric as SQL_Numeric
 from sqlalchemy.dialects.postgresql import ARRAY, BYTEA, JSON, JSONB, NUMERIC, TIMESTAMP
+from sqlmodel import SQLModel
 
 from hemera.common.utils.format_utils import hex_str_to_bytes
 from hemera.common.utils.module_loading import import_string, import_submodules
 from hemera.indexer.domains import Domain
 
-model_path_exclude = []
 
-# db = RouteSQLAlchemy(session_options={"autoflush": False})
-db = SQLAlchemy(session_options={"autoflush": False})
+class HemeraMeta(type(SQLModel)):
+    _registry: Dict[str, Type["HemeraModel"]] = {}
 
-from sqlalchemy import BigInteger, Boolean, DateTime, Integer, LargeBinary, Numeric
-
-
-class HemeraMeta(type(db.Model)):
-    _registry = {}
-
-    def __new__(mcs, name, bases, attrs):
-        new_cls = super().__new__(mcs, name, bases, attrs)
-
+    def __new__(mcs, name, bases, attrs, **kwargs):
+        new_cls = super().__new__(mcs, name, bases, attrs, **kwargs)
         if name != "HemeraModel" and issubclass(new_cls, HemeraModel):
             mcs._registry[name] = new_cls
 
         return new_cls
 
     @classmethod
-    def get_all_subclasses(mcs):
+    def get_all_subclasses(mcs) -> Dict[Type["HemeraModel"], Type["HemeraModel"]]:
         import_submodules("hemera.common.models")
 
-        def get_subclasses(cls):
+        def get_subclasses(cls) -> Set[Type["HemeraModel"]]:
             subclasses = set()
             for subclass in cls.__subclasses__():
                 subclasses.add(subclass)
@@ -46,18 +40,14 @@ class HemeraMeta(type(db.Model)):
         return {subclass: subclass for subclass in all_subclasses}
 
 
-class HemeraModel(db.Model, metaclass=HemeraMeta):
-    __abstract__ = True
+class HemeraModel(SQLModel, metaclass=HemeraMeta):
 
-    __query_order__ = []
+    model_config = {"arbitrary_types_allowed": True}
+    __query_order__: list = []
 
     @staticmethod
     def model_domain_mapping():
         pass
-
-    @classmethod
-    def schema(self):
-        return "public"
 
     @classmethod
     def get_all_annotation_keys(cls):

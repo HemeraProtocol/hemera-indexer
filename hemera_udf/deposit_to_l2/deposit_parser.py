@@ -1,9 +1,8 @@
 import json
 from typing import List, cast
 
-from eth_typing import HexStr
+from eth_typing import ABIEvent, ABIFunction, HexStr
 from web3._utils.contracts import decode_transaction_data
-from web3.types import ABIEvent, ABIFunction
 
 from hemera.indexer.domains.transaction import Transaction
 from hemera.indexer.utils.abi import event_log_abi_to_topic, function_abi_to_4byte_selector_str

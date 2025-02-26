@@ -1,5 +1,9 @@
-from sqlalchemy import Column, func
-from sqlalchemy.dialects.postgresql import JSON, TIMESTAMP, VARCHAR
+from datetime import datetime
+from typing import Dict, Optional
+
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlmodel import Field
 
 from hemera.common.models import HemeraModel
 
@@ -7,8 +11,8 @@ from hemera.common.models import HemeraModel
 class MetricsPersistence(HemeraModel):
     __tablename__ = "metrics_persistence"
 
-    instance = Column(VARCHAR, primary_key=True)
-    metrics = Column(JSON)
+    instance: str = Column(primary_key=True)
+    metrics: Optional[Dict] = Field(default=None, sa_column=Column(JSONB))
 
-    create_time = Column(TIMESTAMP, server_default=func.now())
-    update_time = Column(TIMESTAMP, server_default=func.now())
+    create_time: datetime = Field(default_factory=datetime.utcnow)
+    update_time: datetime = Field(default_factory=datetime.utcnow)

@@ -1,9 +1,9 @@
 import json
 from typing import cast
 
+from eth_typing import ABIEvent, ABIFunction
 from web3._utils.contracts import decode_transaction_data
 from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
-from web3.types import ABIEvent, ABIFunction
 
 from hemera.common.utils.abi_code_utils import decode_log
 from hemera.indexer.domains.log import Log

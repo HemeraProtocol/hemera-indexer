@@ -4,7 +4,7 @@ from json import JSONDecodeError
 from urllib.parse import urlparse
 
 from web3 import HTTPProvider, IPCProvider
-from web3._utils.request import make_post_request
+from web3._utils.http_session_manager import HTTPSessionManager
 from web3._utils.threads import Timeout
 
 DEFAULT_TIMEOUT = 60
@@ -64,6 +64,7 @@ class BatchIPCProvider(IPCProvider):
 
 
 class BatchHTTPProvider(HTTPProvider):
+    http_manager = HTTPSessionManager(100, 5)
 
     def make_request(self, method=None, params=None):
         self.logger.debug("Making request HTTP. URI: %s, Request: %s", self.endpoint_uri, params)
@@ -71,7 +72,7 @@ class BatchHTTPProvider(HTTPProvider):
             request_data = params.encode("utf-8")
         else:
             request_data = params
-        raw_response = make_post_request(self.endpoint_uri, request_data, **self.get_request_kwargs())
+        raw_response = self.http_manager.make_post_request(self.endpoint_uri, request_data, **self.get_request_kwargs())
         try:
             response = self.decode_rpc_response(raw_response)
         except JSONDecodeError:

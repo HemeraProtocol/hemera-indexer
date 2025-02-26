@@ -75,7 +75,6 @@ class PostgresItemExporter(BaseExporter):
                         converter = pg_config["converter"]
 
                         # Initialize sub-progress bar for current table
-                        # Initialize sub-progress bar for current table
                         self.sub_progress = TqdmExtraFormat(
                             total=len(item_group),
                             desc=f"Processing {table.__tablename__}".ljust(35),

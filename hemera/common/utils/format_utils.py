@@ -6,7 +6,7 @@ from typing import Optional, Union
 from sqlalchemy import Integer, Numeric
 
 
-def bytes_to_hex_str(b: bytes) -> str:
+def bytes_to_hex_str(b: bytes) -> Optional[str]:
     """
     Converts a bytes object to a hexadecimal string with '0x' prefix.
 
@@ -16,10 +16,12 @@ def bytes_to_hex_str(b: bytes) -> str:
     :return: A hexadecimal string representation of the input bytes.
     :rtype: str
     """
+    if not b:
+        return None
     return "0x" + b.hex()
 
 
-def hex_str_to_bytes(h: str) -> bytes:
+def hex_str_to_bytes(h: str) -> Optional[bytes]:
     """
     Converts a hexadecimal string to a bytes object.
 

@@ -1,4 +1,4 @@
-from web3.types import ABIFunction
+from eth_typing import ABIFunction
 
 from hemera.common.utils.abi_code_utils import Function
 from hemera.indexer.domains.transaction import Transaction

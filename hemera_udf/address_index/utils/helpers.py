@@ -16,6 +16,7 @@ from hemera.api.app.utils.format_utils import format_coin_value
 from hemera.api.app.utils.token_utils import get_coin_prices, get_latest_coin_prices, get_token_price
 from hemera.api.app.utils.web3_utils import get_balance
 from hemera.common.enumeration.token_type import TokenType
+from hemera.common.enumeration.txn_type import AddressTokenTransferType, AddressTransactionType
 from hemera.common.models import db
 from hemera.common.models.contracts import Contracts
 from hemera.common.models.scheduled_metadata import ScheduledMetadata
@@ -30,14 +31,8 @@ from hemera.common.utils.format_utils import (
     hex_str_to_bytes,
 )
 from hemera.common.utils.web3_utils import ZERO_ADDRESS
-from hemera_udf.address_index.jobs.address_index_job import (
-    AddressTokenTransferType,
-    AddressTransactionType,
-    InternalTransactionType,
-)
 from hemera_udf.address_index.models.address_contract_operation import AddressContractOperations
 from hemera_udf.address_index.models.address_index_daily_stats import AddressIndexDailyStats
-from hemera_udf.address_index.models.address_internal_transaciton import AddressInternalTransactions
 from hemera_udf.address_index.models.address_nft_1155_holders import AddressNftTokenHolders
 from hemera_udf.address_index.models.address_token_holders import AddressTokenHolders
 from hemera_udf.address_index.models.address_token_transfers import AddressTokenTransfers

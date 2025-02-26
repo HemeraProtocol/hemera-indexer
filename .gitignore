@@ -58,3 +58,6 @@ sync_record
 alembic.ini
 !hemera_udf/hemera_ens/abi/*.json
 !hemera_udf/cyber_id/abi/*.json
+
+# DB
+*.db

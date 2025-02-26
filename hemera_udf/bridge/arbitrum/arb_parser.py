@@ -9,9 +9,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Optional, cast
 
+from eth_typing import ABIEvent, ABIFunction
 from web3 import Web3
 from web3._utils.contracts import decode_transaction_data
-from web3.types import ABIEvent, ABIFunction
 
 from hemera.common.utils.abi_code_utils import decode_log
 from hemera.indexer.utils.abi import event_log_abi_to_topic, function_abi_to_4byte_selector_str

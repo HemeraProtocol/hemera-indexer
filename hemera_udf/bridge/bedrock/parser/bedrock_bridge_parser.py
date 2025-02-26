@@ -2,9 +2,9 @@ import json
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, cast
 
+from eth_typing import ABIEvent, ABIFunction
 from web3._utils.contracts import decode_transaction_data
 from web3.auto import w3
-from web3.types import ABIEvent, ABIFunction
 
 from hemera.common.utils.abi_code_utils import decode_log
 from hemera.common.utils.format_utils import bytes_to_hex_str

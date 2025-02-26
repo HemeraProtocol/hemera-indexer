@@ -3,9 +3,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 
 from eth_abi.codec import ABICodec
 from eth_abi.grammar import BasicType
-from eth_abi.utils.numeric import ceil32
-from eth_abi.utils.padding import zpad, zpad_right
-from eth_typing import ChecksumAddress, HexStr, TypeStr
+from eth_typing import ABIEvent, ABIFunction, ChecksumAddress, HexStr, TypeStr
 from eth_utils import (
     event_abi_to_log_topic,
     function_abi_to_4byte_selector,
@@ -18,7 +16,6 @@ from eth_utils import (
 from web3 import Web3
 from web3._utils.abi import build_strict_registry
 from web3._utils.normalizers import implicitly_identity, parse_basic_type_str
-from web3.types import ABIEvent, ABIFunction
 
 from hemera.common.utils.format_utils import bytes_to_hex_str
 

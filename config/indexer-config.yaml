@@ -1,4 +1,12 @@
 chain_id: 1
+uniswap_v3_job:
+  # empty means no filter. only work in price job
+  pool_address:
+  # works in price\token job
+  jobs:
+    - type: uniswapv3  # uniswapv3`
+      factory address: '0x1f98431c8ad98523631ae4a59f267346ea31f984'
+      position_token_address: '0xc36442b4a4522e871399cd717abdd847ab11fe88'
 opensea_job:
   seaport_1_6:
     contract_address: "0x0000000000000068f116a894984e2db1123eb395"

@@ -3,6 +3,7 @@ from enum import Enum
 from itertools import groupby
 from typing import List, Union
 
+from hemera.common.enumeration.txn_type import InternalTransactionType
 from hemera.common.utils.web3_utils import ZERO_ADDRESS
 from hemera.indexer.domains.contract_internal_transaction import ContractInternalTransaction
 from hemera.indexer.domains.token_id_infos import UpdateERC721TokenIdDetail
@@ -17,42 +18,6 @@ from hemera.indexer.utils.token_fetcher import TokenFetcher
 from hemera_udf.address_index.domains import *
 
 logger = logging.getLogger(__name__)
-
-
-class InternalTransactionType(Enum):
-    SELF_CALL = 0
-    SENDER = 1
-    RECEIVER = 2
-
-
-class AddressTransactionType(Enum):
-    SELF_CALL = 0
-
-    SENDER = 1
-    RECEIVER = 2
-
-    CREATOR = 3
-    BEEN_CREATED = 4
-
-
-class AddressTokenTransferType(Enum):
-    SELF_CALL = 0
-
-    SENDER = 1
-    RECEIVER = 2
-
-    DEPOSITOR = 3
-    WITHDRAWER = 4
-
-
-class AddressNftTransferType(Enum):
-    SELF_CALL = 0
-
-    SENDER = 1
-    RECEIVER = 2
-
-    BURNER = 3
-    MINTER = 4
 
 
 def create_address_internal_transaction(

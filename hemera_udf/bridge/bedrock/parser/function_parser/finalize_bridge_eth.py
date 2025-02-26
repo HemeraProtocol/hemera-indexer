@@ -1,8 +1,8 @@
 import json
 from typing import cast
 
+from eth_typing import ABIFunction
 from web3._utils.contracts import decode_transaction_data
-from web3.types import ABIFunction
 
 from hemera.common.utils.exception_control import FastShutdownError
 from hemera.common.utils.format_utils import bytes_to_hex_str

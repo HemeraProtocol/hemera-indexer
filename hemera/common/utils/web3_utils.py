@@ -1,10 +1,11 @@
 import base64
 import json
 import re
+from optparse import Option
+from typing import Optional
 
 import requests
 from web3 import Web3
-from web3.middleware import geth_poa_middleware
 
 ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -94,7 +95,7 @@ chain_id_name_mapping = {SUPPORT_CHAINS[chain_name]["chain_id"]: chain_name for 
 
 def build_web3(provider):
     w3 = Web3(provider)
-    w3.middleware_onion.inject(geth_poa_middleware, layer=0)
+    w3.middleware_onion.inject(PythonicMiddleware, layer=0)
     return w3
 
 
@@ -171,6 +172,38 @@ def is_eth_address(address):
 def is_eth_transaction_hash(hash):
     pattern = re.compile(r"^0x[a-fA-F0-9]{64}")
     return bool(re.fullmatch(pattern, hash))
+
+
+def valid_hash(value: str) -> Optional[str]:
+    """Check if the input string is a valid block hash.
+
+    Args:
+        value: Input string to validate
+
+    Returns:
+        bool: True if the input is a valid block hash, False otherwise
+
+    Examples:
+        >>> valid_hash("0x1234...")  # 64 hex chars with 0x prefix
+        True
+        >>> valid_hash("1234...")    # 64 hex chars without prefix
+        True
+        >>> valid_hash("0xabcd")     # Too short
+        False
+    """
+    # Remove 0x prefix if present
+    hex_value = value.lower().removeprefix("0x")
+
+    # Check if the string has exactly 64 characters (32 bytes)
+    if len(hex_value) != 64:
+        return None
+
+    # Check if all characters are valid hex digits
+    try:
+        int(hex_value, 16)
+        return "0x" + hex_value.lower()
+    except ValueError:
+        return None
 
 
 def to_checksum_address(address):

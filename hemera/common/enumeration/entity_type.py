@@ -188,6 +188,17 @@ def calculate_entity_value(entity_types: str) -> int:
     return entities
 
 
+def generate_entity_types(entity_types: int) -> Generator[str, None, None]:
+    """Generate entity type strings from combined bit value."""
+    for entity_type in EntityType.__members__.keys():
+        if entity_types & EntityType[entity_type]:
+            yield entity_type
+
+    for entity_type, bit_value in DynamicEntityTypeRegistry._dynamic_types.items():
+        if entity_types & bit_value:
+            yield entity_type
+
+
 def generate_output_types(entity_types: int) -> Generator[Type, None, None]:
     """Generate output types for both static and dynamic entity types."""
     yield from DynamicEntityTypeRegistry.get_output_types(entity_types)

@@ -5,7 +5,7 @@ from sqlalchemy import and_, func, insert, literal, select
 
 from hemera.common.models import HemeraModel
 from hemera.common.models.blocks import Blocks
-from hemera.common.models.fix_record import FixRecord
+from hemera.common.models.records import FixRecord
 from hemera.common.services.postgresql_service import PostgreSQLService
 from hemera.common.utils.exception_control import RetriableError
 

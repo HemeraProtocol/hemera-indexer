@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, List, Optional
 
-from web3.types import ABIFunction
+from eth_typing import ABIFunction
 
 from hemera.common.utils.format_utils import bytes_to_hex_str
 from hemera.indexer.utils.abi import function_abi_to_4byte_selector_str

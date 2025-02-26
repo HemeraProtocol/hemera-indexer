@@ -48,14 +48,14 @@ init_db:
 development:
 	@echo "Setting up development environment..."
 	@bash -c 'set -euo pipefail; \
-	PYTHON_CMD=$$(command -v python3 || command -v python); \
+	PYTHON_CMD=$$(command -v python3.10 || command -v python.10); \
 	if [ -z "$$PYTHON_CMD" ] || ! "$$PYTHON_CMD" --version 2>&1 | grep -q "Python 3"; then \
 		echo "Python 3 is not found. Please install Python 3 and try again."; \
 		exit 1; \
 	fi; \
 	python_version=$$($$PYTHON_CMD -c "import sys; print(\"{}.{}\".format(sys.version_info.major, sys.version_info.minor))"); \
-	if ! echo "$$python_version" | grep -qE "^3\.(8|9|10|11)"; then \
-		echo "Python version $$python_version is not supported. Please use Python 3.8, 3.9, 3.10, or 3.11."; \
+	if ! echo "$$python_version" | grep -qE "^3\.(10|11|12|13)"; then \
+		echo "Python version $$python_version is not supported. Please use Python 3.10, 3.11, 3.12 or 3.13."; \
 		exit 1; \
 	fi; \
 	echo "Using Python: $$($$PYTHON_CMD --version)"; \

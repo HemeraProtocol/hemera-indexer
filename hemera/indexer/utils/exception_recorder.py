@@ -3,7 +3,7 @@ from queue import Queue
 
 from sqlalchemy.dialects.postgresql import insert
 
-from hemera.common.models.exception_records import ExceptionRecords
+from hemera.common.models.records import ExceptionRecords
 
 LOG_BUFFER_SIZE = 5000
 

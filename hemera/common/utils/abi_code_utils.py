@@ -9,21 +9,13 @@ import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import eth_abi
-from ens.utils import get_abi_output_types
 from eth_abi import abi
 from eth_abi.codec import ABICodec
-from eth_typing import TypeStr
-from eth_utils import encode_hex, to_hex
+from eth_typing import ABIEvent, ABIFunction, TypeStr
+from eth_utils import encode_hex, get_abi_input_types, get_abi_output_types, to_hex
 from hexbytes import HexBytes
-from web3._utils.abi import (
-    exclude_indexed_event_inputs,
-    get_abi_input_types,
-    get_indexed_event_inputs,
-    map_abi_data,
-    named_tree,
-)
+from web3._utils.abi import exclude_indexed_event_inputs, get_indexed_event_inputs, map_abi_data, named_tree
 from web3._utils.normalizers import BASE_RETURN_NORMALIZERS
-from web3.types import ABIEvent, ABIFunction
 
 from hemera.common.utils.exception_control import FastShutdownError
 from hemera.common.utils.format_utils import bytes_to_hex_str, convert_bytes_to_hex, convert_dict, hex_str_to_bytes
