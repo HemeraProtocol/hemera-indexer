@@ -32,7 +32,6 @@ def rpc_response_to_result(response):
             raise RetriableError(error_message)
         elif response.get("error") is not None:
             logger.error(f"rpc error response: {response}")
-            print(f"rpc error {response}")
             return decode_response_error(response.get("error"))
         else:
             return result
