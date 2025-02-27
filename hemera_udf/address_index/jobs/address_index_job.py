@@ -303,9 +303,14 @@ def nft_transfers_to_address_nft_transfers(transfers: Union[List[ERC721TokenTran
 class AddressIndexerJob(ExtensionJob):
     dependency_types = [Transaction, ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer]
     output_types = [
+        TokenAddressNftInventory,
         AddressTransaction,
         AddressTokenTransfer,
         AddressNftTransfer,
+        AddressTokenHolder,
+        AddressNft1155Holder,
+        AddressInternalTransaction,
+        AddressContractOperation,
     ]
 
     def __init__(self, **kwargs):
@@ -318,14 +323,122 @@ class AddressIndexerJob(ExtensionJob):
         self.token_fetcher = TokenFetcher(self._web3, kwargs)
         self._is_multi_call = kwargs["multicall"]
 
-    def _process(self, **kwargs):
+    def __collect_owner_batch(self, token_list):
+        items = self.token_fetcher.fetch_token_ids_info(token_list)
+        update_erc721_token_id_details = []
+        for item in items:
+            if item.type() == UpdateERC721TokenIdDetail.type():
+                update_erc721_token_id_details.append(item)
 
+        update_erc721_token_id_details = [
+            list(group)[-1]
+            for key, group in groupby(
+                update_erc721_token_id_details,
+                lambda x: (x.token_address, x.token_id),
+            )
+        ]
+
+        for item in update_erc721_token_id_details:
+            self._collect_domain(
+                TokenAddressNftInventory(
+                    token_address=item.token_address, token_id=item.token_id, wallet_address=item.token_owner
+                )
+            )
+
+    def __collect_balance_batch(self, parameters):
+        token_balances = self.token_fetcher.fetch_token_balance(parameters)
+        token_balances.sort(key=lambda x: (x["address"], x["token_address"]))
+        for token_balance in token_balances:
+            if token_balance["token_type"] == "ERC1155":
+                self._collect_domain(
+                    AddressNft1155Holder(
+                        address=token_balance["address"],
+                        token_address=token_balance["token_address"],
+                        token_id=token_balance["token_id"],
+                        balance_of=token_balance["balance"],
+                    )
+                )
+            else:
+                self._collect_domain(
+                    AddressTokenHolder(
+                        address=token_balance["address"],
+                        token_address=token_balance["token_address"],
+                        balance_of=token_balance["balance"],
+                    )
+                )
+
+    def _collect(self, **kwargs):
+        # Get all token transfers
+        if not (
+            set(self._required_output_types) & {TokenAddressNftInventory, AddressTokenHolder, AddressNft1155Holder}
+        ):
+            return
+
+        token_transfers = self._get_domains([ERC20TokenTransfer, ERC721TokenTransfer, ERC1155TokenTransfer])
+
+        # Generate token transfer parameters
+        all_token_parameters = extract_token_parameters(token_transfers, "latest")
+        all_token_parameters.sort(key=lambda x: (x["address"], x["token_address"], x.get("token_id") or 0))
+        parameters = [
+            list(group)[-1]
+            for key, group in groupby(all_token_parameters, lambda x: (x["address"], x["token_address"], x["token_id"]))
+        ]
+
+        # Generate token owner parameters
+        all_owner_parameters = generate_token_id_info(self._data_buff[ERC721TokenTransfer.type()], [], "latest")
+        all_owner_parameters.sort(key=lambda x: (x["address"], x["token_id"]))
+        owner_parameters = [
+            list(group)[-1] for key, group in groupby(all_owner_parameters, lambda x: (x["address"], x["token_id"]))
+        ]
+
+        self.__collect_balance_batch(parameters)
+        self.__collect_owner_batch(owner_parameters)
+
+    def _process(self, **kwargs):
+        # Sort address holder
+        if set(self._required_output_types) & {TokenAddressNftInventory, AddressTokenHolder, AddressNft1155Holder}:
+            self._data_buff[AddressTokenHolder.type()] = distinct_collections_by_group(
+                [
+                    AddressTokenHolder(
+                        address=token_balance.address,
+                        token_address=token_balance.token_address,
+                        balance_of=token_balance.balance_of,
+                    )
+                    for token_balance in self._data_buff[AddressTokenHolder.type()]
+                ],
+                group_by=["address", "token_address", "balance_of"],
+            )
+
+            self._data_buff[TokenAddressNftInventory.type()] = distinct_collections_by_group(
+                [
+                    TokenAddressNftInventory(
+                        token_address=nft_owner.token_address,
+                        token_id=nft_owner.token_id,
+                        wallet_address=nft_owner.wallet_address,
+                    )
+                    for nft_owner in self._data_buff[TokenAddressNftInventory.type()]
+                ],
+                group_by=["token_address", "token_id", "wallet_address"],
+            )
+
+            self._data_buff[AddressNft1155Holder.type()] = distinct_collections_by_group(
+                [
+                    AddressNft1155Holder(
+                        address=nft_owner.address,
+                        token_address=nft_owner.token_address,
+                        token_id=nft_owner.token_id,
+                        balance_of=nft_owner.balance_of,
+                    )
+                    for nft_owner in self._data_buff[AddressNft1155Holder.type()]
+                ],
+                group_by=["address", "token_address", "token_id", "balance_of"],
+            )
         transactions = self._get_domain(Transaction)
         self._collect_domains(list(transactions_to_address_transactions(transactions)))
 
+        transaction_dict = {transaction.hash: transaction for transaction in transactions}
+
         token_transfers = self._get_domain(ERC20TokenTransfer)
-        a = list(erc20_transfers_to_address_token_transfers(token_transfers))
-        print(a)
         self._collect_domains(list(erc20_transfers_to_address_token_transfers(token_transfers)))
 
         nft_transfers = self._get_domain(ERC721TokenTransfer)
@@ -333,3 +446,8 @@ class AddressIndexerJob(ExtensionJob):
 
         erc1155_transfers = self._get_domain(ERC1155TokenTransfer)
         self._collect_domains(list(nft_transfers_to_address_nft_transfers(erc1155_transfers)))
+
+        internal_transactions = self._get_domain(ContractInternalTransaction)
+        self._collect_domains(
+            list(internal_transactions_to_address_internal_transactions(internal_transactions, transaction_dict))
+        )
