@@ -41,7 +41,7 @@ class TokenHolderMetricsCurrent(HemeraModel):
 
     last_transfer_timestamp = Column(TIMESTAMP)
     last_swap_timestamp = Column(TIMESTAMP)
-
+    last_price = Column(NUMERIC)
     success_sell_count = Column(BIGINT)
     fail_sell_count = Column(BIGINT)
 
@@ -50,6 +50,7 @@ class TokenHolderMetricsCurrent(HemeraModel):
     realized_pnl = Column(NUMERIC)
     sell_pnl = Column(NUMERIC)
     win_rate = Column(NUMERIC)
+    pnl_valid = Column(BOOLEAN)
 
     first_block_timestamp = Column(TIMESTAMP)
 
@@ -102,6 +103,7 @@ class TokenHolderMetricsHistory(HemeraModel):
 
     last_transfer_timestamp = Column(TIMESTAMP)
     last_swap_timestamp = Column(TIMESTAMP)
+    last_price = Column(NUMERIC)
 
     success_sell_count = Column(BIGINT)
     fail_sell_count = Column(BIGINT)
@@ -111,6 +113,7 @@ class TokenHolderMetricsHistory(HemeraModel):
     realized_pnl = Column(NUMERIC)
     sell_pnl = Column(NUMERIC)
     win_rate = Column(NUMERIC)
+    pnl_valid = Column(BOOLEAN)
 
     first_block_timestamp = Column(TIMESTAMP)
 
@@ -141,17 +144,20 @@ class ERC20TokenTransfersWithPrice(HemeraModel):
     token_address = Column(BYTEA)
     value = Column(NUMERIC(100))
     price = Column(NUMERIC)
+    decimals = Column(NUMERIC(100))
     is_swap = Column(BOOLEAN)
+    from_address_balance = Column(NUMERIC(100))
+    to_address_balance = Column(NUMERIC(100))
 
     block_number = Column(BIGINT)
     block_hash = Column(BYTEA, primary_key=True)
-    block_timestamp = Column(TIMESTAMP)
+    block_timestamp = Column(TIMESTAMP, primary_key=True)
 
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
     reorg = Column(BOOLEAN, server_default=text("false"))
 
-    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "block_hash", "log_index"),)
+    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "block_hash", "log_index", "block_timestamp"),)
     __query_order__ = [block_number, log_index]
 
     @staticmethod
@@ -159,7 +165,7 @@ class ERC20TokenTransfersWithPrice(HemeraModel):
         return [
             {
                 "domain": ERC20TokenTransferWithPriceD,
-                "conflict_do_update": False,
+                "conflict_do_update": True,
                 "update_strategy": None,
                 "converter": general_converter,
             }

@@ -5,6 +5,8 @@ from sortedcontainers import SortedDict
 from sqlalchemy import text
 
 from hemera.common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from hemera.indexer.domains.current_token_balance import CurrentTokenBalance
+from hemera.indexer.domains.token_balance import TokenBalance
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
 from hemera.indexer.jobs.base_job import ExtensionJob
 from hemera_udf.token_holder_metrics.domains.metrics import ERC20TokenTransferWithPriceD
@@ -16,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 class ExportTokenTransferWithPriceJob(ExtensionJob):
-    dependency_types = [ERC20TokenTransfer, DexBlockTokenPrice, UniswapV2SwapEvent, UniswapV3SwapEvent]
+    dependency_types = [ERC20TokenTransfer, DexBlockTokenPrice, UniswapV2SwapEvent, UniswapV3SwapEvent, TokenBalance]
     output_types = [ERC20TokenTransferWithPriceD]
     able_to_reorg = True
 
@@ -32,6 +34,9 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
         self._init_history_token_prices(kwargs["start_block"])
         self._init_token_dex_prices_batch(kwargs["start_block"], kwargs["end_block"])
         transfers = self._data_buff[ERC20TokenTransfer.type()]
+        token_balance = {}
+        for balance in self._data_buff[TokenBalance.type()]:
+            token_balance[f"{balance.token_address}_{balance.address}_{balance.block_number}"] = balance.balance
 
         swaps = self._data_buff[UniswapV2SwapEvent.type()] + self._data_buff[UniswapV3SwapEvent.type()]
         swap_txs = {swap.transaction_hash: swap for swap in swaps}
@@ -48,8 +53,28 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
                 ):
                     is_swap = True
 
+            decimals = 0
+            token = self.tokens.get(transfer.token_address)
+            if token:
+                decimals = token["decimals"]
+
             price = self._get_token_dex_price(transfer.token_address, transfer.block_number)
-            to_export.append(ERC20TokenTransferWithPriceD(**asdict(transfer), price=price, is_swap=is_swap))
+            from_address_balance = token_balance.get(
+                f"{transfer.token_address}_{transfer.from_address}_{transfer.block_number}", 0
+            )
+            to_address_balance = token_balance.get(
+                f"{transfer.token_address}_{transfer.to_address}_{transfer.block_number}", 0
+            )
+            to_export.append(
+                ERC20TokenTransferWithPriceD(
+                    **asdict(transfer),
+                    price=price,
+                    is_swap=is_swap,
+                    from_address_balance=from_address_balance,
+                    to_address_balance=to_address_balance,
+                    decimals=decimals,
+                )
+            )
         self._collect_items(ERC20TokenTransferWithPriceD.type(), to_export)
         self._update_history_token_prices()
 

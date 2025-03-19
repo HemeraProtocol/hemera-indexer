@@ -11,7 +11,10 @@ class ERC20TokenTransferWithPriceD(Domain):
     to_address: str
     value: int
     price: float
+    decimals: int
     is_swap: bool
+    from_address_balance: int  # balance after transfer
+    to_address_balance: int  # balance after transfer
     token_type: str
     token_address: str
     block_number: int
@@ -29,7 +32,7 @@ class TokenHolderMetricsD(Domain):
     first_block_timestamp: int
     last_swap_timestamp: int
     last_transfer_timestamp: int
-
+    last_price: float = 0.0
     current_balance: int = 0
     max_balance: int = 0
     max_balance_timestamp: int = 0
@@ -60,6 +63,7 @@ class TokenHolderMetricsD(Domain):
     realized_pnl: float = 0.0
     sell_pnl: float = 0.0
     win_rate: float = 0.0
+    pnl_valid: bool = False
 
 
 @dataclass
