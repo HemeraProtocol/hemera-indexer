@@ -1,4 +1,5 @@
 import logging
+import time
 from dataclasses import asdict
 
 from sortedcontainers import SortedDict
@@ -25,7 +26,7 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._service = kwargs["config"].get("db_service")
-        self.history_token_prices = None
+        self.token_price_maps = None
 
     def _collect(self, **kwargs):
         pass
@@ -79,7 +80,7 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
         self._update_history_token_prices()
 
     def _init_history_token_prices(self, start_block: int):
-        if self.history_token_prices is not None:
+        if self.token_price_maps is not None:
             return
         session = self._service.get_service_session()
         token_blocks = session.execute(
@@ -98,7 +99,11 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
             {"start_block": start_block},
         ).fetchall()
         session.close()
-        self.history_token_prices = {bytes_to_hex_str(row[0]): float(row[2]) for row in token_blocks}
+        self.token_price_maps = {}
+        for row in token_blocks:
+            token_addr = bytes_to_hex_str(row[0])
+            self.token_price_maps[token_addr] = SortedDict()
+            self.token_price_maps[token_addr][0] = float(row[2])
 
     def _init_token_dex_prices_batch(self, start_block: int, end_block: int):
 
@@ -115,25 +120,18 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
         prices = session.execute(price_sql, {"min_block": start_block, "max_block": end_block}).fetchall()
         session.close()
 
-        token_price_maps = {token: SortedDict() for token in self.history_token_prices}
-
-        for token in self.history_token_prices:
-            token_price_maps[token][0] = self.history_token_prices[token]
-
         for price_row in prices:
             token_addr = bytes_to_hex_str(price_row[0])
-            if token_addr not in token_price_maps:
-                token_price_maps[token_addr] = SortedDict()
+            if token_addr not in self.token_price_maps:
+                self.token_price_maps[token_addr] = SortedDict()
             block_num = price_row[1]
             price = float(price_row[2])
-            token_price_maps[token_addr][block_num] = price
-
-        self.token_price_maps = token_price_maps
+            self.token_price_maps[token_addr][block_num] = price
 
     def _get_token_dex_price(self, token_addr: str, block_num: int):
         price_map = self.token_price_maps.get(token_addr)
         if not price_map:
-            return self.history_token_prices.get(token_addr, 0.0)
+            return 0.0
 
         keys = list(price_map.keys())
         idx = price_map.bisect_left(block_num)
@@ -153,4 +151,7 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
                 continue
             latest_block = price_map.keys()[-1]
             latest_price = price_map[latest_block]
-            self.history_token_prices[token_addr] = latest_price
+
+            # Clear all data and keep only the latest price
+            price_map.clear()
+            price_map[0] = latest_price
