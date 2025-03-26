@@ -153,4 +153,4 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
 
             # Clear all data and keep only the latest price
             price_map.clear()
-            price_map[0] = latest_price
+            price_map[latest_block] = latest_price
