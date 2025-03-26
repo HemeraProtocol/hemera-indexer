@@ -1,5 +1,4 @@
 import logging
-import time
 from dataclasses import asdict
 
 from sortedcontainers import SortedDict
