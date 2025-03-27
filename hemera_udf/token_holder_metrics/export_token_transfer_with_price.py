@@ -101,8 +101,9 @@ class ExportTokenTransferWithPriceJob(ExtensionJob):
         self.token_price_maps = {}
         for row in token_blocks:
             token_addr = bytes_to_hex_str(row[0])
+            block_number = row[1]
             self.token_price_maps[token_addr] = SortedDict()
-            self.token_price_maps[token_addr][0] = float(row[2])
+            self.token_price_maps[token_addr][block_number] = float(row[2])
 
     def _init_token_dex_prices_batch(self, start_block: int, end_block: int):
 
