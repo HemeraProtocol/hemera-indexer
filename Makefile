@@ -43,7 +43,7 @@ endif
 
 init_db:
 	@echo "Initializing database..."
-	poetry run python -m hemera.py db --init
+	poetry run hemera db --init-schema
 
 development:
 	@echo "Setting up development environment..."
@@ -76,7 +76,7 @@ development:
 	fi; \
 	if ! poetry --version &> /dev/null; then \
 		echo "Installing Poetry..."; \
-		pip install poetry; \
+		pip install poetry==1.6.1; \
 	else \
 		echo "Poetry is already installed."; \
 	fi; \

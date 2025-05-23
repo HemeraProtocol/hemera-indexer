@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install poetry
+          pip install poetry==1.6.1
           poetry update
           poetry install -v
 
@@ -41,4 +41,4 @@ jobs:
           MANTLE_PUBLIC_NODE_DEBUG_RPC_URL: '${{ secrets.MANTLE_PUBLIC_NODE_DEBUG_RPC_URL }}'
         run: |
           export PYTHONPATH=$(pwd)
-          make test indexer
+          poetry run pytest -vv -m indexer

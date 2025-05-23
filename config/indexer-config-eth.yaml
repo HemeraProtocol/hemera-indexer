@@ -1,7 +1,12 @@
 chain_id: 1
-uniswap_v3_pool_job:
-  position_token_address: '0xc36442b4a4522e871399cd717abdd847ab11fe88'
-  factory_address: '0x1f98431c8ad98523631ae4a59f267346ea31f984'
+uniswap_v3_job:
+  # empty means no filter. only work in price job
+  pool_address:
+  # works in price\token job
+  jobs:
+    - type: uniswapv3  # uniswapv3
+      factory_address: '0x1f98431c8ad98523631ae4a59f267346ea31f984'
+      position_token_address: '0xc36442b4a4522e871399cd717abdd847ab11fe88'
 
 eigen_layer_job:
   STRATEGY_MANAGER:
@@ -29,3 +34,9 @@ pendle_pools_job:
   pendle_market_factory_address: '0x27b1dacd74688af24a64bd3c9c1b143118740784'
   pendle_market_factory_v3_address: '0x6fcf753f2c67b83f7b09746bbc4fa0047b35d050'
 
+
+export_block_token_price_job:
+  '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48': 'USDC'
+  '0x6b175474e89094c44da98b954eedeac495271d0f': 'DAI'
+  '0xdac17f958d2ee523a2206206994597c13d831ec7': 'USDT'
+  '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2': 'ETH'

@@ -1,0 +1,39 @@
+from sqlalchemy import Column, PrimaryKeyConstraint, func
+from sqlalchemy.dialects.postgresql import BIGINT, BYTEA, NUMERIC, TEXT, TIMESTAMP
+
+from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.uniswap_v4.domains.feature_uniswap_v4 import UniswapV4Pool
+
+
+class UniswapV4Pools(HemeraModel):
+    __tablename__ = "af_uniswap_v4_pools"
+    position_token_address = Column(BYTEA, primary_key=True)
+    pool_address = Column(BYTEA, primary_key=True)
+
+    factory_address = Column(BYTEA)
+
+    token0_address = Column(BYTEA)
+    token1_address = Column(BYTEA)
+    fee = Column(NUMERIC(100))
+
+    tick_spacing = Column(NUMERIC(100))
+    hook_address = Column(BYTEA)
+
+    block_number = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
+
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
+
+    __table_args__ = (PrimaryKeyConstraint("position_token_address", "pool_address"),)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                "domain": UniswapV4Pool,
+                "conflict_do_update": True,
+                "update_strategy": None,
+                "converter": general_converter,
+            },
+        ]

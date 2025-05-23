@@ -1,0 +1,4 @@
+chain_id: 10143
+
+export_transactions_and_logs_job:
+  use_receipt_from_blocks_rpc: True

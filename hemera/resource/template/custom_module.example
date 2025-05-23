@@ -1,0 +1,101 @@
+from typing import Type, Union
+
+from sqlalchemy import Column, Index, desc, func, text
+from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
+
+from hemera.common.models import HemeraModel, general_converter
+from hemera_udf.${job}.domains import AddressFeatureValueCurrent, AddressFeatureValueHistory, AddressFeatureEvent
+
+
+class AddressFeatureValuesCurrent(HemeraModel):
+    __tablename__ = "address_feature_values_current"
+    address = Column(BYTEA, primary_key=True)
+    feature_value = Column(NUMERIC)
+
+    block_number = Column(BIGINT)
+    block_timestamp = Column(TIMESTAMP)
+
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                "domain": AddressFeatureValueCurrent,
+                "conflict_do_update": True,
+                "update_strategy": "EXCLUDED.block_number > address_feature_values_current.block_number",
+                "converter": general_converter,
+            },
+        ]
+
+
+class AddressFeatureValuesHistory(HemeraModel):
+    __tablename__ = "address_feature_values_history"
+    address = Column(BYTEA, primary_key=True)
+    feature_value = Column(NUMERIC)
+
+    block_number = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(TIMESTAMP)
+
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
+
+    # If the custom job supports reorg,
+    # the data table that stores the data must contain a reorg field.
+    reorg = Column(BOOLEAN, server_default=text("false"))
+
+    __table_args__ = (PrimaryKeyConstraint("address", "block_number"),)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                "domain": AddressFeatureValueHistory,
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
+            }
+        ]
+
+
+class AddressFeatureEvents(HemeraModel):
+    __tablename__ = "address_feature_events"
+    transaction_hash = Column(BYTEA, primary_key=True)
+    address = Column(BYTEA)
+    event_value = Column(NUMERIC)
+
+    block_number = Column(BIGINT, primary_key=True)
+    block_timestamp = Column(TIMESTAMP)
+
+    create_time = Column(TIMESTAMP, server_default=func.now())
+    update_time = Column(TIMESTAMP, server_default=func.now())
+
+    # If the custom job supports reorg,
+    # the data table that stores the data must contain a reorg field.
+    reorg = Column(BOOLEAN, server_default=text("false"))
+
+    __table_args__ = (PrimaryKeyConstraint("transaction_hash", "block_number"),)
+
+    @staticmethod
+    def model_domain_mapping():
+        return [
+            {
+                "domain": AddressFeatureValueEvent,
+                "conflict_do_update": False,
+                "update_strategy": None,
+                "converter": general_converter,
+            }
+        ]
+
+Index("address_feature_events_address_index", AddressFeatureEvents.address)
+
+# This is a custom data conversion function. Usually you can use 'general_converter' directly.
+def converter(
+    table: Type[HemeraModel],
+    data: Union[CustomDomainA],
+    is_update=False,
+):
+    # Special data conversion logic here
+    converted_data = do_some_work(table, data, is_update)
+    return converted_data

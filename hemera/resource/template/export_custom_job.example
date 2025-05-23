@@ -1,0 +1,52 @@
+from typing import List, Union
+
+from hemera.indexer.jobs.base_job import ExtensionJob, Collector
+from hemera.indexer.utils.collection_utils import distinct_collections_by_group
+from hemera_udf.${job}.domains import *
+
+# Also could inherit from FilterTransactionDataJob, like: class Export${job_name}Job(FilterTransactionDataJob):
+class Export${job_name}Job(ExtensionJob):
+    # If the data processing logic of the developed job supports re-running with on-chain data reorg,
+    # set able_to_reorg to True so that the scheduler can automatically start the job during the reorg process.
+    able_to_reorg = False
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    # If the data you need to process is only part of the contract log, event, or a specific type of transaction,
+    # you can inherit the custom class from FilterTransactionDataJob instead of ExtensionJob, and implement the self.get_filter method.
+    # This will speed up the efficiency of the previous task and only index some relevant data.
+    def get_filter(self):
+
+        filter = [
+            TransactionFilterByTransactionInfo(
+                ToAddressSpecification(address=contract),
+                FromAddressSpecification(address=contract),
+                FuncSignSpecification(func_sign=ERC20_BALANCE_OF_FUNCTION.get_signature()),
+            ),
+            TransactionFilterByLogs([TopicSpecification(addresses=addresses, topics=topics)]),
+        ]
+
+        return filter
+
+    def _udf(self, transactions: List[Transaction], logs: List[Log], output: Collector[Union[AddressFeatureEvent, AddressFeatureValueHistory, AddressFeatureValueCurrent]]):
+        AddressFeatureEvent, AddressFeatureValueHistory = some_work_here(transactions, logs)
+
+        AddressFeatureValueCurrent = some_distinct_logic(AddressFeatureEvent)
+
+        output.collects(AddressFeatureEvent)
+        output.collects(AddressFeatureValueHistory)
+        output.collects(AddressFeatureValueCurrent)
+
+        # more collect example:
+        # for item in job_custom_domain_a_list:
+        #     output.collect(item)
+        #
+        # for item in job_custom_domain_a_list:
+        #     output.collect_domain(item)
+        #
+        # for item in job_custom_domain_a_list:
+        #     output.collect_item(item.type(), item)
+        #
+        # output.collect_domains(job_custom_domain_a_list)
+        # output.collect_items(job_custom_domain_a_list[0].type(), job_custom_domain_a_list)
