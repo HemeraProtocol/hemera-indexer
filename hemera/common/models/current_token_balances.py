@@ -1,9 +1,19 @@
+from typing import Type
+
 from sqlalchemy import Column, Index, PrimaryKeyConstraint, desc, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP, VARCHAR
 
-from hemera.common.models import HemeraModel
-from hemera.common.models.token_balances import token_balances_general_converter
+from hemera.common.models import HemeraModel, general_converter
 from hemera.indexer.domains.current_token_balance import CurrentTokenBalance
+from hemera.indexer.domains.token_balance import TokenBalance
+
+
+def current_token_balances_general_converter(table: Type[HemeraModel], data: TokenBalance, is_update=False):
+
+    if data.token_id is None or data.token_id < 0:
+        data.token_id = 0
+
+    return general_converter(table, data, is_update)
 
 
 class CurrentTokenBalances(HemeraModel):
@@ -31,7 +41,7 @@ class CurrentTokenBalances(HemeraModel):
                 "domain": CurrentTokenBalance,
                 "conflict_do_update": True,
                 "update_strategy": "EXCLUDED.block_number > address_current_token_balances.block_number",
-                "converter": token_balances_general_converter,
+                "converter": current_token_balances_general_converter,
             }
         ]
 

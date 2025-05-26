@@ -97,7 +97,7 @@ class ExportTokenBalancesJob(BaseExportJob):
                     [
                         CurrentTokenBalance(
                             address=token_balance.address,
-                            token_id=token_balance.token_id,
+                            token_id=0,
                             token_type=token_balance.token_type,
                             token_address=token_balance.token_address,
                             balance=token_balance.balance,
@@ -123,8 +123,8 @@ class ExportTokenBalancesJob(BaseExportJob):
                 if erc721_token_transfer.token_address not in erc20_tokens:
                     token_transfers.append(erc721_token_transfer)
 
-        if ERC1155TokenTransfer.type() in self._data_buff:
-            token_transfers += self._data_buff[ERC1155TokenTransfer.type()]
+        # if ERC1155TokenTransfer.type() in self._data_buff:
+        #    token_transfers += self._data_buff[ERC1155TokenTransfer.type()]
 
         return token_transfers
 
