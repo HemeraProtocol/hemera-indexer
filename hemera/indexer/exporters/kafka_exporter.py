@@ -13,7 +13,11 @@ from hemera.indexer.domains.current_token_balance import CurrentTokenBalance
 from hemera.indexer.domains.token_balance import TokenBalance
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
 from hemera.indexer.exporters.base_exporter import BaseExporter
-from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD
+from hemera_udf.token_holder_metrics.domains.metrics import (
+    ERC20TokenTransferWithPriceD,
+    TokenHolderMetricsCurrentD,
+    TokenHolderMetricsHistoryD,
+)
 from hemera_udf.token_price.domains import DexBlockTokenPrice
 from hemera_udf.uniswap_v2 import UniswapV2SwapEvent
 from hemera_udf.uniswap_v3 import UniswapV3SwapEvent
@@ -39,6 +43,22 @@ class KafkaItemExporter(BaseExporter):
         self.max_retries = max_retries
         self.timeout = timeout
         self.producer = None
+        if os.environ.get("KAFKA_ACK_MODE", None):
+            ack_mode = os.environ.get("KAFKA_ACK_MODE")
+            # Convert string ack_mode to appropriate format
+            if ack_mode is not None:
+                if ack_mode.lower() == "all":
+                    ack_mode = -1
+                else:
+                    try:
+                        ack_mode = int(ack_mode)
+                    except ValueError:
+                        # Handle invalid values (not a number or "all")
+                        logger.warning(f"Invalid KAFKA_ACK_MODE: {ack_mode}, defaulting to 1")
+                        ack_mode = 1
+            else:
+                # Default value if not set
+                ack_mode = 1  # Or whatever default you prefer
         self._create_producer(ack_mode)
 
     def _create_producer(self, ack_mode):
@@ -180,6 +200,7 @@ class KafkaItemExporter(BaseExporter):
                 ERC20TokenTransfer,
                 TokenHolderMetricsCurrentD,
                 TokenHolderMetricsHistoryD,
+                ERC20TokenTransferWithPriceD,
             ),
         ):
             return data

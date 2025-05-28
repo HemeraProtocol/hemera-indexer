@@ -154,7 +154,11 @@ def handle_withdraw_event(log: Log) -> List[TokenTransfer]:
 
 
 def handle_transfer_event(log: Log) -> List[TokenTransfer]:
-    decode_data = ERC20_TRANSFER_EVENT.decode_log_ignore_indexed(log)
+    try:
+        decode_data = ERC20_TRANSFER_EVENT.decode_log_ignore_indexed(log)
+    except Exception as e:
+        logger.error(f"Error decoding transfer event: {e}, log: {log}")
+        return []
 
     from_address = decode_data.get("from").lower()
     to_address = decode_data.get("to").lower()
