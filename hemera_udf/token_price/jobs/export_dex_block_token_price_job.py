@@ -7,17 +7,19 @@ from hemera.common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
 from hemera.indexer.domains.token_balance import TokenBalance
 from hemera.indexer.jobs.base_job import ExtensionJob
 from hemera.indexer.utils.collection_utils import distinct_collections_by_group
-from hemera_udf.meme_agent.domains.fourmeme import FourMemeTokenTradeD
+from hemera_udf.swap.domains.swap_event_domain import (
+    FourMemeSwapEvent,
+    UniswapV2SwapEvent,
+    UniswapV3SwapEvent,
+    UniswapV4SwapEvent,
+)
 from hemera_udf.token_price.domains import DexBlockTokenPrice, DexBlockTokenPriceCurrent
-from hemera_udf.uniswap_v2 import UniswapV2SwapEvent
-from hemera_udf.uniswap_v3 import UniswapV3SwapEvent
-from hemera_udf.uniswap_v4.domains.feature_uniswap_v4 import UniswapV4SwapEvent
 
 logger = logging.getLogger(__name__)
 
 
 class ExportDexBlockTokenPriceJob(ExtensionJob):
-    dependency_types = [UniswapV2SwapEvent, UniswapV3SwapEvent, TokenBalance, UniswapV4SwapEvent, FourMemeTokenTradeD]
+    dependency_types = [UniswapV2SwapEvent, UniswapV3SwapEvent, TokenBalance, UniswapV4SwapEvent, FourMemeSwapEvent]
 
     output_types = [DexBlockTokenPrice, DexBlockTokenPriceCurrent]
     able_to_reorg = True
@@ -122,19 +124,26 @@ class ExportDexBlockTokenPriceJob(ExtensionJob):
                 uniswapv3_df_, token_balance_dict, self.stable_tokens, self.max_price, self.process_token
             )
 
-        # Process FourMeme trade data
-        fourmeme_df_ = self.dataclass_to_df(self._data_buff[FourMemeTokenTradeD.type()])
-        if fourmeme_df_.empty:
-            fourmeme_df = fourmeme_df_
-        else:
-            fourmeme_df = self.process_fourmeme_df(fourmeme_df_)
-
         uniswapv4_df_ = self.dataclass_to_df(self._data_buff[UniswapV4SwapEvent.type()])
         if uniswapv4_df_.empty:
             uniswapv4_df = uniswapv4_df_
         else:
             uniswapv4_df = self.process_uniswap_data(
                 uniswapv4_df_,
+                token_balance_dict,
+                self.stable_tokens,
+                self.max_price,
+                self.process_token,
+                skip_balance_check=True,
+            )
+
+        # Process FourMeme trade data
+        fourmeme_df_ = self.dataclass_to_df(self._data_buff[FourMemeSwapEvent.type()])
+        if fourmeme_df_.empty:
+            fourmeme_df = fourmeme_df_
+        else:
+            fourmeme_df = self.process_uniswap_data(
+                fourmeme_df_,
                 token_balance_dict,
                 self.stable_tokens,
                 self.max_price,

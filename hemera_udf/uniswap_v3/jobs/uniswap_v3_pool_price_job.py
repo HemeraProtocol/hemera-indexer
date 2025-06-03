@@ -9,12 +9,12 @@ from hemera.indexer.jobs import FilterTransactionDataJob
 from hemera.indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from hemera.indexer.utils.multicall_hemera import Call
 from hemera.indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
+from hemera_udf.swap.domains.swap_event_domain import UniswapV3SwapEvent
 from hemera_udf.token_price.domains import BlockTokenPrice
 from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import (
     UniswapV3PoolCurrentPrice,
     UniswapV3PoolFromSwapEvent,
     UniswapV3PoolPrice,
-    UniswapV3SwapEvent,
 )
 from hemera_udf.uniswap_v3.models.feature_uniswap_v3_pools import UniswapV3Pools
 from hemera_udf.uniswap_v3.util import AddressManager
@@ -50,7 +50,9 @@ class ExportUniSwapV3PoolPriceJob(FilterTransactionDataJob):
             [
                 TopicSpecification(
                     topics=[
-                        abi_module.SWAP_EVENT.get_signature() for abi_module in self._address_manager.abi_modules_list
+                        uniswapv3_abi.SWAP_EVENT.get_signature(),
+                        swapsicle_abi.SWAP_EVENT.get_signature(),
+                        agni_abi.SWAP_EVENT.get_signature(),
                     ],
                     addresses=address_list,
                 ),
@@ -253,6 +255,8 @@ class ExportUniSwapV3PoolPriceJob(FilterTransactionDataJob):
 
                         self._collect_domain(
                             UniswapV3SwapEvent(
+                                project="uniswap",
+                                version=3,
                                 transaction_hash=log.transaction_hash,
                                 transaction_from_address=transaction.from_address,
                                 log_index=log.log_index,
@@ -266,7 +270,7 @@ class ExportUniSwapV3PoolPriceJob(FilterTransactionDataJob):
                                 token0_price=token0_price,
                                 token1_price=token1_price,
                                 amount_usd=amount_usd,
-                            ),
+                            )
                         )
 
         self._collect_domains(price_dict.values())

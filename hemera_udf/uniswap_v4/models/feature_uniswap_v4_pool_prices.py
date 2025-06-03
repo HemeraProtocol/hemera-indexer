@@ -19,8 +19,6 @@ class UniswapV4PoolPrices(HemeraModel):
     token0_price = Column(NUMERIC(100))
     token1_price = Column(NUMERIC(100))
 
-
-
     create_time = Column(TIMESTAMP, server_default=func.now())
     update_time = Column(TIMESTAMP, server_default=func.now())
 

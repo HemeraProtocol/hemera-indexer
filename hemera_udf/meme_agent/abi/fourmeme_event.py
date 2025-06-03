@@ -1,4 +1,4 @@
-from hemera.common.utils.abi_code_utils import Event
+from hemera.common.utils.abi_code_utils import Event, Function
 
 token_create_event = Event(
     {
@@ -51,5 +51,29 @@ token_sale_event = Event(
         ],
         "name": "TokenSale",
         "type": "event",
+    }
+)
+
+
+GET_TOKEN_INFO_FUNCTION = Function(
+    {
+        "inputs": [{"internalType": "address", "name": "token", "type": "address"}],
+        "name": "getTokenInfo",
+        "outputs": [
+            {"internalType": "uint256", "name": "version", "type": "uint256"},
+            {"internalType": "address", "name": "tokenManager", "type": "address"},
+            {"internalType": "address", "name": "quote", "type": "address"},
+            {"internalType": "uint256", "name": "lastPrice", "type": "uint256"},
+            {"internalType": "uint256", "name": "tradingFeeRate", "type": "uint256"},
+            {"internalType": "uint256", "name": "minTradingFee", "type": "uint256"},
+            {"internalType": "uint256", "name": "launchTime", "type": "uint256"},
+            {"internalType": "uint256", "name": "offers", "type": "uint256"},
+            {"internalType": "uint256", "name": "maxOffers", "type": "uint256"},
+            {"internalType": "uint256", "name": "funds", "type": "uint256"},
+            {"internalType": "uint256", "name": "maxFunds", "type": "uint256"},
+            {"internalType": "bool", "name": "liquidityAdded", "type": "bool"},
+        ],
+        "stateMutability": "view",
+        "type": "function",
     }
 )

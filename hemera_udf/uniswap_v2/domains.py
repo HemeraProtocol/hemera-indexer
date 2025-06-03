@@ -16,28 +16,29 @@ class UniswapV2Pool(Domain):
 
 @dataclass
 class UniswapV2SwapEvent(Domain):
-    sender: str
-    amount0_in: int
-    amount1_in: int
-    amount0_out: int
-    amount1_out: int
+    project: str
+    version: int
 
-    to_address: str
+    sender: str
+    transaction_from_address: str
     pool_address: str
     token0_address: str
     token1_address: str
-    # calculate
     amount0: int
     amount1: int
     token0_price: float
     token1_price: float
     amount_usd: float
-
     block_number: int
     block_timestamp: int
     transaction_hash: str
     log_index: int
-    transaction_from_address: str
+    # ----
+    to_address: str
+    amount0_in: int
+    amount1_in: int
+    amount0_out: int
+    amount1_out: int
 
 
 @dataclass

@@ -13,10 +13,14 @@ from hemera.indexer.domains.current_token_balance import CurrentTokenBalance
 from hemera.indexer.domains.token_balance import TokenBalance
 from hemera.indexer.domains.token_transfer import ERC20TokenTransfer
 from hemera.indexer.exporters.base_exporter import BaseExporter
+from hemera_udf.swap.domains.swap_event_domain import (
+    FourMemeSwapEvent,
+    UniswapV2SwapEvent,
+    UniswapV3SwapEvent,
+    UniswapV4SwapEvent,
+)
 from hemera_udf.token_holder_metrics.domains.metrics import TokenHolderMetricsCurrentD, TokenHolderMetricsHistoryD
 from hemera_udf.token_price.domains import DexBlockTokenPrice
-from hemera_udf.uniswap_v2 import UniswapV2SwapEvent
-from hemera_udf.uniswap_v3 import UniswapV3SwapEvent
 
 logger = logging.getLogger(__name__)
 import os
@@ -177,6 +181,8 @@ class KafkaItemExporter(BaseExporter):
             (
                 UniswapV2SwapEvent,
                 UniswapV3SwapEvent,
+                UniswapV4SwapEvent,
+                FourMemeSwapEvent,
                 ERC20TokenTransfer,
                 TokenHolderMetricsCurrentD,
                 TokenHolderMetricsHistoryD,

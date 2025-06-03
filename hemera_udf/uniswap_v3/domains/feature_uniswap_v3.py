@@ -65,25 +65,29 @@ class UniswapV3PoolCurrentPrice(Domain):
 
 @dataclass
 class UniswapV3SwapEvent(Domain):
-    pool_address: str
-    position_token_address: str
-    transaction_from_address: str
+    project: str
+    version: int
+
     sender: str
-    recipient: str
+    transaction_from_address: str
+    pool_address: str
+    token0_address: str
+    token1_address: str
     amount0: int
     amount1: int
     token0_price: float
     token1_price: float
     amount_usd: float
+    block_number: int
+    block_timestamp: int
+    transaction_hash: str
+    log_index: int
+    # ----
+    recipient: str
+    position_token_address: str
     liquidity: int
     tick: int
     sqrt_price_x96: int
-    token0_address: str
-    token1_address: str
-    transaction_hash: str
-    log_index: int
-    block_number: int
-    block_timestamp: int
 
 
 @dataclass
@@ -164,11 +168,6 @@ class AgniV3PoolCurrentPrice(UniswapV3PoolCurrentPrice):
 
 @dataclass
 class AgniV3TokenCurrentStatus(UniswapV3TokenCurrentStatus):
-    pass
-
-
-@dataclass
-class AgniV3SwapEvent(UniswapV3SwapEvent):
     pass
 
 

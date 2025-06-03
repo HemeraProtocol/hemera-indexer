@@ -9,13 +9,21 @@ total_supply_job:
 uniswap_v3_job:
   # empty means no filter. only work in price job
   pool_address:
-    - '0xe2bb11d6b6a39e55762f5e14d632f0981198b3a7'
 
-#  # works in price\token job
-#  jobs:
-#    - type: swapsicle  # thena`
-#      factory_address: '0x306f06c147f064a010530292a1eb6737c3e378e4'
-#      position_token_address: '0xa51adb08cbe6ae398046a23bec013979816b77ab'
+  # works in price\token job
+  jobs:
+    - type: swapsicle  # thena
+      factory_address: '0x306f06c147f064a010530292a1eb6737c3e378e4'
+      position_token_address: '0xa51adb08cbe6ae398046a23bec013979816b77ab'
+
+    - type: uniswapv3  # pancake
+      factory_address: '0x0bfbcf9fa4f9c56b0f40a671ad40e0805a091865'
+      position_token_address: '0x46a15b0b27311cedf172ab29e4f4766fbe7f4364'
+
+    - type: uniswapv3  # uniswapv3
+      factory_address: '0xdb1d10011ad0ff90774d0c6bb92e5c5c8b4461f7'
+      position_token_address: '0x7b8a01b39d58278b5de7e48c8449c9f4f5170613'
+
 
 thena_job:
   gamma_pool_address: '0xfcecab790751c2bf65bcf7bce6ff3555dc12e40b'
@@ -45,19 +53,49 @@ export_staked_transferred_balance_job:
     - "0x6b2a01a5f79deb4c2f3c0eda7b01df456fbd726a"
 
 
-export_tokens_and_transfers_job:
-  filter_token_address:
-    #      gamma_pool_address
-    - '0xfcecab790751c2bf65bcf7bce6ff3555dc12e40b'
-    # fbtc
-    - "0xc96de26018a54d51c097160568752c4e3bd6c364"
-    # pump btc
-    - "0xf9c4ff105803a77ecb5dae300871ad76c2794fa4"
-    # uniBTC
-    - "0x6b2a01a5f79deb4c2f3c0eda7b01df456fbd726a"
+#export_tokens_and_transfers_job:
+#  filter_token_address:
+#    #      gamma_pool_address
+#    - '0xfcecab790751c2bf65bcf7bce6ff3555dc12e40b'
+#    # fbtc
+#    - "0xc96de26018a54d51c097160568752c4e3bd6c364"
+#    # pump btc
+#    - "0xf9c4ff105803a77ecb5dae300871ad76c2794fa4"
+#    # uniBTC
+#    - "0x6b2a01a5f79deb4c2f3c0eda7b01df456fbd726a"
+#    # WBNB
+#    - "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c"
 
 export_four_meme_job:
   token_manager2_addresses: "0x5c952063c7fc8610FFDB798152D69F0B9550762b"
 
 export_block_token_price_job:
-  '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c': 'WBNB'
+  '0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d': 'USDC'
+  '0x1af3f329e8be154074d8769d1ffa4ee058b1dbc3': 'DAI'
+  '0x55d398326f99059ff775485246999027b3197955': 'USDT'
+  '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c': 'WBNB'
+  '0xe9e7cea3dedca5984780bafc599bd69add087d56': 'BUSD'
+  '0x2170ed0880ac9a755fd29b2688956bd959f933f8': 'WETH'
+
+export_transactions_and_logs_job:
+  use_receipt_from_blocks_rpc: True
+
+
+# Add Uniswap v4 configuration
+uniswap_v4_job:
+  # empty means no filter. only work in price job
+  pool_address:
+
+
+  # WETH address for ETH swaps
+  weth_address: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c'
+
+  # WETH hook addresses for tracking ETH swaps
+  weth_hook_addresses: []
+
+  # works in price\token job
+  jobs:
+    - type: uniswapv4
+      factory_address: '0x28e2ea090877bf75740558f6bfb36a5ffee9e9df'  # PoolManager
+      position_token_address: '0x7a4a5c919ae2541aed11041a1aeee68f1287f95b'  # PositionManager
+      state_view_address: '0xd13dd3d6e93f276fafc9db9e6bb47c1180aee0c4'  # StateView

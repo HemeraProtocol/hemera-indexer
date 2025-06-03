@@ -2,7 +2,7 @@ from sqlalchemy import Column, PrimaryKeyConstraint, func, text
 from sqlalchemy.dialects.postgresql import BIGINT, BOOLEAN, BYTEA, NUMERIC, TIMESTAMP
 
 from hemera.common.models import HemeraModel, general_converter
-from hemera_udf.uniswap_v3 import TeahouseLiquidityCurrent
+from hemera_udf.uniswap_v3.domains.feature_uniswap_v3 import TeahouseLiquidityCurrent
 
 
 class AfTeahouseLiquidityCurrent(HemeraModel):

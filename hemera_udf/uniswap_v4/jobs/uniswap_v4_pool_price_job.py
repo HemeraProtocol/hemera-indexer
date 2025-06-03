@@ -7,12 +7,12 @@ from hemera.indexer.domains.transaction import Transaction
 from hemera.indexer.jobs import FilterTransactionDataJob
 from hemera.indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from hemera.indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
+from hemera_udf.swap.domains.swap_event_domain import UniswapV4SwapEvent
 from hemera_udf.token_price.domains import BlockTokenPrice
 from hemera_udf.uniswap_v4.domains.feature_uniswap_v4 import (
     UniswapV4Pool,
     UniswapV4PoolCurrentPrice,
     UniswapV4PoolPrice,
-    UniswapV4SwapEvent,
 )
 from hemera_udf.uniswap_v4.models.feature_uniswap_v4_pools import UniswapV4Pools
 from hemera_udf.uniswap_v4.util import AddressManager
@@ -47,6 +47,7 @@ class ExportUniSwapV4PoolPriceJob(FilterTransactionDataJob):
             self.get_existing_pools()
         )  # This needs to be populated in real applications, containing token address to decimals mapping
         self.tokens[self.eth_address] = {**self.tokens.get(self.weth_address, {}), "symbol": "ETH"}
+        pass
 
     def get_filter(self):
         address_list = self._pool_address if self._pool_address else []
@@ -157,6 +158,8 @@ class ExportUniSwapV4PoolPriceJob(FilterTransactionDataJob):
                     # Create swap event record
                     self._collect_domain(
                         UniswapV4SwapEvent(
+                            project="uniswap",
+                            version=4,
                             transaction_hash=log.transaction_hash,
                             transaction_from_address=transaction.from_address,
                             log_index=log.log_index,

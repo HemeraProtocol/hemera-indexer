@@ -7,11 +7,12 @@ from hemera.indexer.jobs import FilterTransactionDataJob
 from hemera.indexer.specification.specification import TopicSpecification, TransactionFilterByLogs
 from hemera.indexer.utils.multicall_hemera import Call
 from hemera.indexer.utils.multicall_hemera.multi_call_helper import MultiCallHelper
+from hemera_udf.swap.domains.swap_event_domain import UniswapV2SwapEvent
 from hemera_udf.token_price.domains import BlockTokenPrice
 from hemera_udf.uniswap_v2.abi import aerodromev2_abi, uniswapv2_abi
 from hemera_udf.uniswap_v2.abi.aerodromev2_abi import SWAP_EVENT as AERODROME_SWAP_EVENT
 from hemera_udf.uniswap_v2.abi.uniswapv2_abi import SWAP_EVENT as UNISWAPV2_SWAP_EVENT
-from hemera_udf.uniswap_v2.domains import UniswapV2PoolFromSwapEvent, UniswapV2SwapEvent
+from hemera_udf.uniswap_v2.domains import UniswapV2PoolFromSwapEvent
 from hemera_udf.uniswap_v2.models.feature_uniswap_v2_pools import UniswapV2Pools
 
 logger = logging.getLogger(__name__)
@@ -166,6 +167,8 @@ class ExportUniSwapV2SwapEventJob(FilterTransactionDataJob):
                         amount_usd = None
 
                     swap_event = UniswapV2SwapEvent(
+                        project="uniswap",
+                        version=2,
                         pool_address=log.address,
                         sender=decoded_dict["sender"],
                         to_address=decoded_dict["to"],
