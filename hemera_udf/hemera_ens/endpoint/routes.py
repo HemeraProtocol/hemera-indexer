@@ -4,11 +4,13 @@ from datetime import date, datetime
 from typing import Any, Dict, Optional
 
 import flask
+from flask import request
 from flask_restx import Resource
 from sqlalchemy.sql import and_, or_
 from web3 import Web3
 
 from hemera.api.app.address.features import register_feature
+from hemera.api.app.cache import cache
 from hemera.common.models import db
 from hemera.common.models.current_token_balances import CurrentTokenBalances
 from hemera.common.models.erc721_token_id_details import ERC721TokenIdDetails
@@ -17,6 +19,7 @@ from hemera.common.models.erc1155_token_transfers import ERC1155TokenTransfers
 from hemera.common.utils.config import get_config
 from hemera.common.utils.exception_control import APIError
 from hemera.common.utils.format_utils import bytes_to_hex_str, hex_str_to_bytes
+from hemera.common.utils.web3_utils import ZERO_ADDRESS
 from hemera_udf.hemera_ens.endpoint import af_ens_namespace
 from hemera_udf.hemera_ens.endpoint.action_types import OperationType
 from hemera_udf.hemera_ens.models.af_ens_address_current import ENSAddress
@@ -308,3 +311,107 @@ def model_to_dict(instance):
         else:
             res[c.name] = v
     return res
+
+
+def make_key(self):
+    path = request.path
+    address_or_names = request.get_json().get("address")
+    if not address_or_names:
+        address_or_names = request.get_json().get("name")
+    if not address_or_names:
+        return ""
+    address_or_names.sort()
+    args = str(hash(frozenset(address_or_names)))
+    # return (path + args).encode('utf-8')
+    return path + args
+
+
+@af_ens_namespace.route("/v1/ens/address/<address>")
+class ACIEnsAddress(Resource):
+    @cache.cached(timeout=360)
+    def get(self, address):
+        address = address.lower()
+        if address == ZERO_ADDRESS:
+            return {}
+
+        current_time = datetime.utcnow()
+
+        result = (
+            db.session.query(ENSRecord.name)
+            .join(ENSAddress, (ENSAddress.name == ENSRecord.name) & (ENSRecord.address == ENSAddress.address))
+            .filter(ENSAddress.address == hex_str_to_bytes(address), ENSRecord.expires >= current_time)
+            .one_or_none()
+        )
+
+        return {address: result[0]} if result else {}
+
+
+@af_ens_namespace.route("/v1/ens/name/<name>")
+class ACIEnsName(Resource):
+    @cache.cached(timeout=360)
+    def get(self, name):
+        current_time = datetime.utcnow()
+
+        result = (
+            db.session.query(ENSRecord.address)
+            .filter(
+                ENSRecord.name == name,
+                ENSRecord.expires >= current_time,
+                ENSRecord.address != hex_str_to_bytes(ZERO_ADDRESS),
+            )
+            .one_or_none()
+        )
+
+        return {name: bytes_to_hex_str(result[0])} if result else {}
+
+
+@af_ens_namespace.route("/v1/ens/batch/name")
+class ACIEnsBatchName(Resource):
+    @cache.cached(timeout=360, make_cache_key=make_key)
+    def post(self):
+        current_time = datetime.utcnow()
+        request_data = request.get_json()
+        names = list(set(request_data.get("name", [])))  # 去重
+
+        if not names:
+            return {}
+
+        if len(names) > 50:
+            return {"error": "Too many names, should be less than 50"}
+
+        results = (
+            db.session.query(ENSRecord.name, ENSRecord.address)
+            .filter(
+                ENSRecord.name.in_(names),
+                ENSRecord.expires >= current_time,
+                ENSRecord.address != hex_str_to_bytes(ZERO_ADDRESS),
+            )
+            .all()
+        )
+
+        return {name: bytes_to_hex_str(address) for name, address in results}
+
+
+@af_ens_namespace.route("/v1/ens/batch/address")
+class ACIEnsBatchAddress(Resource):
+    @cache.cached(timeout=360, make_cache_key=make_key)
+    def post(self):
+        current_time = datetime.utcnow()
+        request_data = request.get_json()
+        address_s = request_data.get("address", [])
+
+        addresses = list(set(hex_str_to_bytes(ad.lower()) for ad in address_s if ad))
+
+        if not addresses:
+            return {}
+
+        if len(addresses) > 50:
+            return {"error": "Too many addresses, should be less than 50"}
+
+        results = (
+            db.session.query(ENSAddress.address, ENSRecord.name)
+            .join(ENSRecord, (ENSAddress.name == ENSRecord.name) & (ENSRecord.address == ENSAddress.address))
+            .filter(ENSAddress.address.in_(addresses), ENSRecord.expires >= current_time)
+            .all()
+        )
+        return {bytes_to_hex_str(address): name for address, name in results}
