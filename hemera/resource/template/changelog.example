@@ -1,0 +1,20 @@
+# 0.1.0
+---
+### Features
+- feat: add function
+- feat: deal with some senario
+
+### Bug Fixes
+- fix: repair data processing
+
+### Documentation
+- doc: add README.md
+
+### Refactor
+- refactor: optimize data processing flow
+
+### Test
+- test: add unit test
+
+### Chore
+- chore: add dependency

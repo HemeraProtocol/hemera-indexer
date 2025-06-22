@@ -82,6 +82,9 @@ def jobs_space_initialize_before_check(jobs):
     namespace_generator = TemplateGenerator(
         template_file=os.path.join(project_root, "hemera/resource/template/custom_api_namespace.example")
     )
+    changelog_generator = TemplateGenerator(
+        template_file=os.path.join(project_root, "hemera/resource/template/changelog.example")
+    )
 
     for job in jobs:
         if job in exists_job:
@@ -108,5 +111,7 @@ def jobs_space_initialize_before_check(jobs):
         namespace_generator.add_replacements(key="${job_descript}", value=to_space_camel_case(job))
         namespace_generator.generate_file(target_path=os.path.join(custom_job_path, "endpoint", "__init__.py"))
         empty_generator.generate_file(target_path=os.path.join(custom_job_path, "endpoint", "routes.py"))
+
+        changelog_generator.generate_file(target_path=os.path.join(custom_job_path, "CHANGELOG.md"))
 
         logger.info(f"{job} successfully initialized.")
