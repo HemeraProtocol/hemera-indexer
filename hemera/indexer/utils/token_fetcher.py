@@ -86,14 +86,14 @@ class TokenFetcher:
                         user_defined_k=row[self.fixed_k],
                     )
 
-                else:
-                    construct_call = Call(
-                        target=address,
-                        function_abi=TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION,
-                        parameters=[row["token_id"]],
-                        block_number=block_number,
-                        user_defined_k=row[self.fixed_k],
-                    )
+                # else:
+                #     construct_call = Call(
+                #         target=address,
+                #         function_abi=TOKEN_TOTAL_SUPPLY_WITH_ID_FUNCTION,
+                #         parameters=[row["token_id"]],
+                #         block_number=block_number,
+                #         user_defined_k=row[self.fixed_k],
+                #     )
 
             if construct_call:
                 calls.append(construct_call)

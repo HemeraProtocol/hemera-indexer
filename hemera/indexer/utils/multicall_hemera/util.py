@@ -140,8 +140,9 @@ class ThreadPoolManager:
 
             if pending_tasks:
                 if len(pending_tasks) < last_time_tasks:
-                    # some task succeed
+                    # some task succeed, reset attempt
                     delay = 0
+                    attempt = 0
                 else:
                     delay = min(min_wait * (2**attempt), max_wait)
                     attempt += 1
