@@ -1,0 +1,109 @@
+# Monad 测试网优化配置
+# 基于真实RPC限制测试结果调优
+# 测试结果：并发>10开始失败，批量>100返回429，延迟~300ms
+
+chain_id: 5051  # Monad Testnet Chain ID
+
+# RPC调用优化配置 - 严格限制避免429错误
+rpc:
+  # 核心限制参数
+  batch_size: 100              # 批量大小上限（测试验证的安全值）
+  max_workers: 8               # 最大工作线程（保持在10以下）
+  concurrent_limit: 8          # 并发请求硬限制
+  
+  # 超时和重试配置
+  timeout: 45                  # 请求超时（应对高延迟）
+  retry_attempts: 5            # 重试次数
+  retry_delay: 2               # 基础重试延迟
+  max_retry_delay: 30          # 最大重试延迟
+  
+  # 连接池配置
+  connection_pool_size: 15     # HTTP连接池大小
+  max_connections_per_host: 8  # 每个主机最大连接数
+  
+  # 限流配置
+  rate_limit_delay: 0.15       # 请求间延迟150ms
+  burst_limit: 5               # 突发请求限制
+  
+  # 错误处理
+  retry_on_rate_limit: true    # 遇到429时重试
+  rate_limit_backoff: 10       # 429错误后等待10秒
+  exponential_backoff: true    # 指数退避算法
+
+# 数据库配置 - 适应慢RPC的配置
+database:
+  pool_size: 20               # 适中的连接池
+  max_overflow: 10            # 适中的溢出连接
+  pool_timeout: 180           # 增加超时应对RPC延迟
+  pool_recycle: 7200          # 增加连接回收时间
+  commit_batch_size: 2000     # 减少批量提交减轻压力
+
+# 并发处理配置 - 保守但高效
+concurrency:
+  max_workers: 6              # 保守的工作进程数
+  block_batch_size: 30        # 较小的区块批量
+  transaction_batch_size: 300 # 较小的交易批量
+  async_processing: true      # 异步处理
+  
+  # 队列配置
+  max_queue_size: 1000        # 最大队列长度
+  queue_timeout: 60           # 队列超时
+
+# Monad特定配置
+monad_specific:
+  # 网络标识
+  network_name: "monad_testnet"
+  rpc_url: "https://testnet-rpc.monad.xyz"
+  
+  # 区块处理配置
+  block_confirmation_depth: 6  # 区块确认深度
+  max_block_range: 1000       # 单次处理最大区块范围
+  
+  # 特殊处理
+  handle_gas_estimation: true  # 处理Gas估算
+  skip_empty_blocks: false     # 不跳过空区块（测试网重要）
+
+# 错误处理和监控
+error_handling:
+  max_consecutive_failures: 10 # 连续失败上限
+  failure_reset_interval: 300  # 失败重置间隔（5分钟）
+  circuit_breaker_threshold: 20 # 熔断器阈值
+  
+# 缓存配置 - 减少RPC调用
+cache:
+  type: "memory"              # 使用内存缓存
+  block_cache_size: 1000      # 区块缓存大小
+  transaction_cache_size: 5000 # 交易缓存大小
+  default_timeout: 600        # 缓存过期时间（10分钟）
+  
+# 监控和日志
+monitoring:
+  enable_rpc_monitoring: true  # 启用RPC监控
+  rpc_latency_threshold: 1.0   # RPC延迟阈值（1秒）
+  error_rate_threshold: 0.15   # 错误率阈值（15%）
+  log_slow_requests: true      # 记录慢请求
+  
+logging:
+  level: "INFO"
+  log_rpc_calls: true         # 记录RPC调用（用于调试）
+  log_rpc_errors: true        # 记录RPC错误
+  log_performance_stats: true  # 记录性能统计
+  max_log_file_size: "100MB"  # 日志文件大小限制
+  
+# 性能优化
+performance:
+  enable_request_compression: true    # 启用请求压缩
+  enable_response_caching: true       # 启用响应缓存
+  prefetch_blocks: false             # 关闭预取（减少RPC压力）
+  memory_limit: "2GB"                # 内存使用限制
+
+# OpenSea job 配置（如果需要）
+opensea_job:
+  seaport_1_6:
+    contract_address: "0x0000000000000068f116a894984e2db1123eb395"
+    fee_addresses:
+      - "0x0000a26b00c1f0df003000390027140000faa719"
+
+# Token transfers 配置
+export_tokens_and_transfers_job:
+  weth_address: "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"  # 可能需要修改为Monad的WETH
