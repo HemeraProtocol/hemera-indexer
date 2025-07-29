@@ -32,7 +32,7 @@ class BatchWorkExecutor:
         max_workers,
         job_name="BatchWorkExecutor",
         retry_exceptions=RETRY_EXCEPTIONS,
-        max_retries=5,
+        max_retries=2,
     ):
         self.batch_size = starting_batch_size
         self.max_batch_size = starting_batch_size

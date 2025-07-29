@@ -1,5 +1,6 @@
 import logging
 import sys
+import time
 import traceback
 
 from werkzeug.exceptions import HTTPException
@@ -123,6 +124,7 @@ def decode_response_error(error):
     elif code == -32700 or code == -32600 or code == -32602:
         raise FastShutdownError(message)
     elif (-32000 > code >= -32099) or code == -32603:
+        time.sleep(5)
         raise RetriableError(message)
     else:
         return None
