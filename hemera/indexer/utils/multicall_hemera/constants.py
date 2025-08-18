@@ -111,6 +111,7 @@ STORY_ODYSSEY_TESTNET = NetworkConfig(1516, "StoryOdysseyTestnet", 14880)
 MONAD_TESTNET = NetworkConfig(10143, "MonadalTestnet", 251449)
 SONIC = NetworkConfig(146, "Sonic", 60)
 SONIC_TESTNET = NetworkConfig(57054, "SonicTestnet", 1100)
+HYPER = NetworkConfig(999, "HyperEVM", 13051)
 
 
 def get_multicall_network(chain_id: int) -> NetworkConfig:
